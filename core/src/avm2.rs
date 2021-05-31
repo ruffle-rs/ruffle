@@ -156,12 +156,10 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
 
-        let event_proto = context.avm2.prototypes().event;
         let event_constr = context.avm2.constructors().event;
-
-        let event_object =
-            EventObject::from_event(context.gc_context, event_constr, Some(event_proto), event);
         let mut activation = Activation::from_nothing(context.reborrow());
+
+        let event_object = EventObject::from_event(&mut activation, event_constr, event)?;
 
         dispatch_event(&mut activation, target, event_object)
     }

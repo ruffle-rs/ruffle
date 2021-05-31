@@ -21,11 +21,16 @@ pub fn event_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    Ok(EventObject::derive(
-        constr,
-        proto,
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(EventObject(GcCell::allocate(
         activation.context.gc_context,
+        EventObjectData {
+            base,
+            event: Event::new(""),
+        },
     ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -44,34 +49,34 @@ pub struct EventObjectData<'gc> {
 
 impl<'gc> EventObject<'gc> {
     /// Convert a bare event into it's object representation.
+    ///
+    /// This function supports constructing subclasses of `Event`; as a result,
+    /// we will pull the `prototype` off the `constr` given to us.
     pub fn from_event(
-        mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
+        mut constr: Object<'gc>,
         event: Event<'gc>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::ClassInstance(constr));
-
-        EventObject(GcCell::allocate(mc, EventObjectData { base, event })).into()
-    }
-
-    /// Instantiate an event subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
+    ) -> Result<Object<'gc>, Error> {
+        let proto = constr
+            .get_property(
+                constr,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        EventObject(GcCell::allocate(
-            mc,
-            EventObjectData {
-                base,
-                event: Event::new(""),
-            },
+        let event_object = EventObject(GcCell::allocate(
+            activation.context.gc_context,
+            EventObjectData { base, event },
         ))
-        .into()
+        .into();
+
+        //TODO: Find a way to call the constructor's default initializer
+        //without overwriting the event we just put on the object.
+
+        Ok(event_object)
     }
 }
 
