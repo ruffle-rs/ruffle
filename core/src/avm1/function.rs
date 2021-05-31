@@ -12,7 +12,10 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
-use swf::{avm1::types::FunctionParam, SwfStr};
+use swf::{
+    avm1::types::{FunctionFlags, FunctionParam},
+    SwfStr,
+};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -61,16 +64,6 @@ pub struct Avm1Function<'gc> {
     /// set. Any register beyond this ID will be served from the global one.
     register_count: u8,
 
-    preload_parent: bool,
-    preload_root: bool,
-    suppress_super: bool,
-    preload_super: bool,
-    suppress_arguments: bool,
-    preload_arguments: bool,
-    suppress_this: bool,
-    preload_this: bool,
-    preload_global: bool,
-
     /// The names of the function parameters and their register mappings.
     /// r0 indicates that no register shall be written and the parameter stored
     /// as a Variable instead.
@@ -85,6 +78,10 @@ pub struct Avm1Function<'gc> {
     /// The base movie clip that the function was defined on.
     /// This is the movie clip that contains the bytecode.
     base_clip: DisplayObject<'gc>,
+
+    /// The flags that define the preloaded registers of the function.
+    #[collect(require_static)]
+    flags: FunctionFlags,
 }
 
 impl<'gc> Avm1Function<'gc> {
@@ -112,15 +109,6 @@ impl<'gc> Avm1Function<'gc> {
             data: actions,
             name,
             register_count: 0,
-            preload_parent: false,
-            preload_root: false,
-            suppress_super: false,
-            preload_super: false,
-            suppress_arguments: false,
-            preload_arguments: false,
-            suppress_this: false,
-            preload_this: false,
-            preload_global: false,
             params: params
                 .iter()
                 .map(|&s| {
@@ -133,6 +121,7 @@ impl<'gc> Avm1Function<'gc> {
             scope,
             constant_pool,
             base_clip,
+            flags: FunctionFlags::empty(),
         }
     }
 
@@ -172,19 +161,11 @@ impl<'gc> Avm1Function<'gc> {
             data: actions,
             name,
             register_count: swf_function.register_count,
-            preload_parent: swf_function.preload_parent,
-            preload_root: swf_function.preload_root,
-            suppress_super: swf_function.suppress_super,
-            preload_super: swf_function.preload_super,
-            suppress_arguments: swf_function.suppress_arguments,
-            preload_arguments: swf_function.preload_arguments,
-            suppress_this: swf_function.suppress_this,
-            preload_this: swf_function.preload_this,
-            preload_global: swf_function.preload_global,
             params: owned_params,
             scope,
             constant_pool,
             base_clip,
+            flags: swf_function.flags,
         }
     }
 
@@ -281,7 +262,7 @@ impl<'gc> Executable<'gc> {
                     Attribute::DONT_ENUM,
                 );
 
-                if !af.suppress_arguments {
+                if !af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
                     for i in 0..args.len() {
                         arguments.set_array_element(
                             i,
@@ -292,18 +273,19 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let argcell = arguments.into();
-                let super_object: Option<Object<'gc>> = if !af.suppress_super {
-                    Some(
-                        SuperObject::from_this_and_base_proto(
-                            this,
-                            base_proto.unwrap_or(this),
-                            activation,
-                        )?
-                        .into(),
-                    )
-                } else {
-                    None
-                };
+                let super_object: Option<Object<'gc>> =
+                    if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
+                        Some(
+                            SuperObject::from_this_and_base_proto(
+                                this,
+                                base_proto.unwrap_or(this),
+                                activation,
+                            )?
+                            .into(),
+                        )
+                    } else {
+                        None
+                    };
 
                 let effective_ver = if activation.swf_version() > 5 {
                     af.swf_version()
@@ -356,14 +338,14 @@ impl<'gc> Executable<'gc> {
 
                 let mut preload_r = 1;
 
-                if af.preload_this {
+                if af.flags.contains(FunctionFlags::PRELOAD_THIS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
                     frame.set_local_register(preload_r, this);
                     preload_r += 1;
                 }
 
-                if af.preload_arguments {
+                if af.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for arguments?
                     frame.set_local_register(preload_r, argcell);
@@ -371,7 +353,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if let Some(super_object) = super_object {
-                    if af.preload_super {
+                    if af.flags.contains(FunctionFlags::PRELOAD_SUPER) {
                         frame.set_local_register(preload_r, super_object);
                         //TODO: What happens if you specify both suppress and
                         //preload for super?
@@ -381,7 +363,7 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                if af.preload_root {
+                if af.flags.contains(FunctionFlags::PRELOAD_ROOT) {
                     frame.set_local_register(
                         preload_r,
                         af.base_clip.avm1_root(&frame.context)?.object(),
@@ -389,7 +371,7 @@ impl<'gc> Executable<'gc> {
                     preload_r += 1;
                 }
 
-                if af.preload_parent {
+                if af.flags.contains(FunctionFlags::PRELOAD_PARENT) {
                     // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
                     // and _global ends up incorrectly taking _parent's register.
                     // See test for more info.
@@ -399,7 +381,7 @@ impl<'gc> Executable<'gc> {
                     }
                 }
 
-                if af.preload_global {
+                if af.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
                     let global = frame.context.avm1.global_object();
                     frame.set_local_register(preload_r, global);
                 }
