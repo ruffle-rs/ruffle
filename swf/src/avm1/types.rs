@@ -1,4 +1,5 @@
 use crate::string::SwfStr;
+use bitflags::bitflags;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action<'a> {
@@ -157,15 +158,7 @@ pub struct Function<'a> {
     pub name: &'a SwfStr,
     pub register_count: u8,
     pub params: Vec<FunctionParam<'a>>,
-    pub preload_parent: bool,
-    pub preload_root: bool,
-    pub suppress_super: bool,
-    pub preload_super: bool,
-    pub suppress_arguments: bool,
-    pub preload_arguments: bool,
-    pub suppress_this: bool,
-    pub preload_this: bool,
-    pub preload_global: bool,
+    pub flags: FunctionFlags,
     pub actions: &'a [u8],
 }
 
@@ -173,6 +166,20 @@ pub struct Function<'a> {
 pub struct FunctionParam<'a> {
     pub name: &'a SwfStr,
     pub register_index: Option<u8>,
+}
+
+bitflags! {
+    pub struct FunctionFlags: u16 {
+        const PRELOAD_THIS = 1 << 0;
+        const SUPPRESS_THIS = 1 << 1;
+        const PRELOAD_ARGUMENTS = 1 << 2;
+        const SUPPRESS_ARGUMENTS = 1 << 3;
+        const PRELOAD_SUPER = 1 << 4;
+        const SUPPRESS_SUPER = 1 << 5;
+        const PRELOAD_ROOT = 1 << 6;
+        const PRELOAD_PARENT = 1 << 7;
+        const PRELOAD_GLOBAL = 1 << 8;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -302,8 +302,8 @@ impl<'a> Reader<'a> {
     fn read_define_function_2(&mut self, action_length: &mut usize) -> Result<Action<'a>> {
         let name = self.read_str()?;
         let num_params = self.read_u16()?;
-        let register_count = self.read_u8()?; // Number of registers
-        let flags = self.read_u16()?;
+        let register_count = self.read_u8()?;
+        let flags = FunctionFlags::from_bits_truncate(self.read_u16()?);
         let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
             let register = self.read_u8()?;
@@ -319,15 +319,7 @@ impl<'a> Reader<'a> {
             name,
             params,
             register_count,
-            preload_global: flags & 0b1_00000000 != 0,
-            preload_parent: flags & 0b10000000 != 0,
-            preload_root: flags & 0b1000000 != 0,
-            suppress_super: flags & 0b100000 != 0,
-            preload_super: flags & 0b10000 != 0,
-            suppress_arguments: flags & 0b1000 != 0,
-            preload_arguments: flags & 0b100 != 0,
-            suppress_this: flags & 0b10 != 0,
-            preload_this: flags & 0b1 != 0,
+            flags,
             actions: self.read_slice(code_length)?,
         }))
     }

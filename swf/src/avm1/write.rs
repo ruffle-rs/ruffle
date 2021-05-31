@@ -144,26 +144,7 @@ impl<W: Write> Writer<W> {
                 self.write_string(function.name)?;
                 self.write_u16(function.params.len() as u16)?;
                 self.write_u8(function.register_count)?;
-                let flags = if function.preload_global {
-                    0b1_00000000
-                } else {
-                    0
-                } | if function.preload_parent {
-                    0b10000000
-                } else {
-                    0
-                } | if function.preload_root { 0b1000000 } else { 0 }
-                    | if function.suppress_super { 0b100000 } else { 0 }
-                    | if function.preload_super { 0b10000 } else { 0 }
-                    | if function.suppress_arguments {
-                        0b1000
-                    } else {
-                        0
-                    }
-                    | if function.preload_arguments { 0b100 } else { 0 }
-                    | if function.suppress_this { 0b10 } else { 0 }
-                    | if function.preload_this { 0b1 } else { 0 };
-                self.write_u16(flags)?;
+                self.write_u16(function.flags.bits())?;
                 for param in &function.params {
                     self.write_u8(if let Some(n) = param.register_index {
                         n
