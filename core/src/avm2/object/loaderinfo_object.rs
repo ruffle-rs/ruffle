@@ -23,7 +23,16 @@ pub fn loaderinfo_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    LoaderInfoObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(LoaderInfoObject(GcCell::allocate(
+        activation.context.gc_context,
+        LoaderInfoObjectData {
+            base,
+            loaded_stream: None,
+        },
+    ))
+    .into())
 }
 
 /// Represents a thing which can be loaded by a loader.
@@ -62,62 +71,49 @@ pub struct LoaderInfoObjectData<'gc> {
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
     pub fn from_movie(
+        activation: &mut Activation<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().loaderinfo;
+        let proto = activation.avm2().prototypes().loaderinfo;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
-        Ok(LoaderInfoObject(GcCell::allocate(
-            mc,
+        let this = LoaderInfoObject(GcCell::allocate(
+            activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
                 loaded_stream,
             },
         ))
-        .into())
+        .into();
+
+        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
+
+        Ok(this)
     }
 
     /// Create a loader info object for the stage.
-    pub fn from_stage(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
+    pub fn from_stage(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().loaderinfo;
+        let proto = activation.avm2().prototypes().loaderinfo;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        LoaderInfoObject(GcCell::allocate(
-            mc,
+        let this = LoaderInfoObject(GcCell::allocate(
+            activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
                 loaded_stream: Some(LoaderStream::Stage),
             },
         ))
-        .into()
-    }
+        .into();
 
-    /// Construct a loader-info subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 
-        Ok(LoaderInfoObject(GcCell::allocate(
-            mc,
-            LoaderInfoObjectData {
-                base,
-                loaded_stream: None,
-            },
-        ))
-        .into())
+        Ok(this)
     }
 }
 
