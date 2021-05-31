@@ -167,12 +167,15 @@ pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc
 /// Since Object and Function are so heavily intertwined, this function does
 /// not allocate an object to store either proto. Instead, you must allocate
 /// bare objects for both and let this function fill Object for you.
+///
+/// This function returns both the class constructor and it's initializer
+/// method, which must be called before user code runs.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
     mut object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<(Object<'gc>, Object<'gc>), Error> {
     let gc_context = activation.context.gc_context;
 
     object_proto.install_dynamic_property(

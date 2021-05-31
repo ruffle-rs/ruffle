@@ -48,22 +48,22 @@ pub struct ClassObjectData<'gc> {
 impl<'gc> ClassObject<'gc> {
     /// Construct a class.
     ///
-    /// This function returns both the class itself, and the static class
-    /// initializer method that you should call before interacting with the
-    /// class. The latter should be called using the former as a receiver.
+    /// This function returns the class constructor object, which should be
+    /// used in all cases where the type needs to be referred to. It's class
+    /// initializer will be executed during this function call.
     ///
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
     /// in the VM. This corresponds to no base class, and in practice appears
-    /// to be limited to interfaces
+    /// to be limited to interfaces.
     pub fn from_class(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         base_class_constr: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<(Object<'gc>, Object<'gc>), Error> {
+    ) -> Result<Object<'gc>, Error> {
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by a deriver, but instead should be regular objects
-        let class_proto = if let Some(mut base_class_constr) = base_class_constr {
+        let mut class_proto = if let Some(mut base_class_constr) = base_class_constr {
             let base_proto = base_class_constr
                 .get_property(
                     base_class_constr,
@@ -77,17 +77,6 @@ impl<'gc> ClassObject<'gc> {
             ScriptObject::bare_object(activation.context.gc_context)
         };
 
-        ClassObject::from_class_and_proto(activation, class, base_class_constr, class_proto, scope)
-    }
-
-    /// Construct a class with a custom object type as its prototype.
-    fn from_class_and_proto(
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        base_class_constr: Option<Object<'gc>>,
-        mut class_proto: Object<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
@@ -163,19 +152,37 @@ impl<'gc> ClassObject<'gc> {
             constr.into(),
         )?;
 
-        let class_initializer = class_read.class_init();
-        let class_constr = FunctionObject::from_method(
-            activation.context.gc_context,
-            class_initializer,
-            scope,
-            class_constr_proto,
-            None,
-        );
+        if !class_read.is_class_initialized() {
+            let class_initializer = class_read.class_init();
+            let class_init_fn = FunctionObject::from_method(
+                activation.context.gc_context,
+                class_initializer,
+                scope,
+                class_constr_proto,
+                Some(constr),
+            );
 
-        Ok((constr, class_constr))
+            drop(class_read);
+            class
+                .write(activation.context.gc_context)
+                .mark_class_initialized();
+
+            class_init_fn.call(Some(constr), &[], activation, None)?;
+        }
+
+        Ok(constr)
     }
 
     /// Construct a builtin type from a Rust constructor and prototype.
+    ///
+    /// This function returns both the class constructor object and the
+    /// class initializer to call before the class is used. The constructor
+    /// should be used in all cases where the type needs to be referred to. You
+    /// must call the class initializer yourself.
+    ///
+    /// `base_class` is allowed to be `None`, corresponding to a `null` value
+    /// in the VM. This corresponds to no base class, and in practice appears
+    /// to be limited to interfaces.
     pub fn from_builtin_constr(
         mc: MutationContext<'gc, '_>,
         base_class_constr: Option<Object<'gc>>,
@@ -183,7 +190,7 @@ impl<'gc> ClassObject<'gc> {
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<(Object<'gc>, Object<'gc>), Error> {
         let instance_constr =
             Executable::from_method(class.read().instance_init(), scope, None, mc);
         let native_instance_constr =
@@ -215,7 +222,11 @@ impl<'gc> ClassObject<'gc> {
             base.into(),
         )?;
 
-        Ok(base)
+        let class_initializer = class.read().class_init();
+        let class_constr =
+            FunctionObject::from_method(mc, class_initializer, scope, fn_proto, Some(base));
+
+        Ok((base, class_constr))
     }
 }
 

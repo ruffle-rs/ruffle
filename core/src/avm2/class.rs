@@ -160,8 +160,11 @@ pub struct Class<'gc> {
 
     /// The class initializer for this class.
     ///
-    /// Must be called once prior to any use of this class.
+    /// Must be called once and only once prior to any use of this class.
     class_init: Method<'gc>,
+
+    /// Whether or not the class initializer has already been called.
+    class_initializer_called: bool,
 
     /// Static traits for a given class.
     ///
@@ -261,6 +264,7 @@ impl<'gc> Class<'gc> {
                 native_instance_init,
                 instance_traits: Vec::new(),
                 class_init,
+                class_initializer_called: false,
                 class_traits: Vec::new(),
                 traits_loaded: true,
             },
@@ -348,6 +352,7 @@ impl<'gc> Class<'gc> {
                 native_instance_init,
                 instance_traits: Vec::new(),
                 class_init,
+                class_initializer_called: false,
                 class_traits: Vec::new(),
                 traits_loaded: false,
             },
@@ -424,6 +429,7 @@ impl<'gc> Class<'gc> {
                 native_instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
                 instance_traits: traits,
                 class_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                class_initializer_called: false,
                 class_traits: Vec::new(),
                 traits_loaded: true,
             },
@@ -683,6 +689,16 @@ impl<'gc> Class<'gc> {
     /// Get this class's class initializer.
     pub fn class_init(&self) -> Method<'gc> {
         self.class_init.clone()
+    }
+
+    /// Check if the class has already been initialized.
+    pub fn is_class_initialized(&self) -> bool {
+        self.class_initializer_called
+    }
+
+    /// Mark the class as initialized.
+    pub fn mark_class_initialized(&mut self) {
+        self.class_initializer_called = true;
     }
 
     pub fn interfaces(&self) -> &[Multiname<'gc>] {

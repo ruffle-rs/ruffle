@@ -98,12 +98,15 @@ pub fn create_proto<'gc>(
 }
 
 /// Fill `Function.prototype` and allocate it's constructor.
+///
+/// This function returns both the class constructor and it's initializer
+/// method, which must be called before user code runs.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
     mut function_proto: Object<'gc>,
     super_constr: Object<'gc>,
-) -> Object<'gc> {
+) -> Result<(Object<'gc>, Object<'gc>), Error> {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
         Some(QName::new(Namespace::public(), "Object").into()),
@@ -134,5 +137,4 @@ pub fn fill_proto<'gc>(
         function_proto,
         function_proto,
     )
-    .unwrap()
 }

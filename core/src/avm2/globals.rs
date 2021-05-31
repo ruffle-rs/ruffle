@@ -325,19 +325,18 @@ fn class<'gc>(
         None
     };
 
-    let (mut constr, _cinit) =
+    let class_name = class_read.name().clone();
+    drop(class_read);
+
+    let mut constr =
         ClassObject::from_class(activation, class_def, super_class, Some(global_scope))?;
     global.install_const(
         activation.context.gc_context,
-        class_read.name().clone(),
+        class_name.clone(),
         0,
         constr.into(),
     );
-    domain.export_definition(
-        class_read.name().clone(),
-        script,
-        activation.context.gc_context,
-    )?;
+    domain.export_definition(class_name, script, activation.context.gc_context)?;
 
     let proto = constr
         .get_property(
@@ -400,11 +399,12 @@ pub fn load_player_globals<'gc>(
     let object_proto = object::create_proto(activation);
     let fn_proto = function::create_proto(activation, object_proto);
 
-    let object_constr = object::fill_proto(activation, gs, object_proto, fn_proto)?;
-    let function_constr = function::fill_proto(activation, gs, fn_proto, object_constr);
+    let (object_constr, object_cinit) = object::fill_proto(activation, gs, object_proto, fn_proto)?;
+    let (function_constr, function_cinit) =
+        function::fill_proto(activation, gs, fn_proto, object_constr)?;
 
-    let (class_constr, class_proto) =
-        class::create_class(activation, gs, object_constr, object_proto, fn_proto);
+    let (class_constr, class_proto, class_cinit) =
+        class::create_class(activation, gs, object_constr, object_proto, fn_proto)?;
 
     dynamic_class(mc, object_constr, domain, script)?;
     dynamic_class(mc, function_constr, domain, script)?;
@@ -427,10 +427,16 @@ pub fn load_player_globals<'gc>(
         ScriptObject::bare_object(mc),
     ));
 
-    // Even sillier: for the sake of clarity and the borrow checker we need to
-    // clone the prototypes list and modify it outside of the activation. This
-    // also has the side effect that none of these classes can get at each
-    // other from the activation they're handed.
+    // We can now run the class initializers for our core classes.
+    // Everything else initializes as it's installed automatically.
+    object_cinit.call(Some(object_constr), &[], activation, Some(object_constr))?;
+    function_cinit.call(
+        Some(function_constr),
+        &[],
+        activation,
+        Some(function_constr),
+    )?;
+    class_cinit.call(Some(class_constr), &[], activation, Some(class_constr))?;
 
     avm2_system_class!(
         global,

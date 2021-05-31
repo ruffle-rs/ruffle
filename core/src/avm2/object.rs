@@ -634,11 +634,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     None
                 };
 
-                let (class_object, _cinit) =
-                    ClassObject::from_class(activation, *class, super_class, scope)?;
+                let class_name = class_read.name().clone();
+                drop(class_read);
+
+                let class_object = ClassObject::from_class(activation, *class, super_class, scope)?;
                 self.install_const(
                     activation.context.gc_context,
-                    class_read.name().clone(),
+                    class_name,
                     *slot_id,
                     class_object.into(),
                 );

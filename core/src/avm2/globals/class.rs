@@ -27,17 +27,20 @@ pub fn class_init<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Err("Classes cannot be constructed.".into())
+    Ok(Value::Undefined)
 }
 
 /// Construct `Class` and `Class.prototype`, respectively.
+///
+/// This function additionally returns the class initializer method for `Class`,
+/// which must be called before user code runs.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
     super_constr: Object<'gc>,
     super_proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) -> (Object<'gc>, Object<'gc>) {
+) -> Result<(Object<'gc>, Object<'gc>, Object<'gc>), Error> {
     let class_class = Class::new(
         QName::new(Namespace::public(), "Class"),
         Some(QName::new(Namespace::public(), "Object").into()),
@@ -49,15 +52,14 @@ pub fn create_class<'gc>(
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
     let proto = ScriptObject::object(activation.context.gc_context, super_proto);
 
-    let constr = ClassObject::from_builtin_constr(
+    let (constr, cinit) = ClassObject::from_builtin_constr(
         activation.context.gc_context,
         Some(super_constr),
         class_class,
         Some(scope),
         proto,
         fn_proto,
-    )
-    .unwrap();
+    )?;
 
-    (constr, proto)
+    Ok((constr, proto, cinit))
 }

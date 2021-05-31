@@ -233,7 +233,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let activation_class =
                 Class::from_method_body(&mut context, translation_unit, abc_method, body)?;
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
-            let (constr, _cinit) =
+            let constr =
                 ClassObject::from_class(&mut dummy_activation, activation_class, None, scope)?;
 
             drop(dummy_activation);
@@ -1555,10 +1555,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let class_entry = self.table_class(method, index)?;
         let scope = self.scope();
 
-        let (new_class, class_init) =
-            ClassObject::from_class(self, class_entry, base_class, scope)?;
-
-        class_init.call(Some(new_class), &[], self, None)?;
+        let new_class = ClassObject::from_class(self, class_entry, base_class, scope)?;
 
         self.context.avm2.push(new_class);
 
