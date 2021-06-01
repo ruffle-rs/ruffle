@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<movie version="7" width="400" height="300" framerate="24">
+  <background color="#000000" />
+
+  <clip import="classes.swf" />
+
+  <frame>
+    <library>
+      <clip id="main" class="Main" />
+
+      <!-- 20x20 -->
+      <clip id="icon" import="icon.png" />
+      <clip id="column" class="Column" />
+    </library>
+
+    <place id="main" name="main_mc" />
+
+  </frame>
+</movie>
