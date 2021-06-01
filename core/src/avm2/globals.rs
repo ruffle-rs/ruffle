@@ -111,6 +111,7 @@ pub struct SystemPrototypes<'gc> {
     pub stage: Object<'gc>,
     pub sprite: Object<'gc>,
     pub simplebutton: Object<'gc>,
+    pub regexp: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -158,6 +159,7 @@ impl<'gc> SystemPrototypes<'gc> {
             stage: empty,
             sprite: empty,
             simplebutton: empty,
+            regexp: empty,
         }
     }
 }
@@ -196,6 +198,7 @@ pub struct SystemConstructors<'gc> {
     pub stage: Object<'gc>,
     pub sprite: Object<'gc>,
     pub simplebutton: Object<'gc>,
+    pub regexp: Object<'gc>,
 }
 
 impl<'gc> SystemConstructors<'gc> {
@@ -243,6 +246,7 @@ impl<'gc> SystemConstructors<'gc> {
             stage: empty,
             sprite: empty,
             simplebutton: empty,
+            regexp: empty,
         }
     }
 }
@@ -478,7 +482,7 @@ pub fn load_player_globals<'gc>(
     constant(mc, "", "Infinity", f64::INFINITY.into(), domain, script)?;
 
     class(activation, math::create_class(mc), domain, script)?;
-    class(activation, regexp::create_class(mc), domain, script)?;
+    avm2_system_class!(regexp, activation, regexp::create_class(mc), domain, script);
 
     avm2_system_class!(xml, activation, xml::create_class(mc), domain, script);
     avm2_system_class!(

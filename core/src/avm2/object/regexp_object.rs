@@ -21,11 +21,16 @@ pub fn regexp_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    Ok(RegExpObject::derive(
-        constr,
-        proto,
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(RegExpObject(GcCell::allocate(
         activation.context.gc_context,
+        RegExpObjectData {
+            base,
+            regexp: RegExp::new(""),
+        },
     ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -43,33 +48,23 @@ pub struct RegExpObjectData<'gc> {
 
 impl<'gc> RegExpObject<'gc> {
     pub fn from_regexp(
-        mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
         regexp: RegExp<'gc>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::ClassInstance(constr));
-
-        RegExpObject(GcCell::allocate(mc, RegExpObjectData { base, regexp })).into()
-    }
-
-    /// Instantiate a regexp subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
+    ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().regexp;
+        let proto = activation.avm2().prototypes().regexp;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        RegExpObject(GcCell::allocate(
-            mc,
-            RegExpObjectData {
-                base,
-                regexp: RegExp::new(""),
-            },
+        let this = RegExpObject(GcCell::allocate(
+            activation.context.gc_context,
+            RegExpObjectData { base, regexp },
         ))
-        .into()
+        .into();
+
+        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
+
+        Ok(this)
     }
 }
 
