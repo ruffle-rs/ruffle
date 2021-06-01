@@ -1513,7 +1513,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let mut constructor = self
+        let constructor = self
             .0
             .read()
             .avm2_constructor
@@ -1521,20 +1521,9 @@ impl<'gc> MovieClip<'gc> {
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let mc_proto = constructor
-                .get_property(
-                    constructor,
-                    &Avm2QName::new(Avm2Namespace::public(), "prototype"),
-                    &mut activation,
-                )?
-                .coerce_to_object(&mut activation)?;
-            let object = Avm2StageObject::for_display_object(
-                activation.context.gc_context,
-                display_object,
-                constructor,
-                mc_proto,
-            )
-            .into();
+            let object =
+                Avm2StageObject::for_display_object(&mut activation, display_object, constructor)?
+                    .into();
 
             Ok(object)
         };

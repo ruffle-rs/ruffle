@@ -1,5 +1,8 @@
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value};
+use crate::avm2::{
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Value as Avm2Value,
+};
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
@@ -426,15 +429,16 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         if self.0.read().object.is_none() {
-            let simplebutton_proto = context.avm2.prototypes().simplebutton;
             let simplebutton_constr = context.avm2.constructors().simplebutton;
-            let object = Avm2StageObject::for_display_object(
-                context.gc_context,
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            match Avm2StageObject::for_display_object(
+                &mut activation,
                 (*self).into(),
                 simplebutton_constr,
-                simplebutton_proto,
-            );
-            self.0.write(context.gc_context).object = Some(object.into());
+            ) {
+                Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
+                Err(e) => log::error!("Got {} when constructing AVM2 side of button", e),
+            };
 
             let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
             let (over_state, over_should_fire) = self.create_state(context, swf::ButtonState::OVER);

@@ -7,7 +7,6 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    TObject as Avm2TObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -1509,29 +1508,23 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let textfield_proto = context.avm2.prototypes().textfield;
         let textfield_constr = context.avm2.constructors().textfield;
-
-        let object: Avm2Object<'gc> = Avm2StageObject::for_display_object(
-            context.gc_context,
-            display_object,
-            textfield_constr,
-            textfield_proto,
-        )
-        .into();
-
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-        if let Err(e) =
-            textfield_constr.call(Some(object), &[], &mut activation, Some(textfield_constr))
-        {
-            log::error!(
+        match Avm2StageObject::for_display_object_childless(
+            &mut activation,
+            display_object,
+            textfield_constr,
+        ) {
+            Ok(object) => {
+                let object: Avm2Object<'gc> = object.into();
+                self.0.write(activation.context.gc_context).object = Some(object.into())
+            }
+            Err(e) => log::error!(
                 "Got {} when constructing AVM2 side of dynamic text field",
                 e
-            );
+            ),
         }
-
-        self.0.write(activation.context.gc_context).object = Some(object.into());
     }
 }
 

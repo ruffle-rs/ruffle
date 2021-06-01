@@ -20,7 +20,16 @@ pub fn stage_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    StageObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(StageObject(GcCell::allocate(
+        activation.context.gc_context,
+        StageObjectData {
+            base,
+            display_object: None,
+        },
+    ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -38,14 +47,31 @@ pub struct StageObjectData<'gc> {
 }
 
 impl<'gc> StageObject<'gc> {
+    /// Allocate the AVM2 side of a display object intended to be of a given
+    /// constructor's type.
+    ///
+    /// This function makes no attempt to construct the returned object. You
+    /// are responsible for calling the native initializer of the given
+    /// constructor at a later time. Typically, a display object that can
+    /// contain movie-constructed children must first allocate itself (using
+    /// this function), construct it's children, and then finally initialize
+    /// itself. Display objects that do not need to use this flow should use
+    /// `for_display_object_childless`.
     pub fn for_display_object(
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        constr: Object<'gc>,
-        proto: Object<'gc>,
-    ) -> Self {
-        Self(GcCell::allocate(
-            mc,
+        mut constr: Object<'gc>,
+    ) -> Result<Self, Error> {
+        let proto = constr
+            .get_property(
+                constr,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        Ok(Self(GcCell::allocate(
+            activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::base_new(
                     Some(proto),
@@ -53,26 +79,47 @@ impl<'gc> StageObject<'gc> {
                 ),
                 display_object: Some(display_object),
             },
-        ))
+        )))
     }
 
-    /// Construct a stage object subclass.
-    pub fn derive(
+    /// Allocate and construct the AVM2 side of a display object intended to be
+    /// of a given constructor's type.
+    ///
+    /// This function is intended for display objects that do not have children
+    /// and thus do not need to be allocated and initialized in separate phases.
+    pub fn for_display_object_childless(
+        activation: &mut Activation<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
         constr: Object<'gc>,
-        proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    ) -> Result<Self, Error> {
+        let this = Self::for_display_object(activation, display_object, constr)?;
 
-        Ok(StageObject(GcCell::allocate(
-            mc,
+        constr.call_native_initializer(Some(this.into()), &[], activation, Some(constr))?;
+
+        Ok(this)
+    }
+
+    /// Create a `graphics` object for a given display object.
+    pub fn graphics_of(
+        activation: &mut Activation<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+    ) -> Result<Self, Error> {
+        let constr = activation.avm2().constructors().graphics;
+        let proto = activation.avm2().prototypes().graphics;
+        let this = Self(GcCell::allocate(
+            activation.context.gc_context,
             StageObjectData {
-                base,
-                display_object: None,
+                base: ScriptObjectData::base_new(
+                    Some(proto),
+                    ScriptObjectClass::ClassInstance(constr),
+                ),
+                display_object: Some(display_object),
             },
-        ))
-        .into())
+        ));
+
+        constr.call_native_initializer(Some(this.into()), &[], activation, Some(constr))?;
+
+        Ok(this)
     }
 }
 
