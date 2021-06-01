@@ -20,7 +20,16 @@ pub fn namespace_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    NamespaceObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(NamespaceObject(GcCell::allocate(
+        activation.context.gc_context,
+        NamespaceObjectData {
+            base,
+            namespace: Namespace::public(),
+        },
+    ))
+    .into())
 }
 
 /// An Object which represents a boxed namespace name.
@@ -41,38 +50,23 @@ pub struct NamespaceObjectData<'gc> {
 impl<'gc> NamespaceObject<'gc> {
     /// Box a namespace into an object.
     pub fn from_namespace(
+        activation: &mut Activation<'_, 'gc, '_>,
         namespace: Namespace<'gc>,
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
+        let constr = activation.avm2().constructors().namespace;
+        let proto = activation.avm2().prototypes().namespace;
         let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        Ok(NamespaceObject(GcCell::allocate(
-            mc,
+        let this = NamespaceObject(GcCell::allocate(
+            activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))
-        .into())
-    }
+        .into();
 
-    /// Construct a namespace subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 
-        Ok(NamespaceObject(GcCell::allocate(
-            mc,
-            NamespaceObjectData {
-                base,
-                namespace: Namespace::public(),
-            },
-        ))
-        .into())
+        Ok(this)
     }
 }
 

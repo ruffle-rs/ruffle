@@ -7,7 +7,6 @@ use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
@@ -185,14 +184,14 @@ pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> R
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
-    uc: &mut UpdateContext<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, uc.gc_context)
+            .pool_string(s.0, activation.context.gc_context)
             .map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
@@ -204,18 +203,15 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Protected(ns)
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
-        | AbcDefaultValue::Private(ns) => {
-            let ns_proto = uc.avm2.prototypes().namespace;
-            let ns_constr = uc.avm2.constructors().namespace;
-
-            Ok(NamespaceObject::from_namespace(
-                Namespace::from_abc_namespace(translation_unit, ns.clone(), uc.gc_context)?,
-                ns_constr,
-                ns_proto,
-                uc.gc_context,
-            )?
-            .into())
-        }
+        | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
+            activation,
+            Namespace::from_abc_namespace(
+                translation_unit,
+                ns.clone(),
+                activation.context.gc_context,
+            )?,
+        )?
+        .into()),
     }
 }
 

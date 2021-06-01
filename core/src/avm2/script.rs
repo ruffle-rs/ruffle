@@ -109,7 +109,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_class(
         self,
         class_index: u32,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         let read = self.0.read();
         if let Some(class) = read.classes.get(&class_index) {
@@ -118,15 +118,15 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let class = Class::from_abc_index(self, class_index, uc.gc_context)?;
+        let class = Class::from_abc_index(self, class_index, activation.context.gc_context)?;
         self.0
-            .write(uc.gc_context)
+            .write(activation.context.gc_context)
             .classes
             .insert(class_index, class);
 
         class
-            .write(uc.gc_context)
-            .load_traits(self, class_index, uc)?;
+            .write(activation.context.gc_context)
+            .load_traits(self, class_index, activation)?;
 
         Ok(class)
     }
@@ -148,18 +148,22 @@ impl<'gc> TranslationUnit<'gc> {
 
         let mut activation = Activation::from_nothing(uc.reborrow());
         let global = DomainObject::script_global(&mut activation, domain)?;
-        drop(activation);
 
-        let mut script = Script::from_abc_index(self, script_index, global, uc.gc_context)?;
+        let mut script =
+            Script::from_abc_index(self, script_index, global, activation.context.gc_context)?;
         self.0
-            .write(uc.gc_context)
+            .write(activation.context.gc_context)
             .scripts
             .insert(script_index, script);
 
-        script.load_traits(self, script_index, uc)?;
+        script.load_traits(self, script_index, &mut activation)?;
 
         for traitdef in script.traits()?.iter() {
-            domain.export_definition(traitdef.name().clone(), script, uc.gc_context)?;
+            domain.export_definition(
+                traitdef.name().clone(),
+                script,
+                activation.context.gc_context,
+            )?;
         }
 
         Ok(script)
@@ -310,9 +314,9 @@ impl<'gc> Script<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut write = self.0.write(uc.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
 
         if write.traits_loaded {
             return Ok(());
@@ -330,9 +334,9 @@ impl<'gc> Script<'gc> {
         for abc_trait in script.traits.iter() {
             drop(write);
 
-            let newtrait = Trait::from_abc_trait(unit, abc_trait, uc)?;
+            let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
 
-            write = self.0.write(uc.gc_context);
+            write = self.0.write(activation.context.gc_context);
             write.traits.push(newtrait);
         }
 

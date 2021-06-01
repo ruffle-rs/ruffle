@@ -9,7 +9,6 @@ use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -369,7 +368,7 @@ impl<'gc> Class<'gc> {
         &mut self,
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self.traits_loaded {
             return Ok(());
@@ -392,32 +391,37 @@ impl<'gc> Class<'gc> {
 
         for abc_trait in abc_instance.traits.iter() {
             self.instance_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, uc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
 
         for abc_trait in abc_class.traits.iter() {
             self.class_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, uc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
 
         Ok(())
     }
 
     pub fn from_method_body(
-        uc: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
         body: &AbcMethodBody,
     ) -> Result<GcCell<'gc, Self>, Error> {
-        let name = translation_unit.pool_string(method.name.as_u30(), uc.gc_context)?;
+        let name =
+            translation_unit.pool_string(method.name.as_u30(), activation.context.gc_context)?;
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {
-            traits.push(Trait::from_abc_trait(translation_unit, trait_entry, uc)?);
+            traits.push(Trait::from_abc_trait(
+                translation_unit,
+                trait_entry,
+                activation,
+            )?);
         }
 
         Ok(GcCell::allocate(
-            uc.gc_context,
+            activation.context.gc_context,
             Self {
                 name: QName::dynamic_name(name),
                 super_class: None,

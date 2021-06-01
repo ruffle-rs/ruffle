@@ -230,9 +230,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let activation_constr = if method.method().needs_activation {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
-            let activation_class =
-                Class::from_method_body(&mut context, translation_unit, abc_method, body)?;
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
+            let activation_class =
+                Class::from_method_body(&mut dummy_activation, translation_unit, abc_method, body)?;
             let constr =
                 ClassObject::from_class(&mut dummy_activation, activation_class, None, scope)?;
 
@@ -523,9 +523,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcClass>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
-        method
-            .translation_unit()
-            .load_class(index.0, &mut self.context)
+        method.translation_unit().load_class(index.0, self)
     }
 
     pub fn run_actions(
@@ -800,15 +798,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
         let ns = self.pool_namespace(method, value, self.context.gc_context)?;
-        let ns_proto = self.context.avm2.prototypes().namespace;
-        let ns_constr = self.context.avm2.constructors().namespace;
+        let ns_object = NamespaceObject::from_namespace(self, ns)?;
 
-        self.context.avm2.push(NamespaceObject::from_namespace(
-            ns,
-            ns_constr,
-            ns_proto,
-            self.context.gc_context,
-        )?);
+        self.context.avm2.push(ns_object);
         Ok(FrameControl::Continue)
     }
 

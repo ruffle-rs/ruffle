@@ -18,6 +18,19 @@ pub fn instance_init<'gc>(
     Err("Namespace constructor is a stub.".into())
 }
 
+/// Implements `Namespace`'s native instance initializer.
+pub fn native_instance_init<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        activation.super_init(this, args)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Namespace`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -39,6 +52,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
     write.set_instance_deriver(namespace_deriver);
+    write.set_native_instance_init(Method::from_builtin(native_instance_init));
 
     class
 }
