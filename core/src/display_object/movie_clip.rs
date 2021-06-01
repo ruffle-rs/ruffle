@@ -85,6 +85,8 @@ pub struct MovieClipData<'gc> {
     use_hand_cursor: bool,
     last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
+    target_width: Option<f64>,
+    target_height: Option<f64>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -112,6 +114,8 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                target_width: None,
+                target_height: None,
             },
         ))
     }
@@ -144,6 +148,8 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                target_width: None,
+                target_height: None,
             },
         ))
     }
@@ -179,6 +185,8 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                target_width: None,
+                target_height: None,
             },
         ))
     }
@@ -211,6 +219,8 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                target_width: None,
+                target_height: None,
             },
         ));
         mc.set_is_root(gc_context, true);
@@ -1664,6 +1674,22 @@ impl<'gc> MovieClip<'gc> {
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     impl_display_object!(base);
 
+    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        if !self.0.read().initialized() {
+            self.0.write(gc_context).target_width = Some(value);
+        } else {
+            self.set_scale_from_width(gc_context, value);
+        }
+    }
+
+    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        if !self.0.read().initialized() {
+            self.0.write(gc_context).target_height = Some(value);
+        } else {
+            self.set_scale_from_height(gc_context, value);
+        }
+    }
+
     fn id(&self) -> CharacterId {
         self.0.read().id()
     }
@@ -1741,6 +1767,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         if is_load_frame {
+            // TODO: What order should this run in with respect to run_clip_postevent?
+            let target_width = self.0.write(context.gc_context).target_width.take();
+            if let Some(target_width) = target_width {
+                self.set_scale_from_width(context.gc_context, target_width);
+            }
+            let target_height = self.0.write(context.gc_context).target_height.take();
+            if let Some(target_height) = target_height {
+                self.set_scale_from_height(context.gc_context, target_height);
+            }
+
             self.0.write(context.gc_context).run_clip_postevent(
                 (*self).into(),
                 context,

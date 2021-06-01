@@ -640,7 +640,7 @@ pub trait TDisplayObject<'gc>:
     /// The width is based on the AABB of the object.
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_scale_from_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
@@ -677,6 +677,9 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
     }
+    fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        self.set_scale_from_width(gc_context, value);
+    }
 
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
@@ -688,7 +691,7 @@ pub trait TDisplayObject<'gc>:
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
-    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+    fn set_scale_from_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let object_bounds = self.bounds();
         let object_width = (object_bounds.x_max - object_bounds.x_min).to_pixels();
         let object_height = (object_bounds.y_max - object_bounds.y_min).to_pixels();
@@ -724,6 +727,9 @@ pub trait TDisplayObject<'gc>:
 
         self.set_scale_x(gc_context, Percent::from_unit(new_scale_x));
         self.set_scale_y(gc_context, Percent::from_unit(new_scale_y));
+    }
+    fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
+        self.set_scale_from_height(gc_context, value);
     }
 
     /// The opacity of this display object.
