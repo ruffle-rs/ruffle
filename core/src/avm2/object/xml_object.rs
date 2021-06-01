@@ -19,7 +19,13 @@ pub fn xml_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    XmlObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(XmlObject(GcCell::allocate(
+        activation.context.gc_context,
+        XmlObjectData { base },
+    ))
+    .into())
 }
 
 #[derive(Clone, Collect, Debug, Copy)]
@@ -31,29 +37,6 @@ pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
 pub struct XmlObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
-}
-
-impl<'gc> XmlObject<'gc> {
-    /// Instantiate an xml subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
-
-        Ok(XmlObject(GcCell::allocate(mc, XmlObjectData { base })).into())
-    }
-
-    pub fn empty_object(
-        mc: MutationContext<'gc, '_>,
-        base_proto: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
-
-        XmlObject(GcCell::allocate(mc, XmlObjectData { base })).into()
-    }
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
