@@ -1406,16 +1406,18 @@ impl<'gc> MovieClip<'gc> {
                         Some(prototype),
                     )
                     .into();
+                    self.0.write(activation.context.gc_context).object = Some(object.into());
+
+                    if run_frame {
+                        self.run_frame(&mut activation.context);
+                    }
+
                     if let Some(init_object) = init_object {
                         for key in init_object.get_keys(&mut activation) {
                             if let Ok(value) = init_object.get(&key, &mut activation) {
                                 let _ = object.set(&key, value, &mut activation);
                             }
                         }
-                    }
-                    self.0.write(activation.context.gc_context).object = Some(object.into());
-                    if run_frame {
-                        self.run_frame(&mut activation.context);
                     }
                     let _ = constructor.construct_on_existing(&mut activation, object, &[]);
                 }
@@ -1429,6 +1431,12 @@ impl<'gc> MovieClip<'gc> {
                 Some(context.avm1.prototypes().movie_clip),
             )
             .into();
+            self.0.write(context.gc_context).object = Some(object.into());
+
+            if run_frame {
+                self.run_frame(context);
+            }
+
             if let Some(init_object) = init_object {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
@@ -1444,12 +1452,10 @@ impl<'gc> MovieClip<'gc> {
                     }
                 }
             }
-            let mut mc = self.0.write(context.gc_context);
-            mc.object = Some(object.into());
 
             let mut events = Vec::new();
 
-            for clip_action in mc.clip_actions().iter() {
+            for clip_action in self.0.write(context.gc_context).clip_actions().iter() {
                 match clip_action.event {
                     ClipEvent::Initialize => context.action_queue.queue_actions(
                         display_object,
@@ -1471,9 +1477,7 @@ impl<'gc> MovieClip<'gc> {
                 },
                 false,
             );
-        }
-
-        if run_frame {
+        } else if run_frame {
             self.run_frame(context);
         }
 
