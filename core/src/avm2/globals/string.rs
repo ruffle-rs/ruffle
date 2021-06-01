@@ -21,11 +21,13 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if let Some(mut value) = this.as_primitive_mut(activation.context.gc_context) {
-            *value = args
-                .get(0)
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?
-                .into();
+            if !matches!(*value, Value::String(_)) {
+                *value = args
+                    .get(0)
+                    .unwrap_or(&Value::String("".into()))
+                    .coerce_to_string(activation)?
+                    .into();
+            }
         }
     }
 

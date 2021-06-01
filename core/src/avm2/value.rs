@@ -565,24 +565,7 @@ impl<'gc> Value<'gc> {
             _ => {}
         };
 
-        let proto = match self {
-            Value::Bool(_) => activation.avm2().prototypes().boolean,
-            Value::Number(_) => activation.avm2().prototypes().number,
-            Value::Unsigned(_) => activation.avm2().prototypes().uint,
-            Value::Integer(_) => activation.avm2().prototypes().int,
-            Value::String(_) => activation.avm2().prototypes().string,
-            _ => unreachable!(),
-        };
-        let constr = match self {
-            Value::Bool(_) => activation.avm2().constructors().boolean,
-            Value::Number(_) => activation.avm2().constructors().number,
-            Value::Unsigned(_) => activation.avm2().constructors().uint,
-            Value::Integer(_) => activation.avm2().constructors().int,
-            Value::String(_) => activation.avm2().constructors().string,
-            _ => unreachable!(),
-        };
-
-        PrimitiveObject::from_primitive(self.clone(), constr, proto, activation.context.gc_context)
+        PrimitiveObject::from_primitive(self.clone(), activation)
     }
 
     /// Determine if two values are abstractly equal to each other.

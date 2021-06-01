@@ -21,7 +21,16 @@ pub fn primitive_deriver<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    PrimitiveObject::derive(constr, proto, activation.context.gc_context)
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+
+    Ok(PrimitiveObject(GcCell::allocate(
+        activation.context.gc_context,
+        PrimitiveObjectData {
+            base,
+            primitive: Value::Undefined,
+        },
+    ))
+    .into())
 }
 
 /// An Object which represents a primitive value of some other kind.
@@ -41,43 +50,51 @@ pub struct PrimitiveObjectData<'gc> {
 
 impl<'gc> PrimitiveObject<'gc> {
     /// Box a primitive into an object.
+    ///
+    /// This function will yield an error if `primitive` is `Undefined`, `Null`,
+    /// or an object already.
     pub fn from_primitive(
         primitive: Value<'gc>,
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         if !primitive.is_primitive() {
             return Err("Attempted to box an object as a primitive".into());
         }
 
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+        if matches!(primitive, Value::Undefined) {
+            return Err("Cannot box an undefined value".into());
+        } else if matches!(primitive, Value::Null) {
+            return Err("Cannot box a null value".into());
+        }
 
-        Ok(PrimitiveObject(GcCell::allocate(
-            mc,
+        let proto = match primitive {
+            Value::Bool(_) => activation.avm2().prototypes().boolean,
+            Value::Number(_) => activation.avm2().prototypes().number,
+            Value::Unsigned(_) => activation.avm2().prototypes().uint,
+            Value::Integer(_) => activation.avm2().prototypes().int,
+            Value::String(_) => activation.avm2().prototypes().string,
+            _ => unreachable!(),
+        };
+        let constr = match primitive {
+            Value::Bool(_) => activation.avm2().constructors().boolean,
+            Value::Number(_) => activation.avm2().constructors().number,
+            Value::Unsigned(_) => activation.avm2().constructors().uint,
+            Value::Integer(_) => activation.avm2().constructors().int,
+            Value::String(_) => activation.avm2().constructors().string,
+            _ => unreachable!(),
+        };
+
+        let base =
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let this = PrimitiveObject(GcCell::allocate(
+            activation.context.gc_context,
             PrimitiveObjectData { base, primitive },
         ))
-        .into())
-    }
+        .into();
 
-    /// Construct a primitive subclass.
-    pub fn derive(
-        constr: Object<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
-        let base =
-            ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::ClassInstance(constr));
+        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 
-        Ok(PrimitiveObject(GcCell::allocate(
-            mc,
-            PrimitiveObjectData {
-                base,
-                primitive: Value::Undefined,
-            },
-        ))
-        .into())
+        Ok(this)
     }
 }
 
