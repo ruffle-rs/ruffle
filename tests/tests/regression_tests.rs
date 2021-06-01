@@ -263,6 +263,7 @@ swf_tests! {
     (issue_1671, "avm1/issue_1671", 1),
     (issue_1906, "avm1/issue_1906", 2),
     (issue_2030, "avm1/issue_2030", 1),
+    (issue_2084, "avm1/issue_2084", 2),
     (issue_2166, "avm1/issue_2166", 1),
     (issue_2870, "avm1/issue_2870", 10),
     (issue_3169, "avm1/issue_3169", 1),

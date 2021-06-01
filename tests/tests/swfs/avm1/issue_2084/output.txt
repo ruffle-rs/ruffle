@@ -1,0 +1,16 @@
+onLoad
+col_mc_1 0,0
+col_mc_2 0,0
+Column onLoad 0,0
+icon_1 20,20
+icon_2 20,20
+icon_3 40,20
+icon_4 10,40
+Column onLoad 0,0
+icon_1 20,20
+icon_2 20,20
+icon_3 40,20
+icon_4 10,40
+onEnterFrame
+col1 40,100
+col2 0,0
