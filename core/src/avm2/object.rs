@@ -523,7 +523,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         receiver: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        let fn_proto = activation.avm2().prototypes().function;
         let trait_name = trait_entry.name().clone();
         avm_debug!(
             activation.avm2(),
@@ -551,13 +550,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Method {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_method(
                     activation.context.gc_context,
                     trait_name,
@@ -570,13 +564,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Getter {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_getter(
                     activation.context.gc_context,
                     trait_name,
@@ -589,13 +578,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Setter {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_setter(
                     activation.context.gc_context,
                     trait_name,
@@ -650,13 +634,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Function {
                 slot_id, function, ..
             } => {
-                let mut fobject = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    function.clone(),
-                    scope,
-                    fn_proto,
-                    None,
-                );
+                let mut fobject =
+                    FunctionObject::from_method(activation, function.clone(), scope, None);
                 let es3_proto = ScriptObject::object(
                     activation.context.gc_context,
                     activation.avm2().prototypes().object,
@@ -770,13 +749,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Method { method, .. } = base_trait.kind() {
-            let callee = FunctionObject::from_method(
-                activation.context.gc_context,
-                method.clone(),
-                scope,
-                activation.avm2().prototypes().function,
-                reciever,
-            );
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, arguments, activation, Some(constr_with_trait))
         } else {
@@ -821,13 +794,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Getter { method, .. } = base_trait.kind() {
-            let callee = FunctionObject::from_method(
-                activation.context.gc_context,
-                method.clone(),
-                scope,
-                activation.avm2().prototypes().function,
-                reciever,
-            );
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, &[], activation, Some(constr_with_trait))
         } else {
@@ -873,13 +840,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let scope = constr_with_trait.get_scope();
 
         if let TraitKind::Setter { method, .. } = base_trait.kind() {
-            let callee = FunctionObject::from_method(
-                activation.context.gc_context,
-                method.clone(),
-                scope,
-                activation.avm2().prototypes().function,
-                reciever,
-            );
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, &[value], activation, Some(constr_with_trait))?;
 

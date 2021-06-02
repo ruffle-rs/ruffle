@@ -181,37 +181,86 @@ pub fn fill_proto<'gc>(
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "hasOwnProperty"),
-        FunctionObject::from_builtin(gc_context, has_own_property, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(has_own_property),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "propertyIsEnumerable"),
-        FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(property_is_enumerable),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "setPropertyIsEnumerable"),
-        FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(set_property_is_enumerable),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "isPrototypeOf"),
-        FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(is_prototype_of),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "toString"),
-        FunctionObject::from_builtin(gc_context, to_string, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(to_string),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "toLocaleString"),
-        FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(to_locale_string),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "valueOf"),
-        FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(value_of),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
 
     let object_class = Class::new(

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
@@ -36,16 +36,21 @@ impl<'gc> FunctionObject<'gc> {
     /// The given `reciever`, if supplied, will override any user-specified
     /// `this` parameter.
     pub fn from_method(
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         method: Method<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
         receiver: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let exec = Some(Executable::from_method(method, scope, receiver, mc));
+        let fn_proto = activation.avm2().prototypes().function;
+        let exec = Some(Executable::from_method(
+            method,
+            scope,
+            receiver,
+            activation.context.gc_context,
+        ));
 
         FunctionObject(GcCell::allocate(
-            mc,
+            activation.context.gc_context,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
                 exec,
@@ -54,17 +59,27 @@ impl<'gc> FunctionObject<'gc> {
         .into()
     }
 
-    /// Construct a builtin function object from a Rust function.
-    pub fn from_builtin(
+    /// Construct a function from an ABC method, the current closure scope, and
+    /// a function prototype.
+    ///
+    /// The given `reciever`, if supplied, will override any user-specified
+    /// `this` parameter.
+    ///
+    /// This function exists primarily for early globals. Unless you are in a
+    /// position where you cannot access `Function.prototype` yet, you should
+    /// use `from_method` instead.
+    pub fn from_method_and_proto(
         mc: MutationContext<'gc, '_>,
-        nf: NativeMethod,
+        method: Method<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
         fn_proto: Object<'gc>,
+        receiver: Option<Object<'gc>>,
     ) -> Object<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
                 base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
-                exec: Some(Executable::from_method(nf.into(), None, None, mc)),
+                exec: Some(Executable::from_method(method, scope, receiver, mc)),
             },
         ))
         .into()

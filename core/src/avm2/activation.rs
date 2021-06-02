@@ -1004,13 +1004,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let method = self.table_method(method, index, self.context.gc_context)?;
         let scope = self.scope(); //TODO: Is this correct?
-        let function = FunctionObject::from_method(
-            self.context.gc_context,
-            method.into(),
-            scope,
-            self.context.avm2.prototypes().function,
-            None,
-        );
+        let function = FunctionObject::from_method(self, method.into(), scope, None);
         let value = function.call(Some(receiver), &args, self, receiver.as_constr())?;
 
         self.context.avm2.push(value);
@@ -1508,13 +1502,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method_entry = self.table_method(method, index, self.context.gc_context)?;
         let scope = self.scope();
 
-        let mut new_fn = FunctionObject::from_method(
-            self.context.gc_context,
-            method_entry.into(),
-            scope,
-            self.context.avm2.prototypes().function,
-            None,
-        );
+        let mut new_fn = FunctionObject::from_method(self, method_entry.into(), scope, None);
         let es3_proto = ScriptObject::object(
             self.context.gc_context,
             self.context.avm2.prototypes().object,

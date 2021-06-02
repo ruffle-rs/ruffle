@@ -109,7 +109,6 @@ impl<'gc> ClassObject<'gc> {
         }
 
         let fn_proto = activation.avm2().prototypes().function;
-        let class_constr_proto = activation.avm2().prototypes().class;
 
         let class_read = class.read();
         let instance_constr = Executable::from_method(
@@ -154,13 +153,8 @@ impl<'gc> ClassObject<'gc> {
 
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();
-            let class_init_fn = FunctionObject::from_method(
-                activation.context.gc_context,
-                class_initializer,
-                scope,
-                class_constr_proto,
-                Some(constr),
-            );
+            let class_init_fn =
+                FunctionObject::from_method(activation, class_initializer, scope, Some(constr));
 
             drop(class_read);
             class
@@ -223,8 +217,13 @@ impl<'gc> ClassObject<'gc> {
         )?;
 
         let class_initializer = class.read().class_init();
-        let class_constr =
-            FunctionObject::from_method(mc, class_initializer, scope, fn_proto, Some(base));
+        let class_constr = FunctionObject::from_method_and_proto(
+            mc,
+            class_initializer,
+            scope,
+            fn_proto,
+            Some(base),
+        );
 
         Ok((base, class_constr))
     }
