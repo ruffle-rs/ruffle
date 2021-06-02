@@ -5,9 +5,7 @@ use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{
-    loaderinfo_deriver, DomainObject, LoaderStream, Object, ScriptObject, TObject,
-};
+use crate::avm2::object::{loaderinfo_deriver, DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
@@ -378,9 +376,11 @@ pub fn parameters<'gc>(
                     return Err("Error: The stage's loader info does not have parameters".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let object_proto = activation.context.avm2.prototypes().object;
-                    let mut params_obj =
-                        ScriptObject::object(activation.context.gc_context, object_proto);
+                    let mut params_obj = activation
+                        .avm2()
+                        .constructors()
+                        .object
+                        .construct(activation, &[])?;
                     let parameters = root.parameters();
 
                     for (k, v) in parameters.iter() {

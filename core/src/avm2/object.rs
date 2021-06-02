@@ -634,19 +634,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Function {
                 slot_id, function, ..
             } => {
-                let mut fobject =
-                    FunctionObject::from_method(activation, function.clone(), scope, None);
-                let es3_proto = ScriptObject::object(
-                    activation.context.gc_context,
-                    activation.avm2().prototypes().object,
-                );
-
-                fobject.install_slot(
-                    activation.context.gc_context,
-                    QName::new(Namespace::public(), "prototype"),
-                    0,
-                    es3_proto.into(),
-                );
+                let fobject = FunctionObject::from_function(activation, function.clone(), scope)?;
                 self.install_const(
                     activation.context.gc_context,
                     trait_name,

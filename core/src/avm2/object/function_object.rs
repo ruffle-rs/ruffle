@@ -5,7 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -32,6 +32,30 @@ pub struct FunctionObjectData<'gc> {
 
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.
+    ///
+    /// This associated constructor will also create and initialize an empty
+    /// `Object` prototype for the function.
+    pub fn from_function(
+        activation: &mut Activation<'_, 'gc, '_>,
+        method: Method<'gc>,
+        scope: Option<GcCell<'gc, Scope<'gc>>>,
+    ) -> Result<Object<'gc>, Error> {
+        let mut this = Self::from_method(activation, method, scope, None);
+        let es3_proto = ScriptObject::object(
+            activation.context.gc_context,
+            activation.avm2().prototypes().object,
+        );
+
+        this.install_slot(
+            activation.context.gc_context,
+            QName::new(Namespace::public(), "prototype"),
+            0,
+            es3_proto.into(),
+        );
+
+        Ok(this)
+    }
+    /// Construct a method from an ABC method and the current closure scope.
     ///
     /// The given `reciever`, if supplied, will override any user-specified
     /// `this` parameter.

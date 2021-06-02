@@ -1472,10 +1472,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
-        let mut object = ScriptObject::object(
-            self.context.gc_context,
-            self.context.avm2.prototypes().object,
-        );
+        let mut object = self
+            .context
+            .avm2
+            .constructors()
+            .object
+            .construct(self, &[])?;
 
         for _ in 0..num_args {
             let value = self.context.avm2.pop();
@@ -1502,18 +1504,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method_entry = self.table_method(method, index, self.context.gc_context)?;
         let scope = self.scope();
 
-        let mut new_fn = FunctionObject::from_method(self, method_entry.into(), scope, None);
-        let es3_proto = ScriptObject::object(
-            self.context.gc_context,
-            self.context.avm2.prototypes().object,
-        );
-
-        new_fn.install_slot(
-            self.context.gc_context,
-            QName::new(Namespace::public(), "prototype"),
-            0,
-            es3_proto.into(),
-        );
+        let new_fn = FunctionObject::from_function(self, method_entry.into(), scope)?;
 
         self.context.avm2.push(new_fn);
 
