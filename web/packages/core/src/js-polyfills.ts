@@ -1,6 +1,8 @@
 declare global {
     interface Window {
-        Prototype?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        Prototype?: {
+            Version?: string;
+        };
     }
 }
 
