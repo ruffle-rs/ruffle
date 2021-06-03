@@ -193,16 +193,17 @@ impl<'gc> Avm2<'gc> {
 
     /// Dispatch an event on all objects in the current execution list.
     ///
-    /// `on_class_proto` specifies a class or interface prototype whose
-    /// instances, implementers, and/or subclasses define the set of objects
-    /// that will recieve the event. You can broadcast to just display objects,
-    /// or specific interfaces, and so on.
+    /// `on_type` specifies a class or interface constructor whose instances,
+    /// implementers, and/or subclasses define the set of objects that will
+    /// receive the event. You can broadcast to just display objects, or
+    /// specific interfaces, and so on.
     ///
-    /// Attempts to broadcast a non-broadcast event will do nothing.
+    /// Attempts to broadcast a non-broadcast event will do nothing. To add a
+    /// new broadcast type, you must add it to the `BROADCAST_WHITELIST` first.
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Event<'gc>,
-        on_class_proto: Object<'gc>,
+        on_type: Object<'gc>,
     ) -> Result<(), Error> {
         let event_name = event.event_type();
         if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
@@ -226,7 +227,7 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object {
-                if object.has_prototype_in_chain(on_class_proto)? {
+                if object.is_of_type(on_type)? {
                     Avm2::dispatch_event(context, event.clone(), object)?;
                 }
             }
