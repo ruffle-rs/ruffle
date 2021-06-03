@@ -35,8 +35,8 @@ class RuffleMimeTypeArray implements MimeTypeArray {
 
         this.__mimetypes.push(mimetype);
         this.__named_mimetypes[mimetype.type] = mimetype;
-        (<Record<string, unknown>>this)[mimetype.type] = mimetype;
-        (<Record<string, unknown>>this)[id] = mimetype;
+        this[mimetype.type] = mimetype;
+        this[id] = mimetype;
     }
 
     item(index: number): MimeType {
@@ -52,6 +52,8 @@ class RuffleMimeTypeArray implements MimeTypeArray {
     }
 
     [index: number]: MimeType;
+
+    [name: string]: unknown;
 
     [Symbol.iterator](): IterableIterator<MimeType> {
         return this.__mimetypes[Symbol.iterator]();
@@ -80,7 +82,7 @@ class RufflePlugin extends RuffleMimeTypeArray implements Plugin {
     }
 
     install(mimetype: MimeType): void {
-        super.install(<MimeType>mimetype);
+        super.install(mimetype);
     }
 
     [index: number]: MimeType;
@@ -119,13 +121,13 @@ class RufflePluginArray {
         }
     }
 
-    install(plugin: Plugin | RufflePlugin): void {
+    install(plugin: Plugin): void {
         const id = this.__plugins.length;
 
         this.__plugins.push(plugin);
         this.__named_plugins[plugin.name] = plugin;
-        (<Record<string, unknown>>this)[plugin.name] = plugin;
-        (<Record<string, unknown>>this)[id] = plugin;
+        this[plugin.name] = plugin;
+        this[id] = plugin;
     }
 
     item(index: number): Plugin {
@@ -135,6 +137,10 @@ class RufflePluginArray {
     namedItem(name: string): Plugin {
         return this.__named_plugins[name];
     }
+
+    [index: number]: Plugin;
+
+    [name: string]: unknown;
 
     get length(): number {
         return this.__plugins.length;
@@ -176,6 +182,18 @@ FLASH_PLUGIN.install({
     enabledPlugin: FLASH_PLUGIN,
 });
 
+declare global {
+    interface PluginArray {
+        install?: (plugin: Plugin) => void;
+    }
+}
+
+declare global {
+    interface MimeTypeArray {
+        install?: (mime: MimeType) => void;
+    }
+}
+
 /**
  * Install a fake plugin such that detectors will see it in `navigator.plugins`.
  *
@@ -194,8 +212,8 @@ export function installPlugin(plugin: RufflePlugin): void {
         });
     }
 
-    const plugins = <RufflePluginArray>(<unknown>navigator.plugins);
-    plugins.install(plugin);
+    const plugins = navigator.plugins;
+    plugins.install!(plugin);
 
     if (
         plugin.length > 0 &&
@@ -207,8 +225,8 @@ export function installPlugin(plugin: RufflePlugin): void {
         });
     }
 
-    const mimeTypes = <RuffleMimeTypeArray>(<unknown>navigator.mimeTypes);
+    const mimeTypes = navigator.mimeTypes;
     for (let i = 0; i < plugin.length; i += 1) {
-        mimeTypes.install(plugin[i]);
+        mimeTypes.install!(plugin[i]);
     }
 }
