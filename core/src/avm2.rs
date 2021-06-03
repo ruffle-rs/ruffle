@@ -226,7 +226,7 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object {
-                if object.has_prototype_in_chain(on_class_proto, true)? {
+                if object.has_prototype_in_chain(on_class_proto)? {
                     Avm2::dispatch_event(context, event.clone(), object)?;
                 }
             }

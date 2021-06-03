@@ -77,37 +77,6 @@ impl<'gc> ClassObject<'gc> {
             ScriptObject::bare_object(activation.context.gc_context)
         };
 
-        let interface_names = class.read().interfaces().to_vec();
-        let mut interfaces = Vec::with_capacity(interface_names.len());
-        for interface_name in interface_names {
-            let interface = if let Some(scope) = scope {
-                scope
-                    .write(activation.context.gc_context)
-                    .resolve(&interface_name, activation)?
-            } else {
-                None
-            };
-
-            if interface.is_none() {
-                return Err(format!("Could not resolve interface {:?}", interface_name).into());
-            }
-
-            let mut interface = interface.unwrap().coerce_to_object(activation)?;
-            let iface_proto = interface
-                .get_property(
-                    interface,
-                    &QName::new(Namespace::public(), "prototype"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
-
-            interfaces.push(iface_proto);
-        }
-
-        if !interfaces.is_empty() {
-            class_proto.set_interfaces(activation.context.gc_context, interfaces);
-        }
-
         let fn_proto = activation.avm2().prototypes().function;
 
         let class_read = class.read();
@@ -150,6 +119,29 @@ impl<'gc> ClassObject<'gc> {
             QName::new(Namespace::public(), "constructor"),
             constr.into(),
         )?;
+
+        let interface_names = class.read().interfaces().to_vec();
+        let mut interfaces = Vec::with_capacity(interface_names.len());
+        for interface_name in interface_names {
+            let interface = if let Some(scope) = scope {
+                scope
+                    .write(activation.context.gc_context)
+                    .resolve(&interface_name, activation)?
+            } else {
+                None
+            };
+
+            if interface.is_none() {
+                return Err(format!("Could not resolve interface {:?}", interface_name).into());
+            }
+
+            let interface = interface.unwrap().coerce_to_object(activation)?;
+            interfaces.push(interface);
+        }
+
+        if !interfaces.is_empty() {
+            constr.set_interfaces(activation.context.gc_context, interfaces);
+        }
 
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();

@@ -919,43 +919,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// primitive value. Typically, this would be a number of some kind.
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
-    /// Enumerate all interfaces implemented by this object.
+    /// Enumerate all interfaces implemented by this constructor.
+    ///
+    /// Non-constructors do not implement interfaces.
     fn interfaces(&self) -> Vec<Object<'gc>>;
 
-    /// Set the interface list for this object.
+    /// Set the interface list for this constructor.
     fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
     /// Determine if this object is an instance of a given type.
     ///
+    /// This uses the ES3 definition of instance, which walks the prototype
+    /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
+    /// the constructor chain and accounts for interfaces.
+    ///
     /// The given object should be the constructor for the given type we are
-    /// checking against this object. Its prototype will be searched in the
-    /// prototype chain of this object. If `check_interfaces` is enabled, then
-    /// the interfaces listed on each prototype will also be checked.
+    /// checking against this object. Its prototype will be extracted and
+    /// searched in the prototype chain of this object.
     #[allow(unused_mut)] //it's not unused
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         mut constructor: Object<'gc>,
-        check_interfaces: bool,
     ) -> Result<bool, Error> {
         let type_proto = constructor
             .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
             .coerce_to_object(activation)?;
 
-        self.has_prototype_in_chain(type_proto, check_interfaces)
+        self.has_prototype_in_chain(type_proto)
     }
 
     /// Determine if this object has a given prototype in its prototype chain.
     ///
-    /// The given object should be the prototype we are checking against this
-    /// object. Its prototype will be searched in the
-    /// prototype chain of this object. If `check_interfaces` is enabled, then
-    /// the interfaces listed on each prototype will also be checked.
-    fn has_prototype_in_chain(
-        &self,
-        type_proto: Object<'gc>,
-        check_interfaces: bool,
-    ) -> Result<bool, Error> {
+    /// The given object `type_proto` should be the prototype we are checking
+    /// against this object.
+    fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error> {
         let mut my_proto = self.proto();
 
         //TODO: Is it a verification error to do `obj instanceof bare_object`?
@@ -964,15 +962,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            if check_interfaces {
-                for interface in proto.interfaces() {
-                    if Object::ptr_eq(interface, type_proto) {
-                        return Ok(true);
-                    }
+            my_proto = proto.proto()
+        }
+
+        Ok(false)
+    }
+
+    /// Determine if this object is an instance of a given type.
+    ///
+    /// This uses the ES4 definition of instance, which walks the constructor
+    /// chain and accounts for interfaces. For the ES3 definition of instance,
+    /// use `is_instance_of`, which uses the prototype chain.
+    ///
+    /// The given object should be the constructor for the given type we are
+    /// checking against this object.
+    #[allow(unused_mut)] //it's not unused
+    fn is_of_type(&self, mut constructor: Object<'gc>) -> Result<bool, Error> {
+        self.has_constr_in_chain(constructor)
+    }
+
+    /// Determine if this object has a given constructor in its constructor
+    /// chain.
+    ///
+    /// The given object `constr` should be the type constructor we are
+    /// checking against this object. Interfaces, which are represented as type
+    /// constructors unrooted from `Object`, may also be used.
+    fn has_constr_in_chain(&self, type_constr: Object<'gc>) -> Result<bool, Error> {
+        let mut my_constr = self.as_constr();
+
+        while let Some(constr) = my_constr {
+            if Object::ptr_eq(constr, type_constr) {
+                return Ok(true);
+            }
+
+            for interface in constr.interfaces() {
+                if Object::ptr_eq(interface, type_constr) {
+                    return Ok(true);
                 }
             }
 
-            my_proto = proto.proto()
+            my_constr = constr.base_class_constr()
         }
 
         Ok(false)
