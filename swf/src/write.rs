@@ -2433,12 +2433,7 @@ impl<W: Write> Writer<W> {
             }
 
             if let Some(ref layout) = edit_text.layout {
-                writer.write_u8(match layout.align {
-                    TextAlign::Left => 0,
-                    TextAlign::Right => 1,
-                    TextAlign::Center => 2,
-                    TextAlign::Justify => 3,
-                })?;
+                writer.write_u8(layout.align.to_u8())?;
                 writer.write_u16(layout.left_margin.get() as u16)?; // TODO: Handle overflow
                 writer.write_u16(layout.right_margin.get() as u16)?;
                 writer.write_u16(layout.indent.get() as u16)?;

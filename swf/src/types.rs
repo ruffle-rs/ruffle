@@ -1371,12 +1371,22 @@ pub struct TextLayout {
     pub leading: Twips,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum TextAlign {
-    Left,
-    Center,
-    Right,
-    Justify,
+    Left = 0,
+    Right = 1,
+    Center = 2,
+    Justify = 3,
+}
+
+impl TextAlign {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

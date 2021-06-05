@@ -2469,13 +2469,8 @@ impl<'a> Reader<'a> {
         };
         let layout = if flags2 & 0b100000 != 0 {
             Some(TextLayout {
-                align: match self.read_u8()? {
-                    0 => TextAlign::Left,
-                    1 => TextAlign::Right,
-                    2 => TextAlign::Center,
-                    3 => TextAlign::Justify,
-                    _ => return Err(Error::invalid_data("Invalid edit text alignment")),
-                },
+                align: TextAlign::from_u8(self.read_u8()?)
+                    .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
                 left_margin: Twips::new(self.read_u16()?),
                 right_margin: Twips::new(self.read_u16()?),
                 indent: Twips::new(self.read_u16()?),
