@@ -1408,13 +1408,12 @@ pub struct DefineBitsLossless<'a> {
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
-    pub num_colors: u8,
     pub data: &'a [u8],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BitmapFormat {
-    ColorMap8,
+    ColorMap8 { num_colors: u8 },
     Rgb15,
     Rgb32,
 }

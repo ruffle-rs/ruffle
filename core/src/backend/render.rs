@@ -440,12 +440,12 @@ pub fn decode_define_bits_lossless(
             }
             decoded_data
         }
-        (1, swf::BitmapFormat::ColorMap8) => {
+        (1, swf::BitmapFormat::ColorMap8 { num_colors }) => {
             let mut i = 0;
             let padded_width = (swf_tag.width + 0b11) & !0b11;
 
-            let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
-            for _ in 0..=swf_tag.num_colors {
+            let mut palette = Vec::with_capacity(num_colors as usize + 1);
+            for _ in 0..=num_colors {
                 palette.push(Color {
                     r: decoded_data[i],
                     g: decoded_data[i + 1],
@@ -476,12 +476,12 @@ pub fn decode_define_bits_lossless(
             }
             out_data
         }
-        (2, swf::BitmapFormat::ColorMap8) => {
+        (2, swf::BitmapFormat::ColorMap8 { num_colors }) => {
             let mut i = 0;
             let padded_width = (swf_tag.width + 0b11) & !0b11;
 
-            let mut palette = Vec::with_capacity(swf_tag.num_colors as usize + 1);
-            for _ in 0..=swf_tag.num_colors {
+            let mut palette = Vec::with_capacity(num_colors as usize + 1);
+            for _ in 0..=num_colors {
                 palette.push(Color {
                     r: decoded_data[i],
                     g: decoded_data[i + 1],
