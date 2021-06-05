@@ -714,15 +714,8 @@ impl<'a> Reader<'a> {
     }
 
     fn read_language(&mut self) -> Result<Language> {
-        Ok(match self.read_u8()? {
-            0 => Language::Unknown,
-            1 => Language::Latin,
-            2 => Language::Japanese,
-            3 => Language::Korean,
-            4 => Language::SimplifiedChinese,
-            5 => Language::TraditionalChinese,
-            _ => return Err(Error::invalid_data("Invalid language code")),
-        })
+        Language::from_u8(self.read_u8()?)
+            .ok_or_else(|| Error::invalid_data("Invalid language code"))
     }
 
     fn read_tag_list(&mut self) -> Result<Vec<Tag<'a>>> {

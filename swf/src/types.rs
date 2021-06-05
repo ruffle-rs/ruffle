@@ -484,14 +484,24 @@ impl Default for ColorTransform {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum Language {
-    Unknown,
-    Latin,
-    Japanese,
-    Korean,
-    SimplifiedChinese,
-    TraditionalChinese,
+    Unknown = 0,
+    Latin = 1,
+    Japanese = 2,
+    Korean = 3,
+    SimplifiedChinese = 4,
+    TraditionalChinese = 5,
+}
+
+impl Language {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 bitflags! {
