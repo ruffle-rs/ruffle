@@ -1470,14 +1470,24 @@ pub struct DefineVideoStream {
     pub codec: VideoCodec,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum VideoDeblocking {
-    UseVideoPacketValue,
-    None,
-    Level1,
-    Level2,
-    Level3,
-    Level4,
+    UseVideoPacketValue = 0,
+    None = 1,
+    Level1 = 2,
+    Level2 = 3,
+    Level3 = 4,
+    Level4 = 5,
+}
+
+impl VideoDeblocking {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
