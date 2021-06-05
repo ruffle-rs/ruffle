@@ -2523,15 +2523,8 @@ impl<'a> Reader<'a> {
             height,
             is_smoothed: flags & 0b1 != 0,
             codec,
-            deblocking: match flags & 0b100_0 {
-                0b000_0 => VideoDeblocking::UseVideoPacketValue,
-                0b001_0 => VideoDeblocking::None,
-                0b010_0 => VideoDeblocking::Level1,
-                0b011_0 => VideoDeblocking::Level2,
-                0b100_0 => VideoDeblocking::Level3,
-                0b101_0 => VideoDeblocking::Level4,
-                _ => return Err(Error::invalid_data("Invalid video deblocking value.")),
-            },
+            deblocking: VideoDeblocking::from_u8((flags >> 1) & 0b111)
+                .ok_or_else(|| Error::invalid_data("Invalid video deblocking value."))?,
         }))
     }
 

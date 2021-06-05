@@ -2449,16 +2449,7 @@ impl<W: Write> Writer<W> {
         self.write_u16(video.num_frames)?;
         self.write_u16(video.width)?;
         self.write_u16(video.height)?;
-        self.write_u8(
-            match video.deblocking {
-                VideoDeblocking::UseVideoPacketValue => 0b000_0,
-                VideoDeblocking::None => 0b001_0,
-                VideoDeblocking::Level1 => 0b010_0,
-                VideoDeblocking::Level2 => 0b011_0,
-                VideoDeblocking::Level3 => 0b100_0,
-                VideoDeblocking::Level4 => 0b101_0,
-            } | if video.is_smoothed { 0b1 } else { 0 },
-        )?;
+        self.write_u8((video.deblocking.to_u8() << 1) | if video.is_smoothed { 0b1 } else { 0 })?;
         self.write_u8(match video.codec {
             VideoCodec::H263 => 2,
             VideoCodec::ScreenVideo => 3,
