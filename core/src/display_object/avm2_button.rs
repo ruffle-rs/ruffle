@@ -13,7 +13,6 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
 
@@ -77,9 +76,7 @@ impl<'gc> Avm2Button<'gc> {
                     actions.push(ButtonAction {
                         action_data: action_data.clone(),
                         condition: ButtonActionCondition::from_bits_truncate(bit),
-                        key_code: action
-                            .key_code
-                            .and_then(|k| ButtonKeyCode::try_from(k).ok()),
+                        key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
                     });
                 }
                 bit <<= 1;

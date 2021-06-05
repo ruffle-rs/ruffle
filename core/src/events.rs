@@ -1,5 +1,3 @@
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-
 #[derive(Debug)]
 pub enum PlayerEvent {
     KeyDown { key_code: KeyCode },
@@ -137,8 +135,7 @@ impl ClipEvent {
 }
 
 /// Flash virtual keycode.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, TryFromPrimitive, IntoPrimitive)]
-#[repr(u8)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum KeyCode {
     Unknown = 0,
     Backspace = 8,
@@ -238,13 +235,22 @@ pub enum KeyCode {
     Apostrophe = 222,
 }
 
+impl KeyCode {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        num_traits::ToPrimitive::to_u8(self).unwrap()
+    }
+}
+
 /// Key codes for SWF4 keyPress button handlers. These are annoyingly different than
 /// `Key.isDown` key codes.
 /// TODO: After 18, these are mostly ASCII... should we just use u8? How are different
 /// keyboard layouts/languages handled?
 /// SWF19 pp. 198-199
-#[derive(Debug, PartialEq, Eq, Copy, Clone, TryFromPrimitive, IntoPrimitive)]
-#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive)]
 pub enum ButtonKeyCode {
     Unknown = 0,
     Left = 1,
@@ -356,6 +362,12 @@ pub enum ButtonKeyCode {
     Pipe = 124,
     RBrace = 125,
     Tilde = 126,
+}
+
+impl ButtonKeyCode {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
 }
 
 pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {

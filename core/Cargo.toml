@@ -21,7 +21,8 @@ ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 bitflags = "1.2.1"
 smallvec = "1.6.1"
-num_enum = "0.5.1"
+num-traits = "0.2"
+num-derive = "0.3"
 quick-xml = "0.22.0"
 downcast-rs = "1.2.0"
 url = "2.2.2"
@@ -29,7 +30,6 @@ weak-table = "0.3.0"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
 chrono = "0.4"
-num-traits = "0.2"
 instant = "0.1"
 encoding_rs = "0.8.28"
 rand = { version = "0.8.3", features = ["std", "small_rng"], default-features = false }
