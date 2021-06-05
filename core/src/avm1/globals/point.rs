@@ -37,7 +37,7 @@ pub fn construct_new_point<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.context.avm1.prototypes.point_constructor;
-    let object = constructor.construct(activation, &args)?;
+    let object = constructor.construct(activation, args)?;
     Ok(object)
 }
 

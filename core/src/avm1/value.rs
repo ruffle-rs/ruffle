@@ -194,7 +194,7 @@ impl<'gc> Value<'gc> {
                     // (as of nightly 4/13, Rust also accepts "infinity")
                     // Check if the strign starts with 'i' (ignoring any leading +/-).
                     if v.strip_prefix(['+', '-'].as_ref())
-                        .unwrap_or(&v)
+                        .unwrap_or(v)
                         .starts_with(['i', 'I'].as_ref())
                     {
                         f64::NAN

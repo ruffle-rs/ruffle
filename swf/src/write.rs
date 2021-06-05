@@ -54,7 +54,7 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> 
         writer.write_u16(header.num_frames)?;
 
         // Write main timeline tag list.
-        writer.write_tag_list(&tags)?;
+        writer.write_tag_list(tags)?;
     }
 
     // Write SWF header.
@@ -88,7 +88,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     use flate2::write::ZlibEncoder;
     use flate2::Compression;
     let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
-    encoder.write_all(&swf_body)?;
+    encoder.write_all(swf_body)?;
     encoder.finish()?;
     Ok(())
 }
@@ -530,20 +530,20 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0)?; // Reserved (0).
             }
 
-            Tag::DefineBinaryData { id, ref data } => {
+            Tag::DefineBinaryData { id, data } => {
                 self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6)?;
                 self.write_u16(id)?;
                 self.write_u32(0)?; // Reserved
                 self.output.write_all(data)?;
             }
 
-            Tag::DefineBits { id, ref jpeg_data } => {
+            Tag::DefineBits { id, jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBits, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
             }
 
-            Tag::DefineBitsJpeg2 { id, ref jpeg_data } => {
+            Tag::DefineBitsJpeg2 { id, jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBitsJpeg2, jpeg_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(jpeg_data)?;
@@ -560,8 +560,8 @@ impl<W: Write> Writer<W> {
                 }
                 // TODO(Herschel): Verify deblocking parameter is zero in version 3.
                 self.write_u32(jpeg.data.len() as u32)?;
-                self.output.write_all(&jpeg.data)?;
-                self.output.write_all(&jpeg.alpha_data)?;
+                self.output.write_all(jpeg.data)?;
+                self.output.write_all(jpeg.alpha_data)?;
             }
 
             Tag::DefineBitsLossless(ref tag) => {
@@ -588,7 +588,7 @@ impl<W: Write> Writer<W> {
                 if tag.format == BitmapFormat::ColorMap8 {
                     self.write_u8(tag.num_colors)?;
                 }
-                self.output.write_all(&tag.data)?;
+                self.output.write_all(tag.data)?;
             }
 
             Tag::DefineButton(ref button) => self.write_define_button(button)?,
@@ -787,16 +787,13 @@ impl<W: Write> Writer<W> {
                 self.write_tag_header(TagCode::DoAbc, len as u32)?;
                 self.write_u32(if do_abc.is_lazy_initialize { 1 } else { 0 })?;
                 self.write_string(do_abc.name)?;
-                self.output.write_all(&do_abc.data)?;
+                self.output.write_all(do_abc.data)?;
             }
-            Tag::DoAction(ref action_data) => {
+            Tag::DoAction(action_data) => {
                 self.write_tag_header(TagCode::DoAction, action_data.len() as u32)?;
                 self.output.write_all(action_data)?;
             }
-            Tag::DoInitAction {
-                id,
-                ref action_data,
-            } => {
+            Tag::DoInitAction { id, action_data } => {
                 self.write_tag_header(TagCode::DoInitAction, action_data.len() as u32 + 2)?;
                 self.write_u16(id)?;
                 self.output.write_all(action_data)?;
@@ -815,7 +812,7 @@ impl<W: Write> Writer<W> {
                 self.write_string(password_md5)?;
             }
 
-            Tag::EnableTelemetry { ref password_hash } => {
+            Tag::EnableTelemetry { password_hash } => {
                 if !password_hash.is_empty() {
                     self.write_tag_header(TagCode::EnableTelemetry, 34)?;
                     self.write_u16(0)?;
@@ -850,7 +847,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            Tag::JpegTables(ref data) => {
+            Tag::JpegTables(data) => {
                 self.write_tag_header(TagCode::JpegTables, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
@@ -863,7 +860,7 @@ impl<W: Write> Writer<W> {
             // TODO: Allow clone of color.
             Tag::SetBackgroundColor(ref color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
-                self.write_rgb(&color)?;
+                self.write_rgb(color)?;
             }
 
             Tag::ScriptLimits {
@@ -899,7 +896,7 @@ impl<W: Write> Writer<W> {
                 self.write_u16(remove_object.depth)?;
             }
 
-            Tag::SoundStreamBlock(ref data) => {
+            Tag::SoundStreamBlock(data) => {
                 self.write_tag_header(TagCode::SoundStreamBlock, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
@@ -973,7 +970,7 @@ impl<W: Write> Writer<W> {
                 self.write_tag_header(TagCode::VideoFrame, 4 + frame.data.len() as u32)?;
                 self.write_character_id(frame.stream_id)?;
                 self.write_u16(frame.frame_num)?;
-                self.output.write_all(&frame.data)?;
+                self.output.write_all(frame.data)?;
             }
 
             Tag::FileAttributes(attributes) => {
@@ -998,7 +995,7 @@ impl<W: Write> Writer<W> {
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
             Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
 
-            Tag::Unknown { tag_code, ref data } => {
+            Tag::Unknown { tag_code, data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
                 self.output.write_all(data)?;
             }
@@ -1016,7 +1013,7 @@ impl<W: Write> Writer<W> {
             }
             writer.write_u8(0)?; // End button records
                                  // TODO: Assert we have some action.
-            writer.output.write_all(&button.actions[0].action_data)?;
+            writer.output.write_all(button.actions[0].action_data)?;
         }
         self.write_tag_header(TagCode::DefineButton, buf.len() as u32)?;
         self.output.write_all(&buf)?;
@@ -1057,7 +1054,7 @@ impl<W: Write> Writer<W> {
                     }
                 }
                 writer.write_u16(flags)?;
-                writer.output.write_all(&action.action_data)?;
+                writer.output.write_all(action.action_data)?;
             }
         }
         self.write_tag_header(TagCode::DefineButton2, buf.len() as u32)?;
@@ -1440,7 +1437,7 @@ impl<W: Write> Writer<W> {
         self.write_u16(sound.id)?;
         self.write_sound_format(&sound.format)?;
         self.write_u32(sound.num_samples)?;
-        self.output.write_all(&sound.data)?;
+        self.output.write_all(sound.data)?;
         Ok(())
     }
 
@@ -1936,7 +1933,7 @@ impl<W: Write> Writer<W> {
 
             // PlaceObject4 adds some embedded AMF data per instance.
             if place_object_version >= 4 {
-                if let Some(ref data) = place_object.amf_data {
+                if let Some(data) = place_object.amf_data {
                     writer.output.write_all(data)?;
                 }
             }
@@ -2093,7 +2090,7 @@ impl<W: Write> Writer<W> {
             if let Some(k) = action.key_code {
                 self.write_u8(k)?;
             }
-            self.output.write_all(&action.action_data)?;
+            self.output.write_all(action.action_data)?;
         }
         if self.version <= 5 {
             self.write_u16(0)?;
@@ -2355,7 +2352,7 @@ impl<W: Write> Writer<W> {
 
     fn write_define_font_4(&mut self, font: &Font4) -> Result<()> {
         let mut tag_len = 4 + font.name.len();
-        if let Some(ref data) = font.data {
+        if let Some(data) = font.data {
             tag_len += data.len()
         };
         self.write_tag_header(TagCode::DefineFont4, tag_len as u32)?;
@@ -2366,7 +2363,7 @@ impl<W: Write> Writer<W> {
                 | if font.is_bold { 0b1 } else { 0 },
         )?;
         self.write_string(font.name)?;
-        if let Some(ref data) = font.data {
+        if let Some(data) = font.data {
             self.output.write_all(data)?;
         }
         Ok(())

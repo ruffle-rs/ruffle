@@ -669,7 +669,7 @@ impl<'gc> LayoutBox<'gc> {
         let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
 
         for (span_start, _end, span_text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, &span, is_device_font) {
+            if let Some(font) = layout_context.resolve_font(context, span, is_device_font) {
                 layout_context.newspan(span);
 
                 let params = EvalParameters::from_span(span);
@@ -696,7 +696,7 @@ impl<'gc> LayoutBox<'gc> {
                     let mut last_breakpoint = 0;
 
                     if is_word_wrap {
-                        let (mut width, mut offset) = layout_context.wrap_dimensions(&span);
+                        let (mut width, mut offset) = layout_context.wrap_dimensions(span);
 
                         while let Some(breakpoint) = font.wrap_line(
                             &text[last_breakpoint..],
@@ -715,7 +715,7 @@ impl<'gc> LayoutBox<'gc> {
                             } else if breakpoint == 0 {
                                 layout_context.newline(context);
 
-                                let next_dim = layout_context.wrap_dimensions(&span);
+                                let next_dim = layout_context.wrap_dimensions(span);
 
                                 width = next_dim.0;
                                 offset = next_dim.1;
@@ -747,7 +747,7 @@ impl<'gc> LayoutBox<'gc> {
                             }
 
                             layout_context.newline(context);
-                            let next_dim = layout_context.wrap_dimensions(&span);
+                            let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;
                             offset = next_dim.1;
@@ -795,7 +795,7 @@ impl<'gc> LayoutBox<'gc> {
                 color,
             } => Some((
                 text.get(*start..*end)?,
-                &text_format,
+                text_format,
                 *font,
                 *params,
                 color.clone(),
@@ -805,7 +805,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color,
-            } => Some(("\u{2022}", &text_format, *font, *params, color.clone())),
+            } => Some(("\u{2022}", text_format, *font, *params, color.clone())),
             LayoutContent::Drawing(..) => None,
         }
     }

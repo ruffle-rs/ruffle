@@ -303,7 +303,7 @@ impl SwfSlice {
         let new_end = self.start + end;
 
         if new_start <= new_end {
-            self.to_subslice(&self.movie.data().get(new_start..new_end)?)
+            self.to_subslice(self.movie.data().get(new_start..new_end)?)
         } else {
             None
         }

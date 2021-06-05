@@ -290,7 +290,7 @@ impl<'a> ReadSwfExt<'a> for Reader<'a> {
 
     #[inline(always)]
     fn as_slice(&self) -> &'a [u8] {
-        &self.input
+        self.input
     }
 }
 
@@ -2825,7 +2825,7 @@ pub mod tests {
     #[test]
     fn read_bit() {
         let buf: &[u8] = &[0b01010101, 0b00100101];
-        let mut reader = Reader::new(&buf, 1);
+        let mut reader = Reader::new(buf, 1);
         let mut bits = reader.bits();
         assert_eq!(
             (0..16)

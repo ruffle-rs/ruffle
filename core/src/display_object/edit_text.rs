@@ -892,7 +892,7 @@ impl<'gc> EditText<'gc> {
                             });
                         }
                         _ => {
-                            context.transform_stack.push(&transform);
+                            context.transform_stack.push(transform);
                         }
                     }
 

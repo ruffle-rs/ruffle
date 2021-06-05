@@ -115,7 +115,7 @@ impl SwfStr {
         string: &'a str,
         encoding: &'static Encoding,
     ) -> Option<&'a Self> {
-        if let (Cow::Borrowed(s), _, false) = encoding.encode(&string) {
+        if let (Cow::Borrowed(s), _, false) = encoding.encode(string) {
             Some(Self::from_bytes(s))
         } else {
             None

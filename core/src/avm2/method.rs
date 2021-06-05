@@ -100,7 +100,7 @@ impl<'gc> BytecodeMethod<'gc> {
 
     /// Get a reference to the ABC method entry this refers to.
     pub fn method(&self) -> &AbcMethod {
-        &self.abc.methods.get(self.abc_method as usize).unwrap()
+        self.abc.methods.get(self.abc_method as usize).unwrap()
     }
 
     /// Get a reference to the ABC method body entry this refers to.

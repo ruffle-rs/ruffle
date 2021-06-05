@@ -188,7 +188,7 @@ impl<'gc> XmlDocument<'gc> {
             let mut result = Vec::new();
             let mut writer = Writer::new(Cursor::new(&mut result));
             let bd = BytesDecl::new(
-                &self_read.version.as_bytes(),
+                self_read.version.as_bytes(),
                 self_read.encoding.as_ref().map(|s| s.as_bytes()),
                 self_read.standalone.as_ref().map(|s| s.as_bytes()),
             );

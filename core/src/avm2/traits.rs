@@ -200,7 +200,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, &dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, avm2, mc)?)
                     } else {
                         None
                     },
@@ -261,7 +261,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, &dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, avm2, mc)?)
                     } else {
                         None
                     },

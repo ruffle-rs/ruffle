@@ -568,13 +568,13 @@ impl RenderBackend for WebCanvasRenderBackend {
 
                         match xformed_fill_style.as_ref().unwrap_or(fill_style) {
                             CanvasFillStyle::Color(CanvasColor(color, ..)) => {
-                                self.context.set_fill_style(&JsValue::from_str(&color))
+                                self.context.set_fill_style(&JsValue::from_str(color))
                             }
                             CanvasFillStyle::Gradient(grad) => self.context.set_fill_style(grad),
                             CanvasFillStyle::Pattern(patt) => self.context.set_fill_style(patt),
                         };
 
-                        self.context.fill_with_path_2d(&path);
+                        self.context.fill_with_path_2d(path);
 
                         if xformed_fill_style.is_none() {
                             self.clear_color_filter();
@@ -591,12 +591,12 @@ impl RenderBackend for WebCanvasRenderBackend {
                         let xformed_stroke_style =
                             stroke_style.color_transform(&transform.color_transform);
                         self.context.set_line_width(*line_width);
-                        self.context.set_line_cap(&line_cap);
-                        self.context.set_line_join(&line_join);
+                        self.context.set_line_cap(line_cap);
+                        self.context.set_line_join(line_join);
                         self.context.set_miter_limit(*miter_limit);
                         self.context
                             .set_stroke_style(&JsValue::from_str(&xformed_stroke_style.0));
-                        self.context.stroke_with_path(&path);
+                        self.context.stroke_with_path(path);
                     }
                     CanvasDrawCommand::DrawImage {
                         image,
@@ -606,7 +606,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                         self.set_color_filter(transform);
                         let _ = self
                             .context
-                            .draw_image_with_html_image_element(&image, *x_min, *y_min);
+                            .draw_image_with_html_image_element(image, *x_min, *y_min);
                         self.clear_color_filter();
                     }
                 }
@@ -672,7 +672,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.color_matrix
             .set_attribute(
                 "values",
-                &"1.0 0 0 0 0 0 1.0 0 0 0 0 0 1.0 0 0 0 0 0 256.0 0",
+                "1.0 0 0 0 0 0 1.0 0 0 0 0 0 1.0 0 0 0 0 0 256.0 0",
             )
             .warn_on_error();
 
@@ -1036,7 +1036,7 @@ fn swf_shape_to_svg(
                             .and_then(|lib| lib.get_bitmap(*id))
                             .and_then(|bitmap| bitmaps.get(bitmap.bitmap_handle().0))
                         {
-                            if !bitmap_defs.contains(&id) {
+                            if !bitmap_defs.contains(id) {
                                 let mut image = Image::new()
                                     .set("width", bitmap.width)
                                     .set("height", bitmap.height)
@@ -1371,7 +1371,7 @@ fn swf_shape_to_canvas_commands(
 
                 let path = Path2d::new().unwrap();
                 path.add_path_with_transformation(
-                    &draw_commands_to_path2d(&commands, false),
+                    &draw_commands_to_path2d(commands, false),
                     &bounds_viewbox_matrix,
                 );
 
@@ -1416,7 +1416,7 @@ fn swf_shape_to_canvas_commands(
 
                 let path = Path2d::new().unwrap();
                 path.add_path_with_transformation(
-                    &draw_commands_to_path2d(&commands, *is_closed),
+                    &draw_commands_to_path2d(commands, *is_closed),
                     &bounds_viewbox_matrix,
                 );
 

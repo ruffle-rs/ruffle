@@ -248,7 +248,7 @@ impl<'gc> Font<'gc> {
                 let twips_advance =
                     Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing;
 
-                glyph_func(pos, &transform, &glyph, twips_advance, x);
+                glyph_func(pos, &transform, glyph, twips_advance, x);
 
                 // Step horizontally.
                 transform.matrix.tx += twips_advance;
@@ -514,7 +514,7 @@ mod tests {
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
             let string = "abcdefghijklmnopqrstuv";
             let breakpoint = df.wrap_line(
-                &string,
+                string,
                 params,
                 Twips::from_pixels(200.0),
                 Twips::from_pixels(0.0),
@@ -533,7 +533,7 @@ mod tests {
             let string = "abcd efgh ijkl mnop";
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
-                &string,
+                string,
                 params,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
@@ -587,7 +587,7 @@ mod tests {
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
             let string = "abcd efgh ijkl mnop";
             let breakpoint = df.wrap_line(
-                &string,
+                string,
                 params,
                 Twips::from_pixels(30.0),
                 Twips::from_pixels(29.0),
@@ -606,7 +606,7 @@ mod tests {
             let string = "abcdi j kl mnop q rstuv";
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
-                &string,
+                string,
                 params,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),

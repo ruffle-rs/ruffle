@@ -111,7 +111,7 @@ impl<'gc> RegExp<'gc> {
             },
         ) {
             let start = if self.global() { self.last_index } else { 0 };
-            if let Some(matched) = re.find_from(&text, start).next() {
+            if let Some(matched) = re.find_from(text, start).next() {
                 if self.global() {
                     self.last_index = matched.end();
                 }

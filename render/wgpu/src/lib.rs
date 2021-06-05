@@ -988,8 +988,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             match &draw.draw_type {
                 DrawType::Color => {
                     frame.render_pass.set_pipeline(
-                        &self
-                            .descriptors
+                        self.descriptors
                             .pipelines
                             .color_pipelines
                             .pipeline_for(self.mask_state),
@@ -997,8 +996,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
                 DrawType::Gradient { bind_group, .. } => {
                     frame.render_pass.set_pipeline(
-                        &self
-                            .descriptors
+                        self.descriptors
                             .pipelines
                             .gradient_pipelines
                             .pipeline_for(self.mask_state),
@@ -1012,8 +1010,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     ..
                 } => {
                     frame.render_pass.set_pipeline(
-                        &self
-                            .descriptors
+                        self.descriptors
                             .pipelines
                             .bitmap_pipelines
                             .pipeline_for(self.mask_state),
@@ -1090,8 +1087,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         let add_color = [0.0, 0.0, 0.0, 0.0];
         frame.render_pass.set_pipeline(
-            &self
-                .descriptors
+            self.descriptors
                 .pipelines
                 .color_pipelines
                 .pipeline_for(self.mask_state),
@@ -1221,7 +1217,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.descriptors.queue.write_texture(
             wgpu::ImageCopyTexture {
-                texture: &texture,
+                texture,
                 mip_level: 0,
                 origin: Default::default(),
             },

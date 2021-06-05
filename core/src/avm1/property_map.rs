@@ -31,7 +31,7 @@ impl<V> PropertyMap<V> {
 
     pub fn entry<'a>(&'a mut self, key: &'a str, case_sensitive: bool) -> Entry<'a, V> {
         if case_sensitive {
-            match self.0.get_full_mut(&CaseSensitiveStr(&key)) {
+            match self.0.get_full_mut(&CaseSensitiveStr(key)) {
                 Some((index, _, _)) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
@@ -42,7 +42,7 @@ impl<V> PropertyMap<V> {
                 }),
             }
         } else {
-            match self.0.get_full_mut(&CaseInsensitiveStr(&key)) {
+            match self.0.get_full_mut(&CaseInsensitiveStr(key)) {
                 Some((index, _, _)) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
@@ -158,7 +158,7 @@ struct CaseInsensitiveStr<'a>(&'a str);
 
 impl<'a> Hash for CaseInsensitiveStr<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        swf_hash_string_ignore_case(&self.0, state);
+        swf_hash_string_ignore_case(self.0, state);
     }
 }
 
@@ -174,7 +174,7 @@ struct CaseSensitiveStr<'a>(&'a str);
 
 impl<'a> Hash for CaseSensitiveStr<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        swf_hash_string_ignore_case(&self.0, state);
+        swf_hash_string_ignore_case(self.0, state);
     }
 }
 

@@ -32,13 +32,13 @@ pub enum EventPhase {
 #[collect(require_static)]
 pub enum PropagationMode {
     /// Propagate events normally.
-    AllowPropagation,
+    Allow,
 
     /// Stop capturing or bubbling events.
-    StopPropagation,
+    Stop,
 
     /// Stop running event handlers altogether.
-    StopImmediatePropagation,
+    StopImmediate,
 }
 
 /// Represents data fields of an event that can be fired on an object that
@@ -83,7 +83,7 @@ impl<'gc> Event<'gc> {
             bubbles: false,
             cancelable: false,
             cancelled: false,
-            propagation: PropagationMode::AllowPropagation,
+            propagation: PropagationMode::Allow,
             current_target: None,
             event_phase: EventPhase::AtTarget,
             target: None,
@@ -129,21 +129,21 @@ impl<'gc> Event<'gc> {
     }
 
     pub fn is_propagation_stopped(&self) -> bool {
-        self.propagation != PropagationMode::AllowPropagation
+        self.propagation != PropagationMode::Allow
     }
 
     pub fn stop_propagation(&mut self) {
-        if self.propagation != PropagationMode::StopImmediatePropagation {
-            self.propagation = PropagationMode::StopPropagation;
+        if self.propagation != PropagationMode::StopImmediate {
+            self.propagation = PropagationMode::Stop;
         }
     }
 
     pub fn is_propagation_stopped_immediately(&self) -> bool {
-        self.propagation == PropagationMode::StopImmediatePropagation
+        self.propagation == PropagationMode::StopImmediate
     }
 
     pub fn stop_immediate_propagation(&mut self) {
-        self.propagation = PropagationMode::StopImmediatePropagation;
+        self.propagation = PropagationMode::StopImmediate;
     }
 
     pub fn phase(&self) -> EventPhase {

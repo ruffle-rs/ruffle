@@ -1062,7 +1062,7 @@ pub trait TDisplayObject<'gc>:
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
         if !self.transformed_by_script() {
             if let Some(matrix) = &place_object.matrix {
-                self.set_matrix(context.gc_context, &matrix);
+                self.set_matrix(context.gc_context, matrix);
             }
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(context.gc_context, &color_transform.clone().into());

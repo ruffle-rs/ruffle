@@ -153,7 +153,7 @@ pub fn write_utf<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Some(utf_string) = args.get(0) {
                 let utf_string = utf_string.coerce_to_string(activation)?;
-                bytearray.write_utf(&utf_string.as_str())?;
+                bytearray.write_utf(utf_string.as_str())?;
             }
         }
     }
@@ -453,7 +453,7 @@ pub fn read_utf_bytes<'gc>(
                 .coerce_to_u32(activation)?;
             return Ok(AvmString::new(
                 activation.context.gc_context,
-                String::from_utf8_lossy(&bytearray.read_exact(len as usize)?),
+                String::from_utf8_lossy(bytearray.read_exact(len as usize)?),
             )
             .into());
         }

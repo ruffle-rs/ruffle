@@ -898,7 +898,7 @@ fn spawn_xml_fetch<'gc>(
 
     this.set("loaded", false.into(), activation)?;
 
-    let fetch = activation.context.navigator.fetch(&url, request_options);
+    let fetch = activation.context.navigator.fetch(url, request_options);
     let target_clip = activation.target_clip_or_root()?;
     // given any defined loader object, sends the request. Will load into LoadVars if given.
     let process = if let Some(node) = loader_object.as_xml_node() {

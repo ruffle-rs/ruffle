@@ -494,7 +494,7 @@ fn sort<'gc>(
         let this = Value::Undefined.coerce_to_object(activation);
         // this is undefined in the compare function
         Box::new(move |activation, a: &Value<'gc>, b: &Value<'gc>| {
-            sort_compare_custom(activation, this, a, b, &f)
+            sort_compare_custom(activation, this, a, b, f)
         })
     } else if flags.contains(SortFlags::NUMERIC) {
         Box::new(sort_compare_numeric(
@@ -649,7 +649,7 @@ pub fn create_proto<'gc>(
 ) -> Object<'gc> {
     let array = ScriptObject::array(gc_context, Some(proto));
     let object = array.as_script_object().unwrap();
-    define_properties_on(&PROTO_DECLS, gc_context, object, fn_proto);
+    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     array.into()
 }
 

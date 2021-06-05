@@ -497,7 +497,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     &params[..],
                     data.to_unbounded_subslice(actions).unwrap(),
                 ),
-                Action::DefineFunction2(func) => self.action_define_function_2(&func, &data),
+                Action::DefineFunction2(func) => self.action_define_function_2(&func, data),
                 Action::DefineLocal => self.action_define_local(),
                 Action::DefineLocal2 => self.action_define_local_2(),
                 Action::Delete => self.action_delete(),
@@ -592,7 +592,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.action_with(data.to_unbounded_subslice(actions).unwrap())
                 }
                 Action::Throw => self.action_throw(),
-                Action::Try(try_block) => self.action_try(&try_block, &data),
+                Action::Try(try_block) => self.action_try(&try_block, data),
                 _ => self.unknown_op(action),
             }
         } else {
@@ -775,7 +775,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
+                    } else if let Some(frame) = clip.frame_label_to_number(frame) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame.into()));
                     }
@@ -859,7 +859,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             object.call("[Anonymous]", self, this, None, &args)?
         } else {
             // Call `this[method_name]`.
-            object.call_method(&method_name.as_str(), &args, self)?
+            object.call_method(method_name.as_str(), &args, self)?
         };
 
         self.context.avm1.push(result);
@@ -1729,7 +1729,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/empty method name; construct `this` as a function.
             object.construct(self, &args)?
         } else {
-            let constructor = object.get(&method_name.as_str(), self)?;
+            let constructor = object.get(method_name.as_str(), self)?;
             if let Value::Object(constructor) = constructor {
                 // Construct `this[method_name]`.
                 constructor.construct(self, &args)?
@@ -2285,9 +2285,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/null with is ignored.
             Value::Undefined | Value::Null => {
                 // Mimic Flash's error output.
-                let message =
-                    "Error: A 'with' action failed because the specified object did not exist.\n";
-                self.context.log.avm_trace(&message);
+                self.context.log.avm_trace(
+                    "Error: A 'with' action failed because the specified object did not exist.\n",
+                );
                 Ok(FrameControl::Continue)
             }
 
@@ -2615,7 +2615,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     {
                         child.object()
                     } else {
-                        object.get(&name, self).unwrap()
+                        object.get(name, self).unwrap()
                     }
                 }
             };
@@ -2766,7 +2766,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Finally! It's a plain old variable name.
         // Resolve using scope chain, as normal.
-        self.resolve(&path)
+        self.resolve(path)
     }
 
     /// Sets the value referenced by a target path string.

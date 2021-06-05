@@ -18,7 +18,7 @@ impl LogBackend for WebLogBackend {
     fn avm_trace(&self, message: &str) {
         log::info!(target: "avm_trace", "{}", message);
         if let Some(function) = self.trace_observer.borrow().dyn_ref::<Function>() {
-            let _ = function.call1(&function, &JsValue::from_str(message));
+            let _ = function.call1(function, &JsValue::from_str(message));
         }
     }
 }

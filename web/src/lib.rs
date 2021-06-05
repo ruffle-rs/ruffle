@@ -208,7 +208,7 @@ impl Ruffle {
     /// This method should only be called once per player.
     pub fn stream_from(&mut self, movie_url: &str, parameters: &JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
-            let parameters_to_load = parse_movie_parameters(&parameters);
+            let parameters_to_load = parse_movie_parameters(parameters);
 
             let ruffle = *self;
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
@@ -229,7 +229,7 @@ impl Ruffle {
             swf_data.copy_to(&mut data[..]);
             let mut movie = SwfMovie::from_data(&data, None, None)
                 .map_err(|e| format!("Error loading movie: {}", e))?;
-            movie.append_parameters(parse_movie_parameters(&parameters));
+            movie.append_parameters(parse_movie_parameters(parameters));
             movie
         });
 
@@ -1153,7 +1153,7 @@ fn js_to_external_value(js: &JsValue) -> ExternalValue {
         ExternalValue::List(values)
     } else if let Some(object) = js.dyn_ref::<Object>() {
         let mut values = BTreeMap::new();
-        for entry in Object::entries(&object).values() {
+        for entry in Object::entries(object).values() {
             if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>()) {
                 if let Some(key) = entry.get(0).as_string() {
                     values.insert(key, js_to_external_value(&entry.get(1)));
