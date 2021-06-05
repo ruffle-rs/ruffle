@@ -484,14 +484,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_language(&mut self, language: Language) -> Result<()> {
-        self.write_u8(match language {
-            Language::Unknown => 0,
-            Language::Latin => 1,
-            Language::Japanese => 2,
-            Language::Korean => 3,
-            Language::SimplifiedChinese => 4,
-            Language::TraditionalChinese => 5,
-        })?;
+        self.write_u8(language.to_u8())?;
         Ok(())
     }
 
