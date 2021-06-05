@@ -394,7 +394,7 @@ export class RufflePlayer extends HTMLElement {
                     message.includes("WebAssembly.instantiate") &&
                     e.name === "CompileError"
                 ) {
-                    e.ruffleIndexError = PanicError.InvalidWasm;=
+                    e.ruffleIndexError = PanicError.InvalidWasm;
                 } else if (
                     !message.includes("magic") &&
                     (e.name === "CompileError" || e.name === "TypeError")
