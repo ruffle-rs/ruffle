@@ -1735,17 +1735,11 @@ impl<W: Write> Writer<W> {
 
     fn write_gradient_flags(&mut self, gradient: &Gradient) -> Result<()> {
         let mut flags = 0;
-        flags |= match &gradient.spread {
-            GradientSpread::Pad => 0,
-            GradientSpread::Reflect => 0b0100_0000,
-            GradientSpread::Repeat => 0b1000_0000,
-        };
-
+        flags |= gradient.spread.to_u8() << 6;
         flags |= match &gradient.interpolation {
             GradientInterpolation::Rgb => 0b00_0000,
             GradientInterpolation::LinearRgb => 0b_01_0000,
         };
-
         flags |= (gradient.records.len() as u8) & 0b1111;
         self.write_u8(flags)?;
         Ok(())

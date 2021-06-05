@@ -1769,12 +1769,8 @@ impl<'a> Reader<'a> {
 
     fn read_gradient_flags(&mut self) -> Result<(usize, GradientSpread, GradientInterpolation)> {
         let flags = self.read_u8()?;
-        let spread = match flags & 0b1100_0000 {
-            0b0000_0000 => GradientSpread::Pad,
-            0b0100_0000 => GradientSpread::Reflect,
-            0b1000_0000 => GradientSpread::Repeat,
-            _ => return Err(Error::invalid_data("Invalid gradient spread mode")),
-        };
+        let spread = GradientSpread::from_u8((flags >> 6) & 0b11)
+            .ok_or_else(|| Error::invalid_data("Invalid gradient spread mode"))?;
         let interpolation = match flags & 0b11_0000 {
             0b00_0000 => GradientInterpolation::Rgb,
             0b01_0000 => GradientInterpolation::LinearRgb,
