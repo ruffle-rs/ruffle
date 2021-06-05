@@ -28,6 +28,7 @@ enum PanicError {
     Unknown,
     CSPConflict,
     FileProtocol,
+    InvalidWasm,
     JavascriptConfiguration,
     JavascriptConflict,
     WasmCors,
