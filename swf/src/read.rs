@@ -1356,24 +1356,16 @@ impl<'a> Reader<'a> {
             // MorphLineStyle2 in DefineMorphShape2.
             let flags0 = self.read_u8()?;
             let flags1 = self.read_u8()?;
-            let start_cap = match flags0 >> 6 {
-                0 => LineCapStyle::Round,
-                1 => LineCapStyle::None,
-                2 => LineCapStyle::Square,
-                _ => return Err(Error::invalid_data("Invalid line cap type.")),
-            };
+            let start_cap = LineCapStyle::from_u8(flags0 >> 6)
+                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
             let join_style_id = (flags0 >> 4) & 0b11;
             let has_fill = (flags0 & 0b1000) != 0;
             let allow_scale_x = (flags0 & 0b100) == 0;
             let allow_scale_y = (flags0 & 0b10) == 0;
             let is_pixel_hinted = (flags0 & 0b1) != 0;
             let allow_close = (flags1 & 0b100) == 0;
-            let end_cap = match flags1 & 0b11 {
-                0 => LineCapStyle::Round,
-                1 => LineCapStyle::None,
-                2 => LineCapStyle::Square,
-                _ => return Err(Error::invalid_data("Invalid line cap type.")),
-            };
+            let end_cap = LineCapStyle::from_u8(flags1 & 0b11)
+                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
             let join_style = match join_style_id {
                 0 => LineJoinStyle::Round,
                 1 => LineJoinStyle::Bevel,
@@ -1691,24 +1683,16 @@ impl<'a> Reader<'a> {
             let width = Twips::new(self.read_u16()?);
             let flags0 = self.read_u8()?;
             let flags1 = self.read_u8()?;
-            let start_cap = match flags0 >> 6 {
-                0 => LineCapStyle::Round,
-                1 => LineCapStyle::None,
-                2 => LineCapStyle::Square,
-                _ => return Err(Error::invalid_data("Invalid line cap type.")),
-            };
+            let start_cap = LineCapStyle::from_u8(flags0 >> 6)
+                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
             let join_style_id = (flags0 >> 4) & 0b11;
             let has_fill = (flags0 & 0b1000) != 0;
             let allow_scale_x = (flags0 & 0b100) == 0;
             let allow_scale_y = (flags0 & 0b10) == 0;
             let is_pixel_hinted = (flags0 & 0b1) != 0;
             let allow_close = (flags1 & 0b100) == 0;
-            let end_cap = match flags1 & 0b11 {
-                0 => LineCapStyle::Round,
-                1 => LineCapStyle::None,
-                2 => LineCapStyle::Square,
-                _ => return Err(Error::invalid_data("Invalid line cap type.")),
-            };
+            let end_cap = LineCapStyle::from_u8(flags1 & 0b11)
+                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
             let join_style = match join_style_id {
                 0 => LineJoinStyle::Round,
                 1 => LineJoinStyle::Bevel,
@@ -1771,11 +1755,8 @@ impl<'a> Reader<'a> {
         let flags = self.read_u8()?;
         let spread = GradientSpread::from_u8((flags >> 6) & 0b11)
             .ok_or_else(|| Error::invalid_data("Invalid gradient spread mode"))?;
-        let interpolation = match flags & 0b11_0000 {
-            0b00_0000 => GradientInterpolation::Rgb,
-            0b01_0000 => GradientInterpolation::LinearRgb,
-            _ => return Err(Error::invalid_data("Invalid gradient interpolation mode")),
-        };
+        let interpolation = GradientInterpolation::from_u8((flags >> 4) & 0b11)
+            .ok_or_else(|| Error::invalid_data("Invalid gradient interpolation mode"))?;
         let num_records = usize::from(flags & 0b1111);
         Ok((num_records, spread, interpolation))
     }

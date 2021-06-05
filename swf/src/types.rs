@@ -1044,10 +1044,20 @@ impl GradientSpread {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum GradientInterpolation {
-    Rgb,
-    LinearRgb,
+    Rgb = 0,
+    LinearRgb = 1,
+}
+
+impl GradientInterpolation {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -1087,11 +1097,21 @@ impl LineStyle {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum LineCapStyle {
-    Round,
-    None,
-    Square,
+    Round = 0,
+    None = 1,
+    Square = 2,
+}
+
+impl LineCapStyle {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

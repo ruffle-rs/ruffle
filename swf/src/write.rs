@@ -1299,14 +1299,7 @@ impl<W: Write> Writer<W> {
 
             // MorphLineStyle2
             let mut bits = self.bits();
-            bits.write_ubits(
-                2,
-                match start.start_cap {
-                    LineCapStyle::Round => 0,
-                    LineCapStyle::None => 1,
-                    LineCapStyle::Square => 2,
-                },
-            )?;
+            bits.write_ubits(2, start.start_cap.to_u8().into())?;
             bits.write_ubits(
                 2,
                 match start.join_style {
@@ -1321,14 +1314,7 @@ impl<W: Write> Writer<W> {
             bits.write_bit(start.is_pixel_hinted)?;
             bits.write_ubits(5, 0)?;
             bits.write_bit(!start.allow_close)?;
-            bits.write_ubits(
-                2,
-                match start.end_cap {
-                    LineCapStyle::Round => 0,
-                    LineCapStyle::None => 1,
-                    LineCapStyle::Square => 2,
-                },
-            )?;
+            bits.write_ubits(2, start.end_cap.to_u8().into())?;
             drop(bits);
             if let LineJoinStyle::Miter(miter_factor) = start.join_style {
                 self.write_fixed8(miter_factor)?;
@@ -1671,14 +1657,7 @@ impl<W: Write> Writer<W> {
         if shape_version >= 4 {
             let mut bits = self.bits();
             // LineStyle2
-            bits.write_ubits(
-                2,
-                match line_style.start_cap {
-                    LineCapStyle::Round => 0,
-                    LineCapStyle::None => 1,
-                    LineCapStyle::Square => 2,
-                },
-            )?;
+            bits.write_ubits(2, line_style.start_cap.to_u8().into())?;
             bits.write_ubits(
                 2,
                 match line_style.join_style {
@@ -1693,14 +1672,7 @@ impl<W: Write> Writer<W> {
             bits.write_bit(line_style.is_pixel_hinted)?;
             bits.write_ubits(5, 0)?;
             bits.write_bit(!line_style.allow_close)?;
-            bits.write_ubits(
-                2,
-                match line_style.end_cap {
-                    LineCapStyle::Round => 0,
-                    LineCapStyle::None => 1,
-                    LineCapStyle::Square => 2,
-                },
-            )?;
+            bits.write_ubits(2, line_style.end_cap.to_u8().into())?;
             drop(bits);
             if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
                 self.write_fixed8(miter_factor)?;
@@ -1734,13 +1706,9 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_gradient_flags(&mut self, gradient: &Gradient) -> Result<()> {
-        let mut flags = 0;
-        flags |= gradient.spread.to_u8() << 6;
-        flags |= match &gradient.interpolation {
-            GradientInterpolation::Rgb => 0b00_0000,
-            GradientInterpolation::LinearRgb => 0b_01_0000,
-        };
-        flags |= (gradient.records.len() as u8) & 0b1111;
+        let flags = (gradient.spread.to_u8() << 6)
+            | (gradient.interpolation.to_u8() << 4)
+            | ((gradient.records.len() as u8) & 0b1111);
         self.write_u8(flags)?;
         Ok(())
     }
