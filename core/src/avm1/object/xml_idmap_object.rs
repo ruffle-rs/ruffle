@@ -74,13 +74,16 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         }
     }
 
-    fn set(
+    fn set_local(
         &self,
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        self.base().set(name, value, activation)
+        self.base()
+            .set_local(name, value, activation, this, base_proto)
     }
     fn call(
         &self,

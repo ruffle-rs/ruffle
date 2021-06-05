@@ -207,132 +207,6 @@ impl<'gc> ScriptObject<'gc> {
             }
         }
     }
-
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub(crate) fn internal_set(
-        &self,
-        name: &str,
-        mut value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
-    ) -> Result<(), Error<'gc>> {
-        if name == "__proto__" {
-            self.0.write(activation.context.gc_context).prototype = value;
-        } else if let Ok(index) = name.parse::<usize>() {
-            self.set_array_element(index, value.to_owned(), activation.context.gc_context);
-        } else if !name.is_empty() {
-            if name == "length" {
-                let length = value
-                    .coerce_to_f64(activation)
-                    .map(|v| v.abs() as i32)
-                    .unwrap_or(0);
-                if length > 0 {
-                    self.set_length(activation.context.gc_context, length as usize);
-                } else {
-                    self.set_length(activation.context.gc_context, 0);
-                }
-            }
-
-            //Before actually inserting a new property, we need to crawl the
-            //prototype chain for virtual setters, which kind of break how
-            //ECMAScript `[[Set]]` is supposed to work...
-            let is_vacant = !self
-                .0
-                .read()
-                .values
-                .contains_key(name, activation.is_case_sensitive());
-            let mut worked = false;
-
-            if is_vacant {
-                let mut proto: Value<'gc> = (*self).into();
-                while let Value::Object(this_proto) = proto {
-                    if this_proto.has_own_virtual(activation, name) {
-                        break;
-                    }
-
-                    proto = this_proto.proto();
-                }
-
-                if let Value::Object(this_proto) = proto {
-                    worked = true;
-                    if let Some(rval) = this_proto.call_setter(name, value, activation) {
-                        if let Some(exec) = rval.as_executable() {
-                            let _ = exec.exec(
-                                "[Setter]",
-                                activation,
-                                this,
-                                Some(this_proto),
-                                &[value],
-                                ExecutionReason::Special,
-                                rval,
-                            );
-                        }
-                    }
-                }
-            }
-
-            //This signals we didn't call a virtual setter above. Normally,
-            //we'd resolve and return up there, but we have borrows that need
-            //to end before we can do so.
-            if !worked {
-                let watcher = self
-                    .0
-                    .read()
-                    .watchers
-                    .get(name, activation.is_case_sensitive())
-                    .cloned();
-                let mut return_value = Ok(());
-                if let Some(watcher) = watcher {
-                    let old_value = self.get(name, activation)?;
-                    value = match watcher.call(activation, name, old_value, value, this, base_proto)
-                    {
-                        Ok(value) => value,
-                        Err(Error::ThrownValue(error)) => {
-                            return_value = Err(Error::ThrownValue(error));
-                            Value::Undefined
-                        }
-                        Err(_) => Value::Undefined,
-                    };
-                }
-
-                let rval = match self
-                    .0
-                    .write(activation.context.gc_context)
-                    .values
-                    .entry(name, activation.is_case_sensitive())
-                {
-                    Entry::Occupied(mut entry) => entry.get_mut().set(value),
-                    Entry::Vacant(entry) => {
-                        entry.insert(Property::Stored {
-                            value,
-                            attributes: Attribute::empty(),
-                        });
-
-                        None
-                    }
-                };
-
-                if let Some(rval) = rval {
-                    if let Some(exec) = rval.as_executable() {
-                        let _ = exec.exec(
-                            "[Setter]",
-                            activation,
-                            this,
-                            base_proto,
-                            &[value],
-                            ExecutionReason::Special,
-                            rval,
-                        );
-                    }
-                }
-
-                return return_value;
-            }
-        }
-
-        Ok(())
-    }
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -396,19 +270,66 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// This function takes a redundant `this` parameter which should be
     /// the object's own `GcCell`, so that it can pass it to user-defined
     /// overrides that may need to interact with the underlying object.
-    fn set(
+    fn set_local(
         &self,
         name: &str,
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        self.internal_set(
-            name,
-            value,
-            activation,
-            (*self).into(),
-            Some((*self).into()),
-        )
+        let watcher = self
+            .0
+            .read()
+            .watchers
+            .get(name, activation.is_case_sensitive())
+            .cloned();
+        let mut result = Ok(());
+        if let Some(watcher) = watcher {
+            let old_value = self.get(name, activation)?;
+            match watcher.call(activation, name, old_value, value, this, base_proto) {
+                Ok(v) => value = v,
+                Err(Error::ThrownValue(e)) => {
+                    value = Value::Undefined;
+                    result = Err(Error::ThrownValue(e));
+                }
+                Err(_) => value = Value::Undefined,
+            };
+        }
+
+        let setter = match self
+            .0
+            .write(activation.context.gc_context)
+            .values
+            .entry(name, activation.is_case_sensitive())
+        {
+            Entry::Occupied(mut entry) => entry.get_mut().set(value),
+            Entry::Vacant(entry) => {
+                entry.insert(Property::Stored {
+                    value,
+                    attributes: Attribute::empty(),
+                });
+                None
+            }
+        };
+
+        if let Some(setter) = setter {
+            if let Some(exec) = setter.as_executable() {
+                if let Err(Error::ThrownValue(e)) = exec.exec(
+                    "[Setter]",
+                    activation,
+                    this,
+                    base_proto,
+                    &[value],
+                    ExecutionReason::Special,
+                    setter,
+                ) {
+                    return Err(Error::ThrownValue(e));
+                }
+            }
+        }
+
+        result
     }
 
     /// Call the underlying object.
