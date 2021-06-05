@@ -688,22 +688,35 @@ pub struct GradientBevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum BlendMode {
-    Normal,
-    Layer,
-    Multiply,
-    Screen,
-    Lighten,
-    Darken,
-    Difference,
-    Add,
-    Subtract,
-    Invert,
-    Alpha,
-    Erase,
-    Overlay,
-    HardLight,
+    Normal = 0,
+    Layer = 2,
+    Multiply = 3,
+    Screen = 4,
+    Lighten = 5,
+    Darken = 6,
+    Difference = 7,
+    Add = 8,
+    Subtract = 9,
+    Invert = 10,
+    Alpha = 11,
+    Erase = 12,
+    Overlay = 13,
+    HardLight = 14,
+}
+
+impl BlendMode {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(match n {
+            1 => 0,
+            n => n,
+        })
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 /// An clip action (a.k.a. clip event) placed on a movieclip instance.

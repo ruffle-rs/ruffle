@@ -1491,22 +1491,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_blend_mode(&mut self, blend_mode: BlendMode) -> Result<()> {
-        self.write_u8(match blend_mode {
-            BlendMode::Normal => 0,
-            BlendMode::Layer => 2,
-            BlendMode::Multiply => 3,
-            BlendMode::Screen => 4,
-            BlendMode::Lighten => 5,
-            BlendMode::Darken => 6,
-            BlendMode::Difference => 7,
-            BlendMode::Add => 8,
-            BlendMode::Subtract => 9,
-            BlendMode::Invert => 10,
-            BlendMode::Alpha => 11,
-            BlendMode::Erase => 12,
-            BlendMode::Overlay => 13,
-            BlendMode::HardLight => 14,
-        })?;
+        self.write_u8(blend_mode.to_u8())?;
         Ok(())
     }
 

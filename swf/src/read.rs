@@ -2060,23 +2060,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn read_blend_mode(&mut self) -> Result<BlendMode> {
-        Ok(match self.read_u8()? {
-            0 | 1 => BlendMode::Normal,
-            2 => BlendMode::Layer,
-            3 => BlendMode::Multiply,
-            4 => BlendMode::Screen,
-            5 => BlendMode::Lighten,
-            6 => BlendMode::Darken,
-            7 => BlendMode::Difference,
-            8 => BlendMode::Add,
-            9 => BlendMode::Subtract,
-            10 => BlendMode::Invert,
-            11 => BlendMode::Alpha,
-            12 => BlendMode::Erase,
-            13 => BlendMode::Overlay,
-            14 => BlendMode::HardLight,
-            _ => return Err(Error::invalid_data("Invalid blend mode")),
-        })
+        BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
