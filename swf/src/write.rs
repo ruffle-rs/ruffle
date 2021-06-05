@@ -2165,19 +2165,18 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags = match sound_info.event {
-            SoundEvent::Event => 0b00_0000u8,
-            SoundEvent::Start => 0b01_0000u8,
-            SoundEvent::Stop => 0b10_0000u8,
-        } | if sound_info.in_sample.is_some() {
-            0b1
-        } else {
-            0
-        } | if sound_info.out_sample.is_some() {
-            0b10
-        } else {
-            0
-        } | if sound_info.num_loops > 1 { 0b100 } else { 0 }
+        let flags = sound_info.event.to_u8() << 4
+            | if sound_info.in_sample.is_some() {
+                0b1
+            } else {
+                0
+            }
+            | if sound_info.out_sample.is_some() {
+                0b10
+            } else {
+                0
+            }
+            | if sound_info.num_loops > 1 { 0b100 } else { 0 }
             | if sound_info.envelope.is_some() {
                 0b1000
             } else {

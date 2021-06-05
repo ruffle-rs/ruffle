@@ -930,11 +930,24 @@ pub struct SoundInfo {
     pub envelope: Option<SoundEnvelope>,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum SoundEvent {
-    Event,
-    Start,
-    Stop,
+    Event = 0,
+    Start = 1,
+    Stop = 2,
+}
+
+impl SoundEvent {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(match n {
+            3 => 2,
+            n => n,
+        })
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 pub type SoundEnvelope = Vec<SoundEnvelopePoint>;
