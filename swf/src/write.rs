@@ -2450,13 +2450,7 @@ impl<W: Write> Writer<W> {
         self.write_u16(video.width)?;
         self.write_u16(video.height)?;
         self.write_u8((video.deblocking.to_u8() << 1) | if video.is_smoothed { 0b1 } else { 0 })?;
-        self.write_u8(match video.codec {
-            VideoCodec::H263 => 2,
-            VideoCodec::ScreenVideo => 3,
-            VideoCodec::Vp6 => 4,
-            VideoCodec::Vp6WithAlpha => 5,
-            VideoCodec::ScreenVideoV2 => 6,
-        })?;
+        self.write_u8(video.codec.to_u8())?;
         Ok(())
     }
 

@@ -2508,14 +2508,8 @@ impl<'a> Reader<'a> {
         let height = self.read_u16()?;
         let flags = self.read_u8()?;
         // TODO(Herschel): Check SWF version.
-        let codec = match self.read_u8()? {
-            2 => VideoCodec::H263,
-            3 => VideoCodec::ScreenVideo,
-            4 => VideoCodec::Vp6,
-            5 => VideoCodec::Vp6WithAlpha,
-            6 => VideoCodec::ScreenVideoV2,
-            _ => return Err(Error::invalid_data("Invalid video codec.")),
-        };
+        let codec = VideoCodec::from_u8(self.read_u8()?)
+            .ok_or_else(|| Error::invalid_data("Invalid video codec."))?;
         Ok(Tag::DefineVideoStream(DefineVideoStream {
             id,
             num_frames,
