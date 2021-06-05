@@ -9,3 +9,5 @@ anonymous-cli-metrics.json
 /lerna-debug.log*
 
 /package.json.lerna_backup
+
+/packages/**/package-lock.json
