@@ -919,12 +919,8 @@ impl<'a> Reader<'a> {
         Ok(CsmTextSettings {
             id,
             use_advanced_rendering: flags & 0b01000000 != 0,
-            grid_fit: match flags & 0b11_000 {
-                0b00_000 => TextGridFit::None,
-                0b01_000 => TextGridFit::Pixel,
-                0b10_000 => TextGridFit::SubPixel,
-                _ => return Err(Error::invalid_data("Invalid text grid fitting")),
-            },
+            grid_fit: TextGridFit::from_u8((flags >> 3) & 0b11)
+                .ok_or_else(|| Error::invalid_data("Invalid text grid fitting"))?,
             thickness,
             sharpness,
         })

@@ -512,11 +512,7 @@ impl<W: Write> Writer<W> {
                         0b01_000000
                     } else {
                         0
-                    } | match settings.grid_fit {
-                        TextGridFit::None => 0,
-                        TextGridFit::Pixel => 0b01_000,
-                        TextGridFit::SubPixel => 0b10_000,
-                    },
+                    } | (settings.grid_fit.to_u8() << 3),
                 )?;
                 self.write_f32(settings.thickness)?;
                 self.write_f32(settings.sharpness)?;
