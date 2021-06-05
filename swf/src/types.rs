@@ -1398,11 +1398,21 @@ pub struct FontAlignZone {
     pub height: i16,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum FontThickness {
-    Thin,
-    Medium,
-    Thick,
+    Thin = 0,
+    Medium = 1,
+    Thick = 2,
+}
+
+impl FontThickness {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

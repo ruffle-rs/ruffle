@@ -685,11 +685,7 @@ impl<W: Write> Writer<W> {
             } => {
                 self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
                 self.write_character_id(id)?;
-                self.write_u8(match thickness {
-                    FontThickness::Thin => 0b00_000000,
-                    FontThickness::Medium => 0b01_000000,
-                    FontThickness::Thick => 0b10_000000,
-                })?;
+                self.write_u8(thickness.to_u8() << 6)?;
                 for zone in zones {
                     self.write_u8(2)?; // Always 2 dimensions.
                     self.write_i16(zone.left)?;
