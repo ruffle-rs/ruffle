@@ -61,7 +61,7 @@ pub fn get_code<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let code = activation.context.ui.last_key_code().to_u8();
+    let code = activation.context.ui.last_key_code() as u8;
     Ok(code.into())
 }
 
