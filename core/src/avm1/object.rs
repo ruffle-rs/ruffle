@@ -111,11 +111,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.has_own_property(activation, name) {
-            self.get_local(name, activation, (*self).into())
-        } else {
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
-        }
+        let this = (*self).into();
+        Ok(search_prototype(Value::Object(this), name, activation, this)?.0)
     }
 
     /// Set a named property on this object, or its prototype.
@@ -173,18 +170,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (method, base_proto) = search_prototype(
-            Value::Object((*self).into()),
-            name,
-            activation,
-            (*self).into(),
-        )?;
+        let this = (*self).into();
+        let (method, base_proto) = search_prototype(Value::Object(this), name, activation, this)?;
 
         if method.is_primitive() {
             avm_warn!(activation, "Object method {} is not callable", name);
         }
 
-        method.call(name, activation, (*self).into(), base_proto, args)
+        method.call(name, activation, this, base_proto, args)
     }
 
     /// Call a setter defined in this object.
