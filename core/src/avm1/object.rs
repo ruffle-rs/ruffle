@@ -111,6 +111,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        if name == "__proto__" {
+            return Ok(self.proto());
+        }
+
         let this = (*self).into();
         Ok(search_prototype(Value::Object(this), name, activation, this)?.0)
     }
