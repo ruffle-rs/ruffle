@@ -1121,16 +1121,26 @@ pub enum LineJoinStyle {
     Miter(Fixed8),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
 pub enum AudioCompression {
-    UncompressedUnknownEndian,
-    Adpcm,
-    Mp3,
-    Uncompressed,
-    Nellymoser16Khz,
-    Nellymoser8Khz,
-    Nellymoser,
-    Speex,
+    UncompressedUnknownEndian = 0,
+    Adpcm = 1,
+    Mp3 = 2,
+    Uncompressed = 3,
+    Nellymoser16Khz = 4,
+    Nellymoser8Khz = 5,
+    Nellymoser = 6,
+    Speex = 11,
+}
+
+impl AudioCompression {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

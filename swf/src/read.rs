@@ -2287,17 +2287,8 @@ impl<'a> Reader<'a> {
 
     pub fn read_sound_format(&mut self) -> Result<SoundFormat> {
         let flags = self.read_u8()?;
-        let compression = match flags >> 4 {
-            0 => AudioCompression::UncompressedUnknownEndian,
-            1 => AudioCompression::Adpcm,
-            2 => AudioCompression::Mp3,
-            3 => AudioCompression::Uncompressed,
-            4 => AudioCompression::Nellymoser16Khz,
-            5 => AudioCompression::Nellymoser8Khz,
-            6 => AudioCompression::Nellymoser,
-            11 => AudioCompression::Speex,
-            _ => return Err(Error::invalid_data("Invalid audio format.")),
-        };
+        let compression = AudioCompression::from_u8(flags >> 4)
+            .ok_or_else(|| Error::invalid_data("Invalid audio format."))?;
         let sample_rate = match (flags & 0b11_00) >> 2 {
             0 => 5512,
             1 => 11025,
