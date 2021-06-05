@@ -283,12 +283,12 @@ impl<'gc> Class<'gc> {
 
         for abc_trait in abc_instance.traits.iter() {
             self.instance_traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, avm2, mc)?);
         }
 
         for abc_trait in abc_class.traits.iter() {
             self.class_traits
-                .push(Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?);
+                .push(Trait::from_abc_trait(unit, abc_trait, avm2, mc)?);
         }
 
         Ok(())
@@ -307,7 +307,7 @@ impl<'gc> Class<'gc> {
         for trait_entry in body.traits.iter() {
             traits.push(Trait::from_abc_trait(
                 translation_unit,
-                &trait_entry,
+                trait_entry,
                 avm2,
                 mc,
             )?);

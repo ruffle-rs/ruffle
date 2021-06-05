@@ -86,7 +86,7 @@ impl StorageBackend for DiskStorageBackend {
 
         match File::create(path) {
             Ok(mut file) => {
-                if let Err(r) = file.write_all(&value) {
+                if let Err(r) = file.write_all(value) {
                     log::warn!("Unable to write file content {:?}", r);
                     false
                 } else {

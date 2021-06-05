@@ -323,7 +323,7 @@ impl<'gc> Script<'gc> {
         for abc_trait in script.traits.iter() {
             drop(write);
 
-            let newtrait = Trait::from_abc_trait(unit, &abc_trait, avm2, mc)?;
+            let newtrait = Trait::from_abc_trait(unit, abc_trait, avm2, mc)?;
 
             write = self.0.write(mc);
             write.traits.push(newtrait);

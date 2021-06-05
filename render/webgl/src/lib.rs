@@ -987,11 +987,11 @@ impl RenderBackend for WebGlRenderBackend {
                 self.add_color = Some(add_color);
             }
 
-            program.uniform_matrix3fv(&self.gl, ShaderUniform::TextureMatrix, &bitmap_matrix);
+            program.uniform_matrix3fv(&self.gl, ShaderUniform::TextureMatrix, bitmap_matrix);
 
             // Bind texture.
             self.gl.active_texture(Gl::TEXTURE0);
-            self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+            self.gl.bind_texture(Gl::TEXTURE_2D, Some(texture));
             program.uniform1i(&self.gl, ShaderUniform::BitmapTexture, 0);
 
             // Set texture parameters.
@@ -1096,7 +1096,7 @@ impl RenderBackend for WebGlRenderBackend {
                     program.uniform4fv(
                         &self.gl,
                         ShaderUniform::GradientColors,
-                        &bytemuck::cast_slice(&gradient.colors),
+                        bytemuck::cast_slice(&gradient.colors),
                     );
                     program.uniform1i(
                         &self.gl,
@@ -1458,8 +1458,8 @@ impl ShaderProgram {
         fragment_shader: &WebGlShader,
     ) -> Result<Self, Error> {
         let program = gl.create_program().ok_or("Unable to create program")?;
-        gl.attach_shader(&program, &vertex_shader);
-        gl.attach_shader(&program, &fragment_shader);
+        gl.attach_shader(&program, vertex_shader);
+        gl.attach_shader(&program, fragment_shader);
 
         gl.link_program(&program);
         if !gl

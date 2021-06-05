@@ -53,6 +53,7 @@ pub use crate::avm2::object::xml_object::XmlObject;
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
+    #[allow(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {

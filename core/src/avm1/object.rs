@@ -60,6 +60,7 @@ pub mod xml_object;
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
 #[enum_trait_object(
+    #[allow(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {

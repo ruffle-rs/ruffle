@@ -113,16 +113,16 @@ impl<W: Write> Writer<W> {
             }
             Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
             Action::DefineFunction {
-                ref name,
+                name,
                 ref params,
-                ref actions,
+                actions,
             } => {
                 // 1 zero byte for string name, 1 zero byte per param, 2 bytes for # of params,
                 // 2 bytes for code length
                 let len =
                     name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() + 2;
                 self.write_action_header(OpCode::DefineFunction, len)?;
-                self.write_string(*name)?;
+                self.write_string(name)?;
                 self.write_u16(params.len() as u16)?;
                 for param in params {
                     self.write_string(*param)?;
@@ -154,7 +154,7 @@ impl<W: Write> Writer<W> {
                     self.write_string(param.name)?;
                 }
                 self.write_u16(function.actions.len() as u16)?;
-                self.output.write_all(&function.actions)?;
+                self.output.write_all(function.actions)?;
             }
             Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
             Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
@@ -170,13 +170,10 @@ impl<W: Write> Writer<W> {
             Action::GetMember => self.write_action_header(OpCode::GetMember, 0)?,
             Action::GetProperty => self.write_action_header(OpCode::GetProperty, 0)?,
             Action::GetTime => self.write_action_header(OpCode::GetTime, 0)?,
-            Action::GetUrl {
-                ref url,
-                ref target,
-            } => {
+            Action::GetUrl { url, target } => {
                 self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
-                self.write_string(*url)?;
-                self.write_string(*target)?;
+                self.write_string(url)?;
+                self.write_string(target)?;
             }
             Action::GetUrl2 {
                 send_vars_method,
@@ -210,9 +207,9 @@ impl<W: Write> Writer<W> {
                     self.write_u8(if set_playing { 0b10 } else { 0b00 })?;
                 }
             }
-            Action::GotoLabel(ref label) => {
+            Action::GotoLabel(label) => {
                 self.write_action_header(OpCode::GotoLabel, label.len() + 1)?;
-                self.write_string(*label)?;
+                self.write_string(label)?;
             }
             Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
             Action::If { offset } => {
@@ -248,7 +245,7 @@ impl<W: Write> Writer<W> {
                 let len = values
                     .iter()
                     .map(|v| match *v {
-                        Value::Str(ref string) => string.len() + 2,
+                        Value::Str(string) => string.len() + 2,
                         Value::Null | Value::Undefined => 1,
                         Value::Register(_) | Value::Bool(_) => 2,
                         Value::Double(_) => 9,
@@ -273,9 +270,9 @@ impl<W: Write> Writer<W> {
             Action::Return => self.write_action_header(OpCode::Return, 0)?,
             Action::SetMember => self.write_action_header(OpCode::SetMember, 0)?,
             Action::SetProperty => self.write_action_header(OpCode::SetProperty, 0)?,
-            Action::SetTarget(ref target) => {
+            Action::SetTarget(target) => {
                 self.write_action_header(OpCode::SetTarget, target.len() + 1)?;
-                self.write_string(*target)?;
+                self.write_string(target)?;
             }
             Action::SetTarget2 => self.write_action_header(OpCode::SetTarget2, 0)?,
             Action::SetVariable => self.write_action_header(OpCode::SetVariable, 0)?,
@@ -308,15 +305,15 @@ impl<W: Write> Writer<W> {
                 let finally_length;
                 let mut action_buf = vec![];
                 {
-                    action_buf.write_all(&try_block.try_actions)?;
+                    action_buf.write_all(try_block.try_actions)?;
                     try_length = try_block.try_actions.len();
-                    catch_length = if let Some((_, ref catch)) = try_block.catch {
+                    catch_length = if let Some((_, catch)) = try_block.catch {
                         action_buf.write_all(catch)?;
                         catch.len()
                     } else {
                         0
                     };
-                    finally_length = if let Some(ref finally) = try_block.finally {
+                    finally_length = if let Some(finally) = try_block.finally {
                         action_buf.write_all(finally)?;
                         finally.len()
                     } else {
@@ -325,7 +322,7 @@ impl<W: Write> Writer<W> {
                 }
                 let len = 7
                     + action_buf.len()
-                    + if let Some((CatchVar::Var(ref name), _)) = try_block.catch {
+                    + if let Some((CatchVar::Var(name), _)) = try_block.catch {
                         name.len() + 1
                     } else {
                         1
@@ -364,11 +361,11 @@ impl<W: Write> Writer<W> {
                 self.write_action_header(OpCode::WaitForFrame2, 1)?;
                 self.write_u8(num_actions_to_skip)?;
             }
-            Action::With { ref actions } => {
+            Action::With { actions } => {
                 self.write_action_header(OpCode::With, actions.len())?;
-                self.output.write_all(&actions)?;
+                self.output.write_all(actions)?;
             }
-            Action::Unknown { opcode, ref data } => {
+            Action::Unknown { opcode, data } => {
                 self.write_opcode_and_length(opcode, data.len())?;
                 self.output.write_all(data)?;
             }

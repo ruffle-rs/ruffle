@@ -101,7 +101,7 @@ impl<'a> VariableDumper<'a> {
         key: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) {
-        match object.get(&key, activation) {
+        match object.get(key, activation) {
             Ok(value) => {
                 self.print_value(&value, activation);
             }

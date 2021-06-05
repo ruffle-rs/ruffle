@@ -387,7 +387,7 @@ impl AudioBackend for CpalAudioBackend {
             self.make_signal_from_simple_event_sound(&sound.format, data)?
         } else {
             // For event sounds with envelopes/other properties, wrap it in `EventSoundSignal`.
-            self.make_signal_from_event_sound(&sound, settings, data)?
+            self.make_signal_from_event_sound(sound, settings, data)?
         };
 
         // Add sound instance to active list.

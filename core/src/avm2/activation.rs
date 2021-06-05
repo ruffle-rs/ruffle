@@ -375,7 +375,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
 
-        function.call(Some(receiver), &args, self, Some(base_proto))
+        function.call(Some(receiver), args, self, Some(base_proto))
     }
 
     /// Attempts to lock the activation frame for execution.

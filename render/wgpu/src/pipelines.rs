@@ -63,7 +63,7 @@ impl Pipelines {
         }];
 
         let color_pipelines = create_color_pipelines(
-            &device,
+            device,
             &color_vs,
             &color_fs,
             msaa_sample_count,
@@ -100,7 +100,7 @@ impl Pipelines {
             });
 
         let bitmap_pipelines = create_bitmap_pipeline(
-            &device,
+            device,
             &texture_vs,
             &bitmap_fs,
             msaa_sample_count,
@@ -139,7 +139,7 @@ impl Pipelines {
             });
 
         let gradient_pipelines = create_gradient_pipeline(
-            &device,
+            device,
             &texture_vs,
             &gradient_fs,
             msaa_sample_count,
@@ -171,14 +171,14 @@ fn create_pipeline_descriptor<'a>(
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
         label,
-        layout: Some(&pipeline_layout),
+        layout: Some(pipeline_layout),
         vertex: wgpu::VertexState {
-            module: &vertex_shader,
+            module: vertex_shader,
             entry_point: "main",
             buffers: vertex_buffer_layout,
         },
         fragment: Some(wgpu::FragmentState {
-            module: &fragment_shader,
+            module: fragment_shader,
             entry_point: "main",
             targets: color_target_state,
         }),

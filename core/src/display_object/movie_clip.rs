@@ -2679,7 +2679,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let button = Avm1Button::from_swf_tag(
                 &swf_button,
                 &self.static_data.swf,
-                &context.library,
+                context.library,
                 context.gc_context,
             );
             context
@@ -3209,7 +3209,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                     self,
                     mc.current_frame() + 1,
                     slice,
-                    &stream_info,
+                    stream_info,
                 );
                 drop(mc);
                 self.0.write(context.gc_context).audio_stream = audio_stream;

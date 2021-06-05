@@ -95,7 +95,7 @@ impl XmlName {
 
         match (&self.namespace, &other.namespace) {
             (None, None) => true,
-            (Some(a), Some(b)) => a.eq_ignore_ascii_case(&b),
+            (Some(a), Some(b)) => a.eq_ignore_ascii_case(b),
             _ => false,
         }
     }

@@ -297,7 +297,7 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
     for file in &files {
         let (new_descriptors, frames) = take_screenshot(
             descriptors,
-            &file.path(),
+            file.path(),
             opt.frames,
             opt.skipframes,
             &progress,
@@ -318,7 +318,7 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
         let mut relative_path = file
             .path()
             .strip_prefix(&opt.swf)
-            .unwrap_or_else(|_| &file.path())
+            .unwrap_or_else(|_| file.path())
             .to_path_buf();
 
         if frames.len() == 1 {

@@ -47,9 +47,6 @@ pub enum Error {
 
     #[error("Target node is not a child of this one!")]
     CantRemoveNonChild,
-
-    #[error("Error running avm1 script: {0}")]
-    Avm1Error(Box<dyn std::error::Error>),
 }
 
 impl From<FromUtf8Error> for Error {

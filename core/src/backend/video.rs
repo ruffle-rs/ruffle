@@ -28,7 +28,7 @@ pub struct EncodedFrame<'a> {
 impl<'a> EncodedFrame<'a> {
     /// Borrow this frame's data.
     pub fn data(&'a self) -> &'a [u8] {
-        &self.data
+        self.data
     }
 }
 

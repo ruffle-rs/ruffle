@@ -117,13 +117,13 @@ fn on_data<'gc>(
     let success = match args.get(0) {
         None | Some(Value::Undefined) | Some(Value::Null) => false,
         Some(val) => {
-            this.call_method(&"decode", &[*val], activation)?;
+            this.call_method("decode", &[*val], activation)?;
             this.set("loaded", true.into(), activation)?;
             true
         }
     };
 
-    this.call_method(&"onLoad", &[success.into()], activation)?;
+    this.call_method("onLoad", &[success.into()], activation)?;
 
     Ok(Value::Undefined)
 }
@@ -250,7 +250,7 @@ fn spawn_load_var_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (url, request_options) = if let Some((send_object, method)) = send_object {
         // Send properties from `send_object`.
-        activation.object_into_request_options(send_object, Cow::Borrowed(&url), Some(method))
+        activation.object_into_request_options(send_object, Cow::Borrowed(url), Some(method))
     } else {
         // Not sending any parameters.
         (Cow::Borrowed(url.as_str()), RequestOptions::get())

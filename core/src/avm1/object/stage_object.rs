@@ -186,7 +186,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         {
             // 3) Child display objects with the given instance name
             Ok(child.object())
-        } else if let Some(property) = props.read().get_by_name(&name) {
+        } else if let Some(property) = props.read().get_by_name(name) {
             // 4) Display object properties such as _x, _y
             let val = property.get(activation, obj.display_object)?;
             Ok(val)
@@ -241,7 +241,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 (*self).into(),
                 Some((*self).into()),
             )
-        } else if let Some(property) = props.read().get_by_name(&name) {
+        } else if let Some(property) = props.read().get_by_name(name) {
             // 2) Display object properties such as _x, _y
             property.set(activation, display_object, value)?;
             Ok(())
@@ -384,7 +384,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .avm1
             .display_properties
             .read()
-            .get_by_name(&name)
+            .get_by_name(name)
             .is_some()
         {
             return true;
@@ -591,7 +591,7 @@ impl<'gc> DisplayPropertyMap<'gc> {
     pub fn get_by_name(&self, name: &str) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.0.get(&name, false)
+        self.0.get(name, false)
     }
 
     /// Gets a property slot by SWF4 index.
