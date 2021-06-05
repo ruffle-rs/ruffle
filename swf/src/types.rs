@@ -1490,13 +1490,23 @@ impl VideoDeblocking {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
 pub enum VideoCodec {
-    H263,
-    ScreenVideo,
-    Vp6,
-    Vp6WithAlpha,
-    ScreenVideoV2,
+    H263 = 2,
+    ScreenVideo = 3,
+    Vp6 = 4,
+    Vp6WithAlpha = 5,
+    ScreenVideoV2 = 6,
+}
+
+impl VideoCodec {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn to_u8(self) -> u8 {
+        num_traits::ToPrimitive::to_u8(&self).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
