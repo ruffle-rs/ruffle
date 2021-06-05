@@ -38,6 +38,9 @@ nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", branch = "mai
 regress = "0.3"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "e39a8abc897289696672858e30bbc9e43b1c98ac" }
 json = "0.12.4"
+dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"] }
+symphonia = { version = "0.2.0", default-features = false, features = ["mp3"], optional = true }
+symphonia-bundle-mp3 = { version = "0.2.0", default-features = false, optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.1.22"
@@ -51,5 +54,6 @@ env_logger = "0.8.3"
 [features]
 default = ["minimp3", "serde"]
 lzma = ["swf/lzma"]
+symphonia_mp3 = ["symphonia", "symphonia-bundle-mp3"]
 wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []

@@ -26,3 +26,26 @@ export function copyToAudioBuffer(
         dstBuffer.set(rightData);
     }
 }
+
+/**
+ * Copies data into the given audio channel.
+ * This is necessary because Safari does not support `AudioBuffer.copyToChannel`.
+ *
+ * @internal
+ */
+export function copyToAudioBufferInterleaved(
+    audioBuffer: AudioBuffer,
+    interleavedData: ArrayLike<number>
+): void {
+    const numSamples = audioBuffer.length;
+    const leftBuffer = audioBuffer.getChannelData(0);
+    const rightBuffer = audioBuffer.getChannelData(1);
+    let i = 0;
+    let sample = 0;
+    while (sample < numSamples) {
+        leftBuffer[sample] = interleavedData[i];
+        rightBuffer[sample] = interleavedData[i + 1];
+        sample++;
+        i += 2;
+    }
+}

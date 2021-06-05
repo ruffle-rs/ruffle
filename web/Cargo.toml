@@ -14,11 +14,13 @@ publish = false # This crate is useless alone, people should use the npm package
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["canvas", "console_error_panic_hook", "console_log", "webgl"]
+default = ["audio_mixer", "canvas", "console_error_panic_hook", "console_log", "webgl"]
 lzma = ["ruffle_core/lzma"]
 avm_debug = ["ruffle_core/avm_debug"]
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
+audio_mixer = []
+web_audio = []
 
 [dependencies]
 byteorder = "1.4.3"
@@ -43,7 +45,7 @@ base64 = "0.13.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["serde", "wasm-bindgen"]
+features = ["serde", "symphonia_mp3", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.45"
