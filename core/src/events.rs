@@ -135,7 +135,7 @@ impl ClipEvent {
 }
 
 /// Flash virtual keycode.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive)]
 pub enum KeyCode {
     Unknown = 0,
     Backspace = 8,
@@ -238,10 +238,6 @@ pub enum KeyCode {
 impl KeyCode {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(&self) -> u8 {
-        num_traits::ToPrimitive::to_u8(self).unwrap()
     }
 }
 
