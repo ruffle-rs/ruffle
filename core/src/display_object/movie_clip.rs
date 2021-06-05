@@ -33,7 +33,6 @@ use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
 use swf::{FrameLabelData, Tag};
@@ -3498,7 +3497,7 @@ impl ClipAction {
                 ClipEventFlag::KEY_DOWN => ClipEvent::KeyDown,
                 ClipEventFlag::KEY_PRESS => ClipEvent::KeyPress {
                     key_code: key_code
-                        .and_then(|k| ButtonKeyCode::try_from(k).ok())
+                        .and_then(ButtonKeyCode::from_u8)
                         .unwrap_or(ButtonKeyCode::Unknown),
                 },
                 ClipEventFlag::LOAD => ClipEvent::Load,

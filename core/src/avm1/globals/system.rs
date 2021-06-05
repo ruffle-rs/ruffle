@@ -8,8 +8,6 @@ use crate::avm_warn;
 use bitflags::bitflags;
 use core::fmt;
 use gc_arena::MutationContext;
-use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "exactSettings" => property(get_exact_settings, set_exact_settings);
@@ -215,13 +213,18 @@ impl fmt::Display for PlayerType {
     }
 }
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
-#[repr(u8)]
+#[derive(Debug, Copy, Clone, FromPrimitive)]
 enum SettingsPanel {
     Privacy = 0,
     LocalStorage = 1,
     Microphone = 2,
     Camera = 3,
+}
+
+impl SettingsPanel {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
 }
 
 bitflags! {
@@ -438,7 +441,7 @@ pub fn show_settings<'gc>(
         .unwrap_or(&Value::Number(last_panel_pos as f64))
         .coerce_to_i32(activation)?;
 
-    let panel = SettingsPanel::try_from(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
+    let panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);
 
     avm_warn!(
         activation,

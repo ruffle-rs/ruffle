@@ -34,7 +34,6 @@ use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{HashMap, VecDeque};
-use std::convert::TryFrom;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
@@ -826,7 +825,7 @@ impl Player {
                 if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
             {
                 Some(ClipEvent::KeyPress {
-                    key_code: ButtonKeyCode::try_from(codepoint as u8).unwrap(),
+                    key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
                 })
             }
 

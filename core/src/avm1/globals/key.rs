@@ -5,7 +5,6 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::events::KeyCode;
 use gc_arena::MutationContext;
-use std::convert::TryFrom;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALT" => int(18; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -40,7 +39,7 @@ pub fn is_down<'gc>(
     if let Some(key) = args
         .get(0)
         .and_then(|v| v.coerce_to_f64(activation).ok())
-        .and_then(|k| KeyCode::try_from(k as u8).ok())
+        .and_then(|k| KeyCode::from_u8(k as u8))
     {
         Ok(activation.context.ui.is_key_down(key).into())
     } else {
@@ -62,7 +61,7 @@ pub fn get_code<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let code: u8 = activation.context.ui.last_key_code().into();
+    let code = activation.context.ui.last_key_code().to_u8();
     Ok(code.into())
 }
 
