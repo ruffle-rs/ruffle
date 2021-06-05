@@ -2554,18 +2554,16 @@ impl<'a> Reader<'a> {
 
     pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
         let id = self.read_character_id()?;
-        let format = match self.read_u8()? {
-            3 => BitmapFormat::ColorMap8,
+        let format = self.read_u8()?;
+        let width = self.read_u16()?;
+        let height = self.read_u16()?;
+        let format = match format {
+            3 => BitmapFormat::ColorMap8 {
+                num_colors: self.read_u8()?,
+            },
             4 if version == 1 => BitmapFormat::Rgb15,
             5 => BitmapFormat::Rgb32,
             _ => return Err(Error::invalid_data("Invalid bitmap format.")),
-        };
-        let width = self.read_u16()?;
-        let height = self.read_u16()?;
-        let num_colors = if format == BitmapFormat::ColorMap8 {
-            self.read_u8()?
-        } else {
-            0
         };
         let data = self.read_slice_to_end();
         Ok(DefineBitsLossless {
@@ -2574,7 +2572,6 @@ impl<'a> Reader<'a> {
             format,
             width,
             height,
-            num_colors,
             data,
         })
     }

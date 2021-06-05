@@ -165,7 +165,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                num_colors: 0,
                 data: &[
                     120, 218, 251, 207, 192, 240, 255, 255, 8, 198, 0, 4, 128, 127, 129,
                 ],
@@ -183,7 +182,6 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                num_colors: 0,
                 data: &[
                     120, 218, 107, 96, 96, 168, 107, 24, 193, 24, 0, 227, 81, 63, 129,
                 ],

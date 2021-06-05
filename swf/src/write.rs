@@ -555,7 +555,7 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineBitsLossless(ref tag) => {
                 let mut length = 7 + tag.data.len();
-                if tag.format == BitmapFormat::ColorMap8 {
+                if let BitmapFormat::ColorMap8 { .. } = tag.format {
                     length += 1;
                 }
                 // TODO(Herschel): Throw error if RGB15 in tag version 2.
@@ -567,15 +567,15 @@ impl<W: Write> Writer<W> {
                 self.write_tag_header(tag_code, length as u32)?;
                 self.write_character_id(tag.id)?;
                 let format_id = match tag.format {
-                    BitmapFormat::ColorMap8 => 3,
+                    BitmapFormat::ColorMap8 { .. } => 3,
                     BitmapFormat::Rgb15 => 4,
                     BitmapFormat::Rgb32 => 5,
                 };
                 self.write_u8(format_id)?;
                 self.write_u16(tag.width)?;
                 self.write_u16(tag.height)?;
-                if tag.format == BitmapFormat::ColorMap8 {
-                    self.write_u8(tag.num_colors)?;
+                if let BitmapFormat::ColorMap8 { num_colors } = tag.format {
+                    self.write_u8(num_colors)?;
                 }
                 self.output.write_all(tag.data)?;
             }
