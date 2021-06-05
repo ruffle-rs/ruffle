@@ -2098,19 +2098,7 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
         let mut bits = self.bits();
-        bits.write_ubits(
-            4,
-            match sound_format.compression {
-                AudioCompression::UncompressedUnknownEndian => 0,
-                AudioCompression::Adpcm => 1,
-                AudioCompression::Mp3 => 2,
-                AudioCompression::Uncompressed => 3,
-                AudioCompression::Nellymoser16Khz => 4,
-                AudioCompression::Nellymoser8Khz => 5,
-                AudioCompression::Nellymoser => 6,
-                AudioCompression::Speex => 11,
-            },
-        )?;
+        bits.write_ubits(4, sound_format.compression.to_u8().into())?;
         bits.write_ubits(
             2,
             match sound_format.sample_rate {
