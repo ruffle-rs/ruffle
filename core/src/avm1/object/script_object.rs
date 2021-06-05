@@ -224,43 +224,32 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        if name == "__proto__" {
-            return Some(Ok(self.proto()));
-        }
-
-        let mut getter = None;
-
-        if let Some(value) = self
+        let getter = match self
             .0
             .read()
             .values
             .get(name, activation.is_case_sensitive())
         {
-            match value {
-                Property::Virtual { get, .. } => getter = Some(get.to_owned()),
-                Property::Stored { value, .. } => return Some(Ok(value.to_owned())),
-            }
-        }
+            Some(Property::Virtual { get, .. }) => get.to_owned(),
+            Some(Property::Stored { value, .. }) => return Some(Ok(value.to_owned())),
+            None => return None,
+        };
 
-        if let Some(getter) = getter {
-            if let Some(exec) = getter.as_executable() {
-                // Errors, even fatal ones, are completely and silently ignored here.
-                Some(
-                    exec.exec(
-                        "[Getter]",
-                        activation,
-                        this,
-                        Some((*self).into()),
-                        &[],
-                        ExecutionReason::Special,
-                        getter,
-                    )
-                    .or(Ok(Value::Undefined)),
-                )
-            } else {
-                // TODO: Return None?
-                Some(Ok(Value::Undefined))
-            }
+        if let Some(exec) = getter.as_executable() {
+            let result = exec.exec(
+                "[Getter]",
+                activation,
+                this,
+                Some((*self).into()),
+                &[],
+                ExecutionReason::Special,
+                getter,
+            );
+            Some(match result {
+                Ok(v) => Ok(v),
+                Err(Error::ThrownValue(e)) => Err(Error::ThrownValue(e)),
+                Err(_) => Ok(Value::Undefined),
+            })
         } else {
             None
         }
