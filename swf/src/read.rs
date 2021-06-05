@@ -2340,12 +2340,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_sound_info(&mut self) -> Result<SoundInfo> {
         let flags = self.read_u8()?;
-        let event = match (flags >> 4) & 0b11 {
-            0b10 | 0b11 => SoundEvent::Stop,
-            0b00 => SoundEvent::Event,
-            0b01 => SoundEvent::Start,
-            _ => unreachable!(),
-        };
+        let event = SoundEvent::from_u8((flags >> 4) & 0b11).unwrap();
         let in_sample = if (flags & 0b1) != 0 {
             Some(self.read_u32()?)
         } else {
