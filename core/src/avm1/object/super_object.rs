@@ -83,8 +83,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _name: &str,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Undefined)
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        Some(Ok(Value::Undefined))
     }
 
     fn set_local(

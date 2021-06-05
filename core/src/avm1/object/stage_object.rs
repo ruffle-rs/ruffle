@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
-use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -162,48 +161,37 @@ impl fmt::Debug for StageObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn get(
+    fn get_local(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+        this: Object<'gc>,
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
         let case_sensitive = activation.is_case_sensitive();
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            self.get_local(name, activation, (*self).into())
+            self.0.read().base.get_local(name, activation, this)
         } else if let Some(level) =
             Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
             // 2) _levelN
-            Ok(level)
+            Some(Ok(level))
         } else if let Some(child) = obj
             .display_object
             .as_container()
             .and_then(|o| o.child_by_name(name, case_sensitive))
         {
             // 3) Child display objects with the given instance name
-            Ok(child.object())
+            Some(Ok(child.object()))
         } else if let Some(property) = props.read().get_by_name(name) {
             // 4) Display object properties such as _x, _y
-            let val = property.get(activation, obj.display_object)?;
-            Ok(val)
+            Some(property.get(activation, obj.display_object))
         } else {
-            // 5) Prototype
-            Ok(search_prototype(self.proto(), name, activation, (*self).into())?.0)
+            None
         }
-        // 6) TODO: __resolve?
-    }
-
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().base.get_local(name, activation, this)
     }
 
     fn set_local(

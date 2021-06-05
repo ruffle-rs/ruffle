@@ -58,7 +58,7 @@ macro_rules! impl_custom_object {
             name: &str,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             this: crate::avm1::Object<'gc>,
-        ) -> Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>> {
+        ) -> Option<Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>>> {
             self.0.read().$field.get_local(name, activation, this)
         }
 

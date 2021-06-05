@@ -535,7 +535,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         self.base.get_local(name, activation, this)
     }
 

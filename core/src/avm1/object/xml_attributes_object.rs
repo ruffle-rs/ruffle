@@ -61,12 +61,10 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(self
-            .node()
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        self.node()
             .attribute_value(&XmlName::from_str(name))
-            .map(|s| AvmString::new(activation.context.gc_context, s).into())
-            .unwrap_or_else(|| Value::Undefined))
+            .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
     }
 
     fn set_local(
