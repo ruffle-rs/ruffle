@@ -1164,12 +1164,8 @@ impl<'a> Reader<'a> {
 
     fn read_define_font_align_zones(&mut self) -> Result<Tag<'a>> {
         let id = self.read_character_id()?;
-        let thickness = match self.read_u8()? {
-            0b00_000000 => FontThickness::Thin,
-            0b01_000000 => FontThickness::Medium,
-            0b10_000000 => FontThickness::Thick,
-            _ => return Err(Error::invalid_data("Invalid font thickness type.")),
-        };
+        let thickness = FontThickness::from_u8(self.read_u8()? >> 6)
+            .ok_or_else(|| Error::invalid_data("Invalid font thickness type."))?;
         let mut zones = vec![];
         while let Ok(zone) = self.read_font_align_zone() {
             zones.push(zone);
