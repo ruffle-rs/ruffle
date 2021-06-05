@@ -103,7 +103,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>>;
+    ) -> Option<Result<Value<'gc>, Error<'gc>>>;
 
     /// Retrieve a named property from the object, or its prototype.
     fn get(
@@ -644,8 +644,8 @@ pub fn search_prototype<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if p.has_own_property(activation, name) {
-            return Ok((p.get_local(name, activation, this)?, Some(p)));
+        if let Some(value) = p.get_local(name, activation, this) {
+            return Ok((value?, Some(p)));
         }
 
         proto = p.proto();

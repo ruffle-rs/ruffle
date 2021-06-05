@@ -61,14 +61,14 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
-            Ok(node
+            Some(Ok(node
                 .script_object(
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes().xml_node),
                 )
-                .into())
+                .into()))
         } else {
             self.base().get_local(name, activation, this)
         }

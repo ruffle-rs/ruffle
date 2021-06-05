@@ -223,9 +223,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         if name == "__proto__" {
-            return Ok(self.proto());
+            return Some(Ok(self.proto()));
         }
 
         let mut getter = None;
@@ -238,30 +238,31 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         {
             match value {
                 Property::Virtual { get, .. } => getter = Some(get.to_owned()),
-                Property::Stored { value, .. } => return Ok(value.to_owned()),
+                Property::Stored { value, .. } => return Some(Ok(value.to_owned())),
             }
         }
 
         if let Some(getter) = getter {
             if let Some(exec) = getter.as_executable() {
                 // Errors, even fatal ones, are completely and silently ignored here.
-                match exec.exec(
-                    "[Getter]",
-                    activation,
-                    this,
-                    Some((*self).into()),
-                    &[],
-                    ExecutionReason::Special,
-                    getter,
-                ) {
-                    Ok(value) => Ok(value),
-                    Err(_) => Ok(Value::Undefined),
-                }
+                Some(
+                    exec.exec(
+                        "[Getter]",
+                        activation,
+                        this,
+                        Some((*self).into()),
+                        &[],
+                        ExecutionReason::Special,
+                        getter,
+                    )
+                    .or(Ok(Value::Undefined)),
+                )
             } else {
-                Ok(Value::Undefined)
+                // TODO: Return None?
+                Some(Ok(Value::Undefined))
             }
         } else {
-            Ok(Value::Undefined)
+            None
         }
     }
 
