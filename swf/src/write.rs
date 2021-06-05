@@ -484,7 +484,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_language(&mut self, language: Language) -> Result<()> {
-        self.write_u8(language.to_u8())?;
+        self.write_u8(language as u8)?;
         Ok(())
     }
 
@@ -512,7 +512,7 @@ impl<W: Write> Writer<W> {
                         0b01_000000
                     } else {
                         0
-                    } | (settings.grid_fit.to_u8() << 3),
+                    } | ((settings.grid_fit as u8) << 3),
                 )?;
                 self.write_f32(settings.thickness)?;
                 self.write_f32(settings.sharpness)?;
@@ -681,7 +681,7 @@ impl<W: Write> Writer<W> {
             } => {
                 self.write_tag_header(TagCode::DefineFontAlignZones, 3 + 10 * zones.len() as u32)?;
                 self.write_character_id(id)?;
-                self.write_u8(thickness.to_u8() << 6)?;
+                self.write_u8((thickness as u8) << 6)?;
                 for zone in zones {
                     self.write_u8(2)?; // Always 2 dimensions.
                     self.write_i16(zone.left)?;
@@ -1291,7 +1291,7 @@ impl<W: Write> Writer<W> {
 
             // MorphLineStyle2
             let mut bits = self.bits();
-            bits.write_ubits(2, start.start_cap.to_u8().into())?;
+            bits.write_ubits(2, start.start_cap as u32)?;
             bits.write_ubits(
                 2,
                 match start.join_style {
@@ -1306,7 +1306,7 @@ impl<W: Write> Writer<W> {
             bits.write_bit(start.is_pixel_hinted)?;
             bits.write_ubits(5, 0)?;
             bits.write_bit(!start.allow_close)?;
-            bits.write_ubits(2, start.end_cap.to_u8().into())?;
+            bits.write_ubits(2, start.end_cap as u32)?;
             drop(bits);
             if let LineJoinStyle::Miter(miter_factor) = start.join_style {
                 self.write_fixed8(miter_factor)?;
@@ -1469,7 +1469,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_blend_mode(&mut self, blend_mode: BlendMode) -> Result<()> {
-        self.write_u8(blend_mode.to_u8())?;
+        self.write_u8(blend_mode as u8)?;
         Ok(())
     }
 
@@ -1649,7 +1649,7 @@ impl<W: Write> Writer<W> {
         if shape_version >= 4 {
             let mut bits = self.bits();
             // LineStyle2
-            bits.write_ubits(2, line_style.start_cap.to_u8().into())?;
+            bits.write_ubits(2, line_style.start_cap as u32)?;
             bits.write_ubits(
                 2,
                 match line_style.join_style {
@@ -1664,7 +1664,7 @@ impl<W: Write> Writer<W> {
             bits.write_bit(line_style.is_pixel_hinted)?;
             bits.write_ubits(5, 0)?;
             bits.write_bit(!line_style.allow_close)?;
-            bits.write_ubits(2, line_style.end_cap.to_u8().into())?;
+            bits.write_ubits(2, line_style.end_cap as u32)?;
             drop(bits);
             if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
                 self.write_fixed8(miter_factor)?;
@@ -1698,8 +1698,8 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_gradient_flags(&mut self, gradient: &Gradient) -> Result<()> {
-        let flags = (gradient.spread.to_u8() << 6)
-            | (gradient.interpolation.to_u8() << 4)
+        let flags = ((gradient.spread as u8) << 6)
+            | ((gradient.interpolation as u8) << 4)
             | ((gradient.records.len() as u8) & 0b1111);
         self.write_u8(flags)?;
         Ok(())
@@ -2090,7 +2090,7 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
         let mut bits = self.bits();
-        bits.write_ubits(4, sound_format.compression.to_u8().into())?;
+        bits.write_ubits(4, sound_format.compression as u32)?;
         bits.write_ubits(
             2,
             match sound_format.sample_rate {
@@ -2107,7 +2107,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags = sound_info.event.to_u8() << 4
+        let flags = (sound_info.event as u8) << 4
             | if sound_info.in_sample.is_some() {
                 0b1
             } else {
@@ -2425,7 +2425,7 @@ impl<W: Write> Writer<W> {
             }
 
             if let Some(ref layout) = edit_text.layout {
-                writer.write_u8(layout.align.to_u8())?;
+                writer.write_u8(layout.align as u8)?;
                 writer.write_u16(layout.left_margin.get() as u16)?; // TODO: Handle overflow
                 writer.write_u16(layout.right_margin.get() as u16)?;
                 writer.write_u16(layout.indent.get() as u16)?;
@@ -2449,8 +2449,8 @@ impl<W: Write> Writer<W> {
         self.write_u16(video.num_frames)?;
         self.write_u16(video.width)?;
         self.write_u16(video.height)?;
-        self.write_u8((video.deblocking.to_u8() << 1) | if video.is_smoothed { 0b1 } else { 0 })?;
-        self.write_u8(video.codec.to_u8())?;
+        self.write_u8(((video.deblocking as u8) << 1) | if video.is_smoothed { 0b1 } else { 0 })?;
+        self.write_u8(video.codec as u8)?;
         Ok(())
     }
 

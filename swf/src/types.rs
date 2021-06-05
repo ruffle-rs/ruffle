@@ -484,7 +484,7 @@ impl Default for ColorTransform {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, FromPrimitive)]
 pub enum Language {
     Unknown = 0,
     Latin = 1,
@@ -497,10 +497,6 @@ pub enum Language {
 impl Language {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -688,7 +684,7 @@ pub struct GradientBevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum BlendMode {
     Normal = 0,
     Layer = 2,
@@ -712,10 +708,6 @@ impl BlendMode {
             1 => 0,
             n => n,
         })
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -930,7 +922,7 @@ pub struct SoundInfo {
     pub envelope: Option<SoundEnvelope>,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum SoundEvent {
     Event = 0,
     Start = 1,
@@ -943,10 +935,6 @@ impl SoundEvent {
             3 => 2,
             n => n,
         })
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1027,7 +1015,7 @@ pub struct Gradient {
     pub records: Vec<GradientRecord>,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum GradientSpread {
     Pad = 0,
     Reflect = 1,
@@ -1038,13 +1026,9 @@ impl GradientSpread {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
-    }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum GradientInterpolation {
     Rgb = 0,
     LinearRgb = 1,
@@ -1053,10 +1037,6 @@ pub enum GradientInterpolation {
 impl GradientInterpolation {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1097,7 +1077,7 @@ impl LineStyle {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum LineCapStyle {
     Round = 0,
     None = 1,
@@ -1108,10 +1088,6 @@ impl LineCapStyle {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
-    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -1121,7 +1097,7 @@ pub enum LineJoinStyle {
     Miter(Fixed8),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
+#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum AudioCompression {
     UncompressedUnknownEndian = 0,
     Adpcm = 1,
@@ -1136,10 +1112,6 @@ pub enum AudioCompression {
 impl AudioCompression {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1371,7 +1343,7 @@ pub struct TextLayout {
     pub leading: Twips,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive)]
 pub enum TextAlign {
     Left = 0,
     Right = 1,
@@ -1382,10 +1354,6 @@ pub enum TextAlign {
 impl TextAlign {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1398,7 +1366,7 @@ pub struct FontAlignZone {
     pub height: i16,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive)]
 pub enum FontThickness {
     Thin = 0,
     Medium = 1,
@@ -1408,10 +1376,6 @@ pub enum FontThickness {
 impl FontThickness {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1424,7 +1388,7 @@ pub struct CsmTextSettings {
     pub sharpness: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive)]
 pub enum TextGridFit {
     None = 0,
     Pixel = 1,
@@ -1434,10 +1398,6 @@ pub enum TextGridFit {
 impl TextGridFit {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
@@ -1470,7 +1430,7 @@ pub struct DefineVideoStream {
     pub codec: VideoCodec,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive)]
 pub enum VideoDeblocking {
     UseVideoPacketValue = 0,
     None = 1,
@@ -1484,13 +1444,9 @@ impl VideoDeblocking {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
-    }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, FromPrimitive)]
 pub enum VideoCodec {
     H263 = 2,
     ScreenVideo = 3,
@@ -1502,10 +1458,6 @@ pub enum VideoCodec {
 impl VideoCodec {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
-    }
-
-    pub fn to_u8(self) -> u8 {
-        num_traits::ToPrimitive::to_u8(&self).unwrap()
     }
 }
 
