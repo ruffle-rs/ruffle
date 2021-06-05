@@ -1,7 +1,7 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
+use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -115,13 +115,77 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(search_prototype(Value::Object(this), name, activation, this)?.0)
     }
 
+    fn set_local(
+        &self,
+        name: &str,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
+    ) -> Result<(), Error<'gc>>;
+
     /// Set a named property on this object, or its prototype.
     fn set(
         &self,
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error<'gc>>;
+    ) -> Result<(), Error<'gc>> {
+        if name.is_empty() {
+            return Ok(());
+        }
+
+        if name == "__proto__" {
+            self.set_proto(activation.context.gc_context, value);
+            return Ok(());
+        }
+
+        if let Ok(index) = name.parse::<usize>() {
+            self.set_array_element(index, value.to_owned(), activation.context.gc_context);
+            return Ok(());
+        }
+
+        if name == "length" {
+            let length = value
+                .coerce_to_f64(activation)
+                .map(|v| v.abs() as i32)
+                .unwrap_or(0);
+            if length > 0 {
+                self.set_length(activation.context.gc_context, length as usize);
+            } else {
+                self.set_length(activation.context.gc_context, 0);
+            }
+        }
+
+        let this = (*self).into();
+        if !self.has_own_property(activation, name) {
+            // Before actually inserting a new property, we need to crawl the
+            // prototype chain for virtual setters.
+            let mut proto = Value::Object(this);
+            while let Value::Object(this_proto) = proto {
+                if this_proto.has_own_virtual(activation, name) {
+                    if let Some(setter) = this_proto.call_setter(name, value, activation) {
+                        if let Some(exec) = setter.as_executable() {
+                            let _ = exec.exec(
+                                "[Setter]",
+                                activation,
+                                this,
+                                Some(this_proto),
+                                &[value],
+                                ExecutionReason::Special,
+                                setter,
+                            );
+                        }
+                    }
+                    return Ok(());
+                }
+
+                proto = this_proto.proto();
+            }
+        }
+
+        self.set_local(name, value, activation, this, Some(this))
+    }
 
     /// Call the underlying object.
     ///
