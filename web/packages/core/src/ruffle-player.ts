@@ -28,6 +28,7 @@ enum PanicError {
     Unknown,
     CSPConflict,
     FileProtocol,
+    InvalidWasm,
     JavascriptConfiguration,
     JavascriptConflict,
     WasmCors,
@@ -390,6 +391,11 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmCors;
                 } else if (message.includes("disallowed by embedder")) {
                     e.ruffleIndexError = PanicError.CSPConflict;
+                } else if (
+                    message.includes("WebAssembly.instantiate") &&
+                    e.name === "CompileError"
+                ) {
+                    e.ruffleIndexError = PanicError.InvalidWasm;
                 } else if (
                     !message.includes("magic") &&
                     (e.name === "CompileError" || e.name === "TypeError")
@@ -1050,6 +1056,18 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case PanicError.InvalidWasm:
+                // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                    <p>It seems like this page has missing or invalid files for running Ruffle.</p>
+                    <p>If you are the server administrator, please consult the Ruffle wiki for help.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">View Ruffle Wiki</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
