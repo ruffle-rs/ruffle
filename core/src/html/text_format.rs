@@ -179,14 +179,12 @@ fn getfloatarray_from_avm1_object<'gc>(
         Avm1Value::Undefined => None,
         Avm1Value::Null => None,
         v => {
-            let mut output = Vec::new();
             let v = v.coerce_to_object(activation);
-
-            for i in 0..v.length() {
-                output.push(v.array_element(i).coerce_to_f64(activation)?);
-            }
-
-            Some(output)
+            let length = v.length(activation)?;
+            let output: Result<Vec<_>, crate::avm1::error::Error<'gc>> = (0..length)
+                .map(|i| v.get_element(activation, i).coerce_to_f64(activation))
+                .collect();
+            Some(output?)
         }
     })
 }
@@ -679,23 +677,21 @@ impl TextFormat {
             activation,
         )?;
 
-        if let Some(ts) = &self.tab_stops {
+        let tab_stops = if let Some(ts) = &self.tab_stops {
             let tab_stops = Avm1ScriptObject::array(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().array),
             );
-
-            tab_stops.set_length(activation.context.gc_context, ts.len());
-
-            for (index, tab) in ts.iter().enumerate() {
-                tab_stops.set_array_element(index, (*tab).into(), activation.context.gc_context);
+            for (i, &tab) in ts.iter().enumerate() {
+                tab_stops
+                    .set_element(activation, i as i32, tab.into())
+                    .unwrap();
             }
-
-            object.set("tabStops", tab_stops.into(), activation)?;
+            tab_stops.into()
         } else {
-            object.set("tabStops", Avm1Value::Null, activation)?;
-        }
-
+            Avm1Value::Null
+        };
+        object.set("tabStops", tab_stops, activation)?;
         Ok(object.into())
     }
 

@@ -79,27 +79,19 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut consumed = false;
-
-    if args.len() == 1 {
-        let arg = args.get(0).unwrap();
-        if let Value::Number(length) = *arg {
-            if length >= 0.0 {
-                this.set_length(activation.context.gc_context, length as usize);
-                consumed = true;
-            } else if !length.is_nan() {
-                this.set_length(activation.context.gc_context, 0);
-                consumed = true;
-            }
+    if let [Value::Number(length)] = *args {
+        let length = if length.is_finite() && length >= i32::MIN.into() && length <= i32::MAX.into()
+        {
+            length as i32
+        } else {
+            i32::MIN
+        };
+        this.set_length(activation, length)?;
+    } else {
+        for (i, &arg) in args.iter().enumerate() {
+            this.set_element(activation, i as i32, arg)?;
         }
     }
-
-    if !consumed {
-        for (i, arg) in args.iter().enumerate() {
-            this.set_array_element(i, arg.to_owned(), activation.context.gc_context);
-        }
-    }
-
     Ok(this.into())
 }
 
@@ -109,31 +101,11 @@ pub fn array_function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut consumed = false;
-
-    let prototype = activation.context.avm1.prototypes.array;
-    let array_obj = prototype.create_bare_object(activation, prototype)?;
-
-    if args.len() == 1 {
-        let arg = args.get(0).unwrap();
-        if let Value::Number(length) = *arg {
-            if length >= 0.0 {
-                array_obj.set_length(activation.context.gc_context, length as usize);
-                consumed = true;
-            } else if !length.is_nan() {
-                array_obj.set_length(activation.context.gc_context, 0);
-                consumed = true;
-            }
-        }
-    }
-
-    if !consumed {
-        for (i, arg) in args.iter().enumerate() {
-            array_obj.set_array_element(i, arg.to_owned(), activation.context.gc_context);
-        }
-    }
-
-    Ok(array_obj.into())
+    let array = ScriptObject::array(
+        activation.context.gc_context,
+        Some(activation.context.avm1.prototypes.array),
+    );
+    constructor(activation, array.into(), args)
 }
 
 pub fn push<'gc>(
@@ -141,19 +113,14 @@ pub fn push<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_length = this.length();
-    let new_length = old_length + args.len();
-    this.set_length(activation.context.gc_context, new_length);
-
-    for i in 0..args.len() {
-        this.set_array_element(
-            old_length + i,
-            args.get(i).unwrap().to_owned(),
-            activation.context.gc_context,
-        );
+    let old_length = this.length(activation)?;
+    for (i, &arg) in args.iter().enumerate() {
+        this.set_element(activation, old_length + i as i32, arg)?;
     }
 
-    Ok((new_length as f64).into())
+    let new_length = old_length + args.len() as i32;
+    this.set_length(activation, new_length)?;
+    Ok(new_length.into())
 }
 
 pub fn unshift<'gc>(
@@ -161,33 +128,25 @@ pub fn unshift<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_length = this.length();
-    let new_length = old_length + args.len();
-    let offset = args.len();
-
-    if old_length > 0 {
-        // Move all elements up by [offset], in reverse order.
-        for i in (offset..new_length).rev() {
-            this.set_array_element(
-                i,
-                this.array_element(i - offset),
-                activation.context.gc_context,
-            );
+    let old_length = this.length(activation)?;
+    let new_length = old_length + args.len() as i32;
+    for i in 0..old_length {
+        let from = old_length - i - 1;
+        let to = new_length - i - 1;
+        if this.has_element(activation, from) {
+            let element = this.get_element(activation, from);
+            this.set_element(activation, to, element)?;
+        } else {
+            this.delete_element(activation, to);
         }
     }
 
-    for i in 0..args.len() {
-        // Put the new elements at the start of the array.
-        this.set_array_element(
-            i,
-            args.get(i).unwrap().to_owned(),
-            activation.context.gc_context,
-        );
+    for (i, &arg) in args.iter().enumerate() {
+        this.set_element(activation, i as i32, arg)?;
     }
 
-    this.set_length(activation.context.gc_context, new_length);
-
-    Ok((new_length as f64).into())
+    this.set_length(activation, new_length)?;
+    Ok(new_length.into())
 }
 
 pub fn shift<'gc>(
@@ -195,25 +154,26 @@ pub fn shift<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_length = this.length();
-    if old_length == 0 {
+    let length = this.length(activation)?;
+    if length == 0 {
         return Ok(Value::Undefined);
     }
 
-    let new_length = old_length - 1;
+    let first = this.get_element(activation, 0);
 
-    let removed = this.array_element(0);
-
-    for i in 0..new_length {
-        this.set_array_element(i, this.array_element(i + 1), activation.context.gc_context);
+    for i in 1..length {
+        if this.has_element(activation, i) {
+            let element = this.get_element(activation, i);
+            this.set_element(activation, i - 1, element)?;
+        } else {
+            this.delete_element(activation, i - 1);
+        }
     }
 
-    this.delete_array_element(new_length, activation.context.gc_context);
-    this.delete(activation, &new_length.to_string());
+    this.delete_element(activation, length - 1);
 
-    this.set_length(activation.context.gc_context, new_length);
-
-    Ok(removed)
+    this.set_length(activation, length - 1)?;
+    Ok(first)
 }
 
 pub fn pop<'gc>(
@@ -221,20 +181,16 @@ pub fn pop<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_length = this.length();
+    let old_length = this.length(activation)?;
     if old_length == 0 {
         return Ok(Value::Undefined);
     }
 
     let new_length = old_length - 1;
-
-    let removed = this.array_element(new_length);
-    this.delete_array_element(new_length, activation.context.gc_context);
-    this.delete(activation, &new_length.to_string());
-
-    this.set_length(activation.context.gc_context, new_length);
-
-    Ok(removed)
+    let last = this.get_element(activation, new_length);
+    this.delete_element(activation, new_length);
+    this.set_length(activation, new_length)?;
+    Ok(last)
 }
 
 pub fn reverse<'gc>(
@@ -242,11 +198,41 @@ pub fn reverse<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let length = this.length();
-    let mut values = this.array().to_vec();
+    let length = this.length(activation)?;
+    for lower_index in 0..length / 2 {
+        let has_lower = this.has_element(activation, lower_index);
+        let lower_value = if has_lower {
+            this.get_element(activation, lower_index)
+        } else {
+            Value::Undefined
+        };
 
-    for i in 0..length {
-        this.set_array_element(i, values.pop().unwrap(), activation.context.gc_context);
+        let upper_index = length - lower_index - 1;
+        let has_upper = this.has_element(activation, upper_index);
+        let upper_value = if has_upper {
+            this.get_element(activation, upper_index)
+        } else {
+            Value::Undefined
+        };
+
+        match (has_lower, has_upper) {
+            (true, true) => {
+                this.set_element(activation, lower_index, upper_value)?;
+                this.set_element(activation, upper_index, lower_value)?;
+            }
+            (true, false) => {
+                this.delete_element(activation, lower_index);
+                this.set_element(activation, upper_index, lower_value)?;
+            }
+            (false, true) => {
+                this.set_element(activation, lower_index, upper_value)?;
+                this.delete_element(activation, upper_index);
+            }
+            (false, false) => {
+                this.delete_element(activation, lower_index);
+                this.delete_element(activation, upper_index);
+            }
+        }
     }
 
     // Some docs incorrectly say reverse returns Void.
@@ -258,35 +244,35 @@ pub fn join<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let separator = args
-        .get(0)
-        .and_then(|v| v.coerce_to_string(activation).ok())
-        .unwrap_or_else(|| ",".into());
-    let values: Vec<Value<'gc>> = this.array();
+    let length = this.length(activation)?;
 
-    Ok(AvmString::new(
-        activation.context.gc_context,
-        values
-            .iter()
-            .map(|v| {
-                v.coerce_to_string(activation)
-                    .unwrap_or_else(|_| "undefined".into())
-                    .to_string()
-            })
-            .collect::<Vec<String>>()
-            .join(&separator),
-    )
-    .into())
+    let separator = if let Some(v) = args.get(0) {
+        v.coerce_to_string(activation)?
+    } else {
+        ",".into()
+    };
+
+    if length <= 0 {
+        return Ok("".into());
+    }
+
+    let parts: Result<Vec<_>, Error<'gc>> = (0..length)
+        .map(|i| {
+            let element = this.get_element(activation, i);
+            Ok(element.coerce_to_string(activation)?.to_string())
+        })
+        .collect();
+
+    Ok(AvmString::new(activation.context.gc_context, parts?.join(&separator)).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).
 /// The returned index will be positive and clamped from [0, length].
-fn make_index_absolute(index: i32, length: usize) -> usize {
+fn make_index_absolute(index: i32, length: i32) -> i32 {
     if index < 0 {
-        let offset = index as isize;
-        length.saturating_sub((-offset) as usize)
+        (index + length).max(0)
     } else {
-        (index as usize).min(length)
+        index.min(length)
     }
 }
 
@@ -295,32 +281,30 @@ pub fn slice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let start = args
-        .get(0)
-        .and_then(|v| v.coerce_to_f64(activation).ok())
-        .map(|v| make_index_absolute(v as i32, this.length()))
-        .unwrap_or(0);
-    let end = args
-        .get(1)
-        .and_then(|v| v.coerce_to_f64(activation).ok())
-        .map(|v| make_index_absolute(v as i32, this.length()))
-        .unwrap_or_else(|| this.length());
+    let length = this.length(activation)?;
+
+    let start = make_index_absolute(
+        args.get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?,
+        length,
+    );
+
+    let end = args.get(1).unwrap_or(&Value::Undefined);
+    let end = if end == &Value::Undefined {
+        length
+    } else {
+        make_index_absolute(end.coerce_to_i32(activation)?, length)
+    };
 
     let array = ScriptObject::array(
         activation.context.gc_context,
         Some(activation.context.avm1.prototypes.array),
     );
-
-    if start < end {
-        let length = end - start;
-        array.set_length(activation.context.gc_context, length);
-
-        for i in 0..length {
-            array.set_array_element(
-                i,
-                this.array_element(start + i),
-                activation.context.gc_context,
-            );
+    for i in start..end {
+        if this.has_element(activation, i) {
+            let element = this.get_element(activation, i);
+            array.set_element(activation, i - start, element).unwrap();
         }
     }
 
@@ -336,72 +320,58 @@ pub fn splice<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let old_length = this.length();
-    let start = args
-        .get(0)
-        .and_then(|v| v.coerce_to_f64(activation).ok())
-        .map(|v| make_index_absolute(v as i32, old_length))
-        .unwrap_or(0);
-    let count = args
-        .get(1)
-        .and_then(|v| v.coerce_to_f64(activation).ok())
-        .map(|v| v as i32)
-        .unwrap_or(old_length as i32);
-    if count < 0 {
-        return Ok(Value::Undefined);
-    }
+    let length = this.length(activation)?;
+    let start = make_index_absolute(args.get(0).unwrap().coerce_to_i32(activation)?, length);
+    let delete_count = if let Some(arg) = args.get(1) {
+        let delete_count = arg.coerce_to_i32(activation)?;
+        if delete_count < 0 {
+            return Ok(Value::Undefined);
+        }
+        delete_count.min(length - start)
+    } else {
+        length - start
+    };
 
-    let removed = ScriptObject::array(
+    let result_array = ScriptObject::array(
         activation.context.gc_context,
         Some(activation.context.avm1.prototypes.array),
     );
-    let to_remove = count.min(old_length as i32 - start as i32).max(0) as usize;
-    let to_add = if args.len() > 2 { &args[2..] } else { &[] };
-    let offset = to_remove as i32 - to_add.len() as i32;
-    let new_length = old_length + to_add.len() - to_remove;
-    for i in start..start + to_remove {
-        removed.set_array_element(
-            i - start,
-            this.array_element(i),
-            activation.context.gc_context,
-        );
+    for i in 0..delete_count {
+        if this.has_element(activation, start + i) {
+            let element = this.get_element(activation, start + i);
+            result_array.set_element(activation, i, element).unwrap();
+        }
     }
-    removed.set_length(activation.context.gc_context, to_remove);
+    result_array.set_length(activation, delete_count).unwrap();
 
-    if offset < 0 {
-        for i in (start + to_add.len()..new_length).rev() {
-            this.set_array_element(
-                i,
-                this.array_element((i as i32 + offset) as usize),
-                activation.context.gc_context,
-            );
+    let items = if args.len() > 2 { &args[2..] } else { &[] };
+    // TODO: Avoid code duplication.
+    if items.len() as i32 > delete_count {
+        for i in (start + delete_count..length).rev() {
+            if this.has_element(activation, i) {
+                let element = this.get_element(activation, i);
+                this.set_element(activation, i - delete_count + items.len() as i32, element)?;
+            } else {
+                this.delete_element(activation, i - delete_count + items.len() as i32);
+            }
         }
     } else {
-        for i in start + to_add.len()..new_length {
-            this.set_array_element(
-                i,
-                this.array_element((i as i32 + offset) as usize),
-                activation.context.gc_context,
-            );
+        for i in start + delete_count..length {
+            if this.has_element(activation, i) {
+                let element = this.get_element(activation, i);
+                this.set_element(activation, i - delete_count + items.len() as i32, element)?;
+            } else {
+                this.delete_element(activation, i - delete_count + items.len() as i32);
+            }
         }
     }
 
-    for i in 0..to_add.len() {
-        this.set_array_element(
-            start + i,
-            to_add.get(i).unwrap().to_owned(),
-            activation.context.gc_context,
-        );
+    for (i, &item) in items.iter().enumerate() {
+        this.set_element(activation, start + i as i32, item)?;
     }
+    this.set_length(activation, length - delete_count + items.len() as i32)?;
 
-    for i in new_length..old_length {
-        this.delete_array_element(i, activation.context.gc_context);
-        this.delete(activation, &i.to_string());
-    }
-
-    this.set_length(activation.context.gc_context, new_length);
-
-    Ok(removed.into())
+    Ok(result_array.into())
 }
 
 pub fn concat<'gc>(
@@ -409,25 +379,14 @@ pub fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let array = ScriptObject::array(
+    let result_array = ScriptObject::array(
         activation.context.gc_context,
         Some(activation.context.avm1.prototypes.array),
     );
-    let mut length = 0;
 
-    for i in 0..this.length() {
-        let old = this
-            .get(&i.to_string(), activation)
-            .unwrap_or(Value::Undefined);
-        array.set_array_element(length, old, activation.context.gc_context);
-        length += 1;
-    }
-
-    for arg in args {
-        let mut added = false;
-
-        if let Value::Object(object) = arg {
-            let object = *object;
+    let mut index = 0;
+    for &value in [this.into()].iter().chain(args) {
+        let array_object = if let Value::Object(object) = value {
             if activation
                 .context
                 .avm1
@@ -435,24 +394,32 @@ pub fn concat<'gc>(
                 .array
                 .is_prototype_of(object)
             {
-                added = true;
-                for i in 0..object.length() {
-                    let old = object
-                        .get(&i.to_string(), activation)
-                        .unwrap_or(Value::Undefined);
-                    array.set_array_element(length, old, activation.context.gc_context);
-                    length += 1;
+                Some(object)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(array_object) = array_object {
+            let length = array_object.length(activation)?;
+            for i in 0..length {
+                if array_object.has_element(activation, i) {
+                    let element = array_object.get_element(activation, i);
+                    result_array
+                        .set_element(activation, index, element)
+                        .unwrap();
+                    index += 1;
                 }
             }
-        }
-
-        if !added {
-            array.set_array_element(length, *arg, activation.context.gc_context);
-            length += 1;
+        } else {
+            result_array.set_element(activation, index, value).unwrap();
+            index += 1;
         }
     }
 
-    Ok(array.into())
+    Ok(result_array.into())
 }
 
 pub fn to_string<'gc>(
@@ -518,11 +485,16 @@ fn sort_on<'gc>(
     let fields = match args.get(0) {
         Some(Value::Object(array)) => {
             // Array of field names.
-            let mut field_names = vec![];
-            for name in array.array() {
-                field_names.push(name.coerce_to_string(activation)?.to_string());
-            }
-            field_names
+            let length = array.length(activation)?;
+            let field_names: Result<Vec<_>, Error<'gc>> = (0..length)
+                .map(|i| {
+                    Ok(array
+                        .get_element(activation, i)
+                        .coerce_to_string(activation)?
+                        .to_string())
+                })
+                .collect();
+            field_names?
         }
         Some(field_name) => {
             // Single field.
@@ -539,14 +511,16 @@ fn sort_on<'gc>(
     let flags = match args.get(1) {
         Some(Value::Object(array)) => {
             // Array of field names.
-            if array.length() == fields.len() {
-                let mut flags = vec![];
-                for flag in array.array() {
-                    flags.push(SortFlags::from_bits_truncate(
-                        flag.coerce_to_i32(activation)?,
-                    ));
-                }
-                flags
+            let length = array.length(activation)?;
+            if length as usize == fields.len() {
+                let flags: Result<Vec<_>, Error<'gc>> = (0..length)
+                    .map(|i| {
+                        Ok(SortFlags::from_bits_truncate(
+                            array.get_element(activation, i).coerce_to_i32(activation)?,
+                        ))
+                    })
+                    .collect();
+                flags?
             } else {
                 // If the lengths of the flags and fields array do not match, the flags array is ignored.
                 std::iter::repeat(SortFlags::empty())
@@ -598,13 +572,14 @@ fn sort_with_function<'gc>(
     mut compare_fn: impl FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering,
     flags: SortFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let length = this.length();
-    let mut values: Vec<(usize, Value<'gc>)> = this.array().into_iter().enumerate().collect();
-    let array_proto = activation.context.avm1.prototypes.array;
+    let length = this.length(activation)?;
+    let mut values: Vec<_> = (0..length)
+        .map(|i| (i, this.get_element(activation, i)))
+        .collect();
 
     let mut is_unique = true;
-    values.sort_unstable_by(|a, b| {
-        let mut ret = compare_fn(activation, &a.1, &b.1);
+    values.sort_unstable_by(|(_, a), (_, b)| {
+        let mut ret = compare_fn(activation, a, b);
         if flags.contains(SortFlags::DESCENDING) {
             ret = ret.reverse();
         }
@@ -622,22 +597,24 @@ fn sort_with_function<'gc>(
     if flags.contains(SortFlags::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
-        let array = ScriptObject::array(activation.context.gc_context, Some(array_proto));
-        array.set_length(activation.context.gc_context, length);
-        for (i, value) in values.into_iter().enumerate() {
-            array.set_array_element(
-                i,
-                Value::Number(value.0 as f64),
-                activation.context.gc_context,
-            );
+        let array = ScriptObject::array(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.array),
+        );
+        for (i, (index, _)) in values.into_iter().enumerate() {
+            array
+                .set_element(activation, i as i32, index.into())
+                .unwrap();
         }
+        array.set_length(activation, length).unwrap();
         Ok(array.into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
-        for (i, value) in values.into_iter().enumerate() {
-            this.set_array_element(i, value.1, activation.context.gc_context);
+        for (i, (_, value)) in values.into_iter().enumerate() {
+            this.set_element(activation, i as i32, value)?;
         }
+        this.set_length(activation, length)?;
         Ok(this.into())
     }
 }

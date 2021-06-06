@@ -1465,7 +1465,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_init_array(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let num_elements = self.context.avm1.pop().coerce_to_f64(self)?;
-        let result = if num_elements < 0.0 || num_elements > std::i32::MAX as f64 {
+        let result = if num_elements < 0.0 || num_elements > i32::MAX as f64 {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
@@ -1473,8 +1473,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 self.context.gc_context,
                 Some(self.context.avm1.prototypes.array),
             );
-            for i in 0..num_elements as usize {
-                array.set_array_element(i, self.context.avm1.pop(), self.context.gc_context);
+            for i in 0..num_elements as i32 {
+                let element = self.context.avm1.pop();
+                array.set_element(self, i, element).unwrap();
             }
             Value::Object(array.into())
         };
@@ -1485,7 +1486,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_init_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let num_props = self.context.avm1.pop().coerce_to_f64(self)?;
-        let result = if num_props < 0.0 || num_props > std::i32::MAX as f64 {
+        let result = if num_props < 0.0 || num_props > i32::MAX as f64 {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {

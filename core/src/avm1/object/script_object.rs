@@ -14,7 +14,7 @@ pub const TYPE_OF_OBJECT: &str = "object";
 #[collect(no_drop)]
 pub enum ArrayStorage<'gc> {
     Vector(Vec<Value<'gc>>),
-    Properties { length: usize },
+    Properties { length: i32 },
 }
 
 #[derive(Debug, Clone, Collect)]
@@ -41,7 +41,7 @@ impl<'gc> Watcher<'gc> {
         new_value: Value<'gc>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, crate::avm1::error::Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
             Value::String(AvmString::new(
                 activation.context.gc_context,
@@ -589,52 +589,61 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn length(&self) -> usize {
+    fn length(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
         match &self.0.read().array {
-            ArrayStorage::Vector(vector) => vector.len(),
-            ArrayStorage::Properties { length } => *length,
+            ArrayStorage::Vector(vector) => Ok(vector.len() as i32),
+            ArrayStorage::Properties { length } => Ok(*length),
         }
     }
 
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
-        let mut to_remove = None;
-
-        match &mut self.0.write(gc_context).array {
+    fn set_length(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        new_length: i32,
+    ) -> Result<(), Error<'gc>> {
+        let to_remove = match &mut self.0.write(activation.context.gc_context).array {
             ArrayStorage::Vector(vector) => {
-                let old_length = vector.len();
-                vector.resize(new_length, Value::Undefined);
-                if new_length < old_length {
-                    to_remove = Some(new_length..old_length);
+                if new_length >= 0 {
+                    let old_length = vector.len();
+                    let new_length = new_length as usize;
+                    vector.resize(new_length, Value::Undefined);
+                    Some(new_length..old_length)
+                } else {
+                    None
                 }
             }
             ArrayStorage::Properties { length } => {
                 *length = new_length;
+                None
             }
-        }
+        };
         if let Some(to_remove) = to_remove {
             for i in to_remove {
-                self.sync_native_property(&i.to_string(), gc_context, None, true);
+                self.sync_native_property(
+                    &i.to_string(),
+                    activation.context.gc_context,
+                    None,
+                    true,
+                );
             }
         }
-        self.sync_native_property("length", gc_context, Some(new_length.into()), false);
+        self.sync_native_property(
+            "length",
+            activation.context.gc_context,
+            Some(new_length.into()),
+            false,
+        );
+        Ok(())
     }
 
-    fn array(&self) -> Vec<Value<'gc>> {
-        match &self.0.read().array {
-            ArrayStorage::Vector(vector) => vector.to_owned(),
-            ArrayStorage::Properties { length } => {
-                let mut values = Vec::new();
-                for i in 0..*length {
-                    values.push(self.array_element(i));
-                }
-                values
-            }
-        }
+    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.has_own_property(activation, &index.to_string())
     }
 
-    fn array_element(&self, index: usize) -> Value<'gc> {
+    fn get_element(&self, _activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
         match &self.0.read().array {
             ArrayStorage::Vector(vector) => {
+                let index = index as usize;
                 if let Some(value) = vector.get(index) {
                     value.to_owned()
                 } else {
@@ -654,36 +663,59 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn set_array_element(
+    fn set_element(
         &self,
-        index: usize,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
         value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.sync_native_property(&index.to_string(), gc_context, Some(value), true);
-        let mut adjust_length = false;
-        let length = match &mut self.0.write(gc_context).array {
+    ) -> Result<(), Error<'gc>> {
+        self.sync_native_property(
+            &index.to_string(),
+            activation.context.gc_context,
+            Some(value),
+            true,
+        );
+        let length = match &mut self.0.write(activation.context.gc_context).array {
             ArrayStorage::Vector(vector) => {
-                if index >= vector.len() {
-                    vector.resize(index + 1, Value::Undefined);
+                if index >= 0 {
+                    let index = index as usize;
+                    if index >= vector.len() {
+                        vector.resize(index + 1, Value::Undefined);
+                    }
+                    vector[index] = value;
+                    Some(vector.len())
+                } else {
+                    None
                 }
-                vector[index] = value;
-                adjust_length = true;
-                vector.len()
             }
-            ArrayStorage::Properties { length } => *length,
+            ArrayStorage::Properties { length: _ } => {
+                // TODO: Support Array-like case?
+                None
+            }
         };
-        if adjust_length {
-            self.sync_native_property("length", gc_context, Some(length.into()), false);
+        if let Some(length) = length {
+            self.sync_native_property(
+                "length",
+                activation.context.gc_context,
+                Some(length.into()),
+                false,
+            );
         }
-        length
+        Ok(())
     }
 
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        if let ArrayStorage::Vector(vector) = &mut self.0.write(gc_context).array {
-            if index < vector.len() {
-                vector[index] = Value::Undefined;
+    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        match &mut self.0.write(activation.context.gc_context).array {
+            ArrayStorage::Vector(vector) => {
+                let index = index as usize;
+                if index < vector.len() {
+                    vector[index] = Value::Undefined;
+                    true
+                } else {
+                    false
+                }
             }
+            ArrayStorage::Properties { length: _ } => self.delete(activation, &index.to_string()),
         }
     }
 }

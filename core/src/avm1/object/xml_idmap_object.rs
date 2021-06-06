@@ -235,32 +235,36 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         self.base().as_ptr() as *const ObjectPtr
     }
 
-    fn length(&self) -> usize {
-        self.base().length()
+    fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
+        self.base().length(activation)
     }
 
-    fn array(&self) -> Vec<Value<'gc>> {
-        self.base().array()
-    }
-
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize) {
-        self.base().set_length(gc_context, length)
-    }
-
-    fn array_element(&self, index: usize) -> Value<'gc> {
-        self.base().array_element(index)
-    }
-
-    fn set_array_element(
+    fn set_length(
         &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.base().set_array_element(index, value, gc_context)
+        activation: &mut Activation<'_, 'gc, '_>,
+        length: i32,
+    ) -> Result<(), Error<'gc>> {
+        self.base().set_length(activation, length)
     }
 
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        self.base().delete_array_element(index, gc_context)
+    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.base().has_element(activation, index)
+    }
+
+    fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
+        self.base().get_element(activation, index)
+    }
+
+    fn set_element(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base().set_element(activation, index, value)
+    }
+
+    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.base().delete_element(activation, index)
     }
 }

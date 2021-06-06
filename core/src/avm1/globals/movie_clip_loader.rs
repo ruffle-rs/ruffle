@@ -33,7 +33,7 @@ pub fn constructor<'gc>(
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
     );
-    listeners.set_array_element(0, Value::Object(this), activation.context.gc_context);
+    listeners.set_element(activation, 0, this.into()).unwrap();
 
     Ok(this.into())
 }
