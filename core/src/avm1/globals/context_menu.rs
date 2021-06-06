@@ -111,12 +111,9 @@ pub fn copy<'gc>(
         .get("customItems", activation)?
         .coerce_to_object(activation);
 
-    for i in 0..custom_items.length() {
-        custom_items_copy.set_array_element(
-            i,
-            custom_items.array_element(i),
-            activation.context.gc_context,
-        );
+    for i in 0..custom_items.length(activation)? {
+        let element = custom_items.get_element(activation, i);
+        custom_items_copy.set_element(activation, i, element)?;
     }
 
     Ok(copy.into())
@@ -230,46 +227,51 @@ pub fn make_context_menu_state<'gc>(
 
     if let Some(menu) = menu {
         if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
-            for (i, item) in custom_items.array().iter().enumerate() {
-                if let Value::Object(item) = item {
-                    let caption =
-                        if let Ok(Value::String(caption)) = item.get("caption", activation) {
-                            caption
-                        } else {
-                            continue;
-                        };
-                    let on_select =
-                        if let Ok(Value::Object(on_select)) = item.get("onSelect", activation) {
+            if let Ok(length) = custom_items.length(activation) {
+                for i in 0..length {
+                    let item = custom_items.get_element(activation, i);
+                    if let Value::Object(item) = item {
+                        let caption =
+                            if let Ok(Value::String(caption)) = item.get("caption", activation) {
+                                caption
+                            } else {
+                                continue;
+                            };
+                        let on_select = if let Ok(Value::Object(on_select)) =
+                            item.get("onSelect", activation)
+                        {
                             on_select
                         } else {
                             continue;
                         };
-                    // false if `false`, everything else is true
-                    let visible =
-                        !matches!(item.get("visible", activation), Ok(Value::Bool(false)));
-                    // true if `true`, everything else is false
-                    let enabled = matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
-                    let separator_before = matches!(
-                        item.get("separatorBefore", activation),
-                        Ok(Value::Bool(true))
-                    );
+                        // false if `false`, everything else is true
+                        let visible =
+                            !matches!(item.get("visible", activation), Ok(Value::Bool(false)));
+                        // true if `true`, everything else is false
+                        let enabled =
+                            matches!(item.get("enabled", activation), Ok(Value::Bool(true)));
+                        let separator_before = matches!(
+                            item.get("separatorBefore", activation),
+                            Ok(Value::Bool(true))
+                        );
 
-                    if !visible {
-                        continue;
+                        if !visible {
+                            continue;
+                        }
+
+                        result.push(
+                            context_menu::ContextMenuItem {
+                                enabled,
+                                separator_before: separator_before || i == 0,
+                                caption: caption.to_string(),
+                                checked: false,
+                            },
+                            context_menu::ContextMenuCallback::Avm1 {
+                                item,
+                                callback: on_select,
+                            },
+                        );
                     }
-
-                    result.push(
-                        context_menu::ContextMenuItem {
-                            enabled,
-                            separator_before: separator_before || i == 0,
-                            caption: caption.to_string(),
-                            checked: false,
-                        },
-                        context_menu::ContextMenuCallback::Avm1 {
-                            item: *item,
-                            callback: on_select,
-                        },
-                    );
                 }
             }
         }

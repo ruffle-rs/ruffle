@@ -350,27 +350,40 @@ fn begin_gradient_fill<'gc>(
         args.get(4),
     ) {
         let method = method.coerce_to_string(activation)?;
-        let colors = colors.coerce_to_object(activation).array();
-        let alphas = alphas.coerce_to_object(activation).array();
-        let ratios = ratios.coerce_to_object(activation).array();
+        let colors_object = colors.coerce_to_object(activation);
+        let colors_length = colors_object.length(activation)?;
+        let alphas_object = alphas.coerce_to_object(activation);
+        let alphas_length = alphas_object.length(activation)?;
+        let ratios_object = ratios.coerce_to_object(activation);
+        let ratios_length = ratios_object.length(activation)?;
         let matrix_object = matrix.coerce_to_object(activation);
-        if colors.len() != alphas.len() || colors.len() != ratios.len() {
+        if colors_length != alphas_length || colors_length != ratios_length {
             avm_warn!(
                 activation,
                 "beginGradientFill() received different sized arrays for colors, alphas and ratios"
             );
             return Ok(Value::Undefined);
         }
-        let mut records = Vec::with_capacity(colors.len());
-        for i in 0..colors.len() {
-            let ratio = ratios[i].coerce_to_f64(activation)?.min(255.0).max(0.0);
-            let rgb = colors[i].coerce_to_u32(activation)?;
-            let alpha = alphas[i].coerce_to_f64(activation)?.min(100.0).max(0.0);
-            records.push(GradientRecord {
-                ratio: ratio as u8,
-                color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
-            });
-        }
+        let records: Result<Vec<_>, Error<'gc>> = (0..colors_length)
+            .map(|i| {
+                let ratio = ratios_object
+                    .get_element(activation, i)
+                    .coerce_to_f64(activation)?
+                    .clamp(0.0, 255.0) as u8;
+                let rgb = colors_object
+                    .get_element(activation, i)
+                    .coerce_to_u32(activation)?;
+                let alpha = alphas_object
+                    .get_element(activation, i)
+                    .coerce_to_f64(activation)?
+                    .clamp(0.0, 100.0);
+                Ok(GradientRecord {
+                    ratio,
+                    color: Color::from_rgb(rgb, (alpha / 100.0 * 255.0) as u8),
+                })
+            })
+            .collect();
+        let records = records?;
         let matrix = gradient_object_to_matrix(matrix_object, activation)?;
         let spread = match args
             .get(5)

@@ -227,40 +227,28 @@ macro_rules! impl_custom_object {
             self.0.as_ptr() as *const crate::avm1::ObjectPtr
         }
 
-        fn length(&self) -> usize {
-            self.0.read().$field.length()
+        fn length(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>) -> Result<i32, crate::avm1::Error<'gc>> {
+            self.0.read().$field.length(activation)
         }
 
-        fn array(&self) -> Vec<crate::avm1::Value<'gc>> {
-            self.0.read().$field.array()
+        fn set_length(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, length: i32) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.set_length(activation, length)
         }
 
-        fn set_length(&self, gc_context: gc_arena::MutationContext<'gc, '_>, length: usize) {
-            self.0.read().$field.set_length(gc_context, length)
+        fn has_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32) -> bool {
+            self.0.read().$field.has_element(activation, index)
         }
 
-        fn array_element(&self, index: usize) -> crate::avm1::Value<'gc> {
-            self.0.read().$field.array_element(index)
+        fn get_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32) -> crate::avm1::Value<'gc> {
+            self.0.read().$field.get_element(activation, index)
         }
 
-        fn set_array_element(
-            &self,
-            index: usize,
-            value: crate::avm1::Value<'gc>,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
-        ) -> usize {
-            self.0
-                .read()
-                .$field
-                .set_array_element(index, value, gc_context)
+        fn set_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32, value: crate::avm1::Value<'gc>) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.set_element(activation, index, value)
         }
 
-        fn delete_array_element(
-            &self,
-            index: usize,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
-        ) {
-            self.0.read().$field.delete_array_element(index, gc_context)
+        fn delete_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32) -> bool {
+            self.0.read().$field.delete_element(activation, index)
         }
 
         fn set_watcher(

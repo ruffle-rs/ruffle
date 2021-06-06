@@ -4,6 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use crate::string_utils;
@@ -43,7 +44,12 @@ pub fn string<'gc>(
 
     if let Some(mut vbox) = this.as_value_object() {
         let len = value.encode_utf16().count();
-        vbox.set_length(activation.context.gc_context, len);
+        vbox.define_value(
+            activation.context.gc_context,
+            "length",
+            len.into(),
+            Attribute::empty(),
+        );
         vbox.replace_value(activation.context.gc_context, value.into());
     }
 
@@ -312,22 +318,26 @@ fn split<'gc>(
     );
     if !delimiter.is_empty() {
         for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
-            array.set_array_element(
-                i,
-                AvmString::new(activation.context.gc_context, token.to_string()).into(),
-                activation.context.gc_context,
-            );
+            array
+                .set_element(
+                    activation,
+                    i as i32,
+                    AvmString::new(activation.context.gc_context, token.to_string()).into(),
+                )
+                .unwrap();
         }
     } else {
         // When using an empty "" delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         for (i, token) in this.chars().take(limit).enumerate() {
-            array.set_array_element(
-                i,
-                AvmString::new(activation.context.gc_context, token.to_string()).into(),
-                activation.context.gc_context,
-            );
+            array
+                .set_element(
+                    activation,
+                    i as i32,
+                    AvmString::new(activation.context.gc_context, token.to_string()).into(),
+                )
+                .unwrap();
         }
     }
     Ok(array.into())

@@ -368,16 +368,18 @@ pub fn xmlnode_child_nodes<'gc>(
                 continue;
             }
 
-            array.set_array_element(
-                compatible_nodes as usize,
-                child
-                    .script_object(
-                        activation.context.gc_context,
-                        Some(activation.context.avm1.prototypes.xml_node),
-                    )
-                    .into(),
-                activation.context.gc_context,
-            );
+            array
+                .set_element(
+                    activation,
+                    compatible_nodes,
+                    child
+                        .script_object(
+                            activation.context.gc_context,
+                            Some(activation.context.avm1.prototypes.xml_node),
+                        )
+                        .into(),
+                )
+                .unwrap();
 
             compatible_nodes += 1;
         }

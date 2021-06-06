@@ -76,10 +76,11 @@ fn serialize_value<'gc>(
             {
                 if o.is_instance_of(activation, o, array).unwrap_or_default() {
                     let mut values = Vec::new();
-                    let len = o.length();
                     recursive_serialize(activation, o, &mut values);
 
-                    Some(AmfValue::ECMAArray(vec![], values, len as u32))
+                    // TODO: What happens if an exception is thrown here?
+                    let length = o.length(activation).unwrap();
+                    Some(AmfValue::ECMAArray(vec![], values, length as u32))
                 } else if o.is_instance_of(activation, o, xml).unwrap_or_default() {
                     o.as_xml_node().and_then(|xml_node| {
                         xml_node
@@ -139,8 +140,8 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
                 for entry in associative {
                     let value = deserialize_value(activation, entry.value());
 
-                    if let Ok(i) = entry.name().parse::<usize>() {
-                        obj.set_array_element(i, value, activation.context.gc_context);
+                    if let Ok(i) = entry.name().parse::<i32>() {
+                        let _ = obj.set_element(activation, i, value);
                     } else {
                         obj.define_value(
                             activation.context.gc_context,
@@ -289,8 +290,8 @@ fn deserialize_array_json<'gc>(
 
         for entry in json_obj.iter() {
             let value = recursive_deserialize_json(entry.1.clone(), activation);
-            if let Ok(i) = entry.0.parse::<usize>() {
-                obj.set_array_element(i, value, activation.context.gc_context);
+            if let Ok(i) = entry.0.parse::<i32>() {
+                let _ = obj.set_element(activation, i, value);
             } else {
                 obj.define_value(
                     activation.context.gc_context,

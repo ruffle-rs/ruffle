@@ -263,12 +263,10 @@ impl<'gc> Executable<'gc> {
                 );
 
                 if !af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
-                    for i in 0..args.len() {
-                        arguments.set_array_element(
-                            i,
-                            *args.get(i).unwrap(),
-                            activation.context.gc_context,
-                        );
+                    for (i, arg) in args.iter().enumerate() {
+                        arguments
+                            .set_element(activation, i as i32, arg.to_owned())
+                            .unwrap();
                     }
                 }
 
@@ -803,33 +801,37 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.as_ptr()
     }
 
-    fn length(&self) -> usize {
-        self.base.length()
+    fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
+        self.base.length(activation)
     }
 
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, new_length: usize) {
-        self.base.set_length(gc_context, new_length)
-    }
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        self.base.array()
-    }
-
-    fn array_element(&self, index: usize) -> Value<'gc> {
-        self.base.array_element(index)
-    }
-
-    fn set_array_element(
+    fn set_length(
         &self,
-        index: usize,
-        value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        self.base.set_array_element(index, value, gc_context)
+        activation: &mut Activation<'_, 'gc, '_>,
+        length: i32,
+    ) -> Result<(), Error<'gc>> {
+        self.base.set_length(activation, length)
     }
 
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>) {
-        self.base.delete_array_element(index, gc_context)
+    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.base.has_element(activation, index)
+    }
+
+    fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
+        self.base.get_element(activation, index)
+    }
+
+    fn set_element(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
+        value: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base.set_element(activation, index, value)
+    }
+
+    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
+        self.base.delete_element(activation, index)
     }
 }
 

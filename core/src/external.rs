@@ -131,11 +131,14 @@ impl Value {
                     .array
                     .is_prototype_of(object)
                 {
-                    let mut values = Vec::new();
-                    for value in object.array() {
-                        values.push(Value::from_avm1(activation, value)?);
-                    }
-                    Value::List(values)
+                    let length = object.length(activation)?;
+                    let values: Result<Vec<_>, crate::avm1::error::Error<'gc>> = (0..length)
+                        .map(|i| {
+                            let element = object.get_element(activation, i);
+                            Value::from_avm1(activation, element)
+                        })
+                        .collect();
+                    Value::List(values?)
                 } else {
                     let keys = object.get_keys(activation);
                     let mut values = BTreeMap::new();
@@ -172,12 +175,9 @@ impl Value {
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes().array),
                 );
-                for value in values {
-                    array.set_array_element(
-                        array.length(),
-                        value.into_avm1(activation),
-                        activation.context.gc_context,
-                    );
+                for (i, value) in values.iter().enumerate() {
+                    let element = value.to_owned().into_avm1(activation);
+                    array.set_element(activation, i as i32, element).unwrap();
                 }
                 array.into()
             }

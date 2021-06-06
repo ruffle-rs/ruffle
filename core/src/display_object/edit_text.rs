@@ -1227,15 +1227,13 @@ impl<'gc> EditText<'gc> {
             );
 
             if let Ok(Avm1Value::Object(listeners)) = object.get("_listeners", activation) {
-                if listeners.length() == 0 {
+                let length = listeners.length(activation);
+                if matches!(length, Ok(0)) {
                     // Add the TextField as its own listener to match Flash's behavior
                     // This makes it so that the TextField's handlers are called before other listeners'.
-                    listeners.set_array_element(0, object.into(), activation.context.gc_context);
+                    let _ = listeners.set_element(activation, 0, object.into());
                 } else {
-                    log::warn!(
-                        "_listeners should be empty, but its length is {}",
-                        listeners.length()
-                    );
+                    log::warn!("_listeners should be empty");
                 }
             }
         }

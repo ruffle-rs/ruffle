@@ -144,9 +144,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return Ok(());
         }
 
-        if let Ok(index) = name.parse::<usize>() {
-            self.set_array_element(index, value.to_owned(), activation.context.gc_context);
-            return Ok(());
+        if let Ok(index) = name.parse::<i32>() {
+            return self.set_element(activation, index, value.to_owned());
         }
 
         if name == "length" {
@@ -155,9 +154,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 .map(|v| v.abs() as i32)
                 .unwrap_or(0);
             if length > 0 {
-                self.set_length(activation.context.gc_context, length as usize);
+                self.set_length(activation, length)?;
             } else {
-                self.set_length(activation.context.gc_context, 0);
+                self.set_length(activation, 0)?;
             }
         }
 
@@ -583,40 +582,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         false
     }
 
-    /// Get the length of this object, as if it were an array.
-    fn length(&self) -> usize;
-
-    /// Gets a copy of the array storage behind this object.
-    fn array(&self) -> Vec<Value<'gc>>;
+    /// Gets the length of this object, as if it were an array.
+    fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>>;
 
     /// Sets the length of this object, as if it were an array.
-    ///
-    /// Increasing this value will fill the gap with Value::Undefined.
-    /// Decreasing this value will remove affected items from both the array and properties storage.
-    fn set_length(&self, gc_context: MutationContext<'gc, '_>, length: usize);
-
-    /// Gets a property of this object as if it were an array.
-    ///
-    /// Array element lookups do not respect the prototype chain, and will ignore virtual properties.
-    fn array_element(&self, index: usize) -> Value<'gc>;
-
-    /// Sets a property of this object as if it were an array.
-    ///
-    /// This will increase the "length" of this object to encompass the index, and return the new length.
-    /// Any gap created by increasing the length will be filled with Value::Undefined, both in array
-    /// and property storage.
-    fn set_array_element(
+    fn set_length(
         &self,
-        index: usize,
+        activation: &mut Activation<'_, 'gc, '_>,
+        length: i32,
+    ) -> Result<(), Error<'gc>>;
+
+    /// Checks if this object has an element.
+    fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool;
+
+    /// Gets a property of this object, as if it were an array.
+    fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc>;
+
+    /// Sets a property of this object, as if it were an array.
+    fn set_element(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        index: i32,
         value: Value<'gc>,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> usize;
+    ) -> Result<(), Error<'gc>>;
 
     /// Deletes a property of this object as if it were an array.
-    ///
-    /// This will not rearrange the array or adjust the length, nor will it affect the properties
-    /// storage.
-    fn delete_array_element(&self, index: usize, gc_context: MutationContext<'gc, '_>);
+    fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool;
 }
 
 pub enum ObjectPtr {}

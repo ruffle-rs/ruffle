@@ -252,30 +252,38 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         TYPE_OF_OBJECT
     }
 
-    fn length(&self) -> usize {
-        0
+    fn length(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
+        Ok(0)
     }
 
-    fn set_length(&self, _gc_context: MutationContext<'gc, '_>, _new_length: usize) {}
-
-    fn array(&self) -> Vec<Value<'gc>> {
-        vec![]
+    fn set_length(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _length: i32,
+    ) -> Result<(), Error<'gc>> {
+        Ok(())
     }
 
-    fn array_element(&self, _index: usize) -> Value<'gc> {
+    fn has_element(&self, _activation: &mut Activation<'_, 'gc, '_>, _index: i32) -> bool {
+        false
+    }
+
+    fn get_element(&self, _activation: &mut Activation<'_, 'gc, '_>, _index: i32) -> Value<'gc> {
         Value::Undefined
     }
 
-    fn set_array_element(
+    fn set_element(
         &self,
-        _index: usize,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _index: i32,
         _value: Value<'gc>,
-        _gc_context: MutationContext<'gc, '_>,
-    ) -> usize {
-        0
+    ) -> Result<(), Error<'gc>> {
+        Ok(())
     }
 
-    fn delete_array_element(&self, _index: usize, _gc_context: MutationContext<'gc, '_>) {}
+    fn delete_element(&self, _activation: &mut Activation<'_, 'gc, '_>, _index: i32) -> bool {
+        false
+    }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {
         //`super` does not implement interfaces
