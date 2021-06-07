@@ -392,7 +392,7 @@ export class RufflePlayer extends HTMLElement {
                 } else if (message.includes("disallowed by embedder")) {
                     e.ruffleIndexError = PanicError.CSPConflict;
                 } else if (
-                    message.includes("WebAssembly.instantiate") &&
+                    message.includes("webassembly.instantiate") &&
                     e.name === "CompileError"
                 ) {
                     e.ruffleIndexError = PanicError.InvalidWasm;
