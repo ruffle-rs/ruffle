@@ -10,6 +10,6 @@ edition = "2018"
 ruffle_core = { path = "../core" }
 
 [dev-dependencies]
-approx = "0.4.0"
+approx = "0.5.0"
 pretty_assertions = "0.6.1"
 env_logger = "0.8.3"
