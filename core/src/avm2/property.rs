@@ -145,7 +145,7 @@ impl<'gc> Property<'gc> {
 
             // This doesn't need the non-local version of this property because
             // by the time this has called the slot was already installed
-            Property::Slot { slot_id, .. } => this.get_slot_local(*slot_id).map(|v| v.into()),
+            Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
         }
     }
 

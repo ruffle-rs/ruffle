@@ -188,31 +188,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Retrieve a slot by its index.
-    #[allow(unused_mut)]
-    fn get_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-    ) -> Result<Value<'gc>, Error> {
-        self.get_slot_local(id)
-    }
-
-    /// Retrieve a slot by its index, ignoring uninstalled traits.
-    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error>;
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
 
     /// Set a slot by its index.
-    #[allow(unused_mut)]
     fn set_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        self.set_slot_local(id, value, activation.context.gc_context)
-    }
-
-    /// Set a slot by its index, ignoring uninstalled traits.
-    fn set_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
@@ -220,18 +199,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error>;
 
     /// Initialize a slot by its index.
-    #[allow(unused_mut)]
     fn init_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        self.init_slot_local(id, value, activation.context.gc_context)
-    }
-
-    /// Initialize a slot by its index, ignoring uninstalled traits.
-    fn init_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
