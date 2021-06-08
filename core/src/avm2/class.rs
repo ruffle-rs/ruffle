@@ -727,4 +727,9 @@ impl<'gc> Class<'gc> {
     pub fn is_sealed(&self) -> bool {
         self.attributes.contains(ClassAttributes::SEALED)
     }
+
+    /// Determine if this class is final (cannot be subclassed)
+    pub fn is_final(&self) -> bool {
+        self.attributes.contains(ClassAttributes::FINAL)
+    }
 }

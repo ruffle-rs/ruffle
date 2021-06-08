@@ -60,6 +60,16 @@ impl<'gc> ClassObject<'gc> {
         base_class_constr: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
+        if let Some(base_class) = base_class_constr.and_then(|b| b.as_class()) {
+            if base_class.read().is_final() {
+                return Err(format!(
+                    "Base class {:?} is final and cannot be subclassed",
+                    base_class.read().name().local_name()
+                )
+                .into());
+            }
+        }
+
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by a deriver, but instead should be regular objects
         let mut class_proto = if let Some(mut base_class_constr) = base_class_constr {
