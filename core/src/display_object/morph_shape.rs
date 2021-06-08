@@ -6,7 +6,7 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::sync::Arc;
-use swf::{Fixed8, Twips};
+use swf::{Fixed16, Fixed8, Twips};
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -482,11 +482,13 @@ fn lerp_edges(
 fn lerp_matrix(start: &swf::Matrix, end: &swf::Matrix, a: f32, b: f32) -> swf::Matrix {
     // TODO: Lerping a matrix element-wise is geometrically wrong,
     // but I doubt Flash is decomposing the matrix into scale-rotate-translate?
+    let af = Fixed16::from_f32(a);
+    let bf = Fixed16::from_f32(b);
     swf::Matrix {
-        a: start.a * a + end.a * b,
-        b: start.b * a + end.b * b,
-        c: start.c * a + end.c * b,
-        d: start.d * a + end.d * b,
+        a: start.a * af + end.a * bf,
+        b: start.b * af + end.b * bf,
+        c: start.c * af + end.c * bf,
+        d: start.d * af + end.d * bf,
         tx: lerp_twips(start.tx, end.tx, a, b),
         ty: lerp_twips(start.ty, end.ty, a, b),
     }

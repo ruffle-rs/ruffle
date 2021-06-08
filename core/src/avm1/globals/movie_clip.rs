@@ -391,7 +391,7 @@ fn begin_gradient_fill<'gc>(
         };
 
         let gradient = Gradient {
-            matrix,
+            matrix: matrix.into(),
             spread,
             interpolation,
             records,

@@ -38,6 +38,7 @@ mod font;
 mod html;
 mod library;
 pub mod loader;
+pub mod matrix;
 mod player;
 mod prelude;
 pub mod shape_utils;

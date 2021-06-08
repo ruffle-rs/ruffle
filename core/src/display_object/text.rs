@@ -36,7 +36,7 @@ impl<'gc> Text<'gc> {
                         swf,
                         id: tag.id,
                         bounds: tag.bounds.clone().into(),
-                        text_transform: tag.matrix,
+                        text_transform: tag.matrix.into(),
                         text_blocks: tag.records.clone(),
                     },
                 ),

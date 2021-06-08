@@ -4,8 +4,8 @@ use ruffle_core::backend::render::{
     RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
+use ruffle_core::matrix::Matrix;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
-use ruffle_core::swf::Matrix;
 use ruffle_web_common::JsResult;
 use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
@@ -845,7 +845,7 @@ fn swf_shape_to_svg(
                             ty: swf::Twips::new(-16384),
                             ..Default::default()
                         };
-                        let gradient_matrix = gradient.matrix * shift;
+                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
 
                         let mut svg_gradient = LinearGradient::new()
                             .set("id", format!("f{}", num_defs))
@@ -904,7 +904,7 @@ fn swf_shape_to_svg(
                             d: 32768.0,
                             ..Default::default()
                         };
-                        let gradient_matrix = gradient.matrix * shift;
+                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
 
                         let mut svg_gradient = RadialGradient::new()
                             .set("id", format!("f{}", num_defs))
@@ -969,7 +969,7 @@ fn swf_shape_to_svg(
                             d: 32768.0,
                             ..Default::default()
                         };
-                        let gradient_matrix = gradient.matrix * shift;
+                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
 
                         let mut svg_gradient = RadialGradient::new()
                             .set("id", format!("f{}", num_defs))
@@ -1346,10 +1346,10 @@ fn swf_shape_to_canvas_commands(
 
                             let matrix = matrix_factory.create_svg_matrix();
 
-                            matrix.set_a(a.a);
-                            matrix.set_b(a.b);
-                            matrix.set_c(a.c);
-                            matrix.set_d(a.d);
+                            matrix.set_a(a.a.to_f32());
+                            matrix.set_b(a.b.to_f32());
+                            matrix.set_c(a.c.to_f32());
+                            matrix.set_d(a.d.to_f32());
                             matrix.set_e(a.tx.get() as f32);
                             matrix.set_f(a.ty.get() as f32);
 
