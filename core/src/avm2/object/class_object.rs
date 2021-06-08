@@ -108,16 +108,18 @@ impl<'gc> ClassObject<'gc> {
         ))
         .into();
 
-        constr.install_dynamic_property(
+        constr.install_slot(
             activation.context.gc_context,
             QName::new(Namespace::public(), "prototype"),
+            0,
             class_proto.into(),
-        )?;
-        class_proto.install_dynamic_property(
+        );
+        class_proto.install_slot(
             activation.context.gc_context,
             QName::new(Namespace::public(), "constructor"),
+            0,
             constr.into(),
-        )?;
+        );
 
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
@@ -204,16 +206,18 @@ impl<'gc> ClassObject<'gc> {
         ))
         .into();
 
-        base.install_dynamic_property(
+        base.install_slot(
             mc,
             QName::new(Namespace::public(), "prototype"),
+            0,
             prototype.into(),
-        )?;
-        prototype.install_dynamic_property(
+        );
+        prototype.install_slot(
             mc,
             QName::new(Namespace::public(), "constructor"),
+            0,
             base.into(),
-        )?;
+        );
 
         let class_initializer = class.read().class_init();
         let class_constr = FunctionObject::from_method_and_proto(

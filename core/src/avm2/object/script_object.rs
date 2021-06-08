@@ -773,6 +773,16 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error> {
+        if let Some(class) = self.as_class() {
+            if class.read().is_sealed() {
+                return Err(format!(
+                    "Objects of type {:?} are not dynamic",
+                    class.read().name().local_name()
+                )
+                .into());
+            }
+        }
+
         self.values
             .insert(name, Property::new_dynamic_property(value));
 
