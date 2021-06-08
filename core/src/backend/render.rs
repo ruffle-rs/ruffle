@@ -1,10 +1,10 @@
+use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
 pub use crate::{library::MovieLibrary, transform::Transform, Color};
 use downcast_rs::Downcast;
 use gc_arena::Collect;
 use std::io::Read;
 pub use swf;
-use swf::Matrix;
 
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);

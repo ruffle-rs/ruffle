@@ -6,8 +6,9 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::matrix::Matrix;
 use gc_arena::MutationContext;
-use swf::{Matrix, Twips};
+use swf::Twips;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
@@ -138,7 +139,7 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        apply_matrix_to_object(Matrix::identity(), this, activation)?;
+        apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
     } else {
         if let Some(a) = args.get(0) {
             this.set("a", *a, activation)?;
@@ -168,7 +169,7 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    apply_matrix_to_object(Matrix::identity(), this, activation)?;
+    apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
     Ok(Value::Undefined)
 }
 

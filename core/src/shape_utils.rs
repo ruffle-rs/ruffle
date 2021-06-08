@@ -1,8 +1,8 @@
-use crate::bounding_box::BoundingBox;
+use crate::{bounding_box::BoundingBox, matrix::Matrix};
 use fnv::FnvHashMap;
 use smallvec::SmallVec;
 use std::num::NonZeroU32;
-use swf::{CharacterId, FillStyle, LineStyle, Matrix, Shape, ShapeRecord, Twips};
+use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {

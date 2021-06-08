@@ -182,8 +182,8 @@ impl<W: Write> BitWriter<W> {
     }
 
     #[inline]
-    fn write_fbits(&mut self, num_bits: u32, n: f32) -> io::Result<()> {
-        self.write_sbits(num_bits, (n * 65536f32) as i32)
+    fn write_fbits(&mut self, num_bits: u32, n: Fixed16) -> io::Result<()> {
+        self.write_sbits(num_bits, n.get())
     }
 
     #[inline]
@@ -458,7 +458,7 @@ impl<W: Write> Writer<W> {
     fn write_matrix(&mut self, m: &Matrix) -> Result<()> {
         let mut bits = self.bits();
         // Scale
-        let has_scale = m.a != 1f32 || m.d != 1f32;
+        let has_scale = m.a != Fixed16::ONE || m.d != Fixed16::ONE;
         bits.write_bit(has_scale)?;
         if has_scale {
             let num_bits = max(count_fbits(m.a), count_fbits(m.d));
@@ -467,7 +467,7 @@ impl<W: Write> Writer<W> {
             bits.write_fbits(num_bits, m.d)?;
         }
         // Rotate/Skew
-        let has_rotate_skew = m.b != 0f32 || m.c != 0f32;
+        let has_rotate_skew = m.b != Fixed16::ZERO || m.c != Fixed16::ZERO;
         bits.write_bit(has_rotate_skew)?;
         if has_rotate_skew {
             let num_bits = max(count_fbits(m.b), count_fbits(m.c));
@@ -1721,7 +1721,7 @@ impl<W: Write> Writer<W> {
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;
             } else {
-                writer.write_matrix(&Matrix::identity())?;
+                writer.write_matrix(&Matrix::IDENTITY)?;
             }
             if let Some(ref color_transform) = place_object.color_transform {
                 writer.write_color_transform_no_alpha(color_transform)?;
@@ -2533,8 +2533,8 @@ fn count_sbits_twips(n: Twips) -> u32 {
     }
 }
 
-fn count_fbits(n: f32) -> u32 {
-    count_sbits((n * 65536f32) as i32)
+fn count_fbits(n: Fixed16) -> u32 {
+    count_sbits(n.get() as i32)
 }
 
 #[cfg(test)]
@@ -2677,13 +2677,13 @@ mod tests {
     #[test]
     fn write_fbits() {
         let num_bits = 18;
-        let nums = [1f32, -1f32];
+        let nums = [1.0, -1.0];
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, 1);
             let mut bits = writer.bits();
             for n in &nums {
-                bits.write_fbits(num_bits, *n).unwrap();
+                bits.write_fbits(num_bits, Fixed16::from_f32(*n)).unwrap();
             }
         }
         assert_eq!(
@@ -2811,7 +2811,7 @@ mod tests {
             buf
         }
 
-        let m = Matrix::identity();
+        let m = Matrix::IDENTITY;
         assert_eq!(write_to_buf(&m), [0]);
     }
 

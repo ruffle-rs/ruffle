@@ -1,7 +1,6 @@
 #![allow(
     renamed_and_removed_lints,
     clippy::unknown_clippy_lints,
-    clippy::float_cmp,
     clippy::inconsistent_digit_grouping,
     clippy::unreadable_literal
 )]
@@ -266,8 +265,8 @@ impl<'a, 'b> BitReader<'a, 'b> {
     }
 
     #[inline]
-    fn read_fbits(&mut self, num_bits: u32) -> io::Result<f32> {
-        self.read_sbits(num_bits).map(|n| (n as f32) / 65536f32)
+    fn read_fbits(&mut self, num_bits: u32) -> io::Result<Fixed16> {
+        self.read_sbits(num_bits).map(Fixed16::from_bits)
     }
 
     #[inline]
@@ -693,7 +692,7 @@ impl<'a> Reader<'a> {
 
     fn read_matrix(&mut self) -> Result<Matrix> {
         let mut bits = self.bits();
-        let mut m = Matrix::identity();
+        let mut m = Matrix::IDENTITY;
         // Scale
         if bits.read_bit()? {
             let num_bits = bits.read_ubits(5)?;
@@ -2777,20 +2776,23 @@ pub mod tests {
 
     #[test]
     fn read_fbits() {
-        assert_eq!(Reader::new(&[0][..], 1).bits().read_fbits(5).unwrap(), 0f32);
+        assert_eq!(
+            Reader::new(&[0][..], 1).bits().read_fbits(5).unwrap(),
+            Fixed16::ZERO
+        );
         assert_eq!(
             Reader::new(&[0b01000000, 0b00000000, 0b0_0000000][..], 1)
                 .bits()
                 .read_fbits(17)
                 .unwrap(),
-            0.5f32
+            Fixed16::from_f32(0.5)
         );
         assert_eq!(
             Reader::new(&[0b10000000, 0b00000000][..], 1)
                 .bits()
                 .read_fbits(16)
                 .unwrap(),
-            -0.5f32
+            Fixed16::from_f32(-0.5)
         );
     }
 
@@ -2874,10 +2876,10 @@ pub mod tests {
                 Matrix {
                     tx: Twips::from_pixels(0.0),
                     ty: Twips::from_pixels(0.0),
-                    a: 1f32,
-                    d: 1f32,
-                    b: 0f32,
-                    c: 0f32,
+                    a: Fixed16::ONE,
+                    b: Fixed16::ZERO,
+                    c: Fixed16::ZERO,
+                    d: Fixed16::ONE,
                 }
             );
         }
@@ -2965,7 +2967,7 @@ pub mod tests {
 
         let fill_style = FillStyle::Bitmap {
             id: 20,
-            matrix: Matrix::identity(),
+            matrix: Matrix::IDENTITY,
             is_smoothed: false,
             is_repeating: true,
         };
@@ -2974,7 +2976,7 @@ pub mod tests {
             fill_style
         );
 
-        let mut matrix = Matrix::identity();
+        let mut matrix = Matrix::IDENTITY;
         matrix.tx = Twips::from_pixels(1.0);
         let fill_style = FillStyle::Bitmap {
             id: 33,

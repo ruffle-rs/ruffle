@@ -203,7 +203,7 @@ impl<'gc> Avm2Button<'gc> {
                     .instantiate_by_id(record.id, context.gc_context)
                 {
                     Ok(child) => {
-                        child.set_matrix(context.gc_context, &record.matrix);
+                        child.set_matrix(context.gc_context, &record.matrix.into());
                         child.set_depth(context.gc_context, record.depth.into());
 
                         if swf_state != swf::ButtonState::HIT_TEST {

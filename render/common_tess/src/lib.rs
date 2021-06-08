@@ -185,7 +185,7 @@ impl ShapeTessellator {
                             flush_draw(
                                 DrawType::Bitmap(Bitmap {
                                     matrix: swf_bitmap_to_gl_matrix(
-                                        *matrix,
+                                        (*matrix).into(),
                                         bitmap_width,
                                         bitmap_height,
                                     ),
@@ -320,7 +320,7 @@ pub struct Bitmap {
 }
 
 #[allow(clippy::many_single_char_names)]
-fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
+fn swf_to_gl_matrix(m: ruffle_core::matrix::Matrix) -> [[f32; 3]; 3] {
     let tx = m.tx.get() as f32;
     let ty = m.ty.get() as f32;
     let det = m.a * m.d - m.c * m.b;
@@ -344,7 +344,11 @@ fn swf_to_gl_matrix(m: swf::Matrix) -> [[f32; 3]; 3] {
 }
 
 #[allow(clippy::many_single_char_names)]
-fn swf_bitmap_to_gl_matrix(m: swf::Matrix, bitmap_width: u32, bitmap_height: u32) -> [[f32; 3]; 3] {
+fn swf_bitmap_to_gl_matrix(
+    m: ruffle_core::matrix::Matrix,
+    bitmap_width: u32,
+    bitmap_height: u32,
+) -> [[f32; 3]; 3] {
     let bitmap_width = bitmap_width as f32;
     let bitmap_height = bitmap_height as f32;
 
@@ -440,7 +444,7 @@ fn swf_gradient_to_uniforms(
     }
 
     Gradient {
-        matrix: swf_to_gl_matrix(gradient.matrix),
+        matrix: swf_to_gl_matrix(gradient.matrix.into()),
         gradient_type,
         ratios,
         colors,

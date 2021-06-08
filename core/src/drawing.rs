@@ -252,7 +252,7 @@ impl Drawing {
         self.shape_bounds.clone()
     }
 
-    pub fn hit_test(&self, point: (Twips, Twips), local_matrix: &swf::Matrix) -> bool {
+    pub fn hit_test(&self, point: (Twips, Twips), local_matrix: &crate::matrix::Matrix) -> bool {
         use crate::shape_utils;
         for path in &self.fills {
             if shape_utils::draw_command_fill_hit_test(&path.1, point) {
