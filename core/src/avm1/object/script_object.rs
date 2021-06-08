@@ -456,7 +456,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .write(gc_context)
             .values
-            .insert(name, Property::Stored { value, attributes }, false);
+            .insert(name, Property::Stored { value, attributes }, true);
     }
 
     fn set_attributes(
