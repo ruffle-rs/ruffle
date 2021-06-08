@@ -49,11 +49,7 @@ pub fn create_class<'gc>(
         activation.context.gc_context,
     );
 
-    let scope = Scope::push_scope(
-        globals.get_scope(activation.context.gc_context),
-        globals,
-        activation.context.gc_context,
-    );
+    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
     let proto = ScriptObject::object(activation.context.gc_context, super_proto);
 
     let (constr, cinit) = ClassObject::from_builtin_constr(

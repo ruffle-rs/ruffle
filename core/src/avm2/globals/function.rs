@@ -114,11 +114,7 @@ pub fn fill_proto<'gc>(
         Method::from_builtin(class_init),
         activation.context.gc_context,
     );
-    let scope = Scope::push_scope(
-        globals.get_scope(activation.context.gc_context),
-        globals,
-        activation.context.gc_context,
-    );
+    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
 
     function_proto.install_method(
         activation.context.gc_context,

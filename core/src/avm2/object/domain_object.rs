@@ -20,7 +20,7 @@ pub fn appdomain_deriver<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
     let scope = constr
-        .get_scope(activation.context.gc_context)
+        .get_scope()
         .ok_or("Constructor has an empty scope stack")?;
     let domain = scope
         .read()
@@ -100,7 +100,7 @@ impl<'gc> DomainObject<'gc> {
         let constr = activation.avm2().constructors().global;
         let proto = activation.avm2().prototypes().global;
         let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::GlobalScopeInstance(constr));
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },

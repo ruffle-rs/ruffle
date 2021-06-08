@@ -288,7 +288,7 @@ pub fn fill_proto<'gc>(
 
     drop(write);
 
-    let scope = Scope::push_scope(globals.get_scope(gc_context), globals, gc_context);
+    let scope = Scope::push_scope(globals.get_scope(), globals, gc_context);
 
     ClassObject::from_builtin_constr(
         gc_context,

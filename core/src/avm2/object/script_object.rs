@@ -38,11 +38,6 @@ pub enum ScriptObjectClass<'gc> {
     /// Instantiate instance traits, for class instances.
     ClassInstance(Object<'gc>),
 
-    /// Instantiate instance traits with itself as the scope.
-    ///
-    /// TODO: This is temporary; it should be removed when we separate
-    GlobalScopeInstance(Object<'gc>),
-
     /// Do not instantiate any class or instance traits.
     NoClass,
 }
@@ -164,8 +159,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_scope(self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, Scope<'gc>>> {
-        self.0.read().get_scope(self.into(), mc)
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.0.read().get_scope()
     }
 
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
@@ -532,8 +527,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
             //Class instances have instance traits from any class in the base
             //class chain.
-            ScriptObjectClass::ClassInstance(constr)
-            | ScriptObjectClass::GlobalScopeInstance(constr) => {
+            ScriptObjectClass::ClassInstance(constr) => {
                 let mut cur_constr = Some(*constr);
 
                 while let Some(constr) = cur_constr {
@@ -555,17 +549,10 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn get_scope(
-        &self,
-        this: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Option<GcCell<'gc, Scope<'gc>>> {
+    pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
-            ScriptObjectClass::ClassInstance(constr) => constr.get_scope(mc),
-            ScriptObjectClass::GlobalScopeInstance(_constr) => {
-                Some(Scope::push_scope(None, this, mc))
-            }
+            ScriptObjectClass::ClassInstance(constr) => constr.get_scope(),
             ScriptObjectClass::NoClass => None,
         }
     }
@@ -605,8 +592,7 @@ impl<'gc> ScriptObjectData<'gc> {
             ScriptObjectClass::ClassConstructor(class, ..) => {
                 Ok(class.read().resolve_any_class_trait(local_name))
             }
-            ScriptObjectClass::ClassInstance(constr)
-            | ScriptObjectClass::GlobalScopeInstance(constr) => {
+            ScriptObjectClass::ClassInstance(constr) => {
                 let mut cur_constr = Some(*constr);
 
                 while let Some(constr) = cur_constr {
@@ -848,7 +834,6 @@ impl<'gc> ScriptObjectData<'gc> {
         match self.class {
             ScriptObjectClass::ClassConstructor(class, _) => Some(class),
             ScriptObjectClass::ClassInstance(constr) => constr.as_class(),
-            ScriptObjectClass::GlobalScopeInstance(constr) => constr.as_class(),
             ScriptObjectClass::NoClass => None,
         }
     }
@@ -858,7 +843,6 @@ impl<'gc> ScriptObjectData<'gc> {
         match self.class {
             ScriptObjectClass::ClassConstructor(..) => None,
             ScriptObjectClass::ClassInstance(constr) => Some(constr),
-            ScriptObjectClass::GlobalScopeInstance(constr) => Some(constr),
             ScriptObjectClass::NoClass => None,
         }
     }

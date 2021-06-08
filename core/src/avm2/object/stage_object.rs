@@ -221,8 +221,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn get_scope(self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, Scope<'gc>>> {
-        self.0.read().base.get_scope(self.into(), mc)
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.0.read().base.get_scope()
     }
 
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {

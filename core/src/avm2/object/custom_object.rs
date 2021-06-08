@@ -120,8 +120,8 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().$field.get_method(id)
         }
 
-        fn get_scope(self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, Scope<'gc>>> {
-            self.0.read().$field.get_scope(self.into(), mc)
+        fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+            self.0.read().$field.get_scope()
         }
 
         fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
