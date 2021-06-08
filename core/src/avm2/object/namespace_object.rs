@@ -7,7 +7,6 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
@@ -58,11 +57,12 @@ impl<'gc> NamespaceObject<'gc> {
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        let this = NamespaceObject(GcCell::allocate(
+        let mut this: Object<'gc> = NamespaceObject(GcCell::allocate(
             activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 

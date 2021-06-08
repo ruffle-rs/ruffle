@@ -8,7 +8,6 @@ use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
@@ -75,11 +74,12 @@ impl<'gc> DomainObject<'gc> {
         let proto = activation.avm2().prototypes().application_domain;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
-        let this = DomainObject(GcCell::allocate(
+        let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_initializer(Some(this), &[], activation, Some(constr))?;
 
@@ -101,11 +101,12 @@ impl<'gc> DomainObject<'gc> {
         let proto = activation.avm2().prototypes().global;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
-        let this = DomainObject(GcCell::allocate(
+        let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_initializer(Some(this), &[], activation, Some(constr))?;
 

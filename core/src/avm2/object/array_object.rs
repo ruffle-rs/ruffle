@@ -8,7 +8,6 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::impl_avm2_custom_object;
@@ -66,11 +65,12 @@ impl<'gc> ArrayObject<'gc> {
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        let instance = ArrayObject(GcCell::allocate(
+        let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))
         .into();
+        instance.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(instance), &[], activation, Some(constr))?;
 

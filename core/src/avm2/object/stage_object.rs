@@ -8,7 +8,6 @@ use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
@@ -70,7 +69,7 @@ impl<'gc> StageObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        Ok(Self(GcCell::allocate(
+        let mut instance = Self(GcCell::allocate(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::base_new(
@@ -79,7 +78,10 @@ impl<'gc> StageObject<'gc> {
                 ),
                 display_object: Some(display_object),
             },
-        )))
+        ));
+        instance.install_instance_traits(activation, constr)?;
+
+        Ok(instance)
     }
 
     /// Allocate and construct the AVM2 side of a display object intended to be
@@ -106,7 +108,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error> {
         let constr = activation.avm2().constructors().graphics;
         let proto = activation.avm2().prototypes().graphics;
-        let this = Self(GcCell::allocate(
+        let mut this = Self(GcCell::allocate(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::base_new(
@@ -116,6 +118,7 @@ impl<'gc> StageObject<'gc> {
                 display_object: Some(display_object),
             },
         ));
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(this.into()), &[], activation, Some(constr))?;
 
@@ -192,10 +195,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(gc_context).base.delete_property(multiname)
     }
 
-    fn has_slot_local(self, id: u32) -> bool {
-        self.0.read().base.has_slot_local(id)
-    }
-
     fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
         self.0.read().base.get_slot_local(id)
     }
@@ -222,14 +221,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.get_method(id)
     }
 
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        self.0.read().base.get_trait(name)
-    }
-
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().base.get_trait_slot(id)
-    }
-
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().base.get_scope()
     }
@@ -251,10 +242,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().base.has_trait(name)
-    }
-
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-        self.0.read().base.has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {

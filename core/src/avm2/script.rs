@@ -5,7 +5,6 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{DomainObject, Object, TObject};
-use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -362,19 +361,11 @@ impl<'gc> Script<'gc> {
             write.initialized = true;
 
             let mut globals = write.globals;
-            let scope = Scope::push_scope(None, globals, context.gc_context);
             let mut null_activation = Activation::from_nothing(context.reborrow());
 
             drop(write);
 
-            for trait_entry in self.traits()?.iter() {
-                globals.install_foreign_trait(
-                    &mut null_activation,
-                    trait_entry.clone(),
-                    Some(scope),
-                    globals,
-                )?;
-            }
+            globals.install_traits(&mut null_activation, &self.traits()?)?;
 
             Avm2::run_script_initializer(*self, context)?;
 

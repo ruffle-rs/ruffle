@@ -94,10 +94,6 @@ macro_rules! impl_avm2_custom_object_properties {
 #[macro_export]
 macro_rules! impl_avm2_custom_object {
     ($field:ident) => {
-        fn has_slot_local(self, id: u32) -> bool {
-            self.0.read().$field.has_slot_local(id)
-        }
-
         fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
             self.0.read().$field.get_slot_local(id)
         }
@@ -124,24 +120,12 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().$field.get_method(id)
         }
 
-        fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-            self.0.read().$field.get_trait(name)
-        }
-
-        fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-            self.0.read().$field.get_trait_slot(id)
-        }
-
         fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
             self.0.read().$field.get_scope()
         }
 
         fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
             self.0.read().$field.has_trait(name)
-        }
-
-        fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-            self.0.read().$field.has_instantiated_property(name)
         }
 
         fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {

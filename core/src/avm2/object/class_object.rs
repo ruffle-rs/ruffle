@@ -9,7 +9,6 @@ use crate::avm2::object::script_object::{ScriptObject, ScriptObjectClass, Script
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
@@ -143,6 +142,8 @@ impl<'gc> ClassObject<'gc> {
             constr.set_interfaces(activation.context.gc_context, interfaces);
         }
 
+        constr.install_traits(activation, class_read.class_traits())?;
+
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();
             let class_init_fn =
@@ -165,6 +166,12 @@ impl<'gc> ClassObject<'gc> {
     /// class initializer to call before the class is used. The constructor
     /// should be used in all cases where the type needs to be referred to. You
     /// must call the class initializer yourself.
+    ///
+    /// You are also required to install class constructor traits yourself onto
+    /// the returned object. This is due to the fact that normal trait
+    /// installation requires a working `context.avm2` with a link to the
+    /// function prototype, and this is intended to be called before that link
+    /// has been established.
     ///
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
     /// in the VM. This corresponds to no base class, and in practice appears
@@ -293,7 +300,9 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        let instance = deriver(constr, prototype, activation)?;
+        let mut instance = deriver(constr, prototype, activation)?;
+
+        instance.install_instance_traits(activation, constr)?;
 
         self.call_initializer(Some(instance), arguments, activation, Some(constr))?;
 

@@ -10,7 +10,6 @@ use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -134,10 +133,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(gc_context).delete_property(name)
     }
 
-    fn has_slot_local(self, id: u32) -> bool {
-        self.0.read().has_slot_local(id)
-    }
-
     fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
         self.0.read().get_slot_local(id)
     }
@@ -164,14 +159,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().get_method(id)
     }
 
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        self.0.read().get_trait(name)
-    }
-
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().get_trait_slot(id)
-    }
-
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.0.read().get_scope()
     }
@@ -193,10 +180,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().has_trait(name)
-    }
-
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-        self.0.read().has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
@@ -499,13 +482,6 @@ impl<'gc> ScriptObjectData<'gc> {
         can_delete
     }
 
-    pub fn has_slot_local(&self, id: u32) -> bool {
-        self.slots
-            .get(id as usize)
-            .map(|s| s.is_occupied())
-            .unwrap_or(false)
-    }
-
     pub fn get_slot_local(&self, id: u32) -> Result<Value<'gc>, Error> {
         self.slots
             .get(id as usize)
@@ -545,74 +521,6 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Retrieve a method from the method table.
     pub fn get_method(&self, id: u32) -> Option<Object<'gc>> {
         self.methods.get(id as usize).and_then(|v| *v)
-    }
-
-    pub fn get_trait(&self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        match &self.class {
-            //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                let mut known_traits = Vec::new();
-                class.read().lookup_class_traits(name, &mut known_traits)?;
-
-                Ok(known_traits)
-            }
-
-            //Class instances have all instance traits from all superclasses.
-            ScriptObjectClass::ClassInstance(constr) => {
-                let mut constr_list = Vec::new();
-                let mut cur_constr = Some(*constr);
-                while let Some(constr) = cur_constr {
-                    constr_list.push(constr);
-
-                    cur_constr = constr.base_class_constr();
-                }
-
-                let mut known_traits = Vec::new();
-                for constr in constr_list.iter().rev() {
-                    let cur_class = constr
-                        .as_class()
-                        .ok_or("Object is not a class constructor")?;
-                    cur_class
-                        .read()
-                        .lookup_instance_traits(name, &mut known_traits)?;
-                }
-
-                Ok(known_traits)
-            }
-
-            // Bare objects, ES3 objects, and prototypes do not have traits.
-            ScriptObjectClass::NoClass => Ok(Vec::new()),
-        }
-    }
-
-    pub fn get_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        match &self.class {
-            //Class constructors have local slot traits only.
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.read().lookup_class_traits_by_slot(id)
-            }
-
-            //Class instances have all instance slot traits from all superclasses.
-            ScriptObjectClass::ClassInstance(constr) => {
-                let mut cur_constr = Some(*constr);
-
-                while let Some(constr) = cur_constr {
-                    let cur_class = constr
-                        .as_class()
-                        .ok_or("Object is not a class constructor")?;
-                    if let Some(inst_trait) = cur_class.read().lookup_instance_traits_by_slot(id)? {
-                        return Ok(Some(inst_trait));
-                    }
-
-                    cur_constr = constr.base_class_constr();
-                }
-
-                Ok(None)
-            }
-
-            // Bare objects, ES3 objects, and prototypes do not have traits.
-            ScriptObjectClass::NoClass => Ok(None),
-        }
     }
 
     pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
@@ -711,10 +619,6 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {
         Ok(self.values.get(name).is_some() || self.has_trait(name)?)
-    }
-
-    pub fn has_instantiated_property(&self, name: &QName<'gc>) -> bool {
-        self.values.get(name).is_some()
     }
 
     pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {

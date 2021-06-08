@@ -583,6 +583,11 @@ impl<'gc> Class<'gc> {
         false
     }
 
+    /// Return class traits provided by this class.
+    pub fn class_traits(&self) -> &[Trait<'gc>] {
+        &self.class_traits[..]
+    }
+
     /// Look for a class trait with a given local name, and return its
     /// namespace.
     ///
@@ -648,6 +653,11 @@ impl<'gc> Class<'gc> {
         }
 
         false
+    }
+
+    /// Return instance traits provided by this class.
+    pub fn instance_traits(&self) -> &[Trait<'gc>] {
+        &self.instance_traits[..]
     }
 
     /// Look for an instance trait with a given local name, and return its

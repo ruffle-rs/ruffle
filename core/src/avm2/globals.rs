@@ -403,11 +403,12 @@ pub fn load_player_globals<'gc>(
     let object_proto = object::create_proto(activation);
     let fn_proto = function::create_proto(activation, object_proto);
 
-    let (object_constr, object_cinit) = object::fill_proto(activation, gs, object_proto, fn_proto)?;
-    let (function_constr, function_cinit) =
+    let (mut object_constr, object_cinit) =
+        object::fill_proto(activation, gs, object_proto, fn_proto)?;
+    let (mut function_constr, function_cinit) =
         function::fill_proto(activation, gs, fn_proto, object_constr)?;
 
-    let (class_constr, class_proto, class_cinit) =
+    let (mut class_constr, class_proto, class_cinit) =
         class::create_class(activation, gs, object_constr, object_proto, fn_proto)?;
 
     dynamic_class(mc, object_constr, domain, script)?;
@@ -431,8 +432,23 @@ pub fn load_player_globals<'gc>(
         ScriptObject::bare_object(mc),
     ));
 
-    // We can now run the class initializers for our core classes.
-    // Everything else initializes as it's installed automatically.
+    // We can now run all of the steps that would ordinarily be run
+    // automatically had we not been so early in VM setup. This means things
+    // like installing constructor traits and running class initializers, which
+    // usually are done in the associated constructor for `ClassObject`.
+    object_constr.install_traits(
+        activation,
+        object_constr.as_class().unwrap().read().class_traits(),
+    )?;
+    function_constr.install_traits(
+        activation,
+        function_constr.as_class().unwrap().read().class_traits(),
+    )?;
+    class_constr.install_traits(
+        activation,
+        class_constr.as_class().unwrap().read().class_traits(),
+    )?;
+
     object_cinit.call(Some(object_constr), &[], activation, Some(object_constr))?;
     function_cinit.call(
         Some(function_constr),

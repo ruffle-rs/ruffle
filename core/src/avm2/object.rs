@@ -94,12 +94,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
         if self.has_own_property(name)? && !has_no_getter {
@@ -154,12 +148,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
         self.set_property_local(receiver, name, value, activation)
     }
 
@@ -180,12 +168,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
         if self.has_own_virtual_setter(name) {
             return self.init_property_local(receiver, name, value, activation);
         }
@@ -205,9 +187,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         receiver.init_property_local(receiver, name, value, activation)
     }
 
-    /// Determines if a local slot already exists and is occupied.
-    fn has_slot_local(self, id: u32) -> bool;
-
     /// Retrieve a slot by its index.
     #[allow(unused_mut)]
     fn get_slot(
@@ -215,13 +194,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         id: u32,
     ) -> Result<Value<'gc>, Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
         self.get_slot_local(id)
     }
 
@@ -236,13 +208,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
         self.set_slot_local(id, value, activation.context.gc_context)
     }
 
@@ -262,13 +227,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
         self.init_slot_local(id, value, activation.context.gc_context)
     }
 
@@ -282,20 +240,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a method by its index.
     fn get_method(self, id: u32) -> Option<Object<'gc>>;
-
-    /// Retrieves a trait entry by name.
-    ///
-    /// This function returns an empty `Vec` if no such trait exists, or the
-    /// object does not have traits. It returns `Err` if *any* trait in the
-    /// object's prototype chain bearing this name is malformed in some way.
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error>;
-
-    /// Retrieves a trait entry by slot ID.
-    ///
-    /// This function returns `None` if no such trait exists, or the object
-    /// does not have traits. It returns `Err` if *any* trait in the object's
-    /// prototype chain bearing this name is malformed in some way.
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error>;
 
     /// Retrieves the scope chain of the object at time of its creation.
     ///
@@ -368,13 +312,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Returns true if an object has one or more traits of a given name.
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
-
-    /// Indicates whether or not a property or *instantiated* trait exists on
-    /// an object and is not part of the prototype chain.
-    ///
-    /// Unlike `has_own_property`, this will not yield `true` for traits this
-    /// object can have but has not yet instantiated.
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool;
 
     /// Check if a particular object contains a virtual getter by the given
     /// name.
@@ -487,42 +424,71 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
     );
 
-    /// Install a trait from the current object.
+    /// Install all instance traits provided from a class constructor.
     ///
-    /// This function should only be called once, as reinstalling a trait may
-    /// also unset already set properties. It may either be called immediately
-    /// when the object is instantiated or lazily; this behavior is ostensibly
-    /// controlled by the `lazy_init` flag provided to `load_abc`, but in
-    /// practice every version of Flash and Animate uses lazy trait
-    /// installation.
+    /// This method will also install superclass instance traits first. By
+    /// calling this method with the lowest class in the chain, you will ensure
+    /// all instance traits are installed.
     ///
-    /// The `reciever` property allows specifying the object that methods are
-    /// bound to. It should always be `self` except when doing things with
-    /// `super`, which needs to create bound methods pointing to a different
-    /// object.
+    /// This function should be called immediately after object allocation and
+    /// before any constructors have a chance to run.
+    ///
+    /// All traits will be instantiated with this object's current scope stack
+    /// and this object as a bound receiver.
+    fn install_instance_traits(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        from_constr: Object<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(base_constr) = from_constr.base_class_constr() {
+            self.install_instance_traits(activation, base_constr)?;
+        }
+
+        if let Some(class) = from_constr.as_class() {
+            self.install_traits(activation, class.read().instance_traits())?;
+        }
+
+        Ok(())
+    }
+
+    /// Install a list of traits into this object.
+    ///
+    /// This function should be called immediately after object allocation and
+    /// before any constructors have a chance to run.
+    ///
+    /// All traits will be instantiated with this object's current scope stack
+    /// and this object as a bound receiver.
+    fn install_traits(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        traits: &[Trait<'gc>],
+    ) -> Result<(), Error> {
+        for trait_entry in traits {
+            self.install_trait(activation, trait_entry)?;
+        }
+
+        Ok(())
+    }
+
+    /// Install a single trait into this object.
+    ///
+    /// This function should be called immediately after object allocation and
+    /// before any constructors have a chance to run. It should also only be
+    /// called once per name and/or slot ID, as reinstalling a trait may unset
+    /// already set properties.
+    ///
+    /// All traits will be instantiated with this object's current scope stack
+    /// and this object as a bound receiver.
     ///
     /// The value of the trait at the time of installation will be returned
     /// here.
     fn install_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        trait_entry: Trait<'gc>,
-        receiver: Object<'gc>,
+        trait_entry: &Trait<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        self.install_foreign_trait(activation, trait_entry, self.get_scope(), receiver)
-    }
-
-    /// Install a trait from anywyere.
-    ///
-    /// The value of the trait at the time of installation will be returned
-    /// here.
-    fn install_foreign_trait(
-        &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        trait_entry: Trait<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        receiver: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
+        let receiver = (*self).into();
+        let scope = self.get_scope();
         let trait_name = trait_entry.name().clone();
         avm_debug!(
             activation.avm2(),

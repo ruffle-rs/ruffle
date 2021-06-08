@@ -7,7 +7,6 @@ use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
@@ -81,7 +80,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
-        let this = LoaderInfoObject(GcCell::allocate(
+        let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -89,6 +88,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 
@@ -102,7 +102,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        let this = LoaderInfoObject(GcCell::allocate(
+        let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
@@ -110,6 +110,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 

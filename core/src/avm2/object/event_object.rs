@@ -8,7 +8,6 @@ use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
@@ -67,11 +66,12 @@ impl<'gc> EventObject<'gc> {
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        let event_object = EventObject(GcCell::allocate(
+        let mut event_object: Object<'gc> = EventObject(GcCell::allocate(
             activation.context.gc_context,
             EventObjectData { base, event },
         ))
         .into();
+        event_object.install_instance_traits(activation, constr)?;
 
         //TODO: Find a way to call the constructor's default initializer
         //without overwriting the event we just put on the object.

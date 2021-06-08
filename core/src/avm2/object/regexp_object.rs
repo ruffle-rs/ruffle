@@ -8,7 +8,6 @@ use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::regexp::RegExp;
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
@@ -56,11 +55,12 @@ impl<'gc> RegExpObject<'gc> {
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
 
-        let this = RegExpObject(GcCell::allocate(
+        let mut this: Object<'gc> = RegExpObject(GcCell::allocate(
             activation.context.gc_context,
             RegExpObjectData { base, regexp },
         ))
         .into();
+        this.install_instance_traits(activation, constr)?;
 
         constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
 
