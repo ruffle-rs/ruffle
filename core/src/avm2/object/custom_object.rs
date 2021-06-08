@@ -66,6 +66,10 @@ macro_rules! impl_avm2_custom_object_properties {
                 .is_property_overwritable(name)
         }
 
+        fn is_property_final(self, name: &QName<'gc>) -> bool {
+            self.0.read().$field.is_property_final(name)
+        }
+
         fn delete_property(
             &self,
             gc_context: MutationContext<'gc, '_>,
@@ -186,11 +190,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) {
             self.0
                 .write(mc)
                 .$field
-                .install_method(name, disp_id, function)
+                .install_method(name, disp_id, function, is_final)
         }
 
         fn install_getter(
@@ -199,11 +204,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) -> Result<(), Error> {
             self.0
                 .write(mc)
                 .$field
-                .install_getter(name, disp_id, function)
+                .install_getter(name, disp_id, function, is_final)
         }
 
         fn install_setter(
@@ -212,11 +218,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) -> Result<(), Error> {
             self.0
                 .write(mc)
                 .$field
-                .install_setter(name, disp_id, function)
+                .install_setter(name, disp_id, function, is_final)
         }
 
         fn install_dynamic_property(
@@ -237,8 +244,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             id: u32,
             value: Value<'gc>,
+            is_final: bool,
         ) {
-            self.0.write(mc).$field.install_slot(name, id, value)
+            self.0
+                .write(mc)
+                .$field
+                .install_slot(name, id, value, is_final)
         }
 
         fn install_const(
@@ -247,8 +258,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             id: u32,
             value: Value<'gc>,
+            is_final: bool,
         ) {
-            self.0.write(mc).$field.install_const(name, id, value)
+            self.0
+                .write(mc)
+                .$field
+                .install_const(name, id, value, is_final)
         }
 
         fn interfaces(&self) -> Vec<Object<'gc>> {

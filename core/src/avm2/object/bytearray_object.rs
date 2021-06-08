@@ -139,6 +139,10 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.write(gc_context).base.is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().base.is_property_final(name)
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {

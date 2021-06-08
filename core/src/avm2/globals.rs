@@ -292,7 +292,7 @@ fn dynamic_class<'gc>(
     script
         .init()
         .1
-        .install_const(mc, name.clone(), 0, constr.into());
+        .install_const(mc, name.clone(), 0, constr.into(), false);
     domain.export_definition(name, script, mc)
 }
 
@@ -339,6 +339,7 @@ fn class<'gc>(
         class_name.clone(),
         0,
         constr.into(),
+        false,
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
@@ -364,7 +365,7 @@ fn constant<'gc>(
 ) -> Result<(), Error> {
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name.clone(), script, mc)?;
-    script.init().1.install_const(mc, name, 0, value);
+    script.init().1.install_const(mc, name, 0, value, false);
 
     Ok(())
 }

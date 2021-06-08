@@ -50,6 +50,7 @@ impl<'gc> FunctionObject<'gc> {
             QName::new(Namespace::public(), "prototype"),
             0,
             es3_proto.into(),
+            false,
         );
 
         Ok(this)

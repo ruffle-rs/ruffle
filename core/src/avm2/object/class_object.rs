@@ -131,12 +131,14 @@ impl<'gc> ClassObject<'gc> {
             QName::new(Namespace::public(), "prototype"),
             0,
             class_proto.into(),
+            false,
         );
         class_proto.install_slot(
             activation.context.gc_context,
             QName::new(Namespace::public(), "constructor"),
             0,
             constr.into(),
+            false,
         );
 
         let interface_names = class.read().interfaces().to_vec();
@@ -239,12 +241,14 @@ impl<'gc> ClassObject<'gc> {
             QName::new(Namespace::public(), "prototype"),
             0,
             prototype.into(),
+            false,
         );
         prototype.install_slot(
             mc,
             QName::new(Namespace::public(), "constructor"),
             0,
             base.into(),
+            false,
         );
 
         let class_initializer = class.read().class_init();

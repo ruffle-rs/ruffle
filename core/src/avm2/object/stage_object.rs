@@ -187,6 +187,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(gc_context).base.is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().base.is_property_final(name)
+    }
+
     fn delete_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -342,11 +346,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) {
         self.0
             .write(mc)
             .base
-            .install_method(name, disp_id, function)
+            .install_method(name, disp_id, function, is_final)
     }
 
     fn install_getter(
@@ -355,11 +360,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         self.0
             .write(mc)
             .base
-            .install_getter(name, disp_id, function)
+            .install_getter(name, disp_id, function, is_final)
     }
 
     fn install_setter(
@@ -368,11 +374,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         self.0
             .write(mc)
             .base
-            .install_setter(name, disp_id, function)
+            .install_setter(name, disp_id, function, is_final)
     }
 
     fn install_dynamic_property(
@@ -390,8 +397,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).base.install_slot(name, id, value)
+        self.0
+            .write(mc)
+            .base
+            .install_slot(name, id, value, is_final)
     }
 
     fn install_const(
@@ -400,8 +411,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).base.install_const(name, id, value)
+        self.0
+            .write(mc)
+            .base
+            .install_const(name, id, value, is_final)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {

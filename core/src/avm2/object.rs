@@ -296,6 +296,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _name: &QName<'gc>,
     ) -> bool;
 
+    /// Indicates whether or not a property is final.
+    fn is_property_final(self, _name: &QName<'gc>) -> bool;
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
@@ -346,6 +349,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     );
 
     /// Install a getter method on an object property.
@@ -355,6 +359,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error>;
 
     /// Install a setter method on an object property.
@@ -364,6 +369,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error>;
 
     /// Install a dynamic or built-in value property on an object.
@@ -381,6 +387,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     );
 
     /// Install a const on an object property.
@@ -390,6 +397,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     );
 
     /// Install all instance traits provided from a class constructor.
@@ -469,6 +477,28 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .into());
         }
 
+        //AS3 considers the setter and getter half of a final property to be
+        //separate from one another and *not* overriding each other, which can
+        //cause false verify errors if we don't exempt this particular case.
+        //
+        //TODO: We should actually check to see *what* this trait is overriding.
+        //TODO: We should also tighten the override check above using the same
+        //rationale.
+        let is_final = trait_entry.is_final();
+        let is_second_half_of_property = (self.has_own_virtual_getter(&trait_name)
+            && !self.has_own_virtual_setter(&trait_name))
+            || (!self.has_own_virtual_getter(&trait_name)
+                && self.has_own_virtual_setter(&trait_name));
+        let is_overriding_final =
+            self.has_own_property(&trait_name)? && self.is_property_final(&trait_name);
+        if is_overriding_final && !is_second_half_of_property {
+            return Err(format!(
+                "Attempted to override property {:?}, which is final",
+                trait_name
+            )
+            .into());
+        }
+
         avm_debug!(
             activation.avm2(),
             "Installing trait {:?} of kind {:?}",
@@ -488,6 +518,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     value.clone(),
+                    is_final,
                 );
 
                 Ok(value)
@@ -502,6 +533,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 );
 
                 Ok(function.into())
@@ -516,6 +548,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 )?;
 
                 Ok(function.into())
@@ -530,6 +563,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 )?;
 
                 Ok(function.into())
@@ -540,6 +574,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     Value::Undefined,
+                    is_final,
                 );
 
                 Ok(Value::Undefined)
@@ -550,6 +585,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     Value::Undefined,
+                    is_final,
                 );
 
                 Ok(Value::Undefined)
@@ -565,6 +601,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     value.clone(),
+                    is_final,
                 );
 
                 Ok(value)
