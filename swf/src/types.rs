@@ -200,6 +200,24 @@ impl Twips {
     /// There are 20 twips in a pixel.
     pub const TWIPS_PER_PIXEL: f64 = 20.0;
 
+    /// The `Twips` object with a value of `0`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(swf::Twips::ZERO.to_pixels(), 0.0);
+    /// ```
+    pub const ZERO: Self = Self(0);
+
+    /// The `Twips` object with a value of `1` pixel.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert_eq!(swf::Twips::ONE.to_pixels(), 1.0);
+    /// ```
+    pub const ONE: Self = Self(Self::TWIPS_PER_PIXEL as i32);
+
     /// Creates a new `Twips` object. Note that the `twips` value is in twips,
     /// not pixels. Use the [`from_pixels`] method to convert from pixel units.
     ///
@@ -214,20 +232,6 @@ impl Twips {
     /// ```
     pub fn new<T: Into<i32>>(twips: T) -> Self {
         Self(twips.into())
-    }
-
-    /// Creates a new `Twips` object with a value of `0`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use swf::Twips;
-    ///
-    /// let twips = Twips::zero();
-    /// assert_eq!(twips.get(), 0);
-    /// ```
-    pub const fn zero() -> Self {
-        Self(0)
     }
 
     /// Returns the number of twips.

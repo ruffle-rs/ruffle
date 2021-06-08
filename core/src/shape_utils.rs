@@ -11,8 +11,8 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
         x_max: Twips::new(i32::MIN),
         y_max: Twips::new(i32::MIN),
     };
-    let mut x = Twips::zero();
-    let mut y = Twips::zero();
+    let mut x = Twips::ZERO;
+    let mut y = Twips::ZERO;
     for record in shape_records {
         match record {
             swf::ShapeRecord::StyleChange(style_change) => {
@@ -359,8 +359,8 @@ impl<'a> ShapeConverter<'a> {
         ShapeConverter {
             iter: shape.shape.iter(),
 
-            x: Twips::zero(),
-            y: Twips::zero(),
+            x: Twips::ZERO,
+            y: Twips::ZERO,
 
             fill_styles: &shape.styles.fill_styles,
             line_styles: &shape.styles.line_styles,
@@ -748,8 +748,8 @@ pub fn shape_hit_test(
     local_matrix: &Matrix,
 ) -> bool {
     // Transform point to local space.
-    let mut x = Twips::zero();
-    let mut y = Twips::zero();
+    let mut x = Twips::ZERO;
+    let mut y = Twips::ZERO;
     let mut winding = 0;
 
     let mut has_fill_style0: bool = false;
@@ -860,8 +860,8 @@ pub fn draw_command_fill_hit_test(
     commands: &[DrawCommand],
     (point_x, point_y): (Twips, Twips),
 ) -> bool {
-    let mut x = Twips::zero();
-    let mut y = Twips::zero();
+    let mut x = Twips::ZERO;
+    let mut y = Twips::ZERO;
     let mut winding = 0;
 
     // Draw command only contains a single fill, so don't have to worry about fill styles.

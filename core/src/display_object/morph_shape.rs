@@ -180,10 +180,10 @@ impl MorphShapeStatic {
         let mut end_iter = self.end.shape.iter();
         let mut start = start_iter.next();
         let mut end = end_iter.next();
-        let mut start_x = Twips::zero();
-        let mut start_y = Twips::zero();
-        let mut end_x = Twips::zero();
-        let mut end_y = Twips::zero();
+        let mut start_x = Twips::ZERO;
+        let mut start_y = Twips::ZERO;
+        let mut end_x = Twips::ZERO;
+        let mut end_y = Twips::ZERO;
         // TODO: Feels like this could be cleaned up a bit.
         // We step through both the start records and end records, interpolating edges pairwise.
         // Fill style/line style changes should only appear in the start records.

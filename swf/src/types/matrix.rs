@@ -51,8 +51,8 @@ impl Matrix {
         c: Fixed16::ZERO,
         b: Fixed16::ZERO,
         d: Fixed16::ONE,
-        ty: Twips::zero(),
-        tx: Twips::zero(),
+        ty: Twips::ZERO,
+        tx: Twips::ZERO,
     };
 
     /// Returns a scale matrix.

@@ -39,7 +39,7 @@ impl Drawing {
             lines: Vec::new(),
             current_fill: None,
             current_line: None,
-            cursor: (Twips::zero(), Twips::zero()),
+            cursor: (Twips::ZERO, Twips::ZERO),
         }
     }
 
@@ -53,7 +53,7 @@ impl Drawing {
             lines: Vec::new(),
             current_fill: None,
             current_line: None,
-            cursor: (Twips::zero(), Twips::zero()),
+            cursor: (Twips::ZERO, Twips::ZERO),
         };
 
         let shape = DistilledShape::from(shape);
@@ -114,7 +114,7 @@ impl Drawing {
         self.edge_bounds = BoundingBox::default();
         self.shape_bounds = BoundingBox::default();
         self.dirty.set(true);
-        self.cursor = (Twips::zero(), Twips::zero());
+        self.cursor = (Twips::ZERO, Twips::ZERO);
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -139,19 +139,19 @@ impl Drawing {
         let stroke_width = if let Some((style, _)) = &self.current_line {
             style.width
         } else {
-            Twips::zero()
+            Twips::ZERO
         };
 
         match command {
             DrawCommand::MoveTo { .. } => {}
             DrawCommand::LineTo { .. } => {
                 stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
-                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::zero());
+                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::ZERO);
                 include_last = true;
             }
             DrawCommand::CurveTo { .. } => {
                 stretch_bounding_box(&mut self.shape_bounds, &command, stroke_width);
-                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::zero());
+                stretch_bounding_box(&mut self.edge_bounds, &command, Twips::ZERO);
                 include_last = true;
             }
         }
@@ -172,7 +172,7 @@ impl Drawing {
                 .and_then(|(_, commands)| commands.last())
             {
                 stretch_bounding_box(&mut self.shape_bounds, command, stroke_width);
-                stretch_bounding_box(&mut self.edge_bounds, command, Twips::zero());
+                stretch_bounding_box(&mut self.edge_bounds, command, Twips::ZERO);
             }
 
             if let Some(command) = self
@@ -181,7 +181,7 @@ impl Drawing {
                 .and_then(|(_, commands)| commands.last())
             {
                 stretch_bounding_box(&mut self.shape_bounds, command, stroke_width);
-                stretch_bounding_box(&mut self.edge_bounds, command, Twips::zero());
+                stretch_bounding_box(&mut self.edge_bounds, command, Twips::ZERO);
             }
         }
 

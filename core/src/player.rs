@@ -286,7 +286,7 @@ impl Player {
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
 
-            mouse_pos: (Twips::zero(), Twips::zero()),
+            mouse_pos: (Twips::ZERO, Twips::ZERO),
             is_mouse_down: false,
             mouse_cursor: MouseCursor::Arrow,
 
