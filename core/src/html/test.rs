@@ -232,7 +232,7 @@ fn bounds_size_addassign() {
 
 #[test]
 fn bounds_with_size() {
-    let pos1 = Position::from((Twips::zero(), Twips::new(5760)));
+    let pos1 = Position::from((Twips::ZERO, Twips::new(5760)));
     let size1 = Size::from((Twips::new(7900), Twips::new(500)));
     let bounds1 = BoxBounds::from_position_and_size(pos1, size1);
 

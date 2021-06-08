@@ -710,11 +710,11 @@ impl<'gc> EditText<'gc> {
                 write.drawing.set_fill_style(None);
             }
             write.drawing.draw_command(DrawCommand::MoveTo {
-                x: Twips::zero(),
-                y: Twips::zero(),
+                x: Twips::ZERO,
+                y: Twips::ZERO,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::zero(),
+                x: Twips::ZERO,
                 y: bounds.y_max - bounds.y_min,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
@@ -723,11 +723,11 @@ impl<'gc> EditText<'gc> {
             });
             write.drawing.draw_command(DrawCommand::LineTo {
                 x: bounds.x_max - bounds.x_min,
-                y: Twips::zero(),
+                y: Twips::ZERO,
             });
             write.drawing.draw_command(DrawCommand::LineTo {
-                x: Twips::zero(),
-                y: Twips::zero(),
+                x: Twips::ZERO,
+                y: Twips::ZERO,
             });
         }
     }
@@ -1123,7 +1123,7 @@ impl<'gc> EditText<'gc> {
                     |pos, _transform, _glyph: &Glyph, advance, x| {
                         if local_position.0 >= x
                             && local_position.0 <= x + advance
-                            && local_position.1 >= Twips::zero()
+                            && local_position.1 >= Twips::ZERO
                             && local_position.1 <= params.height()
                         {
                             if local_position.0 >= x + (advance / 2) {
@@ -1497,8 +1497,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             edit_text.bounds.width().to_pixels() as f32,
             edit_text.bounds.height().to_pixels() as f32,
             0.0,
-            Twips::zero(),
-            Twips::zero(),
+            Twips::ZERO,
+            Twips::ZERO,
         );
         context.renderer.draw_rect(
             Color::from_rgb(0, 0xff),

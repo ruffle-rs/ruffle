@@ -21,7 +21,7 @@ fn draw_underline(drawing: &mut Drawing, starting_pos: Position<Twips>, width: T
         return;
     }
 
-    let ending_pos = starting_pos + Position::from((width, Twips::zero()));
+    let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
 
     drawing.draw_command(DrawCommand::MoveTo {
         x: starting_pos.x(),
@@ -113,7 +113,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // and adds one. I'm not sure why.
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(Twips::zero)
+            .unwrap_or_default()
     }
 
     /// Calculate the line-to-line leading present on this line, including the
@@ -121,7 +121,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn line_leading_adjustment(&self) -> Twips {
         self.font
             .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_else(Twips::zero)
+            .unwrap_or_default()
             + Twips::from_pixels(self.current_line_span.leading)
     }
 
@@ -187,7 +187,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                             if tf.underline.unwrap_or(false) {
                                 starting_pos = Some(
                                     linebox.bounds().origin()
-                                        + Position::from((Twips::zero(), underline_baseline)),
+                                        + Position::from((Twips::ZERO, underline_baseline)),
                                 );
                                 current_width = Some(linebox.bounds().width());
                             }

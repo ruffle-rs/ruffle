@@ -60,7 +60,7 @@ where
             log: &mut NullLogBackend::new(),
             video: &mut NullVideoBackend::new(),
             mouse_hovered_object: None,
-            mouse_position: &(Twips::zero(), Twips::zero()),
+            mouse_position: &(Twips::ZERO, Twips::ZERO),
             drag_object: &mut None,
             player: None,
             load_manager: &mut LoadManager::new(),

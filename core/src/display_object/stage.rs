@@ -322,8 +322,8 @@ impl<'gc> Stage<'gc> {
         self.0.write(context.gc_context).view_bounds = if self.should_letterbox(context.ui) {
             // Letterbox: movie area
             BoundingBox {
-                x_min: Twips::zero(),
-                y_min: Twips::zero(),
+                x_min: Twips::ZERO,
+                y_min: Twips::ZERO,
                 x_max: Twips::from_pixels(movie_width),
                 y_max: Twips::from_pixels(movie_height),
                 valid: true,
