@@ -116,30 +116,30 @@ pub fn fill_proto<'gc>(
     );
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
 
-    function_proto.install_method(
+    function_proto.install_dynamic_property(
         activation.context.gc_context,
         QName::new(Namespace::as3_namespace(), "call"),
-        0,
         FunctionObject::from_method_and_proto(
             activation.context.gc_context,
             Method::from_builtin(call),
             None,
             function_proto,
             None,
-        ),
-    );
-    function_proto.install_method(
+        )
+        .into(),
+    )?;
+    function_proto.install_dynamic_property(
         activation.context.gc_context,
         QName::new(Namespace::as3_namespace(), "apply"),
-        0,
         FunctionObject::from_method_and_proto(
             activation.context.gc_context,
             Method::from_builtin(apply),
             None,
             function_proto,
             None,
-        ),
-    );
+        )
+        .into(),
+    )?;
 
     ClassObject::from_builtin_constr(
         activation.context.gc_context,
