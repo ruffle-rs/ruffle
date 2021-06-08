@@ -398,11 +398,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// calling this method with the lowest class in the chain, you will ensure
     /// all instance traits are installed.
     ///
-    /// This function should be called immediately after object allocation and
-    /// before any constructors have a chance to run.
-    ///
-    /// All traits will be instantiated with this object's current scope stack
-    /// and this object as a bound receiver.
+    /// Read the documentation for `install_trait` to learn more about exactly
+    /// how traits are instantiated.
     fn install_instance_traits(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -424,8 +421,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This function should be called immediately after object allocation and
     /// before any constructors have a chance to run.
     ///
-    /// All traits will be instantiated with this object's current scope stack
-    /// and this object as a bound receiver.
+    /// Read the documentation for `install_trait` to learn more about exactly
+    /// how traits are instantiated.
     fn install_traits(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -445,11 +442,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// called once per name and/or slot ID, as reinstalling a trait may unset
     /// already set properties.
     ///
-    /// All traits will be instantiated with this object's current scope stack
-    /// and this object as a bound receiver.
+    /// Class and function traits are *not* instantiated at installation time.
+    /// Instead, installing such traits is treated as installing a const with
+    /// `undefined` as it's value.
+    ///
+    /// All traits that are instantiated at install time will be instantiated
+    /// with this object's current scope stack and this object as a bound
+    /// receiver.
     ///
     /// The value of the trait at the time of installation will be returned
-    /// here.
+    /// here, or `undefined` for classes and functions.
     fn install_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -523,60 +525,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 Ok(function.into())
             }
-            TraitKind::Class { slot_id, class } => {
-                let class_read = class.read();
-                let super_class = if let Some(sc_name) = class_read.super_class_name() {
-                    let super_name = self
-                        .resolve_multiname(sc_name)?
-                        .unwrap_or_else(|| QName::dynamic_name("Object"));
-
-                    let super_class = if let Some(scope) = scope {
-                        scope
-                            .write(activation.context.gc_context)
-                            .resolve(&super_name.clone().into(), activation)?
-                    } else {
-                        None
-                    };
-
-                    Some(
-                        super_class
-                            .ok_or_else(|| {
-                                format!(
-                                    "Could not resolve superclass {:?}",
-                                    super_name.local_name()
-                                )
-                            })?
-                            .coerce_to_object(activation)?,
-                    )
-                } else {
-                    None
-                };
-
-                let class_name = class_read.name().clone();
-                drop(class_read);
-
-                let class_object = ClassObject::from_class(activation, *class, super_class, scope)?;
-                self.install_const(
-                    activation.context.gc_context,
-                    class_name,
-                    *slot_id,
-                    class_object.into(),
-                );
-
-                Ok(class_object.into())
-            }
-            TraitKind::Function {
-                slot_id, function, ..
-            } => {
-                let fobject = FunctionObject::from_function(activation, function.clone(), scope)?;
+            TraitKind::Class { slot_id, .. } => {
                 self.install_const(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    fobject.into(),
+                    Value::Undefined,
                 );
 
-                Ok(fobject.into())
+                Ok(Value::Undefined)
+            }
+            TraitKind::Function { slot_id, .. } => {
+                self.install_const(
+                    activation.context.gc_context,
+                    trait_name,
+                    *slot_id,
+                    Value::Undefined,
+                );
+
+                Ok(Value::Undefined)
             }
             TraitKind::Const {
                 slot_id,
