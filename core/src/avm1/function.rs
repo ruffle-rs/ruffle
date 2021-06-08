@@ -359,7 +359,7 @@ impl<'gc> Executable<'gc> {
                         //preload for super?
                         preload_r += 1;
                     } else {
-                        frame.define("super", super_object);
+                        frame.force_define_local("super", super_object);
                     }
                 }
 
@@ -397,7 +397,7 @@ impl<'gc> Executable<'gc> {
                 for (param, value) in af.params.iter().zip(args_iter) {
                     match param {
                         (Some(argreg), _argname) => frame.set_local_register(*argreg, value),
-                        (None, argname) => frame.define(argname, value),
+                        (None, argname) => frame.force_define_local(argname, value),
                     }
                 }
 

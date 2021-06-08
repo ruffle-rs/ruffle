@@ -943,7 +943,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
-            self.define(name, func_obj);
+            self.define_local(name, func_obj)?;
         }
 
         Ok(FrameControl::Continue)
@@ -982,7 +982,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if action_func.name.is_empty() {
             self.context.avm1.push(func_obj);
         } else {
-            self.define(&action_func.name.to_str_lossy(self.encoding()), func_obj);
+            self.define_local(&action_func.name.to_str_lossy(self.encoding()), func_obj)?;
         }
 
         Ok(FrameControl::Continue)
@@ -994,11 +994,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm1.pop();
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
-        let scope = self.scope_cell();
-        scope
-            .write(self.context.gc_context)
-            .locals()
-            .set(&name, value, self)?;
+        self.define_local(&name, value)?;
         Ok(FrameControl::Continue)
     }
 
@@ -1009,10 +1005,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name = name_val.coerce_to_string(self)?;
         let scope = self.scope_cell();
         if !scope.read().locals().has_property(self, &name) {
-            scope
-                .write(self.context.gc_context)
-                .locals()
-                .set(&name, Value::Undefined, self)?;
+            self.define_local(&name, Value::Undefined)?;
         }
         Ok(FrameControl::Continue)
     }
@@ -2969,9 +2962,29 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.target_clip = value;
     }
 
-    /// Define a named local variable within this activation.
-    pub fn define(&self, name: &str, value: impl Into<Value<'gc>>) {
-        self.scope().define(name, value, self.context.gc_context)
+    /// Define a local property on the activation.
+    ///
+    /// If the property does not already exist on the local scope, it will created.
+    /// Otherwise, the existing property will be set to `value`. This does not crawl the scope
+    /// chain. Any properties deeper in the scope chain with the same name will be shadowed.
+    pub fn define_local(
+        &mut self,
+        name: &str,
+        value: impl Into<Value<'gc>>,
+    ) -> Result<(), Error<'gc>> {
+        let scope = self.scope;
+        let scope = scope.write(self.context.gc_context);
+        scope.define_local(name, value.into(), self)
+    }
+
+    /// Create a local property on the activation.
+    ///
+    /// This inserts a value as a stored property on the local scope. If the property already
+    /// exists, it will be forcefully overwritten. Used internally to initialize objects.
+    pub fn force_define_local(&mut self, name: &str, value: impl Into<Value<'gc>>) {
+        self.scope
+            .read()
+            .force_define_local(name, value.into(), self.context.gc_context)
     }
 
     /// Returns value of `this` as a reference.
