@@ -309,7 +309,11 @@ fn class<'gc>(
     script: Script<'gc>,
 ) -> Result<(Object<'gc>, Object<'gc>), Error> {
     let mut global = script.init().1;
-    let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
+    let global_scope = Scope::push_scope(
+        global.get_scope(activation.context.gc_context),
+        global,
+        activation.context.gc_context,
+    );
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {

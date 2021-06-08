@@ -215,7 +215,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// object is called, as well as any class methods on the object.
     /// Non-method functions and prototype functions (ES3 methods) do not use
     /// this scope chain.
-    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>>;
+    fn get_scope(self, mc: MutationContext<'gc, '_>) -> Option<GcCell<'gc, Scope<'gc>>>;
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
@@ -456,7 +456,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         trait_entry: &Trait<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let receiver = (*self).into();
-        let scope = self.get_scope();
+        let scope = self.get_scope(activation.context.gc_context);
         let trait_name = trait_entry.name().clone();
         avm_debug!(
             activation.avm2(),
@@ -668,7 +668,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = constr_with_trait.get_scope(activation.context.gc_context);
 
         if let TraitKind::Method { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
@@ -713,7 +713,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = constr_with_trait.get_scope(activation.context.gc_context);
 
         if let TraitKind::Getter { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
@@ -759,7 +759,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = constr_with_trait.get_scope(activation.context.gc_context);
 
         if let TraitKind::Setter { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
