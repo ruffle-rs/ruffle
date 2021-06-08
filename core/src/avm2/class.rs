@@ -732,4 +732,9 @@ impl<'gc> Class<'gc> {
     pub fn is_final(&self) -> bool {
         self.attributes.contains(ClassAttributes::FINAL)
     }
+
+    /// Determine if this class is an interface
+    pub fn is_interface(&self) -> bool {
+        self.attributes.contains(ClassAttributes::INTERFACE)
+    }
 }

@@ -63,7 +63,15 @@ impl<'gc> ClassObject<'gc> {
         if let Some(base_class) = base_class_constr.and_then(|b| b.as_class()) {
             if base_class.read().is_final() {
                 return Err(format!(
-                    "Base class {:?} is final and cannot be subclassed",
+                    "Base class {:?} is final and cannot be extended",
+                    base_class.read().name().local_name()
+                )
+                .into());
+            }
+
+            if base_class.read().is_interface() {
+                return Err(format!(
+                    "Base class {:?} is an interface and cannot be extended",
                     base_class.read().name().local_name()
                 )
                 .into());
@@ -147,6 +155,16 @@ impl<'gc> ClassObject<'gc> {
             }
 
             let interface = interface.unwrap().coerce_to_object(activation)?;
+            if let Some(class) = interface.as_class() {
+                if !class.read().is_interface() {
+                    return Err(format!(
+                        "Class {:?} is not an interface and cannot be implemented by classes",
+                        class.read().name().local_name()
+                    )
+                    .into());
+                }
+            }
+
             interfaces.push(interface);
         }
 
