@@ -217,6 +217,7 @@ swf_tests! {
     (xml_cdata, "avm1/xml_cdata", 1),
     (funky_function_calls, "avm1/funky_function_calls", 1),
     (undefined_to_string_swf6, "avm1/undefined_to_string_swf6", 1),
+    (define_function_case_sensitive, "avm1/define_function_case_sensitive", 2),
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
     (mcl_as_broadcaster, "avm1/mcl_as_broadcaster", 1),
