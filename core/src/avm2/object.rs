@@ -460,6 +460,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let receiver = (*self).into();
         let scope = self.get_scope();
         let trait_name = trait_entry.name().clone();
+
+        if trait_entry.is_override() && !self.has_own_property(&trait_name)? {
+            return Err(format!(
+                "Attempted to override property {:?}, which is not already defined",
+                trait_name
+            )
+            .into());
+        }
+
         avm_debug!(
             activation.avm2(),
             "Installing trait {:?} of kind {:?}",
