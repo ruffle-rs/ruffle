@@ -1,0 +1,10 @@
+// frame 1
+instance1
+[object Shape]
+
+// frame 2
+instance1
+[object Shape]
+// shape == shape2
+true
+
