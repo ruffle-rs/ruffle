@@ -115,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.avm_type() == AvmType::Avm2 {
+        if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
             let mut allocator = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
                 let mut proto = activation.context.avm2.prototypes().shape;
