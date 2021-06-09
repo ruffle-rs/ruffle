@@ -1092,14 +1092,12 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
-    #[allow(clippy::too_many_arguments)]
     fn instantiate_child(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
         depth: Depth,
         place_object: &swf::PlaceObject,
-        copy_previous_properties: bool,
     ) -> Option<DisplayObject<'gc>> {
         match context
             .library
@@ -1122,11 +1120,7 @@ impl<'gc> MovieClip<'gc> {
                     } else {
                         child.set_place_frame(context.gc_context, self.current_frame());
                     }
-                    if copy_previous_properties {
-                        if let Some(prev_child) = prev_child {
-                            child.copy_display_properties_from(context.gc_context, prev_child);
-                        }
-                    }
+
                     // Run first frame.
                     child.apply_place_object(context, self.movie(), place_object);
                     child.construct_frame(context);
@@ -1317,7 +1311,6 @@ impl<'gc> MovieClip<'gc> {
                         params.id(),
                         params.depth(),
                         &params.place_object,
-                        params.modifies_original_item(),
                     ) {
                         // Set the place frame to the frame where the object *would* have been placed.
                         child.set_place_frame(context.gc_context, params.frame);
@@ -3114,28 +3107,28 @@ impl<'gc, 'a> MovieClip<'gc> {
         }?;
         use swf::PlaceObjectAction;
         match place_object.action {
-            PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id) => {
-                if let Some(child) = self.instantiate_child(
-                    context,
-                    id,
-                    place_object.depth.into(),
-                    &place_object,
-                    matches!(place_object.action, PlaceObjectAction::Replace(_)),
-                ) {
-                    child
-                } else {
-                    return Ok(());
+            PlaceObjectAction::Place(id) => {
+                self.instantiate_child(context, id, place_object.depth.into(), &place_object);
+            }
+            PlaceObjectAction::Replace(id) => {
+                if let Some(child) = self.child_by_depth(place_object.depth.into()) {
+                    child.replace_with(context, id);
+                    child.apply_place_object(context, self.movie(), &place_object);
+                    if child.avm_type() == AvmType::Avm2 {
+                        // In AVM2 instantiation happens before frame advance so we
+                        // have to special-case that
+                        child.set_place_frame(context.gc_context, self.current_frame() + 1);
+                    } else {
+                        child.set_place_frame(context.gc_context, self.current_frame());
+                    }
                 }
             }
             PlaceObjectAction::Modify => {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.apply_place_object(context, self.movie(), &place_object);
-                    child
-                } else {
-                    return Ok(());
                 }
             }
-        };
+        }
 
         Ok(())
     }
@@ -3371,14 +3364,6 @@ impl<'a> GotoPlaceObject<'a> {
             swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => *id,
             swf::PlaceObjectAction::Modify => 0,
         }
-    }
-
-    #[inline]
-    fn modifies_original_item(&self) -> bool {
-        matches!(
-            &self.place_object.action,
-            swf::PlaceObjectAction::Replace(_)
-        )
     }
 
     #[inline]

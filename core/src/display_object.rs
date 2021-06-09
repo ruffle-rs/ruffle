@@ -1114,23 +1114,10 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn copy_display_properties_from(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        other: DisplayObject<'gc>,
-    ) {
-        self.set_matrix(gc_context, &*other.matrix());
-        self.set_color_transform(gc_context, &*other.color_transform());
-        self.set_clip_depth(gc_context, other.clip_depth());
-        self.set_name(gc_context, &*other.name());
-        if let (Some(mut me), Some(other)) = (self.as_morph_shape(), other.as_morph_shape()) {
-            me.set_ratio(gc_context, other.ratio());
-        }
-        // onEnterFrame actions only apply to movie clips.
-        if let (Some(me), Some(other)) = (self.as_movie_clip(), other.as_movie_clip()) {
-            me.set_clip_actions(gc_context, other.clip_actions().iter().cloned().collect());
-        }
-        // TODO: More in here eventually.
+    /// Called when this object should be replaced by a PlaceObject tag.
+    #[allow(unused_variables)]
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+        // Noop for most symbols; only shapes can replace their innards with another graphic.
     }
 
     fn object(&self) -> Avm1Value<'gc> {

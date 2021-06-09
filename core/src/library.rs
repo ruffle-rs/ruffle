@@ -3,7 +3,7 @@ use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::display_object::{Bitmap, TDisplayObject};
+use crate::display_object::{Bitmap, Graphic, TDisplayObject};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -285,6 +285,16 @@ impl<'gc> MovieLibrary<'gc> {
         let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
 
         self.fonts.get(&descriptor).copied()
+    }
+
+    /// Returns the graphic with the given character ID.
+    /// Returns `None` if the ID does not exist or is not a `Graphic`.
+    pub fn get_graphic(&self, id: CharacterId) -> Option<Graphic<'gc>> {
+        if let Some(&Character::Graphic(graphic)) = self.characters.get(&id) {
+            Some(graphic)
+        } else {
+            None
+        }
     }
 
     pub fn get_sound(&self, id: CharacterId) -> Option<SoundHandle> {
