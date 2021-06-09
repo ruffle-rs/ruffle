@@ -146,6 +146,21 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+        // Only a graphic can replace themselves with another graphic via a Replace PlaceObject tag.
+        // This does not create a new graphic instance, but instead swaps out the underlying handle to point to
+        // the new art.
+        if let Some(new_graphic) = context
+            .library
+            .library_for_movie_mut(self.movie().unwrap())
+            .get_graphic(id)
+        {
+            self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
+        } else {
+            log::warn!("PlaceObject: expected graphic at character ID {}", id);
+        }
+    }
+
     fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }
