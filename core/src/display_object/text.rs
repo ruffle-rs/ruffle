@@ -65,6 +65,18 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Some(self.0.read().static_data.swf.clone())
     }
 
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+        if let Some(new_text) = context
+            .library
+            .library_for_movie_mut(self.movie().unwrap())
+            .get_text(id)
+        {
+            self.0.write(context.gc_context).static_data = new_text.0.read().static_data;
+        } else {
+            log::warn!("PlaceObject: expected text at character ID {}", id);
+        }
+    }
+
     fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }

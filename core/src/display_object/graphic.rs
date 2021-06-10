@@ -147,9 +147,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
-        // Only a graphic can replace themselves with another graphic via a Replace PlaceObject tag.
-        // This does not create a new graphic instance, but instead swaps out the underlying handle to point to
-        // the new art.
+        // Static assets like graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
+        // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
             .library
             .library_for_movie_mut(self.movie().unwrap())

@@ -55,6 +55,18 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Some(*self)
     }
 
+    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+        if let Some(new_morph_shape) = context
+            .library
+            .library_for_movie_mut(self.movie().unwrap())
+            .get_morph_shape(id)
+        {
+            self.0.write(context.gc_context).static_data = new_morph_shape.0.read().static_data;
+        } else {
+            log::warn!("PlaceObject: expected morph shape at character ID {}", id);
+        }
+    }
+
     fn run_frame(&self, _context: &mut UpdateContext) {
         // Noop
     }

@@ -3,7 +3,7 @@ use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use crate::display_object::{Bitmap, Graphic, TDisplayObject};
+use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -297,9 +297,29 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
+    /// Returns the `MorphShape` with the given character ID.
+    /// Returns `None` if the ID does not exist or is not a `MorphShape`.
+    pub fn get_morph_shape(&self, id: CharacterId) -> Option<MorphShape<'gc>> {
+        if let Some(&Character::MorphShape(morph_shape)) = self.characters.get(&id) {
+            Some(morph_shape)
+        } else {
+            None
+        }
+    }
+
     pub fn get_sound(&self, id: CharacterId) -> Option<SoundHandle> {
         if let Some(Character::Sound(sound)) = self.characters.get(&id) {
             Some(*sound)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the `Text` with the given character ID.
+    /// Returns `None` if the ID does not exist or is not a `Text`.
+    pub fn get_text(&self, id: CharacterId) -> Option<Text<'gc>> {
+        if let Some(&Character::Text(text)) = self.characters.get(&id) {
+            Some(text)
         } else {
             None
         }
