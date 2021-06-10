@@ -7,8 +7,8 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
-    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
-    ScriptObject as Avm2ScriptObject, TObject as Avm2TObject, Value as Avm2Value,
+    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
+    Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
@@ -698,11 +698,8 @@ impl TextFormat {
         &self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
     ) -> Result<Avm2Object<'gc>, Avm2Error> {
-        let proto = activation.context.avm2.prototypes().textformat;
         let constr = activation.context.avm2.constructors().textformat;
-        let mut object = Avm2ScriptObject::object(activation.context.gc_context, proto);
-
-        constr.call(Some(object), &[], activation, Some(constr))?;
+        let mut object = constr.construct(activation, &[])?;
 
         object.set_property(
             object,
