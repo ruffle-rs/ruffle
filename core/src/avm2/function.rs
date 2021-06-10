@@ -77,6 +77,9 @@ impl<'gc> Executable<'gc> {
     ///
     /// It is a panicking logic error to attempt to execute user code while any
     /// reachable object is currently under a GcCell write lock.
+    ///
+    /// Passed-in arguments will be conformed to the set of method parameters
+    /// declared on the function.
     pub fn exec(
         &self,
         unbound_reciever: Option<Object<'gc>>,

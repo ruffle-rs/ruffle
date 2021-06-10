@@ -12,17 +12,19 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::string::AvmString;
-use crate::avm2::value::Value;
+use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
+use std::borrow::Cow;
+use std::cmp::{min, Ordering};
 use std::convert::{TryFrom, TryInto};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
-    Namespace as AbcNamespace, Op,
+    Class as AbcClass, Index, Method as AbcMethod, MethodParam as AbcMethodParam,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
 /// Represents a particular register set.
@@ -191,6 +193,81 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         })
     }
 
+    /// Given an individual parameter value and the associated parameter's
+    /// configuration, return what value should be stored in the called
+    /// function's local registers (or an error, if the parameter violates the
+    /// signature of the current called method).
+    fn resolve_parameter_value(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        value: Option<&Value<'gc>>,
+        param_config: &AbcMethodParam,
+        index: usize,
+    ) -> Result<Value<'gc>, Error> {
+        let kind = param_config.kind.clone();
+        let param_type_name = if kind.0 == 0 {
+            Multiname::any()
+        } else {
+            Multiname::from_abc_multiname_static(
+                method.translation_unit(),
+                kind,
+                self.context.gc_context,
+            )?
+        };
+
+        let param_name = if let Some(name_index) = &param_config.name {
+            self.pool_string(&method, name_index.clone(), self.context.gc_context)?
+        } else {
+            "<Unnamed parameter>".into()
+        };
+
+        let arg = if let Some(value) = value {
+            Cow::Borrowed(value)
+        } else if let Some(default) = &param_config.default_value {
+            Cow::Owned(abc_default_value(method.translation_unit(), default, self)?)
+        } else if param_type_name.is_any() {
+            return Ok(Value::Undefined);
+        } else {
+            return Err(format!(
+                "Param {} (index {}) was missing when calling {}",
+                param_name,
+                index,
+                method.method_name()
+            )
+            .into());
+        };
+
+        if !param_type_name.is_any() {
+            let param_type = self
+                .scope
+                .ok_or_else(|| {
+                    format!(
+                        "Cannot resolve parameter types on method {} as it has no scope stack",
+                        method.method_name()
+                    )
+                })?
+                .write(self.context.gc_context)
+                .resolve(&param_type_name, self)?
+                .ok_or_else(|| {
+                    format!(
+                        "Could not resolve parameter type {:?} when calling {}",
+                        param_type_name,
+                        method.method_name()
+                    )
+                })?
+                .coerce_to_object(self)?;
+
+            //All parameters are nullable.
+            if let Ok(arg_object) = arg.coerce_to_object(self) {
+                if !arg_object.is_of_type(param_type)? {
+                    return Err(format!("Param {} (index{}) is not of type {:?} when calling {}, passed-in value was {:?}", param_name, index, param_type_name, method.method_name(), arg).into());
+                }
+            }
+        }
+
+        Ok(arg.into_owned())
+    }
+
     /// Construct an activation for the execution of a particular bytecode
     /// method.
     pub fn from_method(
@@ -198,7 +275,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
+        user_arguments: &[Value<'gc>],
         base_constr: Option<Object<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Self, Error> {
@@ -207,9 +284,22 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| "Cannot execute non-native method without body".into());
         let body = body?;
         let num_locals = body.num_locals;
-        let has_rest_or_args = method.method().needs_arguments_object || method.method().needs_rest;
+        let has_rest_or_args = method.is_variadic();
         let arg_register = if has_rest_or_args { 1 } else { 0 };
-        let num_declared_arguments = method.method().params.len() as u32;
+
+        let params = method.method_params();
+        if user_arguments.len() > params.len() && !has_rest_or_args {
+            return Err(format!(
+                "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
+                method.method_name(),
+                user_arguments.len(),
+                params.len()
+            )
+            .into());
+        }
+
+        let num_declared_arguments = params.len() as u32;
+
         let local_registers = GcCell::allocate(
             context.gc_context,
             RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1),
@@ -218,13 +308,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         {
             let mut write = local_registers.write(context.gc_context);
             *write.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
-
-            for i in 0..num_declared_arguments {
-                *write.get_mut(1 + i).unwrap() = arguments
-                    .get(i as usize)
-                    .cloned()
-                    .unwrap_or(Value::Undefined);
-            }
         }
 
         let activation_constr = if method.method().needs_activation {
@@ -257,11 +340,53 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             context,
         };
 
+        //Statically verify all non-variadic, provided parameters.
+        let mut arguments_list = Vec::new();
+        for (i, (arg, param_config)) in user_arguments.iter().zip(params.iter()).enumerate() {
+            arguments_list.push(activation.resolve_parameter_value(
+                method,
+                Some(arg),
+                param_config,
+                i,
+            )?);
+        }
+
+        match user_arguments.len().cmp(&params.len()) {
+            Ordering::Greater => {
+                //Variadic parameters exist, just push them into the list
+                for arg in user_arguments[params.len()..].iter() {
+                    arguments_list.push(arg.clone());
+                }
+            }
+            Ordering::Less => {
+                //Apply remaining default parameters
+                for (i, param_config) in params[user_arguments.len()..].iter().enumerate() {
+                    arguments_list.push(activation.resolve_parameter_value(
+                        method,
+                        None,
+                        param_config,
+                        i + user_arguments.len(),
+                    )?);
+                }
+            }
+            _ => {}
+        }
+
+        {
+            let mut write = local_registers.write(activation.context.gc_context);
+            for (i, arg) in arguments_list[0..min(params.len(), arguments_list.len())]
+                .iter()
+                .enumerate()
+            {
+                *write.get_mut(1 + i as u32).unwrap() = arg.clone();
+            }
+        }
+
         if has_rest_or_args {
             let args_array = if method.method().needs_arguments_object {
-                ArrayStorage::from_args(arguments)
+                ArrayStorage::from_args(&arguments_list)
             } else if method.method().needs_rest {
-                if let Some(rest_args) = arguments.get(num_declared_arguments as usize..) {
+                if let Some(rest_args) = arguments_list.get(params.len()..) {
                     ArrayStorage::from_args(rest_args)
                 } else {
                     ArrayStorage::new(0)

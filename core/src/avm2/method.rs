@@ -8,7 +8,9 @@ use crate::avm2::Error;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody};
+use swf::avm2::types::{
+    AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody, MethodParam as AbcMethodParam,
+};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -112,6 +114,33 @@ impl<'gc> BytecodeMethod<'gc> {
         } else {
             None
         }
+    }
+
+    /// Get the list of method params for this method.
+    pub fn method_params(&self) -> &[AbcMethodParam] {
+        &self.method().params
+    }
+
+    /// Get the name of this method.
+    pub fn method_name(&self) -> &str {
+        let name_index = self.method().name.0 as usize;
+        if name_index == 0 {
+            return "";
+        }
+
+        self.abc
+            .constant_pool
+            .strings
+            .get(name_index - 1)
+            .map(|s| s.as_str())
+            .unwrap_or("")
+    }
+
+    /// Determine if a given method is variadic.
+    ///
+    /// Variadic methods do not yield an error
+    pub fn is_variadic(&self) -> bool {
+        self.method().needs_arguments_object || self.method().needs_rest
     }
 }
 
