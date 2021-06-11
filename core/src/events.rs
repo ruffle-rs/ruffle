@@ -1,3 +1,5 @@
+use swf::ClipEventFlag;
+
 #[derive(Debug)]
 pub enum PlayerEvent {
     KeyDown { key_code: KeyCode },
@@ -75,8 +77,44 @@ impl ClipEvent {
         "onRollOver",
     ];
 
+    pub const BUTTON_EVENT_FLAGS: ClipEventFlag = ClipEventFlag::from_bits_truncate(
+        ClipEventFlag::DRAG_OUT.bits()
+            | ClipEventFlag::DRAG_OVER.bits()
+            | ClipEventFlag::KEY_PRESS.bits()
+            | ClipEventFlag::PRESS.bits()
+            | ClipEventFlag::ROLL_OUT.bits()
+            | ClipEventFlag::ROLL_OVER.bits()
+            | ClipEventFlag::RELEASE.bits()
+            | ClipEventFlag::RELEASE_OUTSIDE.bits(),
+    );
+
+    /// Returns the `swf::ClipEventFlag` cooresponding to this event type.
+    pub const fn flag(self) -> ClipEventFlag {
+        match self {
+            ClipEvent::Construct => ClipEventFlag::CONSTRUCT,
+            ClipEvent::Data => ClipEventFlag::DATA,
+            ClipEvent::DragOut => ClipEventFlag::DRAG_OUT,
+            ClipEvent::DragOver => ClipEventFlag::DRAG_OVER,
+            ClipEvent::EnterFrame => ClipEventFlag::ENTER_FRAME,
+            ClipEvent::Initialize => ClipEventFlag::INITIALIZE,
+            ClipEvent::KeyDown => ClipEventFlag::KEY_DOWN,
+            ClipEvent::KeyPress { .. } => ClipEventFlag::KEY_PRESS,
+            ClipEvent::KeyUp => ClipEventFlag::KEY_UP,
+            ClipEvent::Load => ClipEventFlag::LOAD,
+            ClipEvent::MouseDown => ClipEventFlag::MOUSE_DOWN,
+            ClipEvent::MouseMove => ClipEventFlag::MOUSE_MOVE,
+            ClipEvent::MouseUp => ClipEventFlag::MOUSE_UP,
+            ClipEvent::Press => ClipEventFlag::PRESS,
+            ClipEvent::RollOut => ClipEventFlag::ROLL_OUT,
+            ClipEvent::RollOver => ClipEventFlag::ROLL_OVER,
+            ClipEvent::Release => ClipEventFlag::RELEASE,
+            ClipEvent::ReleaseOutside => ClipEventFlag::RELEASE_OUTSIDE,
+            ClipEvent::Unload => ClipEventFlag::UNLOAD,
+        }
+    }
+
     /// Indicates that the event should be propagated down to children.
-    pub fn propagates(self) -> bool {
+    pub const fn propagates(self) -> bool {
         matches!(
             self,
             Self::MouseUp
@@ -89,27 +127,17 @@ impl ClipEvent {
     }
 
     /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
-    pub fn is_button_event(self) -> bool {
-        matches!(
-            self,
-            Self::DragOut
-                | Self::DragOver
-                | Self::KeyPress { .. }
-                | Self::Press
-                | Self::RollOut
-                | Self::RollOver
-                | Self::Release
-                | Self::ReleaseOutside
-        )
+    pub const fn is_button_event(self) -> bool {
+        self.flag().contains(Self::BUTTON_EVENT_FLAGS)
     }
 
     /// Indicates whether this is a keyboard event type (keyUp, keyDown, keyPress).
-    pub fn is_key_event(self) -> bool {
+    pub const fn is_key_event(self) -> bool {
         matches!(self, Self::KeyDown | Self::KeyUp | Self::KeyPress { .. })
     }
 
     /// Returns the method name of the event handler for this event.
-    pub fn method_name(self) -> Option<&'static str> {
+    pub const fn method_name(self) -> Option<&'static str> {
         match self {
             ClipEvent::Construct => None,
             ClipEvent::Data => Some("onData"),

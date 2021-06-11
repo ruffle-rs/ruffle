@@ -1086,18 +1086,20 @@ pub trait TDisplayObject<'gc>:
             if let (Some(clip_actions), Some(clip)) =
                 (&place_object.clip_actions, self.as_movie_clip())
             {
-                // Convert from `swf::ClipAction` to Ruffle's `ClipAction`.
-                use crate::display_object::movie_clip::ClipAction;
+                // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
+                use crate::display_object::movie_clip::ClipEventHandler;
                 if let Some(placing_movie) = placing_movie {
-                    clip.set_clip_actions(
+                    clip.set_clip_event_handlers(
                         context.gc_context,
                         clip_actions
                             .iter()
                             .cloned()
                             .map(|a| {
-                                ClipAction::from_action_and_movie(a, Arc::clone(&placing_movie))
+                                ClipEventHandler::from_action_and_movie(
+                                    a,
+                                    Arc::clone(&placing_movie),
+                                )
                             })
-                            .flatten()
                             .collect(),
                     );
                 } else {

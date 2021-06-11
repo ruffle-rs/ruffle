@@ -735,7 +735,7 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             activation.context.gc_context,
             &*movie_clip.color_transform(),
         );
-        new_clip.as_movie_clip().unwrap().set_clip_actions(
+        new_clip.as_movie_clip().unwrap().set_clip_event_handlers(
             activation.context.gc_context,
             movie_clip.clip_actions().to_vec(),
         );
