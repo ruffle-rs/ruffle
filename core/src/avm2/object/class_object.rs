@@ -293,7 +293,33 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         let instance_constr = self.0.read().instance_constr;
 
-        instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
+        instance_constr.exec(
+            receiver,
+            arguments,
+            activation,
+            base_constr,
+            self.into(),
+            false,
+        )
+    }
+
+    fn call_strict(
+        self,
+        receiver: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+        base_constr: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        let instance_constr = self.0.read().instance_constr;
+
+        instance_constr.exec(
+            receiver,
+            arguments,
+            activation,
+            base_constr,
+            self.into(),
+            true,
+        )
     }
 
     fn call_initializer(
@@ -305,7 +331,14 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         let instance_constr = self.0.read().instance_constr;
 
-        instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
+        instance_constr.exec(
+            receiver,
+            arguments,
+            activation,
+            base_constr,
+            self.into(),
+            true,
+        )
     }
 
     fn call_native_initializer(
@@ -317,7 +350,14 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         let native_instance_constr = self.0.read().native_instance_constr;
 
-        native_instance_constr.exec(receiver, arguments, activation, base_constr, self.into())
+        native_instance_constr.exec(
+            receiver,
+            arguments,
+            activation,
+            base_constr,
+            self.into(),
+            true,
+        )
     }
 
     fn construct(

@@ -83,10 +83,11 @@ impl<'gc> Executable<'gc> {
     pub fn exec(
         &self,
         unbound_reciever: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
+        mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
         callee: Object<'gc>,
+        error_on_too_many_arguments: bool,
     ) -> Result<Value<'gc>, Error> {
         match self {
             Executable::Native(nf, receiver) => {
@@ -102,6 +103,13 @@ impl<'gc> Executable<'gc> {
                 nf(&mut activation, receiver, arguments)
             }
             Executable::Action(bm) => {
+                if !error_on_too_many_arguments {
+                    let max_args = bm.method.method_params().len();
+                    if arguments.len() > max_args && !bm.method.is_variadic() {
+                        arguments = &arguments[..max_args];
+                    }
+                }
+
                 let receiver = bm.receiver.or(unbound_reciever);
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),

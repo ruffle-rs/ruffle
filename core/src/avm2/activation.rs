@@ -989,7 +989,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let receiver = self.context.avm2.pop().coerce_to_object(self).ok();
         let function = self.context.avm2.pop().coerce_to_object(self)?;
         let base_proto = receiver.and_then(|r| r.proto());
-        let value = function.call(receiver, &args, self, base_proto)?;
+        let value = function.call_strict(receiver, &args, self, base_proto)?;
 
         self.context.avm2.push(value);
 
@@ -1007,7 +1007,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_method(index.0)
             .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
         let base_proto = receiver.proto();
-        let value = function?.call(Some(receiver), &args, self, base_proto)?;
+        let value = function?.call_strict(Some(receiver), &args, self, base_proto)?;
 
         self.context.avm2.push(value);
 
@@ -1035,7 +1035,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function = receiver
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
-        let value = function.call(Some(receiver), &args, self, base_constr)?;
+        let value = function.call_strict(Some(receiver), &args, self, base_constr)?;
 
         self.context.avm2.push(value);
 
@@ -1057,7 +1057,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function = receiver
             .get_property(receiver, &name?, self)?
             .coerce_to_object(self)?;
-        let value = function.call(None, &args, self, None)?;
+        let value = function.call_strict(None, &args, self, None)?;
 
         self.context.avm2.push(value);
 
@@ -1086,7 +1086,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
 
-        function.call(Some(receiver), &args, self, base_constr)?;
+        function.call_strict(Some(receiver), &args, self, base_constr)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1102,7 +1102,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method = self.table_method(method, index, self.context.gc_context)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(self, method.into(), scope, None);
-        let value = function.call(Some(receiver), &args, self, receiver.as_constr())?;
+        let value = function.call_strict(Some(receiver), &args, self, receiver.as_constr())?;
 
         self.context.avm2.push(value);
 

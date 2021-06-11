@@ -95,6 +95,7 @@ impl<'gc> ReturnValue<'gc> {
                 activation,
                 base_constr,
                 callee,
+                false,
             ),
         }
     }
