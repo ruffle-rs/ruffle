@@ -598,12 +598,16 @@ impl<'gc> Value<'gc> {
                 return Ok(self.coerce_to_number(activation)?.into());
             }
 
-            if type_name.contains_name(&QName::new(Namespace::public(), "String")) {
-                return Ok(self.coerce_to_string(activation)?.into());
-            }
-
             if type_name.contains_name(&QName::new(Namespace::public(), "Boolean")) {
                 return Ok(self.coerce_to_boolean().into());
+            }
+
+            if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
+                return Ok(Value::Null);
+            }
+
+            if type_name.contains_name(&QName::new(Namespace::public(), "String")) {
+                return Ok(self.coerce_to_string(activation)?.into());
             }
 
             if let Ok(object) = self.coerce_to_object(activation) {
@@ -623,7 +627,7 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        //undefined and null, or type is unconstrained
+        //type is unconstrained
         Ok(self.clone())
     }
 
