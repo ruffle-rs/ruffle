@@ -1,0 +1,108 @@
+//coerces_param_into_int(undefined);
+0
+//coerces_param_into_int(null);
+0
+//coerces_param_into_int(true);
+1
+//coerces_param_into_int(false);
+0
+//coerces_param_into_int(5.12);
+5
+//coerces_param_into_int(-6);
+-6
+//coerces_param_into_int("12.23");
+12
+//coerces_param_into_int(new CoercibleAsString());
+-99
+//coerces_param_into_int(new CoercibleAsValue());
+23
+//coerces_param_into_uint(undefined);
+0
+//coerces_param_into_uint(null);
+0
+//coerces_param_into_uint(true);
+1
+//coerces_param_into_uint(false);
+0
+//coerces_param_into_uint(5.12);
+5
+//coerces_param_into_uint(-6);
+4294967290
+//coerces_param_into_uint("12.23");
+12
+//coerces_param_into_uint(new CoercibleAsString());
+4294967197
+//coerces_param_into_uint(new CoercibleAsValue());
+23
+//coerces_param_into_Number(undefined);
+NaN
+//coerces_param_into_Number(null);
+0
+//coerces_param_into_Number(true);
+1
+//coerces_param_into_Number(false);
+0
+//coerces_param_into_Number(5.12);
+5.12
+//coerces_param_into_Number(-6);
+-6
+//coerces_param_into_Number("12.23");
+12.23
+//coerces_param_into_Number(new CoercibleAsString());
+-99.13
+//coerces_param_into_Number(new CoercibleAsValue());
+23.16
+//coerces_param_into_Boolean(undefined);
+false
+//coerces_param_into_Boolean(null);
+false
+//coerces_param_into_Boolean(true);
+true
+//coerces_param_into_Boolean(false);
+false
+//coerces_param_into_Boolean(5.12);
+true
+//coerces_param_into_Boolean(-6);
+true
+//coerces_param_into_Boolean("12.23");
+true
+//coerces_param_into_Boolean(new CoercibleAsString());
+true
+//coerces_param_into_Boolean(new CoercibleAsValue());
+true
+//coerces_param_into_String(undefined);
+null
+//coerces_param_into_String(null);
+null
+//coerces_param_into_String(true);
+true
+//coerces_param_into_String(false);
+false
+//coerces_param_into_String(5.12);
+5.12
+//coerces_param_into_String(-6);
+-6
+//coerces_param_into_String("12.23");
+12.23
+//coerces_param_into_String(new CoercibleAsString());
+-99.13
+//coerces_param_into_String(new CoercibleAsValue());
+[object CoercibleAsValue]
+//coerces_param_into_Object(undefined);
+null
+//coerces_param_into_Object(null);
+null
+//coerces_param_into_Object(true);
+true
+//coerces_param_into_Object(false);
+false
+//coerces_param_into_Object(5.12);
+5.12
+//coerces_param_into_Object(-6);
+-6
+//coerces_param_into_Object("12.23");
+12.23
+//coerces_param_into_Object(new CoercibleAsString());
+-99.13
+//coerces_param_into_Object(new CoercibleAsValue());
+[object CoercibleAsValue]
