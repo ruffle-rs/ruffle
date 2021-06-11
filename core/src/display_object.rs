@@ -1115,8 +1115,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Called when this object should be replaced by a PlaceObject tag.
-    #[allow(unused_variables)]
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
+    fn replace_with(&self, _context: &mut UpdateContext<'_, 'gc, '_>, _id: CharacterId) {
         // Noop for most symbols; only shapes can replace their innards with another graphic.
     }
 
