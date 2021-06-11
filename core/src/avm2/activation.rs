@@ -205,18 +205,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: usize,
     ) -> Result<Value<'gc>, Error> {
         let kind = param_config.kind.clone();
-        let param_type_name = if kind.0 == 0 {
-            Multiname::any()
-        } else {
-            Multiname::from_abc_multiname_static(
-                method.translation_unit(),
-                kind,
-                self.context.gc_context,
-            )?
-        };
+        let param_type_name = self.pool_multiname_static_any(method, kind)?;
 
         let param_name = if let Some(name_index) = &param_config.name {
-            self.pool_string(&method, name_index.clone(), self.context.gc_context)?
+            self.pool_string(&method, name_index.clone())?
         } else {
             "<Unnamed parameter>".into()
         };
@@ -568,9 +560,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &self,
         method: &'b BytecodeMethod<'gc>,
         index: Index<String>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<AvmString<'gc>, Error> {
-        method.translation_unit().pool_string(index.0, mc)
+        method
+            .translation_unit()
+            .pool_string(index.0, self.context.gc_context)
     }
 
     /// Retrieve a namespace from the current constant pool.
@@ -578,9 +571,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Namespace<'gc>, Error> {
-        Namespace::from_abc_namespace(method.translation_unit(), index, mc)
+        Namespace::from_abc_namespace(method.translation_unit(), index, self.context.gc_context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -594,13 +586,38 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
     /// pool.
+    ///
+    /// This version of the function treats index 0 as an error condition.
     fn pool_multiname_static(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Multiname<'gc>, Error> {
-        Multiname::from_abc_multiname_static(method.translation_unit(), index, mc)
+        Multiname::from_abc_multiname_static(
+            method.translation_unit(),
+            index,
+            self.context.gc_context,
+        )
+    }
+
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    ///
+    /// This version of the function treats index 0 as the any-type `*`.
+    fn pool_multiname_static_any(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
+    ) -> Result<Multiname<'gc>, Error> {
+        if index.0 == 0 {
+            Ok(Multiname::any())
+        } else {
+            Multiname::from_abc_multiname_static(
+                method.translation_unit(),
+                index,
+                self.context.gc_context,
+            )
+        }
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -608,10 +625,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
-        mc: MutationContext<'gc, '_>,
     ) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
-        BytecodeMethod::from_method_index(method.translation_unit(), index.clone(), mc)
-            .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
+        BytecodeMethod::from_method_index(
+            method.translation_unit(),
+            index.clone(),
+            self.context.gc_context,
+        )
+        .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
     }
 
     /// Retrieve a class entry from the current ABC file's method table.
@@ -894,7 +914,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let ns = self.pool_namespace(method, value, self.context.gc_context)?;
+        let ns = self.pool_namespace(method, value)?;
         let ns_object = NamespaceObject::from_namespace(self, ns)?;
 
         self.context.avm2.push(ns_object);
@@ -921,9 +941,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         value: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
-        self.context
-            .avm2
-            .push(self.pool_string(&method, value, self.context.gc_context)?);
+        self.context.avm2.push(self.pool_string(&method, value)?);
         Ok(FrameControl::Continue)
     }
 
@@ -1099,7 +1117,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let method = self.table_method(method, index, self.context.gc_context)?;
+        let method = self.table_method(method, index)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(self, method.into(), scope, None);
         let value = function.call_strict(Some(receiver), &args, self, receiver.as_constr())?;
@@ -1455,7 +1473,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname_static(method, index, self.context.gc_context)?;
+        let multiname = self.pool_multiname_static(method, index)?;
         avm_debug!(self.avm2(), "Resolving {:?}", multiname);
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
             scope
@@ -1598,7 +1616,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let method_entry = self.table_method(method, index, self.context.gc_context)?;
+        let method_entry = self.table_method(method, index)?;
         let scope = self.scope();
 
         let new_fn = FunctionObject::from_function(self, method_entry.into(), scope)?;
@@ -2365,8 +2383,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let multiname =
-            self.pool_multiname_static(method, type_name_index, self.context.gc_context)?;
+        let multiname = self.pool_multiname_static(method, type_name_index)?;
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
             scope
                 .write(self.context.gc_context)
@@ -2407,8 +2424,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let multiname =
-            self.pool_multiname_static(method, type_name_index, self.context.gc_context)?;
+        let multiname = self.pool_multiname_static(method, type_name_index)?;
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
             scope
                 .write(self.context.gc_context)
