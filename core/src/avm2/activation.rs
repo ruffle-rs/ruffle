@@ -2789,7 +2789,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     #[cfg(avm_debug)]
     fn op_debug(
         &mut self,
@@ -2810,19 +2809,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     #[cfg(not(avm_debug))]
     fn op_debug(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        is_local_register: bool,
-        register_name: Index<String>,
-        register: u8,
+        _method: Gc<'gc, BytecodeMethod<'gc>>,
+        _is_local_register: bool,
+        _register_name: Index<String>,
+        _register: u8,
     ) -> Result<FrameControl<'gc>, Error> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     #[cfg(avm_debug)]
     fn op_debug_file(
         &mut self,
@@ -2836,17 +2833,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     #[cfg(not(avm_debug))]
     fn op_debug_file(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        file_name: Index<String>,
+        _method: Gc<'gc, BytecodeMethod<'gc>>,
+        _file_name: Index<String>,
     ) -> Result<FrameControl<'gc>, Error> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(unused_variables)]
     fn op_debug_line(&mut self, line_num: u32) -> Result<FrameControl<'gc>, Error> {
         avm_debug!(self.avm2(), "Line: {}", line_num);
 
