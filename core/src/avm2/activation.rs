@@ -237,35 +237,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into());
         };
 
-        if !param_type_name.is_any() {
-            let param_type = self
-                .scope
-                .ok_or_else(|| {
-                    format!(
-                        "Cannot resolve parameter types on method {} as it has no scope stack",
-                        method.method_name()
-                    )
-                })?
-                .write(self.context.gc_context)
-                .resolve(&param_type_name, self)?
-                .ok_or_else(|| {
-                    format!(
-                        "Could not resolve parameter type {:?} when calling {}",
-                        param_type_name,
-                        method.method_name()
-                    )
-                })?
-                .coerce_to_object(self)?;
-
-            //All parameters are nullable.
-            if let Ok(arg_object) = arg.coerce_to_object(self) {
-                if !arg_object.is_of_type(param_type)? {
-                    return Err(format!("Param {} (index{}) is not of type {:?} when calling {}, passed-in value was {:?}", param_name, index, param_type_name, method.method_name(), arg).into());
-                }
-            }
-        }
-
-        Ok(arg.into_owned())
+        arg.coerce_to_type(self, param_type_name)
     }
 
     /// Construct an activation for the execution of a particular bytecode

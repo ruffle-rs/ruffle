@@ -407,6 +407,14 @@ impl<'gc> Multiname<'gc> {
     pub fn is_any(&self) -> bool {
         self.ns.contains(&Namespace::Any) && self.name.is_none()
     }
+
+    /// Determine if this multiname matches a given QName.
+    pub fn contains_name(&self, name: &QName<'gc>) -> bool {
+        let ns_match = self.ns.contains(name.namespace()) || self.ns.contains(&Namespace::Any);
+        let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
+
+        ns_match && name_match
+    }
 }
 
 impl<'gc> From<QName<'gc>> for Multiname<'gc> {
