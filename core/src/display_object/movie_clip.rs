@@ -35,7 +35,7 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{FrameLabelData, Tag};
+use swf::{ClipEventFlag, FrameLabelData, Tag};
 
 type FrameNumber = u16;
 
@@ -72,9 +72,10 @@ pub struct MovieClipData<'gc> {
     audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
     object: Option<AvmObject<'gc>>,
-    clip_actions: Vec<ClipAction>,
+    clip_event_handlers: Vec<ClipEventHandler>,
+    #[collect(require_static)]
+    clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
-    has_button_clip_event: bool,
     flags: MovieClipFlags,
     avm2_constructor: Option<Avm2Object<'gc>>,
     drawing: Drawing,
@@ -99,9 +100,9 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
-                clip_actions: Vec::new(),
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                has_button_clip_event: false,
                 flags: MovieClipFlags::empty(),
                 avm2_constructor: None,
                 drawing: Drawing::new(),
@@ -131,9 +132,9 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: Some(this.into()),
-                clip_actions: Vec::new(),
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                has_button_clip_event: false,
                 flags: MovieClipFlags::empty(),
                 avm2_constructor: Some(constr),
                 drawing: Drawing::new(),
@@ -166,9 +167,9 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
-                clip_actions: Vec::new(),
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                has_button_clip_event: false,
                 flags: MovieClipFlags::PLAYING,
                 avm2_constructor: None,
                 drawing: Drawing::new(),
@@ -198,9 +199,9 @@ impl<'gc> MovieClip<'gc> {
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
-                clip_actions: Vec::new(),
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
-                has_button_clip_event: false,
                 flags: MovieClipFlags::PLAYING,
                 avm2_constructor: None,
                 drawing: Drawing::new(),
@@ -958,17 +959,20 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Gets the clip events for this movieclip.
-    pub fn clip_actions(&self) -> Ref<[ClipAction]> {
-        Ref::map(self.0.read(), |mc| mc.clip_actions())
+    pub fn clip_actions(&self) -> Ref<[ClipEventHandler]> {
+        Ref::map(self.0.read(), |mc| mc.clip_event_handlers())
     }
 
     /// Sets the clip actions (a.k.a. clip events) for this movieclip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
     /// tag on a movieclip instance.
-    pub fn set_clip_actions(self, gc_context: MutationContext<'gc, '_>, actions: Vec<ClipAction>) {
+    pub fn set_clip_event_handlers(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        event_handlers: Vec<ClipEventHandler>,
+    ) {
         let mut mc = self.0.write(gc_context);
-        mc.has_button_clip_event = actions.iter().any(|a| a.event.is_button_event());
-        mc.set_clip_actions(actions);
+        mc.set_clip_event_handlers(event_handlers);
     }
 
     /// Returns an iterator of AVM1 `DoAction` blocks on the given frame number.
@@ -1447,17 +1451,23 @@ impl<'gc> MovieClip<'gc> {
 
             let mut events = Vec::new();
 
-            for clip_action in self.0.write(context.gc_context).clip_actions().iter() {
-                match clip_action.event {
-                    ClipEvent::Initialize => context.action_queue.queue_actions(
+            for event_handler in self
+                .0
+                .write(context.gc_context)
+                .clip_event_handlers()
+                .iter()
+            {
+                if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
+                    context.action_queue.queue_actions(
                         display_object,
                         ActionType::Initialize {
-                            bytecode: clip_action.action_data.clone(),
+                            bytecode: event_handler.action_data.clone(),
                         },
                         false,
-                    ),
-                    ClipEvent::Construct => events.push(clip_action.action_data.clone()),
-                    _ => (),
+                    );
+                }
+                if event_handler.events.contains(ClipEventFlag::CONSTRUCT) {
+                    events.push(event_handler.action_data.clone());
                 }
             }
 
@@ -1871,7 +1881,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // This movieclip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = {
-                    if self.0.read().has_button_clip_event {
+                    if self
+                        .0
+                        .read()
+                        .clip_event_flags
+                        .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
+                    {
                         true
                     } else {
                         let mut activation = Avm1Activation::from_stub(
@@ -2179,23 +2194,27 @@ impl<'gc> MovieClipData<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-
         if let Some(AvmObject::Avm1(object)) = self.object {
             // TODO: What's the behavior for loaded SWF files?
             if context.swf.version() >= 5 {
-                for clip_action in self
-                    .clip_actions
+                for event_handler in self
+                    .clip_event_handlers
                     .iter()
-                    .filter(|action| action.event == event)
+                    .filter(|handler| handler.events.contains(event.flag()))
                 {
-                    // KeyPress events are consumed by a single instance.
-                    if matches!(clip_action.event, ClipEvent::KeyPress { .. }) {
-                        handled = ClipEventResult::Handled;
+                    // KeyPress event must have matching key code.
+                    if let ClipEvent::KeyPress { key_code } = event {
+                        if key_code == event_handler.key_code {
+                            // KeyPress events are consumed by a single instance.
+                            handled = ClipEventResult::Handled;
+                        } else {
+                            continue;
+                        }
                     }
                     context.action_queue.queue_actions(
                         self_display_object,
                         ActionType::Normal {
-                            bytecode: clip_action.action_data.clone(),
+                            bytecode: event_handler.action_data.clone(),
                         },
                         event == ClipEvent::Unload,
                     );
@@ -2251,12 +2270,17 @@ impl<'gc> MovieClipData<'gc> {
         }
     }
 
-    pub fn clip_actions(&self) -> &[ClipAction] {
-        &self.clip_actions
+    pub fn clip_event_handlers(&self) -> &[ClipEventHandler] {
+        &self.clip_event_handlers
     }
 
-    pub fn set_clip_actions(&mut self, actions: Vec<ClipAction>) {
-        self.clip_actions = actions;
+    pub fn set_clip_event_handlers(&mut self, event_handlers: Vec<ClipEventHandler>) {
+        let mut all_event_flags = ClipEventFlag::empty();
+        for handler in &event_handlers {
+            all_event_flags |= handler.events;
+        }
+        self.clip_event_flags = all_event_flags;
+        self.clip_event_handlers = event_handlers;
     }
 
     fn initialized(&self) -> bool {
@@ -3435,70 +3459,38 @@ bitflags! {
 /// an `onClipEvent`/`on` handler.
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
-pub struct ClipAction {
-    /// The event that triggers this handler.
-    event: ClipEvent,
+pub struct ClipEventHandler {
+    /// The events that triggers this handler.
+    events: ClipEventFlag,
+
+    /// The key code used by the `onKeyPress` event.
+    ///
+    /// Only used if `events` contains `ClipEventFlag::KEY_PRESS`.
+    key_code: ButtonKeyCode,
 
     /// The actions to run.
     action_data: SwfSlice,
 }
 
-impl ClipAction {
-    /// Build a set of clip actions from a SWF movie and a parsed ClipAction.
-    ///
-    /// TODO: Our underlying SWF parser currently does not yield slices of the
-    /// underlying movie, so we cannot convert those slices into a `SwfSlice`.
-    /// Instead, we have to construct a fake `SwfMovie` just to hold one clip
-    /// action.
-    pub fn from_action_and_movie(
-        other: swf::ClipAction<'_>,
-        movie: Arc<SwfMovie>,
-    ) -> impl Iterator<Item = Self> {
-        use swf::ClipEventFlag;
-
-        let key_code = other.key_code;
+impl ClipEventHandler {
+    /// Build an event handler from a SWF movie and a parsed ClipAction.
+    pub fn from_action_and_movie(other: swf::ClipAction<'_>, movie: Arc<SwfMovie>) -> Self {
+        let key_code = if other.events.contains(ClipEventFlag::KEY_PRESS) {
+            other
+                .key_code
+                .and_then(ButtonKeyCode::from_u8)
+                .unwrap_or(ButtonKeyCode::Unknown)
+        } else {
+            ButtonKeyCode::Unknown
+        };
         let action_data = SwfSlice::from(movie)
             .to_unbounded_subslice(other.action_data)
             .unwrap();
-
-        let mut events = Vec::new();
-        let bits = other.events.bits();
-        let mut bit = 1u32;
-        while bits & !(bit - 1) != 0 {
-            if bits & bit != 0 {
-                events.push(ClipEventFlag::from_bits_truncate(bit));
-            }
-            bit <<= 1;
+        Self {
+            events: other.events,
+            key_code,
+            action_data,
         }
-        events.into_iter().map(move |event| Self {
-            event: match event {
-                ClipEventFlag::CONSTRUCT => ClipEvent::Construct,
-                ClipEventFlag::DATA => ClipEvent::Data,
-                ClipEventFlag::DRAG_OUT => ClipEvent::DragOut,
-                ClipEventFlag::DRAG_OVER => ClipEvent::DragOver,
-                ClipEventFlag::ENTER_FRAME => ClipEvent::EnterFrame,
-                ClipEventFlag::INITIALIZE => ClipEvent::Initialize,
-                ClipEventFlag::KEY_UP => ClipEvent::KeyUp,
-                ClipEventFlag::KEY_DOWN => ClipEvent::KeyDown,
-                ClipEventFlag::KEY_PRESS => ClipEvent::KeyPress {
-                    key_code: key_code
-                        .and_then(ButtonKeyCode::from_u8)
-                        .unwrap_or(ButtonKeyCode::Unknown),
-                },
-                ClipEventFlag::LOAD => ClipEvent::Load,
-                ClipEventFlag::MOUSE_UP => ClipEvent::MouseUp,
-                ClipEventFlag::MOUSE_DOWN => ClipEvent::MouseDown,
-                ClipEventFlag::MOUSE_MOVE => ClipEvent::MouseMove,
-                ClipEventFlag::PRESS => ClipEvent::Press,
-                ClipEventFlag::ROLL_OUT => ClipEvent::RollOut,
-                ClipEventFlag::ROLL_OVER => ClipEvent::RollOver,
-                ClipEventFlag::RELEASE => ClipEvent::Release,
-                ClipEventFlag::RELEASE_OUTSIDE => ClipEvent::ReleaseOutside,
-                ClipEventFlag::UNLOAD => ClipEvent::Unload,
-                _ => unreachable!(),
-            },
-            action_data: action_data.clone(),
-        })
     }
 }
 
