@@ -2381,7 +2381,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         type_name_index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop();
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
@@ -2400,7 +2400,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         });
         let type_object = found?.coerce_to_object(self)?;
 
-        let is_instance_of = value.is_of_type(type_object)?;
+        let is_instance_of = value.is_of_type(self, type_object)?;
         self.context.avm2.push(is_instance_of);
 
         Ok(FrameControl::Continue)
@@ -2408,9 +2408,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_is_type_late(&mut self) -> Result<FrameControl<'gc>, Error> {
         let type_object = self.context.avm2.pop().coerce_to_object(self)?;
-        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop();
 
-        let is_instance_of = value.is_of_type(type_object)?;
+        let is_instance_of = value.is_of_type(self, type_object)?;
 
         self.context.avm2.push(is_instance_of);
 

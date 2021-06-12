@@ -1,6 +1,6 @@
 //! Boxed primitives
 
-use std::cell::RefMut;
+use std::cell::{Ref, RefMut};
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
@@ -140,5 +140,9 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
 
     fn as_primitive_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |pod| &mut pod.primitive))
+    }
+
+    fn as_primitive(&self) -> Option<Ref<Value<'gc>>> {
+        Some(Ref::map(self.0.read(), |pod| &pod.primitive))
     }
 }

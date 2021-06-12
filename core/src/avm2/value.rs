@@ -631,6 +631,75 @@ impl<'gc> Value<'gc> {
         Ok(self.clone())
     }
 
+    /// Determine if this value is any kind of number.
+    pub fn is_number(&self) -> bool {
+        match self {
+            Value::Number(_) => true,
+            Value::Integer(_) => true,
+            Value::Unsigned(_) => true,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_number()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is a number representable as a u32 without loss
+    /// of precision.
+    #[allow(clippy::float_cmp)]
+    pub fn is_u32(&self) -> bool {
+        match self {
+            Value::Number(n) => *n == n.round() && n.is_sign_positive() && *n <= u32::MAX as f64,
+            Value::Integer(i) => i.is_positive() || *i == 0,
+            Value::Unsigned(_) => true,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is a number representable as an i32 without
+    /// loss of precision.
+    #[allow(clippy::float_cmp)]
+    pub fn is_i32(&self) -> bool {
+        match self {
+            Value::Number(n) => *n == n.round() && *n >= i32::MIN as f64 && *n <= i32::MAX as f64,
+            Value::Integer(_) => true,
+            Value::Unsigned(u) => *u <= i32::MAX as u32,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is of a given type.
+    ///
+    /// This implements a particularly unusual rule: primitive numeric values
+    /// considered instances of all numeric types that can represent them. For
+    /// example, 5 is simultaneously an instance of `int`, `uint`, and
+    /// `Number`.
+    pub fn is_of_type(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        type_object: Object<'gc>,
+    ) -> Result<bool, Error> {
+        if let Some(type_class) = type_object.as_class() {
+            if type_class.read().name() == &QName::new(Namespace::public(), "Number") {
+                return Ok(self.is_number());
+            }
+
+            if type_class.read().name() == &QName::new(Namespace::public(), "uint") {
+                return Ok(self.is_u32());
+            }
+
+            if type_class.read().name() == &QName::new(Namespace::public(), "int") {
+                return Ok(self.is_i32());
+            }
+        }
+
+        if let Ok(o) = self.coerce_to_object(activation) {
+            o.is_of_type(type_object)
+        } else {
+            Ok(false)
+        }
+    }
+
     /// Determine if two values are abstractly equal to each other.
     ///
     /// This abstract equality algorithm is intended to match ECMA-262 3rd

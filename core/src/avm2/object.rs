@@ -1059,6 +1059,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Unwrap this object as an immutable primitive value.
+    ///
+    /// This function should not be called in cases where a normal `Value`
+    /// coercion would do. It *only* accounts for boxed primitives, and not
+    /// `valueOf`.
+    fn as_primitive(&self) -> Option<Ref<Value<'gc>>> {
+        None
+    }
+
     /// Unwrap this object as a mutable primitive value.
     fn as_primitive_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
         None
