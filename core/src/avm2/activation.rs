@@ -2601,20 +2601,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Implements `Op::Coerce`
     fn op_coerce(
         &mut self,
-        _method: Gc<'gc, BytecodeMethod<'gc>>,
-        _index: Index<AbcMultiname>,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let val = self.context.avm2.pop();
+        let type_name = self.pool_multiname_static_any(method, index)?;
 
-        let x = match val {
-            Value::Null | Value::Undefined => Value::Null,
-            Value::Number(_)
-            | Value::String(_)
-            | Value::Unsigned(_)
-            | Value::Integer(_)
-            | Value::Bool(_) => Value::Object(val.coerce_to_object(self)?),
-            Value::Object(_) => val,
-        };
+        let x = val.coerce_to_type(self, type_name)?;
 
         self.context.avm2.push(x);
         Ok(FrameControl::Continue)
