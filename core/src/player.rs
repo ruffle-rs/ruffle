@@ -584,6 +584,16 @@ impl Player {
                 }
             };
 
+            if let Some(menu) = menu_object {
+                if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
+                    Self::run_context_menu_custom_callback(
+                        menu,
+                        on_select,
+                        &mut activation.context,
+                    );
+                }
+            }
+
             let menu = crate::avm1::globals::context_menu::make_context_menu_state(
                 menu_object,
                 &mut activation,
