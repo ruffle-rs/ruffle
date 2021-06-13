@@ -1665,6 +1665,27 @@ impl<'gc> MovieClip<'gc> {
     pub fn tag_stream_len(&self) -> usize {
         self.0.read().tag_stream_len()
     }
+
+    pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
+        if self
+            .0
+            .read()
+            .clip_event_flags
+            .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
+        {
+            true
+        } else {
+            let mut activation = Avm1Activation::from_stub(
+                context.reborrow(),
+                ActivationIdentifier::root("[Mouse Pick]"),
+            );
+            let object = self.object().coerce_to_object(&mut activation);
+
+            ClipEvent::BUTTON_EVENT_METHODS
+                .iter()
+                .any(|handler| object.has_property(&mut activation, handler))
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1880,26 +1901,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if self.world_bounds().contains(point) {
                 // This movieclip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
-                let is_button_mode = {
-                    if self
-                        .0
-                        .read()
-                        .clip_event_flags
-                        .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
-                    {
-                        true
-                    } else {
-                        let mut activation = Avm1Activation::from_stub(
-                            context.reborrow(),
-                            ActivationIdentifier::root("[Mouse Pick]"),
-                        );
-                        let object = self.object().coerce_to_object(&mut activation);
-
-                        ClipEvent::BUTTON_EVENT_METHODS
-                            .iter()
-                            .any(|handler| object.has_property(&mut activation, handler))
-                    }
-                };
+                let is_button_mode = self.is_button_mode(context);
 
                 if is_button_mode {
                     let mut options = HitTestOptions::SKIP_INVISIBLE;
@@ -1969,6 +1971,22 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             for child in self.iter_execution_list() {
                 if child.handle_clip_event(context, event) == ClipEventResult::Handled {
                     return ClipEventResult::Handled;
+                }
+            }
+        }
+
+        let frame_name = match event {
+            ClipEvent::RollOut => Some("_up"),
+            ClipEvent::RollOver => Some("_over"),
+            ClipEvent::Press => Some("_down"),
+            ClipEvent::Release => Some("_over"),
+            _ => None,
+        };
+
+        if let Some(frame_name) = frame_name {
+            if let Some(frame_number) = self.frame_label_to_number(frame_name) {
+                if self.is_button_mode(context) {
+                    self.goto_frame(context, frame_number, true);
                 }
             }
         }
