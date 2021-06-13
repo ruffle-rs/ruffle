@@ -850,6 +850,7 @@ impl Player {
             _ => None,
         };
 
+        let mut key_press_handled = false;
         if button_event.is_some() {
             self.mutate_with_update_context(|context| {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
@@ -857,19 +858,33 @@ impl Player {
                     if let Some(button_event) = button_event {
                         let state = level.handle_clip_event(context, button_event);
                         if state == ClipEventResult::Handled {
+                            key_press_handled = true;
                             return;
+                        } else if let Some(text) =
+                            context.focus_tracker.get().and_then(|o| o.as_edit_text())
+                        {
+                            // Text fields listen for arrow key presses, etc.
+                            if text.handle_text_control_event(context, button_event)
+                                == ClipEventResult::Handled
+                            {
+                                key_press_handled = true;
+                                return;
+                            }
                         }
                     }
                 }
             });
         }
 
-        if let PlayerEvent::TextInput { codepoint } = event {
-            self.mutate_with_update_context(|context| {
-                if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
-                    text.text_input(codepoint, context);
-                }
-            });
+        // keyPress events take precedence over text input.
+        if !key_press_handled {
+            if let PlayerEvent::TextInput { codepoint } = event {
+                self.mutate_with_update_context(|context| {
+                    if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                        text.text_input(codepoint, context);
+                    }
+                });
+            }
         }
 
         // Propagate clip events.
