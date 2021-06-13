@@ -44,8 +44,16 @@ pub fn create_class<'gc>(
     let class_class = Class::new(
         QName::new(Namespace::public(), "Class"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(
+            instance_init,
+            "<Class instance initializer>",
+            activation.context.gc_context,
+        ),
+        Method::from_builtin_only(
+            class_init,
+            "<Class class initializer>",
+            activation.context.gc_context,
+        ),
         activation.context.gc_context,
     );
 

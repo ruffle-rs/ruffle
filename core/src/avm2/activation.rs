@@ -2,8 +2,7 @@
 
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::BytecodeMethod;
-use crate::avm2::method::Method;
+use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -12,7 +11,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
 use crate::avm2::string::AvmString;
-use crate::avm2::value::{abc_default_value, Value};
+use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
@@ -23,8 +22,8 @@ use std::cmp::{min, Ordering};
 use std::convert::{TryFrom, TryInto};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, Method as AbcMethod, MethodParam as AbcMethodParam,
-    Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
+    Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
+    Namespace as AbcNamespace, Op,
 };
 
 /// Represents a particular register set.
@@ -162,7 +161,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = Some(Scope::push_scope(None, script_scope, context.gc_context));
 
         let num_locals = match method {
-            Method::Native(_nm) => 0,
+            Method::Native { .. } => 0,
             Method::Entry(bytecode) => {
                 let body: Result<_, Error> = bytecode.body().ok_or_else(|| {
                     "Cannot execute non-native method (for script) without body".into()
@@ -193,43 +192,81 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         })
     }
 
+    /// Resolve a single parameter value.
+    ///
     /// Given an individual parameter value and the associated parameter's
     /// configuration, return what value should be stored in the called
     /// function's local registers (or an error, if the parameter violates the
     /// signature of the current called method).
     fn resolve_parameter_value(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
+        method_name: &str,
         value: Option<&Value<'gc>>,
-        param_config: &AbcMethodParam,
+        param_config: &ParamConfig<'gc>,
         index: usize,
     ) -> Result<Value<'gc>, Error> {
-        let kind = param_config.kind.clone();
-        let param_type_name = self.pool_multiname_static_any(method, kind)?;
-
-        let param_name = if let Some(name_index) = &param_config.name {
-            self.pool_string(&method, name_index.clone())?
-        } else {
-            "<Unnamed parameter>".into()
-        };
-
         let arg = if let Some(value) = value {
             Cow::Borrowed(value)
         } else if let Some(default) = &param_config.default_value {
-            Cow::Owned(abc_default_value(method.translation_unit(), default, self)?)
-        } else if param_type_name.is_any() {
+            Cow::Borrowed(default)
+        } else if param_config.param_type_name.is_any() {
             return Ok(Value::Undefined);
         } else {
             return Err(format!(
                 "Param {} (index {}) was missing when calling {}",
-                param_name,
-                index,
-                method.method_name()
+                param_config.param_name, index, method_name
             )
             .into());
         };
 
-        arg.coerce_to_type(self, param_type_name)
+        arg.coerce_to_type(self, param_config.param_type_name.clone())
+    }
+
+    /// Statically resolve all of the parameters for a given method.
+    ///
+    /// This function makes no attempt to enforce a given method's parameter
+    /// count limits or to package variadic arguments.
+    ///
+    /// The returned list of parameters will be coerced to the stated types in
+    /// the signature, with missing parameters filled in with defaults.
+    pub fn resolve_parameters(
+        &mut self,
+        method_name: &str,
+        user_arguments: &[Value<'gc>],
+        signature: &[ParamConfig<'gc>],
+    ) -> Result<Vec<Value<'gc>>, Error> {
+        let mut arguments_list = Vec::new();
+        for (i, (arg, param_config)) in user_arguments.iter().zip(signature.iter()).enumerate() {
+            arguments_list.push(self.resolve_parameter_value(
+                method_name,
+                Some(arg),
+                param_config,
+                i,
+            )?);
+        }
+
+        match user_arguments.len().cmp(&signature.len()) {
+            Ordering::Greater => {
+                //Variadic parameters exist, just push them into the list
+                for arg in user_arguments[signature.len()..].iter() {
+                    arguments_list.push(arg.clone());
+                }
+            }
+            Ordering::Less => {
+                //Apply remaining default parameters
+                for (i, param_config) in signature[user_arguments.len()..].iter().enumerate() {
+                    arguments_list.push(self.resolve_parameter_value(
+                        method_name,
+                        None,
+                        param_config,
+                        i + user_arguments.len(),
+                    )?);
+                }
+            }
+            _ => {}
+        }
+
+        Ok(arguments_list)
     }
 
     /// Construct an activation for the execution of a particular bytecode
@@ -251,18 +288,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let has_rest_or_args = method.is_variadic();
         let arg_register = if has_rest_or_args { 1 } else { 0 };
 
-        let params = method.method_params();
-        if user_arguments.len() > params.len() && !has_rest_or_args {
+        let signature = method.signature();
+        if user_arguments.len() > signature.len() && !has_rest_or_args {
             return Err(format!(
                 "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
                 method.method_name(),
                 user_arguments.len(),
-                params.len()
+                signature.len()
             )
             .into());
         }
 
-        let num_declared_arguments = params.len() as u32;
+        let num_declared_arguments = signature.len() as u32;
 
         let local_registers = GcCell::allocate(
             context.gc_context,
@@ -278,8 +315,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
-            let activation_class =
-                Class::from_method_body(&mut dummy_activation, translation_unit, abc_method, body)?;
+            let activation_class = Class::for_activation_constr(
+                &mut dummy_activation,
+                translation_unit,
+                abc_method,
+                body,
+            )?;
             let constr =
                 ClassObject::from_class(&mut dummy_activation, activation_class, None, scope)?;
 
@@ -305,40 +346,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         //Statically verify all non-variadic, provided parameters.
-        let mut arguments_list = Vec::new();
-        for (i, (arg, param_config)) in user_arguments.iter().zip(params.iter()).enumerate() {
-            arguments_list.push(activation.resolve_parameter_value(
-                method,
-                Some(arg),
-                param_config,
-                i,
-            )?);
-        }
-
-        match user_arguments.len().cmp(&params.len()) {
-            Ordering::Greater => {
-                //Variadic parameters exist, just push them into the list
-                for arg in user_arguments[params.len()..].iter() {
-                    arguments_list.push(arg.clone());
-                }
-            }
-            Ordering::Less => {
-                //Apply remaining default parameters
-                for (i, param_config) in params[user_arguments.len()..].iter().enumerate() {
-                    arguments_list.push(activation.resolve_parameter_value(
-                        method,
-                        None,
-                        param_config,
-                        i + user_arguments.len(),
-                    )?);
-                }
-            }
-            _ => {}
-        }
+        let arguments_list =
+            activation.resolve_parameters(method.method_name(), user_arguments, signature)?;
 
         {
             let mut write = local_registers.write(activation.context.gc_context);
-            for (i, arg) in arguments_list[0..min(params.len(), arguments_list.len())]
+            for (i, arg) in arguments_list[0..min(signature.len(), arguments_list.len())]
                 .iter()
                 .enumerate()
             {
@@ -350,7 +363,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let args_array = if method.method().needs_arguments_object {
                 ArrayStorage::from_args(&arguments_list)
             } else if method.method().needs_rest {
-                if let Some(rest_args) = arguments_list.get(params.len()..) {
+                if let Some(rest_args) = arguments_list.get(signature.len()..) {
                     ArrayStorage::from_args(rest_args)
                 } else {
                     ArrayStorage::new(0)
@@ -626,12 +639,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
     ) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
-        BytecodeMethod::from_method_index(
-            method.translation_unit(),
-            index.clone(),
-            self.context.gc_context,
-        )
-        .ok_or_else(|| format!("Method index {} does not exist", index.0).into())
+        BytecodeMethod::from_method_index(method.translation_unit(), index, self)
     }
 
     /// Retrieve a class entry from the current ABC file's method table.

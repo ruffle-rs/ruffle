@@ -720,8 +720,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.utils"), "ByteArray"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<ByteArray instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<ByteArray class initializer>", mc),
         mc,
     );
 
@@ -762,7 +762,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("writeUTFBytes", write_utf_bytes),
         ("readUTFBytes", read_utf_bytes),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("bytesAvailable", Some(bytes_available), None),
@@ -770,7 +770,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("position", Some(position), Some(set_position)),
         ("endian", Some(endian), Some(set_endian)),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

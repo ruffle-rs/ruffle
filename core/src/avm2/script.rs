@@ -82,7 +82,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_method(
         self,
         method_index: u32,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Method<'gc>, Error> {
         let read = self.0.read();
         if let Some(method) = read.methods.get(&method_index) {
@@ -92,12 +92,11 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
-            BytecodeMethod::from_method_index(self, Index::new(method_index), mc)
-                .ok_or_else(|| "Method index does not exist".into());
+            BytecodeMethod::from_method_index(self, Index::new(method_index), activation);
         let method: Method<'gc> = method?.into();
 
         self.0
-            .write(mc)
+            .write(activation.context.gc_context)
             .methods
             .insert(method_index, method.clone());
 
@@ -117,7 +116,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let class = Class::from_abc_index(self, class_index, activation.context.gc_context)?;
+        let class = Class::from_abc_index(self, class_index, activation)?;
         self.0
             .write(activation.context.gc_context)
             .classes
@@ -148,8 +147,7 @@ impl<'gc> TranslationUnit<'gc> {
         let mut activation = Activation::from_nothing(uc.reborrow());
         let global = DomainObject::script_global(&mut activation, domain)?;
 
-        let mut script =
-            Script::from_abc_index(self, script_index, global, activation.context.gc_context)?;
+        let mut script = Script::from_abc_index(self, script_index, global, &mut activation)?;
         self.0
             .write(activation.context.gc_context)
             .scripts
@@ -259,7 +257,11 @@ impl<'gc> Script<'gc> {
             mc,
             ScriptData {
                 globals,
-                init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                init: Method::from_builtin_only(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Built-in script initializer>",
+                    mc,
+                ),
                 traits: Vec::new(),
                 traits_loaded: true,
                 initialized: false,
@@ -280,7 +282,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script_index: u32,
         globals: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
         let abc = unit.abc();
         let script: Result<&AbcScript, Error> = abc
@@ -289,10 +291,10 @@ impl<'gc> Script<'gc> {
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
 
-        let init = unit.load_method(script.init_method.0, mc)?;
+        let init = unit.load_method(script.init_method.0, activation)?;
 
         Ok(Self(GcCell::allocate(
-            mc,
+            activation.context.gc_context,
             ScriptData {
                 globals,
                 init,

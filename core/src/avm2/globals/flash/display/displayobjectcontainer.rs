@@ -587,18 +587,26 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             "DisplayObjectContainer",
         ),
         Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(
+            instance_init,
+            "<DisplayObjectContainer instance initializer>",
+            mc,
+        ),
+        Method::from_builtin_only(class_init, "<DisplayObjectContainer class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    write.set_native_instance_init(Method::from_builtin(native_instance_init));
+    write.set_native_instance_init(Method::from_builtin_only(
+        native_instance_init,
+        "<DisplayObjectContainer native instance initializer>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("numChildren", Some(num_children), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("getChildAt", get_child_at),
@@ -620,7 +628,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             are_inaccessible_objects_under_point,
         ),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

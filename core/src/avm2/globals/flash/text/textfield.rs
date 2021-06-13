@@ -856,8 +856,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "TextField"),
         Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<TextField instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<TextField class initializer>", mc),
         mc,
     );
 
@@ -896,7 +896,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("type", Some(get_type), Some(set_type)),
         ("wordWrap", Some(word_wrap), Some(set_word_wrap)),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("appendText", append_text),
@@ -906,7 +906,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setSelection", set_selection),
         ("setTextFormat", set_text_format),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

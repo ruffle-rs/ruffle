@@ -46,8 +46,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Math"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Math instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<Math class initializer>", mc),
         mc,
     );
 
@@ -87,7 +87,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sqrt", math_wrap_std!(f64::sqrt)),
         ("tan", math_wrap_std!(f64::tan)),
     ];
-    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }

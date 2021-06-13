@@ -408,8 +408,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "LoaderInfo"),
         Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<LoaderInfo instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<LoaderInfo class initializer>", mc),
         mc,
     );
 
@@ -417,7 +417,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_deriver(loaderinfo_deriver);
-    write.set_native_instance_init(Method::from_builtin(native_instance_init));
+    write.set_native_instance_init(Method::from_builtin_only(
+        native_instance_init,
+        "<LoaderInfo native instance initializer>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("actionScriptVersion", Some(action_script_version), None),
@@ -436,7 +440,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("loaderUrl", Some(loader_url), None),
         ("parameters", Some(parameters), None),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

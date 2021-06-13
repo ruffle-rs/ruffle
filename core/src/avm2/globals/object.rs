@@ -183,7 +183,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "hasOwnProperty"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(has_own_property),
+            Method::from_builtin_only(has_own_property, "hasOwnProperty", gc_context),
             None,
             fn_proto,
             None,
@@ -195,7 +195,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "propertyIsEnumerable"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(property_is_enumerable),
+            Method::from_builtin_only(property_is_enumerable, "propertyIsEnumerable", gc_context),
             None,
             fn_proto,
             None,
@@ -207,7 +207,11 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "setPropertyIsEnumerable"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(set_property_is_enumerable),
+            Method::from_builtin_only(
+                set_property_is_enumerable,
+                "setPropertyIsEnumerable",
+                gc_context,
+            ),
             None,
             fn_proto,
             None,
@@ -219,7 +223,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "isPrototypeOf"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(is_prototype_of),
+            Method::from_builtin_only(is_prototype_of, "isPrototypeOf", gc_context),
             None,
             fn_proto,
             None,
@@ -231,7 +235,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "toString"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(to_string),
+            Method::from_builtin_only(to_string, "toString", gc_context),
             None,
             fn_proto,
             None,
@@ -243,7 +247,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "toLocaleString"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(to_locale_string),
+            Method::from_builtin_only(to_locale_string, "toLocaleString", gc_context),
             None,
             fn_proto,
             None,
@@ -255,7 +259,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::public(), "valueOf"),
         FunctionObject::from_method_and_proto(
             gc_context,
-            Method::from_builtin(value_of),
+            Method::from_builtin_only(value_of, "valueOf", gc_context),
             None,
             fn_proto,
             None,
@@ -266,8 +270,8 @@ pub fn fill_proto<'gc>(
     let object_class = Class::new(
         QName::new(Namespace::public(), "Object"),
         None,
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Object instance initializer>", gc_context),
+        Method::from_builtin_only(class_init, "<Object class initializer>", gc_context),
         gc_context,
     );
     let mut write = object_class.write(gc_context);
@@ -284,7 +288,7 @@ pub fn fill_proto<'gc>(
         ("isPrototypeOf", is_prototype_of),
         ("propertyIsEnumerable", property_is_enumerable),
     ];
-    write.define_as3_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(gc_context, PUBLIC_INSTANCE_METHODS);
 
     drop(write);
 

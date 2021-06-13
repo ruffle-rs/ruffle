@@ -288,7 +288,7 @@ impl<'gc> Class<'gc> {
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<GcCell<'gc, Self>, Error> {
         let abc = unit.abc();
         let abc_class: Result<&AbcClass, Error> = abc
@@ -303,19 +303,27 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(unit, abc_instance.name.clone(), mc)?;
+        let name = QName::from_abc_multiname(
+            unit,
+            abc_instance.name.clone(),
+            activation.context.gc_context,
+        )?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(Multiname::from_abc_multiname_static(
                 unit,
                 abc_instance.super_name.clone(),
-                mc,
+                activation.context.gc_context,
             )?)
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(Namespace::from_abc_namespace(unit, ns.clone(), mc)?)
+            Some(Namespace::from_abc_namespace(
+                unit,
+                ns.clone(),
+                activation.context.gc_context,
+            )?)
         } else {
             None
         };
@@ -325,13 +333,13 @@ impl<'gc> Class<'gc> {
             interfaces.push(Multiname::from_abc_multiname_static(
                 unit,
                 interface_name.clone(),
-                mc,
+                activation.context.gc_context,
             )?);
         }
 
-        let instance_init = unit.load_method(abc_instance.init_method.0, mc)?;
+        let instance_init = unit.load_method(abc_instance.init_method.0, activation)?;
         let native_instance_init = instance_init.clone();
-        let class_init = unit.load_method(abc_class.init_method.0, mc)?;
+        let class_init = unit.load_method(abc_class.init_method.0, activation)?;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -339,7 +347,7 @@ impl<'gc> Class<'gc> {
         attributes.set(ClassAttributes::INTERFACE, abc_instance.is_interface);
 
         Ok(GcCell::allocate(
-            mc,
+            activation.context.gc_context,
             Self {
                 name,
                 super_class,
@@ -402,7 +410,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn from_method_body(
+    pub fn for_activation_constr(
         activation: &mut Activation<'_, 'gc, '_>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
@@ -429,10 +437,22 @@ impl<'gc> Class<'gc> {
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_deriver: Deriver(implicit_deriver),
-                instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
-                native_instance_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                instance_init: Method::from_builtin_only(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Activation object constructor>",
+                    activation.context.gc_context,
+                ),
+                native_instance_init: Method::from_builtin_only(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Activation object constructor>",
+                    activation.context.gc_context,
+                ),
                 instance_traits: traits,
-                class_init: Method::from_builtin(|_, _, _| Ok(Value::Undefined)),
+                class_init: Method::from_builtin_only(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Activation object class constructor>",
+                    activation.context.gc_context,
+                ),
                 class_initializer_called: false,
                 class_traits: Vec::new(),
                 traits_loaded: true,
@@ -484,49 +504,59 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_public_builtin_instance_methods(
         &mut self,
+        mc: MutationContext<'gc, '_>,
         items: &[(&'static str, NativeMethod)],
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
                 QName::new(Namespace::public(), name),
-                Method::from_builtin(value),
+                Method::from_builtin_only(value, name, mc),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_as3_builtin_instance_methods(&mut self, items: &[(&'static str, NativeMethod)]) {
+    pub fn define_as3_builtin_instance_methods(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        items: &[(&'static str, NativeMethod)],
+    ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
                 QName::new(Namespace::as3_namespace(), name),
-                Method::from_builtin(value),
+                Method::from_builtin_only(value, name, mc),
             ));
         }
     }
     #[inline(never)]
-    pub fn define_public_builtin_class_methods(&mut self, items: &[(&'static str, NativeMethod)]) {
+    pub fn define_public_builtin_class_methods(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        items: &[(&'static str, NativeMethod)],
+    ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_method(
                 QName::new(Namespace::public(), name),
-                Method::from_builtin(value),
+                Method::from_builtin_only(value, name, mc),
             ));
         }
     }
     #[inline(never)]
     pub fn define_public_builtin_instance_properties(
         &mut self,
+        mc: MutationContext<'gc, '_>,
         items: &[(&'static str, Option<NativeMethod>, Option<NativeMethod>)],
     ) {
         for &(name, getter, setter) in items {
             if let Some(getter) = getter {
                 self.define_instance_trait(Trait::from_getter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin(getter),
+                    Method::from_builtin_only(getter, name, mc),
                 ));
             }
             if let Some(setter) = setter {
                 self.define_instance_trait(Trait::from_setter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin(setter),
+                    Method::from_builtin_only(setter, name, mc),
                 ));
             }
         }

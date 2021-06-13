@@ -333,8 +333,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.geom"), "Point"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Point instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<Point class initializer>", mc),
         mc,
     );
 
@@ -343,14 +343,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("length", Some(length), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[
         ("distance", distance),
         ("interpolate", interpolate),
         ("polar", polar),
     ];
-    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("add", add),
@@ -363,6 +363,6 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("subtract", subtract),
         ("toString", to_string),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
     class
 }

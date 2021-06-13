@@ -32,8 +32,12 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "IEventDispatcher"),
         None,
-        Method::from_builtin(bodiless_method),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(
+            bodiless_method,
+            "<IEventDispatcher instance initializer>",
+            mc,
+        ),
+        Method::from_builtin_only(class_init, "<IEventDispatcher interface initializer>", mc),
         mc,
     );
 
@@ -48,7 +52,7 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
         ("removeEventListener", bodiless_method),
         ("willTrigger", bodiless_method),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

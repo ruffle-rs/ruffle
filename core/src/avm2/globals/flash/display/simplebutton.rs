@@ -377,8 +377,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "SimpleButton"),
         Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<SimpleButton instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<SimpleButton class initializer>", mc),
         mc,
     );
 
@@ -403,7 +403,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_use_hand_cursor),
         ),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

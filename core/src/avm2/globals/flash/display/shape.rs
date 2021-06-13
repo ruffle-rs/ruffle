@@ -85,8 +85,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Shape"),
         Some(QName::new(Namespace::package("flash.display"), "DisplayObject").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Shape instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<Shape class initializer>", mc),
         mc,
     );
 
@@ -94,7 +94,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("graphics", Some(graphics), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(

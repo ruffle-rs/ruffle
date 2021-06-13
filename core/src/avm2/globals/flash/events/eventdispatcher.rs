@@ -242,8 +242,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "EventDispatcher"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<EventDispatcher instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<EventDispatcher class initializer>", mc),
         mc,
     );
 
@@ -260,7 +260,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("willTrigger", will_trigger),
         ("dispatchEvent", dispatch_event),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),

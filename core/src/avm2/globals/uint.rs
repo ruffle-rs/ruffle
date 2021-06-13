@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_deriver, Object};
 use crate::avm2::value::Value;
@@ -45,14 +45,32 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "uint"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_and_params(
+            instance_init,
+            "<uint instance initializer>",
+            vec![ParamConfig::of_type(
+                "num",
+                QName::new(Namespace::public(), "Object").into(),
+            )],
+            false,
+            mc,
+        ),
+        Method::from_builtin_only(class_init, "<uint class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
     write.set_instance_deriver(primitive_deriver);
-    write.set_native_instance_init(Method::from_builtin(native_instance_init));
+    write.set_native_instance_init(Method::from_builtin_and_params(
+        native_instance_init,
+        "<uint native instance initializer>",
+        vec![ParamConfig::of_type(
+            "num",
+            QName::new(Namespace::public(), "Object").into(),
+        )],
+        false,
+        mc,
+    ));
 
     class
 }

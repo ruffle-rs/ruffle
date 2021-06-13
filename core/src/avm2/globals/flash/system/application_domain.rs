@@ -144,8 +144,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.system"), "ApplicationDomain"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(
+            instance_init,
+            "<ApplicationDomain instance initializer>",
+            mc,
+        ),
+        Method::from_builtin_only(class_init, "<ApplicationDomain class initializer>", mc),
         mc,
     );
 
@@ -158,11 +162,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getDefinition", get_definition),
         ("hasDefinition", has_definition),
     ];
-    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

@@ -590,15 +590,19 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "DisplayObject"),
         Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<DisplayObject instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<DisplayObject class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
     write.set_instance_deriver(stage_deriver);
-    write.set_native_instance_init(Method::from_builtin(native_instance_init));
+    write.set_native_instance_init(Method::from_builtin_only(
+        native_instance_init,
+        "<DisplayObject native instance initializer>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
@@ -618,13 +622,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("mouseY", Some(mouse_y), None),
         ("loaderInfo", Some(loader_info), None),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("hitTestPoint", hit_test_point),
         ("hitTestObject", hit_test_object),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

@@ -369,8 +369,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Graphics"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Graphics instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<Graphics class initializer>", mc),
         mc,
     );
 
@@ -378,7 +378,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_deriver(stage_deriver);
-    write.set_native_instance_init(Method::from_builtin(native_instance_init));
+    write.set_native_instance_init(Method::from_builtin_only(
+        native_instance_init,
+        "<Graphics native instance initializer>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
         ("beginFill", begin_fill),
@@ -390,7 +394,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("moveTo", move_to),
         ("drawRect", draw_rect),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

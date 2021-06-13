@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::method::NativeMethod;
+use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     ClassObject, DomainObject, FunctionObject, Object, ScriptObject, TObject,
@@ -255,19 +255,20 @@ impl<'gc> SystemConstructors<'gc> {
 fn function<'gc>(
     mc: MutationContext<'gc, '_>,
     package: impl Into<AvmString<'gc>>,
-    name: impl Into<AvmString<'gc>>,
+    name: &'static str,
     nf: NativeMethod,
     fn_proto: Object<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
 ) -> Result<(), Error> {
-    let name = QName::new(Namespace::package(package), name);
-    let as3fn = FunctionObject::from_method_and_proto(mc, nf.into(), None, fn_proto, None).into();
-    domain.export_definition(name.clone(), script, mc)?;
+    let qname = QName::new(Namespace::package(package), name);
+    let method = Method::from_builtin_only(nf, name, mc);
+    let as3fn = FunctionObject::from_method_and_proto(mc, method, None, fn_proto, None).into();
+    domain.export_definition(qname.clone(), script, mc)?;
     script
         .init()
         .1
-        .install_dynamic_property(mc, name, as3fn)
+        .install_dynamic_property(mc, qname, as3fn)
         .unwrap();
 
     Ok(())

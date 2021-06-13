@@ -131,7 +131,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().exec
+        self.0.read().exec.clone()
     }
 
     fn call(

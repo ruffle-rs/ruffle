@@ -291,7 +291,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr;
+        let instance_constr = self.0.read().instance_constr.clone();
 
         instance_constr.exec(
             receiver,
@@ -310,7 +310,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr;
+        let instance_constr = self.0.read().instance_constr.clone();
 
         instance_constr.exec(
             receiver,
@@ -329,7 +329,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr;
+        let instance_constr = self.0.read().instance_constr.clone();
 
         instance_constr.exec(
             receiver,
@@ -348,7 +348,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let native_instance_constr = self.0.read().native_instance_constr;
+        let native_instance_constr = self.0.read().native_instance_constr.clone();
 
         native_instance_constr.exec(
             receiver,

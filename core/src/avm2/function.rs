@@ -1,7 +1,7 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
+use crate::avm2::method::{BytecodeMethod, Method, NativeMethod, ParamConfig};
 use crate::avm2::object::Object;
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
@@ -28,12 +28,26 @@ pub struct BytecodeExecutable<'gc> {
 }
 
 /// Represents code that can be executed by some means.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
-    ///
-    /// The second parameter stores the bound receiver for this function.
-    Native(NativeMethod, Option<Object<'gc>>),
+    Native {
+        /// The function to call to execute the method.
+        method: NativeMethod,
+
+        /// The name of the method.
+        name: &'static str,
+
+        /// The bound reciever for this method.
+        bound_receiver: Option<Object<'gc>>,
+
+        /// The parameter signature of the method.
+        signature: Gc<'gc, Vec<ParamConfig<'gc>>>,
+
+        /// Whether or not this method accepts parameters beyond those
+        /// mentioned in the parameter list.
+        is_variadic: bool,
+    },
 
     /// Code defined in a loaded ABC file.
     Action(Gc<'gc, BytecodeExecutable<'gc>>),
@@ -43,7 +57,14 @@ unsafe impl<'gc> Collect for Executable<'gc> {
     fn trace(&self, cc: CollectionContext) {
         match self {
             Self::Action(be) => be.trace(cc),
-            Self::Native(_nf, receiver) => receiver.trace(cc),
+            Self::Native {
+                bound_receiver,
+                signature,
+                ..
+            } => {
+                bound_receiver.trace(cc);
+                signature.trace(cc);
+            }
         }
     }
 }
@@ -57,7 +78,18 @@ impl<'gc> Executable<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
-            Method::Native(nf) => Self::Native(nf, receiver),
+            Method::Native {
+                method,
+                name,
+                signature,
+                is_variadic,
+            } => Self::Native {
+                method,
+                name,
+                bound_receiver: receiver,
+                signature,
+                is_variadic,
+            },
             Method::Entry(method) => Self::Action(Gc::allocate(
                 mc,
                 BytecodeExecutable {
@@ -82,7 +114,7 @@ impl<'gc> Executable<'gc> {
     /// declared on the function.
     pub fn exec(
         &self,
-        unbound_reciever: Option<Object<'gc>>,
+        unbound_receiver: Option<Object<'gc>>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
         base_constr: Option<Object<'gc>>,
@@ -90,8 +122,14 @@ impl<'gc> Executable<'gc> {
         error_on_too_many_arguments: bool,
     ) -> Result<Value<'gc>, Error> {
         match self {
-            Executable::Native(nf, receiver) => {
-                let receiver = receiver.or(unbound_reciever);
+            Executable::Native {
+                method,
+                name,
+                bound_receiver,
+                signature,
+                is_variadic,
+            } => {
+                let receiver = bound_receiver.or(unbound_receiver);
                 let scope = activation.scope();
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
@@ -100,17 +138,29 @@ impl<'gc> Executable<'gc> {
                     base_constr,
                 )?;
 
-                nf(&mut activation, receiver, arguments)
+                if arguments.len() > signature.len() && !is_variadic {
+                    return Err(format!(
+                        "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
+                        name,
+                        arguments.len(),
+                        signature.len()
+                    )
+                    .into());
+                }
+
+                let arguments = activation.resolve_parameters(name, arguments, &signature)?;
+
+                method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
                 if !error_on_too_many_arguments {
-                    let max_args = bm.method.method_params().len();
+                    let max_args = bm.method.signature().len();
                     if arguments.len() > max_args && !bm.method.is_variadic() {
                         arguments = &arguments[..max_args];
                     }
                 }
 
-                let receiver = bm.receiver.or(unbound_reciever);
+                let receiver = bm.receiver.or(unbound_receiver);
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
                     bm.method,
@@ -136,10 +186,19 @@ impl<'gc> fmt::Debug for Executable<'gc> {
                 .field("scope", &be.scope)
                 .field("receiver", &be.receiver)
                 .finish(),
-            Self::Native(nf, receiver) => fmt
-                .debug_tuple("Executable::Native")
-                .field(&format!("{:p}", nf))
-                .field(receiver)
+            Self::Native {
+                method,
+                name,
+                bound_receiver,
+                signature,
+                is_variadic,
+            } => fmt
+                .debug_struct("Executable::Native")
+                .field("method", &format!("{:p}", method))
+                .field("name", name)
+                .field("bound_receiver", bound_receiver)
+                .field("signature", signature)
+                .field("is_variadic", is_variadic)
                 .finish(),
         }
     }

@@ -77,8 +77,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             )
             .into(),
         ),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_only(instance_init, "<Sprite instance initializer>", mc),
+        Method::from_builtin_only(class_init, "<Sprite class initializer>", mc),
         mc,
     );
 
@@ -88,7 +88,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
         &[("graphics", Some(graphics), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     // Slot for lazy-initialized Graphics object.
     write.define_instance_trait(Trait::from_slot(
