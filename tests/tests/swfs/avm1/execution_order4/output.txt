@@ -1,0 +1,12 @@
+_level0: frame 1
+_level0.clip1: frame 1
+_level0.clip2: frame 1
+_level0.clip2: frame 2
+_level0.clip1: frame 2
+_level0.clip1.child: frame 1
+_level0: frame 2
+_level0.clip1.child: frame 2
+_level0.clip2: frame 3
+_level0.clip1: frame 3
+_level0: frame 3
+_level0.clip1.child: frame 3
