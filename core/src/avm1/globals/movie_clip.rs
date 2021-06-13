@@ -221,6 +221,13 @@ fn attach_bitmap<'gc>(
                         display_object.into(),
                         depth,
                     );
+                    display_object.post_instantiation(
+                        &mut activation.context,
+                        display_object.into(),
+                        None,
+                        Instantiator::Avm1,
+                        true,
+                    );
                 }
             }
         }
