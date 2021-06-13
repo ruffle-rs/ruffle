@@ -592,6 +592,7 @@ swf_tests! {
     (as3_function_call_default, "avm2/function_call_default", 1),
     (as3_function_call_types, "avm2/function_call_types", 1),
     (as3_function_call_coercion, "avm2/function_call_coercion", 1),
+    (as3_istypelate_coerce, "avm2/istypelate_coerce", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
