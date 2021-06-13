@@ -1217,6 +1217,61 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Listens for keyboard text control commands.
+    ///
+    /// TODO: Add explicit text control events (#4452).
+    pub fn handle_text_control_event(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        if let ClipEvent::KeyPress { key_code } = event {
+            let mut edit_text = self.0.write(context.gc_context);
+            let selection = edit_text.selection;
+            if let Some(mut selection) = selection {
+                let text = edit_text.text_spans.text();
+                let length = text.len();
+                match key_code {
+                    ButtonKeyCode::Left => {
+                        if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
+                            && selection.to > 0
+                        {
+                            selection.to = string_utils::prev_char_boundary(text, selection.to);
+                            if !context.ui.is_key_down(KeyCode::Shift) {
+                                selection.from = selection.to;
+                            }
+                        } else if !context.ui.is_key_down(KeyCode::Shift) {
+                            selection.to = selection.start();
+                            selection.from = selection.to;
+                        }
+                        selection.clamp(length);
+                        edit_text.selection = Some(selection);
+                        return ClipEventResult::Handled;
+                    }
+                    ButtonKeyCode::Right => {
+                        if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
+                            && selection.to < length
+                        {
+                            selection.to = string_utils::next_char_boundary(text, selection.to);
+                            if !context.ui.is_key_down(KeyCode::Shift) {
+                                selection.from = selection.to;
+                            }
+                        } else if !context.ui.is_key_down(KeyCode::Shift) {
+                            selection.to = selection.end();
+                            selection.from = selection.to;
+                        }
+                        selection.clamp(length);
+                        edit_text.selection = Some(selection);
+                        return ClipEventResult::Handled;
+                    }
+                    _ => (),
+                }
+            }
+        }
+
+        ClipEventResult::NotHandled
+    }
+
     fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc, '_>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
@@ -1636,65 +1691,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
-        match event {
-            ClipEvent::Press => {
-                let tracker = context.focus_tracker;
-                tracker.set(Some((*self).into()), context);
-                if let Some(position) = self
-                    .screen_position_to_index(*context.mouse_position)
-                    .map(TextSelection::for_position)
-                {
-                    self.0.write(context.gc_context).selection = Some(position);
-                } else {
-                    self.0.write(context.gc_context).selection =
-                        Some(TextSelection::for_position(self.text_length()));
-                }
-                ClipEventResult::Handled
+        if event == ClipEvent::Press {
+            let tracker = context.focus_tracker;
+            tracker.set(Some((*self).into()), context);
+            if let Some(position) = self
+                .screen_position_to_index(*context.mouse_position)
+                .map(TextSelection::for_position)
+            {
+                self.0.write(context.gc_context).selection = Some(position);
+            } else {
+                self.0.write(context.gc_context).selection =
+                    Some(TextSelection::for_position(self.text_length()));
             }
-            ClipEvent::KeyPress { key_code } => {
-                let mut edit_text = self.0.write(context.gc_context);
-                let selection = edit_text.selection;
-                if let Some(mut selection) = selection {
-                    let text = edit_text.text_spans.text();
-                    let length = text.len();
-                    match key_code {
-                        ButtonKeyCode::Left => {
-                            if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
-                                && selection.to > 0
-                            {
-                                selection.to = string_utils::prev_char_boundary(text, selection.to);
-                                if !context.ui.is_key_down(KeyCode::Shift) {
-                                    selection.from = selection.to;
-                                }
-                            } else if !context.ui.is_key_down(KeyCode::Shift) {
-                                selection.to = selection.start();
-                                selection.from = selection.to;
-                            }
-                        }
-                        ButtonKeyCode::Right => {
-                            if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
-                                && selection.to < length
-                            {
-                                selection.to = string_utils::next_char_boundary(text, selection.to);
-                                if !context.ui.is_key_down(KeyCode::Shift) {
-                                    selection.from = selection.to;
-                                }
-                            } else if !context.ui.is_key_down(KeyCode::Shift) {
-                                selection.to = selection.end();
-                                selection.from = selection.to;
-                            }
-                        }
-                        _ => {}
-                    }
-                    selection.clamp(length);
-                    edit_text.selection = Some(selection);
-                    ClipEventResult::Handled
-                } else {
-                    ClipEventResult::NotHandled
-                }
-            }
-            _ => ClipEventResult::NotHandled,
+            return ClipEventResult::Handled;
         }
+        ClipEventResult::NotHandled
     }
 }
 
