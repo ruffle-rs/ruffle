@@ -5,10 +5,10 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{self, AvmString, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
-use crate::backend::navigator::NavigationMethod;
+use crate::backend::{navigator::NavigationMethod, render};
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
@@ -93,6 +93,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -333,6 +334,68 @@ fn begin_fill<'gc>(
             .as_drawing(activation.context.gc_context)
             .unwrap()
             .set_fill_style(None);
+    }
+    Ok(Value::Undefined)
+}
+
+fn begin_bitmap_fill<'gc>(
+    movie_clip: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let mut drawing = movie_clip
+        .as_drawing(activation.context.gc_context)
+        .unwrap();
+    if let Some(bitmap_data) = args
+        .get(0)
+        .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
+    {
+        // Register the bitmap data with the drawing.
+        let bitmap_data = bitmap_data.bitmap_data();
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let bitmap = render::BitmapInfo {
+            handle: bitmap_data
+                .bitmap_handle(activation.context.renderer)
+                .unwrap(),
+            width: bitmap_data.width() as u16,
+            height: bitmap_data.height() as u16,
+        };
+        let id = drawing.add_bitmap(bitmap);
+
+        let mut matrix = if let Some(val) = args.get(1) {
+            avm1::globals::matrix::object_to_matrix(val.coerce_to_object(activation), activation)?
+        } else {
+            Default::default()
+        };
+        // Flash matrix is in pixels. Scale from pixels to twips.
+        const PIXELS_TO_TWIPS: Matrix = Matrix {
+            a: 20.0,
+            b: 0.0,
+            c: 0.0,
+            d: 20.0,
+            tx: Twips::ZERO,
+            ty: Twips::ZERO,
+        };
+        matrix *= PIXELS_TO_TWIPS;
+
+        // `repeating` defaults to true, `smoothed` to false.
+        // `smoothed` parameter may not be listed in some documentation.
+        let is_repeating = args
+            .get(2)
+            .unwrap_or(&Value::Bool(true))
+            .as_bool(activation.swf_version());
+        let is_smoothed = args
+            .get(3)
+            .unwrap_or(&Value::Bool(false))
+            .as_bool(activation.swf_version());
+        drawing.set_fill_style(Some(FillStyle::Bitmap {
+            id,
+            matrix: matrix.into(),
+            is_smoothed,
+            is_repeating,
+        }));
+    } else {
+        drawing.set_fill_style(None);
     }
     Ok(Value::Undefined)
 }

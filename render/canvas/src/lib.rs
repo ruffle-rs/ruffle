@@ -1,7 +1,7 @@
 use ruffle_core::backend::render::{
     swf::{self, CharacterId, GradientInterpolation, GradientSpread},
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, JpegTagFormat, MovieLibrary,
-    RenderBackend, ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, JpegTagFormat,
+    NullBitmapSource, RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::matrix::Matrix;
@@ -419,19 +419,24 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
 
         let data = swf_shape_to_canvas_commands(
             &shape,
-            library,
+            bitmap_source,
             &self.bitmaps,
             self.pixelated_property_value,
             &self.context,
         )
         .unwrap_or_else(|| {
-            swf_shape_to_svg(shape, library, &self.bitmaps, self.pixelated_property_value)
+            swf_shape_to_svg(
+                shape,
+                bitmap_source,
+                &self.bitmaps,
+                self.pixelated_property_value,
+            )
         });
 
         self.shapes.push(data);
@@ -442,25 +447,30 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
         let data = swf_shape_to_canvas_commands(
             &shape,
-            library,
+            bitmap_source,
             &self.bitmaps,
             self.pixelated_property_value,
             &self.context,
         )
         .unwrap_or_else(|| {
-            swf_shape_to_svg(shape, library, &self.bitmaps, self.pixelated_property_value)
+            swf_shape_to_svg(
+                shape,
+                bitmap_source,
+                &self.bitmaps,
+                self.pixelated_property_value,
+            )
         });
         self.shapes[handle.0] = data;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
-        self.register_shape((&shape).into(), None)
+        self.register_shape((&shape).into(), &NullBitmapSource)
     }
 
     fn register_bitmap_jpeg(
@@ -776,7 +786,7 @@ impl RenderBackend for WebCanvasRenderBackend {
 #[allow(clippy::cognitive_complexity)]
 fn swf_shape_to_svg(
     shape: DistilledShape,
-    library: Option<&MovieLibrary<'_>>,
+    bitmap_source: &dyn BitmapSource,
     bitmaps: &[BitmapData],
     pixelated_property_value: &str,
 ) -> ShapeData {
@@ -1032,9 +1042,9 @@ fn swf_shape_to_svg(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        if let Some(bitmap) = library
-                            .and_then(|lib| lib.get_bitmap(*id))
-                            .and_then(|bitmap| bitmaps.get(bitmap.bitmap_handle().0))
+                        if let Some(bitmap) = bitmap_source
+                            .bitmap(*id)
+                            .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
                         {
                             if !bitmap_defs.contains(id) {
                                 let mut image = Image::new()
@@ -1257,7 +1267,7 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 
 fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
-    library: Option<&MovieLibrary<'_>>,
+    bitmap_source: &dyn BitmapSource,
     bitmaps: &[BitmapData],
     _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
@@ -1314,9 +1324,9 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        if let Some(bitmap) = library
-                            .and_then(|lib| lib.get_bitmap(*id))
-                            .and_then(|bitmap| bitmaps.get(bitmap.bitmap_handle().0))
+                        if let Some(bitmap) = bitmap_source
+                            .bitmap(*id)
+                            .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
                         {
                             let image = HtmlImageElement::new_with_width_and_height(
                                 bitmap.width,

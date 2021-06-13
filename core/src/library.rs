@@ -1,7 +1,7 @@
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
-use crate::backend::audio::SoundHandle;
+use crate::backend::{audio::SoundHandle, render};
 use crate::character::Character;
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
@@ -337,7 +337,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables = if data.is_empty() {
             None
         } else {
-            Some(crate::backend::render::remove_invalid_jpeg_data(&data[..]).to_vec())
+            Some(render::remove_invalid_jpeg_data(&data[..]).to_vec())
         }
     }
 
@@ -371,6 +371,16 @@ impl<'gc> MovieLibrary<'gc> {
     /// an AVM1 movie, and thus this domain is unused.
     pub fn avm2_domain(&self) -> Avm2Domain<'gc> {
         self.avm2_domain.unwrap()
+    }
+}
+
+impl<'gc> render::BitmapSource for MovieLibrary<'gc> {
+    fn bitmap(&self, id: u16) -> Option<render::BitmapInfo> {
+        self.get_bitmap(id).map(|bitmap| render::BitmapInfo {
+            handle: bitmap.bitmap_handle(),
+            width: bitmap.width(),
+            height: bitmap.height(),
+        })
     }
 }
 

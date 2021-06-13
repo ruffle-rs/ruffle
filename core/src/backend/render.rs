@@ -11,12 +11,12 @@ pub trait RenderBackend: Downcast {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
@@ -80,6 +80,21 @@ pub struct BitmapInfo {
     pub height: u16,
 }
 
+/// An object that returns a bitmap given an ID.
+///
+/// This is used by render backends to get the bitmap used in a bitmap fill.
+/// For movie libraries, this will return the bitmap with the given character ID.
+pub trait BitmapSource {
+    fn bitmap(&self, id: u16) -> Option<BitmapInfo>;
+}
+
+pub struct NullBitmapSource;
+impl BitmapSource for NullBitmapSource {
+    fn bitmap(&self, _id: u16) -> Option<BitmapInfo> {
+        None
+    }
+}
+
 pub struct NullRenderer;
 
 impl NullRenderer {
@@ -99,14 +114,14 @@ impl RenderBackend for NullRenderer {
     fn register_shape(
         &mut self,
         _shape: DistilledShape,
-        _library: Option<&MovieLibrary<'_>>,
+        _bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         ShapeHandle(0)
     }
     fn replace_shape(
         &mut self,
         _shape: DistilledShape,
-        _library: Option<&MovieLibrary<'_>>,
+        _bitmap_source: &dyn BitmapSource,
         _handle: ShapeHandle,
     ) {
     }
