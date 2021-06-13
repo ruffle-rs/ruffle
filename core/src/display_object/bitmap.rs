@@ -1,10 +1,12 @@
 //! Bitmap display object
 
+use crate::avm1;
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
+use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell};
 
 /// A Bitmap display object is a raw bitamp on the stage.
@@ -94,6 +96,25 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             x_max: Twips::from_pixels(Bitmap::width(*self).into()),
             y_max: Twips::from_pixels(Bitmap::height(*self).into()),
             valid: true,
+        }
+    }
+
+    fn post_instantiation(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _display_object: DisplayObject<'gc>,
+        _init_object: Option<avm1::Object<'gc>>,
+        _instantiated_by: Instantiator,
+        run_frame: bool,
+    ) {
+        if self.avm_type() == AvmType::Avm1 {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
+        }
+
+        if run_frame {
+            self.run_frame(context);
         }
     }
 
