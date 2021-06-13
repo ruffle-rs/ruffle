@@ -5,7 +5,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_core::backend::render::{srgb_to_linear, swf, BitmapHandle};
+use ruffle_core::backend::render::{srgb_to_linear, swf, BitmapHandle, BitmapSource};
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
@@ -21,10 +21,11 @@ impl ShapeTessellator {
         }
     }
 
-    pub fn tessellate_shape<F>(&mut self, shape: DistilledShape, get_bitmap: F) -> Mesh
-    where
-        F: Fn(swf::CharacterId) -> Option<(u32, u32, BitmapHandle)>,
-    {
+    pub fn tessellate_shape(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+    ) -> Mesh {
         let mut mesh = Vec::new();
 
         let mut lyon_mesh: VertexBuffers<_, u32> = VertexBuffers::new();
@@ -181,15 +182,15 @@ impl ShapeTessellator {
                             continue;
                         }
 
-                        if let Some((bitmap_width, bitmap_height, bitmap)) = get_bitmap(*id) {
+                        if let Some(bitmap) = bitmap_source.bitmap(*id) {
                             flush_draw(
                                 DrawType::Bitmap(Bitmap {
                                     matrix: swf_bitmap_to_gl_matrix(
                                         (*matrix).into(),
-                                        bitmap_width,
-                                        bitmap_height,
+                                        bitmap.width.into(),
+                                        bitmap.height.into(),
                                     ),
-                                    bitmap,
+                                    bitmap: bitmap.handle,
                                     is_smoothed: *is_smoothed,
                                     is_repeating: *is_repeating,
                                 }),

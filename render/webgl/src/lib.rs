@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
-    ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, NullBitmapSource,
+    RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
@@ -476,23 +476,15 @@ impl WebGlRenderBackend {
     fn register_shape_internal(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
         use ruffle_render_common_tess::DrawType as TessDrawType;
 
-        let textures = &self.textures;
-        let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
-            library
-                .and_then(|lib| lib.get_bitmap(id))
-                .and_then(|bitmap| {
-                    let handle = bitmap.bitmap_handle();
-                    textures.get(handle.0).map(|texture| (texture, handle))
-                })
-                .map(|(texture, handle)| (texture.width, texture.height, handle))
-        });
+        let lyon_mesh = self
+            .shape_tessellator
+            .tessellate_shape(shape, bitmap_source);
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
-
         for draw in lyon_mesh {
             let num_indices = draw.indices.len() as i32;
 
@@ -741,10 +733,10 @@ impl RenderBackend for WebGlRenderBackend {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, library);
+        let mesh = self.register_shape_internal(shape, bitmap_source);
         self.meshes.push(mesh);
         handle
     }
@@ -752,17 +744,17 @@ impl RenderBackend for WebGlRenderBackend {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let mesh = self.register_shape_internal(shape, library);
+        let mesh = self.register_shape_internal(shape, bitmap_source);
         self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into(), None);
+        let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
         self.meshes.push(mesh);
         handle
     }

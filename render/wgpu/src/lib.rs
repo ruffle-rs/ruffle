@@ -1,5 +1,5 @@
 use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, Color, MovieLibrary, RenderBackend,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, RenderBackend,
     ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
@@ -388,22 +388,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     fn register_shape_internal(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
         let shape_id = shape.id; // TODO: remove?
-        let textures = &self.textures;
-        let lyon_mesh = self.shape_tessellator.tessellate_shape(shape, |id| {
-            library
-                .and_then(|lib| lib.get_bitmap(id))
-                .and_then(|bitmap| {
-                    let handle = bitmap.bitmap_handle();
-                    textures.get(handle.0).map(|texture| (texture, handle))
-                })
-                .map(|(texture, handle)| (texture.width, texture.height, handle))
-        });
+        let lyon_mesh = self
+            .shape_tessellator
+            .tessellate_shape(shape, bitmap_source);
 
         let mut draws = Vec::with_capacity(lyon_mesh.len());
-
         for draw in lyon_mesh {
             let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
             let vertex_buffer = create_buffer_with_data(
@@ -743,10 +735,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal(shape, library);
+        let mesh = self.register_shape_internal(shape, bitmap_source);
         self.meshes.push(mesh);
         handle
     }
@@ -754,17 +746,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn replace_shape(
         &mut self,
         shape: DistilledShape,
-        library: Option<&MovieLibrary<'_>>,
+        bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let mesh = self.register_shape_internal(shape, library);
+        let mesh = self.register_shape_internal(shape, bitmap_source);
         self.meshes[handle.0] = mesh;
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
-        let mesh = self.register_shape_internal((&shape).into(), None);
+        let mesh = self.register_shape_internal(
+            (&shape).into(),
+            &ruffle_core::backend::render::NullBitmapSource,
+        );
         self.meshes.push(mesh);
         handle
     }

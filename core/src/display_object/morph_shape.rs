@@ -154,7 +154,10 @@ impl MorphShapeStatic {
             return;
         }
 
-        let library = context.library.library_for_movie(Arc::clone(&self.movie));
+        let library = context
+            .library
+            .library_for_movie(Arc::clone(&self.movie))
+            .unwrap();
 
         // Interpolate MorphShapes into a Shape.
         use swf::{FillStyle, LineStyle, ShapeRecord, ShapeStyles};
@@ -281,8 +284,9 @@ impl MorphShapeStatic {
             shape,
         };
 
+        let shape_handle = context.renderer.register_shape((&shape).into(), library);
         let frame = Frame {
-            shape_handle: context.renderer.register_shape((&shape).into(), library),
+            shape_handle,
             shape,
             bounds: bounds.into(),
         };
