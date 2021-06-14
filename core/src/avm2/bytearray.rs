@@ -263,7 +263,7 @@ impl Seek for ByteArrayStorage {
 
         match new_pos {
             Some(n) => {
-                self.position.set(n as usize);
+                self.position.set(n);
                 Ok(n as u64)
             }
             None => Err(io::Error::new(
