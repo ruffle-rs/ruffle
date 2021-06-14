@@ -1,0 +1,5 @@
+root frame 1
+child frame 1 start
+foo
+child frame 1 end
+root frame 2
