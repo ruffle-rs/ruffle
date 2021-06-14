@@ -930,8 +930,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if let Some(drawing) = lbox.as_renderable_drawing() {
-            let movie = self.movie();
-            drawing.render(context, movie);
+            drawing.render(context);
         }
 
         context.transform_stack.pop();
@@ -1476,8 +1475,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             return;
         }
 
-        let movie = self.movie();
-
         let edit_text = self.0.read();
         context.transform_stack.push(&Transform {
             matrix: Matrix {
@@ -1488,7 +1485,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        edit_text.drawing.render(context, movie);
+        edit_text.drawing.render(context);
 
         context.renderer.push_mask();
         let mask = Matrix::create_box(

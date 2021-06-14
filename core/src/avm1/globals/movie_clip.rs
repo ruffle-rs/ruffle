@@ -343,9 +343,6 @@ fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut drawing = movie_clip
-        .as_drawing(activation.context.gc_context)
-        .unwrap();
     if let Some(bitmap_data) = args
         .get(0)
         .and_then(|val| val.coerce_to_object(activation).as_bitmap_data_object())
@@ -353,20 +350,27 @@ fn begin_bitmap_fill<'gc>(
         // Register the bitmap data with the drawing.
         let bitmap_data = bitmap_data.bitmap_data();
         let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        let handle = if let Some(handle) = bitmap_data.bitmap_handle(activation.context.renderer) {
+            handle
+        } else {
+            return Ok(Value::Undefined);
+        };
         let bitmap = render::BitmapInfo {
-            handle: bitmap_data
-                .bitmap_handle(activation.context.renderer)
-                .unwrap(),
+            handle,
             width: bitmap_data.width() as u16,
             height: bitmap_data.height() as u16,
         };
-        let id = drawing.add_bitmap(bitmap);
+        let id = movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .add_bitmap(bitmap);
 
-        let mut matrix = if let Some(val) = args.get(1) {
-            avm1::globals::matrix::object_to_matrix(val.coerce_to_object(activation), activation)?
-        } else {
-            Default::default()
-        };
+        let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
+            args.get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation),
+            activation,
+        )?;
         // Flash matrix is in pixels. Scale from pixels to twips.
         const PIXELS_TO_TWIPS: Matrix = Matrix {
             a: 20.0,
@@ -388,14 +392,20 @@ fn begin_bitmap_fill<'gc>(
             .get(3)
             .unwrap_or(&Value::Bool(false))
             .as_bool(activation.swf_version());
-        drawing.set_fill_style(Some(FillStyle::Bitmap {
-            id,
-            matrix: matrix.into(),
-            is_smoothed,
-            is_repeating,
-        }));
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(Some(FillStyle::Bitmap {
+                id,
+                matrix: matrix.into(),
+                is_smoothed,
+                is_repeating,
+            }));
     } else {
-        drawing.set_fill_style(None);
+        movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .set_fill_style(None);
     }
     Ok(Value::Undefined)
 }

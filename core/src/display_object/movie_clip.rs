@@ -1821,9 +1821,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
-        let movie = self.movie();
-
-        self.0.read().drawing.render(context, movie);
+        self.0.read().drawing.render(context);
         self.render_children(context);
     }
 
