@@ -6,7 +6,7 @@ use std::cell::Cell;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
-use std::io::Read;
+use std::io::{Read, SeekFrom};
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -241,6 +241,36 @@ impl Read for ByteArrayStorage {
         })?;
         buf.copy_from_slice(bytes);
         Ok(buf.len())
+    }
+}
+
+impl Seek for ByteArrayStorage {
+    fn seek(&mut self, style: SeekFrom) -> io::Result<u64> {
+        let (base_pos, offset) = match style {
+            SeekFrom::Start(n) => {
+                self.position.set(n as usize);
+                return Ok(n);
+            }
+            SeekFrom::End(n) => (self.len(), n),
+            SeekFrom::Current(n) => (self.position.get(), n),
+        };
+
+        let new_pos = if offset >= 0 {
+            base_pos.checked_add(offset as usize)
+        } else {
+            base_pos.checked_sub((offset.wrapping_neg()) as usize)
+        };
+
+        match new_pos {
+            Some(n) => {
+                self.position.set(n as usize);
+                Ok(n as u64)
+            }
+            None => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "invalid seek to a negative or overflowing position",
+            )),
+        }
     }
 }
 
