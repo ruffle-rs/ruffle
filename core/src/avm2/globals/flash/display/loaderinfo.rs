@@ -307,7 +307,7 @@ pub fn bytes<'gc>(
                     // off. We scroll back 2 bytes before writing the actual
                     // datastream as it is guaranteed to at least be as long as
                     // the implicit end tag we want to get rid of.
-                    let correct_header_length = ba_write.bytes().len() - 2;
+                    let correct_header_length = ba_write.len() - 2;
                     ba_write.set_position(correct_header_length);
                     ba_write.write_bytes(root.data())?;
 

@@ -61,7 +61,7 @@ pub fn write_bytes<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(Value::Object(second_array)) = args.get(0) {
         let combining_bytes = match second_array.as_bytearray() {
-            Some(b) => b.bytes().clone(),
+            Some(b) => b.clone(),
             None => return Err("ArgumentError: Parameter must be a bytearray".into()),
         };
 
@@ -103,7 +103,6 @@ pub fn read_bytes<'gc>(
         let current_bytes = this
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap()
-            .bytes()
             .clone();
         let position = this
             .as_bytearray_mut(activation.context.gc_context)
@@ -181,8 +180,7 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            let bytes = bytearray.bytes();
-            let (new_string, _, _) = UTF_8.decode(bytes);
+            let (new_string, _, _) = UTF_8.decode(&bytearray);
             return Ok(AvmString::new(activation.context.gc_context, new_string).into());
         }
     }
@@ -244,10 +242,10 @@ pub fn bytes_available<'gc>(
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Unsigned(
-                if bytearray.position() > bytearray.bytes().len() {
+                if bytearray.position() > bytearray.len() {
                     0
                 } else {
-                    (bytearray.bytes().len() - bytearray.position()) as u32
+                    (bytearray.len() - bytearray.position()) as u32
                 },
             ));
         }
@@ -263,7 +261,7 @@ pub fn length<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(bytearray.bytes().len() as u32));
+            return Ok(Value::Unsigned(bytearray.len() as u32));
         }
     }
 
@@ -453,7 +451,7 @@ pub fn read_utf_bytes<'gc>(
                 .coerce_to_u32(activation)?;
             return Ok(AvmString::new(
                 activation.context.gc_context,
-                String::from_utf8_lossy(bytearray.read_exact(len as usize)?),
+                String::from_utf8_lossy(bytearray.read_bytes(len as usize)?),
             )
             .into());
         }
@@ -620,7 +618,7 @@ pub fn read_multibyte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            let bytes = bytearray.read_exact(len as usize)?;
+            let bytes = bytearray.read_bytes(len as usize)?;
             let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
             return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
