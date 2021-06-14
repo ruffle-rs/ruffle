@@ -21,10 +21,10 @@ pub struct ByteArrayStorage {
     /// Underlying ByteArray
     bytes: Vec<u8>,
 
-    // The current position to read/write from
+    /// The current position to read/write from
     position: usize,
 
-    /// This represents what endian to use while reading data.
+    /// This represents what endian to use while reading/writing data.
     endian: Endian,
 }
 
@@ -38,56 +38,39 @@ impl ByteArrayStorage {
         }
     }
 
-    /// Write a byte at next position in the bytearray
-    pub fn write_byte(&mut self, byte: u8) {
-        let bytes_len = self.bytes.len();
-        // Allocate space for the byte
-        self.position += 1;
-        if self.position > bytes_len {
-            self.bytes.resize(self.position, 0);
+    /// Safe version of write_at_unchecked
+    /// Will automatically grow the ByteArray to fit the new buffer
+    pub fn write_at(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
+        match offset.checked_add(buf.len()) {
+            Some(new_len) => {
+                if self.bytes.len() < new_len {
+                    self.bytes.resize(new_len, 0);
+                }
+                unsafe { self.write_at_unchecked(buf, offset) }
+            }
+            None => return Err("RangeError: The length of this ByteArray is too big".into())
         }
-        self.bytes[self.position - 1] = byte;
+        Ok(())
     }
 
-    /// Write bytes at next position in bytearray (This function is similar to whats in std::io::Cursor)
-    pub fn write_bytes(&mut self, buf: &[u8]) {
-        // Make sure the internal buffer is as least as big as where we
-        // currently are
-        let len = self.bytes.len();
-        if len < self.position {
-            // use `resize` so that the zero filling is as efficient as possible
-            self.bytes.resize(self.position, 0);
+    /// Safe version of write_at_unchecked
+    /// Will return an error if the new buffer does not fit the ByteArray
+    pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
+        match offset.checked_add(buf.len()) {
+            Some(new_len) => {
+                if self.bytes.len() < new_len {
+                    return Err("RangeError: The specified range is invalid".into());
+                }
+                unsafe { self.write_at_unchecked(buf, offset) }
+            }
+            None => return Err("RangeError: The length of this ByteArray is too big".into())
         }
-        // Figure out what bytes will be used to overwrite what's currently
-        // there (left), and what will be appended on the end (right)
-        {
-            let space = self.bytes.len() - self.position;
-            let (left, right) = buf.split_at(cmp::min(space, buf.len()));
-            self.bytes[self.position..self.position + left.len()].copy_from_slice(left);
-            self.bytes.extend_from_slice(right);
-        }
-
-        // Bump us forward
-        self.position += buf.len();
+        Ok(())
     }
 
-    // Write bytes at an offset, ignoring the current position
-    pub fn write_bytes_at(&mut self, buf: &[u8], offset: usize) {
-        // Make sure the internal buffer is as least as big as where we
-        // currently are
-        let len = self.bytes.len();
-        if len < offset {
-            // use `resize` so that the zero filling is as efficient as possible
-            self.bytes.resize(offset, 0);
-        }
-        // Figure out what bytes will be used to overwrite what's currently
-        // there (left), and what will be appended on the end (right)
-        {
-            let space = self.bytes.len() - offset;
-            let (left, right) = buf.split_at(cmp::min(space, buf.len()));
-            self.bytes[offset..offset + left.len()].copy_from_slice(left);
-            self.bytes.extend_from_slice(right);
-        }
+    #[inline]
+    pub unsafe fn write_at_unchecked(&mut self, buf: &[u8], offset: usize) {
+        std::ptr::copy_nonoverlapping(buf.as_ptr(), self.bytes.as_mut_ptr().add(offset), buf.len());
     }
 
     pub fn clear(&mut self) {
@@ -225,7 +208,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&float_bytes);
+        self.write(&float_bytes);
     }
 
     // Writes a f64 to the buffer
@@ -234,12 +217,12 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&double_bytes);
+        self.write(&double_bytes);
     }
 
     // Writes a 1 byte to the buffer, either 1 or 0
     pub fn write_boolean(&mut self, val: bool) {
-        self.write_bytes(&[val as u8; 1]);
+        self.write(&[val as u8; 1]);
     }
 
     // Writes a i32 to the buffer
@@ -248,7 +231,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&int_bytes);
+        self.write(&int_bytes);
     }
 
     // Writes a u32 to the buffer
@@ -257,7 +240,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&uint_bytes);
+        self.write(&uint_bytes);
     }
 
     // Writes a i16 to the buffer
@@ -266,7 +249,7 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&short_bytes);
+        self.write(&short_bytes);
     }
 
     // Writes a u16 to the buffer
@@ -275,14 +258,14 @@ impl ByteArrayStorage {
             Endian::Big => val.to_be_bytes(),
             Endian::Little => val.to_le_bytes(),
         };
-        self.write_bytes(&ushort_bytes);
+        self.write(&ushort_bytes);
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
     pub fn write_utf(&mut self, utf_string: &str) -> Result<(), Error> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
             self.write_unsigned_short(str_size);
-            self.write_bytes(utf_string.as_bytes());
+            self.write(utf_string.as_bytes());
         } else {
             return Err("RangeError: UTF String length must fit into a short".into());
         }
@@ -342,7 +325,7 @@ impl ByteArrayStorage {
 
 impl Write for ByteArrayStorage {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_bytes(buf);
+        self.write_at(buf, self.position);
 
         Ok(buf.len())
     }
