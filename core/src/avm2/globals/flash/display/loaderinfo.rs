@@ -14,7 +14,6 @@ use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 use swf::{write_swf, Compression};
-use std::io::Write;
 
 /// Implements `flash.display.LoaderInfo`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -310,13 +309,13 @@ pub fn bytes<'gc>(
                     // the implicit end tag we want to get rid of.
                     let correct_header_length = ba_write.bytes().len() - 2;
                     ba_write.set_position(correct_header_length);
-                    ba_write.write(root.data())?;
+                    ba_write.write_bytes(root.data())?;
 
                     // `swf` wrote the wrong length (since we wrote the data
                     // ourselves), so we need to overwrite it ourselves.
                     ba_write.set_position(4);
                     ba_write.set_endian(Endian::Little);
-                    ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32);
+                    ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
 
                     // Finally, reset the array to the correct state.
                     ba_write.set_position(0);

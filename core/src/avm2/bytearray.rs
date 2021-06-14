@@ -2,7 +2,6 @@ use crate::avm2::Error;
 use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
-use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
@@ -36,6 +35,11 @@ impl ByteArrayStorage {
             position: 0,
             endian: Endian::Big,
         }
+    }
+
+    #[inline]
+    pub fn write_bytes(&mut self, buf: &[u8]) -> Result<(), Error> {
+        self.write_at(buf, self.position)
     }
 
     /// Safe version of write_at_unchecked
@@ -202,74 +206,18 @@ impl ByteArrayStorage {
         })
     }
 
-    // Writes a f32 to the buffer
-    pub fn write_float(&mut self, val: f32) {
-        let float_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&float_bytes);
-    }
-
-    // Writes a f64 to the buffer
-    pub fn write_double(&mut self, val: f64) {
-        let double_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&double_bytes);
-    }
-
-    // Writes a 1 byte to the buffer, either 1 or 0
-    pub fn write_boolean(&mut self, val: bool) {
-        self.write(&[val as u8; 1]);
-    }
-
-    // Writes a i32 to the buffer
-    pub fn write_int(&mut self, val: i32) {
-        let int_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&int_bytes);
-    }
-
-    // Writes a u32 to the buffer
-    pub fn write_unsigned_int(&mut self, val: u32) {
-        let uint_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&uint_bytes);
-    }
-
-    // Writes a i16 to the buffer
-    pub fn write_short(&mut self, val: i16) {
-        let short_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&short_bytes);
-    }
-
-    // Writes a u16 to the buffer
-    pub fn write_unsigned_short(&mut self, val: u16) {
-        let ushort_bytes = match self.endian {
-            Endian::Big => val.to_be_bytes(),
-            Endian::Little => val.to_le_bytes(),
-        };
-        self.write(&ushort_bytes);
+    pub fn write_boolean(&mut self, val: bool) -> Result<(), Error> {
+        self.write_bytes(&[val as u8; 1])
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
     pub fn write_utf(&mut self, utf_string: &str) -> Result<(), Error> {
         if let Ok(str_size) = u16::try_from(utf_string.len()) {
-            self.write_unsigned_short(str_size);
-            self.write(utf_string.as_bytes());
+            self.write_unsigned_short(str_size)?;
+            self.write_bytes(utf_string.as_bytes())
         } else {
             return Err("RangeError: UTF String length must fit into a short".into());
         }
-        Ok(())
     }
 
     pub fn get(&self, item: usize) -> Option<u8> {
@@ -325,7 +273,7 @@ impl ByteArrayStorage {
 
 impl Write for ByteArrayStorage {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_at(buf, self.position);
+        self.write_bytes(buf).map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to write to ByteArrayStorage"))?;
 
         Ok(buf.len())
     }
@@ -334,6 +282,25 @@ impl Write for ByteArrayStorage {
         Ok(())
     }
 }
+
+macro_rules! impl_write{
+    ($($method_name:ident $data_type:ident ), *)
+    =>
+    {
+        impl ByteArrayStorage {
+            $( pub fn $method_name (&mut self, val: $data_type) -> Result<(), Error> { 
+                let val_bytes = match self.endian {
+                    Endian::Big => val.to_be_bytes(),
+                    Endian::Little => val.to_le_bytes(),
+                };
+                self.write_bytes(&val_bytes)
+             } )*
+        }
+    }
+}
+
+impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
+
 
 impl Default for ByteArrayStorage {
     fn default() -> Self {

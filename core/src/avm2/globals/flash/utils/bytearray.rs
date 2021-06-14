@@ -10,7 +10,6 @@ use crate::avm2::Error;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use gc_arena::{GcCell, MutationContext};
-use std::io::Write;
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -47,7 +46,7 @@ pub fn write_byte<'gc>(
                 .cloned()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_i32(activation)?;
-            bytearray.write(&[byte as u8])?;
+            bytearray.write_bytes(&[byte as u8])?;
         }
     }
 
@@ -82,7 +81,7 @@ pub fn write_bytes<'gc>(
         }
         if let Some(this) = this {
             if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-                bytearray.write(if length != 0 {
+                bytearray.write_bytes(if length != 0 {
                     &combining_bytes[offset..length + offset]
                 } else {
                     &combining_bytes[offset..]
@@ -488,7 +487,7 @@ pub fn write_float<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_number(activation)?;
-            bytearray.write_float(num as f32);
+            bytearray.write_float(num as f32)?;
         }
     }
 
@@ -506,7 +505,7 @@ pub fn write_double<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_number(activation)?;
-            bytearray.write_double(num);
+            bytearray.write_double(num)?;
         }
     }
 
@@ -521,7 +520,7 @@ pub fn write_boolean<'gc>(
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
-            bytearray.write_boolean(num);
+            bytearray.write_boolean(num)?;
         }
     }
 
@@ -539,7 +538,7 @@ pub fn write_int<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
-            bytearray.write_int(num);
+            bytearray.write_int(num)?;
         }
     }
 
@@ -557,7 +556,7 @@ pub fn write_unsigned_int<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
-            bytearray.write_unsigned_int(num);
+            bytearray.write_unsigned_int(num)?;
         }
     }
 
@@ -575,7 +574,7 @@ pub fn write_short<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_i32(activation)?;
-            bytearray.write_short(num as i16);
+            bytearray.write_short(num as i16)?;
         }
     }
 
@@ -599,7 +598,7 @@ pub fn write_multibyte<'gc>(
                 .coerce_to_string(activation)?;
             let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
             let (encoded_bytes, _, _) = encoder.encode(string.as_str());
-            bytearray.write(&encoded_bytes.into_owned());
+            bytearray.write_bytes(&encoded_bytes.into_owned())?;
         }
     }
 
@@ -642,7 +641,7 @@ pub fn write_utf_bytes<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            bytearray.write(string.as_bytes());
+            bytearray.write_bytes(string.as_bytes())?;
         }
     }
 
@@ -664,7 +663,7 @@ pub fn compress<'gc>(
                 };
                 if let Ok(buffer) = compressed {
                     bytearray.clear();
-                    bytearray.write(&buffer)?;
+                    bytearray.write_bytes(&buffer)?;
                 }
             }
         }
@@ -688,7 +687,7 @@ pub fn uncompress<'gc>(
                 };
                 if let Ok(buffer) = compressed {
                     bytearray.clear();
-                    bytearray.write(&buffer)?;
+                    bytearray.write_bytes(&buffer)?;
                 }
             }
         }
@@ -706,7 +705,7 @@ pub fn deflate<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Ok(buffer) = bytearray.deflate_compress() {
                 bytearray.clear();
-                bytearray.write(&buffer)?;
+                bytearray.write_bytes(&buffer)?;
             }
         }
     }
@@ -723,7 +722,7 @@ pub fn inflate<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Ok(buffer) = bytearray.deflate_decompress() {
                 bytearray.clear();
-                bytearray.write(&buffer)?;
+                bytearray.write_bytes(&buffer)?;
             }
         }
     }
