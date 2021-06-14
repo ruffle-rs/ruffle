@@ -171,7 +171,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
 
         if let Some(drawing) = &self.0.read().drawing {
-            drawing.render(context, self.0.read().static_data.movie.clone());
+            drawing.render(context);
         } else if let Some(render_handle) = self.0.read().static_data.render_handle {
             context
                 .renderer
