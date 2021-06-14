@@ -166,7 +166,7 @@ pub fn read_utf<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(AvmString::new(activation.context.gc_context, bytearray.read_utf()?).into());
         }
     }
@@ -222,7 +222,7 @@ pub fn set_position<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             let num = args
                 .get(0)
                 .unwrap_or(&Value::Integer(0))
@@ -279,7 +279,7 @@ pub fn set_length<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Unsigned(0))
                 .coerce_to_u32(activation)? as usize;
-            bytearray.set_length(len);
+            bytearray.resize(len, 0);
         }
     }
 
@@ -327,12 +327,12 @@ pub fn set_endian<'gc>(
 }
 
 pub fn read_short<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Integer(bytearray.read_short()? as i32));
         }
     }
@@ -341,12 +341,12 @@ pub fn read_short<'gc>(
 }
 
 pub fn read_unsigned_short<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Unsigned(bytearray.read_unsigned_short()? as u32));
         }
     }
@@ -355,12 +355,12 @@ pub fn read_unsigned_short<'gc>(
 }
 
 pub fn read_double<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Number(bytearray.read_double()?));
         }
     }
@@ -369,12 +369,12 @@ pub fn read_double<'gc>(
 }
 
 pub fn read_float<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Number(bytearray.read_float()? as f64));
         }
     }
@@ -383,12 +383,12 @@ pub fn read_float<'gc>(
 }
 
 pub fn read_int<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Integer(bytearray.read_int()?));
         }
     }
@@ -397,12 +397,12 @@ pub fn read_int<'gc>(
 }
 
 pub fn read_unsigned_int<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Unsigned(bytearray.read_unsigned_int()?));
         }
     }
@@ -411,12 +411,12 @@ pub fn read_unsigned_int<'gc>(
 }
 
 pub fn read_boolean<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Bool(bytearray.read_boolean()?));
         }
     }
@@ -425,12 +425,12 @@ pub fn read_boolean<'gc>(
 }
 
 pub fn read_byte<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Integer(bytearray.read_byte()? as i32));
         }
     }
@@ -444,7 +444,7 @@ pub fn read_utf_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             let len = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
@@ -461,12 +461,12 @@ pub fn read_utf_bytes<'gc>(
 }
 
 pub fn read_unsigned_byte<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             return Ok(Value::Unsigned(bytearray.read_unsigned_byte()? as u32));
         }
     }
@@ -609,7 +609,7 @@ pub fn read_multibyte<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(bytearray) = this.as_bytearray() {
             let len = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)

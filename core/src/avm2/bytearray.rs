@@ -5,7 +5,6 @@ use gc_arena::Collect;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
-use std::ops::Range;
 use std::io::Read;
 use std::cell::Cell;
 
@@ -49,7 +48,7 @@ impl ByteArrayStorage {
 
     /// Reads any amount of bytes from the current position in the ByteArray
     #[inline]
-    pub fn read_bytes(&mut self, amnt: usize) -> Result<&[u8], Error> {
+    pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], Error> {
         let bytes = self.read_at(amnt, self.position.get())?;
         self.position.set(self.position.get() + amnt);
         Ok(bytes)
@@ -140,12 +139,7 @@ impl ByteArrayStorage {
         Ok(buffer)
     }
 
-    /// Set a new length for the bytearray
-    pub fn set_length(&mut self, new_len: usize) {
-        self.bytes.resize(new_len, 0);
-    }
-
-    pub fn read_utf(&mut self) -> Result<String, Error> {
+    pub fn read_utf(&self) -> Result<String, Error> {
         let len = self.read_unsigned_short()?;
         let val = String::from_utf8_lossy(self.read_bytes(len.into())?);
         Ok(val.into_owned())
@@ -155,7 +149,7 @@ impl ByteArrayStorage {
         self.write_bytes(&[val as u8; 1])
     }
 
-    pub fn read_boolean(&mut self) -> Result<bool, Error> {
+    pub fn read_boolean(&self) -> Result<bool, Error> {
         Ok(self.read_bytes(1)?[0] != 0)
     }
 
@@ -171,10 +165,6 @@ impl ByteArrayStorage {
 
     pub fn get(&self, item: usize) -> Option<u8> {
         self.bytes.get(item).copied()
-    }
-
-    pub fn get_range(&self, item: Range<usize>) -> Option<&[u8]> {
-        self.bytes.get(item)
     }
 
     pub fn set(&mut self, item: usize, value: u8) {
@@ -267,7 +257,7 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&mut self) -> Result<$data_type, Error> { 
+            $( pub fn $method_name (&self) -> Result<$data_type, Error> { 
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())
