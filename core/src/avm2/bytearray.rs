@@ -58,8 +58,8 @@ impl ByteArrayStorage {
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
     pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], Error> {
-        let end: Result<_, Error> = self.position.get().checked_add(amnt).ok_or("RangeError: Cannot overflow usize".into());
-        self.bytes.get(offset..end?).ok_or("RangeError: Reached EOF".into())
+        let end: Result<_, Error> = offset.checked_add(amnt).ok_or("RangeError: Cannot overflow usize".into());
+        self.bytes.get(offset..end?).ok_or("EOFError: Reached EOF".into())
     }
 
     /// Write bytes at any offset in the ByteArray
@@ -240,7 +240,7 @@ impl Write for ByteArrayStorage {
 
 impl Read for ByteArrayStorage {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes = self.read_bytes(buf.len()).map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArray"))?;
+        let bytes = self.read_bytes(buf.len()).map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage"))?;
         buf.copy_from_slice(bytes);
         Ok(buf.len())
     }
