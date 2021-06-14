@@ -651,7 +651,7 @@ pub fn compress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Value::String(string) = args.get(0).unwrap_or(&Value::Undefined) {
+            if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
                 let compressed = match string.as_str() {
                     "zlib" => bytearray.zlib_compress(),
                     "deflate" => bytearray.deflate_compress(),
@@ -675,7 +675,7 @@ pub fn uncompress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Value::String(string) = args.get(0).unwrap_or(&Value::Undefined) {
+            if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
                 let compressed = match string.as_str() {
                     "zlib" => bytearray.zlib_decompress(),
                     "deflate" => bytearray.deflate_decompress(),
