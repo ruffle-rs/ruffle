@@ -2,11 +2,11 @@ use crate::avm2::Error;
 use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
+use std::cell::Cell;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
 use std::io::Read;
-use std::cell::Cell;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -57,8 +57,12 @@ impl ByteArrayStorage {
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
     pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], Error> {
-        let end: Result<_, Error> = offset.checked_add(amnt).ok_or("RangeError: Cannot overflow usize".into());
-        self.bytes.get(offset..end?).ok_or("EOFError: Reached EOF".into())
+        let end: Result<_, Error> = offset
+            .checked_add(amnt)
+            .ok_or("RangeError: Cannot overflow usize".into());
+        self.bytes
+            .get(offset..end?)
+            .ok_or("EOFError: Reached EOF".into())
     }
 
     /// Write bytes at any offset in the ByteArray
@@ -71,7 +75,7 @@ impl ByteArrayStorage {
                 }
                 unsafe { self.write_at_unchecked(buf, offset) }
             }
-            None => return Err("RangeError: The length of this ByteArray is too big".into())
+            None => return Err("RangeError: The length of this ByteArray is too big".into()),
         }
         Ok(())
     }
@@ -86,7 +90,7 @@ impl ByteArrayStorage {
                 }
                 unsafe { self.write_at_unchecked(buf, offset) }
             }
-            None => return Err("RangeError: The length of this ByteArray is too big".into())
+            None => return Err("RangeError: The length of this ByteArray is too big".into()),
         }
         Ok(())
     }
@@ -218,7 +222,9 @@ impl std::ops::DerefMut for ByteArrayStorage {
 
 impl Write for ByteArrayStorage {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_bytes(buf).map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to write to ByteArrayStorage"))?;
+        self.write_bytes(buf).map_err(|_| {
+            io::Error::new(io::ErrorKind::Other, "Failed to write to ByteArrayStorage")
+        })?;
 
         Ok(buf.len())
     }
@@ -230,7 +236,9 @@ impl Write for ByteArrayStorage {
 
 impl Read for ByteArrayStorage {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes = self.read_bytes(buf.len()).map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage"))?;
+        let bytes = self.read_bytes(buf.len()).map_err(|_| {
+            io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
+        })?;
         buf.copy_from_slice(bytes);
         Ok(buf.len())
     }
@@ -241,7 +249,7 @@ macro_rules! impl_write{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&mut self, val: $data_type) -> Result<(), Error> { 
+            $( pub fn $method_name (&mut self, val: $data_type) -> Result<(), Error> {
                 let val_bytes = match self.endian {
                     Endian::Big => val.to_be_bytes(),
                     Endian::Little => val.to_le_bytes(),
@@ -257,7 +265,7 @@ macro_rules! impl_read{
     =>
     {
         impl ByteArrayStorage {
-            $( pub fn $method_name (&self) -> Result<$data_type, Error> { 
+            $( pub fn $method_name (&self) -> Result<$data_type, Error> {
                 Ok(match self.endian {
                     Endian::Big => <$data_type>::from_be_bytes(self.read_bytes($size)?.try_into().unwrap()),
                     Endian::Little => <$data_type>::from_le_bytes(self.read_bytes($size)?.try_into().unwrap())

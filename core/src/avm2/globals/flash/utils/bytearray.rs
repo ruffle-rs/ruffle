@@ -241,13 +241,11 @@ pub fn bytes_available<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(
-                if bytearray.position() > bytearray.len() {
-                    0
-                } else {
-                    (bytearray.len() - bytearray.position()) as u32
-                },
-            ));
+            return Ok(Value::Unsigned(if bytearray.position() > bytearray.len() {
+                0
+            } else {
+                (bytearray.len() - bytearray.position()) as u32
+            }));
         }
     }
 

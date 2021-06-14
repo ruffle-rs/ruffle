@@ -2568,7 +2568,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        
+
         dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
 
         Ok(FrameControl::Continue)

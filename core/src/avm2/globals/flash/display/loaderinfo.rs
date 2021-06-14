@@ -315,7 +315,8 @@ pub fn bytes<'gc>(
                     // ourselves), so we need to overwrite it ourselves.
                     ba_write.set_position(4);
                     ba_write.set_endian(Endian::Little);
-                    ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
+                    ba_write
+                        .write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
 
                     // Finally, reset the array to the correct state.
                     ba_write.set_position(0);
