@@ -60,10 +60,10 @@ impl ByteArrayStorage {
     pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], Error> {
         let end: Result<_, Error> = offset
             .checked_add(amnt)
-            .ok_or("RangeError: Cannot overflow usize".into());
+            .ok_or_else(|| "RangeError: Cannot overflow usize".into());
         self.bytes
             .get(offset..end?)
-            .ok_or("EOFError: Reached EOF".into())
+            .ok_or_else(|| "EOFError: Reached EOF".into())
     }
 
     /// Write bytes at any offset in the ByteArray
@@ -171,7 +171,7 @@ impl ByteArrayStorage {
             self.write_unsigned_short(str_size)?;
             self.write_bytes(utf_string.as_bytes())
         } else {
-            return Err("RangeError: UTF String length must fit into a short".into());
+            Err("RangeError: UTF String length must fit into a short".into())
         }
     }
 
