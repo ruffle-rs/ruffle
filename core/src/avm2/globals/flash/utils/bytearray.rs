@@ -196,6 +196,8 @@ pub fn clear<'gc>(
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             bytearray.clear();
+            bytearray.shrink_to_fit();
+            bytearray.set_position(0);
         }
     }
 
@@ -241,11 +243,7 @@ pub fn bytes_available<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(Value::Unsigned(if bytearray.position() > bytearray.len() {
-                0
-            } else {
-                (bytearray.len() - bytearray.position()) as u32
-            }));
+            return Ok(Value::Unsigned(bytearray.bytes_available() as u32));
         }
     }
 
@@ -652,11 +650,7 @@ pub fn compress<'gc>(
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
-                let compressed = match string.as_str() {
-                    "zlib" => bytearray.zlib_compress(),
-                    "deflate" => bytearray.deflate_compress(),
-                    &_ => return Ok(Value::Undefined),
-                };
+                let compressed = bytearray.compress(string.as_str());
                 if let Ok(buffer) = compressed {
                     bytearray.clear();
                     bytearray.write_bytes(&buffer)?;
@@ -676,12 +670,8 @@ pub fn uncompress<'gc>(
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
-                let compressed = match string.as_str() {
-                    "zlib" => bytearray.zlib_decompress(),
-                    "deflate" => bytearray.deflate_decompress(),
-                    &_ => return Ok(Value::Undefined),
-                };
-                if let Ok(buffer) = compressed {
+                let uncompressed = bytearray.decompress(string.as_str());
+                if let Ok(buffer) = uncompressed {
                     bytearray.clear();
                     bytearray.write_bytes(&buffer)?;
                 }
@@ -699,7 +689,7 @@ pub fn deflate<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Ok(buffer) = bytearray.deflate_compress() {
+            if let Ok(buffer) = bytearray.compress("deflate") {
                 bytearray.clear();
                 bytearray.write_bytes(&buffer)?;
             }
@@ -716,7 +706,7 @@ pub fn inflate<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Ok(buffer) = bytearray.deflate_decompress() {
+            if let Ok(buffer) = bytearray.decompress("deflate") {
                 bytearray.clear();
                 bytearray.write_bytes(&buffer)?;
             }

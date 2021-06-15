@@ -3,6 +3,7 @@ use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
 use std::cell::Cell;
+use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use std::io;
 use std::io::prelude::*;
@@ -70,10 +71,12 @@ impl ByteArrayStorage {
     pub fn write_at(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
         match offset.checked_add(buf.len()) {
             Some(new_len) => {
-                if self.bytes.len() < new_len {
-                    self.bytes.resize(new_len, 0);
+                if self.len() < new_len {
+                    self.resize(new_len, 0);
                 }
-                unsafe { self.write_at_unchecked(buf, offset) }
+                // SAFETY:
+                // The storage is garunteed to be at least the size of new_len because we just resized it.
+                unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
             }
             None => return Err("RangeError: The length of this ByteArray is too big".into()),
         }
@@ -88,58 +91,63 @@ impl ByteArrayStorage {
                 if self.bytes.len() < new_len {
                     return Err("RangeError: The specified range is invalid".into());
                 }
-                unsafe { self.write_at_unchecked(buf, offset) }
+                // SAFETY:
+                // The storage is garunteed to be at least the size of new_len because the function would have returned already.
+                unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
             }
             None => return Err("RangeError: The length of this ByteArray is too big".into()),
         }
         Ok(())
     }
 
-    /// Writes a buffer into the ByteArray at any offset without bounds checking.
-    /// Callers must garuntee that:
-    /// 1. The length of the buffer + offset MUST be less than or equal to the length of the ByteArray
-    /// 2. The length of the buffer + offset MUST not overflow usize
-    #[inline]
-    pub unsafe fn write_at_unchecked(&mut self, buf: &[u8], offset: usize) {
-        std::ptr::copy_nonoverlapping(buf.as_ptr(), self.bytes.as_mut_ptr().add(offset), buf.len());
-    }
-
-    pub fn clear(&mut self) {
-        self.bytes.clear();
-        // According to docs, this is where the bytearray should free resources
-        self.bytes.shrink_to_fit();
+    /// Compress the ByteArray into a temporary buffer
+    pub fn compress(&mut self, algorithm: &str) -> io::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
         self.position.set(0);
-    }
-
-    // Returns the bytearray compressed with zlib
-    pub fn zlib_compress(&mut self) -> io::Result<Vec<u8>> {
-        let mut buffer = Vec::new();
-        let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
-        compresser.read_to_end(&mut buffer)?;
+        match algorithm {
+            "zlib" => {
+                let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
+                compresser.read_to_end(&mut buffer)?;
+            }
+            "deflate" => {
+                let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
+                compresser.read_to_end(&mut buffer)?;
+            }
+            #[cfg(feature = "lzma")]
+            "lzma" => lzma_rs::lzma_compress(&mut io::BufReader::new(&*self.bytes), &mut buffer)?,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unknown compression algorithm",
+                ))
+            }
+        }
         Ok(buffer)
     }
 
-    // Returns the bytearray compressed with deflate
-    pub fn deflate_compress(&mut self) -> io::Result<Vec<u8>> {
+    /// Decompress the ByteArray into a temporary buffer
+    pub fn decompress(&mut self, algorithm: &str) -> io::Result<Vec<u8>> {
         let mut buffer = Vec::new();
-        let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
-        compresser.read_to_end(&mut buffer)?;
-        Ok(buffer)
-    }
-
-    // Returns the bytearray decompressed with zlib
-    pub fn zlib_decompress(&mut self) -> io::Result<Vec<u8>> {
-        let mut buffer = Vec::new();
-        let mut compresser = ZlibDecoder::new(&*self.bytes);
-        compresser.read_to_end(&mut buffer)?;
-        Ok(buffer)
-    }
-
-    // Returns the bytearray decompressed with deflate
-    pub fn deflate_decompress(&mut self) -> io::Result<Vec<u8>> {
-        let mut buffer = Vec::new();
-        let mut compresser = DeflateDecoder::new(&*self.bytes);
-        compresser.read_to_end(&mut buffer)?;
+        self.position.set(0);
+        match algorithm {
+            "zlib" => {
+                let mut compresser = ZlibDecoder::new(&*self.bytes);
+                compresser.read_to_end(&mut buffer)?;
+            }
+            "deflate" => {
+                let mut compresser = DeflateDecoder::new(&*self.bytes);
+                compresser.read_to_end(&mut buffer)?;
+            }
+            #[cfg(feature = "lzma")]
+            "lzma" => lzma_rs::lzma_decompress(&mut io::BufReader::new(&*self.bytes), &mut buffer)
+                .map_err(|_| io::Error::new(io::ErrorKind::Other, "LZMA decompression failed"))?,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Unknown compression algorithm",
+                ))
+            }
+        }
         Ok(buffer)
     }
 
@@ -167,42 +175,52 @@ impl ByteArrayStorage {
         }
     }
 
-    pub fn get(&self, item: usize) -> Option<u8> {
-        self.bytes.get(item).copied()
-    }
-
     pub fn set(&mut self, item: usize, value: u8) {
-        if self.bytes.len() < (item + 1) {
-            self.bytes.resize(item + 1, 0)
+        if self.len() < (item + 1) {
+            self.resize(item + 1, 0)
         }
 
-        *self.bytes.get_mut(item).unwrap() = value;
+        *self.get_mut(item).unwrap() = value;
     }
 
     pub fn delete(&mut self, item: usize) {
-        if let Some(i) = self.bytes.get_mut(item) {
+        if let Some(i) = self.get_mut(item) {
             *i = 0;
         }
     }
 
+    #[inline]
     pub fn position(&self) -> usize {
         self.position.get()
     }
 
+    #[inline]
     pub fn set_position(&self, pos: usize) {
         self.position.set(pos);
     }
 
+    #[inline]
     pub fn add_position(&self, amnt: usize) {
         self.position.set(self.position.get() + amnt);
     }
 
+    #[inline]
     pub fn endian(&self) -> &Endian {
         &self.endian
     }
 
+    #[inline]
     pub fn set_endian(&mut self, new_endian: Endian) {
         self.endian = new_endian;
+    }
+
+    pub fn bytes_available(&self) -> usize {
+        let pos = self.position.get();
+        if pos > self.len() {
+            0
+        } else {
+            self.len() - pos
+        }
     }
 }
 
@@ -236,11 +254,13 @@ impl Write for ByteArrayStorage {
 
 impl Read for ByteArrayStorage {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes = self.read_bytes(buf.len()).map_err(|_| {
-            io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
-        })?;
-        buf.copy_from_slice(bytes);
-        Ok(buf.len())
+        let bytes = self
+            .read_bytes(cmp::min(buf.len(), self.bytes_available()))
+            .map_err(|_| {
+                io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
+            })?;
+        buf.split_at_mut(bytes.len()).0.copy_from_slice(bytes);
+        Ok(bytes.len())
     }
 }
 
