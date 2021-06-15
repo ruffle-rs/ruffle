@@ -59,7 +59,11 @@ struct GcRootData<'gc> {
     /// accessed in AVM2.
     stage: Stage<'gc>,
 
-    mouse_hovered_object: Option<DisplayObject<'gc>>, // TODO: Remove GcCell wrapped inside GcCell.
+    /// The display object that the mouse is currently hovering over.
+    mouse_hovered_object: Option<DisplayObject<'gc>>,
+
+    /// If the mouse is down, the display object that the mouse is currently pressing.
+    mouse_pressed_object: Option<DisplayObject<'gc>>,
 
     /// The object being dragged via a `startDrag` action.
     drag_object: Option<DragObject<'gc>>,
@@ -265,6 +269,7 @@ impl Player {
                         library: Library::empty(gc_context),
                         stage: Stage::empty(gc_context, movie_width, movie_height),
                         mouse_hovered_object: None,
+                        mouse_pressed_object: None,
                         drag_object: None,
                         avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
                         avm2: Avm2::new(gc_context),
@@ -1354,6 +1359,7 @@ impl Player {
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
+            let mouse_pressed_object = root_data.mouse_pressed_object;
             let focus_tracker = root_data.focus_tracker;
             let (
                 stage,
@@ -1384,6 +1390,7 @@ impl Player {
                 gc_context,
                 stage,
                 mouse_hovered_object,
+                mouse_pressed_object,
                 mouse_position,
                 drag_object,
                 player,
@@ -1430,7 +1437,10 @@ impl Player {
                 .map(|clip| clip.current_frame());
 
             // Hovered object may have been updated; copy it back to the GC root.
-            root_data.mouse_hovered_object = update_context.mouse_hovered_object;
+            let mouse_hovered_object = update_context.mouse_hovered_object;
+            let mouse_pressed_object = update_context.mouse_pressed_object;
+            root_data.mouse_hovered_object = mouse_hovered_object;
+            root_data.mouse_pressed_object = mouse_pressed_object;
 
             ret
         })

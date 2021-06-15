@@ -95,6 +95,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The display object that the mouse is currently hovering over.
     pub mouse_hovered_object: Option<DisplayObject<'gc>>,
 
+    /// If the mouse is down, the display object that the mouse is currently pressing.
+    pub mouse_pressed_object: Option<DisplayObject<'gc>>,
+
     /// The location of the mouse when it was last over the player.
     pub mouse_position: &'a (Twips, Twips),
 
@@ -266,6 +269,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             rng: self.rng,
             stage: self.stage,
             mouse_hovered_object: self.mouse_hovered_object,
+            mouse_pressed_object: self.mouse_pressed_object,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,
             player: self.player.clone(),
