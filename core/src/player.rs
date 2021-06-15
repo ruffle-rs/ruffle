@@ -940,6 +940,8 @@ impl Player {
                     false,
                 );
             }
+
+            Self::run_actions(context);
         });
 
         let mut is_mouse_down = self.is_mouse_down;
