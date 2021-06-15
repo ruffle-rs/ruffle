@@ -423,61 +423,60 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             }
         }
 
-        let mut handled = ClipEventResult::NotHandled;
         let self_display_object = (*self).into();
         let mut write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
-        let cur_state = write.state;
-        let new_state = match event {
-            ClipEvent::RollOut => ButtonState::Up,
-            ClipEvent::RollOver => ButtonState::Over,
-            ClipEvent::Press => ButtonState::Down,
-            ClipEvent::Release => ButtonState::Over,
+        let static_data = write.static_data;
+        let static_data = static_data.read();
+        let (new_state, condition, sound) = match event {
+            ClipEvent::DragOut => (
+                ButtonState::Over,
+                ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN,
+                None,
+            ),
+            ClipEvent::DragOver => (
+                ButtonState::Down,
+                ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN,
+                None,
+            ),
+            ClipEvent::Press => (
+                ButtonState::Down,
+                ButtonActionCondition::OVER_UP_TO_OVER_DOWN,
+                static_data.over_to_down_sound.as_ref(),
+            ),
+            ClipEvent::Release => (
+                ButtonState::Over,
+                ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
+                static_data.down_to_over_sound.as_ref(),
+            ),
+            ClipEvent::ReleaseOutside => (
+                ButtonState::Up,
+                ButtonActionCondition::OUT_DOWN_TO_IDLE,
+                static_data.over_to_up_sound.as_ref(),
+            ),
+            ClipEvent::RollOut => (
+                ButtonState::Up,
+                ButtonActionCondition::OVER_UP_TO_IDLE,
+                static_data.over_to_up_sound.as_ref(),
+            ),
+            ClipEvent::RollOver => (
+                ButtonState::Over,
+                ButtonActionCondition::IDLE_TO_OVER_UP,
+                static_data.up_to_over_sound.as_ref(),
+            ),
             ClipEvent::KeyPress { key_code } => {
-                handled = write.run_actions(
+                return write.run_actions(
                     context,
                     swf::ButtonActionCondition::KEY_PRESS,
                     Some(key_code),
                 );
-                cur_state
             }
             _ => return ClipEventResult::NotHandled,
         };
 
-        match (cur_state, new_state) {
-            (ButtonState::Up, ButtonState::Over) => {
-                write.run_actions(context, swf::ButtonActionCondition::IDLE_TO_OVER_UP, None);
-                write.play_sound(context, write.static_data.read().up_to_over_sound.as_ref());
-            }
-            (ButtonState::Over, ButtonState::Up) => {
-                write.run_actions(context, swf::ButtonActionCondition::OVER_UP_TO_IDLE, None);
-                write.play_sound(context, write.static_data.read().over_to_up_sound.as_ref());
-            }
-            (ButtonState::Over, ButtonState::Down) => {
-                write.run_actions(
-                    context,
-                    swf::ButtonActionCondition::OVER_UP_TO_OVER_DOWN,
-                    None,
-                );
-                write.play_sound(
-                    context,
-                    write.static_data.read().over_to_down_sound.as_ref(),
-                );
-            }
-            (ButtonState::Down, ButtonState::Over) => {
-                write.run_actions(
-                    context,
-                    swf::ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
-                    None,
-                );
-                write.play_sound(
-                    context,
-                    write.static_data.read().down_to_over_sound.as_ref(),
-                );
-            }
-            _ => (),
-        };
+        write.run_actions(context, condition, None);
+        write.play_sound(context, sound);
 
         // Queue ActionScript-defined event handlers after the SWF defined ones.
         // (e.g., clip.onRelease = foo).
@@ -500,7 +499,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             self.set_state(context, new_state);
         }
 
-        handled
+        ClipEventResult::NotHandled
     }
 
     fn is_focusable(&self) -> bool {
