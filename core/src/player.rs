@@ -759,9 +759,6 @@ impl Player {
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         let mut needs_render = self.needs_render;
-        let inverse_view_matrix =
-            self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
-
         if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
                 key_code: KeyCode::V,
@@ -822,15 +819,9 @@ impl Player {
             }
         }
 
-        // Update mouse position from mouse events.
-        if let PlayerEvent::MouseMove { x, y }
-        | PlayerEvent::MouseDown { x, y }
-        | PlayerEvent::MouseUp { x, y } = event
-        {
-            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
-            if self.update_roll_over() {
-                needs_render = true;
-            }
+        // Update mouse state.
+        if self.update_mouse_state(Some(&event)) {
+            needs_render = true;
         }
 
         // Propagate button events.
@@ -944,37 +935,6 @@ impl Player {
             Self::run_actions(context);
         });
 
-        let mut is_mouse_down = self.is_mouse_down;
-        self.mutate_with_update_context(|context| {
-            if let Some(node) = context.mouse_hovered_object {
-                if node.removed() {
-                    context.mouse_hovered_object = None;
-                }
-            }
-
-            match event {
-                PlayerEvent::MouseDown { .. } => {
-                    is_mouse_down = true;
-                    needs_render = true;
-                    if let Some(node) = context.mouse_hovered_object {
-                        node.handle_clip_event(context, ClipEvent::Press);
-                    }
-                }
-
-                PlayerEvent::MouseUp { .. } => {
-                    is_mouse_down = false;
-                    needs_render = true;
-                    if let Some(node) = context.mouse_hovered_object {
-                        node.handle_clip_event(context, ClipEvent::Release);
-                    }
-                }
-
-                _ => (),
-            }
-
-            Self::run_actions(context);
-        });
-        self.is_mouse_down = is_mouse_down;
         if needs_render {
             self.needs_render = true;
         }
@@ -1008,52 +968,150 @@ impl Player {
         });
     }
 
-    /// Checks to see if a recent update has caused the current mouse hover
-    /// node to change.
-    fn update_roll_over(&mut self) -> bool {
-        // TODO: While the mouse is down, maintain the hovered node.
-        if self.is_mouse_down {
-            return false;
-        }
-        let mouse_pos = self.mouse_pos;
+    /// Updates the hover state of buttons.
+    fn update_mouse_state(&mut self, event: Option<&PlayerEvent>) -> bool {
+        let inverse_view_matrix =
+            self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
 
+        // Update mouse state based on event type.
+        let mut is_mouse_down = self.is_mouse_down;
+        let mut new_mouse_pos = None;
+        match event {
+            Some(&PlayerEvent::MouseMove { x, y }) => {
+                new_mouse_pos = Some((x, y));
+            }
+            Some(&PlayerEvent::MouseDown { x, y }) => {
+                new_mouse_pos = Some((x, y));
+                is_mouse_down = true;
+            }
+            Some(&PlayerEvent::MouseUp { x, y }) => {
+                new_mouse_pos = Some((x, y));
+                is_mouse_down = false;
+            }
+            // Explicity requested an update.
+            None => (),
+            // Don't care about non-mouse events.
+            _ => return false,
+        }
+        if let Some((x, y)) = new_mouse_pos {
+            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y))
+        }
+        let is_mouse_button_changed = self.is_mouse_down != is_mouse_down;
+        self.is_mouse_down = is_mouse_down;
         let mut new_cursor = self.mouse_cursor;
-        let hover_changed = self.mutate_with_update_context(|context| {
-            // Check hovered object.
-            let mut new_hovered = None;
-            let levels: Vec<_> = context.stage.iter_depth_list().collect();
-            for (_depth, level) in levels.iter().rev() {
-                if new_hovered.is_none() {
-                    new_hovered = level.mouse_pick(context, *level, mouse_pos);
-                } else {
-                    break;
+
+        // Determine the display object the mouse is hovering over.
+        // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
+        let needs_render = self.mutate_with_update_context(|context| {
+            let new_over_object = context
+                .stage
+                .iter_depth_list()
+                .rev()
+                .filter_map(|(_depth, level)| {
+                    level.mouse_pick(context, level, *context.mouse_position)
+                })
+                .next();
+
+            let mut events: smallvec::SmallVec<[(DisplayObject<'_>, ClipEvent); 2]> =
+                Default::default();
+
+            // Cancel hover if an object is removed from the stage.
+            if let Some(hovered) = context.mouse_over_object {
+                if hovered.removed() {
+                    context.mouse_over_object = None;
+                }
+            }
+            if let Some(pressed) = context.mouse_down_object {
+                if pressed.removed() {
+                    context.mouse_down_object = None;
                 }
             }
 
-            let cur_hovered = context.mouse_hovered_object;
-
-            if cur_hovered.map(|d| d.as_ptr()) != new_hovered.map(|d| d.as_ptr()) {
-                // RollOut of previous node.
-                if let Some(node) = cur_hovered {
-                    if !node.removed() {
-                        node.handle_clip_event(context, ClipEvent::RollOut);
+            let cur_over_object = context.mouse_over_object;
+            // Check if a new object has been hovered over.
+            if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
+                // If the mouse button is down, the object the user clicked on grabs the focus
+                // and fires "drag" events. Other objects are ignroed.
+                if is_mouse_down {
+                    context.mouse_over_object = new_over_object;
+                    if let Some(down_object) = context.mouse_down_object {
+                        if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
+                        {
+                            // Dragged from outside the clicked object to the inside.
+                            events.push((down_object, ClipEvent::DragOut));
+                        } else if DisplayObject::option_ptr_eq(
+                            context.mouse_down_object,
+                            new_over_object,
+                        ) {
+                            // Dragged from inside the clicked object to the outside.
+                            events.push((down_object, ClipEvent::DragOver));
+                        }
+                    }
+                } else {
+                    // The mouse button is up, so fire rollover states for the object we are hovering over.
+                    // Rolled out of the previous object.
+                    if let Some(cur_over_object) = cur_over_object {
+                        events.push((cur_over_object, ClipEvent::RollOut));
+                    }
+                    // Rolled over the new object.
+                    if let Some(new_over_object) = new_over_object {
+                        new_cursor = new_over_object.mouse_cursor();
+                        events.push((new_over_object, ClipEvent::RollOver));
+                    } else {
+                        new_cursor = MouseCursor::Arrow;
                     }
                 }
-
-                // RollOver on new node.I still
-                new_cursor = MouseCursor::Arrow;
-                if let Some(node) = new_hovered {
-                    new_cursor = node.mouse_cursor();
-                    node.handle_clip_event(context, ClipEvent::RollOver);
-                }
-
-                context.mouse_hovered_object = new_hovered;
-
-                Self::run_actions(context);
-                true
-            } else {
-                false
             }
+            context.mouse_over_object = new_over_object;
+
+            // Handle presses and releases.
+            if is_mouse_button_changed {
+                if is_mouse_down {
+                    // Pressed on a hovered object.
+                    if let Some(over_object) = context.mouse_over_object {
+                        events.push((over_object, ClipEvent::Press));
+                        context.mouse_down_object = context.mouse_over_object;
+                    }
+                } else {
+                    let released_inside = DisplayObject::option_ptr_eq(
+                        context.mouse_down_object,
+                        context.mouse_over_object,
+                    );
+                    if released_inside {
+                        // Released inside the clicked object.
+                        if let Some(down_object) = context.mouse_down_object {
+                            events.push((down_object, ClipEvent::Release));
+                        }
+                    } else {
+                        // Released outside the clicked object.
+                        if let Some(down_object) = context.mouse_down_object {
+                            events.push((down_object, ClipEvent::ReleaseOutside));
+                        }
+                        // The new object is rolled over immediately.
+                        if let Some(over_object) = context.mouse_over_object {
+                            new_cursor = over_object.mouse_cursor();
+                            events.push((over_object, ClipEvent::RollOver));
+                        } else {
+                            new_cursor = MouseCursor::Arrow;
+                        }
+                    }
+                    context.mouse_down_object = None;
+                }
+            }
+
+            // Fire any pending mouse events.
+            let needs_render = if events.is_empty() {
+                false
+            } else {
+                for (object, event) in events {
+                    if !object.removed() {
+                        object.handle_clip_event(context, event);
+                    }
+                }
+                true
+            };
+            Self::run_actions(context);
+            needs_render
         });
 
         // Update mouse cursor if it has changed.
@@ -1062,7 +1120,7 @@ impl Player {
             self.ui.set_mouse_cursor(new_cursor)
         }
 
-        hover_changed
+        needs_render
     }
 
     /// Preload the first movie in the player.
@@ -1391,8 +1449,8 @@ impl Player {
                 action_queue,
                 gc_context,
                 stage,
-                mouse_hovered_object,
-                mouse_pressed_object,
+                mouse_over_object: mouse_hovered_object,
+                mouse_down_object: mouse_pressed_object,
                 mouse_position,
                 drag_object,
                 player,
@@ -1439,8 +1497,8 @@ impl Player {
                 .map(|clip| clip.current_frame());
 
             // Hovered object may have been updated; copy it back to the GC root.
-            let mouse_hovered_object = update_context.mouse_hovered_object;
-            let mouse_pressed_object = update_context.mouse_pressed_object;
+            let mouse_hovered_object = update_context.mouse_over_object;
+            let mouse_pressed_object = update_context.mouse_down_object;
             root_data.mouse_hovered_object = mouse_hovered_object;
             root_data.mouse_pressed_object = mouse_pressed_object;
 
@@ -1489,7 +1547,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_roll_over();
+        self.update_mouse_state(None);
 
         // GC
         self.gc_arena.collect_debt();
