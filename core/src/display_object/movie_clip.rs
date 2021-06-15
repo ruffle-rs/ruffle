@@ -1969,10 +1969,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         let frame_name = match event {
-            ClipEvent::RollOut => Some("_up"),
-            ClipEvent::RollOver => Some("_over"),
-            ClipEvent::Press => Some("_down"),
-            ClipEvent::Release => Some("_over"),
+            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some("_up"),
+            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => Some("_over"),
+            ClipEvent::Press | ClipEvent::DragOver => Some("_down"),
             _ => None,
         };
 
