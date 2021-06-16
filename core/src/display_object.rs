@@ -1176,7 +1176,6 @@ pub trait TDisplayObject<'gc>:
     fn mouse_pick(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        self_node: DisplayObject<'gc>,
         pos: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {

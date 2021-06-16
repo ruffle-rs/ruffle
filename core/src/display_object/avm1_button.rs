@@ -350,14 +350,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn mouse_pick(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
             for child in self.iter_render_list().rev() {
-                let result = child.mouse_pick(context, child, point, require_button_mode);
+                let result = child.mouse_pick(context, point, require_button_mode);
                 if result.is_some() {
                     return result;
                 }
@@ -365,7 +364,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
             for child in self.0.read().hit_area.values() {
                 if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some(self_node);
+                    return Some((*self).into());
                 }
             }
         }

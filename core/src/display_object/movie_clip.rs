@@ -1898,11 +1898,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn mouse_pick(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         if self.visible() {
+            let this = DisplayObject::from(*self);
+
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
                     return None;
@@ -1918,7 +1919,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     let mut options = HitTestOptions::SKIP_INVISIBLE;
                     options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
                     if self.hit_test_shape(context, point, options) {
-                        return Some(self_node);
+                        return Some(this);
                     }
                 }
             }
@@ -1938,7 +1939,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                 } else if result.is_none() {
-                    result = child.mouse_pick(context, child, point, require_button_mode);
+                    result = child.mouse_pick(context, point, require_button_mode);
 
                     if result.is_some() {
                         hit_depth = child.depth();
@@ -1954,7 +1955,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let mut options = HitTestOptions::SKIP_INVISIBLE;
                 options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
                 if self.hit_test_shape(context, point, options) {
-                    return Some(self_node);
+                    return Some(this);
                 }
             }
         }

@@ -963,14 +963,17 @@ impl Player {
 
                     // Update _droptarget property of dragged object.
                     if let Some(movie_clip) = display_object.as_movie_clip() {
+                        // Turn the dragged object invisible so that we don't pick it.
+                        // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
                         let was_visible = display_object.visible();
                         display_object.set_visible(context.gc_context, false);
+                        // Set _droptarget to the object the mouse is hovering over.
                         let drop_target_object = context
                             .stage
                             .iter_depth_list()
                             .rev()
                             .filter_map(|(_depth, level)| {
-                                level.mouse_pick(context, level, *context.mouse_position, false)
+                                level.mouse_pick(context, *context.mouse_position, false)
                             })
                             .next();
                         movie_clip.set_drop_target(context.gc_context, drop_target_object);
@@ -1021,7 +1024,7 @@ impl Player {
                 .iter_depth_list()
                 .rev()
                 .filter_map(|(_depth, level)| {
-                    level.mouse_pick(context, level, *context.mouse_position, true)
+                    level.mouse_pick(context, *context.mouse_position, true)
                 })
                 .next();
 
