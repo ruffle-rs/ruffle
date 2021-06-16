@@ -63,7 +63,7 @@ impl ByteArrayStorage {
                 offset
                     ..offset
                         .checked_add(amnt)
-                        .ok_or_else(|| "RangeError: Cannot overflow usize")?,
+                        .ok_or("RangeError: Cannot overflow usize")?,
             )
             .ok_or_else(|| "EOFError: Reached EOF".into())
     }
@@ -73,7 +73,7 @@ impl ByteArrayStorage {
     pub fn write_at(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
         let new_len = offset
             .checked_add(buf.len())
-            .ok_or_else(|| "RangeError: The length of this ByteArray is too big")?;
+            .ok_or("RangeError: The length of this ByteArray is too big")?;
         if self.len() < new_len {
             self.resize(new_len, 0);
         }
@@ -88,9 +88,9 @@ impl ByteArrayStorage {
     pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
         let new_len = offset
             .checked_add(buf.len())
-            .ok_or_else(|| "RangeError: The length of this ByteArray is too big")?;
+            .ok_or("RangeError: The length of this ByteArray is too big")?;
         self.get_mut(offset..new_len)
-            .ok_or_else(|| "RangeError: The specified range is invalid")?
+            .ok_or("RangeError: The specified range is invalid")?
             .copy_from_slice(buf);
         Ok(())
     }
