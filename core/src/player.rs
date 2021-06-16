@@ -819,11 +819,6 @@ impl Player {
             }
         }
 
-        // Update mouse state.
-        if self.update_mouse_state(Some(&event)) {
-            needs_render = true;
-        }
-
         // Propagate button events.
         let button_event = match event {
             // ASCII characters convert directly to keyPress button events.
@@ -931,9 +926,13 @@ impl Player {
                     false,
                 );
             }
-
-            Self::run_actions(context);
         });
+
+        // Update mouse state.
+        // This fires button rollover/press events, which should run after the above mouseMove events.
+        if self.update_mouse_state(Some(&event)) {
+            needs_render = true;
+        }
 
         if needs_render {
             self.needs_render = true;
