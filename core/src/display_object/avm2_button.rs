@@ -621,7 +621,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn mouse_pick(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
@@ -631,8 +630,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             let state_child = self.get_state_child(state.into());
 
             if let Some(state_child) = state_child {
-                let mouse_pick =
-                    state_child.mouse_pick(context, state_child, point, require_button_mode);
+                let mouse_pick = state_child.mouse_pick(context, point, require_button_mode);
                 if mouse_pick.is_some() {
                     return mouse_pick;
                 }
@@ -643,7 +641,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 // hit_area is not actually a child, so transform point into local space before passing it down.
                 let point = self.global_to_local(point);
                 if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some(self_node);
+                    return Some((*self).into());
                 }
             }
         }

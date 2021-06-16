@@ -1655,7 +1655,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn mouse_pick(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
         _require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
@@ -1664,7 +1663,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             && self.is_selectable()
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
-            Some(self_node)
+            Some((*self).into())
         } else {
             None
         }
