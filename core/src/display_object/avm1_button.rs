@@ -352,11 +352,12 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
+        require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible() {
             for child in self.iter_render_list().rev() {
-                let result = child.mouse_pick(context, child, point);
+                let result = child.mouse_pick(context, child, point, require_button_mode);
                 if result.is_some() {
                     return result;
                 }

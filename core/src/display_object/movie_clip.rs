@@ -85,6 +85,7 @@ pub struct MovieClipData<'gc> {
     use_hand_cursor: bool,
     last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
+    drop_target: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -112,6 +113,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                drop_target: None,
             },
         ))
     }
@@ -144,6 +146,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                drop_target: None,
             },
         ))
     }
@@ -179,6 +182,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                drop_target: None,
             },
         ))
     }
@@ -211,6 +215,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                drop_target: None,
             },
         ));
         mc.set_is_root(gc_context, true);
@@ -666,6 +671,18 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn programmatically_played(self) -> bool {
         self.0.read().programmatically_played()
+    }
+
+    pub fn drop_target(self) -> Option<DisplayObject<'gc>> {
+        self.0.read().drop_target
+    }
+
+    pub fn set_drop_target(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        drop_target: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.write(gc_context).drop_target = drop_target;
     }
 
     pub fn set_programmatically_played(self, mc: MutationContext<'gc, '_>) {
@@ -1883,6 +1900,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
+        require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         if self.visible() {
             if let Some(masker) = self.masker() {
@@ -1920,7 +1938,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                         }
                     }
                 } else if result.is_none() {
-                    result = child.mouse_pick(context, child, point);
+                    result = child.mouse_pick(context, child, point, require_button_mode);
 
                     if result.is_some() {
                         hit_depth = child.depth();
@@ -1930,6 +1948,14 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             if result.is_some() {
                 return result;
+            }
+
+            if !require_button_mode {
+                let mut options = HitTestOptions::SKIP_INVISIBLE;
+                options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                if self.hit_test_shape(context, point, options) {
+                    return Some(self_node);
+                }
             }
         }
 

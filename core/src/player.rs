@@ -945,6 +945,7 @@ impl Player {
         let mouse_pos = self.mouse_pos;
         self.mutate_with_update_context(|context| {
             if let Some(drag_object) = &mut context.drag_object {
+                let display_object = drag_object.display_object;
                 if drag_object.display_object.removed() {
                     // Be sure to clear the drag if the object was removed.
                     *context.drag_object = None;
@@ -953,16 +954,28 @@ impl Player {
                         mouse_pos.0 + drag_object.offset.0,
                         mouse_pos.1 + drag_object.offset.1,
                     );
-                    if let Some(parent) = drag_object.display_object.parent() {
+                    if let Some(parent) = display_object.parent() {
                         drag_point = parent.global_to_local(drag_point);
                     }
                     drag_point = drag_object.constraint.clamp(drag_point);
-                    drag_object
-                        .display_object
-                        .set_x(context.gc_context, drag_point.0.to_pixels());
-                    drag_object
-                        .display_object
-                        .set_y(context.gc_context, drag_point.1.to_pixels());
+                    display_object.set_x(context.gc_context, drag_point.0.to_pixels());
+                    display_object.set_y(context.gc_context, drag_point.1.to_pixels());
+
+                    // Update _droptarget property of dragged object.
+                    if let Some(movie_clip) = display_object.as_movie_clip() {
+                        let was_visible = display_object.visible();
+                        display_object.set_visible(context.gc_context, false);
+                        let drop_target_object = context
+                            .stage
+                            .iter_depth_list()
+                            .rev()
+                            .filter_map(|(_depth, level)| {
+                                level.mouse_pick(context, level, *context.mouse_position, false)
+                            })
+                            .next();
+                        movie_clip.set_drop_target(context.gc_context, drop_target_object);
+                        display_object.set_visible(context.gc_context, was_visible);
+                    }
                 }
             }
         });
@@ -1008,7 +1021,7 @@ impl Player {
                 .iter_depth_list()
                 .rev()
                 .filter_map(|(_depth, level)| {
-                    level.mouse_pick(context, level, *context.mouse_position)
+                    level.mouse_pick(context, level, *context.mouse_position, true)
                 })
                 .next();
 
