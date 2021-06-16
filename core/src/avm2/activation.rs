@@ -18,7 +18,7 @@ use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
@@ -2569,7 +2569,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
+        usize::try_from(address)
+            .map_err(|_| "RangeError: The specified range is invalid".into())
+            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2584,7 +2586,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
+        usize::try_from(address)
+            .map_err(|_| "RangeError: The specified range is invalid".into())
+            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2599,7 +2603,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
+        usize::try_from(address)
+            .map_err(|_| "RangeError: The specified range is invalid".into())
+            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2614,7 +2620,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
+        usize::try_from(address)
+            .map_err(|_| "RangeError: The specified range is invalid".into())
+            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
 
         Ok(FrameControl::Continue)
     }
@@ -2629,7 +2637,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address as usize)?;
+        usize::try_from(address)
+            .map_err(|_| "RangeError: The specified range is invalid".into())
+            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
 
         Ok(FrameControl::Continue)
     }
