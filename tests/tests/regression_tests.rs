@@ -342,6 +342,7 @@ swf_tests! {
     (glow_filter, "avm1/glow_filter", 1),
     (date_constructor, "avm1/date/constructor", 1),
     (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
+    (removed_base_clip_tell_target, "avm1/removed_base_clip_tell_target", 2),
     (target_clip_removed, "avm1/target_clip_removed", 1),
     (date_utc, "avm1/date/UTC", 1),
     (date_set_date, "avm1/date/setDate", 1),
