@@ -58,45 +58,40 @@ impl ByteArrayStorage {
     /// Reads any amount of bytes at any offset in the ByteArray
     #[inline]
     pub fn read_at(&self, amnt: usize, offset: usize) -> Result<&[u8], Error> {
-        let end: Result<_, Error> = offset
-            .checked_add(amnt)
-            .ok_or_else(|| "RangeError: Cannot overflow usize".into());
         self.bytes
-            .get(offset..end?)
+            .get(
+                offset
+                    ..offset
+                        .checked_add(amnt)
+                        .ok_or_else(|| "RangeError: Cannot overflow usize")?,
+            )
             .ok_or_else(|| "EOFError: Reached EOF".into())
     }
 
     /// Write bytes at any offset in the ByteArray
     /// Will automatically grow the ByteArray to fit the new buffer
     pub fn write_at(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
-        match offset.checked_add(buf.len()) {
-            Some(new_len) => {
-                if self.len() < new_len {
-                    self.resize(new_len, 0);
-                }
-                // SAFETY:
-                // The storage is garunteed to be at least the size of new_len because we just resized it.
-                unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
-            }
-            None => return Err("RangeError: The length of this ByteArray is too big".into()),
+        let new_len = offset
+            .checked_add(buf.len())
+            .ok_or_else(|| "RangeError: The length of this ByteArray is too big")?;
+        if self.len() < new_len {
+            self.resize(new_len, 0);
         }
+        // SAFETY:
+        // The storage is garunteed to be at least the size of new_len because we just resized it.
+        unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
         Ok(())
     }
 
     /// Write bytes at any offset in the ByteArray
     /// Will return an error if the new buffer does not fit the ByteArray
     pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
-        match offset.checked_add(buf.len()) {
-            Some(new_len) => {
-                if self.bytes.len() < new_len {
-                    return Err("RangeError: The specified range is invalid".into());
-                }
-                // SAFETY:
-                // The storage is garunteed to be at least the size of new_len because the function would have returned already.
-                unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
-            }
-            None => return Err("RangeError: The length of this ByteArray is too big".into()),
-        }
+        let new_len = offset
+            .checked_add(buf.len())
+            .ok_or_else(|| "RangeError: The length of this ByteArray is too big")?;
+        self.get_mut(offset..new_len)
+            .ok_or_else(|| "RangeError: The specified range is invalid")?
+            .copy_from_slice(buf);
         Ok(())
     }
 
