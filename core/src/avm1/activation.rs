@@ -1928,6 +1928,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if let Some(clip) = self
             .resolve_target_path(root, start, target, false)?
             .and_then(|o| o.as_display_object())
+            .filter(|_| !self.base_clip.removed())
+        // All properties invalid if base clip is removed.
         {
             new_target_clip = Some(clip);
         } else {
@@ -1936,7 +1938,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let message = format!(
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
-                base_clip.path()
+                if base_clip.removed() {
+                    "?".to_string()
+                } else {
+                    base_clip.path()
+                }
             );
             self.context.log.avm_trace(&message);
 
@@ -1961,6 +1967,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_set_target2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = self.context.avm1.pop();
+
+        let base_clip = self.base_clip();
+        if base_clip.removed() {
+            self.set_target_clip(None);
+            return Ok(FrameControl::Continue);
+        }
+
         match target {
             Value::String(target) => {
                 return self.action_set_target(&target);
