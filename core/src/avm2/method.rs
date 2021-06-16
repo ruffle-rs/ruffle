@@ -70,7 +70,7 @@ impl<'gc> ParamConfig<'gc> {
             )?
         };
         let default_value = if let Some(dv) = &config.default_value {
-            Some(abc_default_value(txunit, &dv, activation)?)
+            Some(abc_default_value(txunit, dv, activation)?)
         } else {
             None
         };
@@ -137,7 +137,7 @@ impl<'gc> BytecodeMethod<'gc> {
         if abc.methods.get(abc_method.0 as usize).is_some() {
             let method = &abc.methods[abc_method.0 as usize];
             for param in &method.params {
-                signature.push(ParamConfig::from_abc_param(&param, txunit, activation)?);
+                signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
             for (index, method_body) in abc.method_bodies.iter().enumerate() {

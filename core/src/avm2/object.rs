@@ -672,7 +672,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(&name)?.ok_or_else(|| {
+        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall method {:?}, which does not exist",
                 name
@@ -717,7 +717,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Option<Object<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(&name)?.ok_or_else(|| {
+        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall getter {:?}, which does not exist",
                 name
@@ -763,7 +763,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Option<Object<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(&name)?.ok_or_else(|| {
+        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall setter {:?}, which does not exist",
                 name

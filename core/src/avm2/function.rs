@@ -148,7 +148,7 @@ impl<'gc> Executable<'gc> {
                     .into());
                 }
 
-                let arguments = activation.resolve_parameters(name, arguments, &signature)?;
+                let arguments = activation.resolve_parameters(name, arguments, signature)?;
 
                 method(&mut activation, receiver, &arguments)
             }
