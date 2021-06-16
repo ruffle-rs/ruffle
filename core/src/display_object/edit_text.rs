@@ -1657,6 +1657,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         self_node: DisplayObject<'gc>,
         point: (Twips, Twips),
+        _require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible()

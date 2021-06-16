@@ -1172,11 +1172,13 @@ pub trait TDisplayObject<'gc>:
         self.hit_test_bounds(pos)
     }
 
+    #[allow(unused_variables)]
     fn mouse_pick(
         &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        _self_node: DisplayObject<'gc>,
-        _pos: (Twips, Twips),
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        self_node: DisplayObject<'gc>,
+        pos: (Twips, Twips),
+        require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         None
     }

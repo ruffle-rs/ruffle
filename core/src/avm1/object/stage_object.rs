@@ -828,10 +828,15 @@ fn set_name<'gc>(
 
 fn drop_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
+    this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _droptarget");
-    Ok("".into())
+    Ok(this
+        .as_movie_clip()
+        .and_then(|mc| mc.drop_target())
+        .map(|drop_target| {
+            AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
+        })
+        .unwrap_or_else(|| "".into()))
 }
 
 fn url<'gc>(
