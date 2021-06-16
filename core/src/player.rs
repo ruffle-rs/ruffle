@@ -758,7 +758,6 @@ impl Player {
     }
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
-        let mut needs_render = self.needs_render;
         if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
                 key_code: KeyCode::V,
@@ -926,15 +925,13 @@ impl Player {
                     false,
                 );
             }
+
+            Self::run_actions(context);
         });
 
         // Update mouse state.
         // This fires button rollover/press events, which should run after the above mouseMove events.
         if self.update_mouse_state(Some(&event)) {
-            needs_render = true;
-        }
-
-        if needs_render {
             self.needs_render = true;
         }
     }
