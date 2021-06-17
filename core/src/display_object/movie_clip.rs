@@ -1314,8 +1314,9 @@ impl<'gc> MovieClip<'gc> {
         let run_goto_command = |clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'_, 'gc, '_>,
                                 params: &GotoPlaceObject<'_>| {
+            use swf::PlaceObjectAction;
             let child_entry = clip.child_by_depth(params.depth());
-            match child_entry {
+            match (params.place_object.action, child_entry, is_rewind) {
                 // Apply final delta to display parameters.
                 // For rewinds, if an object was created before the final frame,
                 // it will exist on the final frame as well. Re-use this object
@@ -1323,19 +1324,28 @@ impl<'gc> MovieClip<'gc> {
                 // If the ID is 0, we are modifying a previous child. Otherwise, we're replacing it.
                 // If it's a rewind, we removed any dead children above, so we always
                 // modify the previous child.
-                Some(prev_child) if params.id() == 0 || is_rewind => {
+                (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
                     prev_child.apply_place_object(context, self.movie(), &params.place_object);
                 }
-                _ => {
-                    if let Some(child) = clip.instantiate_child(
-                        context,
-                        params.id(),
-                        params.depth(),
-                        &params.place_object,
-                    ) {
+                (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
+                    prev_child.replace_with(context, id);
+                    prev_child.apply_place_object(context, self.movie(), &params.place_object);
+                    prev_child.set_place_frame(context.gc_context, params.frame);
+                }
+                (PlaceObjectAction::Place(id), _, _)
+                | (swf::PlaceObjectAction::Replace(id), _, _) => {
+                    if let Some(child) =
+                        clip.instantiate_child(context, id, params.depth(), &params.place_object)
+                    {
                         // Set the place frame to the frame where the object *would* have been placed.
                         child.set_place_frame(context.gc_context, params.frame);
                     }
+                }
+                _ => {
+                    log::error!(
+                        "Unexpected PlaceObject during goto: {:?}",
+                        params.place_object
+                    )
                 }
             }
         };
@@ -3419,14 +3429,6 @@ impl<'a> GotoPlaceObject<'a> {
             frame,
             place_object,
             index,
-        }
-    }
-
-    #[inline]
-    fn id(&self) -> CharacterId {
-        match &self.place_object.action {
-            swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => *id,
-            swf::PlaceObjectAction::Modify => 0,
         }
     }
 
