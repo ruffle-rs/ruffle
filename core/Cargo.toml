@@ -51,6 +51,6 @@ env_logger = "0.8.3"
 
 [features]
 default = ["minimp3", "serde"]
-lzma = ["lzma-rs"]
+lzma = ["lzma-rs", "swf/lzma"]
 wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []
