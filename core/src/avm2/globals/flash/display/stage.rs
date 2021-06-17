@@ -584,14 +584,34 @@ pub fn allows_full_screen_interactive<'gc>(
 }
 
 /// Implement `quality`'s getter
-///
-/// TODO: This is a stub.
 pub fn quality<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok("HIGH".into())
+    let quality = activation.context.stage.quality().into_avm_str();
+    Ok(AvmString::new(activation.context.gc_context, quality).into())
+}
+
+/// Implement `quality`'s setter
+pub fn set_quality<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    // Invalid values result in no change.
+    if let Ok(quality) = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+    {
+        activation
+            .context
+            .stage
+            .set_quality(activation.context.gc_context, quality);
+    }
+    Ok(Value::Undefined)
 }
 
 /// Construct `Stage`'s class.
@@ -690,7 +710,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(allows_full_screen_interactive),
             None,
         ),
-        ("quality", Some(quality), None),
+        ("quality", Some(quality), Some(set_quality)),
     ];
     write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
 
