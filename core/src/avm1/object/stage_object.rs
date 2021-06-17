@@ -855,16 +855,36 @@ fn high_quality<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _highquality");
-    Ok(1.into())
+    use crate::display_object::StageQuality;
+    let quality = match activation.context.stage.quality() {
+        StageQuality::Best => 2,
+        StageQuality::High => 1,
+        _ => 0,
+    };
+    Ok(quality.into())
 }
 
 fn set_high_quality<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-    _val: Value<'gc>,
+    val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _highquality");
+    use crate::display_object::StageQuality;
+    let val = val.coerce_to_f64(activation)?;
+    if !val.is_nan() {
+        // 0 -> Low, 1 -> High, 2 -> Best, but with some odd rules for non-integers.
+        let quality = if val > 1.5 {
+            StageQuality::Best
+        } else if val == 0.0 {
+            StageQuality::Low
+        } else {
+            StageQuality::High
+        };
+        activation
+            .context
+            .stage
+            .set_quality(activation.context.gc_context, quality);
+    }
     Ok(())
 }
 
