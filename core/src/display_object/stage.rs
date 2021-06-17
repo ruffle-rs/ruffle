@@ -68,6 +68,13 @@ pub struct StageData<'gc> {
     /// The alignment of the stage.
     align: StageAlign,
 
+    /// Whether to use high quality downsampling for bitmaps.
+    ///
+    /// This is usally implied by `quality` being `Best` or higher, but the AVM1
+    /// `ToggleHighQuality` op can adjust stage quality independently of this flag.
+    /// This setting is currently ignored in Ruffle.
+    use_bitmap_downsampling: bool,
+
     /// The dimensions of the stage's containing viewport.
     #[collect(require_static)]
     viewport_size: (u32, u32),
@@ -100,6 +107,7 @@ impl<'gc> Stage<'gc> {
                 stage_size: (width, height),
                 scale_mode: Default::default(),
                 align: Default::default(),
+                use_bitmap_downsampling: false,
                 viewport_size: (width, height),
                 viewport_scale_factor: 1.0,
                 view_bounds: Default::default(),
@@ -159,7 +167,16 @@ impl<'gc> Stage<'gc> {
     /// This setting is currently ignored in Ruffle.
     /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
     pub fn set_quality(self, gc_context: MutationContext<'gc, '_>, quality: StageQuality) {
-        self.0.write(gc_context).quality = quality;
+        let mut this = self.0.write(gc_context);
+        this.quality = quality;
+        this.use_bitmap_downsampling = matches!(
+            quality,
+            StageQuality::Best
+                | StageQuality::High8x8
+                | StageQuality::High8x8Linear
+                | StageQuality::High16x16
+                | StageQuality::High16x16Linear
+        );
     }
 
     /// Get the size of the stage.
@@ -196,6 +213,18 @@ impl<'gc> Stage<'gc> {
     pub fn set_align(self, context: &mut UpdateContext<'_, 'gc, '_>, align: StageAlign) {
         self.0.write(context.gc_context).align = align;
         self.build_matrices(context);
+    }
+
+    /// Returns whether bitmaps will use high quality downsampling when scaled down.
+    /// This setting is currently ignored in Ruffle.
+    pub fn use_bitmap_downsampling(self) -> bool {
+        self.0.read().use_bitmap_downsampling
+    }
+
+    /// Sets whether bitmaps will use high quality downsampling when scaled down.
+    /// This setting is currently ignored in Ruffle.
+    pub fn set_use_bitmap_downsampling(self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.0.write(gc_context).use_bitmap_downsampling = value;
     }
 
     /// Get the current viewport size, in device pixels.
