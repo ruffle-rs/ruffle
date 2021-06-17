@@ -906,16 +906,21 @@ fn quality<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _quality");
-    Ok("HIGH".into())
+    let quality = activation.context.stage.quality().into_avm_str();
+    Ok(AvmString::new(activation.context.gc_context, quality).into())
 }
 
 fn set_quality<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-    _val: Value<'gc>,
+    val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _quality");
+    if let Ok(quality) = val.coerce_to_string(activation)?.parse() {
+        activation
+            .context
+            .stage
+            .set_quality(activation.context.gc_context, quality);
+    }
     Ok(())
 }
 
