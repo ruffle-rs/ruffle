@@ -55,6 +55,9 @@ pub struct StageData<'gc> {
     #[collect(require_static)]
     movie_size: (u32, u32),
 
+    /// The quality settings of the stage.
+    quality: StageQuality,
+
     /// The dimensions of the stage, as reported to ActionScript.
     #[collect(require_static)]
     stage_size: (u32, u32),
@@ -93,6 +96,7 @@ impl<'gc> Stage<'gc> {
                 background_color: None,
                 letterbox: Letterbox::Fullscreen,
                 movie_size: (width, height),
+                quality: Default::default(),
                 stage_size: (width, height),
                 scale_mode: Default::default(),
                 align: Default::default(),
@@ -138,6 +142,24 @@ impl<'gc> Stage<'gc> {
     /// Set the size of the SWF file.
     pub fn set_movie_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
         self.0.write(gc_context).movie_size = (width, height);
+    }
+
+    /// Returns the quality setting of the stage.
+    ///
+    /// In the Flash Player, the quality setting affects anti-aliasing and smoothing of bitmaps.
+    /// This setting is currently ignored in Ruffle.
+    /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
+    pub fn quality(self) -> StageQuality {
+        self.0.read().quality
+    }
+
+    /// Sets the quality setting of the stage.
+    ///
+    /// In the Flash Player, the quality setting affects anti-aliasing and smoothing of bitmaps.
+    /// This setting is currently ignored in Ruffle.
+    /// Used by AVM1 `stage.quality` and AVM2 `Stage.quality` properties.
+    pub fn set_quality(self, gc_context: MutationContext<'gc, '_>, quality: StageQuality) {
+        self.0.write(gc_context).quality = quality;
     }
 
     /// Get the size of the stage.
@@ -644,5 +666,105 @@ impl FromStr for StageAlign {
             }
         }
         Ok(align)
+    }
+}
+
+/// The quality setting of the `Stage`.
+///
+/// In the Flash Player, this settings affects anti-aliasing and bitmap smoothing.
+/// These settings currently have no effect in Ruffle, but the active setting is still stored.
+/// [StageQuality in the AS3 Reference](https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/StageQuality.html)
+#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
+#[collect(require_static)]
+pub enum StageQuality {
+    /// No anti-aliasing, and bitmaps are never smoothed.
+    Low,
+
+    /// 2x anti-aliasing.
+    Medium,
+
+    /// 4x anti-aliasing.
+    High,
+
+    /// 4x anti-aliasing with high quality downsampling.
+    /// Bitmaps will use high quality downsampling when scaled down.
+    /// Despite the name, this is not the best quality setting as 8x8 and 16x16 modes were added to
+    /// Flash Player 11.3.
+    Best,
+
+    /// 8x anti-aliasing.
+    /// Bitmaps will use high quality downsampling when scaled down.
+    High8x8,
+
+    /// 8x anti-aliasing done in linear sRGB space.
+    /// Bitmaps will use high quality downsampling when scaled down.
+    High8x8Linear,
+
+    /// 16x anti-aliasing.
+    /// Bitmaps will use high quality downsampling when scaled down.
+    High16x16,
+
+    /// 16x anti-aliasing done in linear sRGB space.
+    /// Bitmaps will use high quality downsampling when scaled down.
+    High16x16Linear,
+}
+
+impl StageQuality {
+    /// Returns the string representing the quality setting as returned by AVM1 `_quality` and
+    /// AVM2 `Stage.quality`.
+    pub fn into_avm_str(self) -> &'static str {
+        // Flash Player always returns quality in uppercase, despite the AVM2 `StageQuality` being
+        // lowercase.
+        match self {
+            StageQuality::Low => "LOW",
+            StageQuality::Medium => "MEDIUM",
+            StageQuality::High => "HIGH",
+            StageQuality::Best => "BEST",
+            // The linear sRGB quality settings are not returned even if they are active.
+            StageQuality::High8x8 | StageQuality::High8x8Linear => "8X8",
+            StageQuality::High16x16 | StageQuality::High16x16Linear => "16X16",
+        }
+    }
+}
+
+impl Default for StageQuality {
+    fn default() -> StageQuality {
+        StageQuality::High
+    }
+}
+
+impl Display for StageQuality {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        // Match string values returned by AS.
+        let s = match *self {
+            StageQuality::Low => "low",
+            StageQuality::Medium => "medium",
+            StageQuality::High => "high",
+            StageQuality::Best => "best",
+            StageQuality::High8x8 => "8x8",
+            StageQuality::High8x8Linear => "8x8linear",
+            StageQuality::High16x16 => "16x16",
+            StageQuality::High16x16Linear => "16x16linear",
+        };
+        f.write_str(s)
+    }
+}
+
+impl FromStr for StageQuality {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let quality = match s.to_ascii_lowercase().as_str() {
+            "low" => StageQuality::Low,
+            "medium" => StageQuality::Medium,
+            "high" => StageQuality::High,
+            "best" => StageQuality::Best,
+            "8x8" => StageQuality::High8x8,
+            "8x8linear" => StageQuality::High8x8Linear,
+            "16x16" => StageQuality::High16x16,
+            "16x16linear" => StageQuality::High16x16Linear,
+            _ => return Err(ParseEnumError),
+        };
+        Ok(quality)
     }
 }
