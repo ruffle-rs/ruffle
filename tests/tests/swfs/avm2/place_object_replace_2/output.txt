@@ -1,0 +1,25 @@
+// frame 1
+// Position:
+100, 100
+// gotoAndStop(2)
+
+// frame 2
+// Replaced shape is the same object:
+true
+// Position:
+100, 100
+gotoAndStop(4)
+
+// frame 4
+// Replaced shape is the same object:
+true
+// Position:
+20, 20
+gotoAndStop(3)
+
+// frame 3
+// Replaced shape is the same object:
+false
+// Position:
+300, 150
+
