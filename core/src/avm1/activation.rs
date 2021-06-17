@@ -2176,7 +2176,22 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn toggle_quality(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // TODO(Herschel): Noop for now? Could chang anti-aliasing on render backend.
+        use crate::display_object::StageQuality;
+        // Toggle between `Low` and `High`/`Best` quality.
+        // This op remembers whether the stage quality was `Best` or higher, so we have to maintain
+        // the bitmap downsampling flag to ensure we toggle back to the proper quality.
+        let use_bitmap_downsamping = self.context.stage.use_bitmap_downsampling();
+        let new_quality = match self.context.stage.quality() {
+            StageQuality::High | StageQuality::Best => StageQuality::Low,
+            _ if use_bitmap_downsamping => StageQuality::Best,
+            _ => StageQuality::High,
+        };
+        self.context
+            .stage
+            .set_quality(self.context.gc_context, new_quality);
+        self.context
+            .stage
+            .set_use_bitmap_downsampling(self.context.gc_context, use_bitmap_downsamping);
         Ok(FrameControl::Continue)
     }
 
