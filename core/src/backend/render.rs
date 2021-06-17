@@ -469,7 +469,8 @@ pub fn decode_define_bits_lossless(
                 });
                 i += 3;
             }
-            let mut out_data = vec![];
+            let mut out_data: Vec<u8> =
+                Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
@@ -505,7 +506,8 @@ pub fn decode_define_bits_lossless(
                 });
                 i += 4;
             }
-            let mut out_data = vec![];
+            let mut out_data: Vec<u8> =
+                Vec::with_capacity(swf_tag.width as usize * swf_tag.height as usize * 4);
             for _ in 0..swf_tag.height {
                 for _ in 0..swf_tag.width {
                     let entry = decoded_data[i] as usize;
