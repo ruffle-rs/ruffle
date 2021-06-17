@@ -109,7 +109,7 @@ impl ByteArrayStorage {
                 compresser.read_to_end(&mut buffer)?;
             }
             #[cfg(feature = "lzma")]
-            "lzma" => lzma_rs::lzma_compress(&mut io::BufReader::new(&*self.bytes), &mut buffer)?,
+            "lzma" => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)?,
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
@@ -134,7 +134,7 @@ impl ByteArrayStorage {
                 compresser.read_to_end(&mut buffer)?;
             }
             #[cfg(feature = "lzma")]
-            "lzma" => lzma_rs::lzma_decompress(&mut io::BufReader::new(&*self.bytes), &mut buffer)
+            "lzma" => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)
                 .map_err(|_| io::Error::new(io::ErrorKind::Other, "LZMA decompression failed"))?,
             _ => {
                 return Err(io::Error::new(
@@ -254,7 +254,7 @@ impl Read for ByteArrayStorage {
             .map_err(|_| {
                 io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
             })?;
-        buf.split_at_mut(bytes.len()).0.copy_from_slice(bytes);
+        buf[..bytes.len()].copy_from_slice(bytes);
         Ok(bytes.len())
     }
 }
