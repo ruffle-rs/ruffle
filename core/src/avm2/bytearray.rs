@@ -157,7 +157,7 @@ impl ByteArrayStorage {
     }
 
     pub fn read_boolean(&self) -> Result<bool, Error> {
-        Ok(self.read_bytes(1)?[0] != 0)
+        Ok(self.read_bytes(1)? != [0])
     }
 
     // Writes a UTF String into the buffer, with its length as a prefix
