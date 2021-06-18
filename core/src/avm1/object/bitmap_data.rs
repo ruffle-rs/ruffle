@@ -6,6 +6,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::backend::render::{BitmapHandle, RenderBackend};
 use crate::bitmap::turbulence::Turbulence;
+use bitflags::bitflags;
 use downcast_rs::__std::fmt::Formatter;
 use std::fmt;
 use std::ops::Range;
@@ -121,30 +122,13 @@ impl From<i32> for Color {
     }
 }
 
-pub struct ChannelOptions(pub u32);
-
-impl ChannelOptions {
-    pub fn alpha(&self) -> bool {
-        self.0 & 8 == 8
-    }
-    pub fn red(&self) -> bool {
-        self.0 & 1 == 1
-    }
-    pub fn green(&self) -> bool {
-        self.0 & 2 == 2
-    }
-    pub fn blue(&self) -> bool {
-        self.0 & 4 == 4
-    }
-
-    pub fn rgb() -> Self {
-        (1 | 2 | 4).into()
-    }
-}
-
-impl From<u32> for ChannelOptions {
-    fn from(v: u32) -> Self {
-        Self { 0: v }
+bitflags! {
+    pub struct ChannelOptions: u8 {
+        const RED = 1 << 0;
+        const GREEN = 1 << 1;
+        const BLUE = 1 << 2;
+        const ALPHA = 1 << 3;
+        const RGB = Self::RED.bits | Self::GREEN.bits | Self::BLUE.bits;
     }
 }
 
@@ -341,7 +325,7 @@ impl BitmapData {
             for x in 0..self.width() {
                 let pixel_color = if gray_scale {
                     let gray = rng.gen_range(low..high);
-                    let alpha = if channel_options.alpha() {
+                    let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
                         rng.gen_range(low..high)
                     } else {
                         255
@@ -349,25 +333,25 @@ impl BitmapData {
 
                     Color::argb(alpha, gray, gray, gray)
                 } else {
-                    let r = if channel_options.red() {
+                    let r = if channel_options.contains(ChannelOptions::RED) {
                         rng.gen_range(low..high)
                     } else {
                         0
                     };
 
-                    let g = if channel_options.green() {
+                    let g = if channel_options.contains(ChannelOptions::GREEN) {
                         rng.gen_range(low..high)
                     } else {
                         0
                     };
 
-                    let b = if channel_options.blue() {
+                    let b = if channel_options.contains(ChannelOptions::BLUE) {
                         rng.gen_range(low..high)
                     } else {
                         0
                     };
 
-                    let a = if channel_options.alpha() {
+                    let a = if channel_options.contains(ChannelOptions::ALPHA) {
                         rng.gen_range(low..high)
                     } else {
                         255
@@ -715,7 +699,7 @@ impl BitmapData {
         random_seed: i64,
         stitch: bool,
         fractal_noise: bool,
-        channel_options: u8,
+        channel_options: ChannelOptions,
         grayscale: bool,
         offsets: Vec<(f64, f64)>, // must contain `num_octaves` values
     ) {
@@ -726,7 +710,7 @@ impl BitmapData {
                 let px = x as f64;
                 let py = y as f64;
 
-                let mut noise = [0.0_f64; 4];
+                let mut noise = [0.0; 4];
 
                 // grayscale mode is different enough to warrant its own branch
                 if grayscale {
@@ -745,7 +729,7 @@ impl BitmapData {
                     noise[1] = noise[0];
                     noise[2] = noise[0];
 
-                    noise[3] = if channel_options & 8 != 0 {
+                    noise[3] = if channel_options.contains(ChannelOptions::ALPHA) {
                         turb.turbulence(
                             1,
                             (px, py),
@@ -772,7 +756,9 @@ impl BitmapData {
                         // because of the saturating conversion to u8
                         *noise_c = if c == 3 { 1.0 } else { -1.0 };
 
-                        if (channel_options & (1 << c)) != 0 {
+                        // SAFETY: `c` is always in 0..4, so `1 << c` is a valid `ChannelOptions`.
+                        let c = unsafe { ChannelOptions::from_bits_unchecked(1 << c) };
+                        if channel_options.contains(c) {
                             *noise_c = turb.turbulence(
                                 channel,
                                 (px, py),
