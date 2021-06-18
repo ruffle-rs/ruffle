@@ -979,7 +979,7 @@ impl<W: Write> Writer<W> {
             }
             Tag::ProductInfo(ref product_info) => self.write_product_info(product_info)?,
             Tag::DebugId(ref debug_id) => self.write_debug_id(debug_id)?,
-
+            Tag::NameCharacter(ref name_character) => self.write_name_character(name_character)?,
             Tag::Unknown { tag_code, data } => {
                 self.write_tag_code_and_length(tag_code, data.len() as u32)?;
                 self.output.write_all(data)?;
@@ -2467,6 +2467,13 @@ impl<W: Write> Writer<W> {
 
     fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
         self.output.write_all(debug_id)?;
+        Ok(())
+    }
+
+    fn write_name_character(&mut self, name_character: &NameCharacter) -> Result<()> {
+        self.write_tag_header(TagCode::NameCharacter, 3 + name_character.name.len() as u32)?;
+        self.write_character_id(name_character.id)?;
+        self.write_string(name_character.name)?;
         Ok(())
     }
 
