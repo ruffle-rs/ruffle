@@ -81,7 +81,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(if let Some(val) = read.storage.get(index) {
-                    Value::Unsigned(*val as u32)
+                    Value::Unsigned(val as u32)
                 } else {
                     Value::Undefined
                 });

@@ -61,7 +61,7 @@ pub fn write_bytes<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(Value::Object(second_array)) = args.get(0) {
         let combining_bytes = match second_array.as_bytearray() {
-            Some(b) => b.clone(),
+            Some(b) => b.bytes().clone(),
             None => return Err("ArgumentError: Parameter must be a bytearray".into()),
         };
 
@@ -103,6 +103,7 @@ pub fn read_bytes<'gc>(
         let current_bytes = this
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap()
+            .bytes()
             .clone();
         let position = this
             .as_bytearray_mut(activation.context.gc_context)
@@ -180,7 +181,7 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            let (new_string, _, _) = UTF_8.decode(&bytearray);
+            let (new_string, _, _) = UTF_8.decode(bytearray.bytes());
             return Ok(AvmString::new(activation.context.gc_context, new_string).into());
         }
     }
@@ -275,7 +276,7 @@ pub fn set_length<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Unsigned(0))
                 .coerce_to_u32(activation)? as usize;
-            bytearray.resize(len, 0);
+            bytearray.set_length(len);
         }
     }
 

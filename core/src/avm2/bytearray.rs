@@ -75,11 +75,11 @@ impl ByteArrayStorage {
             .checked_add(buf.len())
             .ok_or("RangeError: The length of this ByteArray is too big")?;
         if self.len() < new_len {
-            self.resize(new_len, 0);
+            self.set_length(new_len);
         }
         // SAFETY:
         // The storage is garunteed to be at least the size of new_len because we just resized it.
-        unsafe { self.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
+        unsafe { self.bytes.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
         Ok(())
     }
 
@@ -89,7 +89,7 @@ impl ByteArrayStorage {
         let new_len = offset
             .checked_add(buf.len())
             .ok_or("RangeError: The length of this ByteArray is too big")?;
-        self.get_mut(offset..new_len)
+        self.bytes.get_mut(offset..new_len)
             .ok_or("RangeError: The specified range is invalid")?
             .copy_from_slice(buf);
         Ok(())
@@ -170,18 +170,47 @@ impl ByteArrayStorage {
         }
     }
 
+    #[inline]
+    pub fn clear(&mut self) {
+        self.bytes.clear()
+    }
+
+    #[inline]
+    pub fn shrink_to_fit(&mut self) {
+        self.bytes.shrink_to_fit()
+    }
+
+    #[inline]
+    pub fn set_length(&mut self, new_len: usize) {
+        self.bytes.resize(new_len, 0);
+    }
+
+    pub fn get(&self, pos: usize) -> Option<u8> {
+        self.bytes.get(pos).copied()
+    }
+
     pub fn set(&mut self, item: usize, value: u8) {
         if self.len() < (item + 1) {
-            self.resize(item + 1, 0)
+            self.bytes.resize(item + 1, 0)
         }
 
-        *self.get_mut(item).unwrap() = value;
+        *self.bytes.get_mut(item).unwrap() = value;
     }
 
     pub fn delete(&mut self, item: usize) {
-        if let Some(i) = self.get_mut(item) {
+        if let Some(i) = self.bytes.get_mut(item) {
             *i = 0;
         }
+    }
+
+    #[inline]
+    pub fn bytes(&self) -> &Vec<u8> {
+        &self.bytes
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.bytes.len()
     }
 
     #[inline]
@@ -212,20 +241,6 @@ impl ByteArrayStorage {
     #[inline]
     pub fn bytes_available(&self) -> usize {
         self.len().saturating_sub(self.position.get())
-    }
-}
-
-impl std::ops::Deref for ByteArrayStorage {
-    type Target = Vec<u8>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
-}
-
-impl std::ops::DerefMut for ByteArrayStorage {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.bytes
     }
 }
 

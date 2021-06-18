@@ -2655,7 +2655,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = dm.get(address);
 
         if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(*val as i32));
+            self.context.avm2.push(Value::Integer(val as i32));
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
