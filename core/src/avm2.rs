@@ -1,6 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::globals::{SystemConstructors, SystemPrototypes};
+use crate::avm2::globals::{SystemClasses, SystemPrototypes};
 use crate::avm2::method::Method;
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -73,7 +73,7 @@ pub struct Avm2<'gc> {
     system_prototypes: Option<SystemPrototypes<'gc>>,
 
     /// System constructors.
-    system_constructors: Option<SystemConstructors<'gc>>,
+    system_classes: Option<SystemClasses<'gc>>,
 
     /// A list of objects which are capable of recieving broadcasts.
     ///
@@ -98,7 +98,7 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_prototypes: None,
-            system_constructors: None,
+            system_classes: None,
             broadcast_list: HashMap::new(),
 
             #[cfg(feature = "avm_debug")]
@@ -119,11 +119,11 @@ impl<'gc> Avm2<'gc> {
         self.system_prototypes.as_ref().unwrap()
     }
 
-    /// Return the current set of system constructors.
+    /// Return the current set of system classes.
     ///
     /// This function panics if the interpreter has not yet been initialized.
-    pub fn constructors(&self) -> &SystemConstructors<'gc> {
-        self.system_constructors.as_ref().unwrap()
+    pub fn classes(&self) -> &SystemClasses<'gc> {
+        self.system_classes.as_ref().unwrap()
     }
 
     /// Run a script's initializer method.
@@ -165,7 +165,7 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
 
-        let event_constr = context.avm2.constructors().event;
+        let event_constr = context.avm2.classes().event;
         let mut activation = Activation::from_nothing(context.reborrow());
 
         let event_object = EventObject::from_event(&mut activation, event_constr, event)?;

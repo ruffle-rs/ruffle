@@ -50,7 +50,7 @@ impl<'gc> RegExpObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         regexp: RegExp<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().regexp;
+        let constr = activation.avm2().classes().regexp;
         let proto = activation.avm2().prototypes().regexp;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));

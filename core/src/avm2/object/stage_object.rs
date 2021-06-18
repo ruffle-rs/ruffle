@@ -106,7 +106,7 @@ impl<'gc> StageObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error> {
-        let constr = activation.avm2().constructors().graphics;
+        let constr = activation.avm2().classes().graphics;
         let proto = activation.avm2().prototypes().graphics;
         let mut this = Self(GcCell::allocate(
             activation.context.gc_context,

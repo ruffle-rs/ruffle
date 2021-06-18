@@ -517,7 +517,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        let stage_constr = context.avm2.constructors().stage;
+        let stage_constr = context.avm2.classes().stage;
 
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.

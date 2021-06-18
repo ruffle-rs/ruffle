@@ -60,7 +60,7 @@ impl<'gc> ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         array: ArrayStorage<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().array;
+        let constr = activation.avm2().classes().array;
         let proto = activation.avm2().prototypes().array;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));

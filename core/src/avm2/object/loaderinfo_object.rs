@@ -74,7 +74,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().loaderinfo;
+        let constr = activation.avm2().classes().loaderinfo;
         let proto = activation.avm2().prototypes().loaderinfo;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
@@ -97,7 +97,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     /// Create a loader info object for the stage.
     pub fn from_stage(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().loaderinfo;
+        let constr = activation.avm2().classes().loaderinfo;
         let proto = activation.avm2().prototypes().loaderinfo;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));

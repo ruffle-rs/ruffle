@@ -75,11 +75,11 @@ impl<'gc> PrimitiveObject<'gc> {
             _ => unreachable!(),
         };
         let constr = match primitive {
-            Value::Bool(_) => activation.avm2().constructors().boolean,
-            Value::Number(_) => activation.avm2().constructors().number,
-            Value::Unsigned(_) => activation.avm2().constructors().uint,
-            Value::Integer(_) => activation.avm2().constructors().int,
-            Value::String(_) => activation.avm2().constructors().string,
+            Value::Bool(_) => activation.avm2().classes().boolean,
+            Value::Number(_) => activation.avm2().classes().number,
+            Value::Unsigned(_) => activation.avm2().classes().uint,
+            Value::Integer(_) => activation.avm2().classes().int,
+            Value::String(_) => activation.avm2().classes().string,
             _ => unreachable!(),
         };
 

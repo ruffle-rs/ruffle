@@ -1595,12 +1595,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error> {
-        let mut object = self
-            .context
-            .avm2
-            .constructors()
-            .object
-            .construct(self, &[])?;
+        let mut object = self.context.avm2.classes().object.construct(self, &[])?;
 
         for _ in 0..num_args {
             let value = self.context.avm2.pop();

@@ -178,7 +178,7 @@ impl<'gc> Avm2Button<'gc> {
             .movie()
             .expect("All SWF-defined buttons should have movies");
         let empty_slice = SwfSlice::empty(movie.clone());
-        let sprite_constr = context.avm2.constructors().sprite;
+        let sprite_constr = context.avm2.classes().sprite;
 
         let mut children = Vec::new();
         let static_data = self.0.read().static_data;
@@ -429,7 +429,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         if self.0.read().object.is_none() {
-            let simplebutton_constr = context.avm2.constructors().simplebutton;
+            let simplebutton_constr = context.avm2.classes().simplebutton;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             match Avm2StageObject::for_display_object(
                 &mut activation,

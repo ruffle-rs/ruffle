@@ -1517,7 +1517,7 @@ impl<'gc> MovieClip<'gc> {
             .0
             .read()
             .avm2_constructor
-            .unwrap_or_else(|| context.avm2.constructors().movieclip);
+            .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
@@ -1546,7 +1546,7 @@ impl<'gc> MovieClip<'gc> {
             .0
             .read()
             .avm2_constructor
-            .unwrap_or_else(|| context.avm2.constructors().movieclip);
+            .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {

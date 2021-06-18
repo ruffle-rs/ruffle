@@ -933,7 +933,7 @@ pub trait TDisplayObject<'gc>:
         enter_frame_evt.set_bubbles(false);
         enter_frame_evt.set_cancelable(false);
 
-        let dobject_constr = context.avm2.constructors().display_object;
+        let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
             log::error!(
@@ -979,7 +979,7 @@ pub trait TDisplayObject<'gc>:
         frame_constructed_evt.set_bubbles(false);
         frame_constructed_evt.set_cancelable(false);
 
-        let dobject_constr = context.avm2.constructors().display_object;
+        let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr) {
             log::error!(
@@ -1004,7 +1004,7 @@ pub trait TDisplayObject<'gc>:
         exit_frame_evt.set_bubbles(false);
         exit_frame_evt.set_cancelable(false);
 
-        let dobject_constr = context.avm2.constructors().display_object;
+        let dobject_constr = context.avm2.classes().display_object;
 
         if let Err(e) = Avm2::broadcast_event(context, exit_frame_evt, dobject_constr) {
             log::error!(

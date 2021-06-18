@@ -114,7 +114,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
-            let shape_constr = context.avm2.constructors().shape;
+            let shape_constr = context.avm2.classes().shape;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
             match Avm2StageObject::for_display_object_childless(

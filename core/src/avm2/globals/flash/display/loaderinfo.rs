@@ -296,7 +296,7 @@ pub fn bytes<'gc>(
                     return Err("Error: The stage's loader info does not have a bytestream".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let ba_constr = activation.context.avm2.constructors().bytearray;
+                    let ba_constr = activation.context.avm2.classes().bytearray;
 
                     let ba = ba_constr.construct(activation, &[])?;
                     let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
@@ -378,7 +378,7 @@ pub fn parameters<'gc>(
                 LoaderStream::Swf(root, _) => {
                     let mut params_obj = activation
                         .avm2()
-                        .constructors()
+                        .classes()
                         .object
                         .construct(activation, &[])?;
                     let parameters = root.parameters();

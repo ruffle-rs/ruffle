@@ -1508,7 +1508,7 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let textfield_constr = context.avm2.constructors().textfield;
+        let textfield_constr = context.avm2.classes().textfield;
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         match Avm2StageObject::for_display_object_childless(

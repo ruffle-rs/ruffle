@@ -52,7 +52,7 @@ impl<'gc> NamespaceObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         namespace: Namespace<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().namespace;
+        let constr = activation.avm2().classes().namespace;
         let proto = activation.avm2().prototypes().namespace;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));

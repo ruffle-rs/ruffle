@@ -142,7 +142,7 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(evt) = this.unwrap().as_event() {
-        let evt_constr = activation.avm2().constructors().event;
+        let evt_constr = activation.avm2().classes().event;
 
         return Ok(EventObject::from_event(activation, evt_constr, evt.clone())?.into());
     }

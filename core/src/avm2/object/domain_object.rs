@@ -70,7 +70,7 @@ impl<'gc> DomainObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().application_domain;
+        let constr = activation.avm2().classes().application_domain;
         let proto = activation.avm2().prototypes().application_domain;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
@@ -97,7 +97,7 @@ impl<'gc> DomainObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().constructors().global;
+        let constr = activation.avm2().classes().global;
         let proto = activation.avm2().prototypes().global;
         let base =
             ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));

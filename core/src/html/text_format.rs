@@ -698,7 +698,7 @@ impl TextFormat {
         &self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
     ) -> Result<Avm2Object<'gc>, Avm2Error> {
-        let constr = activation.context.avm2.constructors().textformat;
+        let constr = activation.context.avm2.classes().textformat;
         let mut object = constr.construct(activation, &[])?;
 
         object.set_property(

@@ -167,7 +167,7 @@ impl<'gc> SystemPrototypes<'gc> {
 /// This structure represents all system builtins' constructors.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct SystemConstructors<'gc> {
+pub struct SystemClasses<'gc> {
     pub object: Object<'gc>,
     pub function: Object<'gc>,
     pub class: Object<'gc>,
@@ -201,7 +201,7 @@ pub struct SystemConstructors<'gc> {
     pub regexp: Object<'gc>,
 }
 
-impl<'gc> SystemConstructors<'gc> {
+impl<'gc> SystemClasses<'gc> {
     /// Construct a minimal set of system prototypes necessary for
     /// bootstrapping player globals.
     ///
@@ -215,7 +215,7 @@ impl<'gc> SystemConstructors<'gc> {
         class: Object<'gc>,
         empty: Object<'gc>,
     ) -> Self {
-        SystemConstructors {
+        SystemClasses {
             object,
             function,
             class,
@@ -375,7 +375,7 @@ macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $domain:expr, $script:expr) => {
         let (constr, proto) = class($activation, $class, $domain, $script)?;
 
-        let sc = $activation.avm2().system_constructors.as_mut().unwrap();
+        let sc = $activation.avm2().system_classes.as_mut().unwrap();
         sc.$field = constr;
 
         let sp = $activation.avm2().system_prototypes.as_mut().unwrap();
@@ -427,7 +427,7 @@ pub fn load_player_globals<'gc>(
         ScriptObject::bare_object(mc),
     ));
 
-    activation.context.avm2.system_constructors = Some(SystemConstructors::new(
+    activation.context.avm2.system_classes = Some(SystemClasses::new(
         object_constr,
         function_constr,
         class_constr,

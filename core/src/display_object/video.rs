@@ -383,7 +383,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let vm_type = self.avm_type();
         if vm_type == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
-            let video_constr = context.avm2.constructors().video;
+            let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
