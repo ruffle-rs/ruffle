@@ -1321,7 +1321,7 @@ impl<'gc> EditText<'gc> {
                 if matches!(length, Ok(0)) {
                     // Add the TextField as its own listener to match Flash's behavior
                     // This makes it so that the TextField's handlers are called before other listeners'.
-                    let _ = listeners.set_element(activation, 0, object.into());
+                    listeners.set_element(activation, 0, object.into()).unwrap();
                 } else {
                     log::warn!("_listeners should be empty");
                 }

@@ -8,6 +8,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 
 use crate::avm1::activation::Activation;
+use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::object::blur_filter::BlurFilterObject;
@@ -33,6 +34,7 @@ use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+pub mod array_object;
 pub mod bevel_filter;
 pub mod bitmap_data;
 pub mod blur_filter;
@@ -65,6 +67,7 @@ pub mod xml_object;
     #[collect(no_drop)]
     pub enum Object<'gc> {
         ScriptObject(ScriptObject<'gc>),
+        ArrayObject(ArrayObject<'gc>),
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
@@ -142,22 +145,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if name == "__proto__" {
             self.set_proto(activation.context.gc_context, value);
             return Ok(());
-        }
-
-        if let Ok(index) = name.parse::<i32>() {
-            return self.set_element(activation, index, value.to_owned());
-        }
-
-        if name == "length" {
-            let length = value
-                .coerce_to_f64(activation)
-                .map(|v| v.abs() as i32)
-                .unwrap_or(0);
-            if length > 0 {
-                self.set_length(activation, length)?;
-            } else {
-                self.set_length(activation, 0)?;
-            }
         }
 
         let this = (*self).into();
@@ -459,6 +446,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
+
+    /// Get the underlying array object, if it exists.
+    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
+        None
+    }
 
     /// Get the underlying sound object, if it exists.
     fn as_sound_object(&self) -> Option<SoundObject<'gc>> {

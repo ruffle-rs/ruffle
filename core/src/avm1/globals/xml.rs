@@ -2,10 +2,9 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{ArrayObject, AvmString, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::xml;
@@ -73,7 +72,7 @@ const XML_PROTO_DECLS: &[Declaration] = declare_properties! {
 /// not. Those nodes are filtered from all attributes that return XML nodes to
 /// act as if those nodes did not exist. For example, `prevSibling` skips
 /// past incompatible nodes, etc.
-fn is_as2_compatible(node: XmlNode<'_>) -> bool {
+fn is_as2_compatible(node: &XmlNode<'_>) -> bool {
     node.is_document_root() || node.is_element() || node.is_text()
 }
 
@@ -357,34 +356,19 @@ pub fn xmlnode_child_nodes<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let array = ScriptObject::array(
+        return Ok(ArrayObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.array),
-        );
-
-        let mut compatible_nodes = 0;
-        for mut child in node.children() {
-            if !is_as2_compatible(child) {
-                continue;
-            }
-
-            array
-                .set_element(
-                    activation,
-                    compatible_nodes,
-                    child
-                        .script_object(
-                            activation.context.gc_context,
-                            Some(activation.context.avm1.prototypes.xml_node),
-                        )
-                        .into(),
-                )
-                .unwrap();
-
-            compatible_nodes += 1;
-        }
-
-        return Ok(array.into());
+            activation.context.avm1.prototypes().array,
+            node.children().filter(is_as2_compatible).map(|mut child| {
+                child
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
+                    .into()
+            }),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -399,7 +383,7 @@ pub fn xmlnode_first_child<'gc>(
         let mut children = node.children();
         let mut next = children.next();
         while let Some(my_next) = next {
-            if is_as2_compatible(my_next) {
+            if is_as2_compatible(&my_next) {
                 break;
             }
 
@@ -430,7 +414,7 @@ pub fn xmlnode_last_child<'gc>(
         let mut children = node.children();
         let mut prev = children.next_back();
         while let Some(my_prev) = prev {
-            if is_as2_compatible(my_prev) {
+            if is_as2_compatible(&my_prev) {
                 break;
             }
 
@@ -481,7 +465,7 @@ pub fn xmlnode_previous_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         let mut prev = node.prev_sibling();
         while let Some(my_prev) = prev {
-            if is_as2_compatible(my_prev) {
+            if is_as2_compatible(&my_prev) {
                 break;
             }
 
@@ -510,7 +494,7 @@ pub fn xmlnode_next_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         let mut next = node.next_sibling();
         while let Some(my_next) = next {
-            if is_as2_compatible(my_next) {
+            if is_as2_compatible(&my_next) {
                 break;
             }
 

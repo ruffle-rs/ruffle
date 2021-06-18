@@ -6,7 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, AvmString, Object, TObject, Value};
 use crate::string_utils;
 use gc_arena::MutationContext;
 
@@ -304,43 +304,37 @@ fn split<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_val = Value::from(this);
-    let this = this_val.coerce_to_string(activation)?;
-    let delimiter_val = args.get(0).unwrap_or(&Value::Undefined);
-    let delimiter = delimiter_val.coerce_to_string(activation)?;
-    let limit = match args.get(1) {
-        None | Some(Value::Undefined) => usize::MAX,
-        Some(n) => std::cmp::max(0, n.coerce_to_i32(activation)?) as usize,
+    let this = Value::from(this).coerce_to_string(activation)?;
+    let delimiter = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let limit = match args.get(1).unwrap_or(&Value::Undefined) {
+        Value::Undefined => usize::MAX,
+        limit => limit.coerce_to_i32(activation)?.max(0) as usize,
     };
-    let array = ScriptObject::array(
-        activation.context.gc_context,
-        Some(activation.context.avm1.prototypes.array),
-    );
-    if !delimiter.is_empty() {
-        for (i, token) in this.split(delimiter.as_ref()).take(limit).enumerate() {
-            array
-                .set_element(
-                    activation,
-                    i as i32,
-                    AvmString::new(activation.context.gc_context, token.to_string()).into(),
-                )
-                .unwrap();
-        }
-    } else {
-        // When using an empty "" delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
+    if delimiter.is_empty() {
+        // When using an empty delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
-        for (i, token) in this.chars().take(limit).enumerate() {
-            array
-                .set_element(
-                    activation,
-                    i as i32,
-                    AvmString::new(activation.context.gc_context, token.to_string()).into(),
-                )
-                .unwrap();
-        }
+        Ok(ArrayObject::new(
+            activation.context.gc_context,
+            activation.context.avm1.prototypes().array,
+            this.chars()
+                .take(limit)
+                .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
+        )
+        .into())
+    } else {
+        Ok(ArrayObject::new(
+            activation.context.gc_context,
+            activation.context.avm1.prototypes().array,
+            this.split(delimiter.as_ref())
+                .take(limit)
+                .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
+        )
+        .into())
     }
-    Ok(array.into())
 }
 
 fn substr<'gc>(
