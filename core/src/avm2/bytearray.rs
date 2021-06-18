@@ -209,13 +209,9 @@ impl ByteArrayStorage {
         self.endian = new_endian;
     }
 
+    #[inline]
     pub fn bytes_available(&self) -> usize {
-        let pos = self.position.get();
-        if pos > self.len() {
-            0
-        } else {
-            self.len() - pos
-        }
+        self.len().saturating_sub(self.position.get())
     }
 }
 
