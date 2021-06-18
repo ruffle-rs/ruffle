@@ -492,10 +492,11 @@ pub fn noise<'gc>(
         .unwrap_or(&Value::Number(255.0))
         .coerce_to_u32(activation)? as u8;
 
-    let channel_options = args
-        .get(3)
-        .unwrap_or(&Value::Number(ChannelOptions::rgb().0 as f64))
-        .coerce_to_u32(activation)?;
+    let channel_options = if let Some(c) = args.get(3) {
+        ChannelOptions::from_bits_truncate(c.coerce_to_u32(activation)? as u8)
+    } else {
+        ChannelOptions::RGB
+    };
 
     let gray_scale = args
         .get(4)
@@ -509,13 +510,7 @@ pub fn noise<'gc>(
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .noise(
-                        random_seed,
-                        low,
-                        high.max(low),
-                        channel_options.into(),
-                        gray_scale,
-                    )
+                    .noise(random_seed, low, high.max(low), channel_options, gray_scale)
             }
 
             return Ok(Value::Undefined);
@@ -672,10 +667,11 @@ pub fn perlin_noise<'gc>(
                 .get(5)
                 .unwrap_or(&Value::Undefined)
                 .as_bool(activation.swf_version());
-            let channel_options = args
-                .get(6)
-                .unwrap_or(&Value::Number((1 | 2 | 4) as f64))
-                .coerce_to_u16(activation)? as u8;
+            let channel_options = if let Some(c) = args.get(6) {
+                ChannelOptions::from_bits_truncate(c.coerce_to_i16(activation)? as u8)
+            } else {
+                ChannelOptions::RGB
+            };
             let grayscale = args
                 .get(7)
                 .unwrap_or(&Value::Undefined)
