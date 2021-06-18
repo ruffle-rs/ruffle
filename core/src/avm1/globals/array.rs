@@ -60,7 +60,7 @@ pub fn create_array_object<'gc>(
     let array = FunctionObject::constructor(
         gc_context,
         Executable::Native(constructor),
-        Executable::Native(array_function),
+        Executable::Native(constructor),
         Some(fn_proto),
         array_proto,
     );
@@ -73,30 +73,8 @@ pub fn create_array_object<'gc>(
     array
 }
 
-/// Implements `Array` constructor
+/// Implements `Array` constructor and function
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let [Value::Number(length)] = *args {
-        let length = if length.is_finite() && length >= i32::MIN.into() && length <= i32::MAX.into()
-        {
-            length as i32
-        } else {
-            i32::MIN
-        };
-        this.set_length(activation, length)?;
-    } else {
-        for (i, &arg) in args.iter().enumerate() {
-            this.set_element(activation, i as i32, arg)?;
-        }
-    }
-    Ok(this.into())
-}
-
-/// Implements `Array` function
-pub fn array_function<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
