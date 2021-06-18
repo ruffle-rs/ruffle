@@ -836,6 +836,7 @@ pub enum Tag<'a> {
         imports: Vec<ExportedAsset<'a>>,
     },
     JpegTables(JpegTables<'a>),
+    NameCharacter(NameCharacter<'a>),
     SetBackgroundColor(SetBackgroundColor),
     SetTabIndex {
         depth: Depth,
@@ -1506,3 +1507,12 @@ pub struct ProductInfo {
 
 /// `DebugId` is a UUID written to debug SWFs and used by the Flash Debugger.
 pub type DebugId = [u8; 16];
+
+/// An undocumented and unused tag to set the instance name of a character.
+/// This seems to have no effect in the official Flash Player.
+/// Superseded by the PlaceObject2 tag.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NameCharacter<'a> {
+    pub id: CharacterId,
+    pub name: &'a SwfStr,
+}

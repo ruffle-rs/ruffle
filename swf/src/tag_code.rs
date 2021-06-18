@@ -41,7 +41,7 @@ pub enum TagCode {
     DefineEditText = 37,
 
     DefineSprite = 39,
-
+    NameCharacter = 40,
     ProductInfo = 41,
 
     FrameLabel = 43,
