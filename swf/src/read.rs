@@ -4,6 +4,7 @@
     clippy::inconsistent_digit_grouping,
     clippy::unreadable_literal
 )]
+
 use crate::extensions::ReadSwfExt;
 use crate::{
     error::{Error, Result},
