@@ -31,8 +31,8 @@ impl<V> PropertyMap<V> {
 
     pub fn entry<'a>(&'a mut self, key: &'a str, case_sensitive: bool) -> Entry<'a, V> {
         if case_sensitive {
-            match self.0.get_full_mut(&CaseSensitiveStr(key)) {
-                Some((index, _, _)) => Entry::Occupied(OccupiedEntry {
+            match self.0.get_index_of(&CaseSensitiveStr(key)) {
+                Some(index) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
                 }),
@@ -42,8 +42,8 @@ impl<V> PropertyMap<V> {
                 }),
             }
         } else {
-            match self.0.get_full_mut(&CaseInsensitiveStr(key)) {
-                Some((index, _, _)) => Entry::Occupied(OccupiedEntry {
+            match self.0.get_index_of(&CaseInsensitiveStr(key)) {
+                Some(index) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
                 }),
@@ -65,7 +65,6 @@ impl<V> PropertyMap<V> {
     }
 
     /// Gets a mutable reference to the value for the specified property.
-    #[allow(dead_code)]
     pub fn get_mut(&mut self, key: &str, case_sensitive: bool) -> Option<&mut V> {
         if case_sensitive {
             self.0.get_mut(&CaseSensitiveStr(key))
@@ -131,6 +130,10 @@ impl<'a, V> OccupiedEntry<'a, V> {
     pub fn remove_entry(&mut self) -> (String, V) {
         let (k, v) = self.map.shift_remove_index(self.index).unwrap();
         (k.0, v)
+    }
+
+    pub fn get(&self) -> &V {
+        self.map.get_index(self.index).unwrap().1
     }
 
     pub fn get_mut(&mut self) -> &mut V {

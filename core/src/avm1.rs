@@ -40,6 +40,7 @@ pub use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 pub use globals::SystemPrototypes;
+pub use object::array_object::ArrayObject;
 pub use object::script_object::ScriptObject;
 pub use object::sound_object::SoundObject;
 pub use object::stage_object::StageObject;

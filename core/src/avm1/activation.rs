@@ -5,7 +5,8 @@ use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, AvmString, ScriptObject, Value,
+    fscommand, globals, scope, skip_actions, start_drag, ArrayObject, AvmString, ScriptObject,
+    Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
@@ -1469,15 +1470,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
-            let array = ScriptObject::array(
+            ArrayObject::new(
                 self.context.gc_context,
-                Some(self.context.avm1.prototypes.array),
-            );
-            for i in 0..num_elements as i32 {
-                let element = self.context.avm1.pop();
-                array.set_element(self, i, element).unwrap();
-            }
-            Value::Object(array.into())
+                self.context.avm1.prototypes().array,
+                (0..num_elements as i32).map(|_| self.context.avm1.pop()),
+            )
+            .into()
         };
 
         self.context.avm1.push(result);

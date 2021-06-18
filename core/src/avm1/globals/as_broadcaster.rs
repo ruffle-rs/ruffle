@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{ArrayObject, Object, ScriptObject, Value};
 use gc_arena::{Collect, MutationContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -183,35 +183,30 @@ pub fn initialize<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn initialize_internal<'gc>(
+fn initialize_internal<'gc>(
     gc_context: MutationContext<'gc, '_>,
     broadcaster: Object<'gc>,
     functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) {
-    let listeners = ScriptObject::array(gc_context, Some(array_proto));
-
     broadcaster.define_value(
         gc_context,
         "_listeners",
-        listeners.into(),
+        ArrayObject::empty_with_proto(gc_context, Some(array_proto)).into(),
         Attribute::DONT_ENUM,
     );
-
     broadcaster.define_value(
         gc_context,
         "addListener",
         functions.add_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
-
     broadcaster.define_value(
         gc_context,
         "removeListener",
         functions.remove_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
-
     broadcaster.define_value(
         gc_context,
         "broadcastMessage",

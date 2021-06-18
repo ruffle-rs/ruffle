@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, Object, TObject, Value};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -189,16 +189,12 @@ pub fn matrix<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_convolution_filter_object() {
-        let array = ScriptObject::array(
+        return Ok(ArrayObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.array),
-        );
-        for (i, item) in filter.matrix().iter().copied().enumerate() {
-            array
-                .set_element(activation, i as i32, item.into())
-                .unwrap();
-        }
-        return Ok(array.into());
+            activation.context.avm1.prototypes().array,
+            filter.matrix().iter().map(|&x| x.into()),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)

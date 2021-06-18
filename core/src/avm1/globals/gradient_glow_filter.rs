@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::bevel_filter::BevelFilterType;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{ArrayObject, AvmString, Object, TObject, Value};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -112,16 +112,12 @@ pub fn colors<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_glow_filter_object() {
-        let array = ScriptObject::array(
+        return Ok(ArrayObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.array),
-        );
-        for (i, item) in filter.colors().iter().copied().enumerate() {
-            array
-                .set_element(activation, i as i32, item.into())
-                .unwrap();
-        }
-        return Ok(array.into());
+            activation.context.avm1.prototypes().array,
+            filter.colors().iter().map(|&x| x.into()),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -176,16 +172,12 @@ pub fn alphas<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_glow_filter_object() {
-        let array = ScriptObject::array(
+        return Ok(ArrayObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.array),
-        );
-        for (i, item) in filter.alphas().iter().copied().enumerate() {
-            array
-                .set_element(activation, i as i32, item.into())
-                .unwrap();
-        }
-        return Ok(array.into());
+            activation.context.avm1.prototypes().array,
+            filter.alphas().iter().map(|&x| x.into()),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -231,16 +223,12 @@ pub fn ratios<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_glow_filter_object() {
-        let array = ScriptObject::array(
+        return Ok(ArrayObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.array),
-        );
-        for (i, item) in filter.ratios().iter().copied().enumerate() {
-            array
-                .set_element(activation, i as i32, item.into())
-                .unwrap();
-        }
-        return Ok(array.into());
+            activation.context.avm1.prototypes().array,
+            filter.ratios().iter().map(|&x| x.into()),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)

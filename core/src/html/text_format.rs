@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation as Avm1Activation;
 use crate::avm1::{
-    AvmString, Object as Avm1Object, ScriptObject as Avm1ScriptObject, TObject as Avm1TObject,
-    Value as Avm1Value,
+    ArrayObject as Avm1ArrayObject, AvmString, Object as Avm1Object,
+    ScriptObject as Avm1ScriptObject, TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::{
     Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
@@ -677,20 +677,17 @@ impl TextFormat {
             activation,
         )?;
 
-        let tab_stops = if let Some(ts) = &self.tab_stops {
-            let tab_stops = Avm1ScriptObject::array(
-                activation.context.gc_context,
-                Some(activation.context.avm1.prototypes().array),
-            );
-            for (i, &tab) in ts.iter().enumerate() {
-                tab_stops
-                    .set_element(activation, i as i32, tab.into())
-                    .unwrap();
-            }
-            tab_stops.into()
-        } else {
-            Avm1Value::Null
-        };
+        let tab_stops = self
+            .tab_stops
+            .as_ref()
+            .map_or(Avm1Value::Null, |tab_stops| {
+                Avm1ArrayObject::new(
+                    activation.context.gc_context,
+                    activation.context.avm1.prototypes().array,
+                    tab_stops.iter().map(|&x| x.into()),
+                )
+                .into()
+            });
         object.set("tabStops", tab_stops, activation)?;
         Ok(object.into())
     }

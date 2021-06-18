@@ -7,7 +7,7 @@ use crate::avm1::object::script_object::ScriptObject;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, Value};
+use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::RequestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use gc_arena::MutationContext;
@@ -23,9 +23,10 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ScriptObject::array(
+    let listeners = ArrayObject::new(
         activation.context.gc_context,
-        Some(activation.context.avm1.prototypes().array),
+        activation.context.avm1.prototypes().array,
+        [this.into()],
     );
     this.define_value(
         activation.context.gc_context,
@@ -33,8 +34,6 @@ pub fn constructor<'gc>(
         Value::Object(listeners.into()),
         Attribute::DONT_ENUM,
     );
-    listeners.set_element(activation, 0, this.into()).unwrap();
-
     Ok(this.into())
 }
 

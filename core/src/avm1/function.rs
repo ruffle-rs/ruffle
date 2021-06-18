@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
@@ -244,10 +244,16 @@ impl<'gc> Executable<'gc> {
                     activation.context.gc_context,
                     Scope::new_local_scope(af.scope(), activation.context.gc_context),
                 );
-                let arguments = ScriptObject::array(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().array),
-                );
+
+                let arguments = if af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
+                    ArrayObject::empty(activation)
+                } else {
+                    ArrayObject::new(
+                        activation.context.gc_context,
+                        activation.context.avm1.prototypes().array,
+                        args.iter().cloned(),
+                    )
+                };
                 arguments.define_value(
                     activation.context.gc_context,
                     "callee",
@@ -261,14 +267,6 @@ impl<'gc> Executable<'gc> {
                     activation.callee.map(Value::from).unwrap_or(Value::Null),
                     Attribute::DONT_ENUM,
                 );
-
-                if !af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
-                    for (i, arg) in args.iter().enumerate() {
-                        arguments
-                            .set_element(activation, i as i32, arg.to_owned())
-                            .unwrap();
-                    }
-                }
 
                 let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> =
