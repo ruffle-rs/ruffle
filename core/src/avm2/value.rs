@@ -647,8 +647,8 @@ impl<'gc> Value<'gc> {
     #[allow(clippy::float_cmp)]
     pub fn is_u32(&self) -> bool {
         match self {
-            Value::Number(n) => *n == n.round() && n.is_sign_positive() && *n <= u32::MAX as f64,
-            Value::Integer(i) => i.is_positive() || *i == 0,
+            Value::Number(n) => *n == (*n as u32 as f64),
+            Value::Integer(i) => *i >= 0,
             Value::Unsigned(_) => true,
             Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
             _ => false,
@@ -660,10 +660,10 @@ impl<'gc> Value<'gc> {
     #[allow(clippy::float_cmp)]
     pub fn is_i32(&self) -> bool {
         match self {
-            Value::Number(n) => *n == n.round() && *n >= i32::MIN as f64 && *n <= i32::MAX as f64,
+            Value::Number(n) => *n == (*n as i32 as f64),
             Value::Integer(_) => true,
             Value::Unsigned(u) => *u <= i32::MAX as u32,
-            Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
+            Value::Object(o) => o.as_primitive().map(|p| p.is_i32()).unwrap_or(false),
             _ => false,
         }
     }
