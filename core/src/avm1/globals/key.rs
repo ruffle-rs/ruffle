@@ -36,11 +36,11 @@ pub fn is_down<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(key) = args
-        .get(0)
-        .and_then(|v| v.coerce_to_f64(activation).ok())
-        .and_then(|k| KeyCode::from_u8(k as u8))
-    {
+    if let Some(key) = KeyCode::from_u8(
+        args.get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)? as u8,
+    ) {
         Ok(activation.context.ui.is_key_down(key).into())
     } else {
         Ok(false.into())
