@@ -85,11 +85,8 @@ impl fmt::Debug for ScriptObjectData<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
-    pub fn object(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> ScriptObject<'gc> {
-        ScriptObject(GcCell::allocate(
+    pub fn object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+        Self(GcCell::allocate(
             gc_context,
             ScriptObjectData {
                 prototype: proto.map_or(Value::Undefined, Value::Object),
@@ -106,17 +103,7 @@ impl<'gc> ScriptObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            gc_context,
-            ScriptObjectData {
-                prototype: proto.map_or(Value::Undefined, Value::Object),
-                type_of: TYPE_OF_OBJECT,
-                values: PropertyMap::new(),
-                interfaces: vec![],
-                watchers: PropertyMap::new(),
-            },
-        ))
-        .into()
+        Self::object(gc_context, proto).into()
     }
 
     /// Constructs an object with no values, not even builtins.
@@ -125,16 +112,7 @@ impl<'gc> ScriptObject<'gc> {
     /// object values, but can't just have a hashmap because of `with` and
     /// friends.
     pub fn bare_object(gc_context: MutationContext<'gc, '_>) -> Self {
-        ScriptObject(GcCell::allocate(
-            gc_context,
-            ScriptObjectData {
-                prototype: Value::Undefined,
-                type_of: TYPE_OF_OBJECT,
-                values: PropertyMap::new(),
-                interfaces: vec![],
-                watchers: PropertyMap::new(),
-            },
-        ))
+        Self::object(gc_context, None)
     }
 
     pub fn set_type_of(&mut self, gc_context: MutationContext<'gc, '_>, type_of: &'static str) {
