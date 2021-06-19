@@ -299,10 +299,8 @@ fn dynamic_class<'gc>(
 
 /// Add a class builtin to the global scope.
 ///
-/// This function returns a prototype which may be stored in `SystemPrototypes`.
-/// The `custom_derive` is used to select a particular `TObject` impl, or you
-/// can use `None` to indicate that this class does not change host object
-/// impls.
+/// This function returns the class object and class prototype as a pair, which
+/// may be stored in `SystemClasses` and `SystemPrototypes`, respectively.
 fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,

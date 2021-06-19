@@ -660,11 +660,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Call an instance method by name.
     ///
-    /// Intended to be called on the current base constructor used for
-    /// searching for traits. That constructor's base classes will be searched
-    /// for an appropriately named method trait, and if found, the method will
-    /// be called with the given reciever, arguments and new ancestor
-    /// constructor.
+    /// This is intended for use in supercalls, specifically supermethod calls
+    /// It is to be called on the class object you want to start searching from
+    /// in the superclass tree.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a method trait with the given name. If it
+    /// is found, it will be called with the reciever and arguments you
+    /// provided, as if it were defined on the target instance object.
+    ///
+    /// The class that defined the method being called will also be provided to
+    /// the `Activation` that the method runs on so that further supercalls
+    /// will work as expected.
     fn call_instance_method(
         self,
         name: &QName<'gc>,
@@ -706,11 +713,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Call an instance getter by name.
     ///
-    /// Intended to be called on the current base constructor used for
-    /// searching for traits. That constructor's base classes will be searched
-    /// for an appropriately named getter trait, and if found, the getter will
-    /// be called with the given reciever, arguments and new ancestor
-    /// constructor.
+    /// This is intended for use in supercalls, specifically superproperty
+    /// reads. It is to be called on the class object you want to start
+    /// searching from in the superclass tree.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a getter trait with the given name. If it
+    /// is found, it will be called with the reciever you provided, as if it
+    /// were defined on the target instance object.
+    ///
+    /// The class that defined the getter being called will also be provided to
+    /// the `Activation` that the getter runs on so that further supercalls
+    /// will work as expected.
     fn call_instance_getter(
         self,
         name: &QName<'gc>,
@@ -751,11 +765,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Call an instance setter by name.
     ///
-    /// Intended to be called on the current base constructor used for
-    /// searching for traits. That constructor's base classes will be searched
-    /// for an appropriately named setter trait, and if found, the setter will
-    /// be called with the given reciever, arguments and new ancestor
-    /// constructor.
+    /// This is intended for use in supercalls, specifically superproperty
+    /// writes. It is to be called on the class object you want to start
+    /// searching from in the superclass tree.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a setter trait with the given name. If it
+    /// is found, it will be called with the reciever and value you provided,
+    /// as if it were defined on the target instance object.
+    ///
+    /// The class that defined the setter being called will also be provided to
+    /// the `Activation` that the setter runs on so that further supercalls
+    /// will work as expected.
     fn call_instance_setter(
         self,
         name: &QName<'gc>,

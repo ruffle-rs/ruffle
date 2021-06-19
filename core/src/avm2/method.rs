@@ -28,14 +28,13 @@ use swf::avm2::types::{
 /// resolve on the AVM stack, as if you had called a non-native function. If
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
-
 pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error>;
 
-/// Configuration of a single parameter of a native method.
+/// Configuration of a single parameter of a method.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ParamConfig<'gc> {
