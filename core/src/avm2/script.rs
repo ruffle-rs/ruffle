@@ -257,7 +257,7 @@ impl<'gc> Script<'gc> {
             mc,
             ScriptData {
                 globals,
-                init: Method::from_builtin_only(
+                init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Built-in script initializer>",
                     mc,

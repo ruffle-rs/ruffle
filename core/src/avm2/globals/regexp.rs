@@ -270,7 +270,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             false,
             mc,
         ),
-        Method::from_builtin_only(class_init, "<RegExp class initializer>", mc),
+        Method::from_builtin(class_init, "<RegExp class initializer>", mc),
         mc,
     );
 

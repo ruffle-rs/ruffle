@@ -36,8 +36,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     Class::new(
         QName::new(Namespace::public(), "global"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(instance_init, "<global instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<global class initializer>", mc),
+        Method::from_builtin(instance_init, "<global instance initializer>", mc),
+        Method::from_builtin(class_init, "<global class initializer>", mc),
         mc,
     )
 }

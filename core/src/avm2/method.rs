@@ -294,7 +294,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Define a builtin with no parameter constraints.
-    pub fn from_builtin_only(
+    pub fn from_builtin(
         method: NativeMethodImpl,
         name: &'static str,
         mc: MutationContext<'gc, '_>,

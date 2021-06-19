@@ -1208,8 +1208,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Array"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(instance_init, "<Array instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<Array class initializer>", mc),
+        Method::from_builtin(instance_init, "<Array instance initializer>", mc),
+        Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,
     );
 

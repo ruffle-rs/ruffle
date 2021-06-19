@@ -32,12 +32,12 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "IEventDispatcher"),
         None,
-        Method::from_builtin_only(
+        Method::from_builtin(
             bodiless_method,
             "<IEventDispatcher instance initializer>",
             mc,
         ),
-        Method::from_builtin_only(class_init, "<IEventDispatcher interface initializer>", mc),
+        Method::from_builtin(class_init, "<IEventDispatcher interface initializer>", mc),
         mc,
     );
 

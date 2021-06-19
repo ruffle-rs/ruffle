@@ -590,15 +590,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "DisplayObject"),
         Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
-        Method::from_builtin_only(instance_init, "<DisplayObject instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<DisplayObject class initializer>", mc),
+        Method::from_builtin(instance_init, "<DisplayObject instance initializer>", mc),
+        Method::from_builtin(class_init, "<DisplayObject class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
     write.set_instance_deriver(stage_deriver);
-    write.set_native_instance_init(Method::from_builtin_only(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<DisplayObject native instance initializer>",
         mc,

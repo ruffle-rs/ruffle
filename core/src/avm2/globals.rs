@@ -262,7 +262,7 @@ fn function<'gc>(
     script: Script<'gc>,
 ) -> Result<(), Error> {
     let qname = QName::new(Namespace::package(package), name);
-    let method = Method::from_builtin_only(nf, name, mc);
+    let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method_and_proto(mc, method, None, fn_proto, None).into();
     domain.export_definition(qname.clone(), script, mc)?;
     script

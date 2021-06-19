@@ -45,14 +45,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Number"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(instance_init, "<Number instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<Number class initializer>", mc),
+        Method::from_builtin(instance_init, "<Number instance initializer>", mc),
+        Method::from_builtin(class_init, "<Number class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
     write.set_instance_deriver(primitive_deriver);
-    write.set_native_instance_init(Method::from_builtin_only(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<Number native instance initializer>",
         mc,

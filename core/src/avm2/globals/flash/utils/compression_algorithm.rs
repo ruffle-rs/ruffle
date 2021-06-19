@@ -29,12 +29,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.utils"), "CompressionAlgorithm"),
         None,
-        Method::from_builtin_only(
+        Method::from_builtin(
             instance_init,
             "<CompressionAlgorithm instance initializer>",
             mc,
         ),
-        Method::from_builtin_only(class_init, "<CompressionAlgorithm class initializer>", mc),
+        Method::from_builtin(class_init, "<CompressionAlgorithm class initializer>", mc),
         mc,
     );
 

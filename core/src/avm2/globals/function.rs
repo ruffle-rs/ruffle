@@ -110,12 +110,12 @@ pub fn fill_proto<'gc>(
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(
+        Method::from_builtin(
             instance_init,
             "<Function instance initializer>",
             activation.context.gc_context,
         ),
-        Method::from_builtin_only(
+        Method::from_builtin(
             class_init,
             "<Function class initializer>",
             activation.context.gc_context,
@@ -129,7 +129,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::as3_namespace(), "call"),
         FunctionObject::from_method_and_proto(
             activation.context.gc_context,
-            Method::from_builtin_only(call, "call", activation.context.gc_context),
+            Method::from_builtin(call, "call", activation.context.gc_context),
             None,
             function_proto,
             None,
@@ -141,7 +141,7 @@ pub fn fill_proto<'gc>(
         QName::new(Namespace::as3_namespace(), "apply"),
         FunctionObject::from_method_and_proto(
             activation.context.gc_context,
-            Method::from_builtin_only(apply, "apply", activation.context.gc_context),
+            Method::from_builtin(apply, "apply", activation.context.gc_context),
             None,
             function_proto,
             None,

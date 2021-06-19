@@ -36,12 +36,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.text"), "TextFieldAutoSize"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(
+        Method::from_builtin(
             instance_init,
             "<TextFieldAutoSize instance initializer>",
             mc,
         ),
-        Method::from_builtin_only(class_init, "<TextFieldAutoSize class initializer>", mc),
+        Method::from_builtin(class_init, "<TextFieldAutoSize class initializer>", mc),
         mc,
     );
 

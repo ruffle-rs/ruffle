@@ -55,7 +55,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             false,
             mc,
         ),
-        Method::from_builtin_only(class_init, "<uint class initializer>", mc),
+        Method::from_builtin(class_init, "<uint class initializer>", mc),
         mc,
     );
 

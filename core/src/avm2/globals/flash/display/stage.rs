@@ -631,15 +631,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             )
             .into(),
         ),
-        Method::from_builtin_only(instance_init, "<Stage instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<Stage class initializer>", mc),
+        Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
+        Method::from_builtin(class_init, "<Stage class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
-    write.set_native_instance_init(Method::from_builtin_only(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<Stage native instance initializer>",
         mc,
@@ -683,7 +683,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             write.define_instance_trait(
                 Trait::from_getter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin_only(getter, name, mc),
+                    Method::from_builtin(getter, name, mc),
                 )
                 .with_override(),
             );
@@ -692,7 +692,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             write.define_instance_trait(
                 Trait::from_setter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin_only(setter, name, mc),
+                    Method::from_builtin(setter, name, mc),
                 )
                 .with_override(),
             );

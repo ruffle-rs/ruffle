@@ -437,18 +437,18 @@ impl<'gc> Class<'gc> {
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_deriver: Deriver(implicit_deriver),
-                instance_init: Method::from_builtin_only(
+                instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
                     activation.context.gc_context,
                 ),
-                native_instance_init: Method::from_builtin_only(
+                native_instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
                     activation.context.gc_context,
                 ),
                 instance_traits: traits,
-                class_init: Method::from_builtin_only(
+                class_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
                     activation.context.gc_context,
@@ -510,7 +510,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
                 QName::new(Namespace::public(), name),
-                Method::from_builtin_only(value, name, mc),
+                Method::from_builtin(value, name, mc),
             ));
         }
     }
@@ -523,7 +523,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
                 QName::new(Namespace::as3_namespace(), name),
-                Method::from_builtin_only(value, name, mc),
+                Method::from_builtin(value, name, mc),
             ));
         }
     }
@@ -536,7 +536,7 @@ impl<'gc> Class<'gc> {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_method(
                 QName::new(Namespace::public(), name),
-                Method::from_builtin_only(value, name, mc),
+                Method::from_builtin(value, name, mc),
             ));
         }
     }
@@ -554,13 +554,13 @@ impl<'gc> Class<'gc> {
             if let Some(getter) = getter {
                 self.define_instance_trait(Trait::from_getter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin_only(getter, name, mc),
+                    Method::from_builtin(getter, name, mc),
                 ));
             }
             if let Some(setter) = setter {
                 self.define_instance_trait(Trait::from_setter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin_only(setter, name, mc),
+                    Method::from_builtin(setter, name, mc),
                 ));
             }
         }

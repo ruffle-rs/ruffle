@@ -42,7 +42,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             false,
             mc,
         ),
-        Method::from_builtin_only(class_init, "<XMLList class initializer>", mc),
+        Method::from_builtin(class_init, "<XMLList class initializer>", mc),
         mc,
     );
 

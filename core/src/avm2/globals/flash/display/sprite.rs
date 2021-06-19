@@ -77,8 +77,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             )
             .into(),
         ),
-        Method::from_builtin_only(instance_init, "<Sprite instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<Sprite class initializer>", mc),
+        Method::from_builtin(instance_init, "<Sprite instance initializer>", mc),
+        Method::from_builtin(class_init, "<Sprite class initializer>", mc),
         mc,
     );
 

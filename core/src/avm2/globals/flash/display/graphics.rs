@@ -369,8 +369,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "Graphics"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin_only(instance_init, "<Graphics instance initializer>", mc),
-        Method::from_builtin_only(class_init, "<Graphics class initializer>", mc),
+        Method::from_builtin(instance_init, "<Graphics instance initializer>", mc),
+        Method::from_builtin(class_init, "<Graphics class initializer>", mc),
         mc,
     );
 
@@ -378,7 +378,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_deriver(stage_deriver);
-    write.set_native_instance_init(Method::from_builtin_only(
+    write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<Graphics native instance initializer>",
         mc,
