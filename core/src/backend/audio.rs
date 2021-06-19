@@ -174,6 +174,13 @@ pub struct AudioManager<'gc> {
     /// The global sound transform applied to all sounds.
     global_sound_transform: DisplayObjectSoundTransform,
 
+    /// The number of seconds that a timeline audio stream should buffer before playing.
+    ///
+    /// This is returned by `_soundbuftime` in AVM1 and `SoundMixer.bufferTime` in AVM2.
+    /// Currently unused by Ruffle.
+    /// [ActionScript 3.0: SoundMixer.bufferTime](https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/media/SoundMixer.html#bufferTime)
+    stream_buffer_time: i32,
+
     /// Whether a sound transform has been changed.
     transforms_dirty: bool,
 }
@@ -182,10 +189,14 @@ impl<'gc> AudioManager<'gc> {
     /// The maximum number of sound instances that can play at once.
     pub const MAX_SOUNDS: usize = 32;
 
+    /// The default timeline stream buffer time in seconds.
+    pub const DEFAULT_STREAM_BUFFER_TIME: i32 = 5;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
             global_sound_transform: Default::default(),
+            stream_buffer_time: Self::DEFAULT_STREAM_BUFFER_TIME,
             transforms_dirty: false,
         }
     }
@@ -333,6 +344,20 @@ impl<'gc> AudioManager<'gc> {
     pub fn set_global_sound_transform(&mut self, sound_transform: DisplayObjectSoundTransform) {
         self.global_sound_transform = sound_transform;
         self.transforms_dirty = true;
+    }
+
+    /// Returns the number of seconds that a timeline audio stream should buffer before playing.
+    ///
+    /// Currently unused by Ruffle.
+    pub fn stream_buffer_time(&self) -> i32 {
+        self.stream_buffer_time
+    }
+
+    /// Sets the number of seconds that a timeline audio stream should buffer before playing.
+    ///
+    /// Currently unused by Ruffle.
+    pub fn set_stream_buffer_time(&mut self, stream_buffer_time: i32) {
+        self.stream_buffer_time = stream_buffer_time;
     }
 
     pub fn set_sound_transforms_dirty(&mut self) {
