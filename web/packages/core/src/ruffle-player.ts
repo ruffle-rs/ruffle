@@ -667,7 +667,8 @@ export class RufflePlayer extends HTMLElement {
         const items = [];
 
         if (this.instance) {
-            const customItems: InternalContextMenuItem[] = this.instance.prepare_context_menu();
+            const customItems: InternalContextMenuItem[] =
+                this.instance.prepare_context_menu();
             customItems.forEach((item, index) => {
                 if (item.separatorBefore) items.push(null);
                 items.push({
