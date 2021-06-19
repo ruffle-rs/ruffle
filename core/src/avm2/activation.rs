@@ -460,7 +460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let base_constr = base_constr?;
 
-        base_constr.call_native_initializer(Some(receiver), args, self, Some(base_constr))
+        base_constr.call_native_init(Some(receiver), args, self, Some(base_constr))
     }
 
     /// Attempts to lock the activation frame for execution.

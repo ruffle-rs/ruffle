@@ -96,7 +96,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error> {
         let this = Self::for_display_object(activation, display_object, constr)?;
 
-        constr.call_native_initializer(Some(this.into()), &[], activation, Some(constr))?;
+        constr.call_native_init(Some(this.into()), &[], activation, Some(constr))?;
 
         Ok(this)
     }
@@ -120,7 +120,7 @@ impl<'gc> StageObject<'gc> {
         ));
         this.install_instance_traits(activation, constr)?;
 
-        constr.call_native_initializer(Some(this.into()), &[], activation, Some(constr))?;
+        constr.call_native_init(Some(this.into()), &[], activation, Some(constr))?;
 
         Ok(this)
     }

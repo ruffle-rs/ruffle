@@ -81,7 +81,7 @@ impl<'gc> DomainObject<'gc> {
         .into();
         this.install_instance_traits(activation, constr)?;
 
-        constr.call_initializer(Some(this), &[], activation, Some(constr))?;
+        constr.call_init(Some(this), &[], activation, Some(constr))?;
 
         Ok(this)
     }
@@ -108,7 +108,7 @@ impl<'gc> DomainObject<'gc> {
         .into();
         this.install_instance_traits(activation, constr)?;
 
-        constr.call_initializer(Some(this), &[], activation, Some(constr))?;
+        constr.call_init(Some(this), &[], activation, Some(constr))?;
 
         Ok(this)
     }

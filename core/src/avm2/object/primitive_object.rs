@@ -92,7 +92,7 @@ impl<'gc> PrimitiveObject<'gc> {
         .into();
         this.install_instance_traits(activation, constr)?;
 
-        constr.call_native_initializer(Some(this), &[], activation, Some(constr))?;
+        constr.call_native_init(Some(this), &[], activation, Some(constr))?;
 
         Ok(this)
     }

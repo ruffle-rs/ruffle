@@ -322,7 +322,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         )
     }
 
-    fn call_initializer(
+    fn call_init(
         self,
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
@@ -341,7 +341,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         )
     }
 
-    fn call_native_initializer(
+    fn call_native_init(
         self,
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
@@ -380,7 +380,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         instance.install_instance_traits(activation, constr)?;
 
-        self.call_initializer(Some(instance), arguments, activation, Some(constr))?;
+        self.call_init(Some(instance), arguments, activation, Some(constr))?;
 
         Ok(instance)
     }
