@@ -27,9 +27,8 @@ describe("VersionRange", function () {
         });
 
         it("should accept a specific version with an equals sign", function () {
-            const range = VersionRange.fromRequirementString(
-                "=1.2.3 || =1.2.4"
-            );
+            const range =
+                VersionRange.fromRequirementString("=1.2.3 || =1.2.4");
             assert.deepEqual(range.requirements, [
                 [{ comparator: "=", version: Version.fromSemver("1.2.3") }],
                 [{ comparator: "=", version: Version.fromSemver("1.2.4") }],
@@ -47,9 +46,8 @@ describe("VersionRange", function () {
         });
 
         it("should allow inclusive range", function () {
-            const range = VersionRange.fromRequirementString(
-                ">=1-test <=2-test"
-            );
+            const range =
+                VersionRange.fromRequirementString(">=1-test <=2-test");
             assert.deepEqual(range.requirements, [
                 [
                     {
