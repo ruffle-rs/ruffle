@@ -88,29 +88,11 @@ pub fn remove_listener<'gc>(
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-
-        let mut position = None;
-        for i in 0..length {
-            let other_listener = listeners.get_element(activation, i);
-            if old_listener == other_listener {
-                position = Some(i);
-                break;
-            }
-        }
-
-        if let Some(position) = position {
-            if length > 0 {
-                let new_length = length - 1;
-                for i in position..new_length {
-                    let element = listeners.get_element(activation, i + 1);
-                    listeners.set_element(activation, i, element)?;
-                }
-
-                listeners.delete_element(activation, new_length);
-                listeners.set_length(activation, new_length)?;
-
-                return Ok(true.into());
-            }
+        if let Some(index) =
+            (0..length).find(|&i| listeners.get_element(activation, i) == old_listener)
+        {
+            listeners.call_method("splice", &[index.into(), 1.into()], activation)?;
+            return Ok(true.into());
         }
     }
 
