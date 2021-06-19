@@ -243,9 +243,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
                 //Variadic parameters exist, just push them into the list
-                for arg in user_arguments[signature.len()..].iter() {
-                    arguments_list.push(arg.clone());
-                }
+                arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
             Ordering::Less => {
                 //Apply remaining default parameters
