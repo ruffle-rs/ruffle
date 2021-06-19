@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
@@ -283,7 +283,7 @@ pub fn fill_proto<'gc>(
     ));
 
     // Fixed traits (in AS3 namespace)
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("hasOwnProperty", has_own_property),
         ("isPrototypeOf", is_prototype_of),
         ("propertyIsEnumerable", property_is_enumerable),

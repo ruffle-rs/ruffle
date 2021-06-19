@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
@@ -647,8 +647,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_OVERRIDE_INSTANCE_PROPERTIES: &[(
         &str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
     )] = &[
         (
             "accessibilityProperties",
@@ -699,7 +699,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         }
     }
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("align", Some(align), Some(set_align)),
         ("browserZoomFactor", Some(browser_zoom_factor), None),
         ("color", Some(color), Some(set_color)),

@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{CompressionAlgorithm, Endian};
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{bytearray_deriver, Object, TObject};
 use crate::avm2::string::AvmString;
@@ -730,7 +730,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_deriver(bytearray_deriver);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("writeByte", write_byte),
         ("writeBytes", write_bytes),
         ("readBytes", read_bytes),
@@ -764,7 +764,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("bytesAvailable", Some(bytes_available), None),
         ("length", Some(length), Some(set_length)),
         ("position", Some(position), Some(set_position)),

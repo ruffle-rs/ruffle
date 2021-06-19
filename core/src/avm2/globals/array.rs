@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{array_deriver, ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
@@ -1217,18 +1217,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_instance_deriver(array_deriver);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), Some(set_length))];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), Some(set_length))];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
         ("join", join),
         ("forEach", for_each),

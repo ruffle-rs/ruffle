@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{appdomain_deriver, DomainObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -156,7 +156,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_instance_deriver(appdomain_deriver);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("currentDomain", current_domain),
         ("parentDomain", parent_domain),
         ("getDefinition", get_definition),
@@ -164,8 +164,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class

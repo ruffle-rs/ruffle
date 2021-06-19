@@ -2,7 +2,7 @@
 
 use crate::avm1::AvmString;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
 use gc_arena::{GcCell, MutationContext};
 
@@ -341,18 +341,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::SEALED);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), None)];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), None)];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("distance", distance),
         ("interpolate", interpolate),
         ("polar", polar),
     ];
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("add", add),
         ("clone", clone),
         ("copyFrom", copy_from),

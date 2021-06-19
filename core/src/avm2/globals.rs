@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     ClassObject, DomainObject, FunctionObject, Object, ScriptObject, TObject,
@@ -256,7 +256,7 @@ fn function<'gc>(
     mc: MutationContext<'gc, '_>,
     package: impl Into<AvmString<'gc>>,
     name: &'static str,
-    nf: NativeMethod,
+    nf: NativeMethodImpl,
     fn_proto: Object<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,

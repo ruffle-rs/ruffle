@@ -1,7 +1,7 @@
 //! `RegExp` impl
 
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod, ParamConfig};
+use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{regexp_deriver, ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
@@ -277,7 +277,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_instance_deriver(regexp_deriver);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("dotall", Some(dotall), None),
         ("extended", Some(extended), None),
         ("global", Some(global), None),
@@ -288,7 +292,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[("exec", exec), ("test", test)];
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("exec", exec), ("test", test)];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class

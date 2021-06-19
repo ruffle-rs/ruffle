@@ -135,17 +135,12 @@ impl<'gc> Avm2<'gc> {
 
         let (method, scope) = script.init();
         match method {
-            Method::Native {
-                method,
-                name,
-                signature,
-                ..
-            } => {
+            Method::Native(method) => {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
-                init_activation.resolve_parameters(name, &[], &signature)?;
+                init_activation.resolve_parameters(method.name, &[], &method.signature)?;
 
-                method(&mut init_activation, Some(scope), &[])?;
+                (method.method)(&mut init_activation, Some(scope), &[])?;
             }
             Method::Entry(_) => {
                 init_activation.run_stack_frame_for_script(script)?;

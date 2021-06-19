@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_deriver, Object, TObject};
 use crate::avm2::string::AvmString;
@@ -132,11 +132,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
     write.set_instance_deriver(primitive_deriver);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), None)];
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), None)];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] =
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("charAt", char_at), ("charCodeAt", char_code_at)];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 

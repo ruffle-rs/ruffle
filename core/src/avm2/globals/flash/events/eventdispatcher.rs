@@ -6,7 +6,7 @@ use crate::avm2::events::{
     dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
 };
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
@@ -253,7 +253,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("addEventListener", add_event_listener),
         ("removeEventListener", remove_event_listener),
         ("hasEventListener", has_event_listener),

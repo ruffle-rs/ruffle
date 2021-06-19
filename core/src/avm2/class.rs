@@ -1,7 +1,7 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
@@ -505,7 +505,7 @@ impl<'gc> Class<'gc> {
     pub fn define_public_builtin_instance_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, NativeMethod)],
+        items: &[(&'static str, NativeMethodImpl)],
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
@@ -518,7 +518,7 @@ impl<'gc> Class<'gc> {
     pub fn define_as3_builtin_instance_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, NativeMethod)],
+        items: &[(&'static str, NativeMethodImpl)],
     ) {
         for &(name, value) in items {
             self.define_instance_trait(Trait::from_method(
@@ -531,7 +531,7 @@ impl<'gc> Class<'gc> {
     pub fn define_public_builtin_class_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, NativeMethod)],
+        items: &[(&'static str, NativeMethodImpl)],
     ) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_method(
@@ -544,7 +544,11 @@ impl<'gc> Class<'gc> {
     pub fn define_public_builtin_instance_properties(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        items: &[(&'static str, Option<NativeMethod>, Option<NativeMethod>)],
+        items: &[(
+            &'static str,
+            Option<NativeMethodImpl>,
+            Option<NativeMethodImpl>,
+        )],
     ) {
         for &(name, getter, setter) in items {
             if let Some(getter) = getter {

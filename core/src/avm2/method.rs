@@ -29,7 +29,7 @@ use swf::avm2::types::{
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 
-pub type NativeMethod = for<'gc> fn(
+pub type NativeMethodImpl = for<'gc> fn(
     &mut Activation<'_, 'gc, '_>,
     Option<Object<'gc>>,
     &[Value<'gc>],
@@ -222,57 +222,50 @@ impl<'gc> BytecodeMethod<'gc> {
     }
 }
 
+/// An uninstantiated method
+#[derive(Clone)]
+pub struct NativeMethod<'gc> {
+    /// The function to call to execute the method.
+    pub method: NativeMethodImpl,
+
+    /// The name of the method.
+    pub name: &'static str,
+
+    /// The parameter signature of the method.
+    pub signature: Vec<ParamConfig<'gc>>,
+
+    /// Whether or not this method accepts parameters beyond those
+    /// mentioned in the parameter list.
+    pub is_variadic: bool,
+}
+
+unsafe impl<'gc> Collect for NativeMethod<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        self.signature.trace(cc);
+    }
+}
+
+impl<'gc> fmt::Debug for NativeMethod<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NativeMethod")
+            .field("method", &format!("{:p}", &self.method))
+            .field("name", &self.name)
+            .field("signature", &self.signature)
+            .field("is_variadic", &self.is_variadic)
+            .finish()
+    }
+}
+
 /// An uninstantiated method that can either be natively implemented or sourced
 /// from an ABC file.
-#[derive(Clone)]
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
 pub enum Method<'gc> {
     /// A native method.
-    Native {
-        /// The function to call to execute the method.
-        method: NativeMethod,
-
-        /// The name of the method.
-        name: &'static str,
-
-        /// The parameter signature of the method.
-        signature: Gc<'gc, Vec<ParamConfig<'gc>>>,
-
-        /// Whether or not this method accepts parameters beyond those
-        /// mentioned in the parameter list.
-        is_variadic: bool,
-    },
+    Native(Gc<'gc, NativeMethod<'gc>>),
 
     /// An ABC-provided method entry.
     Entry(Gc<'gc, BytecodeMethod<'gc>>),
-}
-
-unsafe impl<'gc> Collect for Method<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Method::Native { signature, .. } => signature.trace(cc),
-            Method::Entry(entry) => entry.trace(cc),
-        }
-    }
-}
-
-impl<'gc> fmt::Debug for Method<'gc> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Method::Native {
-                method,
-                name,
-                signature,
-                is_variadic,
-            } => f
-                .debug_struct("Method::Native")
-                .field("method", &format!("{:p}", method))
-                .field("name", name)
-                .field("signature", signature)
-                .field("is_variadic", is_variadic)
-                .finish(),
-            Method::Entry(entry) => f.debug_tuple("Method::Entry").field(entry).finish(),
-        }
-    }
 }
 
 impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
@@ -284,32 +277,38 @@ impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
 impl<'gc> Method<'gc> {
     /// Define a builtin method with a particular param configuration.
     pub fn from_builtin_and_params(
-        method: NativeMethod,
+        method: NativeMethodImpl,
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native {
-            method,
-            name,
-            signature: Gc::allocate(mc, signature),
-            is_variadic,
-        }
+        Self::Native(Gc::allocate(
+            mc,
+            NativeMethod {
+                method,
+                name,
+                signature,
+                is_variadic,
+            },
+        ))
     }
 
     /// Define a builtin with no parameter constraints.
     pub fn from_builtin_only(
-        method: NativeMethod,
+        method: NativeMethodImpl,
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native {
-            method,
-            name,
-            signature: Gc::allocate(mc, Vec::new()),
-            is_variadic: true,
-        }
+        Self::Native(Gc::allocate(
+            mc,
+            NativeMethod {
+                method,
+                name,
+                signature: Vec::new(),
+                is_variadic: true,
+            },
+        ))
     }
 
     /// Access the bytecode of this method.
