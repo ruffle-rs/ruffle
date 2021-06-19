@@ -69,19 +69,9 @@ pub fn add_listener<'gc>(
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-
-        let mut position = None;
-        for i in 0..length {
-            let other_listener = listeners.get_element(activation, i);
-            if new_listener == other_listener {
-                position = Some(i);
-                break;
-            }
-        }
-
-        if position.is_none() {
-            listeners.set_element(activation, length, new_listener)?;
-            listeners.set_length(activation, length + 1)?;
+        let exists = (0..length).any(|i| listeners.get_element(activation, i) == new_listener);
+        if !exists {
+            listeners.call_method("push", &[new_listener], activation)?;
         }
     }
 
