@@ -410,7 +410,10 @@ impl<'gc> Multiname<'gc> {
 
     /// Determine if this multiname matches a given QName.
     pub fn contains_name(&self, name: &QName<'gc>) -> bool {
-        let ns_match = self.ns.contains(name.namespace()) || self.ns.contains(&Namespace::Any);
+        let ns_match = self
+            .ns
+            .iter()
+            .any(|ns| ns == &Namespace::Any || ns == name.namespace());
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
 
         ns_match && name_match
