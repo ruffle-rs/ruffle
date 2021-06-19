@@ -70,7 +70,7 @@ impl<'gc> Executable<'gc> {
                     bound_receiver: receiver,
                 },
             )),
-            Method::Entry(method) => Self::Action(Gc::allocate(
+            Method::Bytecode(method) => Self::Action(Gc::allocate(
                 mc,
                 BytecodeExecutable {
                     method,

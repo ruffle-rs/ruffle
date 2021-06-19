@@ -264,12 +264,12 @@ pub enum Method<'gc> {
     Native(Gc<'gc, NativeMethod<'gc>>),
 
     /// An ABC-provided method entry.
-    Entry(Gc<'gc, BytecodeMethod<'gc>>),
+    Bytecode(Gc<'gc, BytecodeMethod<'gc>>),
 }
 
 impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
     fn from(bm: Gc<'gc, BytecodeMethod<'gc>>) -> Self {
-        Self::Entry(bm)
+        Self::Bytecode(bm)
     }
 }
 
@@ -318,7 +318,7 @@ impl<'gc> Method<'gc> {
             Method::Native { .. } => {
                 Err("Attempted to unwrap a native method as a user-defined one".into())
             }
-            Method::Entry(bm) => Ok(bm),
+            Method::Bytecode(bm) => Ok(bm),
         }
     }
 }

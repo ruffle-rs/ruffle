@@ -142,7 +142,7 @@ impl<'gc> Avm2<'gc> {
 
                 (method.method)(&mut init_activation, Some(scope), &[])?;
             }
-            Method::Entry(_) => {
+            Method::Bytecode(_) => {
                 init_activation.run_stack_frame_for_script(script)?;
             }
         };
