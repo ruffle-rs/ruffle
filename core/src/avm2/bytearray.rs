@@ -5,15 +5,46 @@ use gc_arena::Collect;
 use std::cell::Cell;
 use std::cmp;
 use std::convert::{TryFrom, TryInto};
-use std::io;
 use std::io::prelude::*;
-use std::io::{Read, SeekFrom};
+use std::io::{self, Read, SeekFrom};
+use std::fmt::{self, Display, Formatter};
+use std::str::FromStr;
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Endian {
     Big,
     Little,
+}
+
+pub enum CompressionAlgorithm {
+    Zlib,
+    Deflate,
+    Lzma
+}
+
+impl Display for CompressionAlgorithm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = match *self {
+            CompressionAlgorithm::Zlib => "zlib",
+            CompressionAlgorithm::Deflate => "deflate",
+            CompressionAlgorithm::Lzma => "lzma",
+        };
+        f.write_str(s)
+    }
+}
+
+impl FromStr for CompressionAlgorithm {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "zlib" => CompressionAlgorithm::Zlib,
+            "deflate" => CompressionAlgorithm::Deflate,
+            "lzma" => CompressionAlgorithm::Lzma,
+            _ => return Err("Unknown compression algorithm".into())
+        })
+    }
 }
 
 #[derive(Clone, Collect, Debug)]
@@ -96,52 +127,43 @@ impl ByteArrayStorage {
     }
 
     /// Compress the ByteArray into a temporary buffer
-    pub fn compress(&mut self, algorithm: &str) -> io::Result<Vec<u8>> {
+    pub fn compress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
         let mut buffer = Vec::new();
         self.position.set(0);
         match algorithm {
-            "zlib" => {
+            CompressionAlgorithm::Zlib => {
                 let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
                 compresser.read_to_end(&mut buffer)?;
             }
-            "deflate" => {
+            CompressionAlgorithm::Deflate => {
                 let mut compresser = DeflateEncoder::new(&*self.bytes, Compression::fast());
                 compresser.read_to_end(&mut buffer)?;
             }
             #[cfg(feature = "lzma")]
-            "lzma" => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)?,
-            _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "Unknown compression algorithm",
-                ))
-            }
+            CompressionAlgorithm::Lzma => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)?,
+            #[cfg(not(feature = "lzma"))]
+            CompressionAlgorithm::Lzma => return Err("Ruffle was not compiled with LZMA support".into()),
         }
         Ok(buffer)
     }
 
     /// Decompress the ByteArray into a temporary buffer
-    pub fn decompress(&mut self, algorithm: &str) -> io::Result<Vec<u8>> {
+    pub fn decompress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
         let mut buffer = Vec::new();
         self.position.set(0);
         match algorithm {
-            "zlib" => {
+            CompressionAlgorithm::Zlib => {
                 let mut compresser = ZlibDecoder::new(&*self.bytes);
                 compresser.read_to_end(&mut buffer)?;
             }
-            "deflate" => {
+            CompressionAlgorithm::Deflate => {
                 let mut compresser = DeflateDecoder::new(&*self.bytes);
                 compresser.read_to_end(&mut buffer)?;
             }
             #[cfg(feature = "lzma")]
-            "lzma" => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)
-                .map_err(|_| io::Error::new(io::ErrorKind::Other, "LZMA decompression failed"))?,
-            _ => {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "Unknown compression algorithm",
-                ))
-            }
+            CompressionAlgorithm::Lzma => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)?,
+            #[cfg(not(feature = "lzma"))]
+            CompressionAlgorithm::Lzma => return Err("Ruffle was not compiled with LZMA support".into()),
         }
         Ok(buffer)
     }

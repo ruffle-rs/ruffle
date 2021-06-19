@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::Endian;
+use crate::avm2::bytearray::{CompressionAlgorithm, Endian};
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::names::{Namespace, QName};
@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use gc_arena::{GcCell, MutationContext};
+use std::str::FromStr;
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -650,13 +651,10 @@ pub fn compress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
-                let compressed = bytearray.compress(string.as_str());
-                if let Ok(buffer) = compressed {
-                    bytearray.clear();
-                    bytearray.write_bytes(&buffer)?;
-                }
-            }
+            let algorithm = args.get(0).unwrap_or(&"zlib".into()).coerce_to_string(activation)?;
+            let buffer = bytearray.compress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            bytearray.clear();
+            bytearray.write_bytes(&buffer)?;
         }
     }
 
@@ -670,13 +668,10 @@ pub fn uncompress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Value::String(string) = args.get(0).unwrap_or(&"zlib".into()) {
-                let uncompressed = bytearray.decompress(string.as_str());
-                if let Ok(buffer) = uncompressed {
-                    bytearray.clear();
-                    bytearray.write_bytes(&buffer)?;
-                }
-            }
+            let algorithm = args.get(0).unwrap_or(&"zlib".into()).coerce_to_string(activation)?;
+            let buffer = bytearray.decompress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            bytearray.clear();
+            bytearray.write_bytes(&buffer)?;
         }
     }
 
@@ -690,10 +685,9 @@ pub fn deflate<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Ok(buffer) = bytearray.compress("deflate") {
-                bytearray.clear();
-                bytearray.write_bytes(&buffer)?;
-            }
+            let buffer = bytearray.compress(CompressionAlgorithm::Deflate)?;
+            bytearray.clear();
+            bytearray.write_bytes(&buffer)?;
         }
     }
 
@@ -707,10 +701,9 @@ pub fn inflate<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            if let Ok(buffer) = bytearray.decompress("deflate") {
-                bytearray.clear();
-                bytearray.write_bytes(&buffer)?;
-            }
+            let buffer = bytearray.decompress(CompressionAlgorithm::Deflate)?;
+            bytearray.clear();
+            bytearray.write_bytes(&buffer)?;
         }
     }
 
