@@ -198,7 +198,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// configuration, return what value should be stored in the called
     /// function's local registers (or an error, if the parameter violates the
     /// signature of the current called method).
-    fn resolve_parameter_value(
+    fn resolve_parameter(
         &mut self,
         method_name: &str,
         value: Option<&Value<'gc>>,
@@ -237,12 +237,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<Vec<Value<'gc>>, Error> {
         let mut arguments_list = Vec::new();
         for (i, (arg, param_config)) in user_arguments.iter().zip(signature.iter()).enumerate() {
-            arguments_list.push(self.resolve_parameter_value(
-                method_name,
-                Some(arg),
-                param_config,
-                i,
-            )?);
+            arguments_list.push(self.resolve_parameter(method_name, Some(arg), param_config, i)?);
         }
 
         match user_arguments.len().cmp(&signature.len()) {
@@ -255,7 +250,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Ordering::Less => {
                 //Apply remaining default parameters
                 for (i, param_config) in signature[user_arguments.len()..].iter().enumerate() {
-                    arguments_list.push(self.resolve_parameter_value(
+                    arguments_list.push(self.resolve_parameter(
                         method_name,
                         None,
                         param_config,
