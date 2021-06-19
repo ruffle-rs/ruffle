@@ -199,7 +199,6 @@ pub fn clear<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             bytearray.clear();
             bytearray.shrink_to_fit();
-            bytearray.set_position(0);
         }
     }
 

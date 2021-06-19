@@ -134,7 +134,6 @@ impl ByteArrayStorage {
     /// Compress the ByteArray into a temporary buffer
     pub fn compress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
         let mut buffer = Vec::new();
-        self.position.set(0);
         match algorithm {
             CompressionAlgorithm::Zlib => {
                 let mut compresser = ZlibEncoder::new(&*self.bytes, Compression::fast());
@@ -157,7 +156,6 @@ impl ByteArrayStorage {
     /// Decompress the ByteArray into a temporary buffer
     pub fn decompress(&mut self, algorithm: CompressionAlgorithm) -> Result<Vec<u8>, Error> {
         let mut buffer = Vec::new();
-        self.position.set(0);
         match algorithm {
             CompressionAlgorithm::Zlib => {
                 let mut compresser = ZlibDecoder::new(&*self.bytes);
@@ -203,7 +201,8 @@ impl ByteArrayStorage {
 
     #[inline]
     pub fn clear(&mut self) {
-        self.bytes.clear()
+        self.bytes.clear();
+        self.position.set(0)
     }
 
     #[inline]
