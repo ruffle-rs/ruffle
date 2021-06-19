@@ -49,7 +49,7 @@ pub struct ArrayObjectData<'gc> {
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
-    pub fn empty_array(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+    pub fn empty(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         Self::from_storage(activation, ArrayStorage::new(0))
     }
 
