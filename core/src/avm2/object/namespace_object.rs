@@ -15,11 +15,11 @@ use std::cell::Ref;
 
 /// A class instance deriver that constructs namespace objects.
 pub fn namespace_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(NamespaceObject(GcCell::allocate(
         activation.context.gc_context,
@@ -52,19 +52,18 @@ impl<'gc> NamespaceObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         namespace: Namespace<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().classes().namespace;
+        let class = activation.avm2().classes().namespace;
         let proto = activation.avm2().prototypes().namespace;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
         let mut this: Object<'gc> = NamespaceObject(GcCell::allocate(
             activation.context.gc_context,
             NamespaceObjectData { base, namespace },
         ))
         .into();
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_native_init(Some(this), &[], activation, Some(constr))?;
+        class.call_native_init(Some(this), &[], activation, Some(class))?;
 
         Ok(this)
     }

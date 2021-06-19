@@ -15,11 +15,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs AppDomain objects.
 pub fn appdomain_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let scope = constr
+    let scope = class
         .get_scope()
         .ok_or("Constructor has an empty scope stack")?;
     let domain = scope
@@ -27,7 +27,7 @@ pub fn appdomain_deriver<'gc>(
         .globals()
         .as_application_domain()
         .ok_or("Constructor scope must have an appdomain at the bottom of it's scope stack")?;
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(DomainObject(GcCell::allocate(
         activation.context.gc_context,
@@ -70,18 +70,17 @@ impl<'gc> DomainObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().classes().application_domain;
+        let class = activation.avm2().classes().application_domain;
         let proto = activation.avm2().prototypes().application_domain;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))
         .into();
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_init(Some(this), &[], activation, Some(constr))?;
+        class.call_init(Some(this), &[], activation, Some(class))?;
 
         Ok(this)
     }
@@ -97,18 +96,17 @@ impl<'gc> DomainObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().classes().global;
+        let class = activation.avm2().classes().global;
         let proto = activation.avm2().prototypes().global;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
         ))
         .into();
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_init(Some(this), &[], activation, Some(constr))?;
+        class.call_init(Some(this), &[], activation, Some(class))?;
 
         Ok(this)
     }

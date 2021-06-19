@@ -16,11 +16,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs RegExp objects.
 pub fn regexp_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(RegExpObject(GcCell::allocate(
         activation.context.gc_context,
@@ -50,19 +50,18 @@ impl<'gc> RegExpObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         regexp: RegExp<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().classes().regexp;
+        let class = activation.avm2().classes().regexp;
         let proto = activation.avm2().prototypes().regexp;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
         let mut this: Object<'gc> = RegExpObject(GcCell::allocate(
             activation.context.gc_context,
             RegExpObjectData { base, regexp },
         ))
         .into();
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_native_init(Some(this), &[], activation, Some(constr))?;
+        class.call_native_init(Some(this), &[], activation, Some(class))?;
 
         Ok(this)
     }

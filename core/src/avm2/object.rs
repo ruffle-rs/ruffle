@@ -107,15 +107,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(Value::Undefined)
     }
 
-    /// Retrieve the base class constructor that a particular QName trait is
-    /// defined in.
+    /// Retrieve the class object that a particular QName trait is defined in.
     ///
-    /// Must be called on a class constructor; will error out if called on
+    /// Must be called on a class object; will error out if called on
     /// anything else.
     ///
     /// This function returns `None` for non-trait properties, such as actually
     /// defined prototype methods for ES3-style classes.
-    fn find_base_constr_for_trait(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
+    fn find_class_for_trait(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
         let class = self
             .as_class()
             .ok_or("Cannot get base traits on non-class object")?;
@@ -124,8 +123,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return Ok(Some(self.into()));
         }
 
-        if let Some(base) = self.base_class_constr() {
-            return base.find_base_constr_for_trait(name);
+        if let Some(base) = self.superclass_object() {
+            return base.find_class_for_trait(name);
         }
 
         Ok(None)
@@ -250,9 +249,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The `Namespace` must not be `Namespace::Any`, as this function exists
     /// specifically resolve names in that namespace.
     ///
-    /// Trait names will be resolve on class constructors and object instances,
-    /// but not prototypes. If you want to search a prototype's provided traits
-    /// you must walk the prototype chain using `resolve_any_trait`.
+    /// Trait names will be resolve on class objects and object instances, but
+    /// not prototypes. If you want to search a prototype's provided traits you
+    /// must walk the prototype chain using `resolve_any_trait`.
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error>;
 
     /// Given a local name of a trait, find the namespace it resides in, if any.
@@ -400,7 +399,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         is_final: bool,
     );
 
-    /// Install all instance traits provided from a class constructor.
+    /// Install all instance traits provided by a class.
     ///
     /// This method will also install superclass instance traits first. By
     /// calling this method with the lowest class in the chain, you will ensure
@@ -411,13 +410,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_instance_traits(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        from_constr: Object<'gc>,
+        from_class_object: Object<'gc>,
     ) -> Result<(), Error> {
-        if let Some(base_constr) = from_constr.base_class_constr() {
-            self.install_instance_traits(activation, base_constr)?;
+        if let Some(superclass_object) = from_class_object.superclass_object() {
+            self.install_instance_traits(activation, superclass_object)?;
         }
 
-        if let Some(class) = from_constr.as_class() {
+        if let Some(class) = from_class_object.as_class() {
             self.install_traits(activation, class.read().instance_traits())?;
         }
 
@@ -615,7 +614,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _base_constr: Option<Object<'gc>>,
+        _subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         Err("Object is not callable".into())
     }
@@ -627,7 +626,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _base_constr: Option<Object<'gc>>,
+        _subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         Err("Object is not strict callable".into())
     }
@@ -638,9 +637,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _base_constr: Option<Object<'gc>>,
+        _subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        Err("Object is not a Class constructor".into())
+        Err("Object is not a Class".into())
     }
 
     /// Call the instance's native initializer.
@@ -653,9 +652,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _base_constr: Option<Object<'gc>>,
+        _subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        Err("Object is not a Class constructor".into())
+        Err("Object is not a Class".into())
     }
 
     /// Call an instance method by name.
@@ -679,14 +678,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall method {:?}, which does not exist",
                 name
             )
         })?;
         let mut class_traits = Vec::new();
-        constr_with_trait
+        superclass_object
             .as_class()
             .unwrap()
             .read()
@@ -700,12 +699,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = superclass_object.get_scope();
 
         if let TraitKind::Method { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
-            callee.call(reciever, arguments, activation, Some(constr_with_trait))
+            callee.call(reciever, arguments, activation, Some(superclass_object))
         } else {
             unreachable!();
         }
@@ -731,14 +730,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Option<Object<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall getter {:?}, which does not exist",
                 name
             )
         })?;
         let mut class_traits = Vec::new();
-        constr_with_trait
+        superclass_object
             .as_class()
             .unwrap()
             .read()
@@ -752,12 +751,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = superclass_object.get_scope();
 
         if let TraitKind::Getter { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
-            callee.call(reciever, &[], activation, Some(constr_with_trait))
+            callee.call(reciever, &[], activation, Some(superclass_object))
         } else {
             unreachable!();
         }
@@ -784,14 +783,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         reciever: Option<Object<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let constr_with_trait = self.find_base_constr_for_trait(name)?.ok_or_else(|| {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall setter {:?}, which does not exist",
                 name
             )
         })?;
         let mut class_traits = Vec::new();
-        constr_with_trait
+        superclass_object
             .as_class()
             .unwrap()
             .read()
@@ -805,12 +804,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     name
                 )
             })?;
-        let scope = constr_with_trait.get_scope();
+        let scope = superclass_object.get_scope();
 
         if let TraitKind::Setter { method, .. } = base_trait.kind() {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
-            callee.call(reciever, &[value], activation, Some(constr_with_trait))?;
+            callee.call(reciever, &[value], activation, Some(superclass_object))?;
 
             Ok(())
         } else {
@@ -821,17 +820,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Construct a Class or Function and return an instance of it.
     ///
     /// As the first step in object construction, the `construct` method is
-    /// called on the constructor to create a new object. The constructor is
-    /// then expected to perform the following steps, in order:
+    /// called on the class object to produce an instance of that class. The
+    /// constructor is then expected to perform the following steps, in order:
     ///
-    /// 1. Allocate the instance object. If the constructor is a `Class`, then
-    /// use the class's instance deriver to allocate the object. Otherwise,
-    /// allocate it as the same type as the constructor's explicit `prototype`.
-    /// 2. Associate the instance object with the constructor's explicit
-    /// `prototype`.
-    /// 3. If the instance has traits, install them at this time.
+    /// 1. Allocate the instance object. For ES4 classes, the class's instance
+    /// deriver is used to allocate the object. ES3-style classes use the
+    /// prototype to derive instances.
+    /// 2. Associate the instance object with the class's explicit `prototype`.
+    /// 3. If the class has instance traits, install them at this time.
     /// 4. Call the constructor method with the newly-allocated object as
-    /// reciever. For `Function`s, this is just the function's method.
+    /// reciever. For ES3 classes, this is just the function's associated
+    /// method.
     /// 5. Yield the allocated object. (The return values of constructors are
     /// ignored.)
     fn construct(
@@ -899,31 +898,31 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// primitive value. Typically, this would be a number of some kind.
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
-    /// Enumerate all interfaces implemented by this constructor.
+    /// Enumerate all interfaces implemented by this class object.
     ///
-    /// Non-constructors do not implement interfaces.
+    /// Non-classes do not implement interfaces.
     fn interfaces(&self) -> Vec<Object<'gc>>;
 
-    /// Set the interface list for this constructor.
+    /// Set the interface list for this class object.
     fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
     /// Determine if this object is an instance of a given type.
     ///
     /// This uses the ES3 definition of instance, which walks the prototype
     /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
-    /// the constructor chain and accounts for interfaces.
+    /// the class object chain and accounts for interfaces.
     ///
-    /// The given object should be the constructor for the given type we are
+    /// The given object should be the class object for the given type we are
     /// checking against this object. Its prototype will be extracted and
     /// searched in the prototype chain of this object.
     #[allow(unused_mut)] //it's not unused
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        mut constructor: Object<'gc>,
+        mut class: Object<'gc>,
     ) -> Result<bool, Error> {
-        let type_proto = constructor
-            .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
+        let type_proto = class
+            .get_property(class, &QName::dynamic_name("prototype"), activation)?
             .coerce_to_object(activation)?;
 
         self.has_prototype_in_chain(type_proto)
@@ -950,38 +949,36 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Determine if this object is an instance of a given type.
     ///
-    /// This uses the ES4 definition of instance, which walks the constructor
+    /// This uses the ES4 definition of instance, which walks the class object
     /// chain and accounts for interfaces. For the ES3 definition of instance,
     /// use `is_instance_of`, which uses the prototype chain.
     ///
-    /// The given object should be the constructor for the given type we are
+    /// The given object should be the class object for the given type we are
     /// checking against this object.
     #[allow(unused_mut)] //it's not unused
-    fn is_of_type(&self, mut constructor: Object<'gc>) -> Result<bool, Error> {
-        self.has_constr_in_chain(constructor)
+    fn is_of_type(&self, mut test_class: Object<'gc>) -> Result<bool, Error> {
+        self.has_class_in_chain(test_class)
     }
 
-    /// Determine if this object has a given constructor in its constructor
-    /// chain.
+    /// Determine if this object has a given class in its class object chain.
     ///
-    /// The given object `constr` should be the type constructor we are
-    /// checking against this object. Interfaces, which are represented as type
-    /// constructors unrooted from `Object`, may also be used.
-    fn has_constr_in_chain(&self, type_constr: Object<'gc>) -> Result<bool, Error> {
-        let mut my_constr = self.as_constr();
+    /// The given object `test_class` should be either a superclass or
+    /// interface we are checking against this object.
+    fn has_class_in_chain(&self, test_class: Object<'gc>) -> Result<bool, Error> {
+        let mut my_class = self.as_class_object();
 
-        while let Some(constr) = my_constr {
-            if Object::ptr_eq(constr, type_constr) {
+        while let Some(class) = my_class {
+            if Object::ptr_eq(class, test_class) {
                 return Ok(true);
             }
 
-            for interface in constr.interfaces() {
-                if Object::ptr_eq(interface, type_constr) {
+            for interface in class.interfaces() {
+                if Object::ptr_eq(interface, test_class) {
                     return Ok(true);
                 }
             }
 
-            my_constr = constr.base_class_constr()
+            my_class = class.superclass_object()
         }
 
         Ok(false)
@@ -993,18 +990,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
 
-    /// Get this object's constructor, if it has one.
-    fn as_constr(&self) -> Option<Object<'gc>>;
+    /// Get this object's class object, if it has one.
+    fn as_class_object(&self) -> Option<Object<'gc>>;
 
-    /// Associate the object with a particular constructor.
+    /// Associate the object with a particular class object.
     ///
     /// This turns the object into an instance of that class. It should only be
     /// used in situations where the object cannot be made an instance of the
     /// class at allocation time, such as during early runtime setup.
-    fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>);
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>);
 
-    /// Get the base class constructor of this object.
-    fn base_class_constr(self) -> Option<Object<'gc>> {
+    /// Get the superclass object of this object.
+    fn superclass_object(self) -> Option<Object<'gc>> {
         None
     }
 

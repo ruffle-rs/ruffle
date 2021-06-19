@@ -68,7 +68,7 @@ pub struct ScriptObjectData<'gc> {
     /// Enumeratable property names.
     enumerants: Vec<QName<'gc>>,
 
-    /// Interfaces implemented by this object. (constructors only)
+    /// Interfaces implemented by this object. (classes only)
     interfaces: Vec<Object<'gc>>,
 }
 
@@ -324,12 +324,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().as_class()
     }
 
-    fn as_constr(&self) -> Option<Object<'gc>> {
-        self.0.read().as_constr()
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.0.read().as_class_object()
     }
 
-    fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
-        self.0.write(mc).set_constr(constr);
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+        self.0.write(mc).set_class_object(class_object);
     }
 }
 
@@ -358,12 +358,12 @@ impl<'gc> ScriptObject<'gc> {
     /// Construct an instance with a class and scope stack.
     pub fn instance(
         mc: MutationContext<'gc, '_>,
-        constr: Object<'gc>,
+        class: Object<'gc>,
         proto: Object<'gc>,
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr)),
+            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class)),
         ))
         .into()
     }
@@ -395,8 +395,8 @@ impl<'gc> ScriptObjectData<'gc> {
                 receiver,
                 Some(
                     activation
-                        .base_constr()
-                        .or_else(|| self.as_constr())
+                        .subclass_object()
+                        .or_else(|| self.as_class_object())
                         .unwrap_or(receiver),
                 ),
             )
@@ -412,7 +412,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let constr = self.as_constr();
+        let class = self.as_class_object();
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
                 Some(slot_id)
@@ -430,7 +430,7 @@ impl<'gc> ScriptObjectData<'gc> {
             let prop = self.values.get_mut(name).unwrap();
             prop.set(
                 receiver,
-                Some(activation.base_constr().or(constr).unwrap_or(receiver)),
+                Some(activation.subclass_object().or(class).unwrap_or(receiver)),
                 value,
             )
         } else {
@@ -450,7 +450,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let constr = self.as_constr();
+        let class = self.as_class_object();
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.init_slot(slot_id, value, activation.context.gc_context)?;
@@ -458,7 +458,7 @@ impl<'gc> ScriptObjectData<'gc> {
             } else {
                 prop.init(
                     receiver,
-                    Some(activation.base_constr().or(constr).unwrap_or(receiver)),
+                    Some(activation.subclass_object().or(class).unwrap_or(receiver)),
                     value,
                 )
             }
@@ -546,18 +546,18 @@ impl<'gc> ScriptObjectData<'gc> {
 
             //Class instances have instance traits from any class in the base
             //class chain.
-            ScriptObjectClass::ClassInstance(constr) => {
-                let mut cur_constr = Some(*constr);
+            ScriptObjectClass::ClassInstance(class) => {
+                let mut cur_class = Some(*class);
 
-                while let Some(constr) = cur_constr {
-                    let cur_class = constr
+                while let Some(class) = cur_class {
+                    let cur_static_class = class
                         .as_class()
                         .ok_or("Object is not a class constructor")?;
-                    if cur_class.read().has_instance_trait(name) {
+                    if cur_static_class.read().has_instance_trait(name) {
                         return Ok(true);
                     }
 
-                    cur_constr = constr.base_class_constr();
+                    cur_class = class.superclass_object();
                 }
 
                 Ok(false)
@@ -571,7 +571,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
         match &self.class {
             ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
-            ScriptObjectClass::ClassInstance(constr) => constr.get_scope(),
+            ScriptObjectClass::ClassInstance(class) => class.get_scope(),
             ScriptObjectClass::NoClass => None,
         }
     }
@@ -611,18 +611,21 @@ impl<'gc> ScriptObjectData<'gc> {
             ScriptObjectClass::ClassConstructor(class, ..) => {
                 Ok(class.read().resolve_any_class_trait(local_name))
             }
-            ScriptObjectClass::ClassInstance(constr) => {
-                let mut cur_constr = Some(*constr);
+            ScriptObjectClass::ClassInstance(class) => {
+                let mut cur_class = Some(*class);
 
-                while let Some(constr) = cur_constr {
-                    let cur_class = constr
+                while let Some(class) = cur_class {
+                    let cur_static_class = class
                         .as_class()
                         .ok_or("Object is not a class constructor")?;
-                    if let Some(ns) = cur_class.read().resolve_any_instance_trait(local_name) {
+                    if let Some(ns) = cur_static_class
+                        .read()
+                        .resolve_any_instance_trait(local_name)
+                    {
                         return Ok(Some(ns));
                     }
 
-                    cur_constr = constr.base_class_constr();
+                    cur_class = class.superclass_object();
                 }
 
                 Ok(None)
@@ -875,26 +878,26 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         match self.class {
             ScriptObjectClass::ClassConstructor(class, _) => Some(class),
-            ScriptObjectClass::ClassInstance(constr) => constr.as_class(),
+            ScriptObjectClass::ClassInstance(class_object) => class_object.as_class(),
             ScriptObjectClass::NoClass => None,
         }
     }
 
-    /// Get the class constructor for this object, if it has one.
-    pub fn as_constr(&self) -> Option<Object<'gc>> {
+    /// Get the class object for this object, if it has one.
+    pub fn as_class_object(&self) -> Option<Object<'gc>> {
         match self.class {
             ScriptObjectClass::ClassConstructor(..) => None,
-            ScriptObjectClass::ClassInstance(constr) => Some(constr),
+            ScriptObjectClass::ClassInstance(class_object) => Some(class_object),
             ScriptObjectClass::NoClass => None,
         }
     }
 
-    /// Associate the object with a particular constructor.
+    /// Associate the object with a particular class object.
     ///
     /// This turns the object into an instance of that class. It should only be
     /// used in situations where the object cannot be made an instance of the
     /// class at allocation time, such as during early runtime setup.
-    pub fn set_constr(&mut self, constr: Object<'gc>) {
-        self.class = ScriptObjectClass::ClassInstance(constr);
+    pub fn set_class_object(&mut self, class_object: Object<'gc>) {
+        self.class = ScriptObjectClass::ClassInstance(class_object);
     }
 }

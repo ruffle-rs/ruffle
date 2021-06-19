@@ -33,15 +33,15 @@ pub fn native_instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let constructor = this
-                .as_constr()
+            let class_object = this
+                .as_class_object()
                 .ok_or("Attempted to construct non-instance DisplayObject.")?;
 
             if let Some((movie, symbol)) = activation
                 .context
                 .library
-                .avm2_constructor_registry()
-                .constr_symbol(constructor)
+                .avm2_class_registry()
+                .class_symbol(class_object)
             {
                 let mut child = activation
                     .context

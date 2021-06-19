@@ -37,7 +37,7 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
-    super_constr: Object<'gc>,
+    superclass: Object<'gc>,
     super_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Result<(Object<'gc>, Object<'gc>, Object<'gc>), Error> {
@@ -60,14 +60,14 @@ pub fn create_class<'gc>(
     let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
     let proto = ScriptObject::object(activation.context.gc_context, super_proto);
 
-    let (constr, cinit) = ClassObject::from_builtin_constr(
+    let (class_object, cinit) = ClassObject::from_builtin_class(
         activation.context.gc_context,
-        Some(super_constr),
+        Some(superclass),
         class_class,
         Some(scope),
         proto,
         fn_proto,
     )?;
 
-    Ok((constr, proto, cinit))
+    Ok((class_object, proto, cinit))
 }

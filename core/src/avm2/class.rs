@@ -41,11 +41,11 @@ bitflags! {
 ///
 /// Parameters for the deriver are:
 ///
-///  * `constr` - The class constructor that was called (or will be called) to
-///  construct this object. This must be the current class (using a base class
-///  will cause the wrong class to be read for traits).
-///  * `proto` - The prototype attached to the class constructor.
-///  * `activation` - This is the current AVM2 activation.
+///  * `class` - The class object that is being allocated. This must be the
+///  current class (using a superclass will cause the wrong class to be
+///  read for traits).
+///  * `proto` - The prototype attached to the class object.
+///  * `activation` - The current AVM2 activation.
 pub type DeriverFn = for<'gc> fn(
     Object<'gc>,
     Object<'gc>,
@@ -69,15 +69,15 @@ impl fmt::Debug for Deriver {
 /// This attempts to use the parent type's deriver, and if such a deriver does
 /// not exist, we default to `ScriptObject`.
 pub fn implicit_deriver<'gc>(
-    mut constr: Object<'gc>,
+    mut class_object: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let mut base_constr = Some(constr);
-    let mut base_class = constr.as_class();
+    let mut base_class_object = Some(class_object);
+    let mut base_class = class_object.as_class();
     let mut instance_deriver = None;
 
-    while let (Some(b_constr), Some(b_class)) = (base_constr, base_class) {
+    while let (Some(b_class_object), Some(b_class)) = (base_class_object, base_class) {
         let base_deriver = b_class.read().instance_deriver();
 
         if base_deriver as usize != implicit_deriver as usize {
@@ -85,16 +85,16 @@ pub fn implicit_deriver<'gc>(
             break;
         }
 
-        base_constr = b_constr.base_class_constr();
-        base_class = base_constr.and_then(|c| c.as_class());
+        base_class_object = b_class_object.superclass_object();
+        base_class = base_class_object.and_then(|c| c.as_class());
     }
 
     if let Some(base_deriver) = instance_deriver {
-        base_deriver(constr, proto, activation)
+        base_deriver(class_object, proto, activation)
     } else {
-        let base_proto = constr
+        let base_proto = class_object
             .get_property(
-                constr,
+                class_object,
                 &QName::new(Namespace::public(), "prototype"),
                 activation,
             )?
@@ -102,7 +102,7 @@ pub fn implicit_deriver<'gc>(
 
         Ok(ScriptObject::instance(
             activation.context.gc_context,
-            constr,
+            class_object,
             base_proto,
         ))
     }
@@ -167,7 +167,7 @@ pub struct Class<'gc> {
 
     /// Static traits for a given class.
     ///
-    /// These are accessed as constructor properties.
+    /// These are accessed as class object properties.
     class_traits: Vec<Trait<'gc>>,
 
     /// Whether or not this `Class` has loaded its traits or not.
@@ -410,7 +410,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn for_activation_constr(
+    pub fn for_activation(
         activation: &mut Activation<'_, 'gc, '_>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
@@ -568,8 +568,7 @@ impl<'gc> Class<'gc> {
 
     /// Define a trait on the class.
     ///
-    /// Class traits will be accessible as properties on the class constructor
-    /// function.
+    /// Class traits will be accessible as properties on the class object.
     pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
         self.class_traits.push(my_trait);
     }

@@ -16,11 +16,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs primitive objects.
 pub fn primitive_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(PrimitiveObject(GcCell::allocate(
         activation.context.gc_context,
@@ -74,7 +74,7 @@ impl<'gc> PrimitiveObject<'gc> {
             Value::String(_) => activation.avm2().prototypes().string,
             _ => unreachable!(),
         };
-        let constr = match primitive {
+        let class = match primitive {
             Value::Bool(_) => activation.avm2().classes().boolean,
             Value::Number(_) => activation.avm2().classes().number,
             Value::Unsigned(_) => activation.avm2().classes().uint,
@@ -83,16 +83,15 @@ impl<'gc> PrimitiveObject<'gc> {
             _ => unreachable!(),
         };
 
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
         let mut this: Object<'gc> = PrimitiveObject(GcCell::allocate(
             activation.context.gc_context,
             PrimitiveObjectData { base, primitive },
         ))
         .into();
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_native_init(Some(this), &[], activation, Some(constr))?;
+        class.call_native_init(Some(this), &[], activation, Some(class))?;
 
         Ok(this)
     }

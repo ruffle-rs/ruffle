@@ -196,9 +196,9 @@ impl<'gc> Domain<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let bytearray_constr = activation.avm2().classes().bytearray;
+        let bytearray_class = activation.avm2().classes().bytearray;
 
-        let domain_memory = bytearray_constr.construct(activation, &[])?;
+        let domain_memory = bytearray_class.construct(activation, &[])?;
         domain_memory
             .as_bytearray_mut(activation.context.gc_context)
             .unwrap()

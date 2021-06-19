@@ -97,15 +97,15 @@ pub fn create_proto<'gc>(
     ScriptObject::object(activation.context.gc_context, super_proto)
 }
 
-/// Fill `Function.prototype` and allocate it's constructor.
+/// Fill `Function.prototype` and allocate it's class object.
 ///
-/// This function returns both the class constructor and it's initializer
-/// method, which must be called before user code runs.
+/// This function returns both the class object and it's class initializer,
+/// which must be called before user code runs.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     globals: Object<'gc>,
     mut function_proto: Object<'gc>,
-    super_constr: Object<'gc>,
+    superclass: Object<'gc>,
 ) -> Result<(Object<'gc>, Object<'gc>), Error> {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
@@ -149,9 +149,9 @@ pub fn fill_proto<'gc>(
         .into(),
     )?;
 
-    ClassObject::from_builtin_constr(
+    ClassObject::from_builtin_class(
         activation.context.gc_context,
-        Some(super_constr),
+        Some(superclass),
         function_class,
         Some(scope),
         function_proto,

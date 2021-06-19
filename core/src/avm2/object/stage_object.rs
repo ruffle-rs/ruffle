@@ -15,11 +15,11 @@ use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance deriver that constructs Stage objects.
 pub fn stage_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(StageObject(GcCell::allocate(
         activation.context.gc_context,
@@ -47,23 +47,23 @@ pub struct StageObjectData<'gc> {
 
 impl<'gc> StageObject<'gc> {
     /// Allocate the AVM2 side of a display object intended to be of a given
-    /// constructor's type.
+    /// class's type.
     ///
     /// This function makes no attempt to construct the returned object. You
     /// are responsible for calling the native initializer of the given
-    /// constructor at a later time. Typically, a display object that can
-    /// contain movie-constructed children must first allocate itself (using
-    /// this function), construct it's children, and then finally initialize
-    /// itself. Display objects that do not need to use this flow should use
+    /// class at a later time. Typically, a display object that can contain
+    /// movie-constructed children must first allocate itself (using this
+    /// function), construct it's children, and then finally initialize itself.
+    /// Display objects that do not need to use this flow should use
     /// `for_display_object_childless`.
     pub fn for_display_object(
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        mut constr: Object<'gc>,
+        mut class: Object<'gc>,
     ) -> Result<Self, Error> {
-        let proto = constr
+        let proto = class
             .get_property(
-                constr,
+                class,
                 &QName::new(Namespace::public(), "prototype"),
                 activation,
             )?
@@ -74,29 +74,29 @@ impl<'gc> StageObject<'gc> {
             StageObjectData {
                 base: ScriptObjectData::base_new(
                     Some(proto),
-                    ScriptObjectClass::ClassInstance(constr),
+                    ScriptObjectClass::ClassInstance(class),
                 ),
                 display_object: Some(display_object),
             },
         ));
-        instance.install_instance_traits(activation, constr)?;
+        instance.install_instance_traits(activation, class)?;
 
         Ok(instance)
     }
 
     /// Allocate and construct the AVM2 side of a display object intended to be
-    /// of a given constructor's type.
+    /// of a given class's type.
     ///
     /// This function is intended for display objects that do not have children
     /// and thus do not need to be allocated and initialized in separate phases.
     pub fn for_display_object_childless(
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        constr: Object<'gc>,
+        class: Object<'gc>,
     ) -> Result<Self, Error> {
-        let this = Self::for_display_object(activation, display_object, constr)?;
+        let this = Self::for_display_object(activation, display_object, class)?;
 
-        constr.call_native_init(Some(this.into()), &[], activation, Some(constr))?;
+        class.call_native_init(Some(this.into()), &[], activation, Some(class))?;
 
         Ok(this)
     }
@@ -106,21 +106,21 @@ impl<'gc> StageObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error> {
-        let constr = activation.avm2().classes().graphics;
+        let class = activation.avm2().classes().graphics;
         let proto = activation.avm2().prototypes().graphics;
         let mut this = Self(GcCell::allocate(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::base_new(
                     Some(proto),
-                    ScriptObjectClass::ClassInstance(constr),
+                    ScriptObjectClass::ClassInstance(class),
                 ),
                 display_object: Some(display_object),
             },
         ));
-        this.install_instance_traits(activation, constr)?;
+        this.install_instance_traits(activation, class)?;
 
-        constr.call_native_init(Some(this.into()), &[], activation, Some(constr))?;
+        class.call_native_init(Some(this.into()), &[], activation, Some(class))?;
 
         Ok(this)
     }
@@ -296,12 +296,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.as_class()
     }
 
-    fn as_constr(&self) -> Option<Object<'gc>> {
-        self.0.read().base.as_constr()
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.0.read().base.as_class_object()
     }
 
-    fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
-        self.0.write(mc).base.set_constr(constr);
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+        self.0.write(mc).base.set_class_object(class_object);
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {

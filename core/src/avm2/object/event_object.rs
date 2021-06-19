@@ -16,11 +16,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs Event objects.
 pub fn event_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(EventObject(GcCell::allocate(
         activation.context.gc_context,
@@ -50,28 +50,27 @@ impl<'gc> EventObject<'gc> {
     /// Convert a bare event into it's object representation.
     ///
     /// This function supports constructing subclasses of `Event`; as a result,
-    /// we will pull the `prototype` off the `constr` given to us.
+    /// we will pull the `prototype` off the `class` given to us.
     pub fn from_event(
         activation: &mut Activation<'_, 'gc, '_>,
-        mut constr: Object<'gc>,
+        mut class: Object<'gc>,
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let proto = constr
+        let proto = class
             .get_property(
-                constr,
+                class,
                 &QName::new(Namespace::public(), "prototype"),
                 activation,
             )?
             .coerce_to_object(activation)?;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
         let mut event_object: Object<'gc> = EventObject(GcCell::allocate(
             activation.context.gc_context,
             EventObjectData { base, event },
         ))
         .into();
-        event_object.install_instance_traits(activation, constr)?;
+        event_object.install_instance_traits(activation, class)?;
 
         //TODO: Find a way to call the constructor's default initializer
         //without overwriting the event we just put on the object.

@@ -178,7 +178,7 @@ impl<'gc> Avm2Button<'gc> {
             .movie()
             .expect("All SWF-defined buttons should have movies");
         let empty_slice = SwfSlice::empty(movie.clone());
-        let sprite_constr = context.avm2.classes().sprite;
+        let sprite_class = context.avm2.classes().sprite;
 
         let mut children = Vec::new();
         let static_data = self.0.read().static_data;
@@ -226,7 +226,7 @@ impl<'gc> Avm2Button<'gc> {
         } else {
             let state_sprite = MovieClip::new(empty_slice, context.gc_context);
 
-            state_sprite.set_avm2_constructor(context.gc_context, Some(sprite_constr));
+            state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context.gc_context, Some(self.into()));
             state_sprite.construct_frame(context);
 

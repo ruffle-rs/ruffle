@@ -77,7 +77,7 @@ pub struct MovieClipData<'gc> {
     clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
     flags: MovieClipFlags,
-    avm2_constructor: Option<Avm2Object<'gc>>,
+    avm2_class: Option<Avm2Object<'gc>>,
     drawing: Drawing,
     is_focusable: bool,
     has_focus: bool,
@@ -105,7 +105,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                avm2_constructor: None,
+                avm2_class: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -138,7 +138,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                avm2_constructor: Some(constr),
+                avm2_class: Some(constr),
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -174,7 +174,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                avm2_constructor: None,
+                avm2_class: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -207,7 +207,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                avm2_constructor: None,
+                avm2_class: None,
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -582,17 +582,17 @@ impl<'gc> MovieClip<'gc> {
                     .library
                     .library_for_movie_mut(movie.clone());
                 let domain = library.avm2_domain();
-                let constr = domain
+                let class_object = domain
                     .get_defined_value(&mut activation, name.clone())
                     .and_then(|v| v.coerce_to_object(&mut activation));
 
-                match constr {
-                    Ok(constr) => {
+                match class_object {
+                    Ok(class_object) => {
                         activation
                             .context
                             .library
-                            .avm2_constructor_registry_mut()
-                            .set_constr_symbol(constr, movie.clone(), id);
+                            .avm2_class_registry_mut()
+                            .set_class_symbol(class_object, movie.clone(), id);
 
                         let library = activation
                             .context
@@ -601,9 +601,9 @@ impl<'gc> MovieClip<'gc> {
 
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
-                            self.set_avm2_constructor(activation.context.gc_context, Some(constr));
+                            self.set_avm2_class(activation.context.gc_context, Some(class_object));
                         } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
-                            mc.set_avm2_constructor(activation.context.gc_context, Some(constr));
+                            mc.set_avm2_class(activation.context.gc_context, Some(class_object));
                         } else {
                             log::warn!(
                                 "Symbol class {} cannot be assigned to invalid character id {}",
@@ -904,13 +904,13 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().static_data.total_frames
     }
 
-    pub fn set_avm2_constructor(
+    pub fn set_avm2_class(
         self,
         gc_context: MutationContext<'gc, '_>,
         constr: Option<Avm2Object<'gc>>,
     ) {
         let mut write = self.0.write(gc_context);
-        write.avm2_constructor = constr;
+        write.avm2_class = constr;
     }
 
     pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
@@ -1513,16 +1513,16 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) {
-        let constructor = self
+        let class_object = self
             .0
             .read()
-            .avm2_constructor
+            .avm2_class
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         let mut constr_thing = || {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let object =
-                Avm2StageObject::for_display_object(&mut activation, display_object, constructor)?
+                Avm2StageObject::for_display_object(&mut activation, display_object, class_object)?
                     .into();
 
             Ok(object)
@@ -1542,16 +1542,16 @@ impl<'gc> MovieClip<'gc> {
     /// will allocate the object first before doing so. This function is
     /// intended to be called from `post_instantiate`.
     fn construct_as_avm2_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let constructor = self
+        let class_object = self
             .0
             .read()
-            .avm2_constructor
+            .avm2_class
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                constructor.call(Some(object), &[], &mut activation, Some(constructor))?;
+                class_object.call(Some(object), &[], &mut activation, Some(class_object))?;
 
                 Ok(())
             };

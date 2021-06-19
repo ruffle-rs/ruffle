@@ -55,6 +55,7 @@ impl<'gc> FunctionObject<'gc> {
 
         Ok(this)
     }
+
     /// Construct a method from an ABC method and the current closure scope.
     ///
     /// The given `reciever`, if supplied, will override any user-specified
@@ -139,14 +140,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
             exec.exec(
                 receiver,
                 arguments,
                 activation,
-                base_constr,
+                subclass_object,
                 self.into(),
                 false,
             )
@@ -160,14 +161,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
             exec.exec(
                 receiver,
                 arguments,
                 activation,
-                base_constr,
+                subclass_object,
                 self.into(),
                 true,
             )
@@ -181,10 +182,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        let constr: Object<'gc> = self.into();
+        let class: Object<'gc> = self.into();
         let prototype = self
             .get_property(
-                constr,
+                class,
                 &QName::new(Namespace::public(), "prototype"),
                 activation,
             )?

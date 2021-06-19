@@ -164,7 +164,7 @@ impl<'gc> SystemPrototypes<'gc> {
     }
 }
 
-/// This structure represents all system builtins' constructors.
+/// This structure represents all system builtin classes.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SystemClasses<'gc> {
@@ -202,11 +202,11 @@ pub struct SystemClasses<'gc> {
 }
 
 impl<'gc> SystemClasses<'gc> {
-    /// Construct a minimal set of system prototypes necessary for
-    /// bootstrapping player globals.
+    /// Construct a minimal set of system classes necessary for bootstrapping
+    /// player globals.
     ///
-    /// All other system prototypes aside from the three given here will be set
-    /// to the empty object also handed to this function. It is the caller's
+    /// All other system classes aside from the three given here will be set to
+    /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
     fn new(
@@ -274,18 +274,17 @@ fn function<'gc>(
     Ok(())
 }
 
-/// Add a class builtin with prototype methods to the global scope.
+/// Add a fully-formed class object builtin to the global scope.
 ///
-/// Since the function has to return a normal prototype object in this case, we
-/// have to construct a constructor to go along with it, as if we had called
-/// `install_foreign_trait` with such a class.
+/// This allows the caller to pre-populate the class's prototype with dynamic
+/// properties, if necessary.
 fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
-    constr: Object<'gc>,
+    class_object: Object<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
 ) -> Result<(), Error> {
-    let class = constr
+    let class = class_object
         .as_class()
         .ok_or("Attempted to create builtin dynamic class without class on it's constructor!")?;
     let name = class.read().name().clone();
@@ -293,7 +292,7 @@ fn dynamic_class<'gc>(
     script
         .init()
         .1
-        .install_const(mc, name.clone(), 0, constr.into(), false);
+        .install_const(mc, name.clone(), 0, class_object.into(), false);
     domain.export_definition(name, script, mc)
 }
 
@@ -331,26 +330,26 @@ fn class<'gc>(
     let class_name = class_read.name().clone();
     drop(class_read);
 
-    let mut constr =
+    let mut class_object =
         ClassObject::from_class(activation, class_def, super_class, Some(global_scope))?;
     global.install_const(
         activation.context.gc_context,
         class_name.clone(),
         0,
-        constr.into(),
+        class_object.into(),
         false,
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
-    let proto = constr
+    let proto = class_object
         .get_property(
-            constr,
+            class_object,
             &QName::new(Namespace::public(), "prototype"),
             activation,
         )?
         .coerce_to_object(activation)?;
 
-    Ok((constr, proto))
+    Ok((class_object, proto))
 }
 
 /// Add a builtin constant to the global scope.
@@ -371,10 +370,10 @@ fn constant<'gc>(
 
 macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $domain:expr, $script:expr) => {
-        let (constr, proto) = class($activation, $class, $domain, $script)?;
+        let (class_object, proto) = class($activation, $class, $domain, $script)?;
 
         let sc = $activation.avm2().system_classes.as_mut().unwrap();
-        sc.$field = constr;
+        sc.$field = class_object;
 
         let sp = $activation.avm2().system_prototypes.as_mut().unwrap();
         sp.$field = proto;
@@ -403,17 +402,17 @@ pub fn load_player_globals<'gc>(
     let object_proto = object::create_proto(activation);
     let fn_proto = function::create_proto(activation, object_proto);
 
-    let (mut object_constr, object_cinit) =
+    let (mut object_class, object_cinit) =
         object::fill_proto(activation, gs, object_proto, fn_proto)?;
-    let (mut function_constr, function_cinit) =
-        function::fill_proto(activation, gs, fn_proto, object_constr)?;
+    let (mut function_class, function_cinit) =
+        function::fill_proto(activation, gs, fn_proto, object_class)?;
 
-    let (mut class_constr, class_proto, class_cinit) =
-        class::create_class(activation, gs, object_constr, object_proto, fn_proto)?;
+    let (mut class_class, class_proto, class_cinit) =
+        class::create_class(activation, gs, object_class, object_proto, fn_proto)?;
 
-    dynamic_class(mc, object_constr, domain, script)?;
-    dynamic_class(mc, function_constr, domain, script)?;
-    dynamic_class(mc, class_constr, domain, script)?;
+    dynamic_class(mc, object_class, domain, script)?;
+    dynamic_class(mc, function_class, domain, script)?;
+    dynamic_class(mc, class_class, domain, script)?;
 
     // At this point, we need at least a partial set of system prototypes in
     // order to continue initializing the player. The rest of the prototypes
@@ -426,37 +425,32 @@ pub fn load_player_globals<'gc>(
     ));
 
     activation.context.avm2.system_classes = Some(SystemClasses::new(
-        object_constr,
-        function_constr,
-        class_constr,
+        object_class,
+        function_class,
+        class_class,
         ScriptObject::bare_object(mc),
     ));
 
     // We can now run all of the steps that would ordinarily be run
     // automatically had we not been so early in VM setup. This means things
-    // like installing constructor traits and running class initializers, which
+    // like installing class traits and running class initializers, which
     // usually are done in the associated constructor for `ClassObject`.
-    object_constr.install_traits(
+    object_class.install_traits(
         activation,
-        object_constr.as_class().unwrap().read().class_traits(),
+        object_class.as_class().unwrap().read().class_traits(),
     )?;
-    function_constr.install_traits(
+    function_class.install_traits(
         activation,
-        function_constr.as_class().unwrap().read().class_traits(),
+        function_class.as_class().unwrap().read().class_traits(),
     )?;
-    class_constr.install_traits(
+    class_class.install_traits(
         activation,
-        class_constr.as_class().unwrap().read().class_traits(),
+        class_class.as_class().unwrap().read().class_traits(),
     )?;
 
-    object_cinit.call(Some(object_constr), &[], activation, Some(object_constr))?;
-    function_cinit.call(
-        Some(function_constr),
-        &[],
-        activation,
-        Some(function_constr),
-    )?;
-    class_cinit.call(Some(class_constr), &[], activation, Some(class_constr))?;
+    object_cinit.call(Some(object_class), &[], activation, Some(object_class))?;
+    function_cinit.call(Some(function_class), &[], activation, Some(function_class))?;
+    class_cinit.call(Some(class_class), &[], activation, Some(class_class))?;
 
     avm2_system_class!(
         global,

@@ -24,14 +24,14 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let constr = this
-                .as_constr()
+            let class_object = this
+                .as_class_object()
                 .ok_or("Attempted to construct non-instance MovieClip")?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
             let new_do = MovieClip::new_with_avm2(
                 SwfSlice::empty(movie),
                 this,
-                constr,
+                class_object,
                 activation.context.gc_context,
             );
 
@@ -159,7 +159,7 @@ fn labels_for_scene<'gc>(
         start: scene_start,
         length: scene_length,
     } = scene;
-    let frame_label_constr = activation.context.avm2.classes().framelabel;
+    let frame_label_class = activation.context.avm2.classes().framelabel;
     let labels = mc.labels_in_range(*scene_start, scene_start + scene_length);
     let mut frame_labels = Vec::with_capacity(labels.len());
 
@@ -167,7 +167,7 @@ fn labels_for_scene<'gc>(
         let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
-        let frame_label = frame_label_constr.construct(activation, &args)?;
+        let frame_label = frame_label_class.construct(activation, &args)?;
 
         frame_labels.push(Some(frame_label.into()));
     }
@@ -216,14 +216,14 @@ pub fn current_scene<'gc>(
             length: mc.total_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
-        let scene_constr = activation.context.avm2.classes().scene;
+        let scene_class = activation.context.avm2.classes().scene;
         let args = [
             AvmString::new(activation.context.gc_context, scene_name).into(),
             scene_labels.into(),
             scene_length.into(),
         ];
 
-        let scene = scene_constr.construct(activation, &args)?;
+        let scene = scene_class.construct(activation, &args)?;
 
         return Ok(scene.into());
     }
@@ -254,14 +254,14 @@ pub fn scenes<'gc>(
         for scene in mc_scenes {
             let (scene_name, scene_length, scene_labels) =
                 labels_for_scene(activation, mc, &scene)?;
-            let scene_constr = activation.context.avm2.classes().scene;
+            let scene_class = activation.context.avm2.classes().scene;
             let args = [
                 AvmString::new(activation.context.gc_context, scene_name).into(),
                 scene_labels.into(),
                 scene_length.into(),
             ];
 
-            let scene = scene_constr.construct(activation, &args)?;
+            let scene = scene_class.construct(activation, &args)?;
 
             scene_objects.push(Some(scene.into()));
         }

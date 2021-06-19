@@ -106,20 +106,27 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// A `scope` of `None` indicates that the scope stack is empty.
     scope: Option<GcCell<'gc, Scope<'gc>>>,
 
-    /// The base class constructor that yielded the currently executing method.
+    /// The class that yielded the currently executing method.
     ///
-    /// This will not be available if this is not a method call.
-    base_constr: Option<Object<'gc>>,
+    /// This is used to maintain continuity when multiple methods supercall
+    /// into one another. For example, if a class method supercalls a
+    /// grandparent class's method, then this value will be the grandparent's
+    /// class object. Then, if we supercall again, we look up supermethods from
+    /// the great-grandparent class, preventing us from accidentally calling
+    /// the same method again.
+    ///
+    /// This will not be available outside of method, setter, or getter calls.
+    subclass_object: Option<Object<'gc>>,
 
-    /// The constructor of all objects returned from `newactivation`.
+    /// The class of all objects returned from `newactivation`.
     ///
     /// In method calls that call for an activation object, this will be
     /// configured as the anonymous class whose traits match the method's
     /// declared traits.
     ///
     /// If this is `None`, then the method did not ask for an activation object
-    /// and we will not allocate a constructor for one.
-    activation_constr: Option<Object<'gc>>,
+    /// and we will not allocate a class for one.
+    activation_class: Option<Object<'gc>>,
 
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
@@ -145,8 +152,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope: None,
-            base_constr: None,
-            activation_constr: None,
+            subclass_object: None,
+            activation_class: None,
             context,
         }
     }
@@ -186,8 +193,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_constr: None,
-            activation_constr: None,
+            subclass_object: None,
+            activation_class: None,
             context,
         })
     }
@@ -270,7 +277,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         user_arguments: &[Value<'gc>],
-        base_constr: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
@@ -304,22 +311,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             *write.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
         }
 
-        let activation_constr = if method.method().needs_activation {
+        let activation_class = if method.method().needs_activation {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
-            let activation_class = Class::for_activation_constr(
-                &mut dummy_activation,
-                translation_unit,
-                abc_method,
-                body,
-            )?;
-            let constr =
+            let activation_class =
+                Class::for_activation(&mut dummy_activation, translation_unit, abc_method, body)?;
+            let activation_class_object =
                 ClassObject::from_class(&mut dummy_activation, activation_class, None, scope)?;
 
             drop(dummy_activation);
 
-            Some(constr)
+            Some(activation_class_object)
         } else {
             None
         };
@@ -333,8 +336,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_constr,
-            activation_constr,
+            subclass_object,
+            activation_class,
             context,
         };
 
@@ -399,7 +402,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         context: UpdateContext<'a, 'gc, 'gc_context>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
-        base_constr: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     ) -> Result<Self, Error> {
         let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
@@ -412,8 +415,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
             scope,
-            base_constr,
-            activation_constr: None,
+            subclass_object,
+            activation_class: None,
             context,
         })
     }
@@ -450,17 +453,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         receiver: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error> {
-        let base_constr: Result<Object<'gc>, Error> = self
-            .base_constr()
-            .and_then(|c| c.base_class_constr())
+        let superclass_object: Result<Object<'gc>, Error> = self
+            .subclass_object()
+            .and_then(|c| c.superclass_object())
             .ok_or_else(|| {
                 "Attempted to call super constructor without a superclass."
                     .to_string()
                     .into()
             });
-        let base_constr = base_constr?;
+        let superclass_object = superclass_object?;
 
-        base_constr.call_native_init(Some(receiver), args, self, Some(base_constr))
+        superclass_object.call_native_init(Some(receiver), args, self, Some(superclass_object))
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -530,8 +533,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Get the base prototype of the object that the currently executing
     /// method was retrieved from, if one exists.
-    pub fn base_constr(&self) -> Option<Object<'gc>> {
-        self.base_constr
+    pub fn subclass_object(&self) -> Option<Object<'gc>> {
+        self.subclass_object
     }
 
     /// Retrieve a int from the current constant pool.
@@ -1046,15 +1049,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_constr = if let Some(c) = receiver.as_constr() {
-            c.find_base_constr_for_trait(&name)?
+        let superclass_object = if let Some(c) = receiver.as_class_object() {
+            c.find_class_for_trait(&name)?
         } else {
             None
         };
         let function = receiver
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
-        let value = function.call_strict(Some(receiver), &args, self, base_constr)?;
+        let value = function.call_strict(Some(receiver), &args, self, superclass_object)?;
 
         self.context.avm2.push(value);
 
@@ -1096,8 +1099,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let base_constr = if let Some(c) = receiver.as_constr() {
-            c.find_base_constr_for_trait(&name)?
+        let superclass_object = if let Some(c) = receiver.as_class_object() {
+            c.find_class_for_trait(&name)?
         } else {
             None
         };
@@ -1105,7 +1108,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
 
-        function.call_strict(Some(receiver), &args, self, base_constr)?;
+        function.call_strict(Some(receiver), &args, self, superclass_object)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1121,7 +1124,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method = self.table_method(method, index)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(self, method.into(), scope, None);
-        let value = function.call_strict(Some(receiver), &args, self, receiver.as_constr())?;
+        let value =
+            function.call_strict(Some(receiver), &args, self, receiver.as_class_object())?;
 
         self.context.avm2.push(value);
 
@@ -1143,17 +1147,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
 
-        let base_constr: Result<Object<'gc>, Error> = self
-            .base_constr()
-            .and_then(|bc| bc.base_class_constr())
+        let superclass_object: Result<Object<'gc>, Error> = self
+            .subclass_object()
+            .and_then(|bc| bc.superclass_object())
             .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_constr = base_constr?;
+        let superclass_object = superclass_object?;
 
-        let value = base_constr.call_instance_method(&name, Some(receiver), &args, self)?;
+        let value = superclass_object.call_instance_method(&name, Some(receiver), &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1175,17 +1179,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
 
-        let base_constr: Result<Object<'gc>, Error> = self
-            .base_constr()
-            .and_then(|bc| bc.base_class_constr())
+        let superclass_object: Result<Object<'gc>, Error> = self
+            .subclass_object()
+            .and_then(|bc| bc.superclass_object())
             .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_constr = base_constr?;
+        let superclass_object = superclass_object?;
 
-        base_constr.call_instance_method(&name, Some(receiver), &args, self)?;
+        superclass_object.call_instance_method(&name, Some(receiver), &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1316,17 +1320,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
 
-        let base_constr: Result<Object<'gc>, Error> = self
-            .base_constr()
-            .and_then(|bc| bc.base_class_constr())
+        let superclass_object: Result<Object<'gc>, Error> = self
+            .subclass_object()
+            .and_then(|bc| bc.superclass_object())
             .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_constr = base_constr?;
+        let superclass_object = superclass_object?;
 
-        let value = base_constr.call_instance_getter(&name, Some(object), self)?;
+        let value = superclass_object.call_instance_getter(&name, Some(object), self)?;
 
         self.context.avm2.push(value);
 
@@ -1347,17 +1351,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
 
-        let base_constr: Result<Object<'gc>, Error> = self
-            .base_constr()
-            .and_then(|bc| bc.base_class_constr())
+        let superclass_object: Result<Object<'gc>, Error> = self
+            .subclass_object()
+            .and_then(|bc| bc.superclass_object())
             .ok_or_else(|| {
                 "Attempted to call super method without a superclass."
                     .to_string()
                     .into()
             });
-        let base_constr = base_constr?;
+        let superclass_object = superclass_object?;
 
-        base_constr.call_instance_setter(&name, value, Some(object), self)?;
+        superclass_object.call_instance_setter(&name, value, Some(object), self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1576,8 +1580,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let instance = if let Some(activation_constr) = self.activation_constr {
-            activation_constr.construct(self, &[])?
+        let instance = if let Some(activation_class) = self.activation_class {
+            activation_class.construct(self, &[])?
         } else {
             ScriptObject::bare_object(self.context.gc_context)
         };

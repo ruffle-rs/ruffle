@@ -35,13 +35,13 @@ pub struct ClassObjectData<'gc> {
     ///
     /// If `None`, this class has no parent. In practice, this is only used for
     /// interfaces (at least by the AS3 compiler in Animate CC 2020.)
-    base_class_constr: Option<Object<'gc>>,
+    superclass_object: Option<Object<'gc>>,
 
     /// The instance constructor function
-    instance_constr: Executable<'gc>,
+    constructor: Executable<'gc>,
 
     /// The native instance constructor function
-    native_instance_constr: Executable<'gc>,
+    native_constructor: Executable<'gc>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -57,10 +57,10 @@ impl<'gc> ClassObject<'gc> {
     pub fn from_class(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
-        base_class_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        if let Some(base_class) = base_class_constr.and_then(|b| b.as_class()) {
+        if let Some(base_class) = superclass_object.and_then(|b| b.as_class()) {
             if base_class.read().is_final() {
                 return Err(format!(
                     "Base class {:?} is final and cannot be extended",
@@ -80,16 +80,16 @@ impl<'gc> ClassObject<'gc> {
 
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by a deriver, but instead should be regular objects
-        let mut class_proto = if let Some(mut base_class_constr) = base_class_constr {
-            let base_proto = base_class_constr
+        let mut class_proto = if let Some(mut superclass_object) = superclass_object {
+            let base_proto = superclass_object
                 .get_property(
-                    base_class_constr,
+                    superclass_object,
                     &QName::new(Namespace::public(), "prototype"),
                     activation,
                 )?
                 .coerce_to_object(activation)?;
             let derive = class.read().instance_deriver();
-            derive(base_class_constr, base_proto, activation)?
+            derive(superclass_object, base_proto, activation)?
         } else {
             ScriptObject::bare_object(activation.context.gc_context)
         };
@@ -97,20 +97,20 @@ impl<'gc> ClassObject<'gc> {
         let fn_proto = activation.avm2().prototypes().function;
 
         let class_read = class.read();
-        let instance_constr = Executable::from_method(
+        let constructor = Executable::from_method(
             class.read().instance_init(),
             scope,
             None,
             activation.context.gc_context,
         );
-        let native_instance_constr = Executable::from_method(
+        let native_constructor = Executable::from_method(
             class.read().native_instance_init(),
             scope,
             None,
             activation.context.gc_context,
         );
 
-        let mut constr: Object<'gc> = ClassObject(GcCell::allocate(
+        let mut class_object: Object<'gc> = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::base_new(
@@ -119,14 +119,14 @@ impl<'gc> ClassObject<'gc> {
                 ),
                 class,
                 scope,
-                base_class_constr,
-                instance_constr,
-                native_instance_constr,
+                superclass_object,
+                constructor,
+                native_constructor,
             },
         ))
         .into();
 
-        constr.install_slot(
+        class_object.install_slot(
             activation.context.gc_context,
             QName::new(Namespace::public(), "prototype"),
             0,
@@ -137,7 +137,7 @@ impl<'gc> ClassObject<'gc> {
             activation.context.gc_context,
             QName::new(Namespace::public(), "constructor"),
             0,
-            constr.into(),
+            class_object.into(),
             false,
         );
 
@@ -171,25 +171,29 @@ impl<'gc> ClassObject<'gc> {
         }
 
         if !interfaces.is_empty() {
-            constr.set_interfaces(activation.context.gc_context, interfaces);
+            class_object.set_interfaces(activation.context.gc_context, interfaces);
         }
 
-        constr.install_traits(activation, class_read.class_traits())?;
+        class_object.install_traits(activation, class_read.class_traits())?;
 
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();
-            let class_init_fn =
-                FunctionObject::from_method(activation, class_initializer, scope, Some(constr));
+            let class_init_fn = FunctionObject::from_method(
+                activation,
+                class_initializer,
+                scope,
+                Some(class_object),
+            );
 
             drop(class_read);
             class
                 .write(activation.context.gc_context)
                 .mark_class_initialized();
 
-            class_init_fn.call(Some(constr), &[], activation, None)?;
+            class_init_fn.call(Some(class_object), &[], activation, None)?;
         }
 
-        Ok(constr)
+        Ok(class_object)
     }
 
     /// Construct a builtin type from a Rust constructor and prototype.
@@ -208,17 +212,16 @@ impl<'gc> ClassObject<'gc> {
     /// `base_class` is allowed to be `None`, corresponding to a `null` value
     /// in the VM. This corresponds to no base class, and in practice appears
     /// to be limited to interfaces.
-    pub fn from_builtin_constr(
+    pub fn from_builtin_class(
         mc: MutationContext<'gc, '_>,
-        base_class_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
         class: GcCell<'gc, Class<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
-        let instance_constr =
-            Executable::from_method(class.read().instance_init(), scope, None, mc);
-        let native_instance_constr =
+        let constructor = Executable::from_method(class.read().instance_init(), scope, None, mc);
+        let native_constructor =
             Executable::from_method(class.read().native_instance_init(), scope, None, mc);
         let mut base: Object<'gc> = ClassObject(GcCell::allocate(
             mc,
@@ -229,9 +232,9 @@ impl<'gc> ClassObject<'gc> {
                 ),
                 class,
                 scope,
-                base_class_constr,
-                instance_constr,
-                native_instance_constr,
+                superclass_object,
+                constructor,
+                native_constructor,
             },
         ))
         .into();
@@ -252,7 +255,7 @@ impl<'gc> ClassObject<'gc> {
         );
 
         let class_initializer = class.read().class_init();
-        let class_constr = FunctionObject::from_method_and_proto(
+        let class_object = FunctionObject::from_method_and_proto(
             mc,
             class_initializer,
             scope,
@@ -260,7 +263,7 @@ impl<'gc> ClassObject<'gc> {
             Some(base),
         );
 
-        Ok((base, class_constr))
+        Ok((base, class_object))
     }
 }
 
@@ -289,15 +292,15 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr.clone();
+        let constructor = self.0.read().constructor.clone();
 
-        instance_constr.exec(
+        constructor.exec(
             receiver,
             arguments,
             activation,
-            base_constr,
+            superclass_object,
             self.into(),
             false,
         )
@@ -308,15 +311,15 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr.clone();
+        let constructor = self.0.read().constructor.clone();
 
-        instance_constr.exec(
+        constructor.exec(
             receiver,
             arguments,
             activation,
-            base_constr,
+            superclass_object,
             self.into(),
             true,
         )
@@ -327,15 +330,15 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let instance_constr = self.0.read().instance_constr.clone();
+        let constructor = self.0.read().constructor.clone();
 
-        instance_constr.exec(
+        constructor.exec(
             receiver,
             arguments,
             activation,
-            base_constr,
+            superclass_object,
             self.into(),
             true,
         )
@@ -346,15 +349,15 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let native_instance_constr = self.0.read().native_instance_constr.clone();
+        let native_constructor = self.0.read().native_constructor.clone();
 
-        native_instance_constr.exec(
+        native_constructor.exec(
             receiver,
             arguments,
             activation,
-            base_constr,
+            superclass_object,
             self.into(),
             true,
         )
@@ -367,20 +370,20 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class = self.as_class().ok_or("Cannot construct classless class!")?;
         let deriver = class.read().instance_deriver();
-        let constr: Object<'gc> = self.into();
+        let class_object: Object<'gc> = self.into();
         let prototype = self
             .get_property(
-                constr,
+                class_object,
                 &QName::new(Namespace::public(), "prototype"),
                 activation,
             )?
             .coerce_to_object(activation)?;
 
-        let mut instance = deriver(constr, prototype, activation)?;
+        let mut instance = deriver(class_object, prototype, activation)?;
 
-        instance.install_instance_traits(activation, constr)?;
+        instance.install_instance_traits(activation, class_object)?;
 
-        self.call_init(Some(instance), arguments, activation, Some(constr))?;
+        self.call_init(Some(instance), arguments, activation, Some(class_object))?;
 
         Ok(instance)
     }
@@ -394,7 +397,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     }
 
     /// Get the base class constructor of this object.
-    fn base_class_constr(self) -> Option<Object<'gc>> {
-        self.0.read().base_class_constr
+    fn superclass_object(self) -> Option<Object<'gc>> {
+        self.0.read().superclass_object
     }
 }

@@ -296,9 +296,9 @@ pub fn bytes<'gc>(
                     return Err("Error: The stage's loader info does not have a bytestream".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let ba_constr = activation.context.avm2.classes().bytearray;
+                    let ba_class = activation.context.avm2.classes().bytearray;
 
-                    let ba = ba_constr.construct(activation, &[])?;
+                    let ba = ba_class.construct(activation, &[])?;
                     let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
 
                     // First, write a fake header corresponding to an

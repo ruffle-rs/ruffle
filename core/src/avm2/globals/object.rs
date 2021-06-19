@@ -168,7 +168,7 @@ pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc
 /// not allocate an object to store either proto. Instead, you must allocate
 /// bare objects for both and let this function fill Object for you.
 ///
-/// This function returns both the class constructor and it's initializer
+/// This function returns both the class object and it's class initializer
 /// method, which must be called before user code runs.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -294,7 +294,7 @@ pub fn fill_proto<'gc>(
 
     let scope = Scope::push_scope(globals.get_scope(), globals, gc_context);
 
-    ClassObject::from_builtin_constr(
+    ClassObject::from_builtin_class(
         gc_context,
         None,
         object_class,

@@ -16,11 +16,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs array objects.
 pub fn array_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(ArrayObject(GcCell::allocate(
         activation.context.gc_context,
@@ -60,19 +60,18 @@ impl<'gc> ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         array: ArrayStorage<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let constr = activation.avm2().classes().array;
+        let class = activation.avm2().classes().array;
         let proto = activation.avm2().prototypes().array;
-        let base =
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
         let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))
         .into();
-        instance.install_instance_traits(activation, constr)?;
+        instance.install_instance_traits(activation, class)?;
 
-        constr.call_native_init(Some(instance), &[], activation, Some(constr))?;
+        class.call_native_init(Some(instance), &[], activation, Some(class))?;
 
         Ok(instance)
     }

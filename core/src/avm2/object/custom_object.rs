@@ -176,12 +176,12 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().base.as_class()
         }
 
-        fn as_constr(&self) -> Option<Object<'gc>> {
-            self.0.read().base.as_constr()
+        fn as_class_object(&self) -> Option<Object<'gc>> {
+            self.0.read().base.as_class_object()
         }
 
-        fn set_constr(self, mc: MutationContext<'gc, '_>, constr: Object<'gc>) {
-            self.0.write(mc).base.set_constr(constr);
+        fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+            self.0.write(mc).base.set_class_object(class_object);
         }
 
         fn install_method(

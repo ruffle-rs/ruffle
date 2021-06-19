@@ -97,7 +97,7 @@ impl<'gc> Executable<'gc> {
         unbound_receiver: Option<Object<'gc>>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_constr: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
         callee: Object<'gc>,
         error_on_too_many_arguments: bool,
     ) -> Result<Value<'gc>, Error> {
@@ -110,7 +110,7 @@ impl<'gc> Executable<'gc> {
                     activation.context.reborrow(),
                     scope,
                     receiver,
-                    base_constr,
+                    subclass_object,
                 )?;
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {
@@ -146,7 +146,7 @@ impl<'gc> Executable<'gc> {
                     bm.scope,
                     receiver,
                     arguments,
-                    base_constr,
+                    subclass_object,
                     callee,
                 )?;
 

@@ -14,11 +14,11 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance deriver that constructs ByteArray objects.
 pub fn bytearray_deriver<'gc>(
-    constr: Object<'gc>,
+    class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(constr));
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
 
     Ok(ByteArrayObject(GcCell::allocate(
         activation.context.gc_context,
