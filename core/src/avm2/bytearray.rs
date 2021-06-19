@@ -5,9 +5,9 @@ use gc_arena::Collect;
 use std::cell::Cell;
 use std::cmp;
 use std::convert::{TryFrom, TryInto};
+use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::io::{self, Read, SeekFrom};
-use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Clone, Collect, Debug)]
@@ -20,7 +20,7 @@ pub enum Endian {
 pub enum CompressionAlgorithm {
     Zlib,
     Deflate,
-    Lzma
+    Lzma,
 }
 
 impl Display for CompressionAlgorithm {
@@ -42,7 +42,7 @@ impl FromStr for CompressionAlgorithm {
             "zlib" => CompressionAlgorithm::Zlib,
             "deflate" => CompressionAlgorithm::Deflate,
             "lzma" => CompressionAlgorithm::Lzma,
-            _ => return Err("Unknown compression algorithm".into())
+            _ => return Err("Unknown compression algorithm".into()),
         })
     }
 }
@@ -110,7 +110,11 @@ impl ByteArrayStorage {
         }
         // SAFETY:
         // The storage is garunteed to be at least the size of new_len because we just resized it.
-        unsafe { self.bytes.get_unchecked_mut(offset..new_len).copy_from_slice(buf) }
+        unsafe {
+            self.bytes
+                .get_unchecked_mut(offset..new_len)
+                .copy_from_slice(buf)
+        }
         Ok(())
     }
 
@@ -120,7 +124,8 @@ impl ByteArrayStorage {
         let new_len = offset
             .checked_add(buf.len())
             .ok_or("RangeError: The length of this ByteArray is too big")?;
-        self.bytes.get_mut(offset..new_len)
+        self.bytes
+            .get_mut(offset..new_len)
             .ok_or("RangeError: The specified range is invalid")?
             .copy_from_slice(buf);
         Ok(())
@@ -142,7 +147,9 @@ impl ByteArrayStorage {
             #[cfg(feature = "lzma")]
             CompressionAlgorithm::Lzma => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)?,
             #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => return Err("Ruffle was not compiled with LZMA support".into()),
+            CompressionAlgorithm::Lzma => {
+                return Err("Ruffle was not compiled with LZMA support".into())
+            }
         }
         Ok(buffer)
     }
@@ -163,7 +170,9 @@ impl ByteArrayStorage {
             #[cfg(feature = "lzma")]
             CompressionAlgorithm::Lzma => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)?,
             #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => return Err("Ruffle was not compiled with LZMA support".into()),
+            CompressionAlgorithm::Lzma => {
+                return Err("Ruffle was not compiled with LZMA support".into())
+            }
         }
         Ok(buffer)
     }

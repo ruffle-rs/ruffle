@@ -651,7 +651,10 @@ pub fn compress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            let algorithm = args.get(0).unwrap_or(&"zlib".into()).coerce_to_string(activation)?;
+            let algorithm = args
+                .get(0)
+                .unwrap_or(&"zlib".into())
+                .coerce_to_string(activation)?;
             let buffer = bytearray.compress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
@@ -668,8 +671,12 @@ pub fn uncompress<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            let algorithm = args.get(0).unwrap_or(&"zlib".into()).coerce_to_string(activation)?;
-            let buffer = bytearray.decompress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            let algorithm = args
+                .get(0)
+                .unwrap_or(&"zlib".into())
+                .coerce_to_string(activation)?;
+            let buffer =
+                bytearray.decompress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }
