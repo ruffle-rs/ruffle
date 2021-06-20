@@ -136,7 +136,10 @@ pub fn unshift<'gc>(
         this.set_element(activation, i as i32, arg)?;
     }
 
-    this.set_length(activation, new_length)?;
+    if this.as_array_object().is_some() {
+        this.set_length(activation, new_length)?;
+    }
+
     Ok(new_length.into())
 }
 
@@ -163,7 +166,10 @@ pub fn shift<'gc>(
 
     this.delete_element(activation, length - 1);
 
-    this.set_length(activation, length - 1)?;
+    if this.as_array_object().is_some() {
+        this.set_length(activation, length - 1)?;
+    }
+
     Ok(first)
 }
 
@@ -172,15 +178,19 @@ pub fn pop<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_length = this.length(activation)?;
-    if old_length == 0 {
+    let length = this.length(activation)?;
+    if length == 0 {
         return Ok(Value::Undefined);
     }
 
-    let new_length = old_length - 1;
-    let last = this.get_element(activation, new_length);
-    this.delete_element(activation, new_length);
-    this.set_length(activation, new_length)?;
+    let last = this.get_element(activation, length - 1);
+
+    this.delete_element(activation, length - 1);
+
+    if this.as_array_object().is_some() {
+        this.set_length(activation, length - 1)?;
+    }
+
     Ok(last)
 }
 
