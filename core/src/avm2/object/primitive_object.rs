@@ -14,8 +14,8 @@ use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
-/// A class instance deriver that constructs primitive objects.
-pub fn primitive_deriver<'gc>(
+/// A class instance allocator that allocates primitive objects.
+pub fn primitive_allocator<'gc>(
     class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,

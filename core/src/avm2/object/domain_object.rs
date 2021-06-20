@@ -13,8 +13,8 @@ use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
 
-/// A class instance deriver that constructs AppDomain objects.
-pub fn appdomain_deriver<'gc>(
+/// A class instance allocator that allocates AppDomain objects.
+pub fn appdomain_allocator<'gc>(
     class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
@@ -136,6 +136,6 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        appdomain_deriver(constr, this, activation)
+        appdomain_allocator(constr, this, activation)
     }
 }

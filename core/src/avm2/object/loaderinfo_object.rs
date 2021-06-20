@@ -16,8 +16,8 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 use std::sync::Arc;
 
-/// A class instance deriver that constructs LoaderInfo objects.
-pub fn loaderinfo_deriver<'gc>(
+/// A class instance allocator that allocates LoaderInfo objects.
+pub fn loaderinfo_allocator<'gc>(
     class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,

@@ -13,8 +13,8 @@ use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-/// A class instance deriver that constructs Stage objects.
-pub fn stage_deriver<'gc>(
+/// A class instance allocator that allocates Stage objects.
+pub fn stage_allocator<'gc>(
     class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,

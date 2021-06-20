@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{primitive_deriver, Object};
+use crate::avm2::object::{primitive_allocator, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -51,7 +51,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
-    write.set_instance_deriver(primitive_deriver);
+    write.set_instance_allocator(primitive_allocator);
     write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<int native instance initializer>",

@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{appdomain_deriver, DomainObject, Object, TObject};
+use crate::avm2::object::{appdomain_allocator, DomainObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -154,7 +154,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
-    write.set_instance_deriver(appdomain_deriver);
+    write.set_instance_allocator(appdomain_allocator);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("currentDomain", current_domain),

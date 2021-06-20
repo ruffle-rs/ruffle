@@ -34,19 +34,19 @@ bitflags! {
 
 /// A function that can be used to allocate instances of a class.
 ///
-/// By default, the `implicit_deriver` is used, which attempts to use the base
-/// class's deriver, and defaults to `ScriptObject` otherwise. Custom derivers
-/// anywhere in the class inheritance chain can change the representation of
-/// all subtypes that use the implicit deriver.
+/// By default, the `implicit_allocator` is used, which attempts to use the base
+/// class's allocator, and defaults to `ScriptObject` otherwise. Custom
+/// allocators anywhere in the class inheritance chain can change the
+/// representation of all subclasses that use the implicit allocator.
 ///
-/// Parameters for the deriver are:
+/// Parameters for the allocator are:
 ///
 ///  * `class` - The class object that is being allocated. This must be the
 ///  current class (using a superclass will cause the wrong class to be
 ///  read for traits).
 ///  * `proto` - The prototype attached to the class object.
 ///  * `activation` - The current AVM2 activation.
-pub type DeriverFn = for<'gc> fn(
+pub type AllocatorFn = for<'gc> fn(
     Object<'gc>,
     Object<'gc>,
     &mut Activation<'_, 'gc, '_>,
@@ -54,34 +54,34 @@ pub type DeriverFn = for<'gc> fn(
 
 #[derive(Clone, Collect)]
 #[collect(require_static)]
-pub struct Deriver(pub DeriverFn);
+pub struct Allocator(pub AllocatorFn);
 
-impl fmt::Debug for Deriver {
+impl fmt::Debug for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Deriver")
+        f.debug_tuple("Allocator")
             .field(&"<native code>".to_string())
             .finish()
     }
 }
 
-/// The implicit deriver for new classes.
+/// The implicit allocator for new classes.
 ///
-/// This attempts to use the parent type's deriver, and if such a deriver does
-/// not exist, we default to `ScriptObject`.
-pub fn implicit_deriver<'gc>(
+/// This attempts to use the parent type's allocator, and if such an allocator
+/// does not exist, we default to allocating a `ScriptObject`.
+pub fn implicit_allocator<'gc>(
     mut class_object: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
     let mut base_class_object = Some(class_object);
     let mut base_class = class_object.as_class();
-    let mut instance_deriver = None;
+    let mut instance_allocator = None;
 
     while let (Some(b_class_object), Some(b_class)) = (base_class_object, base_class) {
-        let base_deriver = b_class.read().instance_deriver();
+        let base_allocator = b_class.read().instance_allocator();
 
-        if base_deriver as usize != implicit_deriver as usize {
-            instance_deriver = Some(base_deriver);
+        if base_allocator as usize != implicit_allocator as usize {
+            instance_allocator = Some(base_allocator);
             break;
         }
 
@@ -89,8 +89,8 @@ pub fn implicit_deriver<'gc>(
         base_class = base_class_object.and_then(|c| c.as_class());
     }
 
-    if let Some(base_deriver) = instance_deriver {
-        base_deriver(class_object, proto, activation)
+    if let Some(base_allocator) = instance_allocator {
+        base_allocator(class_object, proto, activation)
     } else {
         let base_proto = class_object
             .get_property(
@@ -128,8 +128,8 @@ pub struct Class<'gc> {
     /// The list of interfaces this class implements.
     interfaces: Vec<Multiname<'gc>>,
 
-    /// The instance deriver for this class.
-    instance_deriver: Deriver,
+    /// The instance allocator for this class.
+    instance_allocator: Allocator,
 
     /// The instance initializer for this class.
     ///
@@ -258,7 +258,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
-                instance_deriver: Deriver(implicit_deriver),
+                instance_allocator: Allocator(implicit_allocator),
                 instance_init,
                 native_instance_init,
                 instance_traits: Vec::new(),
@@ -354,7 +354,7 @@ impl<'gc> Class<'gc> {
                 attributes,
                 protected_namespace,
                 interfaces,
-                instance_deriver: Deriver(implicit_deriver),
+                instance_allocator: Allocator(implicit_allocator),
                 instance_init,
                 native_instance_init,
                 instance_traits: Vec::new(),
@@ -436,7 +436,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
-                instance_deriver: Deriver(implicit_deriver),
+                instance_allocator: Allocator(implicit_allocator),
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
@@ -708,14 +708,14 @@ impl<'gc> Class<'gc> {
         None
     }
 
-    /// Get this class's instance deriver.
-    pub fn instance_deriver(&self) -> DeriverFn {
-        self.instance_deriver.0
+    /// Get this class's instance allocator.
+    pub fn instance_allocator(&self) -> AllocatorFn {
+        self.instance_allocator.0
     }
 
-    /// Set this class's instance deriver.
-    pub fn set_instance_deriver(&mut self, deriver: DeriverFn) {
-        self.instance_deriver.0 = deriver;
+    /// Set this class's instance allocator.
+    pub fn set_instance_allocator(&mut self, alloc: AllocatorFn) {
+        self.instance_allocator.0 = alloc;
     }
 
     /// Get this class's instance initializer.

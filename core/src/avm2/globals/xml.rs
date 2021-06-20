@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{xml_deriver, Object};
+use crate::avm2::object::{xml_allocator, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -47,7 +47,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     );
 
     let mut write = class.write(mc);
-    write.set_instance_deriver(xml_deriver);
+    write.set_instance_allocator(xml_allocator);
 
     class
 }

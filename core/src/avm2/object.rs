@@ -37,22 +37,22 @@ mod script_object;
 mod stage_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::{array_deriver, ArrayObject};
-pub use crate::avm2::object::bytearray_object::{bytearray_deriver, ByteArrayObject};
+pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
+pub use crate::avm2::object::bytearray_object::{bytearray_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::{appdomain_deriver, DomainObject};
-pub use crate::avm2::object::event_object::{event_deriver, EventObject};
+pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::FunctionObject;
 pub use crate::avm2::object::loaderinfo_object::{
-    loaderinfo_deriver, LoaderInfoObject, LoaderStream,
+    loaderinfo_allocator, LoaderInfoObject, LoaderStream,
 };
-pub use crate::avm2::object::namespace_object::{namespace_deriver, NamespaceObject};
-pub use crate::avm2::object::primitive_object::{primitive_deriver, PrimitiveObject};
-pub use crate::avm2::object::regexp_object::{regexp_deriver, RegExpObject};
+pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
+pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
+pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
-pub use crate::avm2::object::stage_object::{stage_deriver, StageObject};
-pub use crate::avm2::object::xml_object::{xml_deriver, XmlObject};
+pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
+pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -824,7 +824,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// constructor is then expected to perform the following steps, in order:
     ///
     /// 1. Allocate the instance object. For ES4 classes, the class's instance
-    /// deriver is used to allocate the object. ES3-style classes use the
+    /// allocator is used to allocate the object. ES3-style classes use the
     /// prototype to derive instances.
     /// 2. Associate the instance object with the class's explicit `prototype`.
     /// 3. If the class has instance traits, install them at this time.

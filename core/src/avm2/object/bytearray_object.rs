@@ -12,8 +12,8 @@ use crate::impl_avm2_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
-/// A class instance deriver that constructs ByteArray objects.
-pub fn bytearray_deriver<'gc>(
+/// A class instance allocator that allocates ByteArray objects.
+pub fn bytearray_allocator<'gc>(
     class: Object<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,

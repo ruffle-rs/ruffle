@@ -79,7 +79,8 @@ impl<'gc> ClassObject<'gc> {
         }
 
         //TODO: Class prototypes are *not* instances of their class and should
-        //not be allocated by a deriver, but instead should be regular objects
+        //not be allocated by the class allocator, but instead should be
+        //regular objects
         let mut class_proto = if let Some(mut superclass_object) = superclass_object {
             let base_proto = superclass_object
                 .get_property(
@@ -88,8 +89,8 @@ impl<'gc> ClassObject<'gc> {
                     activation,
                 )?
                 .coerce_to_object(activation)?;
-            let derive = class.read().instance_deriver();
-            derive(superclass_object, base_proto, activation)?
+            let allocate = class.read().instance_allocator();
+            allocate(superclass_object, base_proto, activation)?
         } else {
             ScriptObject::bare_object(activation.context.gc_context)
         };
@@ -369,7 +370,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let class = self.as_class().ok_or("Cannot construct classless class!")?;
-        let deriver = class.read().instance_deriver();
+        let allocator = class.read().instance_allocator();
         let class_object: Object<'gc> = self.into();
         let prototype = self
             .get_property(
@@ -379,7 +380,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        let mut instance = deriver(class_object, prototype, activation)?;
+        let mut instance = allocator(class_object, prototype, activation)?;
 
         instance.install_instance_traits(activation, class_object)?;
 

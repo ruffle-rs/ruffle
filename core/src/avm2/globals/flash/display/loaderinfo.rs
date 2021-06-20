@@ -5,7 +5,7 @@ use crate::avm2::bytearray::Endian;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{loaderinfo_deriver, DomainObject, LoaderStream, Object, TObject};
+use crate::avm2::object::{loaderinfo_allocator, DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
@@ -416,7 +416,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
-    write.set_instance_deriver(loaderinfo_deriver);
+    write.set_instance_allocator(loaderinfo_allocator);
     write.set_native_instance_init(Method::from_builtin(
         native_instance_init,
         "<LoaderInfo native instance initializer>",
