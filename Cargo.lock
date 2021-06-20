@@ -191,9 +191,9 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitstream-io"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03539c739e37dab2c322ce07b1990089ca1fc7ad14b813e1538bf11bef98fe06"
+checksum = "1f5a101093baaea4d3684747b026ffae31b70666110bd1d46cfb28cb22be8bcc"
 
 [[package]]
 name = "bitvec"
