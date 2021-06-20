@@ -606,10 +606,7 @@ pub fn set_hscroll<'gc>(
 ) -> Result<(), Error<'gc>> {
     let hscroll_pixels = value.coerce_to_f64(activation)?;
     let clamped = hscroll_pixels.floor().clamp(0.0, this.maxhscroll());
-    this.set_hscroll(
-        clamped,
-        &mut activation.context,
-    );
+    this.set_hscroll(clamped, &mut activation.context);
     Ok(())
 }
 

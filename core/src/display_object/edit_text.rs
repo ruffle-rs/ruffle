@@ -14,7 +14,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
-use crate::font::{Glyph, TextRenderSettings, round_down_to_pixel};
+use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -154,7 +154,7 @@ pub struct EditTextData<'gc> {
     render_settings: TextRenderSettings,
 
     /// How many pixels right the text is offset by
-    hscroll: f64
+    hscroll: f64,
 }
 
 impl<'gc> EditText<'gc> {
@@ -837,7 +837,10 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base = round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels().max(0.0);
+        let base =
+            round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width())
+                .to_pixels()
+                .max(0.0);
 
         // input text boxes get extra space at the end
         if edit_text.is_editable {
@@ -845,7 +848,6 @@ impl<'gc> EditText<'gc> {
         } else {
             base
         }
-
     }
 
     /// Render a layout box, plus its children.
@@ -1600,7 +1602,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
             matrix: Matrix {
-                tx: Twips::from_pixels(Self::INTERNAL_PADDING) - Twips::from_pixels(edit_text.hscroll),
+                tx: Twips::from_pixels(Self::INTERNAL_PADDING)
+                    - Twips::from_pixels(edit_text.hscroll),
                 ty: Twips::from_pixels(Self::INTERNAL_PADDING),
                 ..Default::default()
             },
