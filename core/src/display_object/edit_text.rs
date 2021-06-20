@@ -14,7 +14,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
-use crate::font::{Glyph, TextRenderSettings};
+use crate::font::{Glyph, TextRenderSettings, round_down_to_pixel};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -826,10 +826,11 @@ impl<'gc> EditText<'gc> {
         )
     }
 
+    /// How far the text can be scrolled right, in pixels.
     pub fn maxhscroll(self) -> f64 {
         let edit_text = self.0.read();
 
-        (edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels()
+        round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels().max(0.0)
     }
 
     /// Render a layout box, plus its children.

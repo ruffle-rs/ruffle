@@ -605,7 +605,7 @@ pub fn set_hscroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let hscroll_pixels = value.coerce_to_f64(activation)?;
-    let clamped = hscroll_pixels.max(0.0).min(this.maxhscroll());
+    let clamped = hscroll_pixels.floor().max(0.0).min(this.maxhscroll());
     this.set_hscroll(
         clamped,
         &mut activation.context,
@@ -617,5 +617,5 @@ pub fn maxhscroll<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.maxhscroll().max(0.0).floor().into())
+    Ok(this.maxhscroll().into())
 }
