@@ -4,7 +4,6 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
@@ -123,7 +122,7 @@ impl<'gc> ScriptObject<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
-    fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
         if let Some(Property::Stored { value, .. }) = self
             .0
             .read()
@@ -140,7 +139,7 @@ impl<'gc> ScriptObject<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, but still might
     /// call to watchers.
-    fn set_data(
+    pub fn set_data(
         &self,
         name: &str,
         value: Value<'gc>,
@@ -546,11 +545,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        if let Value::Number(old_length) = self.get_data("length", activation) {
-            for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
-                self.delete_element(activation, i);
-            }
-        }
         self.set_data("length", new_length.into(), activation)
     }
 

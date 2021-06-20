@@ -1,5 +1,6 @@
 use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::ecma_conversions::f64_to_wrapping_i32;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
@@ -281,9 +282,14 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn set_length(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        length: i32,
+        new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().set_length(activation, length)
+        if let Value::Number(old_length) = self.0.read().get_data("length", activation) {
+            for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
+                self.delete_element(activation, i);
+            }
+        }
+        self.0.read().set_length(activation, new_length)
     }
 
     fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
