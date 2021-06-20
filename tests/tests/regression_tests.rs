@@ -605,6 +605,7 @@ swf_tests_approx! {
     (edittext_tab_stops, "avm1/edittext_tab_stops", 1, epsilon = 5.0),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
     (edittext_underline, "avm1/edittext_underline", 1, epsilon = 4.0),
+    (edittext_hscroll, "avm1/edittext_hscroll", 1, epsilon = 3.0),
     (as3_coerce_string_precision, "avm2/coerce_string_precision", 1, max_relative = 30.0 * f64::EPSILON),
     (as3_divide, "avm2/divide", 1, epsilon = 0.0), // TODO: Discrepancy in float formatting.
     (as3_math, "avm2/math", 1, max_relative = 30.0 * f64::EPSILON),
