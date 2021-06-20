@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "Core bindings for Ruffle",
     "license": "(MIT OR Apache-2.0)",
+    "type": "module",
     "main": "./pkg/index.js",
     "types": "./pkg/index.d.ts",
     "files": [
@@ -16,7 +17,7 @@
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && [[ $GITHUB_ACTIONS != true ]]",
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
-        "test": "mocha -r esm -r ts-node/register test/**.ts"
+        "test": "mocha -- --experimental-specifier-resolution=node"
     },
     "devDependencies": {
         "@types/chai": "^4.2.19",
@@ -27,7 +28,7 @@
         "eslint": "^7.29.0",
         "eslint-plugin-jsdoc": "^35.3.2",
         "esm": "^3.2.25",
-        "mocha": "^8.4.0",
+        "mocha": "^9.0.1",
         "replace-in-file": "^6.2.0",
         "ts-node": "^10.0.0",
         "typedoc": "^0.21.0",
