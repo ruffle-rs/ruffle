@@ -17,6 +17,7 @@ pub enum Endian {
     Little,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompressionAlgorithm {
     Zlib,
     Deflate,
