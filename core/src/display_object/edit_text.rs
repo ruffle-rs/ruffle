@@ -152,6 +152,9 @@ pub struct EditTextData<'gc> {
 
     /// Which rendering engine this text field will use.
     render_settings: TextRenderSettings,
+
+    /// How many pixels right the text is offset by
+    hscroll: f64
 }
 
 impl<'gc> EditText<'gc> {
@@ -281,6 +284,7 @@ impl<'gc> EditText<'gc> {
                 selection: None,
                 has_focus: false,
                 render_settings: Default::default(),
+                hscroll: 0.0,
             },
         ));
 
@@ -822,6 +826,12 @@ impl<'gc> EditText<'gc> {
         )
     }
 
+    pub fn maxhscroll(self) -> f64 {
+        let edit_text = self.0.read();
+
+        (edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels()
+    }
+
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let box_transform: Transform = lbox.bounds().origin().into();
@@ -1093,6 +1103,14 @@ impl<'gc> EditText<'gc> {
         settings: TextRenderSettings,
     ) {
         self.0.write(gc_context).render_settings = settings
+    }
+
+    pub fn hscroll(self) -> f64 {
+        self.0.read().hscroll
+    }
+
+    pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).hscroll = hscroll;
     }
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
@@ -1566,7 +1584,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
             matrix: Matrix {
-                tx: Twips::from_pixels(Self::INTERNAL_PADDING),
+                tx: Twips::from_pixels(Self::INTERNAL_PADDING) - Twips::from_pixels(edit_text.hscroll),
                 ty: Twips::from_pixels(Self::INTERNAL_PADDING),
                 ..Default::default()
             },
