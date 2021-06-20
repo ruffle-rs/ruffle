@@ -832,7 +832,20 @@ impl<'gc> EditText<'gc> {
     pub fn maxhscroll(self) -> f64 {
         let edit_text = self.0.read();
 
-        round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels().max(0.0)
+        // word-wrapped text can't be scrolled
+        if edit_text.is_word_wrap {
+            return 0.0;
+        }
+
+        let base = round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width()).to_pixels().max(0.0);
+
+        // input text boxes get extra space at the end
+        if edit_text.is_editable {
+            base + 41.0
+        } else {
+            base
+        }
+
     }
 
     /// Render a layout box, plus its children.
