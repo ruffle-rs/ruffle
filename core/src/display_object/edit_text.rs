@@ -772,6 +772,8 @@ impl<'gc> EditText<'gc> {
 
         edit_text.layout = new_layout;
         edit_text.intrinsic_bounds = intrinsic_bounds;
+        // reset scroll
+        edit_text.hscroll = 0.0;
 
         match autosize {
             AutoSizeMode::None => {}
