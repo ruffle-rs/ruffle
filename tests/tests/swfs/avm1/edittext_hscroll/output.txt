@@ -11,8 +11,8 @@
 6
 // title_txt.hscroll = -10
 0
-// title_txt.hscroll = 10
-6
+// title_txt.hscroll = 3
+3
 // title_txt.hscroll = 100
 6
 // title_txt.hscroll = null
