@@ -377,7 +377,7 @@ impl<'a> ShapeConverter<'a> {
     }
 
     fn into_commands(mut self) -> Vec<DrawPath<'a>> {
-        // as u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
+        // As u32 is okay because SWF has a max of 65536 fills (TODO: should be u16?)
         let mut num_fill_styles = self.fill_styles.len() as u32;
         let mut num_line_styles = self.line_styles.len() as u32;
         while let Some(record) = self.iter.next() {
@@ -855,7 +855,7 @@ pub fn shape_hit_test(
     winding & 0b1 != 0
 }
 
-/// Test whether the given point is contained with in the paths specified by the draw commands.
+/// Test whether the given point is contained within the paths specified by the draw commands.
 pub fn draw_command_fill_hit_test(
     commands: &[DrawCommand],
     (point_x, point_y): (Twips, Twips),
@@ -886,7 +886,7 @@ pub fn draw_command_fill_hit_test(
     winding & 0b1 != 0
 }
 
-/// Test whether the given point is contained with in the strokes specified by the draw commands.
+/// Test whether the given point is contained within the strokes specified by the draw commands.
 /// local_matrix is used to calculate the minimum stroke width.
 pub fn draw_command_stroke_hit_test(
     commands: &[DrawCommand],

@@ -32,7 +32,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
-/// `Player` crates this when it begins a tick and passes it through the call stack to
+/// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
 pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The queue of actions that will be run after the display list updates.
@@ -53,7 +53,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// variables.
     pub player_version: u8,
 
-    /// Requests a that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
+    /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'a mut bool,
 
     /// The root SWF file.
@@ -400,10 +400,10 @@ pub enum ActionType<'gc> {
     /// Normal frame or event actions.
     Normal { bytecode: SwfSlice },
 
-    /// AVM1 initialize clip event
+    /// AVM1 initialize clip event.
     Initialize { bytecode: SwfSlice },
 
-    /// Construct a movie with a custom class or on(construct) events
+    /// Construct a movie with a custom class or on(construct) events.
     Construct {
         constructor: Option<Avm1Object<'gc>>,
         events: Vec<SwfSlice>,
@@ -416,7 +416,7 @@ pub enum ActionType<'gc> {
         args: Vec<Avm1Value<'gc>>,
     },
 
-    /// A system listener method,
+    /// A system listener method.
     NotifyListeners {
         listener: &'static str,
         method: &'static str,

@@ -23,7 +23,7 @@ pub fn f64_to_string(n: f64) -> Cow<'static, str> {
         }
         Cow::Owned(s)
     } else if n == 0.0 {
-        // As of Rust nightly 4/13, Rust can returns an unwated "-0" for f64, which Flash doesn't want.
+        // As of Rust nightly 4/13, Rust can return "-0" for f64, which Flash doesn't want.
         Cow::Borrowed("0")
     } else {
         // Normal number.
@@ -31,7 +31,7 @@ pub fn f64_to_string(n: f64) -> Cow<'static, str> {
     }
 }
 
-/// Converts an `f64` to an `u16` with ECMAScript `ToUInt16` wrapping behavior.
+/// Converts an `f64` to a `u16` with ECMAScript `ToUInt16` wrapping behavior.
 /// The value will be wrapped modulo 2^16.
 pub fn f64_to_wrapping_u16(n: f64) -> u16 {
     if !n.is_finite() {
@@ -47,7 +47,7 @@ pub fn f64_to_wrapping_i16(n: f64) -> i16 {
     f64_to_wrapping_u16(n) as i16
 }
 
-/// Converts an `f64` to an `u32` with ECMAScript `ToUInt32` wrapping behavior.
+/// Converts an `f64` to a `u32` with ECMAScript `ToUInt32` wrapping behavior.
 /// The value will be wrapped modulo 2^32.
 #[allow(clippy::unreadable_literal)]
 pub fn f64_to_wrapping_u32(n: f64) -> u32 {
