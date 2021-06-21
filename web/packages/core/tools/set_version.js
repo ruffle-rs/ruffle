@@ -1,5 +1,5 @@
-import replace from "replace-in-file";
-import childProcess from "child_process";
+const replace = require("replace-in-file");
+const childProcess = require("child_process");
 
 const version_number = process.env.npm_package_version;
 

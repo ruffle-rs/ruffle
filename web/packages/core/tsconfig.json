@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "module": "esnext",
+        "module": "commonjs",
         "moduleResolution": "node",
         "outDir": "pkg",
         "target": "es6",
