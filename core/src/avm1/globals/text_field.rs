@@ -604,9 +604,10 @@ pub fn set_hscroll<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let hscroll_pixels = value.coerce_to_f64(activation)?;
-    let clamped = hscroll_pixels.floor().clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, &mut activation.context);
+    // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
+    let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
+    let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
+    this.set_hscroll(clamped.into(), &mut activation.context);
     Ok(())
 }
 
