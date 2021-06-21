@@ -1,42 +1,42 @@
 {
     "settings_ruffle_enable": {
-        "message": "Flash tartalom lejátszása Ruffle-el"
+        "message": "Flash tartalom lejátszása Ruffle-lel"
     },
     "settings_page_ignore_optout": {
-        "message": "Flash tartalom lejátszása azokon az oldalakon is Ruffle-el, amik nem akarják"
+        "message": "Flash tartalom lejátszása Ruffle-lel azon oldalakon is, amik nem akarják azt"
     },
     "settings_ignore_optout": {
-        "message": "Ignoráld a weboldal kompatibilitásos hibajelzéseit"
+        "message": "Eltekintés a weboldalak kompatibilitási figyelmeztetéseitől"
     },
     "status_init": {
-        "message": "Jelenlegi oldal olvasása…"
+        "message": "Jelenlegi fül olvasása…"
     },
     "status_no_tabs": {
-        "message": "Nincs aktív oldal."
+        "message": "Nincs aktív fül."
     },
     "status_tabs_error": {
-        "message": "Hiba történt az oldal keresése közben."
+        "message": "Hiba történt a jelenlegi fül keresése közben."
     },
     "status_message_init": {
-        "message": "Ruffle státuszának keresése…"
+        "message": "A Ruffle állapotának ellenőrzése a jelenlegi fülön…"
     },
     "status_result_running": {
-        "message": "Ruffle betöltve és futtatja a Flash tartalmat az oldalon."
+        "message": "A Ruffle be van töltve és futtat Flash tartalmat a jelenlegi fülön."
     },
     "status_result_optout": {
-        "message": "Ruffle nincs betöltve, mivel az oldal nem jelezte magát kompatibilisnek."
+        "message": "A Ruffle nincs betöltve, mivel az oldal nem kompatibilisnek jelezte magát."
     },
     "status_result_disabled": {
-        "message": "A felhasználó kikapcsolta Ruffle-t, ezért nem töltött be a program."
+        "message": "A Ruffle nem töltődött be, mert a felhasználó kikapcsolta."
     },
     "status_result_error": {
-        "message": "Hiba történt Ruffle-el az oldalon."
+        "message": "Hiba történt a Ruffle-lel a jelenlegi fülön."
     },
     "status_result_protected": {
-        "message": "Ruffle nem tud oldalakat betölteni védett böngészőkben."
+        "message": "A Ruffle nem tud betöltődni védett böngészőlapokon."
     },
     "action_reload": {
-        "message": "Töltsd be újra az oldalt, hogy mentsd a beállításokat."
+        "message": "Töltsd újra a lapot, hogy mentsd a beállításokat."
     },
     "open_settings_page": {
         "message": "Beállítások megnyitása"
@@ -45,7 +45,7 @@
         "message": "Beállítások"
     },
     "description": {
-        "message": "Visszateszi Flasht a webre, mert oda való."
+        "message": "Visszateszi a Flasht a webre, ahova való."
     },
     "save_settings": {
         "message": "Beállítások mentése"
