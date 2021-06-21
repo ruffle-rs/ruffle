@@ -93,7 +93,7 @@ pub struct Avm1<'gc> {
     /// The global object.
     globals: Object<'gc>,
 
-    /// System builtins that we use internally to construct new objects.
+    /// System built-ins that we use internally to construct new objects.
     prototypes: globals::SystemPrototypes<'gc>,
 
     /// Cached functions for the AsBroadcaster
@@ -533,7 +533,7 @@ fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     }
 }
 
-/// Starts draggining this display object, making it follow the cursor.
+/// Starts dragging this display object, making it follow the cursor.
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
     display_object: DisplayObject<'gc>,

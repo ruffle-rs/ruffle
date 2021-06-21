@@ -90,7 +90,7 @@ pub struct DisplayObjectBase<'gc> {
     /// The display object we are currently masking.
     maskee: Option<DisplayObject<'gc>>,
 
-    /// Bit flags for various display object properites.
+    /// Bit flags for various display object properties.
     flags: DisplayObjectFlags,
 }
 
@@ -559,7 +559,7 @@ pub trait TDisplayObject<'gc>:
         let mut matrix = *self.matrix();
         while let Some(display_object) = node {
             // TODO: We don't want to include the stage transform because it includes the scale
-            // mode and alignemnt transform, but the AS APIs expect "global" to be relative to the
+            // mode and alignment transform, but the AS APIs expect "global" to be relative to the
             // Stage, not final view coordinates.
             // I suspect we want this to include the stage transform eventually.
             if display_object.as_stage().is_some() {
@@ -972,7 +972,7 @@ pub trait TDisplayObject<'gc>:
         self.run_frame(context);
     }
 
-    /// Emit an `frameConstructed` event on this DisplayObject and any children it
+    /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
@@ -1141,11 +1141,11 @@ pub trait TDisplayObject<'gc>:
     }
 
     fn object(&self) -> Avm1Value<'gc> {
-        Avm1Value::Undefined // todo: impl for every type and delete this fallback
+        Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
-        Avm2Value::Undefined // todo: see above
+        Avm2Value::Undefined // TODO: See above.
     }
 
     fn set_object2(&mut self, _mc: MutationContext<'gc, '_>, _to: Avm2Object<'gc>) {}
@@ -1225,7 +1225,7 @@ pub trait TDisplayObject<'gc>:
         true
     }
 
-    /// The cursor to use when this object is the hovered element under a mouse
+    /// The cursor to use when this object is the hovered element under a mouse.
     fn mouse_cursor(&self) -> MouseCursor {
         MouseCursor::Hand
     }
@@ -1701,7 +1701,7 @@ bitflags! {
     }
 }
 
-/// Represents the sound transfomr of sounds played inside a Flash MovieClip.
+/// Represents the sound transform of sounds played inside a Flash MovieClip.
 /// Every value is a percentage (0-100), but out of range values are allowed.
 /// In AVM1, this is returned by `Sound.getTransform`.
 /// In AVM2, this is returned by `Sprite.soundTransform`.

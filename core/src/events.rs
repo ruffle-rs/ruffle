@@ -88,7 +88,7 @@ impl ClipEvent {
             | ClipEventFlag::RELEASE_OUTSIDE.bits(),
     );
 
-    /// Returns the `swf::ClipEventFlag` cooresponding to this event type.
+    /// Returns the `swf::ClipEventFlag` corresponding to this event type.
     pub const fn flag(self) -> ClipEventFlag {
         match self {
             ClipEvent::Construct => ClipEventFlag::CONSTRUCT,

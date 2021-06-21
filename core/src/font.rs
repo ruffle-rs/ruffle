@@ -53,7 +53,7 @@ impl EvalParameters {
         }
     }
 
-    /// Get the height the font would be evaluated at.
+    /// Get the height that the font would be evaluated at.
     pub fn height(&self) -> Twips {
         self.height
     }

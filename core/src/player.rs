@@ -575,7 +575,7 @@ impl Player {
                 ActivationIdentifier::root("[ContextMenu]"),
             );
 
-            // TODO: this should use a pointed display object with `.menu`
+            // TODO: This should use a pointed display object with `.menu`
             let menu_object = {
                 let dobj = activation.context.stage.root_clip();
                 if let Value::Object(obj) = dobj.object() {
@@ -656,7 +656,7 @@ impl Player {
         // currently doesn't allow `this` to be a Value (#843).
         let undefined = Value::Undefined.coerce_to_object(&mut activation);
 
-        // TODO: remember to also change the first arg
+        // TODO: Remember to also change the first arg
         // when we support contextmenu on non-root-movie
         let params = vec![root_clip.object(), Value::Object(item)];
 

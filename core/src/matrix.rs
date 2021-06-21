@@ -263,13 +263,13 @@ mod tests {
         }
     }
 
-    // Identity matrix inverted should be unchanged
+    // Identity matrix inverted should be unchanged.
     test_invert!(
         invert_identity_matrix,
         (Matrix::default(), Matrix::default())
     );
 
-    // Standard test cases; there's nothing special about these matrices
+    // Standard test cases; there's nothing special about these matrices.
     test_invert!(
         invert_matrices,
         (
@@ -346,7 +346,7 @@ mod tests {
         )
     );
 
-    // Anything multiplied by the identity matrix should be unchanged
+    // Anything multiplied by the identity matrix should be unchanged.
     test_multiply!(
         multiply_identity_matrix,
         (Matrix::default(), Matrix::default(), Matrix::default()),
@@ -390,7 +390,7 @@ mod tests {
         )
     );
 
-    // General test cases for matrix multiplication
+    // General test cases for matrix multiplication.
     test_multiply!(
         multiply_matrices,
         (
@@ -525,7 +525,7 @@ mod tests {
         )
     );
 
-    // Twips multiplied by the identity/default matrix should be unchanged
+    // Twips multiplied by the identity/default matrix should be unchanged.
     test_multiply_twips!(
         multiply_twips_identity_matrix,
         (
@@ -550,7 +550,7 @@ mod tests {
         )
     );
 
-    // multiply by translate matrices; values should be shifted
+    // Multiply by translate matrices; values should be shifted.
     test_multiply_twips!(
         multiply_twips_translate,
         (
@@ -579,7 +579,7 @@ mod tests {
         )
     );
 
-    // multiply by scalar matrices; values should be scaled up/down
+    // Multiply by scalar matrices; values should be scaled up/down.
     test_multiply_twips!(
         multiply_twips_scale,
         (
@@ -632,7 +632,7 @@ mod tests {
         )
     );
 
-    // multiply by rotation matrices; values should be rotated around origin
+    // Multiply by rotation matrices; values should be rotated around origin.
     test_multiply_twips!(
         multiply_twips_rotation,
         (
@@ -697,11 +697,11 @@ mod tests {
         )
     );
 
-    // Testing transformation matrices that have more than 1 translation applied
+    // Testing transformation matrices that have more than 1 translation applied.
     test_multiply_twips!(
         multiply_twips_complex,
         (
-            // result of scaling by 3 * rotation by 45 degrees
+            // Result of scaling by 3 * rotation by 45 degrees
             Matrix {
                 a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
                 c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
@@ -714,7 +714,7 @@ mod tests {
             (Twips::new(424), Twips::ZERO)
         ),
         (
-            // result of translating by (-5, 5) * rotation by 45 degrees
+            // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
                 a: 3.0 * f32::cos(std::f32::consts::FRAC_PI_4),
                 c: 3.0 * f32::sin(std::f32::consts::FRAC_PI_4),
@@ -727,7 +727,7 @@ mod tests {
             (Twips::new(419), Twips::new(5))
         ),
         (
-            // result of rotation by 45 degrees * translating by (-5, 5)
+            // Result of rotation by 45 degrees * translating by (-5, 5)
             Matrix {
                 a: f32::cos(std::f32::consts::FRAC_PI_4),
                 c: f32::sin(std::f32::consts::FRAC_PI_4),
@@ -740,7 +740,7 @@ mod tests {
             (Twips::new(136), Twips::new(5))
         ),
         (
-            // result of translating by (-5, 5) * rotation by 45 degrees
+            // Result of translating by (-5, 5) * rotation by 45 degrees
             Matrix {
                 a: f32::cos(std::f32::consts::FRAC_PI_4),
                 c: f32::sin(std::f32::consts::FRAC_PI_4),
