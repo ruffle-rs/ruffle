@@ -122,8 +122,6 @@ impl UiBackend for WebUiBackend {
 /// Return `None` if there is no matching Flash key code.
 pub fn web_to_ruffle_key_code(key_code: &str) -> Option<KeyCode> {
     Some(match key_code {
-        "MouseLeft" => KeyCode::MouseLeft,
-        "MouseRight" => KeyCode::MouseRight,
         "Backspace" => KeyCode::Backspace,
         "Tab" => KeyCode::Tab,
         "Enter" => KeyCode::Return,
