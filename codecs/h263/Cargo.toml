@@ -1,0 +1,12 @@
+[package]
+name = "ruffle_codec_h263"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+bitflags = "1.2.1"
+thiserror = "1.0"
+num-traits = "0.2.12"
+lazy_static = "1.4.0"

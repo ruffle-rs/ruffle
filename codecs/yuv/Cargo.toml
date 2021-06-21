@@ -1,0 +1,6 @@
+[package]
+name = "ruffle_codec_yuv"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
