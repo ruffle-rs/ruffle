@@ -165,9 +165,9 @@ impl ClipEvent {
 /// Flash virtual keycode.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, FromPrimitive, Hash)]
 pub enum KeyCode {
-    MouseLeft = 0,
-    MouseRight = 1,
-    Unknown = 2,
+    Unknown = 0,
+    MouseLeft = 1,
+    MouseRight = 2,
     Backspace = 8,
     Tab = 9,
     Return = 13,
