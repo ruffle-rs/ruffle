@@ -569,7 +569,26 @@ impl Ruffle {
                             y: f64::from(js_event.offset_y()) * device_pixel_ratio,
                         };
                         let _ = instance.with_core_mut(|core| {
+                            let ui = if let Some(ui) =
+                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
+                            {
+                                ui
+                            } else {
+                                return;
+                            };
+                            ui.insert_keydown(KeyCode::MouseLeft);
                             core.handle_event(event);
+                        });
+                    } else if js_event.button() == 2 {
+                        let _ = instance.with_core_mut(|core| {
+                            let ui = if let Some(ui) =
+                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
+                            {
+                                ui
+                            } else {
+                                return;
+                            };
+                            ui.insert_keydown(KeyCode::MouseRight);
                         });
                     }
 
@@ -640,7 +659,26 @@ impl Ruffle {
                             y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
                         };
                         let _ = instance.with_core_mut(|core| {
+                            let ui = if let Some(ui) =
+                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
+                            {
+                                ui
+                            } else {
+                                return;
+                            };
+                            ui.remove_keydown(KeyCode::MouseLeft);
                             core.handle_event(event);
+                        });
+                    } else if js_event.button() == 2 {
+                        let _ = instance.with_core_mut(|core| {
+                            let ui = if let Some(ui) =
+                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
+                            {
+                                ui
+                            } else {
+                                return;
+                            };
+                            ui.remove_keydown(KeyCode::MouseRight);
                         });
                     }
 

@@ -37,6 +37,7 @@ use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
 
+use ruffle_core::events::KeyCode;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
@@ -447,20 +448,43 @@ impl App {
                                 ..
                             } => {
                                 let mut player_lock = player.lock().unwrap();
+                                let ui = player_lock
+                                    .ui_mut()
+                                    .downcast_mut::<ui::DesktopUiBackend>()
+                                    .unwrap();
                                 let event = if pressed == ElementState::Pressed {
+                                    ui.insert_keydown(KeyCode::MouseLeft);
                                     ruffle_core::PlayerEvent::MouseDown {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
                                     }
                                 } else {
+                                    ui.remove_keydown(KeyCode::MouseLeft);
                                     ruffle_core::PlayerEvent::MouseUp {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
                                     }
                                 };
+
                                 player_lock.handle_event(event);
                                 if player_lock.needs_render() {
                                     window.request_redraw();
+                                }
+                            }
+                            WindowEvent::MouseInput {
+                                button: MouseButton::Right,
+                                state: pressed,
+                                ..
+                            } => {
+                                let mut player_lock = player.lock().unwrap();
+                                let ui = player_lock
+                                    .ui_mut()
+                                    .downcast_mut::<ui::DesktopUiBackend>()
+                                    .unwrap();
+                                if pressed == ElementState::Pressed {
+                                    ui.insert_keydown(KeyCode::MouseRight);
+                                } else {
+                                    ui.remove_keydown(KeyCode::MouseRight);
                                 }
                             }
                             WindowEvent::MouseWheel { delta, .. } => {
