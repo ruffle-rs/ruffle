@@ -94,7 +94,6 @@ impl ByteArrayStorage {
             .get(offset..)
             .and_then(|bytes| bytes.get(..amnt))
             .ok_or_else(|| "EOFError: Reached EOF".into())
-
     }
 
     /// Write bytes at any offset in the ByteArray

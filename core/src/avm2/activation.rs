@@ -2569,9 +2569,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        usize::try_from(address)
-            .map_err(|_| "RangeError: The specified range is invalid".into())
-            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2586,9 +2586,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        usize::try_from(address)
-            .map_err(|_| "RangeError: The specified range is invalid".into())
-            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2603,9 +2603,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        usize::try_from(address)
-            .map_err(|_| "RangeError: The specified range is invalid".into())
-            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2620,9 +2620,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        usize::try_from(address)
-            .map_err(|_| "RangeError: The specified range is invalid".into())
-            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2637,9 +2637,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        usize::try_from(address)
-            .map_err(|_| "RangeError: The specified range is invalid".into())
-            .and_then(|addr| dm.write_at_nongrowing(&val.to_le_bytes(), addr))?;
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2655,7 +2655,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = dm.get(address);
 
         if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(val as i32));
+            self.context.avm2.push(val);
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2672,9 +2672,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.read_at(2, address)?;
-        self.context.avm2.push(Value::Integer(
-            u16::from_le_bytes(val.try_into().unwrap()) as i32
-        ));
+        self.context
+            .avm2
+            .push(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
     }
@@ -2690,7 +2690,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = dm.read_at(4, address)?;
         self.context
             .avm2
-            .push(Value::Integer(i32::from_le_bytes(val.try_into().unwrap())));
+            .push(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
 
@@ -2703,9 +2703,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
         let val = dm.read_at(4, address)?;
-        self.context.avm2.push(Value::Number(
-            f32::from_le_bytes(val.try_into().unwrap()) as f64
-        ));
+        self.context
+            .avm2
+            .push(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
     }
@@ -2721,7 +2721,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = dm.read_at(8, address)?;
         self.context
             .avm2
-            .push(Value::Number(f64::from_le_bytes(val.try_into().unwrap())));
+            .push(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
 
