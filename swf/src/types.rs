@@ -420,12 +420,8 @@ impl Color {
     /// let blue = Color::from_rgb(0x0000FF, 255);
     /// ```
     pub const fn from_rgb(rgb: u32, alpha: u8) -> Self {
-        Self {
-            r: ((rgb & 0xFF_0000) >> 16) as u8,
-            g: ((rgb & 0x00_FF00) >> 8) as u8,
-            b: (rgb & 0x00_00FF) as u8,
-            a: alpha,
-        }
+        let [b, g, r, _] = rgb.to_le_bytes();
+        Self { r, g, b, a: alpha }
     }
 
     /// Converts the color to a 32-bit RGB value.

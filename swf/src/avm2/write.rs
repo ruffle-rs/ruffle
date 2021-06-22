@@ -124,12 +124,12 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    #[allow(dead_code)]
     fn write_i24(&mut self, n: i32) -> Result<()> {
-        // TODO: Verify n fits in 24-bits.
-        self.write_u8(((n >> 16) & 0xff) as u8)?;
-        self.write_u8(((n >> 8) & 0xff) as u8)?;
-        self.write_u8((n & 0xff) as u8)?;
+        let bytes = n.to_le_bytes();
+        debug_assert!(bytes[3] == 0 || bytes[3] == 0xFF);
+        self.write_u8(bytes[2])?;
+        self.write_u8(bytes[1])?;
+        self.write_u8(bytes[0])?;
         Ok(())
     }
 

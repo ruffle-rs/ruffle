@@ -140,15 +140,12 @@ pub fn set_rgb<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_u32(activation)?;
-
-    let red = ((new_rgb >> 16) & 0xFF) as f64;
-    let green = ((new_rgb >> 8) & 0xFF) as f64;
-    let blue = (new_rgb & 0xFF) as f64;
+    let [b, g, r, _] = new_rgb.to_le_bytes();
 
     if let Some(ct) = this.as_color_transform_object() {
-        ct.set_red_offset(activation.context.gc_context, red);
-        ct.set_green_offset(activation.context.gc_context, green);
-        ct.set_blue_offset(activation.context.gc_context, blue);
+        ct.set_red_offset(activation.context.gc_context, r.into());
+        ct.set_green_offset(activation.context.gc_context, g.into());
+        ct.set_blue_offset(activation.context.gc_context, b.into());
 
         ct.set_red_multiplier(activation.context.gc_context, 0.0);
         ct.set_green_multiplier(activation.context.gc_context, 0.0);

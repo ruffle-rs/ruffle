@@ -513,7 +513,7 @@ fn lerp_matrix(start: &swf::Matrix, end: &swf::Matrix, a: f32, b: f32) -> swf::M
 fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> swf::Gradient {
     use swf::{Gradient, GradientRecord};
     // Morph gradients are guaranteed to have the same number of records in the start/end gradient.
-    debug_assert!(start.records.len() == end.records.len());
+    debug_assert_eq!(start.records.len(), end.records.len());
     let records: Vec<GradientRecord> = start
         .records
         .iter()
