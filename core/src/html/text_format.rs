@@ -574,7 +574,7 @@ impl TextFormat {
             "color",
             self.color
                 .clone()
-                .map(|v| (((v.r as u32) << 16) + ((v.g as u32) << 8) + v.b as u32).into())
+                .map(|v| v.to_rgb().into())
                 .unwrap_or(Avm1Value::Null),
             activation,
         )?;
@@ -729,7 +729,7 @@ impl TextFormat {
             &Avm2QName::new(Avm2Namespace::public(), "color"),
             self.color
                 .clone()
-                .map(|v| (((v.r as u32) << 16) + ((v.g as u32) << 8) + v.b as u32).into())
+                .map(|v| v.to_rgb().into())
                 .unwrap_or(Avm2Value::Null),
             activation,
         )?;
