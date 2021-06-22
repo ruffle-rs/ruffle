@@ -45,10 +45,12 @@ impl From<TessVertex> for Vertex {
     fn from(vertex: TessVertex) -> Self {
         Self {
             position: [vertex.x, vertex.y],
-            color: ((vertex.color.a as u32) << 24)
-                | ((vertex.color.b as u32) << 16)
-                | ((vertex.color.g as u32) << 8)
-                | (vertex.color.r as u32),
+            color: u32::from_le_bytes([
+                vertex.color.r,
+                vertex.color.g,
+                vertex.color.b,
+                vertex.color.a,
+            ]),
         }
     }
 }

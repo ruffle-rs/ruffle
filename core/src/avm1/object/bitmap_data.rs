@@ -55,7 +55,7 @@ impl Color {
         ((self.0 >> 24) & 0xFF) as u8
     }
 
-    pub fn to_premultiplied_alpha(self, transparency: bool) -> Color {
+    pub fn to_premultiplied_alpha(self, transparency: bool) -> Self {
         // This has some accuracy issues with some alpha values
 
         let old_alpha = if transparency { self.alpha() } else { 255 };
@@ -66,25 +66,25 @@ impl Color {
         let g = (self.green() as f64 * a).round() as u8;
         let b = (self.blue() as f64 * a).round() as u8;
 
-        Color::argb(old_alpha, r, g, b)
+        Self::argb(old_alpha, r, g, b)
     }
 
-    pub fn to_un_multiplied_alpha(self) -> Color {
+    pub fn to_un_multiplied_alpha(self) -> Self {
         let a = self.alpha() as f64 / 255.0;
 
         let r = (self.red() as f64 / a).round() as u8;
         let g = (self.green() as f64 / a).round() as u8;
         let b = (self.blue() as f64 / a).round() as u8;
 
-        Color::argb(self.alpha(), r, g, b)
+        Self::argb(self.alpha(), r, g, b)
     }
 
-    pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Color {
-        Color(((alpha as i32) << 24) | (red as i32) << 16 | (green as i32) << 8 | (blue as i32))
+    pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
+        Self(i32::from_le_bytes([blue, green, red, alpha]))
     }
 
-    pub fn with_alpha(&self, alpha: u8) -> Color {
-        Color::argb(alpha, self.red(), self.green(), self.blue())
+    pub fn with_alpha(&self, alpha: u8) -> Self {
+        Self::argb(alpha, self.red(), self.green(), self.blue())
     }
 
     pub fn blend_over(&self, source: &Self) -> Self {
@@ -94,7 +94,7 @@ impl Color {
         let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) >> 8) as u8;
         let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) >> 8) as u8;
         let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) >> 8) as u8;
-        Color::argb(a, r, g, b)
+        Self::argb(a, r, g, b)
     }
 }
 
@@ -389,28 +389,28 @@ impl BitmapData {
                         .into();
 
                     let channel_shift: u32 = match source_channel {
-                        // Alpha
-                        8 => 24,
                         // red
                         1 => 16,
                         // green
                         2 => 8,
                         // blue
                         4 => 0,
+                        // alpha
+                        8 => 24,
                         _ => 0,
                     };
 
                     let source_part = (source_color >> channel_shift) & 0xFF;
 
                     let result_color: u32 = match dest_channel {
-                        // Alpha
-                        8 => (original_color & 0x00FFFFFF) | source_part << 24,
                         // red
                         1 => (original_color & 0xFF00FFFF) | source_part << 16,
                         // green
                         2 => (original_color & 0xFFFF00FF) | source_part << 8,
                         // blue
                         4 => (original_color & 0xFFFFFF00) | source_part,
+                        // alpha
+                        8 => (original_color & 0x00FFFFFF) | source_part << 24,
                         _ => original_color,
                     };
 
