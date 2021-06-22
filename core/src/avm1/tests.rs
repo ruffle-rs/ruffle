@@ -9,7 +9,7 @@ fn locals_into_form_values() {
         my_locals
             .set("value1", "string".into(), activation)
             .unwrap();
-        my_locals.set("value2", 2.0.into(), activation).unwrap();
+        my_locals.set("value2", 2.into(), activation).unwrap();
         let my_local_values = activation.locals_into_form_values();
 
         assert_eq!(my_local_values.len(), 2);

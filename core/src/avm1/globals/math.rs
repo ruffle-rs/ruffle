@@ -396,15 +396,15 @@ mod tests {
 
             assert_eq!(atan2(activation, math, &[]).unwrap(), f64::NAN.into());
             assert_eq!(
-                atan2(activation, math, &[1.0.into(), Value::Null]).unwrap(),
+                atan2(activation, math, &[1.into(), Value::Null]).unwrap(),
                 f64::NAN.into()
             );
             assert_eq!(
-                atan2(activation, math, &[1.0.into(), Value::Undefined]).unwrap(),
+                atan2(activation, math, &[1.into(), Value::Undefined]).unwrap(),
                 f64::NAN.into()
             );
             assert_eq!(
-                atan2(activation, math, &[Value::Undefined, 1.0.into()]).unwrap(),
+                atan2(activation, math, &[Value::Undefined, 1.into()]).unwrap(),
                 f64::NAN.into()
             );
             Ok(())
@@ -421,11 +421,11 @@ mod tests {
             );
 
             assert_eq!(
-                atan2(activation, math, &[10.0.into()]).unwrap(),
+                atan2(activation, math, &[10.into()]).unwrap(),
                 std::f64::consts::FRAC_PI_2.into()
             );
             assert_eq!(
-                atan2(activation, math, &[1.0.into(), 2.0.into()]).unwrap(),
+                atan2(activation, math, &[1.into(), 2.into()]).unwrap(),
                 f64::atan2(1.0, 2.0).into()
             );
             Ok(())

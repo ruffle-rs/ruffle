@@ -29,7 +29,7 @@ pub fn get_begin_index<'gc>(
     {
         Ok(selection.start().into())
     } else {
-        Ok((-1.0).into())
+        Ok((-1).into())
     }
 }
 
@@ -47,7 +47,7 @@ pub fn get_end_index<'gc>(
     {
         Ok(selection.end().into())
     } else {
-        Ok((-1.0).into())
+        Ok((-1).into())
     }
 }
 
@@ -65,7 +65,7 @@ pub fn get_caret_index<'gc>(
     {
         Ok(selection.to().into())
     } else {
-        Ok((-1.0).into())
+        Ok((-1).into())
     }
 }
 
