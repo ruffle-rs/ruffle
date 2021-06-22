@@ -121,8 +121,8 @@ impl Value {
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
             Avm1Value::Undefined | Avm1Value::Null => Value::Null,
-            Avm1Value::Bool(value) => Value::Bool(value),
-            Avm1Value::Number(value) => Value::Number(value),
+            Avm1Value::Bool(value) => value.into(),
+            Avm1Value::Number(value) => value.into(),
             Avm1Value::String(value) => Value::String(value.to_string()),
             Avm1Value::Object(object) => {
                 if object.as_array_object().is_some() {

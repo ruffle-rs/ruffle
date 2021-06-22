@@ -30,38 +30,14 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let red_multiplier = args
-        .get(0)
-        .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation)?;
-    let green_multiplier = args
-        .get(1)
-        .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation)?;
-    let blue_multiplier = args
-        .get(2)
-        .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation)?;
-    let alpha_multiplier = args
-        .get(3)
-        .unwrap_or(&Value::Number(1.into()))
-        .coerce_to_f64(activation)?;
-    let red_offset = args
-        .get(4)
-        .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation)?;
-    let green_offset = args
-        .get(5)
-        .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation)?;
-    let blue_offset = args
-        .get(6)
-        .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation)?;
-    let alpha_offset = args
-        .get(7)
-        .unwrap_or(&Value::Number(0.into()))
-        .coerce_to_f64(activation)?;
+    let red_multiplier = args.get(0).unwrap_or(&1.into()).coerce_to_f64(activation)?;
+    let green_multiplier = args.get(1).unwrap_or(&1.into()).coerce_to_f64(activation)?;
+    let blue_multiplier = args.get(2).unwrap_or(&1.into()).coerce_to_f64(activation)?;
+    let alpha_multiplier = args.get(3).unwrap_or(&1.into()).coerce_to_f64(activation)?;
+    let red_offset = args.get(4).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let green_offset = args.get(5).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let blue_offset = args.get(6).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let alpha_offset = args.get(7).unwrap_or(&0.into()).coerce_to_f64(activation)?;
 
     if let Some(ct) = this.as_color_transform_object() {
         ct.set_red_multiplier(activation.context.gc_context, red_multiplier);
@@ -149,7 +125,7 @@ pub fn get_rgb<'gc>(
         let rgb = ((ct.get_red_offset() as u32) << 16)
             | ((ct.get_green_offset() as u32) << 8)
             | (ct.get_blue_offset() as u32);
-        Ok(Value::Number(rgb.into()))
+        Ok(rgb.into())
     } else {
         Ok(Value::Undefined)
     }
@@ -207,7 +183,7 @@ macro_rules! color_transform_value_accessor {
                 _args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
                 if let Some(ct) = this.as_color_transform_object() {
-                    Ok(Value::Number(ct.$get_ident()).into())
+                    Ok(ct.$get_ident().into())
                 } else {
                     Ok(Value::Undefined)
                 }
@@ -255,10 +231,7 @@ fn to_string<'gc>(
             this.get("alphaOffset", activation)?.coerce_to_string(activation)?
     );
 
-    Ok(Value::String(AvmString::new(
-        activation.context.gc_context,
-        formatted,
-    )))
+    Ok(AvmString::new(activation.context.gc_context, formatted).into())
 }
 
 fn concat<'gc>(

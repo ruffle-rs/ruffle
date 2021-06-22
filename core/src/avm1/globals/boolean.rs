@@ -19,15 +19,12 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let cons_value = if let Some(val) = args.get(0) {
-        Value::Bool(val.as_bool(activation.swf_version()))
-    } else {
-        Value::Bool(false)
-    };
-
     // Called from a constructor, populate `this`.
     if let Some(mut vbox) = this.as_value_object() {
-        vbox.replace_value(activation.context.gc_context, cons_value);
+        let cons_value = args
+            .get(0)
+            .map_or(false, |value| value.as_bool(activation.swf_version()));
+        vbox.replace_value(activation.context.gc_context, cons_value.into());
     }
 
     Ok(this.into())
@@ -39,15 +36,12 @@ pub fn boolean_function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ret_value = if let Some(val) = args.get(0) {
-        Value::Bool(val.as_bool(activation.swf_version()))
-    } else {
-        Value::Undefined
-    };
-
     // If called as a function, return the value.
     // Boolean() with no argument returns undefined.
-    Ok(ret_value)
+    Ok(args
+        .get(0)
+        .map(|value| value.as_bool(activation.swf_version()))
+        .map_or(Value::Undefined, Value::Bool))
 }
 
 pub fn create_boolean_object<'gc>(

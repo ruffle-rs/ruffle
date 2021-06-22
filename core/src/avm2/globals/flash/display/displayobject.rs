@@ -143,9 +143,10 @@ pub fn scale_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(Value::Number(
-            dobj.scale_y(activation.context.gc_context).into_unit(),
-        ));
+        return Ok(dobj
+            .scale_y(activation.context.gc_context)
+            .into_unit()
+            .into());
     }
 
     Ok(Value::Undefined)
@@ -210,9 +211,10 @@ pub fn scale_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(Value::Number(
-            dobj.scale_x(activation.context.gc_context).into_unit(),
-        ));
+        return Ok(dobj
+            .scale_x(activation.context.gc_context)
+            .into_unit()
+            .into());
     }
 
     Ok(Value::Undefined)
@@ -311,9 +313,9 @@ pub fn rotation<'gc>(
         let rem = rot % 360.0;
 
         if rem <= 180.0 {
-            return Ok(Value::Number(rem));
+            return Ok(rem.into());
         } else {
-            return Ok(Value::Number(rem - 360.0));
+            return Ok((rem - 360.0).into());
         }
     }
 

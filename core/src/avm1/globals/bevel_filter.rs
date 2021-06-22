@@ -394,10 +394,7 @@ pub fn set_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let type_: BevelFilterType = args
         .get(0)
-        .unwrap_or(&Value::String(AvmString::new(
-            activation.context.gc_context,
-            "inner".to_string(),
-        )))
+        .unwrap_or(&"inner".into())
         .coerce_to_string(activation)
         .map(|s| s.as_str().into())?;
 

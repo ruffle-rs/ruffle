@@ -27,9 +27,9 @@ pub fn get_begin_index<'gc>(
         .and_then(|o| o.as_edit_text())
         .and_then(EditText::selection)
     {
-        Ok(Value::Number(selection.start() as f64))
+        Ok(selection.start().into())
     } else {
-        Ok(Value::Number(-1.0))
+        Ok((-1.0).into())
     }
 }
 
@@ -45,9 +45,9 @@ pub fn get_end_index<'gc>(
         .and_then(|o| o.as_edit_text())
         .and_then(EditText::selection)
     {
-        Ok(Value::Number(selection.end() as f64))
+        Ok(selection.end().into())
     } else {
-        Ok(Value::Number(-1.0))
+        Ok((-1.0).into())
     }
 }
 
@@ -63,9 +63,9 @@ pub fn get_caret_index<'gc>(
         .and_then(|o| o.as_edit_text())
         .and_then(EditText::selection)
     {
-        Ok(Value::Number(selection.to() as f64))
+        Ok(selection.to().into())
     } else {
-        Ok(Value::Number(-1.0))
+        Ok((-1.0).into())
     }
 }
 

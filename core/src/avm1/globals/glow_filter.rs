@@ -52,7 +52,7 @@ pub fn set_alpha<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let alpha = args
         .get(0)
-        .unwrap_or(&Value::Number(1.0))
+        .unwrap_or(&1.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(1.0))?;
 
@@ -82,7 +82,7 @@ pub fn set_blur_x<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let blur_x = args
         .get(0)
-        .unwrap_or(&Value::Number(6.0))
+        .unwrap_or(&6.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
@@ -112,7 +112,7 @@ pub fn set_blur_y<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let blur_y = args
         .get(0)
-        .unwrap_or(&Value::Number(6.0))
+        .unwrap_or(&6.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 
@@ -142,7 +142,7 @@ pub fn set_color<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let color = args
         .get(0)
-        .unwrap_or(&Value::Number(0xFF0000.into()))
+        .unwrap_or(&0xFF0000.into())
         .coerce_to_i32(activation)
         .map(|x| x.max(1).min(0xFFFFFF))?;
 
@@ -230,7 +230,7 @@ pub fn set_quality<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let quality = args
         .get(0)
-        .unwrap_or(&Value::Number(1.0))
+        .unwrap_or(&1.into())
         .coerce_to_i32(activation)
         .map(|x| x.max(0).min(15))?;
 
@@ -260,7 +260,7 @@ pub fn set_strength<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let strength = args
         .get(0)
-        .unwrap_or(&Value::Number(2.0))
+        .unwrap_or(&2.into())
         .coerce_to_f64(activation)
         .map(|x| x.max(0.0).min(255.0))?;
 

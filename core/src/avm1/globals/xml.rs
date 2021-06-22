@@ -179,10 +179,12 @@ pub fn xmlnode_clone_node<'gc>(
     ) {
         let mut clone_node = xmlnode.duplicate(activation.context.gc_context, deep);
 
-        return Ok(Value::Object(clone_node.script_object(
-            activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.xml_node),
-        )));
+        return Ok(clone_node
+            .script_object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes.xml_node),
+            )
+            .into());
     }
 
     Ok(Value::Undefined)
@@ -840,23 +842,25 @@ pub fn xml_status<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        return match node.document().last_parse_error() {
-            None => Ok(XML_NO_ERROR.into()),
+        let status = match node.document().last_parse_error() {
+            None => XML_NO_ERROR,
             Some(err) => match err.ref_error() {
-                ParseError::UnexpectedEof(_) => Ok(Value::Number(XML_ELEMENT_MALFORMED)),
-                ParseError::EndEventMismatch { .. } => Ok(Value::Number(XML_MISMATCHED_END)),
-                ParseError::XmlDeclWithoutVersion(_) => Ok(Value::Number(XML_DECL_NOT_TERMINATED)),
-                ParseError::NameWithQuote(_) => Ok(Value::Number(XML_ELEMENT_MALFORMED)),
-                ParseError::NoEqAfterName(_) => Ok(Value::Number(XML_ELEMENT_MALFORMED)),
-                ParseError::UnquotedValue(_) => Ok(Value::Number(XML_ATTRIBUTE_NOT_TERMINATED)),
-                ParseError::DuplicatedAttribute(_, _) => Ok(Value::Number(XML_ELEMENT_MALFORMED)),
-                _ => Ok(Value::Number(XML_OUT_OF_MEMORY)), //Not accounted for:
-                                                           //ParseError::UnexpectedToken(_)
-                                                           //ParseError::UnexpectedBang
-                                                           //ParseError::TextNotFound
-                                                           //ParseError::EscapeError(_)
+                ParseError::UnexpectedEof(_) => XML_ELEMENT_MALFORMED,
+                ParseError::EndEventMismatch { .. } => XML_MISMATCHED_END,
+                ParseError::XmlDeclWithoutVersion(_) => XML_DECL_NOT_TERMINATED,
+                ParseError::NameWithQuote(_) => XML_ELEMENT_MALFORMED,
+                ParseError::NoEqAfterName(_) => XML_ELEMENT_MALFORMED,
+                ParseError::UnquotedValue(_) => XML_ATTRIBUTE_NOT_TERMINATED,
+                ParseError::DuplicatedAttribute(_, _) => XML_ELEMENT_MALFORMED,
+                _ => XML_OUT_OF_MEMORY,
+                // Not accounted for:
+                // ParseError::UnexpectedToken(_)
+                // ParseError::UnexpectedBang
+                // ParseError::TextNotFound
+                // ParseError::EscapeError(_)
             },
         };
+        return Ok(status.into());
     }
 
     Ok(Value::Undefined)

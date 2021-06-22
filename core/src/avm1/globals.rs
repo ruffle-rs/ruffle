@@ -83,9 +83,7 @@ pub fn random<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
-        Some(&Value::Number(max)) => {
-            Ok(activation.context.rng.gen_range(0.0f64..max).floor().into())
-        }
+        Some(&Value::Number(max)) => Ok(activation.context.rng.gen_range(0.0..max).floor().into()),
         _ => Ok(Value::Undefined), //TODO: Shouldn't this be an error condition?
     }
 }

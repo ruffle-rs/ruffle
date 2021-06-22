@@ -379,9 +379,9 @@ impl<'gc> Value<'gc> {
         // e.g. SWF19 p. 72:
         // "If the numbers are equal, true is pushed to the stack for SWF 5 and later. For SWF 4, 1 is pushed to the stack."
         if swf_version >= 5 {
-            Value::Bool(value)
+            value.into()
         } else {
-            Value::Number(if value { 1.0 } else { 0.0 })
+            (value as i32).into()
         }
     }
 
@@ -544,7 +544,7 @@ mod test {
                 _: Object<'gc>,
                 _: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
-                Ok(5.0.into())
+                Ok(5.into())
             }
 
             let valueof = FunctionObject::function(
@@ -564,7 +564,7 @@ mod test {
 
             assert_eq!(
                 Value::Object(o).to_primitive_num(activation).unwrap(),
-                Value::Number(5.0)
+                5.into()
             );
 
             Ok(())
@@ -621,22 +621,19 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), true.into());
 
             let nan = Value::Number(f64::NAN);
             assert_eq!(a.abstract_lt(nan, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(a.abstract_lt(inf, activation).unwrap(), Value::Bool(true));
+            assert_eq!(a.abstract_lt(inf, activation).unwrap(), true.into());
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(
-                a.abstract_lt(neg_inf, activation).unwrap(),
-                Value::Bool(false)
-            );
+            assert_eq!(a.abstract_lt(neg_inf, activation).unwrap(), false.into());
 
             let zero = Value::Number(0.0);
-            assert_eq!(a.abstract_lt(zero, activation).unwrap(), Value::Bool(false));
+            assert_eq!(a.abstract_lt(zero, activation).unwrap(), false.into());
 
             Ok(())
         });
@@ -648,22 +645,19 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), false.into());
 
             let nan = Value::Number(f64::NAN);
             assert_eq!(nan.abstract_lt(a, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(inf.abstract_lt(a, activation).unwrap(), Value::Bool(false));
+            assert_eq!(inf.abstract_lt(a, activation).unwrap(), false.into());
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(
-                neg_inf.abstract_lt(a, activation).unwrap(),
-                Value::Bool(true)
-            );
+            assert_eq!(neg_inf.abstract_lt(a, activation).unwrap(), true.into());
 
             let zero = Value::Number(0.0);
-            assert_eq!(zero.abstract_lt(a, activation).unwrap(), Value::Bool(true));
+            assert_eq!(zero.abstract_lt(a, activation).unwrap(), true.into());
 
             Ok(())
         });
@@ -681,7 +675,7 @@ mod test {
                 "b".to_owned(),
             ));
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), true.into());
 
             Ok(())
         })
@@ -699,7 +693,7 @@ mod test {
                 "b".to_owned(),
             ));
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), false.into());
 
             Ok(())
         })

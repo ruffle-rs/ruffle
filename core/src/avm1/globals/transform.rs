@@ -158,14 +158,16 @@ fn pixel_bounds<'gc>(
     let bounds = clip.world_bounds();
 
     // Return Rectangle object.
-    let args = [
-        Value::Number(bounds.x_min.to_pixels()),
-        Value::Number(bounds.y_min.to_pixels()),
-        Value::Number(bounds.width().to_pixels()),
-        Value::Number(bounds.height().to_pixels()),
-    ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
-    let result = constructor.construct(activation, &args)?;
+    let result = constructor.construct(
+        activation,
+        &[
+            bounds.x_min.to_pixels().into(),
+            bounds.y_min.to_pixels().into(),
+            bounds.width().to_pixels().into(),
+            bounds.height().to_pixels().into(),
+        ],
+    )?;
     Ok(result)
 }
 

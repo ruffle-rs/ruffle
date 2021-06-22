@@ -1809,9 +1809,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let value = match value {
                 SwfValue::Undefined => Value::Undefined,
                 SwfValue::Null => Value::Null,
-                SwfValue::Bool(v) => Value::Bool(*v),
-                SwfValue::Int(v) => f64::from(*v).into(),
-                SwfValue::Float(v) => f64::from(*v).into(),
+                SwfValue::Bool(v) => (*v).into(),
+                SwfValue::Int(v) => (*v).into(),
+                SwfValue::Float(v) => (*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
                     AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
