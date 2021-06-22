@@ -1,0 +1,27 @@
+// text field with width 10
+// text: 1
+// title_txt.maxhscroll
+0
+// title_txt.hscroll = -10
+0
+// title_txt.hscroll = 10
+0
+// text: 12
+// title_txt.maxhscroll
+6
+// title_txt.hscroll = -10
+0
+// title_txt.hscroll = 3
+3
+// title_txt.hscroll = 100
+6
+// title_txt.hscroll = null
+0
+// title_txt.hscroll = undefined
+0
+// title_txt.hscroll = 1.5
+1
+// title_txt.hscroll = 2147483647
+6
+// title_txt.hscroll = 2147483648
+0

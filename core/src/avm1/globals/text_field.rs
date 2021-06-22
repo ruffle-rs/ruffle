@@ -76,6 +76,8 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "variable" => property(tf_getter!(variable), tf_setter!(set_variable));
     "wordWrap" => property(tf_getter!(word_wrap), tf_setter!(set_word_wrap));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
+    "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
+    "maxhscroll" => property(tf_getter!(maxhscroll));
 };
 
 /// Implements `TextField`
@@ -588,4 +590,30 @@ pub fn set_type<'gc>(
         value => log::warn!("Invalid TextField.type: {}", value),
     };
     Ok(())
+}
+
+pub fn hscroll<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.hscroll().into())
+}
+
+pub fn set_hscroll<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
+    let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
+    let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
+    this.set_hscroll(clamped, &mut activation.context);
+    Ok(())
+}
+
+pub fn maxhscroll<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.maxhscroll().into())
 }

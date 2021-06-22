@@ -14,7 +14,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
-use crate::font::{Glyph, TextRenderSettings};
+use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
@@ -152,6 +152,9 @@ pub struct EditTextData<'gc> {
 
     /// Which rendering engine this text field will use.
     render_settings: TextRenderSettings,
+
+    /// How many pixels right the text is offset by
+    hscroll: f64,
 }
 
 impl<'gc> EditText<'gc> {
@@ -281,6 +284,7 @@ impl<'gc> EditText<'gc> {
                 selection: None,
                 has_focus: false,
                 render_settings: Default::default(),
+                hscroll: 0.0,
             },
         ));
 
@@ -768,6 +772,8 @@ impl<'gc> EditText<'gc> {
 
         edit_text.layout = new_layout;
         edit_text.intrinsic_bounds = intrinsic_bounds;
+        // reset scroll
+        edit_text.hscroll = 0.0;
 
         match autosize {
             AutoSizeMode::None => {}
@@ -820,6 +826,28 @@ impl<'gc> EditText<'gc> {
             edit_text.intrinsic_bounds.width(),
             edit_text.intrinsic_bounds.height(),
         )
+    }
+
+    /// How far the text can be scrolled right, in pixels.
+    pub fn maxhscroll(self) -> f64 {
+        let edit_text = self.0.read();
+
+        // word-wrapped text can't be scrolled
+        if edit_text.is_word_wrap {
+            return 0.0;
+        }
+
+        let base =
+            round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width())
+                .to_pixels()
+                .max(0.0);
+
+        // input text boxes get extra space at the end
+        if edit_text.is_editable {
+            base + 41.0
+        } else {
+            base
+        }
     }
 
     /// Render a layout box, plus its children.
@@ -1093,6 +1121,14 @@ impl<'gc> EditText<'gc> {
         settings: TextRenderSettings,
     ) {
         self.0.write(gc_context).render_settings = settings
+    }
+
+    pub fn hscroll(self) -> f64 {
+        self.0.read().hscroll
+    }
+
+    pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).hscroll = hscroll;
     }
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
@@ -1566,7 +1602,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
             matrix: Matrix {
-                tx: Twips::from_pixels(Self::INTERNAL_PADDING),
+                tx: Twips::from_pixels(Self::INTERNAL_PADDING)
+                    - Twips::from_pixels(edit_text.hscroll),
                 ty: Twips::from_pixels(Self::INTERNAL_PADDING),
                 ..Default::default()
             },
