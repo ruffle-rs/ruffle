@@ -102,7 +102,7 @@ impl<'gc> StageObject<'gc> {
     }
 
     /// Create a `graphics` object for a given display object.
-    pub fn graphics_of(
+    pub fn graphics(
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error> {

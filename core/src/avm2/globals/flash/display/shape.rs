@@ -62,7 +62,7 @@ pub fn graphics<'gc>(
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
-                    let graphics = Value::from(StageObject::graphics_of(activation, dobj)?);
+                    let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
                         this,
                         &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
