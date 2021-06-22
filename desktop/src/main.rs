@@ -165,8 +165,8 @@ fn load_movie_from_path(
 fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn std::error::Error>> {
     let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
 
-    let selected = match result {
-        Some(file_path) => PathBuf::from(file_path),
+    let selected: PathBuf = match result {
+        Some(file_path) => file_path.into(),
         None => return Ok(None),
     };
 

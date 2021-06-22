@@ -203,8 +203,8 @@ where
         let height = self.extent_y - self.offset_y;
 
         (
-            Position::from((self.offset_x, self.offset_y)),
-            Size::from((width, height)),
+            (self.offset_x, self.offset_y).into(),
+            (width, height).into(),
         )
     }
 }
@@ -231,11 +231,11 @@ where
     }
 
     pub fn origin(&self) -> Position<T> {
-        Position::from((self.offset_x(), self.offset_y()))
+        (self.offset_x(), self.offset_y()).into()
     }
 
     pub fn extent(&self) -> Position<T> {
-        Position::from((self.extent_x(), self.extent_y()))
+        (self.extent_x(), self.extent_y()).into()
     }
 }
 

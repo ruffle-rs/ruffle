@@ -320,8 +320,7 @@ impl AudioBackend for CpalAudioBackend {
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
-            let skip_sample_frames =
-                u16::from(swf_sound.data[0]) | (u16::from(swf_sound.data[1]) << 8);
+            let skip_sample_frames = u16::from_le_bytes([swf_sound.data[0], swf_sound.data[1]]);
             (skip_sample_frames, &swf_sound.data[2..])
         } else {
             (0, swf_sound.data)
@@ -482,7 +481,7 @@ impl EventSoundSignal {
         num_sample_frames: u32,
         skip_sample_frames: u16,
     ) -> Self {
-        let skip_sample_frames = u32::from(skip_sample_frames);
+        let skip_sample_frames: u32 = skip_sample_frames.into();
         let sample_divisor = 44100 / u32::from(decoder.sample_rate());
         let start_sample_frame =
             settings.in_sample.unwrap_or(0) / sample_divisor + skip_sample_frames;
@@ -601,8 +600,8 @@ impl dasp::signal::Signal for EnvelopeSignal {
     fn next(&mut self) -> Self::Frame {
         // Calculate interpolated volume.
         let out = if self.prev_point.sample < self.next_point.sample {
-            let a = f64::from(self.cur_sample - self.prev_point.sample);
-            let b = f64::from(self.next_point.sample - self.prev_point.sample);
+            let a: f64 = (self.cur_sample - self.prev_point.sample).into();
+            let b: f64 = (self.next_point.sample - self.prev_point.sample).into();
             let lerp = a / b;
             let interpolator = dasp::interpolate::linear::Linear::new(
                 [self.prev_point.left_volume, self.prev_point.right_volume],

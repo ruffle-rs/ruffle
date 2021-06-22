@@ -24,7 +24,7 @@ fn main() {
         println!("cargo:rustc-cfg=nightly");
     }
 
-    let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let out_dir: PathBuf = env::var_os("OUT_DIR").unwrap().into();
 
     File::create(out_dir.join("version-info.txt"))
         .unwrap()

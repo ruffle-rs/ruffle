@@ -234,11 +234,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
-                linebox.bounds = linebox.bounds.with_size(Size::from(font.measure(
-                    text.trim_end(),
-                    params,
-                    false,
-                )));
+                linebox.bounds = linebox
+                    .bounds
+                    .with_size(font.measure(text.trim_end(), params, false).into());
             }
 
             if let Some(line_bounds) = &mut line_bounds {

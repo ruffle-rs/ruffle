@@ -658,7 +658,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // In SWF6+, this operates on UTF-16 code units.
         // TODO: In SWF5 and below, this operates on bytes, regardless of the locale encoding.
-        let char_code = u32::from(self.context.avm1.pop().coerce_to_u16(self)?);
+        let char_code: u32 = self.context.avm1.pop().coerce_to_u16(self)?.into();
         let result = if char_code != 0 {
             // Unpaired surrogates turn into replacement char.
             char::try_from(char_code)
@@ -785,7 +785,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         if let Some((clip, frame)) = call_frame {
-            if frame <= u32::from(u16::MAX) {
+            if frame <= u16::MAX.into() {
                 for action in clip.actions_on_frame(&mut self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action(
                         "[Frame Call]",
@@ -1466,7 +1466,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_init_array(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let num_elements = self.context.avm1.pop().coerce_to_f64(self)?;
-        let result = if num_elements < 0.0 || num_elements > i32::MAX as f64 {
+        let result = if num_elements < 0.0 || num_elements > i32::MAX.into() {
             // InitArray pops no args and pushes undefined if num_elements is out of range.
             Value::Undefined
         } else {
@@ -1484,7 +1484,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_init_object(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let num_props = self.context.avm1.pop().coerce_to_f64(self)?;
-        let result = if num_props < 0.0 || num_props > i32::MAX as f64 {
+        let result = if num_props < 0.0 || num_props > i32::MAX.into() {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
@@ -1594,7 +1594,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_mb_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // In SWF6+, this operates on UTF-16 code units.
         // TODO: In SWF5 and below, this operates on locale-dependent characters.
-        let char_code = u32::from(self.context.avm1.pop().coerce_to_u16(self)?);
+        let char_code: u32 = self.context.avm1.pop().coerce_to_u16(self)?.into();
         let result = if char_code != 0 {
             // Unpaired surrogates turn into replacement char.
             char::try_from(char_code)

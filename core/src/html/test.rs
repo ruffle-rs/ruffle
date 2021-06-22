@@ -9,7 +9,7 @@ fn position_add() {
     let pos1 = Position::from((12, 31));
     let pos2 = Position::from((1, -160));
 
-    assert_eq!(pos1 + pos2, Position::from((13, -129)));
+    assert_eq!(pos1 + pos2, (13, -129).into());
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn position_add_assign() {
 
     pos1 += pos2;
 
-    assert_eq!(pos1, Position::from((13, -129)));
+    assert_eq!(pos1, (13, -129).into());
 }
 
 #[test]
@@ -54,8 +54,8 @@ fn from_swf_rectangle() {
     assert_eq!(
         (pos, size),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(20), Twips::new(80)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(20), Twips::new(80)).into(),
         )
     )
 }
@@ -67,7 +67,7 @@ fn bounds_extents() {
     let bounds = BoxBounds::from_position_and_size(pos, size);
     let extent_pos = Position::from((bounds.extent_x(), bounds.extent_y()));
 
-    assert_eq!(extent_pos, Position::from((Twips::new(23), Twips::new(85))));
+    assert_eq!(extent_pos, (Twips::new(23), Twips::new(85)).into());
 }
 
 #[test]
@@ -85,8 +85,8 @@ fn bounds_union() {
     assert_eq!(
         union.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(57), Twips::new(80)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(57), Twips::new(80)).into(),
         )
     );
 }
@@ -106,8 +106,8 @@ fn bounds_unionassign() {
     assert_eq!(
         bounds1.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(57), Twips::new(80)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(57), Twips::new(80)).into(),
         )
     );
 }
@@ -127,8 +127,8 @@ fn bounds_union_reverse() {
     assert_eq!(
         union.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(57), Twips::new(80)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(57), Twips::new(80)).into(),
         )
     );
 }
@@ -148,8 +148,8 @@ fn bounds_unionassign_reverse() {
     assert_eq!(
         bounds2.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(57), Twips::new(80)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(57), Twips::new(80)).into(),
         )
     );
 }
@@ -167,8 +167,8 @@ fn bounds_position_add() {
     assert_eq!(
         bounds2.into_position_and_size(),
         (
-            Position::from((Twips::new(1), Twips::new(25))),
-            Size::from((Twips::new(20), Twips::new(80)))
+            (Twips::new(1), Twips::new(25)).into(),
+            (Twips::new(20), Twips::new(80)).into(),
         )
     );
 }
@@ -186,8 +186,8 @@ fn bounds_position_addassign() {
     assert_eq!(
         bounds1.into_position_and_size(),
         (
-            Position::from((Twips::new(1), Twips::new(25))),
-            Size::from((Twips::new(20), Twips::new(80)))
+            (Twips::new(1), Twips::new(25)).into(),
+            (Twips::new(20), Twips::new(80)).into(),
         )
     );
 }
@@ -205,8 +205,8 @@ fn bounds_size_add() {
     assert_eq!(
         bounds2.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(18), Twips::new(100)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(18), Twips::new(100)).into(),
         )
     );
 }
@@ -224,8 +224,8 @@ fn bounds_size_addassign() {
     assert_eq!(
         bounds1.into_position_and_size(),
         (
-            Position::from((Twips::new(3), Twips::new(5))),
-            Size::from((Twips::new(18), Twips::new(100)))
+            (Twips::new(3), Twips::new(5)).into(),
+            (Twips::new(18), Twips::new(100)).into(),
         )
     );
 }

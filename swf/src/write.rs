@@ -368,7 +368,7 @@ impl<W: Write> Writer<W> {
         let mut num_bits = if has_mult {
             multiply
                 .iter()
-                .map(|n| count_sbits(n.get() as i32))
+                .map(|n| count_sbits(n.get().into()))
                 .max()
                 .unwrap()
         } else {
@@ -377,10 +377,7 @@ impl<W: Write> Writer<W> {
         if has_add {
             num_bits = max(
                 num_bits,
-                add.iter()
-                    .map(|n| count_sbits(i32::from(*n)))
-                    .max()
-                    .unwrap(),
+                add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
         bits.write_ubits(4, num_bits)?;
@@ -433,10 +430,7 @@ impl<W: Write> Writer<W> {
         if has_add {
             num_bits = max(
                 num_bits,
-                add.iter()
-                    .map(|n| count_sbits(i32::from(*n)))
-                    .max()
-                    .unwrap(),
+                add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
         bits.write_ubits(4, num_bits)?;

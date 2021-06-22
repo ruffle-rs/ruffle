@@ -57,7 +57,7 @@ impl Drawing {
             cursor: (Twips::ZERO, Twips::ZERO),
         };
 
-        let shape = DistilledShape::from(shape);
+        let shape: DistilledShape = shape.into();
         for path in shape.paths {
             match path {
                 DrawPath::Stroke {

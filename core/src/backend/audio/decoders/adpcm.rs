@@ -149,11 +149,7 @@ impl<R: Read> AdpcmDecoder<R> {
         } else {
             self.left_sample += delta;
         }
-        if self.left_sample < (i16::MIN as i32) {
-            self.left_sample = i16::MIN as i32;
-        } else if self.left_sample > (i16::MAX as i32) {
-            self.left_sample = i16::MAX as i32;
-        }
+        self.left_sample = (self.left_sample as i16).into();
 
         let i = magnitude as usize;
         self.left_step_index += Self::INDEX_TABLE[self.bits_per_sample - 2][i];
@@ -176,11 +172,7 @@ impl<R: Read> AdpcmDecoder<R> {
             } else {
                 self.right_sample += delta;
             }
-            if self.right_sample < (i16::MIN as i32) {
-                self.right_sample = i16::MIN as i32;
-            } else if self.right_sample > (i16::MAX as i32) {
-                self.right_sample = i16::MAX as i32;
-            }
+            self.right_sample = (self.right_sample as i16).into();
 
             let i = magnitude as usize;
             self.right_step_index += Self::INDEX_TABLE[self.bits_per_sample - 2][i];
