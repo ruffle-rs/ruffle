@@ -28,9 +28,8 @@ use ruffle_core::{
         video,
     },
     config::Letterbox,
-    events::PlayerEvent,
     tag_utils::SwfMovie,
-    Player,
+    Player, PlayerEvent,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
@@ -432,7 +431,7 @@ impl App {
                             WindowEvent::CursorMoved { position, .. } => {
                                 let mut player_lock = player.lock().unwrap();
                                 mouse_pos = position;
-                                let event = ruffle_core::PlayerEvent::MouseMove {
+                                let event = PlayerEvent::MouseMove {
                                     x: position.x,
                                     y: position.y,
                                 };
@@ -442,22 +441,29 @@ impl App {
                                 }
                             }
                             WindowEvent::MouseInput { button, state, .. } => {
+                                use ruffle_core::events::MouseButton as RuffleMouseButton;
                                 let mut player_lock = player.lock().unwrap();
+                                let button = match button {
+                                    MouseButton::Left => RuffleMouseButton::Left,
+                                    MouseButton::Right => RuffleMouseButton::Right,
+                                    MouseButton::Middle => RuffleMouseButton::Middle,
+                                    MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                                };
                                 let event = match state {
-                                    ElementState::Pressed => ruffle_core::PlayerEvent::MouseDown {
+                                    ElementState::Pressed => PlayerEvent::MouseDown {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
+                                        button,
                                     },
-                                    ElementState::Released => ruffle_core::PlayerEvent::MouseUp {
+                                    ElementState::Released => PlayerEvent::MouseUp {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
+                                        button,
                                     },
                                 };
-                                if button == MouseButton::Left {
-                                    player_lock.handle_event(event);
-                                    if player_lock.needs_render() {
-                                        window.request_redraw();
-                                    }
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
                                 }
                             }
                             WindowEvent::MouseWheel { delta, .. } => {
@@ -471,7 +477,7 @@ impl App {
                                         MouseWheelDelta::Pixels(pos.y)
                                     }
                                 };
-                                let event = ruffle_core::PlayerEvent::MouseWheel { delta };
+                                let event = PlayerEvent::MouseWheel { delta };
                                 player_lock.handle_event(event);
                                 if player_lock.needs_render() {
                                     window.request_redraw();
@@ -479,7 +485,7 @@ impl App {
                             }
                             WindowEvent::CursorLeft { .. } => {
                                 let mut player_lock = player.lock().unwrap();
-                                player_lock.handle_event(ruffle_core::PlayerEvent::MouseLeft);
+                                player_lock.handle_event(PlayerEvent::MouseLeft);
                                 if player_lock.needs_render() {
                                     window.request_redraw();
                                 }

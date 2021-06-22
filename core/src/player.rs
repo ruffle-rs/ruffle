@@ -19,7 +19,7 @@ use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
@@ -823,6 +823,12 @@ impl Player {
             PlayerEvent::KeyUp { key_code } => {
                 self.input.key_up(key_code);
             }
+            PlayerEvent::MouseDown { button, .. } => {
+                self.input.key_down(button.into());
+            }
+            PlayerEvent::MouseUp { button, .. } => {
+                self.input.key_up(button.into());
+            }
             _ => {}
         }
 
@@ -894,11 +900,17 @@ impl Player {
                     Some(ClipEvent::MouseMove),
                     Some(("Mouse", "onMouseMove", vec![])),
                 ),
-                PlayerEvent::MouseUp { .. } => (
+                PlayerEvent::MouseUp {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseUp),
                     Some(("Mouse", "onMouseUp", vec![])),
                 ),
-                PlayerEvent::MouseDown { .. } => (
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseDown),
                     Some(("Mouse", "onMouseDown", vec![])),
                 ),
@@ -935,8 +947,16 @@ impl Player {
 
         // Update mouse state.
         if let PlayerEvent::MouseMove { x, y }
-        | PlayerEvent::MouseDown { x, y }
-        | PlayerEvent::MouseUp { x, y } = event
+        | PlayerEvent::MouseDown {
+            x,
+            y,
+            button: MouseButton::Left,
+        }
+        | PlayerEvent::MouseUp {
+            x,
+            y,
+            button: MouseButton::Left,
+        } = event
         {
             let is_mouse_down = match event {
                 PlayerEvent::MouseMove { .. } => self.input.is_mouse_down,
