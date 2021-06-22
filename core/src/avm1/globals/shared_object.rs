@@ -129,13 +129,13 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
     match val {
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
-        AmfValue::Number(f) => Value::Number(*f),
+        AmfValue::Number(f) => (*f).into(),
         AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
-        AmfValue::Bool(b) => Value::Bool(*b),
+        AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, associative, len) => {
             let array_constructor = activation.context.avm1.prototypes.array_constructor;
             if let Ok(Value::Object(obj)) =
-                array_constructor.construct(activation, &[Value::Number(*len as f64)])
+                array_constructor.construct(activation, &[(*len).into()])
             {
                 for entry in associative {
                     let value = deserialize_value(activation, entry.value());
@@ -177,9 +177,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
         AmfValue::Date(time, _) => {
             let date_proto = activation.context.avm1.prototypes.date_constructor;
 
-            if let Ok(Value::Object(obj)) =
-                date_proto.construct(activation, &[Value::Number(*time)])
-            {
+            if let Ok(Value::Object(obj)) = date_proto.construct(activation, &[(*time).into()]) {
                 Value::Object(obj)
             } else {
                 Value::Undefined
@@ -239,7 +237,7 @@ fn recursive_deserialize_json<'gc>(
         }
         JsonValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
         JsonValue::Number(f) => Value::Number(f.into()),
-        JsonValue::Boolean(b) => Value::Bool(b),
+        JsonValue::Boolean(b) => b.into(),
         JsonValue::Object(o) => {
             if o.get("__proto__").and_then(JsonValue::as_str) == Some("Array") {
                 deserialize_array_json(o, activation)
@@ -416,7 +414,7 @@ pub fn get_local<'gc>(
 
     // Check if this is referencing an existing shared object
     if let Some(so) = activation.context.shared_objects.get(&full_name) {
-        return Ok(Value::Object(*so));
+        return Ok((*so).into());
     }
 
     // Data property only should exist when created with getLocal/Remote

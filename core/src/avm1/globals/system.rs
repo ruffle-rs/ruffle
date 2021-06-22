@@ -438,7 +438,7 @@ pub fn show_settings<'gc>(
 
     let panel_pos = args
         .get(0)
-        .unwrap_or(&Value::Number(last_panel_pos as f64))
+        .unwrap_or(&last_panel_pos.into())
         .coerce_to_i32(activation)?;
 
     let panel = SettingsPanel::from_u8(panel_pos as u8).unwrap_or(SettingsPanel::Privacy);

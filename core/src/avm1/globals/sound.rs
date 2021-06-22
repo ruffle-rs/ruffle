@@ -360,14 +360,8 @@ fn start<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let start_offset = args
-        .get(0)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)?;
-    let loops = args
-        .get(1)
-        .unwrap_or(&Value::Number(1.0))
-        .coerce_to_f64(activation)?;
+    let start_offset = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let loops = args.get(1).unwrap_or(&1.into()).coerce_to_f64(activation)?;
 
     // TODO: Handle loops > u16::MAX.
     let loops = (loops as u16).max(1);

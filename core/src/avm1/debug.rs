@@ -215,12 +215,9 @@ mod tests {
     #[test]
     fn dump_bool() {
         with_avm(19, |activation, _root| -> Result<(), Error> {
+            assert_eq!(VariableDumper::dump(&true.into(), " ", activation), "true");
             assert_eq!(
-                VariableDumper::dump(&Value::Bool(true), " ", activation),
-                "true"
-            );
-            assert_eq!(
-                VariableDumper::dump(&Value::Bool(false), " ", activation),
+                VariableDumper::dump(&false.into(), " ", activation),
                 "false"
             );
             Ok(())
@@ -230,12 +227,9 @@ mod tests {
     #[test]
     fn dump_number() {
         with_avm(19, |activation, _root| -> Result<(), Error> {
+            assert_eq!(VariableDumper::dump(&1000.into(), " ", activation), "1000");
             assert_eq!(
-                VariableDumper::dump(&Value::Number(1000.0), " ", activation),
-                "1000"
-            );
-            assert_eq!(
-                VariableDumper::dump(&Value::Number(-0.05), " ", activation),
+                VariableDumper::dump(&(-0.05).into(), " ", activation),
                 "-0.05"
             );
             Ok(())
@@ -283,7 +277,7 @@ mod tests {
             object.set("test", "value".into(), activation)?;
             object.set("child", child.into(), activation)?;
             child.set("parent", object.into(), activation)?;
-            child.set("age", Value::Number(6.0), activation)?;
+            child.set("age", 6.into(), activation)?;
             assert_eq!(
                 VariableDumper::dump(&object.into(), " ", activation),
                 "[object #0] {\n child: [object #1] {\n  age: 6\n  parent: [object #0]\n }\n test: \"value\"\n self: [object #0]\n}",
@@ -301,7 +295,7 @@ mod tests {
             object.set("test", "value".into(), activation)?;
             object.set("child", child.into(), activation)?;
             child.set("parent", object.into(), activation)?;
-            child.set("age", Value::Number(6.0), activation)?;
+            child.set("age", 6.into(), activation)?;
             let mut dumper = VariableDumper::new(" ");
             dumper.print_variables("Variables:", "object", &object.into(), activation);
             assert_eq!(

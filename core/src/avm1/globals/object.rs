@@ -102,7 +102,7 @@ pub fn has_own_property<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
         let name = value.coerce_to_string(activation)?;
-        Ok(Value::Bool(this.has_own_property(activation, &name)))
+        Ok(this.has_own_property(activation, &name).into())
     } else {
         Ok(false.into())
     }
@@ -124,8 +124,11 @@ fn is_property_enumerable<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
-        Some(Value::String(name)) => Ok(Value::Bool(this.is_property_enumerable(activation, name))),
-        _ => Ok(Value::Bool(false)),
+        Some(name) => {
+            let name = name.coerce_to_string(activation)?;
+            Ok(this.is_property_enumerable(activation, &name).into())
+        }
+        None => Ok(false.into()),
     }
 }
 
@@ -138,9 +141,9 @@ fn is_prototype_of<'gc>(
     match args.get(0) {
         Some(val) => {
             let ob = val.coerce_to_object(activation);
-            Ok(Value::Bool(this.is_prototype_of(ob)))
+            Ok(this.is_prototype_of(ob).into())
         }
-        _ => Ok(Value::Bool(false)),
+        _ => Ok(false.into()),
     }
 }
 
@@ -161,13 +164,13 @@ pub fn register_class<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (class_name, constructor) = match args {
         [class_name, constructor, ..] => (class_name, constructor),
-        _ => return Ok(Value::Bool(false)),
+        _ => return Ok(false.into()),
     };
 
     let constructor = match constructor {
         Value::Null | Value::Undefined => None,
         Value::Object(Object::FunctionObject(func)) => Some(*func),
-        _ => return Ok(Value::Bool(false)),
+        _ => return Ok(false.into()),
     };
 
     let class_name = class_name.coerce_to_string(activation)?;
@@ -181,11 +184,11 @@ pub fn register_class<'gc>(
     match registry {
         Some(registry) => {
             registry.set(&class_name, constructor, activation.context.gc_context);
-            Ok(Value::Bool(true))
+            Ok(true.into())
         }
         None => {
             log::warn!("Can't register_class without a constructor registry");
-            Ok(Value::Bool(false))
+            Ok(false.into())
         }
     }
 }
@@ -294,16 +297,10 @@ pub fn as_set_prop_flags<'gc>(
         }
     };
 
-    let set_flags = args
-        .get(2)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u8;
+    let set_flags = args.get(2).unwrap_or(&0.into()).coerce_to_f64(activation)? as u8;
     let set_attributes = Attribute::from_bits_truncate(set_flags);
 
-    let clear_flags = args
-        .get(3)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_f64(activation)? as u8;
+    let clear_flags = args.get(3).unwrap_or(&0.into()).coerce_to_f64(activation)? as u8;
     let clear_attributes = Attribute::from_bits_truncate(clear_flags);
 
     if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {

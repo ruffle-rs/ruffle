@@ -229,10 +229,9 @@ pub fn mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_displacement_map_filter_object() {
-        return Ok(Value::String(AvmString::new(
-            activation.context.gc_context,
-            String::from(object.mode()),
-        )));
+        return Ok(
+            AvmString::new(activation.context.gc_context, String::from(object.mode())).into(),
+        );
     }
 
     Ok(Value::Undefined)
@@ -245,10 +244,7 @@ pub fn set_mode<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mode = args
         .get(0)
-        .unwrap_or(&Value::String(AvmString::new(
-            activation.context.gc_context,
-            "wrap".to_string(),
-        )))
+        .unwrap_or(&"wrap".into())
         .coerce_to_string(activation)?;
 
     if let Some(object) = this.as_displacement_map_filter_object() {

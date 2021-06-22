@@ -80,24 +80,18 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let width = args
-        .get(0)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_i32(activation)? as u32;
+    let width = args.get(0).unwrap_or(&0.into()).coerce_to_i32(activation)? as u32;
 
-    let height = args
-        .get(1)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_i32(activation)? as u32;
+    let height = args.get(1).unwrap_or(&0.into()).coerce_to_i32(activation)? as u32;
 
     let transparency = args
         .get(2)
-        .unwrap_or(&Value::Bool(true))
+        .unwrap_or(&true.into())
         .as_bool(activation.swf_version());
 
     let fill_color = args
         .get(3)
-        .unwrap_or(&Value::Number(4294967295f64)) // 0xFFFFFFFF
+        .unwrap_or(&(-1).into())
         .coerce_to_i32(activation)?;
 
     if !is_size_valid(activation.swf_version(), width, height) {
@@ -482,14 +476,11 @@ pub fn noise<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let low = args
-        .get(1)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_u32(activation)? as u8;
+    let low = args.get(1).unwrap_or(&0.into()).coerce_to_u32(activation)? as u8;
 
     let high = args
         .get(2)
-        .unwrap_or(&Value::Number(255.0))
+        .unwrap_or(&0xFF.into())
         .coerce_to_u32(activation)? as u8;
 
     let channel_options = if let Some(c) = args.get(3) {
@@ -500,7 +491,7 @@ pub fn noise<'gc>(
 
     let gray_scale = args
         .get(4)
-        .unwrap_or(&Value::Bool(false))
+        .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
@@ -613,7 +604,7 @@ pub fn get_color_bounds_rect<'gc>(
         if !bitmap_data.disposed() {
             let find_color = args
                 .get(2)
-                .unwrap_or(&Value::Bool(true))
+                .unwrap_or(&true.into())
                 .as_bool(activation.swf_version());
 
             if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {

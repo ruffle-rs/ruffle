@@ -307,14 +307,11 @@ fn union<'gc>(
         this_bottom.max(other_bottom)
     } - top;
 
-    let args = [
-        Value::Number(left),
-        Value::Number(top),
-        Value::Number(width),
-        Value::Number(height),
-    ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
-    let result = constructor.construct(activation, &args)?;
+    let result = constructor.construct(
+        activation,
+        &[left.into(), top.into(), width.into(), height.into()],
+    )?;
     Ok(result)
 }
 
@@ -338,10 +335,10 @@ fn inflate<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set("x", Value::Number(x - horizontal), activation)?;
-    this.set("y", Value::Number(y - vertical), activation)?;
-    this.set("width", Value::Number(width + horizontal * 2.0), activation)?;
-    this.set("height", Value::Number(height + vertical * 2.0), activation)?;
+    this.set("x", (x - horizontal).into(), activation)?;
+    this.set("y", (y - vertical).into(), activation)?;
+    this.set("width", (width + horizontal * 2.0).into(), activation)?;
+    this.set("height", (height + vertical * 2.0).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -360,10 +357,10 @@ fn inflate_point<'gc>(
         activation,
     )?;
 
-    this.set("x", Value::Number(x - horizontal), activation)?;
-    this.set("y", Value::Number(y - vertical), activation)?;
-    this.set("width", Value::Number(width + horizontal * 2.0), activation)?;
-    this.set("height", Value::Number(height + vertical * 2.0), activation)?;
+    this.set("x", (x - horizontal).into(), activation)?;
+    this.set("y", (y - vertical).into(), activation)?;
+    this.set("width", (width + horizontal * 2.0).into(), activation)?;
+    this.set("height", (height + vertical * 2.0).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -386,8 +383,8 @@ fn offset<'gc>(
         .to_owned()
         .coerce_to_f64(activation)?;
 
-    this.set("x", Value::Number(x + horizontal), activation)?;
-    this.set("y", Value::Number(y + vertical), activation)?;
+    this.set("x", (x + horizontal).into(), activation)?;
+    this.set("y", (y + vertical).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -404,8 +401,8 @@ fn offset_point<'gc>(
         activation,
     )?;
 
-    this.set("x", Value::Number(x + horizontal), activation)?;
-    this.set("y", Value::Number(y + vertical), activation)?;
+    this.set("x", (x + horizontal).into(), activation)?;
+    this.set("y", (y + vertical).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -460,14 +457,16 @@ fn intersection<'gc>(
         top = 0.0;
     }
 
-    let args = [
-        Value::Number(left),
-        Value::Number(top),
-        Value::Number(right - left),
-        Value::Number(bottom - top),
-    ];
     let constructor = activation.context.avm1.prototypes.rectangle_constructor;
-    let result = constructor.construct(activation, &args)?;
+    let result = constructor.construct(
+        activation,
+        &[
+            left.into(),
+            top.into(),
+            (right - left).into(),
+            (bottom - top).into(),
+        ],
+    )?;
     Ok(result)
 }
 
@@ -517,7 +516,7 @@ fn set_left<'gc>(
     this.set("x", new_left, activation)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
+        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -542,7 +541,7 @@ fn set_top<'gc>(
     this.set("y", new_top, activation)?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
+        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
     Ok(Value::Undefined)
@@ -570,7 +569,7 @@ fn set_right<'gc>(
     };
     let x = this.get("x", activation)?.coerce_to_f64(activation)?;
 
-    this.set("width", Value::Number(right - x), activation)?;
+    this.set("width", (right - x).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -597,7 +596,7 @@ fn set_bottom<'gc>(
     };
     let y = this.get("y", activation)?.coerce_to_f64(activation)?;
 
-    this.set("height", Value::Number(bottom - y), activation)?;
+    this.set("height", (bottom - y).into(), activation)?;
 
     Ok(Value::Undefined)
 }
@@ -660,12 +659,12 @@ fn set_top_left<'gc>(
     this.set("y", new_top, activation)?;
     this.set(
         "width",
-        Value::Number(width + (old_left - new_left.coerce_to_f64(activation)?)),
+        (width + (old_left - new_left.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
     this.set(
         "height",
-        Value::Number(height + (old_top - new_top.coerce_to_f64(activation)?)),
+        (height + (old_top - new_top.coerce_to_f64(activation)?)).into(),
         activation,
     )?;
 
@@ -697,8 +696,8 @@ fn set_bottom_right<'gc>(
     let top = this.get("x", activation)?.coerce_to_f64(activation)?;
     let left = this.get("y", activation)?.coerce_to_f64(activation)?;
 
-    this.set("width", Value::Number(bottom - top), activation)?;
-    this.set("height", Value::Number(right - left), activation)?;
+    this.set("width", (bottom - top).into(), activation)?;
+    this.set("height", (right - left).into(), activation)?;
 
     Ok(Value::Undefined)
 }

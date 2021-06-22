@@ -26,17 +26,17 @@ pub fn constructor<'gc>(
         .map(|v| v.to_owned().coerce_to_object(activation));
     let separator_before = args
         .get(2)
-        .unwrap_or(&Value::Bool(false))
+        .unwrap_or(&false.into())
         .to_owned()
         .as_bool(activation.swf_version());
     let enabled = args
         .get(3)
-        .unwrap_or(&Value::Bool(true))
+        .unwrap_or(&true.into())
         .to_owned()
         .as_bool(activation.swf_version());
     let visible = args
         .get(4)
-        .unwrap_or(&Value::Bool(true))
+        .unwrap_or(&true.into())
         .to_owned()
         .as_bool(activation.swf_version());
 

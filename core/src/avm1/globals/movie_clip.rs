@@ -393,11 +393,11 @@ fn begin_bitmap_fill<'gc>(
         // `smoothed` parameter may not be listed in some documentation.
         let is_repeating = args
             .get(2)
-            .unwrap_or(&Value::Bool(true))
+            .unwrap_or(&true.into())
             .as_bool(activation.swf_version());
         let is_smoothed = args
             .get(3)
-            .unwrap_or(&Value::Bool(false))
+            .unwrap_or(&false.into())
             .as_bool(activation.swf_version());
         movie_clip
             .as_drawing(activation.context.gc_context)
