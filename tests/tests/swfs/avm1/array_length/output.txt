@@ -1,0 +1,42 @@
+// a.length
+1
+// a[0]
+foo
+// a.length
+0
+// a[0]
+undefined
+// a.length
+1
+// a[0]
+undefined
+// a.length
+4
+// a.length
+4
+// keys(a)
+2147483648,-5,3,1
+// a.length
+-2147483648
+// keys(a)
+2147483647,2147483648,-5
+// a.length
+-2147483647
+// a.length
+-2147483646
+// a.length
+-1
+// a.length
+0
+// a.length
+1
+// keys(a)
+4294967296,4294967295,4294967294,2147483649,2147483647,2147483648,-5
+// a.length
+-2147483648
+// a.length
+1
+// a.length
+-2147483648
+// a.length
+1

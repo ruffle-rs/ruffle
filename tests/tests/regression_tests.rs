@@ -138,7 +138,7 @@ swf_tests! {
     (array_splice, "avm1/array_splice", 1),
     (array_properties, "avm1/array_properties", 1),
     (array_prototyping, "avm1/array_prototyping", 1),
-    (array_vs_object_length, "avm1/array_vs_object_length", 1),
+    (array_length, "avm1/array_length", 1),
     (array_sort, "avm1/array_sort", 1),
     (array_enumerate, "avm1/array_enumerate", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
