@@ -183,7 +183,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             let mut matrix = glyph_matrix;
                             matrix.invert();
                             let point = matrix * point;
-                            let glyph_bounds = BoundingBox::from(&glyph.shape.shape_bounds);
+                            let glyph_bounds: BoundingBox = (&glyph.shape.shape_bounds).into();
                             if glyph_bounds.contains(point)
                                 && crate::shape_utils::shape_hit_test(
                                     &glyph.shape,

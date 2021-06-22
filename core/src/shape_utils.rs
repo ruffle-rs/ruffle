@@ -755,7 +755,7 @@ pub fn shape_hit_test(
     let mut has_fill_style0: bool = false;
     let mut has_fill_style1: bool = false;
 
-    let min_width = f64::from(stroke_minimum_width(local_matrix));
+    let min_width = stroke_minimum_width(local_matrix);
     let mut stroke_width = None;
     let mut line_styles = &shape.styles.line_styles;
 
@@ -894,7 +894,7 @@ pub fn draw_command_stroke_hit_test(
     (point_x, point_y): (Twips, Twips),
     local_matrix: &Matrix,
 ) -> bool {
-    let stroke_min_width = f64::from(stroke_minimum_width(local_matrix));
+    let stroke_min_width = stroke_minimum_width(local_matrix);
     let stroke_width = 0.5 * f64::max(stroke_width.get().into(), stroke_min_width);
     let stroke_widths = (stroke_width, stroke_width * stroke_width);
     let mut x = Twips::default();
@@ -935,10 +935,10 @@ pub fn draw_command_stroke_hit_test(
 /// TODO: Verify the actual behavior; I think it's more like the average between scaleX and scaleY.
 /// Does not yet support vertical/horizontal stroke scaling flags.
 /// This might be better to add as a method to Matrix.
-fn stroke_minimum_width(matrix: &Matrix) -> f32 {
+fn stroke_minimum_width(matrix: &Matrix) -> f64 {
     let sx = (matrix.a * matrix.a + matrix.b * matrix.b).sqrt();
     let sy = (matrix.c * matrix.c + matrix.d * matrix.d).sqrt();
-    let scale = sx.max(sy);
+    let scale: f64 = sx.max(sy).into();
     20.0 * scale
 }
 

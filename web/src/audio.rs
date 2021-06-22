@@ -345,7 +345,7 @@ impl WebAudioBackend {
 
                 let buffer_source_node = node.clone();
 
-                let sound_sample_rate = f64::from(sound.format.sample_rate);
+                let sound_sample_rate: f64 = sound.format.sample_rate.into();
                 let mut is_stereo = sound.format.is_stereo;
                 let node: web_sys::AudioNode = match settings {
                     Some(settings)
@@ -795,7 +795,7 @@ impl AudioBackend for WebAudioBackend {
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if sound.format.compression == AudioCompression::Mp3 {
-            let skip_sample_frames = u16::from(sound.data[0]) | (u16::from(sound.data[1]) << 8);
+            let skip_sample_frames = u16::from_le_bytes([sound.data[0], sound.data[1]]);
             (skip_sample_frames, &sound.data[2..])
         } else {
             (0, sound.data)
@@ -864,8 +864,8 @@ impl AudioBackend for WebAudioBackend {
                     // previous blocks had more samples than necessary, or because the stream
                     // is stopping (silence).
                     if audio_data.len() >= 4 {
-                        let num_sample_frames =
-                            u32::from(audio_data[0]) | (u32::from(audio_data[1]) << 8);
+                        let num_sample_frames: u32 =
+                            u16::from_le_bytes([audio_data[0], audio_data[1]]).into();
                         stream.num_sample_frames += num_sample_frames;
                         // MP3 streaming data:
                         // First two bytes = number of samples
@@ -1084,10 +1084,10 @@ fn resample(
     std::iter::from_fn(move || {
         if let (Some(l0), Some(r0), Some(l1), Some(r1)) = (left0, right0, left1, right1) {
             let a = t / dt_input;
-            let l0 = f64::from(l0);
-            let l1 = f64::from(l1);
-            let r0 = f64::from(r0);
-            let r1 = f64::from(r1);
+            let l0: f64 = l0.into();
+            let l1: f64 = l1.into();
+            let r0: f64 = r0.into();
+            let r1: f64 = r1.into();
             left = (l0 + (l1 - l0) * a) as i16;
             right = (r0 + (r1 - r0) * a) as i16;
             t += dt_output;

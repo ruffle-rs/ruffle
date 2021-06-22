@@ -232,7 +232,7 @@ impl<'a> Reader<'a> {
                     num_actions_to_skip: self.read_u8()?,
                 },
                 OpCode::With => {
-                    let code_length = usize::from(self.read_u16()?);
+                    let code_length: usize = (self.read_u16()?).into();
                     *length += code_length;
                     Action::With {
                         actions: self.read_slice(code_length)?,
@@ -290,7 +290,7 @@ impl<'a> Reader<'a> {
             params.push(self.read_str()?);
         }
         // code_length isn't included in the DefineFunction's action length.
-        let code_length = usize::from(self.read_u16()?);
+        let code_length: usize = (self.read_u16()?).into();
         *action_length += code_length;
         Ok(Action::DefineFunction {
             name,
@@ -313,7 +313,7 @@ impl<'a> Reader<'a> {
             });
         }
         // code_length isn't included in the DefineFunction's length.
-        let code_length = usize::from(self.read_u16()?);
+        let code_length: usize = (self.read_u16()?).into();
         *action_length += code_length;
         Ok(Action::DefineFunction2(Function {
             name,
@@ -326,9 +326,9 @@ impl<'a> Reader<'a> {
 
     fn read_try(&mut self, length: &mut usize) -> Result<Action<'a>> {
         let flags = self.read_u8()?;
-        let try_length = usize::from(self.read_u16()?);
-        let catch_length = usize::from(self.read_u16()?);
-        let finally_length = usize::from(self.read_u16()?);
+        let try_length: usize = (self.read_u16()?).into();
+        let catch_length: usize = (self.read_u16()?).into();
+        let finally_length: usize = (self.read_u16()?).into();
         *length += try_length + catch_length + finally_length;
         let catch_var = if flags & 0b100 == 0 {
             CatchVar::Var(self.read_str()?)

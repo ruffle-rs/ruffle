@@ -1725,14 +1725,14 @@ impl SoundTransform {
         const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
         self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32;
 
-        let ll0 = i64::from(self.left_to_left);
-        let lr0 = i64::from(self.left_to_right);
-        let rl0 = i64::from(self.right_to_left);
-        let rr0 = i64::from(self.right_to_right);
-        let ll1 = i64::from(other.left_to_left);
-        let lr1 = i64::from(other.left_to_right);
-        let rl1 = i64::from(other.right_to_left);
-        let rr1 = i64::from(other.right_to_right);
+        let ll0: i64 = self.left_to_left.into();
+        let lr0: i64 = self.left_to_right.into();
+        let rl0: i64 = self.right_to_left.into();
+        let rr0: i64 = self.right_to_right.into();
+        let ll1: i64 = other.left_to_left.into();
+        let lr1: i64 = other.left_to_right.into();
+        let rl1: i64 = other.right_to_left.into();
+        let rr1: i64 = other.right_to_right.into();
         self.left_to_left = ((ll0 * ll1 + rl0 * lr1) / MAX_VOLUME) as i32;
         self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32;
         self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32;

@@ -1040,7 +1040,7 @@ impl<'a> Reader<'a> {
                 if has_wide_offsets {
                     self.read_u32()?;
                 } else {
-                    u32::from(self.read_u16()?);
+                    self.read_u16()?;
                 };
             }
 
@@ -1048,7 +1048,7 @@ impl<'a> Reader<'a> {
             if has_wide_offsets {
                 self.read_u32()?;
             } else {
-                u32::from(self.read_u16()?);
+                self.read_u16()?;
             }
 
             // ShapeTable
@@ -1072,7 +1072,7 @@ impl<'a> Reader<'a> {
                 glyph.code = if has_wide_codes {
                     self.read_u16()?
                 } else {
-                    u16::from(self.read_u8()?)
+                    self.read_u8()?.into()
                 };
             }
         }
@@ -1146,12 +1146,12 @@ impl<'a> Reader<'a> {
             left_code: if has_wide_codes {
                 self.read_u16()?
             } else {
-                u16::from(self.read_u8()?)
+                self.read_u8()?.into()
             },
             right_code: if has_wide_codes {
                 self.read_u16()?
             } else {
-                u16::from(self.read_u8()?)
+                self.read_u8()?.into()
             },
             adjustment: Twips::new(self.read_i16()?),
         })
@@ -1206,7 +1206,7 @@ impl<'a> Reader<'a> {
             }
         } else {
             while let Ok(code) = self.read_u8() {
-                code_table.push(u16::from(code));
+                code_table.push(code.into());
             }
         }
 
@@ -1748,7 +1748,7 @@ impl<'a> Reader<'a> {
             .ok_or_else(|| Error::invalid_data("Invalid gradient spread mode"))?;
         let interpolation = GradientInterpolation::from_u8((flags >> 4) & 0b11)
             .ok_or_else(|| Error::invalid_data("Invalid gradient interpolation mode"))?;
-        let num_records = usize::from(flags & 0b1111);
+        let num_records: usize = (flags & 0b1111).into();
         Ok((num_records, spread, interpolation))
     }
 
@@ -1899,7 +1899,7 @@ impl<'a> Reader<'a> {
         let flags = if place_object_version >= 3 {
             self.read_u16()?
         } else {
-            u16::from(self.read_u8()?)
+            self.read_u8()?.into()
         };
 
         let depth = self.read_u16()?;

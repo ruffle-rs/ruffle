@@ -245,7 +245,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
         frames.get(0).unwrap().save(&output)?;
     } else {
         for (frame, image) in frames.iter().enumerate() {
-            let mut path = PathBuf::from(&output);
+            let mut path: PathBuf = (&output).into();
             path.push(format!("{}.png", frame));
             image.save(&path)?;
         }
@@ -322,7 +322,7 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
             .to_path_buf();
 
         if frames.len() == 1 {
-            let mut destination = PathBuf::from(&output);
+            let mut destination: PathBuf = (&output).into();
             relative_path.set_extension("png");
             destination.push(relative_path);
             if let Some(parent) = destination.parent() {
@@ -330,7 +330,7 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
             }
             frames.get(0).unwrap().save(&destination)?;
         } else {
-            let mut parent = PathBuf::from(&output);
+            let mut parent: PathBuf = (&output).into();
             relative_path.set_extension("");
             parent.push(&relative_path);
             let _ = create_dir_all(&parent);

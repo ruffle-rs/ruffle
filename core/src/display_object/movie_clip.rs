@@ -1646,7 +1646,7 @@ impl<'gc> MovieClip<'gc> {
         } else {
             reader.read_remove_object_2()
         }?;
-        let depth = Depth::from(remove_object.depth);
+        let depth: Depth = remove_object.depth.into();
         if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
             goto_commands.swap_remove(i);
         }
@@ -1912,7 +1912,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         require_button_mode: bool,
     ) -> Option<DisplayObject<'gc>> {
         if self.visible() {
-            let this = DisplayObject::from(*self);
+            let this: DisplayObject<'gc> = (*self).into();
 
             if let Some(masker) = self.masker() {
                 if !masker.hit_test_shape(context, point, HitTestOptions::SKIP_INVISIBLE) {
@@ -2224,7 +2224,7 @@ impl<'gc> MovieClipData<'gc> {
         }?;
 
         // We merge the deltas from this PlaceObject with the previous command.
-        let depth = Depth::from(place_object.depth);
+        let depth: Depth = place_object.depth.into();
         let mut goto_place =
             GotoPlaceObject::new(self.current_frame(), place_object, is_rewind, index);
         if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
