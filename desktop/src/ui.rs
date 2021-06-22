@@ -1,17 +1,14 @@
 use clipboard::{ClipboardContext, ClipboardProvider};
 use ruffle_core::backend::ui::{MouseCursor, UiBackend};
 use ruffle_core::events::KeyCode;
-use std::collections::HashSet;
 use std::rc::Rc;
 use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
-use winit::event::{ElementState, VirtualKeyCode, WindowEvent};
+use winit::event::VirtualKeyCode;
 use winit::window::Window;
 
 pub struct DesktopUiBackend {
     window: Rc<Window>,
-    keys_down: HashSet<KeyCode>,
     cursor_visible: bool,
-    last_key: KeyCode,
     clipboard: ClipboardContext,
 }
 
@@ -19,30 +16,8 @@ impl DesktopUiBackend {
     pub fn new(window: Rc<Window>) -> Self {
         Self {
             window,
-            keys_down: HashSet::new(),
             cursor_visible: true,
-            last_key: KeyCode::Unknown,
             clipboard: ClipboardProvider::new().unwrap(),
-        }
-    }
-
-    /// Process an input event, and return an event that should be forward to the player, if any.
-    pub fn handle_event(&mut self, event: WindowEvent) {
-        // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-        #[allow(deprecated)]
-        if let WindowEvent::KeyboardInput { input, .. } = event {
-            if let Some(key) = input.virtual_keycode {
-                let key_code = winit_to_ruffle_key_code(key);
-                self.last_key = key_code;
-                match input.state {
-                    ElementState::Pressed => {
-                        self.keys_down.insert(key_code);
-                    }
-                    ElementState::Released => {
-                        self.keys_down.remove(&key_code);
-                    }
-                }
-            }
         }
     }
 }
@@ -55,14 +30,6 @@ See the following link for more info:
 https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users";
 
 impl UiBackend for DesktopUiBackend {
-    fn is_key_down(&self, key: KeyCode) -> bool {
-        self.keys_down.contains(&key)
-    }
-
-    fn last_key_code(&self) -> KeyCode {
-        self.last_key
-    }
-
     fn mouse_visible(&self) -> bool {
         self.cursor_visible
     }

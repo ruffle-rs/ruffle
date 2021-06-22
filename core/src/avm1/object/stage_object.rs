@@ -953,7 +953,7 @@ fn x_mouse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let local = this.global_to_local(*activation.context.mouse_position);
+    let local = this.global_to_local(activation.context.input.mouse_position);
     Ok(local.0.to_pixels().into())
 }
 
@@ -961,7 +961,7 @@ fn y_mouse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let local = this.global_to_local(*activation.context.mouse_position);
+    let local = this.global_to_local(activation.context.input.mouse_position);
     Ok(local.1.to_pixels().into())
 }
 

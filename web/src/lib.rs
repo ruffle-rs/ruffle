@@ -18,12 +18,11 @@ use ruffle_core::backend::{
     audio::{AudioBackend, NullAudioBackend},
     render::RenderBackend,
     storage::{MemoryStorageBackend, StorageBackend},
-    ui::UiBackend,
     video::SoftwareVideoBackend,
 };
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseWheelDelta};
+use ruffle_core::events::MouseWheelDelta;
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
@@ -693,19 +692,8 @@ impl Ruffle {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
-                            let ui = if let Some(ui) =
-                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
-                            {
-                                ui
-                            } else {
-                                return;
-                            };
-                            ui.keydown(&js_event);
-
-                            let key_code = ui.last_key_code();
-                            if key_code != KeyCode::Unknown {
-                                core.handle_event(PlayerEvent::KeyDown { key_code });
-                            }
+                            let key_code = ui::web_to_ruffle_key_code(&js_event.code());
+                            core.handle_event(PlayerEvent::KeyDown { key_code });
 
                             if let Some(codepoint) = ui::web_key_to_codepoint(&js_event.key()) {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
@@ -730,19 +718,8 @@ impl Ruffle {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
-                            let ui = if let Some(ui) =
-                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
-                            {
-                                ui
-                            } else {
-                                return;
-                            };
-                            ui.keyup(&js_event);
-
-                            let key_code = ui.last_key_code();
-                            if key_code != KeyCode::Unknown {
-                                core.handle_event(PlayerEvent::KeyUp { key_code });
-                            }
+                            let key_code = ui::web_to_ruffle_key_code(&js_event.code());
+                            core.handle_event(PlayerEvent::KeyUp { key_code });
                         });
                         js_event.prevent_default();
                     }

@@ -2,17 +2,14 @@ use super::JavascriptPlayer;
 use ruffle_core::backend::ui::{MouseCursor, UiBackend};
 use ruffle_core::events::KeyCode;
 use ruffle_web_common::JsResult;
-use std::collections::HashSet;
-use web_sys::{HtmlCanvasElement, KeyboardEvent};
+use web_sys::HtmlCanvasElement;
 
 /// An implementation of `UiBackend` utilizing `web_sys` bindings to input APIs.
 pub struct WebUiBackend {
     js_player: JavascriptPlayer,
     canvas: HtmlCanvasElement,
-    keys_down: HashSet<KeyCode>,
     cursor_visible: bool,
     cursor: MouseCursor,
-    last_key: KeyCode,
 }
 
 impl WebUiBackend {
@@ -20,25 +17,9 @@ impl WebUiBackend {
         Self {
             js_player,
             canvas: canvas.clone(),
-            keys_down: HashSet::new(),
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
-            last_key: KeyCode::Unknown,
         }
-    }
-
-    /// Register a key press for a given code string.
-    pub fn keydown(&mut self, event: &KeyboardEvent) {
-        let key_code = web_to_ruffle_key_code(&event.code());
-        self.last_key = key_code;
-        self.keys_down.insert(key_code);
-    }
-
-    /// Register a key release for a given code string.
-    pub fn keyup(&mut self, event: &KeyboardEvent) {
-        let key_code = web_to_ruffle_key_code(&event.code());
-        self.last_key = key_code;
-        self.keys_down.remove(&key_code);
     }
 
     fn update_mouse_cursor(&self) {
@@ -60,14 +41,6 @@ impl WebUiBackend {
 }
 
 impl UiBackend for WebUiBackend {
-    fn is_key_down(&self, key: KeyCode) -> bool {
-        self.keys_down.contains(&key)
-    }
-
-    fn last_key_code(&self) -> KeyCode {
-        self.last_key
-    }
-
     fn mouse_visible(&self) -> bool {
         self.cursor_visible
     }
@@ -101,7 +74,7 @@ impl UiBackend for WebUiBackend {
 
 /// Convert a web `KeyboardEvent.code` value into a Ruffle `KeyCode`.
 /// Return `None` if there is no matching Flash key code.
-fn web_to_ruffle_key_code(key_code: &str) -> KeyCode {
+pub fn web_to_ruffle_key_code(key_code: &str) -> KeyCode {
     match key_code {
         "Backspace" => KeyCode::Backspace,
         "Tab" => KeyCode::Tab,

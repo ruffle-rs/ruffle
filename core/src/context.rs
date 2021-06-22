@@ -10,7 +10,7 @@ use crate::backend::{
     navigator::NavigatorBackend,
     render::RenderBackend,
     storage::StorageBackend,
-    ui::UiBackend,
+    ui::{InputManager, UiBackend},
     video::VideoBackend,
 };
 use crate::context_menu::ContextMenuState;
@@ -98,8 +98,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// If the mouse is down, the display object that the mouse is currently pressing.
     pub mouse_down_object: Option<DisplayObject<'gc>>,
 
-    /// The location of the mouse when it was last over the player.
-    pub mouse_position: &'a (Twips, Twips),
+    pub input: &'a InputManager,
 
     /// The object being dragged via a `startDrag` action.
     pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
@@ -270,7 +269,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             stage: self.stage,
             mouse_over_object: self.mouse_over_object,
             mouse_down_object: self.mouse_down_object,
-            mouse_position: self.mouse_position,
+            input: self.input,
             drag_object: self.drag_object,
             player: self.player.clone(),
             load_manager: self.load_manager,

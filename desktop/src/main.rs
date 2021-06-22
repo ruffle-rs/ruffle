@@ -486,11 +486,6 @@ impl App {
                             }
                             WindowEvent::KeyboardInput { input, .. } => {
                                 let mut player_lock = player.lock().unwrap();
-                                player_lock
-                                    .ui_mut()
-                                    .downcast_mut::<ui::DesktopUiBackend>()
-                                    .unwrap()
-                                    .handle_event(event);
                                 if let Some(key) = input.virtual_keycode {
                                     let key_code = ui::winit_to_ruffle_key_code(key);
                                     let event = match input.state {

@@ -1269,14 +1269,14 @@ impl<'gc> EditText<'gc> {
                 let length = text.len();
                 match key_code {
                     ButtonKeyCode::Left => {
-                        if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
+                        if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
                             && selection.to > 0
                         {
                             selection.to = string_utils::prev_char_boundary(text, selection.to);
-                            if !context.ui.is_key_down(KeyCode::Shift) {
+                            if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }
-                        } else if !context.ui.is_key_down(KeyCode::Shift) {
+                        } else if !context.input.is_key_down(KeyCode::Shift) {
                             selection.to = selection.start();
                             selection.from = selection.to;
                         }
@@ -1285,14 +1285,14 @@ impl<'gc> EditText<'gc> {
                         return ClipEventResult::Handled;
                     }
                     ButtonKeyCode::Right => {
-                        if (context.ui.is_key_down(KeyCode::Shift) || selection.is_caret())
+                        if (context.input.is_key_down(KeyCode::Shift) || selection.is_caret())
                             && selection.to < length
                         {
                             selection.to = string_utils::next_char_boundary(text, selection.to);
-                            if !context.ui.is_key_down(KeyCode::Shift) {
+                            if !context.input.is_key_down(KeyCode::Shift) {
                                 selection.from = selection.to;
                             }
-                        } else if !context.ui.is_key_down(KeyCode::Shift) {
+                        } else if !context.input.is_key_down(KeyCode::Shift) {
                             selection.to = selection.end();
                             selection.from = selection.to;
                         }
@@ -1732,7 +1732,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             let tracker = context.focus_tracker;
             tracker.set(Some((*self).into()), context);
             if let Some(position) = self
-                .screen_position_to_index(*context.mouse_position)
+                .screen_position_to_index(context.input.mouse_position)
                 .map(TextSelection::for_position)
             {
                 self.0.write(context.gc_context).selection = Some(position);
