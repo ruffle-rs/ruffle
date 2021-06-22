@@ -1551,7 +1551,12 @@ impl<'gc> MovieClip<'gc> {
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                class_object.call(Some(object), &[], &mut activation, Some(class_object))?;
+                class_object.call_native_init(
+                    Some(object),
+                    &[],
+                    &mut activation,
+                    Some(class_object),
+                )?;
 
                 Ok(())
             };
