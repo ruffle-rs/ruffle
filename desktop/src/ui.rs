@@ -1,6 +1,6 @@
 use clipboard::{ClipboardContext, ClipboardProvider};
 use ruffle_core::backend::ui::{MouseCursor, UiBackend};
-use ruffle_core::events::{KeyCode, PlayerEvent};
+use ruffle_core::events::KeyCode;
 use std::collections::HashSet;
 use std::rc::Rc;
 use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
@@ -29,42 +29,25 @@ impl DesktopUiBackend {
     }
 
     /// Process an input event, and return an event that should be forward to the player, if any.
-    pub fn handle_event(&mut self, event: WindowEvent) -> Option<PlayerEvent> {
+    pub fn handle_event(&mut self, event: WindowEvent) {
         // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
         #[allow(deprecated)]
-        match event {
-            WindowEvent::KeyboardInput { input, .. } => match input.state {
-                ElementState::Pressed => {
-                    if let Some(key) = input.virtual_keycode {
-                        let key_code = winit_to_ruffle_key_code(key);
+        if let WindowEvent::KeyboardInput { input, .. } = event {
+            if let Some(key) = input.virtual_keycode {
+                let key_code = winit_to_ruffle_key_code(key);
+                self.last_key = key_code;
+                match input.state {
+                    ElementState::Pressed => {
                         self.keys_down.insert(key_code);
-                        self.last_char =
-                            winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
-                        self.last_key = key_code;
-                        if key_code != KeyCode::Unknown {
-                            return Some(PlayerEvent::KeyDown { key_code });
-                        }
                     }
-                }
-                ElementState::Released => {
-                    if let Some(key) = input.virtual_keycode {
-                        let key_code = winit_to_ruffle_key_code(key);
+                    ElementState::Released => {
                         self.keys_down.remove(&key_code);
-                        self.last_char =
-                            winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
-                        self.last_key = key_code;
-                        if key_code != KeyCode::Unknown {
-                            return Some(PlayerEvent::KeyUp { key_code });
-                        }
                     }
                 }
-            },
-            WindowEvent::ReceivedCharacter(codepoint) => {
-                return Some(PlayerEvent::TextInput { codepoint });
+                self.last_char =
+                    winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
             }
-            _ => (),
         }
-        None
     }
 }
 

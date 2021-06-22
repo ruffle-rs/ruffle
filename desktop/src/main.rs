@@ -28,19 +28,19 @@ use ruffle_core::{
         video,
     },
     config::Letterbox,
+    events::PlayerEvent,
+    tag_utils::SwfMovie,
     Player,
 };
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
+use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tinyfiledialogs::open_file_dialog;
 use url::Url;
-
-use ruffle_core::tag_utils::SwfMovie;
-use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use std::io::Read;
-use std::rc::Rc;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
@@ -441,26 +441,23 @@ impl App {
                                     window.request_redraw();
                                 }
                             }
-                            WindowEvent::MouseInput {
-                                button: MouseButton::Left,
-                                state: pressed,
-                                ..
-                            } => {
+                            WindowEvent::MouseInput { button, state, .. } => {
                                 let mut player_lock = player.lock().unwrap();
-                                let event = if pressed == ElementState::Pressed {
-                                    ruffle_core::PlayerEvent::MouseDown {
+                                let event = match state {
+                                    ElementState::Pressed => ruffle_core::PlayerEvent::MouseDown {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
-                                    }
-                                } else {
-                                    ruffle_core::PlayerEvent::MouseUp {
+                                    },
+                                    ElementState::Released => ruffle_core::PlayerEvent::MouseUp {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
-                                    }
+                                    },
                                 };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
+                                if button == MouseButton::Left {
+                                    player_lock.handle_event(event);
+                                    if player_lock.needs_render() {
+                                        window.request_redraw();
+                                    }
                                 }
                             }
                             WindowEvent::MouseWheel { delta, .. } => {
@@ -487,19 +484,31 @@ impl App {
                                     window.request_redraw();
                                 }
                             }
-                            WindowEvent::KeyboardInput { .. }
-                            | WindowEvent::ReceivedCharacter(_) => {
+                            WindowEvent::KeyboardInput { input, .. } => {
                                 let mut player_lock = player.lock().unwrap();
-                                if let Some(event) = player_lock
+                                player_lock
                                     .ui_mut()
                                     .downcast_mut::<ui::DesktopUiBackend>()
                                     .unwrap()
-                                    .handle_event(event)
-                                {
+                                    .handle_event(event);
+                                if let Some(key) = input.virtual_keycode {
+                                    let key_code = ui::winit_to_ruffle_key_code(key);
+                                    let event = match input.state {
+                                        ElementState::Pressed => PlayerEvent::KeyDown { key_code },
+                                        ElementState::Released => PlayerEvent::KeyUp { key_code },
+                                    };
                                     player_lock.handle_event(event);
                                     if player_lock.needs_render() {
                                         window.request_redraw();
                                     }
+                                }
+                            }
+                            WindowEvent::ReceivedCharacter(codepoint) => {
+                                let mut player_lock = player.lock().unwrap();
+                                let event = PlayerEvent::TextInput { codepoint };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
                                 }
                             }
                             _ => (),
