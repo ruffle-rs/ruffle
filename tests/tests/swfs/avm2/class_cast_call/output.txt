@@ -1,0 +1,14 @@
+//ES4Class(null);
+null
+//ES4Class(undefined);
+null
+//ES4Class(new ES4Class());
+[object ES4Class]
+//ES4Class(new ES4Subclass());
+[object ES4Subclass]
+//ES4Subclass(null);
+null
+//ES4Subclass(undefined);
+null
+//ES4Subclass(new ES4Subclass());
+[object ES4Subclass]
