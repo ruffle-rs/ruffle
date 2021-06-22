@@ -48,7 +48,6 @@ pub struct InputManager {
     keys_down: HashSet<KeyCode>,
     last_key: KeyCode,
     pub mouse_position: (Twips, Twips),
-    pub is_mouse_down: bool,
 }
 
 impl InputManager {
@@ -57,7 +56,6 @@ impl InputManager {
             keys_down: HashSet::new(),
             last_key: KeyCode::Unknown,
             mouse_position: (Twips::ZERO, Twips::ZERO),
-            is_mouse_down: false,
         }
     }
 
@@ -77,6 +75,10 @@ impl InputManager {
 
     pub fn last_key_code(&self) -> KeyCode {
         self.last_key
+    }
+
+    pub fn is_mouse_down(&self) -> bool {
+        self.is_key_down(KeyCode::MouseLeft)
     }
 }
 

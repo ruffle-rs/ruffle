@@ -816,6 +816,7 @@ impl Player {
             }
         }
 
+        let is_mouse_down = self.input.is_mouse_down();
         match event {
             PlayerEvent::KeyDown { key_code } => {
                 self.input.key_down(key_code);
@@ -831,6 +832,7 @@ impl Player {
             }
             _ => {}
         }
+        let is_mouse_button_changed = self.input.is_mouse_down() != is_mouse_down;
 
         // Propagate button events.
         let button_event = match event {
@@ -958,18 +960,10 @@ impl Player {
             button: MouseButton::Left,
         } = event
         {
-            let is_mouse_down = match event {
-                PlayerEvent::MouseMove { .. } => self.input.is_mouse_down,
-                PlayerEvent::MouseDown { .. } => true,
-                PlayerEvent::MouseUp { .. } => false,
-                _ => unreachable!(),
-            };
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
             self.input.mouse_position =
                 inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
-            let is_mouse_button_changed = self.input.is_mouse_down != is_mouse_down;
-            self.input.is_mouse_down = is_mouse_down;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
             if self.update_mouse_state(is_mouse_button_changed) {
@@ -1056,7 +1050,7 @@ impl Player {
             if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignroed.
-                if context.input.is_mouse_down {
+                if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
                         if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
@@ -1090,7 +1084,7 @@ impl Player {
 
             // Handle presses and releases.
             if is_mouse_button_changed {
-                if context.input.is_mouse_down {
+                if context.input.is_mouse_down() {
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_over_object {
                         events.push((over_object, ClipEvent::Press));
