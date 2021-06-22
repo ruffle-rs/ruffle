@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -473,9 +472,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         Some(self.0.read().display_object)
-    }
-    fn as_executable(&self) -> Option<Executable<'gc>> {
-        None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
