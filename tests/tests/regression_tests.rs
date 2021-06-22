@@ -300,7 +300,6 @@ swf_tests! {
     (constructor_function, "avm1/constructor_function", 1),
     (global_array, "avm1/global_array", 1),
     (array_constructor, "avm1/array_constructor", 1),
-    (array_apply, "avm1/array_apply", 1),
     (object_constructor, "avm1/object_constructor", 1),
     (object_function, "avm1/object_function", 1),
     (parse_int, "avm1/parse_int", 1),
