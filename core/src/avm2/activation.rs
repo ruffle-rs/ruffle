@@ -18,7 +18,7 @@ use crate::context::UpdateContext;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
@@ -2568,11 +2568,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        if address < 0 || address as usize >= dm.len() {
-            return Err("RangeError: The specified range is invalid".into());
-        }
 
-        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2587,11 +2586,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if address < 0 || (address as usize + 1) >= dm.len() {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
-        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2606,11 +2603,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if address < 0 || (address as usize + 3) >= dm.len() {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
-        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2625,11 +2620,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if address < 0 || (address as usize + 3) >= dm.len() {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
-        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2644,11 +2637,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_bytearray_mut(self.context.gc_context)
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
 
-        if address < 0 || (address as usize + 7) >= dm.len() {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
-        dm.write_bytes_at(&val.to_le_bytes(), address as usize);
+        let address =
+            usize::try_from(address).map_err(|_| "RangeError: The specified range is invalid")?;
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)?;
 
         Ok(FrameControl::Continue)
     }
@@ -2664,7 +2655,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = dm.get(address);
 
         if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(val as i32));
+            self.context.avm2.push(val);
         } else {
             return Err("RangeError: The specified range is invalid".into());
         }
@@ -2680,15 +2671,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.get_range(address..address + 2);
-
-        if let Some(val) = val {
-            self.context.avm2.push(Value::Integer(
-                u16::from_le_bytes(val.try_into().unwrap()) as i32
-            ));
-        } else {
-            return Err("RangeError: The specified range is invalid".into());
-        }
+        let val = dm.read_at(2, address)?;
+        self.context
+            .avm2
+            .push(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
     }
@@ -2701,16 +2687,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.get_range(address..address + 4);
-
-        if let Some(val) = val {
-            self.context
-                .avm2
-                .push(Value::Integer(i32::from_le_bytes(val.try_into().unwrap())));
-        } else {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
+        let val = dm.read_at(4, address)?;
+        self.context
+            .avm2
+            .push(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
 
@@ -2722,15 +2702,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.get_range(address..address + 4);
-
-        if let Some(val) = val {
-            self.context.avm2.push(Value::Number(
-                f32::from_le_bytes(val.try_into().unwrap()) as f64
-            ));
-        } else {
-            return Err("RangeError: The specified range is invalid".into());
-        }
+        let val = dm.read_at(4, address)?;
+        self.context
+            .avm2
+            .push(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(FrameControl::Continue)
     }
@@ -2743,16 +2718,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let dm = dm
             .as_bytearray()
             .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
-        let val = dm.get_range(address..address + 8);
-
-        if let Some(val) = val {
-            self.context
-                .avm2
-                .push(Value::Number(f64::from_le_bytes(val.try_into().unwrap())));
-        } else {
-            return Err("RangeError: The specified range is invalid".into());
-        }
-
+        let val = dm.read_at(8, address)?;
+        self.context
+            .avm2
+            .push(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(FrameControl::Continue)
     }
 

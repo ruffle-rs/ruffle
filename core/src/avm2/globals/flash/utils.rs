@@ -3,6 +3,7 @@
 use crate::avm2::{Activation, Error, Object, Value};
 
 pub mod bytearray;
+pub mod compression_algorithm;
 pub mod endian;
 
 /// Implements `flash.utils.getTimer`

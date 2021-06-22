@@ -307,15 +307,16 @@ pub fn bytes<'gc>(
                     // off. We scroll back 2 bytes before writing the actual
                     // datastream as it is guaranteed to at least be as long as
                     // the implicit end tag we want to get rid of.
-                    let correct_header_length = ba_write.bytes().len() - 2;
+                    let correct_header_length = ba_write.len() - 2;
                     ba_write.set_position(correct_header_length);
-                    ba_write.write_bytes(root.data());
+                    ba_write.write_bytes(root.data())?;
 
                     // `swf` wrote the wrong length (since we wrote the data
                     // ourselves), so we need to overwrite it ourselves.
                     ba_write.set_position(4);
                     ba_write.set_endian(Endian::Little);
-                    ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32);
+                    ba_write
+                        .write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
 
                     // Finally, reset the array to the correct state.
                     ba_write.set_position(0);

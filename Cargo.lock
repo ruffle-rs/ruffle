@@ -3143,6 +3143,7 @@ dependencies = [
  "jpeg-decoder",
  "json",
  "log",
+ "lzma-rs",
  "minimp3",
  "nellymoser-rs",
  "num-derive",

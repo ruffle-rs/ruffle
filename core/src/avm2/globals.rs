@@ -598,6 +598,14 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    class(
+        activation,
+        flash::utils::compression_algorithm::create_class(mc),
+        implicit_deriver,
+        domain,
+        script,
+    )?;
+
     function(
         mc,
         "flash.utils",

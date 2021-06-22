@@ -1,18 +1,36 @@
-72
-69
-76
-76
-2689877248
-3394.019287109375
-Test
-TesTest
-TesTest
+// ba1.writeBytes(ba2, 3, 2);
+test datae 
+// ba1.readBytes(ba2, 2, 3);
+motesdata
+// ba1.position = 100;
+// ba1.writeUnsignedInt(2);
+104
+// ba1.clear();
 0
-7
-7
-TesTe
-29556
+// ba1.writeDouble(6.6);
+// ba1.position = 3;
+// ba1.bytesAvailable;
+5
+// ba1.writeMultiByte("次 滋 治 爾 璽 痔 磁 示 而 耳 自 蒔 辞 汐 鹿 ", "shift-jis");
+// ba1.readMultiByte(6, "shift-jis")
 次 滋 
-THIS IS A TEST UTF STRING
-25
-ZTHIS IS A TEST UTF STRING
+3
+5
+-10
+20
+40
+22
+false
+true
+true
+100
+255
+64
+64
+false
+false
+true
+5120
+0
+255
+-2560
