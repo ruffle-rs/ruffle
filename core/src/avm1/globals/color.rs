@@ -130,21 +130,20 @@ fn set_rgb<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(activation.context.gc_context, true);
-        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
+
         let rgb = args
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)? as i32;
-        let r = (rgb >> 16) & 0xff;
-        let g = (rgb >> 8) & 0xff;
-        let b = rgb & 0xff;
+        let [b, g, r, _] = rgb.to_le_bytes();
 
+        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
         color_transform.r_mult = Fixed8::ZERO;
         color_transform.g_mult = Fixed8::ZERO;
         color_transform.b_mult = Fixed8::ZERO;
-        color_transform.r_add = r as i16;
-        color_transform.g_add = g as i16;
-        color_transform.b_add = b as i16;
+        color_transform.r_add = r.into();
+        color_transform.g_add = g.into();
+        color_transform.b_add = b.into();
     }
     Ok(Value::Undefined)
 }
