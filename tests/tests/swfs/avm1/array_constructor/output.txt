@@ -25,3 +25,6 @@ null
 // new Array(undefined, false)
 undefined,false
 2
+// Array.call(a, "b")
+a
+b
