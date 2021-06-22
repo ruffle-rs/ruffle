@@ -290,21 +290,25 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn call(
         self,
-        receiver: Option<Object<'gc>>,
+        _receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<Object<'gc>>,
+        _superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let constructor = self.0.read().constructor.clone();
+        let class_name = self
+            .as_class()
+            .ok_or("Attempted to cast to class object that is missing a class!")?
+            .read()
+            .name()
+            .clone()
+            .into();
 
-        constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-            false,
-        )
+        log::error!("{:?}", class_name);
+        arguments
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_type(activation, class_name)
     }
 
     fn call_strict(
@@ -314,16 +318,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let constructor = self.0.read().constructor.clone();
-
-        constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-            true,
-        )
+        self.call(receiver, arguments, activation, superclass_object)
     }
 
     fn call_init(
