@@ -934,15 +934,33 @@ impl Player {
         });
 
         // Update mouse state.
-        // This fires button rollover/press events, which should run after the above mouseMove events.
-        if self.update_mouse_state(Some(&event)) {
-            self.needs_render = true;
+        if let PlayerEvent::MouseMove { x, y }
+        | PlayerEvent::MouseDown { x, y }
+        | PlayerEvent::MouseUp { x, y } = event
+        {
+            let is_mouse_down = match event {
+                PlayerEvent::MouseMove { .. } => self.input.is_mouse_down,
+                PlayerEvent::MouseDown { .. } => true,
+                PlayerEvent::MouseUp { .. } => false,
+                _ => unreachable!(),
+            };
+            let inverse_view_matrix =
+                self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
+            self.input.mouse_position =
+                inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+            let is_mouse_button_changed = self.input.is_mouse_down != is_mouse_down;
+            self.input.is_mouse_down = is_mouse_down;
+
+            // This fires button rollover/press events, which should run after the above mouseMove events.
+            if self.update_mouse_state(is_mouse_button_changed) {
+                self.needs_render = true;
+            }
         }
     }
 
     /// Update dragged object, if any.
     fn update_drag(&mut self) {
-        let mouse_pos = self.input.mouse_position;
+        let (mouse_x, mouse_y) = self.input.mouse_position;
         self.mutate_with_update_context(|context| {
             if let Some(drag_object) = &mut context.drag_object {
                 let display_object = drag_object.display_object;
@@ -950,10 +968,8 @@ impl Player {
                     // Be sure to clear the drag if the object was removed.
                     *context.drag_object = None;
                 } else {
-                    let mut drag_point = (
-                        mouse_pos.0 + drag_object.offset.0,
-                        mouse_pos.1 + drag_object.offset.1,
-                    );
+                    let (offset_x, offset_y) = drag_object.offset;
+                    let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
                     if let Some(parent) = display_object.parent() {
                         drag_point = parent.global_to_local(drag_point);
                     }
@@ -985,36 +1001,7 @@ impl Player {
     }
 
     /// Updates the hover state of buttons.
-    fn update_mouse_state(&mut self, event: Option<&PlayerEvent>) -> bool {
-        let inverse_view_matrix =
-            self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
-
-        // Update mouse state based on event type.
-        let mut is_mouse_down = self.input.is_mouse_down;
-        let mut new_mouse_pos = None;
-        match event {
-            Some(&PlayerEvent::MouseMove { x, y }) => {
-                new_mouse_pos = Some((x, y));
-            }
-            Some(&PlayerEvent::MouseDown { x, y }) => {
-                new_mouse_pos = Some((x, y));
-                is_mouse_down = true;
-            }
-            Some(&PlayerEvent::MouseUp { x, y }) => {
-                new_mouse_pos = Some((x, y));
-                is_mouse_down = false;
-            }
-            // Explicity requested an update.
-            None => (),
-            // Don't care about non-mouse events.
-            _ => return false,
-        }
-        if let Some((x, y)) = new_mouse_pos {
-            self.input.mouse_position =
-                inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y))
-        }
-        let is_mouse_button_changed = self.input.is_mouse_down != is_mouse_down;
-        self.input.is_mouse_down = is_mouse_down;
+    fn update_mouse_state(&mut self, is_mouse_button_changed: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
 
         // Determine the display object the mouse is hovering over.
@@ -1049,7 +1036,7 @@ impl Player {
             if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignroed.
-                if is_mouse_down {
+                if context.input.is_mouse_down {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
                         if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
@@ -1083,7 +1070,7 @@ impl Player {
 
             // Handle presses and releases.
             if is_mouse_button_changed {
-                if is_mouse_down {
+                if context.input.is_mouse_down {
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_over_object {
                         events.push((over_object, ClipEvent::Press));
@@ -1564,7 +1551,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_mouse_state(None);
+        self.update_mouse_state(false);
 
         // GC
         self.gc_arena.collect_debt();
