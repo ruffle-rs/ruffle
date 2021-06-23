@@ -311,10 +311,10 @@ impl<'gc> Value<'gc> {
             (Value::String(a), Value::String(b)) => Ok((**a == **b).into()),
             (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
-            (Value::Object(a), Value::Null) | (Value::Object(a), Value::Undefined) => {
+            (Value::Object(a), Value::Undefined | Value::Null) => {
                 Ok(Object::ptr_eq(*a, activation.context.avm1.global_object_cell()).into())
             }
-            (Value::Null, Value::Object(b)) | (Value::Undefined, Value::Object(b)) => {
+            (Value::Undefined | Value::Null, Value::Object(b)) => {
                 Ok(Object::ptr_eq(*b, activation.context.avm1.global_object_cell()).into())
             }
             (Value::Undefined, Value::Null) => Ok(true.into()),

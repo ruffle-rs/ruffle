@@ -121,7 +121,7 @@ pub fn set_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tracker = activation.context.focus_tracker;
     match args.get(0) {
-        Some(Value::Null) | Some(Value::Undefined) => {
+        Some(Value::Undefined | Value::Null) => {
             tracker.set(None, &mut activation.context);
             Ok(true.into())
         }

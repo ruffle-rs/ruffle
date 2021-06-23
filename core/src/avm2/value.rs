@@ -586,11 +586,14 @@ impl<'gc> Value<'gc> {
         match (self, other) {
             (Value::Undefined, Value::Undefined) => Ok(true),
             (Value::Null, Value::Null) => Ok(true),
-            (Value::Number(_), Value::Number(_))
-            | (Value::Number(_), Value::Unsigned(_))
-            | (Value::Number(_), Value::Integer(_))
-            | (Value::Unsigned(_), Value::Number(_))
-            | (Value::Integer(_), Value::Number(_)) => {
+            (Value::Unsigned(a), Value::Unsigned(b)) => Ok(a == b),
+            (Value::Unsigned(a), Value::Integer(b)) => Ok(*a as i64 == *b as i64),
+            (Value::Integer(a), Value::Unsigned(b)) => Ok(*a as i64 == *b as i64),
+            (Value::Integer(a), Value::Integer(b)) => Ok(a == b),
+            (
+                Value::Number(_) | Value::Unsigned(_) | Value::Integer(_),
+                Value::Number(_) | Value::Unsigned(_) | Value::Integer(_),
+            ) => {
                 let a = self.coerce_to_number(activation)?;
                 let b = other.coerce_to_number(activation)?;
 
@@ -608,25 +611,17 @@ impl<'gc> Value<'gc> {
 
                 Ok(false)
             }
-            (Value::Unsigned(a), Value::Unsigned(b)) => Ok(a == b),
-            (Value::Unsigned(a), Value::Integer(b)) => Ok(*a as i64 == *b as i64),
-            (Value::Integer(a), Value::Unsigned(b)) => Ok(*a as i64 == *b as i64),
-            (Value::Integer(a), Value::Integer(b)) => Ok(a == b),
             (Value::String(a), Value::String(b)) => Ok(a == b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
             (Value::Undefined, Value::Null) => Ok(true),
             (Value::Null, Value::Undefined) => Ok(true),
-            (Value::Number(_), Value::String(_))
-            | (Value::Unsigned(_), Value::String(_))
-            | (Value::Integer(_), Value::String(_)) => {
+            (Value::Number(_) | Value::Unsigned(_) | Value::Integer(_), Value::String(_)) => {
                 let number_other = Value::from(other.coerce_to_number(activation)?);
 
                 self.abstract_eq(&number_other, activation)
             }
-            (Value::String(_), Value::Number(_))
-            | (Value::String(_), Value::Unsigned(_))
-            | (Value::String(_), Value::Integer(_)) => {
+            (Value::String(_), Value::Number(_) | Value::Unsigned(_) | Value::Integer(_)) => {
                 let number_self = Value::from(self.coerce_to_number(activation)?);
 
                 number_self.abstract_eq(other, activation)
@@ -641,19 +636,19 @@ impl<'gc> Value<'gc> {
 
                 self.abstract_eq(&number_other, activation)
             }
-            (Value::String(_), Value::Object(_))
-            | (Value::Number(_), Value::Object(_))
-            | (Value::Unsigned(_), Value::Object(_))
-            | (Value::Integer(_), Value::Object(_)) => {
+            (
+                Value::String(_) | Value::Number(_) | Value::Unsigned(_) | Value::Integer(_),
+                Value::Object(_),
+            ) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
                 let primitive_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 
                 self.abstract_eq(&primitive_other, activation)
             }
-            (Value::Object(_), Value::String(_))
-            | (Value::Object(_), Value::Number(_))
-            | (Value::Object(_), Value::Unsigned(_))
-            | (Value::Object(_), Value::Integer(_)) => {
+            (
+                Value::Object(_),
+                Value::String(_) | Value::Number(_) | Value::Unsigned(_) | Value::Integer(_),
+            ) => {
                 //TODO: Should this be `Hint::Number`, `Hint::String`, or no-hint?
                 let primitive_self = self.coerce_to_primitive(Some(Hint::Number), activation)?;
 
