@@ -64,41 +64,27 @@ fn serialize_value<'gc>(
         Value::Number(f) => Some(AmfValue::Number(f)),
         Value::String(s) => Some(AmfValue::String(s.to_string())),
         Value::Object(o) => {
-            let function = activation.context.avm1.prototypes.function;
-            let array = activation.context.avm1.prototypes.array;
-            let xml = activation.context.avm1.prototypes.xml_node;
-            let date = activation.context.avm1.prototypes.date;
-
             // TODO: Find a more general rule for which object types should be skipped,
-            // and which turned into Undefined
-            if o.is_instance_of(activation, o, function)
-                .unwrap_or_default()
-            {
+            // and which turn into undefined.
+            if o.as_executable().is_some() {
                 None
             } else if o.as_display_object().is_some() {
                 Some(AmfValue::Undefined)
-            } else if o.is_instance_of(activation, o, array).unwrap_or_default() {
+            } else if o.as_array_object().is_some() {
                 let mut values = Vec::new();
                 recursive_serialize(activation, o, &mut values);
 
                 // TODO: What happens if an exception is thrown here?
                 let length = o.length(activation).unwrap();
                 Some(AmfValue::ECMAArray(vec![], values, length as u32))
-            } else if o.is_instance_of(activation, o, xml).unwrap_or_default() {
-                o.as_xml_node().and_then(|xml_node| {
-                    xml_node
-                        .into_string(&mut |_| true)
-                        .map(|xml_string| AmfValue::XML(xml_string, true))
-                        .ok()
-                })
-            } else if o.is_instance_of(activation, o, date).unwrap_or_default() {
-                o.as_date_object()
-                    .and_then(|date_obj| {
-                        date_obj
-                            .date_time()
-                            .map(|date_time| date_time.timestamp_millis())
-                    })
-                    .map(|millis| AmfValue::Date(millis as f64, None))
+            } else if let Some(xml_node) = o.as_xml_node() {
+                xml_node
+                    .into_string(&mut |_| true)
+                    .map(|xml_string| AmfValue::XML(xml_string, true))
+                    .ok()
+            } else if let Some(date) = o.as_date_object() {
+                date.date_time()
+                    .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
             } else {
                 let mut object_body = Vec::new();
                 recursive_serialize(activation, o, &mut object_body);
