@@ -555,51 +555,42 @@ pub fn create_globals<'gc>(
 
     object::fill_proto(gc_context, object_proto, function_proto);
 
-    let button_proto: Object<'gc> = button::create_proto(gc_context, object_proto, function_proto);
+    let button_proto = button::create_proto(gc_context, object_proto, function_proto);
 
-    let movie_clip_proto: Object<'gc> =
-        movie_clip::create_proto(gc_context, object_proto, function_proto);
+    let movie_clip_proto = movie_clip::create_proto(gc_context, object_proto, function_proto);
 
-    let sound_proto: Object<'gc> = sound::create_proto(gc_context, object_proto, function_proto);
+    let sound_proto = sound::create_proto(gc_context, object_proto, function_proto);
 
-    let text_field_proto: Object<'gc> =
-        text_field::create_proto(gc_context, object_proto, function_proto);
-    let text_format_proto: Object<'gc> =
-        text_format::create_proto(gc_context, object_proto, function_proto);
+    let text_field_proto = text_field::create_proto(gc_context, object_proto, function_proto);
+    let text_format_proto = text_format::create_proto(gc_context, object_proto, function_proto);
 
-    let array_proto: Object<'gc> = array::create_proto(gc_context, object_proto, function_proto);
+    let array_proto = array::create_proto(gc_context, object_proto, function_proto);
 
-    let color_proto: Object<'gc> = color::create_proto(gc_context, object_proto, function_proto);
+    let color_proto = color::create_proto(gc_context, object_proto, function_proto);
 
-    let error_proto: Object<'gc> = error::create_proto(gc_context, object_proto, function_proto);
+    let error_proto = error::create_proto(gc_context, object_proto, function_proto);
 
-    let xmlnode_proto: Object<'gc> =
-        xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
+    let xmlnode_proto = xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
 
-    let xml_proto: Object<'gc> = xml::create_xml_proto(gc_context, xmlnode_proto, function_proto);
+    let xml_proto = xml::create_xml_proto(gc_context, xmlnode_proto, function_proto);
 
-    let string_proto: Object<'gc> = string::create_proto(gc_context, object_proto, function_proto);
-    let number_proto: Object<'gc> = number::create_proto(gc_context, object_proto, function_proto);
-    let boolean_proto: Object<'gc> =
-        boolean::create_proto(gc_context, object_proto, function_proto);
-    let load_vars_proto: Object<'gc> =
-        load_vars::create_proto(gc_context, object_proto, function_proto);
-    let matrix_proto: Object<'gc> = matrix::create_proto(gc_context, object_proto, function_proto);
-    let point_proto: Object<'gc> = point::create_proto(gc_context, object_proto, function_proto);
-    let rectangle_proto: Object<'gc> =
-        rectangle::create_proto(gc_context, object_proto, function_proto);
-    let color_transform_proto: Object<'gc> =
+    let string_proto = string::create_proto(gc_context, object_proto, function_proto);
+    let number_proto = number::create_proto(gc_context, object_proto, function_proto);
+    let boolean_proto = boolean::create_proto(gc_context, object_proto, function_proto);
+    let load_vars_proto = load_vars::create_proto(gc_context, object_proto, function_proto);
+    let matrix_proto = matrix::create_proto(gc_context, object_proto, function_proto);
+    let point_proto = point::create_proto(gc_context, object_proto, function_proto);
+    let rectangle_proto = rectangle::create_proto(gc_context, object_proto, function_proto);
+    let color_transform_proto =
         color_transform::create_proto(gc_context, object_proto, function_proto);
-    let transform_proto: Object<'gc> =
-        transform::create_proto(gc_context, object_proto, function_proto);
-    let external_interface_proto: Object<'gc> =
-        external_interface::create_proto(gc_context, object_proto);
-    let selection_proto: Object<'gc> = selection::create_proto(gc_context, object_proto);
+    let transform_proto = transform::create_proto(gc_context, object_proto, function_proto);
+    let external_interface_proto = external_interface::create_proto(gc_context, object_proto);
+    let selection_proto = selection::create_proto(gc_context, object_proto);
 
     let (broadcaster_functions, as_broadcaster) =
         as_broadcaster::create(gc_context, Some(object_proto), function_proto);
 
-    let movie_clip_loader_proto: Object<'gc> = movie_clip_loader::create_proto(
+    let movie_clip_loader_proto = movie_clip_loader::create_proto(
         gc_context,
         object_proto,
         function_proto,
@@ -614,9 +605,9 @@ pub fn create_globals<'gc>(
         Some(function_proto),
         movie_clip_loader_proto,
     );
-    let date_proto: Object<'gc> = date::create_proto(gc_context, object_proto, function_proto);
+    let date_proto = date::create_proto(gc_context, object_proto, function_proto);
 
-    let video_proto: Object<'gc> = video::create_proto(gc_context, object_proto, function_proto);
+    let video_proto = video::create_proto(gc_context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
     let object = object::create_object_object(gc_context, object_proto, function_proto);
