@@ -328,10 +328,7 @@ pub fn color<'gc>(
         let color = dobj
             .background_color()
             .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
-        let rgb = color.to_rgb();
-        let a = (color.a as u32) << 24;
-
-        return Ok((rgb | a).into());
+        return Ok(color.to_rgba().into());
     }
 
     Ok(Value::Undefined)

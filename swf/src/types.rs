@@ -449,6 +449,21 @@ impl Color {
     pub const fn to_rgb(&self) -> u32 {
         u32::from_le_bytes([self.b, self.g, self.r, 0])
     }
+
+    /// Converts the color to a 32-bit RGBA value.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    /// ```rust
+    /// use swf::Color;
+    ///
+    /// let color = Color::from_rgb(0xFF00FF, 255);
+    /// assert_eq!(color.to_rgba(), 0xFFFF00FF);
+    /// ```
+    pub const fn to_rgba(&self) -> u32 {
+        u32::from_le_bytes([self.b, self.g, self.r, self.a])
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
