@@ -594,6 +594,7 @@ swf_tests! {
     (as3_function_call_coercion, "avm2/function_call_coercion", 1),
     (as3_istypelate_coerce, "avm2/istypelate_coerce", 1),
     (as3_class_cast_call, "avm2/class_cast_call", 1),
+    (as3_class_supercalls_mismatched, "avm2/class_supercalls_mismatched", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

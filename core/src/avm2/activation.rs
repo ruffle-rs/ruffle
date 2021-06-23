@@ -1157,7 +1157,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        let value = superclass_object.call_instance_method(&name, Some(receiver), &args, self)?;
+        let value = superclass_object.supercall_method(&name, Some(receiver), &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1189,7 +1189,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.call_instance_method(&name, Some(receiver), &args, self)?;
+        superclass_object.supercall_method(&name, Some(receiver), &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1330,7 +1330,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        let value = superclass_object.call_instance_getter(&name, Some(object), self)?;
+        let value = superclass_object.supercall_getter(&name, Some(object), self)?;
 
         self.context.avm2.push(value);
 
@@ -1361,7 +1361,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.call_instance_setter(&name, value, Some(object), self)?;
+        superclass_object.supercall_setter(&name, value, Some(object), self)?;
 
         Ok(FrameControl::Continue)
     }

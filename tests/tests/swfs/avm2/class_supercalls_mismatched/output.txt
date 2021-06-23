@@ -1,0 +1,30 @@
+//var e = new Evil()
+//e.a
+//(Evil.a get)
+1
+//e.a = 10
+//(Evil.a set with 10)
+10
+//e.a
+//(Evil.a get)
+10
+//e.b
+//(Evil.b get)
+// (Base.b_base set with 20)
+20
+//e.c = 14
+//(Evil.c set with 14)
+// (Base.c_base get)
+14
+//e.d()
+//(Base.d_base called)
+// (Base.d_base closure called)
+undefined
+//e.e()
+//Base.e_base function called)
+undefined
+//e.e_base = (a different function...)
+//e.e()
+// (Patched function e_base called!)
+[object Evil]
+undefined

@@ -657,11 +657,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not a Class".into())
     }
 
-    /// Call an instance method by name.
+    /// Supercall a method defined in this class.
     ///
-    /// This is intended for use in supercalls, specifically supermethod calls
-    /// It is to be called on the class object you want to start searching from
-    /// in the superclass tree.
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same method will call parent and
+    /// grandparent methods, and so on.
+    ///
+    /// If no method exists with the given name, this falls back to calling a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a method trait with the given name. If it
@@ -671,7 +678,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the method being called will also be provided to
     /// the `Activation` that the method runs on so that further supercalls
     /// will work as expected.
-    fn call_instance_method(
+    fn supercall_method(
         self,
         name: &QName<'gc>,
         reciever: Option<Object<'gc>>,
@@ -692,29 +699,43 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .lookup_instance_traits(name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Method { .. }))
-            .ok_or_else(|| {
-                format!(
-                    "Attempted to supercall method {:?}, which does not exist",
-                    name
-                )
-            })?;
+            .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
         let scope = superclass_object.get_scope();
 
-        if let TraitKind::Method { method, .. } = base_trait.kind() {
+        if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, arguments, activation, Some(superclass_object))
         } else {
-            unreachable!();
+            if let Some(mut reciever) = reciever {
+                if let Ok(callee) = reciever
+                    .get_property(reciever, name, activation)
+                    .and_then(|v| v.coerce_to_object(activation))
+                {
+                    return callee.call(Some(reciever), arguments, activation, None);
+                }
+            }
+
+            Err(format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                name
+            )
+            .into())
         }
     }
 
-    /// Call an instance getter by name.
+    /// Supercall a getter defined in this class.
     ///
-    /// This is intended for use in supercalls, specifically superproperty
-    /// reads. It is to be called on the class object you want to start
-    /// searching from in the superclass tree.
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same getter will call parent and
+    /// grandparent getters, and so on.
+    ///
+    /// If no getter exists with the given name, this falls back to getting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a getter trait with the given name. If it
@@ -724,7 +745,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the getter being called will also be provided to
     /// the `Activation` that the getter runs on so that further supercalls
     /// will work as expected.
-    fn call_instance_getter(
+    fn supercall_getter(
         self,
         name: &QName<'gc>,
         reciever: Option<Object<'gc>>,
@@ -744,29 +765,36 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .lookup_instance_traits(name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }))
-            .ok_or_else(|| {
-                format!(
-                    "Attempted to supercall getter {:?}, which does not exist",
-                    name
-                )
-            })?;
+            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
         let scope = superclass_object.get_scope();
 
-        if let TraitKind::Getter { method, .. } = base_trait.kind() {
+        if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, &[], activation, Some(superclass_object))
+        } else if let Some(mut reciever) = reciever {
+            reciever.get_property(reciever, name, activation)
         } else {
-            unreachable!();
+            Err(format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                name
+            )
+            .into())
         }
     }
 
-    /// Call an instance setter by name.
+    /// Supercall a setter defined in this class.
     ///
-    /// This is intended for use in supercalls, specifically superproperty
-    /// writes. It is to be called on the class object you want to start
-    /// searching from in the superclass tree.
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same setter will call parent and
+    /// grandparent setter, and so on.
+    ///
+    /// If no setter exists with the given name, this falls back to setting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
     ///
     /// This function will search through the class object tree starting from
     /// this class up to `Object` for a setter trait with the given name. If it
@@ -776,7 +804,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the setter being called will also be provided to
     /// the `Activation` that the setter runs on so that further supercalls
     /// will work as expected.
-    fn call_instance_setter(
+    fn supercall_setter(
         self,
         name: &QName<'gc>,
         value: Value<'gc>,
@@ -797,23 +825,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .lookup_instance_traits(name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }))
-            .ok_or_else(|| {
-                format!(
-                    "Attempted to supercall setter {:?}, which does not exist",
-                    name
-                )
-            })?;
+            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
         let scope = superclass_object.get_scope();
 
-        if let TraitKind::Setter { method, .. } = base_trait.kind() {
+        if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, &[value], activation, Some(superclass_object))?;
 
             Ok(())
+        } else if let Some(mut reciever) = reciever {
+            reciever.set_property(reciever, name, value, activation)
         } else {
-            unreachable!();
+            Err(format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                name
+            )
+            .into())
         }
     }
 
