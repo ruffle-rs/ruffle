@@ -816,7 +816,6 @@ export class RufflePlayer extends HTMLElement {
      * Used by the polyfill elements, RuffleObject and RuffleEmbed.
      *
      * @param elem The element to copy all attributes from.
-     *
      * @protected
      */
     protected copyElement(elem: HTMLElement): void {

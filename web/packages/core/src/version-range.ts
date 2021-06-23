@@ -114,7 +114,6 @@ export class VersionRange {
      *
      * A separator is `"||`" which splits the requirement string into
      * left OR right.
-     *
      * @returns A version range object.
      */
     static fromRequirementString(requirement: string): VersionRange {
