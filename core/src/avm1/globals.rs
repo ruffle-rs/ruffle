@@ -338,9 +338,9 @@ pub fn create_timer<'gc>(
         _ => return Ok(Value::Undefined),
     };
 
-    let interval = match args.get(i) {
-        Some(Value::Undefined) | None => return Ok(Value::Undefined),
-        Some(value) => value.coerce_to_i32(activation)?,
+    let interval = match args.get(i).unwrap_or(&Value::Undefined) {
+        Value::Undefined => return Ok(Value::Undefined),
+        value => value.coerce_to_i32(activation)?,
     };
     let params = if let Some(params) = args.get(i + 1..) {
         params.to_vec()
