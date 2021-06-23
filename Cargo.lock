@@ -2378,7 +2378,7 @@ checksum = "c44922cb3dbb1c70b5e5f443d63b64363a898564d739ba5198e3a9138442868d"
 [[package]]
 name = "nellymoser-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nellymoser?branch=main#77000f763b58021295429ca5740e3dc3b5228cbd"
+source = "git+https://github.com/ruffle-rs/nellymoser#77000f763b58021295429ca5740e3dc3b5228cbd"
 dependencies = [
  "bitstream-io",
  "rustdct",
