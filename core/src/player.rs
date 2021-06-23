@@ -759,11 +759,10 @@ impl Player {
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         if cfg!(feature = "avm_debug") {
-            if let PlayerEvent::KeyDown {
-                key_code: KeyCode::V,
-            } = event
-            {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
+            match event {
+                PlayerEvent::KeyDown {
+                    key_code: KeyCode::V,
+                } if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) => {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels: Vec<_> = context.stage.iter_depth_list().collect();
@@ -792,13 +791,9 @@ impl Player {
                         log::info!("Variable dump:\n{}", dumper.output());
                     });
                 }
-            }
-
-            if let PlayerEvent::KeyDown {
-                key_code: KeyCode::D,
-            } = event
-            {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
+                PlayerEvent::KeyDown {
+                    key_code: KeyCode::D,
+                } if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) => {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
@@ -815,15 +810,14 @@ impl Player {
                         }
                     });
                 }
+                _ => {}
             }
         }
 
         // Propagate button events.
         let button_event = match event {
             // ASCII characters convert directly to keyPress button events.
-            PlayerEvent::TextInput { codepoint }
-                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
-            {
+            PlayerEvent::TextInput { codepoint } if (32..127).contains(&u32::from(codepoint)) => {
                 Some(ClipEvent::KeyPress {
                     key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
                 })
@@ -841,25 +835,23 @@ impl Player {
         };
 
         let mut key_press_handled = false;
-        if button_event.is_some() {
+        if let Some(button_event) = button_event {
             self.mutate_with_update_context(|context| {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
                 for (_depth, level) in levels {
-                    if let Some(button_event) = button_event {
-                        let state = level.handle_clip_event(context, button_event);
-                        if state == ClipEventResult::Handled {
+                    let state = level.handle_clip_event(context, button_event);
+                    if state == ClipEventResult::Handled {
+                        key_press_handled = true;
+                        return;
+                    } else if let Some(text) =
+                        context.focus_tracker.get().and_then(|o| o.as_edit_text())
+                    {
+                        // Text fields listen for arrow key presses, etc.
+                        if text.handle_text_control_event(context, button_event)
+                            == ClipEventResult::Handled
+                        {
                             key_press_handled = true;
                             return;
-                        } else if let Some(text) =
-                            context.focus_tracker.get().and_then(|o| o.as_edit_text())
-                        {
-                            // Text fields listen for arrow key presses, etc.
-                            if text.handle_text_control_event(context, button_event)
-                                == ClipEventResult::Handled
-                            {
-                                key_press_handled = true;
-                                return;
-                            }
                         }
                     }
                 }
