@@ -42,9 +42,9 @@ pub fn call<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0) {
-        Some(Value::Undefined) | Some(Value::Null) | None => activation.context.avm1.globals,
-        Some(this_val) => this_val.coerce_to_object(activation),
+    let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined | Value::Null => activation.context.avm1.globals,
+        this_val => this_val.coerce_to_object(activation),
     };
     let empty = [];
     let args = match myargs.len() {
@@ -73,9 +73,9 @@ pub fn apply<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0) {
-        Some(Value::Undefined) | Some(Value::Null) | None => activation.context.avm1.globals,
-        Some(this_val) => this_val.coerce_to_object(activation),
+    let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined | Value::Null => activation.context.avm1.globals,
+        this_val => this_val.coerce_to_object(activation),
     };
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {

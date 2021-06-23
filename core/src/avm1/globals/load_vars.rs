@@ -113,9 +113,9 @@ fn on_data<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Default implementation forwards to decode and onLoad.
-    let success = match args.get(0) {
-        None | Some(Value::Undefined) | Some(Value::Null) => false,
-        Some(val) => {
+    let success = match args.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined | Value::Null => false,
+        val => {
             this.call_method("decode".into(), &[*val], activation)?;
             this.set("loaded", true.into(), activation)?;
             true
