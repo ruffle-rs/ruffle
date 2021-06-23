@@ -684,7 +684,7 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some('\n') | Some('\r') => layout_context.explicit_newline(context),
+                        Some('\n' | '\r') => layout_context.explicit_newline(context),
                         Some('\t') => layout_context.tab(),
                         _ => {}
                     }
