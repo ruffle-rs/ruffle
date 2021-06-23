@@ -269,12 +269,16 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.delete(activation, name)
     }
 
-    fn proto(&self) -> Value<'gc> {
-        self.0.read().base.proto()
+    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.0.read().base.proto(activation)
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
-        self.0.read().base.set_proto(gc_context, prototype);
+    fn set_proto(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        prototype: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.0.read().base.set_proto(activation, prototype)
     }
 
     fn define_value(

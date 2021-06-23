@@ -141,7 +141,7 @@ fn is_prototype_of<'gc>(
     match args.get(0) {
         Some(val) => {
             let ob = val.coerce_to_object(activation);
-            Ok(this.is_prototype_of(ob).into())
+            Ok(this.is_prototype_of(activation, ob).into())
         }
         _ => Ok(false.into()),
     }

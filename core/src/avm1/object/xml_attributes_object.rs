@@ -178,12 +178,16 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .set_attributes(gc_context, name, set_attributes, clear_attributes)
     }
 
-    fn proto(&self) -> Value<'gc> {
-        self.base().proto()
+    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.base().proto(activation)
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
-        self.base().set_proto(gc_context, prototype);
+    fn set_proto(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        prototype: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base().set_proto(activation, prototype)
     }
 
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
