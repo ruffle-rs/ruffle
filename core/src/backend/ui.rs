@@ -6,8 +6,6 @@ pub trait UiBackend: Downcast {
 
     fn last_key_code(&self) -> KeyCode;
 
-    fn last_key_char(&self) -> Option<char>;
-
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
@@ -65,10 +63,6 @@ impl UiBackend for NullUiBackend {
 
     fn last_key_code(&self) -> KeyCode {
         KeyCode::Unknown
-    }
-
-    fn last_key_char(&self) -> Option<char> {
-        None
     }
 
     fn mouse_visible(&self) -> bool {

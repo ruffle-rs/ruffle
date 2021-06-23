@@ -703,13 +703,11 @@ impl Ruffle {
                             ui.keydown(&js_event);
 
                             let key_code = ui.last_key_code();
-                            let key_char = ui.last_key_char();
-
                             if key_code != KeyCode::Unknown {
                                 core.handle_event(PlayerEvent::KeyDown { key_code });
                             }
 
-                            if let Some(codepoint) = key_char {
+                            if let Some(codepoint) = ui::web_key_to_codepoint(&js_event.key()) {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
                             }
                         });

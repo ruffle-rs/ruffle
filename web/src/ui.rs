@@ -13,7 +13,6 @@ pub struct WebUiBackend {
     cursor_visible: bool,
     cursor: MouseCursor,
     last_key: KeyCode,
-    last_char: Option<char>,
 }
 
 impl WebUiBackend {
@@ -25,7 +24,6 @@ impl WebUiBackend {
             cursor_visible: true,
             cursor: MouseCursor::Arrow,
             last_key: KeyCode::Unknown,
-            last_char: None,
         }
     }
 
@@ -34,7 +32,6 @@ impl WebUiBackend {
         let key_code = web_to_ruffle_key_code(&event.code());
         self.last_key = key_code;
         self.keys_down.insert(key_code);
-        self.last_char = web_key_to_codepoint(&event.key());
     }
 
     /// Register a key release for a given code string.
@@ -42,7 +39,6 @@ impl WebUiBackend {
         let key_code = web_to_ruffle_key_code(&event.code());
         self.last_key = key_code;
         self.keys_down.remove(&key_code);
-        self.last_char = web_key_to_codepoint(&event.key());
     }
 
     fn update_mouse_cursor(&self) {
@@ -70,10 +66,6 @@ impl UiBackend for WebUiBackend {
 
     fn last_key_code(&self) -> KeyCode {
         self.last_key
-    }
-
-    fn last_key_char(&self) -> Option<char> {
-        self.last_char
     }
 
     fn mouse_visible(&self) -> bool {
@@ -212,7 +204,7 @@ fn web_to_ruffle_key_code(key_code: &str) -> KeyCode {
 
 /// Convert a web `KeyboardEvent.key` value into a character codepoint.
 /// Return `None` if they input was not a printable character.
-fn web_key_to_codepoint(key: &str) -> Option<char> {
+pub fn web_key_to_codepoint(key: &str) -> Option<char> {
     // TODO: This is a very cheesy way to tell if a `KeyboardEvent.key` is a printable character.
     // Single character strings will be an actual printable char that we can use as text input.
     // All the other special values are multiple characters (e.g. "ArrowLeft").
