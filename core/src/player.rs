@@ -1309,7 +1309,7 @@ impl Player {
                     );
                     if let Ok(prototype) = constructor.get("prototype", &mut activation) {
                         if let Value::Object(object) = actions.clip.object() {
-                            object.set_proto(activation.context.gc_context, prototype);
+                            object.set_proto(&mut activation, prototype).unwrap(); // TODO: What happens on error?
                             for event in events {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",

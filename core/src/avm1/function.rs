@@ -680,12 +680,16 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.delete(activation, name)
     }
 
-    fn proto(&self) -> Value<'gc> {
-        self.base.proto()
+    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.base.proto(activation)
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
-        self.base.set_proto(gc_context, prototype);
+    fn set_proto(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        prototype: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base.set_proto(activation, prototype)
     }
 
     fn define_value(

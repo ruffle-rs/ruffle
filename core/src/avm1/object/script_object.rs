@@ -66,7 +66,6 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
-    prototype: Value<'gc>,
     values: PropertyMap<Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
@@ -76,7 +75,6 @@ pub struct ScriptObjectData<'gc> {
 impl fmt::Debug for ScriptObjectData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Object")
-            .field("prototype", &self.prototype)
             .field("values", &self.values)
             .field("watchers", &self.watchers)
             .finish()
@@ -85,16 +83,24 @@ impl fmt::Debug for ScriptObjectData<'_> {
 
 impl<'gc> ScriptObject<'gc> {
     pub fn object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        Self(GcCell::allocate(
+        let object = Self(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                prototype: proto.map_or(Value::Undefined, Value::Object),
                 type_of: TYPE_OF_OBJECT,
                 values: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
             },
-        ))
+        ));
+        if let Some(proto) = proto {
+            object.define_value(
+                gc_context,
+                "__proto__",
+                proto.into(),
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
+        object
     }
 
     /// Constructs and allocates an empty but normal object in one go.
@@ -429,18 +435,22 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
-    fn proto(&self) -> Value<'gc> {
-        self.0.read().prototype
+    fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+        self.get_data("__proto__", activation)
     }
 
-    fn set_proto(&self, gc_context: MutationContext<'gc, '_>, prototype: Value<'gc>) {
-        self.0.write(gc_context).prototype = prototype;
+    fn set_proto(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        prototype: Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.set_data("__proto__", prototype, activation)
     }
 
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.has_own_property(activation, name)
-            || if let Value::Object(proto) = self.proto() {
+            || if let Value::Object(proto) = self.proto(activation) {
                 proto.has_property(activation, name)
             } else {
                 false
@@ -450,9 +460,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
-        if name == "__proto__" {
-            return true;
-        }
         self.0
             .read()
             .values
@@ -488,7 +495,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     /// Enumerate the object.
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
-        let proto_keys = if let Value::Object(proto) = self.proto() {
+        let proto_keys = if let Value::Object(proto) = self.proto(activation) {
             proto.get_keys(activation)
         } else {
             Vec::new()
