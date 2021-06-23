@@ -51,7 +51,6 @@ export class PublicAPI {
      *
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
-     *
      * @protected
      */
     protected constructor(prev: PublicAPI | null | Record<string, unknown>) {
@@ -182,7 +181,6 @@ export class PublicAPI {
      *
      * @param ver_requirement A set of semantic version requirement
      * strings that the player version must satisfy.
-     *
      * @returns An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
@@ -261,15 +259,12 @@ export class PublicAPI {
      *
      * Note that Public API upgrades are deliberately not enabled in this
      * version of Ruffle, since there is no Public API to upgrade from.
-     *
      * @param sourceName The name of this particular
      * Ruffle source.
-     *
      * @param sourceAPI The Ruffle source to add.
      *
      * If both parameters are provided they will be used to define a new Ruffle
      * source to register with the public API.
-     *
      * @returns The Ruffle Public API.
      */
     static negotiate(

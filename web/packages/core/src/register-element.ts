@@ -23,7 +23,6 @@ interface Registration {
  *
  * @param elementName The internal element name, previously used to
  * register the element with the private registry.
- *
  * @returns The element data in the registry, or null if there is
  * no such element name registered.
  */
@@ -56,7 +55,6 @@ export function lookupElement(elementName: string): Registration | null {
  * @param elementClass The class of the element.
  *
  * You must call this function with the same class every time.
- *
  * @returns The actual element name.
  * @throws Throws an error if two different elements were registered with the
  * same internal name.
