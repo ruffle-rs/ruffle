@@ -34,6 +34,7 @@ enum PanicError {
     WasmCors,
     WasmMimeType,
     WasmNotFound,
+    SwfFetchError,
 }
 
 // Safari still requires prefixed fullscreen APIs, see:
@@ -136,6 +137,8 @@ export class RufflePlayer extends HTMLElement {
 
     private ruffleConstructor: Promise<typeof Ruffle>;
     private panicked = false;
+
+    private isExtension = false;
 
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
@@ -934,7 +937,17 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
-        const errorIndex = error?.ruffleIndexError ?? PanicError.Unknown;
+        let errorIndex = error?.ruffleIndexError ?? PanicError.Unknown;
+
+        if (error instanceof Error && error.message.includes("FetchError")) {
+            const swfUrl = new URL(this.swfUrl!);
+            if (window.location.origin != swfUrl.origin && this.isExtension) {
+                this.displayCorsWalkaroundMessage();
+                return;
+            } else {
+                errorIndex = PanicError.SwfFetchError;
+            }
+        }
 
         const errorArray: Array<string | null> & {
             stackIndex: number;
@@ -1047,6 +1060,16 @@ export class RufflePlayer extends HTMLElement {
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
+            case PanicError.SwfFetchError:
+                errorBody = `
+                    <p>Ruffle failed to load the Flash SWF file.</p>
+                    <p>The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.</p>
+                    <p>Try contacting the website administrator for help.</p>
+                `;
+                errorFooter = `
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = `
@@ -1134,6 +1157,19 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
+    displayCorsWalkaroundMessage(): void {
+        const div = document.createElement("div");
+        div.id = "message_overlay";
+        div.innerHTML = `<div class="message">
+            <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
+            <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
+            <div>
+                <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
+            </div>
+        </div>`;
+        this.container.prepend(div);
+    }
+
     displayUnsupportedMessage(): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
@@ -1183,6 +1219,10 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
+    }
+
+    setIsExtension(isExtension: boolean): void {
+        this.isExtension = isExtension;
     }
 }
 
