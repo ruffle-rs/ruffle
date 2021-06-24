@@ -147,7 +147,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn replace_with(&self, context: &mut UpdateContext<'_, 'gc, '_>, id: CharacterId) {
-        // Static assets like graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
+        // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
             .library
@@ -156,7 +156,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         {
             self.0.write(context.gc_context).static_data = new_graphic.0.read().static_data;
         } else {
-            log::warn!("PlaceObject: expected graphic at character ID {}", id);
+            log::warn!("PlaceObject: expected Graphic at character ID {}", id);
         }
     }
 
@@ -249,7 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 }
 
-/// Static data shared between all instances of a graphic.
+/// Static data shared between all instances of a Graphic.
 #[allow(dead_code)]
 #[derive(Collect)]
 #[collect(require_static)]
