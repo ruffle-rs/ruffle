@@ -576,20 +576,18 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
-        this.set("__constructor__", (*self).into(), activation)?;
-        this.set_attributes(
+        this.define_value(
             activation.context.gc_context,
-            Some("__constructor__"),
+            "__constructor__",
+            (*self).into(),
             Attribute::DONT_ENUM,
-            Attribute::empty(),
         );
         if activation.swf_version() < 7 {
-            this.set("constructor", (*self).into(), activation)?;
-            this.set_attributes(
+            this.define_value(
                 activation.context.gc_context,
-                Some("constructor"),
+                "constructor",
+                (*self).into(),
                 Attribute::DONT_ENUM,
-                Attribute::empty(),
             );
         }
         if let Some(exec) = &self.data.read().constructor {
@@ -618,20 +616,18 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .coerce_to_object(activation);
         let this = prototype.create_bare_object(activation, prototype)?;
 
-        this.set("__constructor__", (*self).into(), activation)?;
-        this.set_attributes(
+        this.define_value(
             activation.context.gc_context,
-            Some("__constructor__"),
+            "__constructor__",
+            (*self).into(),
             Attribute::DONT_ENUM,
-            Attribute::empty(),
         );
         if activation.swf_version() < 7 {
-            this.set("constructor", (*self).into(), activation)?;
-            this.set_attributes(
+            this.define_value(
                 activation.context.gc_context,
-                Some("constructor"),
+                "constructor",
+                (*self).into(),
                 Attribute::DONT_ENUM,
-                Attribute::empty(),
             );
         }
         if let Some(exec) = &self.data.read().constructor {
