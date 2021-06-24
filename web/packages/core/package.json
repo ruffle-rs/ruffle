@@ -16,12 +16,13 @@
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && [[ $GITHUB_ACTIONS != true ]]",
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
-        "test": "mocha"
+        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
     },
     "devDependencies": {
         "@types/mocha": "^8.2.2",
         "@typescript-eslint/eslint-plugin": "^4.28.1",
         "@typescript-eslint/parser": "^4.28.1",
+        "cross-env": "^7.0.3",
         "eslint": "^7.29.0",
         "eslint-plugin-jsdoc": "^35.4.1",
         "esm": "^3.2.25",
