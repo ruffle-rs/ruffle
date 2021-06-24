@@ -634,8 +634,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
+        is_function: bool,
     ) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
-        BytecodeMethod::from_method_index(method.translation_unit(), index, self)
+        BytecodeMethod::from_method_index(method.translation_unit(), index, is_function, self)
     }
 
     /// Retrieve a class entry from the current ABC file's method table.
@@ -1011,7 +1012,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let receiver = self.context.avm2.pop().coerce_to_object(self).ok();
         let function = self.context.avm2.pop().coerce_to_object(self)?;
         let base_proto = receiver.and_then(|r| r.proto());
-        let value = function.call_strict(receiver, &args, self, base_proto)?;
+        let value = function.call(receiver, &args, self, base_proto)?;
 
         self.context.avm2.push(value);
 
@@ -1029,7 +1030,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_method(index.0)
             .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
         let base_proto = receiver.proto();
-        let value = function?.call_strict(Some(receiver), &args, self, base_proto)?;
+        let value = function?.call(Some(receiver), &args, self, base_proto)?;
 
         self.context.avm2.push(value);
 
@@ -1057,7 +1058,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function = receiver
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
-        let value = function.call_strict(Some(receiver), &args, self, superclass_object)?;
+        let value = function.call(Some(receiver), &args, self, superclass_object)?;
 
         self.context.avm2.push(value);
 
@@ -1079,7 +1080,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function = receiver
             .get_property(receiver, &name?, self)?
             .coerce_to_object(self)?;
-        let value = function.call_strict(None, &args, self, None)?;
+        let value = function.call(None, &args, self, None)?;
 
         self.context.avm2.push(value);
 
@@ -1108,7 +1109,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_property(receiver, &name, self)?
             .coerce_to_object(self)?;
 
-        function.call_strict(Some(receiver), &args, self, superclass_object)?;
+        function.call(Some(receiver), &args, self, superclass_object)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1121,11 +1122,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let method = self.table_method(method, index)?;
+        let method = self.table_method(method, index, false)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(self, method.into(), scope, None);
-        let value =
-            function.call_strict(Some(receiver), &args, self, receiver.as_class_object())?;
+        let value = function.call(Some(receiver), &args, self, receiver.as_class_object())?;
 
         self.context.avm2.push(value);
 
@@ -1616,7 +1616,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let method_entry = self.table_method(method, index)?;
+        let method_entry = self.table_method(method, index, true)?;
         let scope = self.scope();
 
         let new_fn = FunctionObject::from_function(self, method_entry.into(), scope)?;

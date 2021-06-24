@@ -98,7 +98,6 @@ impl<'gc> ReturnValue<'gc> {
                 activation,
                 subclass_object,
                 callee,
-                false,
             ),
         }
     }

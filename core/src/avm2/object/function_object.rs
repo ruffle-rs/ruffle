@@ -149,28 +149,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 activation,
                 subclass_object,
                 self.into(),
-                false,
-            )
-        } else {
-            Err("Not a callable function!".into())
-        }
-    }
-
-    fn call_strict(
-        self,
-        receiver: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
-        subclass_object: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        if let Some(exec) = &self.0.read().exec {
-            exec.exec(
-                receiver,
-                arguments,
-                activation,
-                subclass_object,
-                self.into(),
-                true,
             )
         } else {
             Err("Not a callable function!".into())

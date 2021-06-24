@@ -99,7 +99,6 @@ impl<'gc> Executable<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         subclass_object: Option<Object<'gc>>,
         callee: Object<'gc>,
-        error_on_too_many_arguments: bool,
     ) -> Result<Value<'gc>, Error> {
         match self {
             Executable::Native(bm) => {
@@ -132,7 +131,7 @@ impl<'gc> Executable<'gc> {
                 method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
-                if !error_on_too_many_arguments {
+                if bm.method.is_unchecked() {
                     let max_args = bm.method.signature().len();
                     if arguments.len() > max_args && !bm.method.is_variadic() {
                         arguments = &arguments[..max_args];

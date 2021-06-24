@@ -619,18 +619,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not callable".into())
     }
 
-    /// Call the object, but yield an error if the function is being called
-    /// with too many parameters.
-    fn call_strict(
-        self,
-        _reciever: Option<Object<'gc>>,
-        _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc, '_>,
-        _subclass_object: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        Err("Object is not strict callable".into())
-    }
-
     /// Call the instance initializer.
     fn call_init(
         self,

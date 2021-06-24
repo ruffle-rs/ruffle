@@ -121,6 +121,15 @@ pub struct BytecodeMethod<'gc> {
 
     /// The parameter signature of this method.
     pub signature: Vec<ParamConfig<'gc>>,
+
+    /// The return type of this method.
+    pub return_type: Multiname<'gc>,
+
+    /// Whether or not this method was declared as a free-standing function.
+    ///
+    /// A free-standing function corresponds to the `Function` trait type, and
+    /// is instantiated with the `newfunction` opcode.
+    pub is_function: bool,
 }
 
 impl<'gc> BytecodeMethod<'gc> {
@@ -128,6 +137,7 @@ impl<'gc> BytecodeMethod<'gc> {
     pub fn from_method_index(
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
+        is_function: bool,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Gc<'gc, Self>, Error> {
         let abc = txunit.abc();
@@ -139,6 +149,16 @@ impl<'gc> BytecodeMethod<'gc> {
                 signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
+            let return_type = if method.return_type.0 == 0 {
+                Multiname::any()
+            } else {
+                Multiname::from_abc_multiname_static(
+                    txunit,
+                    method.return_type.clone(),
+                    activation.context.gc_context,
+                )?
+            };
+
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {
                     return Ok(Gc::allocate(
@@ -149,6 +169,8 @@ impl<'gc> BytecodeMethod<'gc> {
                             abc_method: abc_method.0,
                             abc_method_body: Some(index as u32),
                             signature,
+                            return_type,
+                            is_function,
                         },
                     ));
                 }
@@ -163,6 +185,8 @@ impl<'gc> BytecodeMethod<'gc> {
                 abc_method: abc_method.0,
                 abc_method_body: None,
                 signature,
+                return_type: Multiname::any(),
+                is_function,
             },
         ))
     }
@@ -215,9 +239,31 @@ impl<'gc> BytecodeMethod<'gc> {
 
     /// Determine if a given method is variadic.
     ///
-    /// Variadic methods do not yield an error
+    /// Variadic methods shove excess parameters into a final register.
     pub fn is_variadic(&self) -> bool {
         self.method().needs_arguments_object || self.method().needs_rest
+    }
+
+    /// Determine if a given method is unchecked.
+    ///
+    /// A method is unchecked if all of the following are true:
+    ///
+    ///  * The method was declared as a free-standing function
+    ///  * The function does not use rest-parameters
+    ///  * The function's parameters have no declared types or default values
+    ///  * The function does not declare a return type
+    pub fn is_unchecked(&self) -> bool {
+        if !self.is_function {
+            return false;
+        }
+
+        for param in self.signature() {
+            if !param.param_type_name.is_any() || param.default_value.is_some() {
+                return false;
+            }
+        }
+
+        !self.method().needs_rest && self.return_type.is_any()
     }
 }
 

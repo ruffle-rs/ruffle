@@ -82,6 +82,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_method(
         self,
         method_index: u32,
+        is_function: bool,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Method<'gc>, Error> {
         let read = self.0.read();
@@ -91,8 +92,12 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
-            BytecodeMethod::from_method_index(self, Index::new(method_index), activation);
+        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> = BytecodeMethod::from_method_index(
+            self,
+            Index::new(method_index),
+            is_function,
+            activation,
+        );
         let method: Method<'gc> = method?.into();
 
         self.0
@@ -291,7 +296,7 @@ impl<'gc> Script<'gc> {
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
 
-        let init = unit.load_method(script.init_method.0, activation)?;
+        let init = unit.load_method(script.init_method.0, false, activation)?;
 
         Ok(Self(GcCell::allocate(
             activation.context.gc_context,

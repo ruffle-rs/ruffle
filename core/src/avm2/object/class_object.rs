@@ -311,16 +311,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .coerce_to_type(activation, class_name)
     }
 
-    fn call_strict(
-        self,
-        receiver: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        self.call(receiver, arguments, activation, superclass_object)
-    }
-
     fn call_init(
         self,
         receiver: Option<Object<'gc>>,
@@ -336,7 +326,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             activation,
             superclass_object,
             self.into(),
-            true,
         )
     }
 
@@ -355,7 +344,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             activation,
             superclass_object,
             self.into(),
-            true,
         )
     }
 
