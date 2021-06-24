@@ -23,6 +23,12 @@ pub trait UiBackend: Downcast {
     /// Displays a warning about unsupported content in Ruffle.
     /// The user can still click an "OK" or "run anyway" message to dismiss the warning.
     fn display_unsupported_message(&self);
+
+    /// Displays a message about an error during root movie download.
+    /// In particular, on web this can be a CORS error, which we can sidestep
+    /// by providing a direct .swf link instead.
+    fn display_root_movie_download_failed_message(&self);
+
     // Unused, but kept in case we need it later
     fn message(&self, message: &str);
 }
@@ -86,6 +92,8 @@ impl UiBackend for NullUiBackend {
     }
 
     fn display_unsupported_message(&self) {}
+
+    fn display_root_movie_download_failed_message(&self) {}
 
     fn message(&self, _message: &str) {}
 }

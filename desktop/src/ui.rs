@@ -77,6 +77,8 @@ This content is not yet supported by Ruffle and will likely not run as intended.
 See the following link for more info:
 https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users";
 
+const DOWNLOAD_FAILED_MESSAGE: &str = "Ruffle failed to open or download this file.";
+
 impl UiBackend for DesktopUiBackend {
     fn is_key_down(&self, key: KeyCode) -> bool {
         match key {
@@ -228,6 +230,14 @@ impl UiBackend for DesktopUiBackend {
         message_box_ok(
             "Ruffle - Unsupported content",
             UNSUPPORTED_CONTENT_MESSAGE,
+            MessageBoxIcon::Warning,
+        );
+    }
+
+    fn display_root_movie_download_failed_message(&self) {
+        message_box_ok(
+            "Ruffle - Load failed",
+            DOWNLOAD_FAILED_MESSAGE,
             MessageBoxIcon::Warning,
         );
     }

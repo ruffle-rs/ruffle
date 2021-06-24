@@ -402,6 +402,11 @@ impl<'gc> Loader<'gc> {
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
                 Ok(())
             } else {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui()
+                    .display_root_movie_download_failed_message();
                 Err(Error::FetchError(url))
             }
         })
