@@ -281,7 +281,7 @@ pub enum Loader<'gc> {
         self_handle: Option<Handle>,
     },
 
-    /// Loader that is loading a new movie into a movieclip.
+    /// Loader that is loading a new movie into a MovieClip.
     Movie {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]

@@ -217,7 +217,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
 
     /// The base clip of this stack frame.
-    /// This will be the movieclip that contains the bytecode.
+    /// This will be the MovieClip that contains the bytecode.
     base_clip: DisplayObject<'gc>,
 
     /// The current target display object of this stack frame.
@@ -769,7 +769,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 call_frame = Some((target, f64_to_wrapping_u32(frame)));
             }
         } else {
-            // An optional path to a movieclip and a frame #/label, such as "/clip:framelabel".
+            // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
             if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
@@ -1974,16 +1974,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 return self.action_set_target(&target);
             }
             Value::Undefined => {
-                // Reset
+                // Reset.
                 let base_clip = self.base_clip();
                 self.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
                 if let Some(clip) = o.as_display_object() {
-                    // Movieclips can be targeted directly
+                    // MovieClips can be targeted directly.
                     self.set_target_clip(Some(clip));
                 } else {
-                    // Other objects get coerced to string
+                    // Other objects get coerced to string.
                     let target = target.coerce_to_string(self)?;
                     return self.action_set_target(&target);
                 }

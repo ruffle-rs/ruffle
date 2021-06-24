@@ -1275,7 +1275,7 @@ impl Player {
             }
 
             match actions.action_type {
-                // DoAction/clip event code
+                // DoAction/clip event code.
                 ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
                     Avm1::run_stack_frame_for_action(
                         actions.clip,
@@ -1285,7 +1285,7 @@ impl Player {
                         context,
                     );
                 }
-                // Change the prototype of a movieclip & run constructor events
+                // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
                     constructor: Some(constructor),
                     events,
@@ -1316,7 +1316,7 @@ impl Player {
                         }
                     }
                 }
-                // Run constructor events without changing the prototype
+                // Run constructor events without changing the prototype.
                 ActionType::Construct {
                     constructor: None,
                     events,
@@ -1331,7 +1331,7 @@ impl Player {
                         );
                     }
                 }
-                // Event handler method call (e.g. onEnterFrame)
+                // Event handler method call (e.g. onEnterFrame).
                 ActionType::Method { object, name, args } => {
                     Avm1::run_stack_frame_for_method(
                         actions.clip,
@@ -1343,7 +1343,7 @@ impl Player {
                     );
                 }
 
-                // Event handler method call (e.g. onEnterFrame)
+                // Event handler method call (e.g. onEnterFrame).
                 ActionType::NotifyListeners {
                     listener,
                     method,
