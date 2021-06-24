@@ -47,7 +47,7 @@ pub fn load_clip<'gc>(
     let target = args.get(1).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
-        if let Some(movieclip) = target
+        if let Some(mc) = target
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
@@ -57,7 +57,7 @@ pub fn load_clip<'gc>(
                 .fetch(&url, RequestOptions::get());
             let process = activation.context.load_manager.load_movie_into_clip(
                 activation.context.player.clone().unwrap(),
-                DisplayObject::MovieClip(movieclip),
+                DisplayObject::MovieClip(mc),
                 fetch,
                 url.to_string(),
                 None,
@@ -81,12 +81,12 @@ pub fn unload_clip<'gc>(
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
-        if let Some(mut movieclip) = target
+        if let Some(mut mc) = target
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
-            movieclip.unload(&mut activation.context);
-            movieclip.replace_with_movie(activation.context.gc_context, None);
+            mc.unload(&mut activation.context);
+            mc.replace_with_movie(activation.context.gc_context, None);
 
             return Ok(true.into());
         }
@@ -103,7 +103,7 @@ pub fn get_progress<'gc>(
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Object(target) = target {
-        if let Some(movieclip) = target
+        if let Some(mc) = target
             .as_display_object()
             .and_then(|dobj| dobj.as_movie_clip())
         {
@@ -111,8 +111,7 @@ pub fn get_progress<'gc>(
             ret_obj.define_value(
                 activation.context.gc_context,
                 "bytesLoaded",
-                movieclip
-                    .movie()
+                mc.movie()
                     .map(|mv| (mv.uncompressed_len()).into())
                     .unwrap_or(Value::Undefined),
                 Attribute::empty(),
@@ -120,8 +119,7 @@ pub fn get_progress<'gc>(
             ret_obj.define_value(
                 activation.context.gc_context,
                 "bytesTotal",
-                movieclip
-                    .movie()
+                mc.movie()
                     .map(|mv| (mv.uncompressed_len()).into())
                     .unwrap_or(Value::Undefined),
                 Attribute::empty(),

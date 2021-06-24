@@ -47,7 +47,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Self {
         let mut base = ScriptObject::object(gc_context, proto);
 
-        // Movieclips have a special typeof "movieclip", while others are the default "object".
+        // MovieClips have a special typeof "movieclip", while others are the default "object".
         if display_object.as_movie_clip().is_some() {
             base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
         }

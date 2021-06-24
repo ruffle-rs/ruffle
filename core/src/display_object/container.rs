@@ -441,8 +441,8 @@ macro_rules! impl_display_object_container {
             depth: Depth,
         ) {
             // Verify this is actually our child.
-            // TODO: This seems unnecessary (especially since AS3 movieclips
-            // are allowed to be used in ways that would trip this assert)
+            // TODO: This seems unnecessary (especially since AS3 MovieClips
+            // are allowed to be used in ways that would trip this assert).
             debug_assert!(DisplayObject::ptr_eq(
                 child.parent().unwrap(),
                 (*self).into()

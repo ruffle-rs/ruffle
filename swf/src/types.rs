@@ -715,7 +715,7 @@ impl BlendMode {
     }
 }
 
-/// An clip action (a.k.a. clip event) placed on a movieclip instance.
+/// An clip action (a.k.a. clip event) placed on a MovieClip instance.
 /// Created in the Flash IDE using `onClipEvent` or `on` blocks.
 ///
 /// [SWF19 pp.37-38 ClipActionRecord](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=39)
@@ -727,8 +727,7 @@ pub struct ClipAction<'a> {
 }
 
 bitflags! {
-    /// An event that can be attached to a movieclip instance using
-    /// an `onClipEvent` or `on` block.
+    /// An event that can be attached to a MovieClip instance using an `onClipEvent` or `on` block.
     ///
     /// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=50)
     pub struct ClipEventFlag: u32 {
@@ -760,7 +759,7 @@ pub type KeyCode = u8;
 /// Represents a tag in an SWF file.
 ///
 /// The SWF format is made up of a stream of tags. Each tag either
-/// defines a character (graphic, sound, movieclip), or places/modifies
+/// defines a character (Graphic, Sound, MovieClip), or places/modifies
 /// an instance of these characters on the display list.
 ///
 // [SWF19 p.29](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=29)

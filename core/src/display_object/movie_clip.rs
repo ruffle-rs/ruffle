@@ -975,14 +975,14 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    /// Gets the clip events for this movieclip.
+    /// Gets the clip events for this MovieClip.
     pub fn clip_actions(&self) -> Ref<[ClipEventHandler]> {
         Ref::map(self.0.read(), |mc| mc.clip_event_handlers())
     }
 
-    /// Sets the clip actions (a.k.a. clip events) for this movieclip.
+    /// Sets the clip actions (a.k.a. clip events) for this MovieClip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
-    /// tag on a movieclip instance.
+    /// tag on a MovieClip instance.
     pub fn set_clip_event_handlers(
         self,
         gc_context: MutationContext<'gc, '_>,
@@ -1921,7 +1921,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
 
             if self.world_bounds().contains(point) {
-                // This movieclip operates in "button mode" if it has a mouse handler,
+                // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
 
@@ -2274,7 +2274,7 @@ impl<'gc> MovieClipData<'gc> {
                 // (e.g., clip.onEnterFrame = foo).
                 if context.swf.version() >= 6 {
                     if let Some(name) = event.method_name() {
-                        // Keyboard events don't fire their methods unless the movieclip has focus (#2120).
+                        // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
                         if !event.is_key_event() || self.has_focus {
                             context.action_queue.queue_actions(
                                 self_display_object,
