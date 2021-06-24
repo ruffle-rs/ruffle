@@ -287,7 +287,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.fonts.get(&descriptor).copied()
     }
 
-    /// Returns the graphic with the given character ID.
+    /// Returns the `Graphic` with the given character ID.
     /// Returns `None` if the ID does not exist or is not a `Graphic`.
     pub fn get_graphic(&self, id: CharacterId) -> Option<Graphic<'gc>> {
         if let Some(&Character::Graphic(graphic)) = self.characters.get(&id) {

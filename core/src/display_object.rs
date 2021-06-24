@@ -1137,7 +1137,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Called when this object should be replaced by a PlaceObject tag.
     fn replace_with(&self, _context: &mut UpdateContext<'_, 'gc, '_>, _id: CharacterId) {
-        // Noop for most symbols; only shapes can replace their innards with another graphic.
+        // Noop for most symbols; only shapes can replace their innards with another Graphic.
     }
 
     fn object(&self) -> Avm1Value<'gc> {
