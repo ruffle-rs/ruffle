@@ -127,10 +127,7 @@ impl<W: Write> Writer<W> {
     fn write_i24(&mut self, n: i32) -> Result<()> {
         let bytes = n.to_le_bytes();
         debug_assert!(bytes[3] == 0 || bytes[3] == 0xFF);
-        self.write_u8(bytes[2])?;
-        self.write_u8(bytes[1])?;
-        self.write_u8(bytes[0])?;
-        Ok(())
+        self.output.write_all(&bytes[..3])
     }
 
     fn write_i32(&mut self, n: i32) -> Result<()> {
@@ -1038,5 +1035,22 @@ pub mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn write_i24() {
+        let write = |n: i32| {
+            let mut out = vec![];
+            {
+                let mut writer = Writer::new(&mut out);
+                writer.write_i24(n).unwrap();
+            }
+            out
+        };
+
+        assert_eq!(write(0), &[0, 0, 0]);
+        assert_eq!(write(2), &[2, 0, 0]);
+        assert_eq!(write(77777), &[0b1101_0001, 0b0010_1111, 0b0000_0001]);
+        assert_eq!(write(-77777), &[0b0010_1111, 0b1101_0000, 0b1111_1110]);
     }
 }
