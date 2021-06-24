@@ -31,12 +31,14 @@ function polyfillFlashInstances(): void {
         for (const elem of Array.from(objects)) {
             if (RuffleObject.isInterdictable(elem)) {
                 const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
+                ruffleObject.setIsExtension(isExtension);
                 elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbed.isInterdictable(elem)) {
                 const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
+                ruffleEmbed.setIsExtension(isExtension);
                 elem.replaceWith(ruffleEmbed);
             }
         }

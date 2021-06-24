@@ -206,6 +206,10 @@ impl UiBackend for WebUiBackend {
         self.js_player.display_unsupported_message()
     }
 
+    fn display_root_movie_download_failed_message(&self) {
+        self.js_player.display_root_movie_download_failed_message()
+    }
+
     fn message(&self, message: &str) {
         self.js_player.display_message(message);
     }

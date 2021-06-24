@@ -107,6 +107,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "displayUnsupportedMessage")]
     fn display_unsupported_message(this: &JavascriptPlayer);
 
+    #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
+    fn display_root_movie_download_failed_message(this: &JavascriptPlayer);
+
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
 
