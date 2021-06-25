@@ -52,6 +52,9 @@ impl<'gc> PrimitiveObject<'gc> {
     ///
     /// This function will yield an error if `primitive` is `Undefined`, `Null`,
     /// or an object already.
+    ///
+    /// In order to prevent stack overflow, this function does *not* call the
+    /// initializer of the primitive class being constructed.
     pub fn from_primitive(
         primitive: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -91,7 +94,10 @@ impl<'gc> PrimitiveObject<'gc> {
         .into();
         this.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(this), &[], activation, Some(class))?;
+        //We explicitly DO NOT CALL the native initializers of primitives here.
+        //If we did so, then those primitive initializers' method types would
+        //trigger the construction of primitive objects... which would need to
+        //be initialized, which forms a cycle.
 
         Ok(this)
     }
