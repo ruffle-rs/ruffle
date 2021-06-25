@@ -199,6 +199,30 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         })
     }
 
+    /// Resolve a type name to a class.
+    ///
+    /// This returns an error if a type is named but does not exist; or if the
+    /// typed named is not a class object.
+    fn resolve_type(&mut self, type_name: Multiname<'gc>) -> Result<Option<Object<'gc>>, Error> {
+        if type_name.is_any() {
+            return Ok(None);
+        }
+
+        let class = self
+            .scope()
+            .ok_or("Cannot resolve parameter types without a scope stack")?
+            .write(self.context.gc_context)
+            .resolve(&type_name, self)?
+            .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
+            .coerce_to_object(self)?;
+
+        if class.as_class().is_none() {
+            return Err(format!("Resolved parameter type {:?} is not a class", type_name).into());
+        }
+
+        Ok(Some(class))
+    }
+
     /// Resolve a single parameter value.
     ///
     /// Given an individual parameter value and the associated parameter's
@@ -226,7 +250,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into());
         };
 
-        arg.coerce_to_type(self, param_config.param_type_name.clone())
+        let type_name = param_config.param_type_name.clone();
+        let param_type = self.resolve_type(type_name)?;
+
+        if let Some(param_type) = param_type {
+            arg.coerce_to_type(self, param_type)
+        } else {
+            Ok(arg.into_owned())
+        }
     }
 
     /// Statically resolve all of the parameters for a given method.
@@ -2606,8 +2637,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let val = self.context.avm2.pop();
         let type_name = self.pool_multiname_static_any(method, index)?;
+        let param_type = self.resolve_type(type_name)?;
 
-        let x = val.coerce_to_type(self, type_name)?;
+        let x = if let Some(param_type) = param_type {
+            val.coerce_to_type(self, param_type)?
+        } else {
+            val
+        };
 
         self.context.avm2.push(x);
         Ok(FrameControl::Continue)

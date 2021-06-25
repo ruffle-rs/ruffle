@@ -1,7 +1,6 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Multiname;
 use crate::avm2::names::Namespace;
 use crate::avm2::names::QName;
 use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
@@ -572,63 +571,56 @@ impl<'gc> Value<'gc> {
     /// Coerce the value to another value by type name.
     ///
     /// This function implements a handful of coercion rules that appear to be
-    /// in use when parameters are typechecked. I suspect `op_coerce` also uses
-    /// these, but I cannot typecheck this for certain.
-    ///
-    /// If `type_name` matches a primitive type, additional primitive coercions
-    /// will apply to the resulting value. This relies on the fact that you
-    /// cannot redefine default types, so `int` always refers to an int.
+    /// in use when parameters are typechecked. `op_coerce` appears to use
+    /// these as well. If `class` is the class corresponding to a primitive
+    /// type, then this function will coerce the given value to that type.
     ///
     /// If the type is not coercible to the given type, an error is thrown.
     pub fn coerce_to_type(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        type_name: Multiname<'gc>,
+        class: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        if !type_name.is_any() {
-            if type_name.contains_name(&QName::new(Namespace::public(), "int")) {
-                return Ok(self.coerce_to_i32(activation)?.into());
-            }
+        if Object::ptr_eq(class, activation.avm2().classes().int) {
+            return Ok(self.coerce_to_i32(activation)?.into());
+        }
 
-            if type_name.contains_name(&QName::new(Namespace::public(), "uint")) {
-                return Ok(self.coerce_to_u32(activation)?.into());
-            }
+        if Object::ptr_eq(class, activation.avm2().classes().uint) {
+            return Ok(self.coerce_to_u32(activation)?.into());
+        }
 
-            if type_name.contains_name(&QName::new(Namespace::public(), "Number")) {
-                return Ok(self.coerce_to_number(activation)?.into());
-            }
+        if Object::ptr_eq(class, activation.avm2().classes().number) {
+            return Ok(self.coerce_to_number(activation)?.into());
+        }
 
-            if type_name.contains_name(&QName::new(Namespace::public(), "Boolean")) {
-                return Ok(self.coerce_to_boolean().into());
-            }
+        if Object::ptr_eq(class, activation.avm2().classes().boolean) {
+            return Ok(self.coerce_to_boolean().into());
+        }
 
-            if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
-                return Ok(Value::Null);
-            }
+        if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
+            return Ok(Value::Null);
+        }
 
-            if type_name.contains_name(&QName::new(Namespace::public(), "String")) {
-                return Ok(self.coerce_to_string(activation)?.into());
-            }
+        if Object::ptr_eq(class, activation.avm2().classes().string) {
+            return Ok(self.coerce_to_string(activation)?.into());
+        }
 
-            if let Ok(object) = self.coerce_to_object(activation) {
-                let param_type = activation
-                    .scope()
-                    .ok_or("Cannot resolve parameter types without a scope stack")?
-                    .write(activation.context.gc_context)
-                    .resolve(&type_name, activation)?
-                    .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
-                    .coerce_to_object(activation)?;
-
-                if object.is_of_type(param_type)? {
-                    return Ok(object.into());
-                }
-
-                return Err(format!("Cannot coerce {:?} to an {:?}", self, type_name).into());
+        if let Ok(object) = self.coerce_to_object(activation) {
+            if object.is_of_type(class)? {
+                return Ok(object.into());
             }
         }
 
-        //type is unconstrained
-        Ok(self.clone())
+        if let Some(static_class) = class.as_class() {
+            return Err(format!(
+                "Cannot coerce {:?} to an {:?}",
+                self,
+                static_class.read().name()
+            )
+            .into());
+        } else {
+            return Err(format!("Cannot coerce {:?} to {:?}", self, class).into());
+        }
     }
 
     /// Determine if this value is any kind of number.
