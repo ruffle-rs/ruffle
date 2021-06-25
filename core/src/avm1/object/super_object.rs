@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
@@ -268,13 +267,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         //`super` actually can be used to invoke MovieClip methods
         self.0.read().child.as_display_object()
-    }
-
-    fn as_executable(&self) -> Option<Executable<'gc>> {
-        //well, `super` *can* be called...
-        //...but `super_constr` needs an avm and context in order to get called.
-        //ergo, we can't downcast.
-        None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
