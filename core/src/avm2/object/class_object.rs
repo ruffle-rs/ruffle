@@ -1,11 +1,13 @@
 //! Class object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
-use crate::avm2::object::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::{
+    scriptobject_allocator, ScriptObject, ScriptObjectClass, ScriptObjectData,
+};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -36,6 +38,9 @@ pub struct ClassObjectData<'gc> {
     /// If `None`, this class has no parent. In practice, this is only used for
     /// interfaces (at least by the AS3 compiler in Animate CC 2020.)
     superclass_object: Option<Object<'gc>>,
+
+    /// The instance allocator for this class.
+    instance_allocator: Allocator,
 
     /// The instance constructor function
     constructor: Executable<'gc>,
@@ -78,6 +83,12 @@ impl<'gc> ClassObject<'gc> {
             }
         }
 
+        let instance_allocator = class
+            .read()
+            .instance_allocator()
+            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
+            .unwrap_or(scriptobject_allocator);
+
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by the class allocator, but instead should be
         //regular objects
@@ -89,8 +100,7 @@ impl<'gc> ClassObject<'gc> {
                     activation,
                 )?
                 .coerce_to_object(activation)?;
-            let allocate = class.read().instance_allocator();
-            allocate(superclass_object, base_proto, activation)?
+            instance_allocator(superclass_object, base_proto, activation)?
         } else {
             ScriptObject::bare_object(activation.context.gc_context)
         };
@@ -121,6 +131,7 @@ impl<'gc> ClassObject<'gc> {
                 class,
                 scope,
                 superclass_object,
+                instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
             },
@@ -221,6 +232,12 @@ impl<'gc> ClassObject<'gc> {
         mut prototype: Object<'gc>,
         fn_proto: Object<'gc>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
+        let instance_allocator = class
+            .read()
+            .instance_allocator()
+            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
+            .unwrap_or(scriptobject_allocator);
+
         let constructor = Executable::from_method(class.read().instance_init(), scope, None, mc);
         let native_constructor =
             Executable::from_method(class.read().native_instance_init(), scope, None, mc);
@@ -234,6 +251,7 @@ impl<'gc> ClassObject<'gc> {
                 class,
                 scope,
                 superclass_object,
+                instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
             },
@@ -343,8 +361,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        let class = self.as_class().ok_or("Cannot construct classless class!")?;
-        let allocator = class.read().instance_allocator();
+        let instance_allocator = self.0.read().instance_allocator.0;
         let class_object: Object<'gc> = self.into();
         let prototype = self
             .get_property(
@@ -354,7 +371,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             )?
             .coerce_to_object(activation)?;
 
-        let mut instance = allocator(class_object, prototype, activation)?;
+        let mut instance = instance_allocator(class_object, prototype, activation)?;
 
         instance.install_instance_traits(activation, class_object)?;
 
@@ -371,8 +388,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         .into())
     }
 
-    /// Get the base class constructor of this object.
     fn superclass_object(self) -> Option<Object<'gc>> {
         self.0.read().superclass_object
+    }
+
+    fn instance_allocator(self) -> Option<AllocatorFn> {
+        Some(self.0.read().instance_allocator.0)
     }
 }

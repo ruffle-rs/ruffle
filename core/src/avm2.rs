@@ -72,7 +72,7 @@ pub struct Avm2<'gc> {
     /// System prototypes.
     system_prototypes: Option<SystemPrototypes<'gc>>,
 
-    /// System constructors.
+    /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
     /// A list of objects which are capable of recieving broadcasts.

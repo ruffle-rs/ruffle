@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::object::{Object, ScriptObject, TObject};
+use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -64,50 +64,6 @@ impl fmt::Debug for Allocator {
     }
 }
 
-/// The implicit allocator for new classes.
-///
-/// This attempts to use the parent type's allocator, and if such an allocator
-/// does not exist, we default to allocating a `ScriptObject`.
-pub fn implicit_allocator<'gc>(
-    mut class_object: Object<'gc>,
-    proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error> {
-    let mut base_class_object = Some(class_object);
-    let mut base_class = class_object.as_class();
-    let mut instance_allocator = None;
-
-    while let (Some(b_class_object), Some(b_class)) = (base_class_object, base_class) {
-        let base_allocator = b_class.read().instance_allocator();
-
-        if base_allocator as usize != implicit_allocator as usize {
-            instance_allocator = Some(base_allocator);
-            break;
-        }
-
-        base_class_object = b_class_object.superclass_object();
-        base_class = base_class_object.and_then(|c| c.as_class());
-    }
-
-    if let Some(base_allocator) = instance_allocator {
-        base_allocator(class_object, proto, activation)
-    } else {
-        let base_proto = class_object
-            .get_property(
-                class_object,
-                &QName::new(Namespace::public(), "prototype"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
-
-        Ok(ScriptObject::instance(
-            activation.context.gc_context,
-            class_object,
-            base_proto,
-        ))
-    }
-}
-
 /// A loaded ABC Class which can be used to construct objects with.
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -129,7 +85,11 @@ pub struct Class<'gc> {
     interfaces: Vec<Multiname<'gc>>,
 
     /// The instance allocator for this class.
-    instance_allocator: Allocator,
+    ///
+    /// If `None`, then instances of this object will be allocated the same way
+    /// as the superclass specifies; or if there is no superclass, it will be
+    /// allocated as a `ScriptObject`.
+    instance_allocator: Option<Allocator>,
 
     /// The instance initializer for this class.
     ///
@@ -258,7 +218,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
-                instance_allocator: Allocator(implicit_allocator),
+                instance_allocator: None,
                 instance_init,
                 native_instance_init,
                 instance_traits: Vec::new(),
@@ -354,7 +314,7 @@ impl<'gc> Class<'gc> {
                 attributes,
                 protected_namespace,
                 interfaces,
-                instance_allocator: Allocator(implicit_allocator),
+                instance_allocator: None,
                 instance_init,
                 native_instance_init,
                 instance_traits: Vec::new(),
@@ -436,7 +396,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 interfaces: Vec::new(),
-                instance_allocator: Allocator(implicit_allocator),
+                instance_allocator: None,
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
@@ -709,13 +669,16 @@ impl<'gc> Class<'gc> {
     }
 
     /// Get this class's instance allocator.
-    pub fn instance_allocator(&self) -> AllocatorFn {
-        self.instance_allocator.0
+    ///
+    /// If `None`, then you should use the instance allocator of the superclass
+    /// or allocate as a `ScriptObject` if no such class exists.
+    pub fn instance_allocator(&self) -> Option<AllocatorFn> {
+        self.instance_allocator.as_ref().map(|a| a.0)
     }
 
     /// Set this class's instance allocator.
     pub fn set_instance_allocator(&mut self, alloc: AllocatorFn) {
-        self.instance_allocator.0 = alloc;
+        self.instance_allocator = Some(Allocator(alloc));
     }
 
     /// Get this class's instance initializer.

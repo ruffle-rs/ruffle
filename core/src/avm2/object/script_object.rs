@@ -16,6 +16,17 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+/// A class instance allocator that allocates `ScriptObject`s.
+pub fn scriptobject_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+
+    Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
+}
+
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::class::Class;
+use crate::avm2::class::{AllocatorFn, Class};
 use crate::avm2::domain::Domain;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
@@ -1018,6 +1018,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the superclass object of this object.
     fn superclass_object(self) -> Option<Object<'gc>> {
+        None
+    }
+
+    /// Get this class's instance allocator.
+    fn instance_allocator(self) -> Option<AllocatorFn> {
         None
     }
 
