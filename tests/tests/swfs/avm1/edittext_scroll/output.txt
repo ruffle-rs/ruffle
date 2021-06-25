@@ -1,0 +1,35 @@
+// text field with width 100
+// text: A test for scroll
+// title_txt.maxscroll
+1
+// title_txt.bottomScroll
+1
+// title_txt.scroll = -10
+1
+// title_txt.scroll = 10
+1
+// text: A longer test for scroll. This entry has more than one line, so we must scroll to see more.
+// title_txt.maxscroll
+5
+// title_txt.bottomScroll
+2
+// title_txt.scroll = -10
+1
+// title_txt.scroll = 2
+2
+// title_txt.bottomScroll
+3
+// title_txt.scroll = 100
+5
+// title_txt.bottomScroll
+6
+// title_txt.scroll = null
+1
+// title_txt.scroll = undefined
+1
+// title_txt.scroll = 1.5
+1
+// title_txt.scroll = 2147483647
+5
+// title_txt.scroll = 2147483648
+5
