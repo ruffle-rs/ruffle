@@ -1,12 +1,10 @@
-#![allow(clippy::unreadable_literal)]
-
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
 
-#[allow(dead_code)]
 pub struct Reader<'a> {
     input: &'a [u8],
+    #[allow(dead_code)]
     version: u8,
 }
 
@@ -68,7 +66,7 @@ impl<'a> Reader<'a> {
     pub fn read_opcode_and_length(&mut self) -> Result<(u8, usize)> {
         let opcode = self.read_u8()?;
         let length = if opcode >= 0x80 {
-            self.read_u16()? as usize
+            self.read_u16()?.into()
         } else {
             0
         };

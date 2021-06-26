@@ -24,6 +24,7 @@ impl<R: Read> PcmDecoder<R> {
 
 impl<R: Read> Iterator for PcmDecoder<R> {
     type Item = [i16; 2];
+
     #[allow(unknown_lints, clippy::branches_sharing_code)]
     fn next(&mut self) -> Option<Self::Item> {
         if self.is_stereo {
