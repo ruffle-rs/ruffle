@@ -921,7 +921,7 @@ impl<'gc> RenderIter<'gc> {
 impl<'gc> Iterator for RenderIter<'gc> {
     type Item = DisplayObject<'gc>;
 
-    fn next(&mut self) -> Option<DisplayObject<'gc>> {
+    fn next(&mut self) -> Option<Self::Item> {
         if self.i == self.neg_i {
             return None;
         }

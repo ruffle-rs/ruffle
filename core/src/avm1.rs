@@ -623,6 +623,7 @@ pub struct DisplayObjectIter<'gc> {
 
 impl<'gc> Iterator for DisplayObjectIter<'gc> {
     type Item = DisplayObject<'gc>;
+
     fn next(&mut self) -> Option<Self::Item> {
         let clip = self.clip;
         self.clip = clip.and_then(|clip| clip.next_avm1_clip());
