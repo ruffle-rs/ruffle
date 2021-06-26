@@ -507,17 +507,23 @@ impl<'gc> Avm1<'gc> {
 }
 
 pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
-    if let Error::ThrownValue(error) = &error {
-        let message = error
-            .coerce_to_string(activation)
-            .unwrap_or_else(|_| "undefined".into());
-        activation.context.log.avm_trace(&message);
-    } else {
-        log::error!("{}", error);
+    match &error {
+        Error::ThrownValue(value) => {
+            let message = value
+                .coerce_to_string(activation)
+                .unwrap_or_else(|_| "undefined".into());
+            activation.context.log.avm_trace(&message);
+            // Continue execution without halting.
+            return;
+        }
+        Error::InvalidSwf(swf_error) => {
+            log::error!("{}: {}", error, swf_error);
+        }
+        _ => {
+            log::error!("{}", error);
+        }
     }
-    if error.is_halting() {
-        activation.context.avm1.halt();
-    }
+    activation.context.avm1.halt();
 }
 
 /// Utility function used by `Avm1::action_wait_for_frame` and
