@@ -5,13 +5,15 @@ use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObject, ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// An Object which can be called to execute its function code.
@@ -77,7 +79,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             activation.context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
+                base: ScriptObjectData::base_new(Some(fn_proto), None),
                 exec,
             },
         ))
@@ -103,7 +105,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(GcCell::allocate(
             mc,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), ScriptObjectClass::NoClass),
+                base: ScriptObjectData::base_new(Some(fn_proto), None),
                 exec: Some(Executable::from_method(method, scope, receiver, mc)),
             },
         ))
@@ -114,13 +116,10 @@ impl<'gc> FunctionObject<'gc> {
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
-            Ok(AvmString::new(mc, format!("[class {}]", class.read().name().local_name())).into())
-        } else {
-            Ok("function Function() {}".into())
-        }
+    fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok("function Function() {}".into())
     }
 
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
@@ -178,7 +177,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(Some(this), None);
 
         Ok(FunctionObject(GcCell::allocate(
             activation.context.gc_context,

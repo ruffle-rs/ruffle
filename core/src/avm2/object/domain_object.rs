@@ -4,13 +4,15 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance allocator that allocates AppDomain objects.
@@ -27,7 +29,7 @@ pub fn appdomain_allocator<'gc>(
         .globals()
         .as_application_domain()
         .ok_or("Constructor scope must have an appdomain at the bottom of it's scope stack")?;
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
     Ok(DomainObject(GcCell::allocate(
         activation.context.gc_context,
@@ -57,7 +59,7 @@ impl<'gc> DomainObject<'gc> {
     /// It will return a `Domain` with no proto or instance constructor link,
     /// meaning that you will have to set those yourself.
     pub fn from_early_domain(mc: MutationContext<'gc, '_>, domain: Domain<'gc>) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(None, ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(None, None);
 
         DomainObject(GcCell::allocate(mc, DomainObjectData { base, domain })).into()
     }
@@ -72,7 +74,7 @@ impl<'gc> DomainObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().application_domain;
         let proto = activation.avm2().prototypes().application_domain;
-        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
@@ -98,7 +100,7 @@ impl<'gc> DomainObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().global;
         let proto = activation.avm2().prototypes().global;
-        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },
@@ -115,6 +117,7 @@ impl<'gc> DomainObject<'gc> {
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn as_application_domain(&self) -> Option<Domain<'gc>> {
         Some(self.0.read().domain)

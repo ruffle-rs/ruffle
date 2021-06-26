@@ -5,12 +5,12 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_instance};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -20,7 +20,7 @@ pub fn array_allocator<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
     Ok(ArrayObject(GcCell::allocate(
         activation.context.gc_context,
@@ -62,7 +62,7 @@ impl<'gc> ArrayObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().array;
         let proto = activation.avm2().prototypes().array;
-        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
         let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
             activation.context.gc_context,
@@ -79,6 +79,7 @@ impl<'gc> ArrayObject<'gc> {
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn get_property_local(
         self,
@@ -200,13 +201,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        self.0.read().base.resolve_any_trait(local_name)
-    }
-
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
@@ -228,7 +222,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ArrayObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(Some(this), None);
 
         Ok(ArrayObject(GcCell::allocate(
             activation.context.gc_context,

@@ -22,7 +22,7 @@ pub fn scriptobject_allocator<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
     Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
 }
@@ -31,27 +31,6 @@ pub fn scriptobject_allocator<'gc>(
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
-
-/// Information necessary for a script object to have a class attached to it.
-///
-/// Classes can be attached to a `ScriptObject` such that the class's traits
-/// are instantiated on-demand. Either class or instance traits can be
-/// instantiated.
-///
-/// Trait instantiation obeys prototyping rules: prototypes provide their
-/// instances with classes to pull traits from.
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
-pub enum ScriptObjectClass<'gc> {
-    /// Instantiate class traits, for class constructors.
-    ClassConstructor(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
-
-    /// Instantiate instance traits, for class instances.
-    ClassInstance(Object<'gc>),
-
-    /// Do not instantiate any class or instance traits.
-    NoClass,
-}
 
 /// Base data common to all `TObject` implementations.
 ///
@@ -73,8 +52,9 @@ pub struct ScriptObjectData<'gc> {
     /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
 
-    /// The class that this script object represents.
-    class: ScriptObjectClass<'gc>,
+    /// The class object that this is an instance of.
+    /// If `None`, this is either a class itself, or not an ES4 object at all.
+    instance_of: Option<Object<'gc>>,
 
     /// Enumeratable property names.
     enumerants: Vec<QName<'gc>>,
@@ -350,18 +330,14 @@ impl<'gc> ScriptObject<'gc> {
     /// This is *not* the same thing as an object literal, which actually does
     /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(None, ScriptObjectClass::NoClass),
-        ))
-        .into()
+        ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None, None))).into()
     }
 
     /// Construct an object with a prototype.
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
+            ScriptObjectData::base_new(Some(proto), None),
         ))
         .into()
     }
@@ -374,20 +350,20 @@ impl<'gc> ScriptObject<'gc> {
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class)),
+            ScriptObjectData::base_new(Some(proto), Some(class)),
         ))
         .into()
     }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(proto: Option<Object<'gc>>, trait_source: ScriptObjectClass<'gc>) -> Self {
+    pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<Object<'gc>>) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
             methods: Vec::new(),
             proto,
-            class: trait_source,
+            instance_of,
             enumerants: Vec::new(),
             interfaces: Vec::new(),
         }
@@ -549,16 +525,11 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
-        match &self.class {
-            //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.read().has_class_trait(name))
-            }
-
+        match self.instance_of {
             //Class instances have instance traits from any class in the base
             //class chain.
-            ScriptObjectClass::ClassInstance(class) => {
-                let mut cur_class = Some(*class);
+            Some(class) => {
+                let mut cur_class = Some(class);
 
                 while let Some(class) = cur_class {
                     let cur_static_class = class
@@ -575,16 +546,14 @@ impl<'gc> ScriptObjectData<'gc> {
             }
 
             // Bare objects, ES3 objects, and prototypes do not have traits.
-            ScriptObjectClass::NoClass => Ok(false),
+            None => Ok(false),
         }
     }
 
     pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
-            ScriptObjectClass::ClassInstance(class) => class.get_scope(),
-            ScriptObjectClass::NoClass => None,
-        }
+        self.instance_of
+            .as_ref()
+            .and_then(|class| class.get_scope())
     }
 
     pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
@@ -618,11 +587,8 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.read().resolve_any_class_trait(local_name))
-            }
-            ScriptObjectClass::ClassInstance(class) => {
+        match &self.instance_of {
+            Some(class) => {
                 let mut cur_class = Some(*class);
 
                 while let Some(class) = cur_class {
@@ -641,7 +607,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
                 Ok(None)
             }
-            ScriptObjectClass::NoClass => Ok(None),
+            None => Ok(None),
         }
     }
 
@@ -692,12 +658,12 @@ impl<'gc> ScriptObjectData<'gc> {
         name: &QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
-        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
-            // Traits are never enumerable
-            if self.has_trait(name)? {
-                return Ok(());
-            }
+        // Traits are never enumerable
+        if self.has_trait(name)? {
+            return Ok(());
+        }
 
+        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
             self.enumerants.push(name.clone());
         } else if !is_enumerable && self.enumerants.contains(name) {
             let mut index = None;
@@ -713,10 +679,6 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         Ok(())
-    }
-
-    pub fn class(&self) -> &ScriptObjectClass<'gc> {
-        &self.class
     }
 
     /// Install a method into the object.
@@ -887,20 +849,12 @@ impl<'gc> ScriptObjectData<'gc> {
 
     /// Get the class for this object, if it has one.
     pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        match self.class {
-            ScriptObjectClass::ClassConstructor(class, _) => Some(class),
-            ScriptObjectClass::ClassInstance(class_object) => class_object.as_class(),
-            ScriptObjectClass::NoClass => None,
-        }
+        self.instance_of.and_then(|class| class.as_class())
     }
 
     /// Get the class object for this object, if it has one.
     pub fn as_class_object(&self) -> Option<Object<'gc>> {
-        match self.class {
-            ScriptObjectClass::ClassConstructor(..) => None,
-            ScriptObjectClass::ClassInstance(class_object) => Some(class_object),
-            ScriptObjectClass::NoClass => None,
-        }
+        self.instance_of
     }
 
     /// Associate the object with a particular class object.
@@ -909,6 +863,6 @@ impl<'gc> ScriptObjectData<'gc> {
     /// used in situations where the object cannot be made an instance of the
     /// class at allocation time, such as during early runtime setup.
     pub fn set_class_object(&mut self, class_object: Object<'gc>) {
-        self.class = ScriptObjectClass::ClassInstance(class_object);
+        self.instance_of = Some(class_object)
     }
 }

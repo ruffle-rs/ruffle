@@ -5,9 +5,7 @@ use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
-use crate::avm2::object::script_object::{
-    scriptobject_allocator, ScriptObject, ScriptObjectClass, ScriptObjectData,
-};
+use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
@@ -124,10 +122,7 @@ impl<'gc> ClassObject<'gc> {
         let mut class_object: Object<'gc> = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
-                base: ScriptObjectData::base_new(
-                    Some(fn_proto),
-                    ScriptObjectClass::ClassConstructor(class, scope),
-                ),
+                base: ScriptObjectData::base_new(Some(fn_proto), None),
                 class,
                 scope,
                 superclass_object,
@@ -244,10 +239,7 @@ impl<'gc> ClassObject<'gc> {
         let mut base: Object<'gc> = ClassObject(GcCell::allocate(
             mc,
             ClassObjectData {
-                base: ScriptObjectData::base_new(
-                    Some(fn_proto),
-                    ScriptObjectClass::ClassConstructor(class, scope),
-                ),
+                base: ScriptObjectData::base_new(Some(fn_proto), None),
                 class,
                 scope,
                 superclass_object,
@@ -291,11 +283,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     impl_avm2_custom_object_properties!(base);
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let ScriptObjectClass::ClassConstructor(class, ..) = self.0.read().base.class() {
-            Ok(AvmString::new(mc, format!("[class {}]", class.read().name().local_name())).into())
-        } else {
-            Ok("function Function() {}".into())
-        }
+        Ok(AvmString::new(
+            mc,
+            format!("[class {}]", self.0.read().class.read().name().local_name()),
+        )
+        .into())
     }
 
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
@@ -394,5 +386,66 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn instance_allocator(self) -> Option<AllocatorFn> {
         Some(self.0.read().instance_allocator.0)
+    }
+
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        self.0.read().scope
+    }
+
+    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
+        Ok(self.0.read().class.read().has_class_trait(name))
+    }
+
+    fn resolve_any_trait(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
+        if let Some(proto) = self.proto() {
+            let proto_trait_name = proto.resolve_any_trait(local_name)?;
+            if let Some(ns) = proto_trait_name {
+                return Ok(Some(ns));
+            }
+        }
+
+        Ok(self
+            .0
+            .read()
+            .class
+            .read()
+            .resolve_any_class_trait(local_name))
+    }
+
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        Some(self.0.read().class)
+    }
+
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        None //AS3 does not have metaclasses
+    }
+
+    fn set_class_object(self, _mc: MutationContext<'gc, '_>, _class_object: Object<'gc>) {
+        //Do nothing, as classes cannot be turned into instances.
+    }
+
+    fn set_local_property_is_enumerable(
+        &self,
+        mc: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+        is_enumerable: bool,
+    ) -> Result<(), Error> {
+        // Traits are never enumerable.
+        //
+        // We have to do this here because the `ScriptObjectBase` version of
+        // this function calls the version of `has_trait` that checks instance
+        // traits, and because we're not an instance, we don't have any and
+        // thus the check fails.
+        if self.has_trait(name)? {
+            return Ok(());
+        }
+
+        self.0
+            .write(mc)
+            .base
+            .set_local_property_is_enumerable(name, is_enumerable)
     }
 }

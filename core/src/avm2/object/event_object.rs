@@ -4,13 +4,15 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::events::Event;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -20,7 +22,7 @@ pub fn event_allocator<'gc>(
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
     Ok(EventObject(GcCell::allocate(
         activation.context.gc_context,
@@ -63,7 +65,7 @@ impl<'gc> EventObject<'gc> {
                 activation,
             )?
             .coerce_to_object(activation)?;
-        let base = ScriptObjectData::base_new(Some(proto), ScriptObjectClass::ClassInstance(class));
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
         let mut event_object: Object<'gc> = EventObject(GcCell::allocate(
             activation.context.gc_context,
@@ -82,9 +84,10 @@ impl<'gc> EventObject<'gc> {
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(Some((*self).into()), None);
 
         Ok(EventObject(GcCell::allocate(
             activation.context.gc_context,
