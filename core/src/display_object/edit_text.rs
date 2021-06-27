@@ -892,7 +892,9 @@ impl<'gc> EditText<'gc> {
             return 1;
         }
 
-        let scroll_offset = line_data.get(edit_text.scroll - 1).map_or(Twips::ZERO, |l| l.offset);
+        let scroll_offset = line_data
+            .get(edit_text.scroll - 1)
+            .map_or(Twips::ZERO, |l| l.offset);
         let target = edit_text.bounds.height() + scroll_offset;
 
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
@@ -944,7 +946,7 @@ impl<'gc> EditText<'gc> {
             offset,
             extent,
         });
-        
+
         line_data
     }
 
@@ -1721,8 +1723,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             matrix: Matrix {
                 tx: Twips::from_pixels(Self::INTERNAL_PADDING)
                     - Twips::from_pixels(edit_text.hscroll),
-                ty: Twips::from_pixels(Self::INTERNAL_PADDING)
-                    - scroll_offset,
+                ty: Twips::from_pixels(Self::INTERNAL_PADDING) - scroll_offset,
                 ..Default::default()
             },
             ..Default::default()
