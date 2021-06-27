@@ -153,10 +153,10 @@ pub struct EditTextData<'gc> {
     /// Which rendering engine this text field will use.
     render_settings: TextRenderSettings,
 
-    /// How many pixels right the text is offset by
+    /// How many pixels right the text is offset by. 0-based index.
     hscroll: f64,
 
-    /// How many lines down the text is offset by
+    /// How many lines down the text is offset by. 1-based index.
     scroll: usize,
 }
 
