@@ -859,11 +859,6 @@ impl<'gc> EditText<'gc> {
     pub fn maxscroll(self) -> usize {
         let edit_text = self.0.read();
 
-        // non-word-wrapped text can't be scrolled
-        if !edit_text.is_word_wrap {
-            return 1;
-        }
-
         let line_data = self.get_line_data(&edit_text.layout);
 
         if line_data.is_empty() {
