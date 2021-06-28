@@ -941,7 +941,7 @@ export class RufflePlayer extends HTMLElement {
 
         if (error instanceof Error && error.message.includes("FetchError")) {
             const swfUrl = new URL(this.swfUrl!);
-            if (window.location.origin != swfUrl.origin && this.isExtension) {
+            if (window.location.origin != swfUrl.origin && this.isExtension && window.location.protocol.includes("http")) {
                 this.displayCorsWalkaroundMessage();
                 return;
             } else {
@@ -988,6 +988,7 @@ export class RufflePlayer extends HTMLElement {
         errorArray.push(`Channel: %VERSION_CHANNEL%\n`);
         errorArray.push(`Built: %BUILD_DATE%\n`);
         errorArray.push(`Commit: %COMMIT_HASH%\n`);
+        errorArray.push(`Is extension: ${this.isExtension}\n`);
 
         const errorText = errorArray.join("");
 
