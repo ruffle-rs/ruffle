@@ -83,7 +83,6 @@ impl<'gc> VectorObject<'gc> {
         .into();
 
         object.install_instance_traits(activation, applied_class)?;
-        object.call_native_init(Some(object), &[], activation, Some(applied_class))?;
 
         Ok(object)
     }
