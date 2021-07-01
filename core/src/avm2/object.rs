@@ -1050,6 +1050,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's class object, if it has one.
     fn as_class_object(&self) -> Option<Object<'gc>>;
 
+    /// Get the parameters of this class object, if present.
+    ///
+    /// Only specialized generic classes will yield their parameters.
+    fn as_class_params(&self) -> Option<Ref<[Object<'gc>]>> {
+        None
+    }
+
     /// Associate the object with a particular class object.
     ///
     /// This turns the object into an instance of that class. It should only be
