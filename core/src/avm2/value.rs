@@ -606,7 +606,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class)? {
+            if object.is_of_type(class, activation)? {
                 return Ok(object.into());
             }
         }
@@ -686,7 +686,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object)
+            o.is_of_type(type_object, activation)
         } else {
             Ok(false)
         }
