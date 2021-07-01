@@ -2486,7 +2486,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err("TypeError: The right-hand side of operator must be a class.".into());
         }
 
-        if value.is_of_type(class)? {
+        if value.is_of_type(class, self)? {
             self.context.avm2.push(value);
         } else {
             self.context.avm2.push(Value::Null);
@@ -2503,7 +2503,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err("TypeError: The right-hand side of operator must be a class.".into());
         }
 
-        if value.is_of_type(class)? {
+        if value.is_of_type(class, self)? {
             self.context.avm2.push(value);
         } else {
             self.context.avm2.push(Value::Null);

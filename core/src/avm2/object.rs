@@ -998,16 +998,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The given object should be the class object for the given type we are
     /// checking against this object.
     #[allow(unused_mut)] //it's not unused
-    fn is_of_type(&self, mut test_class: Object<'gc>) -> Result<bool, Error> {
-        self.has_class_in_chain(test_class)
+    fn is_of_type(
+        &self,
+        mut test_class: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<bool, Error> {
+        self.has_class_in_chain(test_class, activation)
     }
 
     /// Determine if this object has a given class in its class object chain.
     ///
     /// The given object `test_class` should be either a superclass or
     /// interface we are checking against this object.
-    fn has_class_in_chain(&self, test_class: Object<'gc>) -> Result<bool, Error> {
+    fn has_class_in_chain(
+        &self,
+        test_class: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<bool, Error> {
         let mut my_class = self.as_class_object();
+
+        // ES3 objects are not class instances but are still treated as
+        // instances of Object, which is an ES4 class.
+        if my_class.is_none() && Object::ptr_eq(test_class, activation.avm2().classes().object) {
+            return Ok(true);
+        }
 
         while let Some(class) = my_class {
             if Object::ptr_eq(class, test_class) {
