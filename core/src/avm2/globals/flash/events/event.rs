@@ -162,14 +162,16 @@ pub fn format_to_string<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    use std::fmt::Write;
+
     if let Some(mut this) = this {
         let class_name = args
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
-        let mut stringified_params = Vec::new();
 
+        let mut stringified_params = String::new();
         if let Some(params) = args.get(1..) {
             for param_name in params {
                 let param_name = QName::dynamic_name(match param_name {
@@ -180,13 +182,19 @@ pub fn format_to_string<'gc>(
                 let param_value = this
                     .get_property(this, &param_name, activation)?
                     .coerce_to_debug_string(activation)?;
-                stringified_params.push(format!(" {}={}", param_name.local_name(), param_value));
+                write!(
+                    stringified_params,
+                    " {}={}",
+                    param_name.local_name(),
+                    param_value
+                )
+                .unwrap();
             }
         }
 
         return Ok(AvmString::new(
             activation.context.gc_context,
-            format!("[{}{}]", class_name, stringified_params.join("")),
+            format!("[{}{}]", class_name, stringified_params),
         )
         .into());
     }

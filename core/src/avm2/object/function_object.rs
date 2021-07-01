@@ -124,8 +124,8 @@ impl<'gc> FunctionObject<'gc> {
         mut class_proto: Object<'gc>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<(Object<'gc>, Object<'gc>), Error> {
-        let mut interfaces = Vec::new();
         let interface_names = class.read().interfaces().to_vec();
+        let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
             let interface = if let Some(scope) = scope {
                 scope

@@ -109,8 +109,9 @@ impl<'a> Reader<'a> {
                 OpCode::CharToAscii => Action::CharToAscii,
                 OpCode::CloneSprite => Action::CloneSprite,
                 OpCode::ConstantPool => {
-                    let mut constants = vec![];
-                    for _ in 0..self.read_u16()? {
+                    let count = self.read_u16()?;
+                    let mut constants = Vec::with_capacity(count as usize);
+                    for _ in 0..count {
                         constants.push(self.read_str()?);
                     }
                     Action::ConstantPool(constants)

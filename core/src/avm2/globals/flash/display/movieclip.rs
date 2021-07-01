@@ -163,10 +163,10 @@ fn labels_for_scene<'gc>(
         start: scene_start,
         length: scene_length,
     } = scene;
-    let mut frame_labels = Vec::new();
     let frame_label_proto = activation.context.avm2.prototypes().framelabel;
-
-    for (name, frame) in mc.labels_in_range(*scene_start, scene_start + scene_length) {
+    let labels = mc.labels_in_range(*scene_start, scene_start + scene_length);
+    let mut frame_labels = Vec::with_capacity(labels.len());
+    for (name, frame) in labels {
         let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
@@ -252,9 +252,7 @@ pub fn scenes<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        let mut scene_objects = Vec::new();
         let mut mc_scenes = mc.scenes();
-
         if mc.scenes().is_empty() {
             mc_scenes.push(Scene {
                 name: "".to_string(),
@@ -263,6 +261,7 @@ pub fn scenes<'gc>(
             });
         }
 
+        let mut scene_objects = Vec::with_capacity(mc_scenes.len());
         for scene in mc_scenes {
             let (scene_name, scene_length, scene_labels) =
                 labels_for_scene(activation, mc, &scene)?;
