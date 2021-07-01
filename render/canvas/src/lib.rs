@@ -837,7 +837,7 @@ fn swf_shape_to_svg(
     let mut num_defs = 0;
     let mut has_linear_rgb_gradient = false;
 
-    let mut svg_paths = vec![];
+    let mut svg_paths = Vec::with_capacity(shape.paths.len());
     for path in shape.paths {
         match path {
             DrawPath::Fill { style, commands } => {

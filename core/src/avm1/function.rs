@@ -12,10 +12,7 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
-use swf::{
-    avm1::types::{FunctionFlags, FunctionParam},
-    SwfStr,
-};
+use swf::{avm1::types::FunctionFlags, SwfStr};
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -144,24 +141,24 @@ impl<'gc> Avm1Function<'gc> {
             )
         };
 
-        let mut owned_params = Vec::new();
-        for FunctionParam {
-            name: s,
-            register_index: r,
-        } in &swf_function.params
-        {
-            owned_params.push((
-                *r,
-                (*s).to_string_lossy(SwfStr::encoding_for_version(swf_version)),
-            ))
-        }
+        let params = swf_function
+            .params
+            .iter()
+            .map(|p| {
+                (
+                    p.register_index,
+                    p.name
+                        .to_string_lossy(SwfStr::encoding_for_version(swf_version)),
+                )
+            })
+            .collect();
 
         Avm1Function {
             swf_version,
             data: actions,
             name,
             register_count: swf_function.register_count,
-            params: owned_params,
+            params,
             scope,
             constant_pool,
             base_clip,
