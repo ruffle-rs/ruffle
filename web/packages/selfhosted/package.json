@@ -12,6 +12,7 @@
     "repository": "github:ruffle-rs/ruffle",
     "scripts": {
         "build": "webpack",
+        "buildDbg": "webpack --mode=development",
         "serve": "webpack-dev-server",
         "test": "wdio"
     },

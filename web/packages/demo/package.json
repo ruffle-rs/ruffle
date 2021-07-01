@@ -6,6 +6,7 @@
     "private": true,
     "scripts": {
         "build": "webpack",
+        "buildDbg": "webpack --mode=development",
         "serve": "webpack serve"
     },
     "dependencies": {

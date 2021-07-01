@@ -36,6 +36,7 @@
     "scripts": {
         "bootstrap": "npm install && lerna bootstrap --hoist",
         "build": "lerna run build --stream",
+        "buildDbg": "lerna run buildDbg --stream",
         "buildProduction": "lerna run build --stream -- --mode=production",
         "build:avm_debug": "lerna run build --stream -- -- --env features=avm_debug",
         "demo": "lerna run --scope ruffle-demo serve --stream",

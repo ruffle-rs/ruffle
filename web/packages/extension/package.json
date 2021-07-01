@@ -6,8 +6,11 @@
     "private": true,
     "scripts": {
         "build": "npm run build:generic && npm run build:firefox",
+        "buildDbg": "npm run build:genericDbg && npm run build:firefoxDbg",
         "build:generic": "webpack --env generic && node tools/zip.js dist/ruffle_extension.zip",
-        "build:firefox": "webpack --env firefox && node tools/zip.js dist/firefox_unsigned.xpi && node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
+        "build:genericDbg": "webpack --env generic --mode=development && node tools/zip.js dist/ruffle_extension.zip",
+        "build:firefox": "webpack --env firefox && node tools/zip.js dist/firefox_unsigned.xpi && node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi",
+        "build:firefoxDbg": "webpack --env firefox --mode=development && node tools/zip.js dist/firefox_unsigned.xpi && node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"
