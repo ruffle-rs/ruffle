@@ -22,8 +22,13 @@ pub fn vector_allocator<'gc>(
 ) -> Result<Object<'gc>, Error> {
     let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
-    //TODO: Pull the parameter out of the class object
-    let param_type = activation.avm2().classes().object;
+    //Because allocators are still called to build prototypes, especially for
+    //the unspecialized Vector class, we have to fall back to Object when
+    //getting the parameter type for our storage.
+    let param_type = class
+        .as_class_params()
+        .and_then(|p| p.get(0).copied())
+        .unwrap_or_else(|| activation.avm2().classes().object);
 
     Ok(VectorObject(GcCell::allocate(
         activation.context.gc_context,

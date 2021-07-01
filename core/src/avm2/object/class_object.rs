@@ -13,6 +13,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::Ref;
 use std::collections::HashMap;
 
 /// An Object which can be called to execute its function code.
@@ -46,6 +47,11 @@ pub struct ClassObjectData<'gc> {
 
     /// The native instance constructor function
     native_constructor: Executable<'gc>,
+
+    /// The parameters of this specialized class.
+    ///
+    /// None flags that this class has not been specialized.
+    params: Option<Vec<Object<'gc>>>,
 
     /// List of all applications of this class.
     ///
@@ -134,6 +140,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
+                params: None,
                 applications: HashMap::new(),
             },
         ));
@@ -189,6 +196,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_allocator: Allocator(instance_allocator),
                 constructor,
                 native_constructor,
+                params: None,
                 applications: HashMap::new(),
             },
         ))
@@ -462,6 +470,16 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         None //AS3 does not have metaclasses
     }
 
+    fn as_class_params(&self) -> Option<Ref<[Object<'gc>]>> {
+        let read = self.0.read();
+
+        if read.params.is_some() {
+            Some(Ref::map(read, |r| &r.params.as_ref().unwrap()[..]))
+        } else {
+            None
+        }
+    }
+
     fn set_class_object(self, _mc: MutationContext<'gc, '_>, _class_object: Object<'gc>) {
         //Do nothing, as classes cannot be turned into instances.
     }
@@ -565,6 +583,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
+                params: Some(params.to_vec()),
                 applications: HashMap::new(),
             },
         ));
