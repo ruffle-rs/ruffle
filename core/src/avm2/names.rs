@@ -469,8 +469,12 @@ impl<'gc> Multiname<'gc> {
                     Self::from_abc_multiname_static(translation_unit, base_type.clone(), mc)?;
 
                 for param_type in parameters {
-                    let param_multiname =
-                        Self::from_abc_multiname_static(translation_unit, param_type.clone(), mc)?;
+                    let param_multiname = if param_type.0 == 0 {
+                        Self::any()
+                    } else {
+                        Self::from_abc_multiname_static(translation_unit, param_type.clone(), mc)?
+                    };
+
                     base.params.push(param_multiname);
                 }
 
