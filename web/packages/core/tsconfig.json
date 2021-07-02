@@ -1,12 +1,11 @@
 {
+    "extends": "@tsconfig/recommended/tsconfig.json",
     "compilerOptions": {
         "module": "esnext",
         "moduleResolution": "node",
-        "outDir": "pkg",
         "target": "es6",
         "strict": true,
-        "esModuleInterop": true
+        "outDir": "pkg",
     },
-    "include": ["./src/**/*"],
-    "exclude": ["./dist", "./pkg", "./docs"]
+    "include": ["src/**/*"],
 }
