@@ -53,6 +53,7 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)
+        .clone()
         .as_display_object()
         .and_then(|o| o.as_movie_clip());
 
