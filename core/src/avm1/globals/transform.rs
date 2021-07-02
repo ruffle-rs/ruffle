@@ -176,13 +176,14 @@ pub fn apply_to_display_object<'gc>(
     transform: Object<'gc>,
     display_object: DisplayObject<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(transform) = transform.as_transform_object() {
-        if let Some(clip) = transform.clip() {
-            display_object.set_matrix(activation.context.gc_context, &*clip.matrix());
-            display_object
-                .set_color_transform(activation.context.gc_context, &*clip.color_transform());
-            display_object.set_transformed_by_script(activation.context.gc_context, true);
-        }
+    if let Some((matrix, color_transform)) = transform
+        .as_transform_object()
+        .and_then(|transform| transform.clip())
+        .map(|clip| (*clip.matrix(), *clip.color_transform()))
+    {
+        display_object.set_matrix(activation.context.gc_context, &matrix);
+        display_object.set_color_transform(activation.context.gc_context, &color_transform);
+        display_object.set_transformed_by_script(activation.context.gc_context, true);
     }
     Ok(())
 }

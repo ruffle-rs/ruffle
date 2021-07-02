@@ -1,0 +1,2 @@
+// test.transform = t1;
+no panic
