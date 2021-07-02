@@ -4,23 +4,17 @@
     },
     "parser": "@typescript-eslint/parser",
     "plugins": [
-        "@typescript-eslint", "jsdoc"
+        "@typescript-eslint",
+        "jsdoc"
     ],
     "extends": [
-        "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
         "plugin:jsdoc/recommended"
     ],
     "rules": {
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/no-unused-vars": ["error", {"argsIgnorePattern": "^_" }],
-        "@typescript-eslint/naming-convention": [
-            "error",
-            {
-                "selector": ["variable", "function"],
-                "format": ["camelCase", "UPPER_CASE"]
-            }
-        ],
+
         "jsdoc/no-types": "error",
         "jsdoc/require-returns-type": "off",
         "jsdoc/require-param-type": "off",
