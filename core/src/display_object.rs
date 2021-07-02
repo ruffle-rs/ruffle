@@ -1415,10 +1415,10 @@ macro_rules! impl_display_object_sansbounds {
             context: gc_arena::MutationContext<'gc, '_>,
             color_transform: &crate::color_transform::ColorTransform,
         ) {
-            self.0
-                .write(context)
-                .$field
-                .set_color_transform(color_transform)
+            match self.0.try_write(context) {
+                Ok(mut result) => result.$field.set_color_transform(color_transform),
+                _ => (),
+            }
         }
         fn rotation(&self, gc_context: gc_arena::MutationContext<'gc, '_>) -> Degrees {
             self.0.write(gc_context).$field.rotation()
@@ -1631,7 +1631,10 @@ macro_rules! impl_display_object {
             context: gc_arena::MutationContext<'gc, '_>,
             matrix: &crate::matrix::Matrix,
         ) {
-            self.0.write(context).$field.set_matrix(matrix)
+            match self.0.try_write(context) {
+                Ok(mut result) => result.$field.set_matrix(matrix),
+                _ => (),
+            }
         }
     };
 }
