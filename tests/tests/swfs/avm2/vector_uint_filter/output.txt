@@ -1,0 +1,10 @@
+/// var a: Vector.<uint> = new <uint>[1,2];
+/// var b: Vector.<uint> = new <uint>[5,16];
+/// a.filter(function (v) { return v > 0; }));
+1,2
+/// a.filter(function (v) { return v > 2; }));
+
+/// b.filter(function (v) { return v > 4; }));
+5,16
+/// b.filter(function (v) { return v > 10; }));
+16
