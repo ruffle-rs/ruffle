@@ -1,0 +1,14 @@
+/// var a: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b: Vector.<Boolean> = new <Boolean>[true, true];
+/// a.filter(function(v) { return v; });
+1 elements
+true
+/// a.filter(function(v) { return !v; });
+1 elements
+false
+/// b.filter(function(v) { return v; });
+2 elements
+true
+true
+/// b.filter(function(v) { return !v; });
+0 elements

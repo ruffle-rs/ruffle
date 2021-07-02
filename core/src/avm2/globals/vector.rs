@@ -9,6 +9,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{vector_allocator, Object, TObject, VectorObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
@@ -348,6 +349,55 @@ pub fn some<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.filter`
+pub fn filter<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let receiver = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+
+        let value_type = this
+            .as_class_object()
+            .and_then(|c| c.as_class_params().and_then(|p| p.get(0).copied()))
+            .ok_or("Cannot filter unparameterized vector")?;
+        let mut new_storage = VectorStorage::new(0, false, value_type);
+        let mut iter = ArrayIter::new(activation, this)?;
+
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            let result = callback
+                .call(
+                    receiver,
+                    &[item.clone(), i.into(), this.into()],
+                    activation,
+                    receiver.and_then(|r| r.proto()),
+                )?
+                .coerce_to_boolean();
+
+            if result {
+                new_storage.push(Some(item));
+            }
+        }
+
+        return Ok(VectorObject::from_vector(new_storage, activation)?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -415,6 +465,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("every", every),
         ("some", some),
         ("forEach", for_each),
+        ("filter", filter),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

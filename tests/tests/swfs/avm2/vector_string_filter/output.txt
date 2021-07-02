@@ -1,0 +1,10 @@
+/// var a: Vector.<String> = new <String>["a","c","d","f"];
+/// var b: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a.filter(function (v) { return v.length > 0; }));
+a,c,d,f
+/// a.filter(function (v) { return v.length > 2; }));
+
+/// b.filter(function (v) { return v.length > 0; }));
+986,B4,Q,rrr
+/// b.filter(function (v) { return v.length > 4; }));
+
