@@ -1004,25 +1004,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mut test_class: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<bool, Error> {
-        self.has_class_in_chain(test_class, activation)
-    }
-
-    /// Determine if this object has a given class in its class object chain.
-    ///
-    /// The given object `test_class` should be either a superclass or
-    /// interface we are checking against this object.
-    fn has_class_in_chain(
-        &self,
-        test_class: Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<bool, Error> {
         let mut my_class = self.as_class_object();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
         if my_class.is_none() && Object::ptr_eq(test_class, activation.avm2().classes().object) {
-            return Ok(true);
+            Ok(true)
+        } else if let Some(my_class) = my_class {
+            my_class.has_class_in_chain(test_class, activation)
+        } else {
+            Ok(false)
         }
+    }
+
+    /// Determine if this class has a given type in it's superclass chain.
+    ///
+    /// The given object `test_class` should be either a superclass or
+    /// interface we are checking against this class.
+    ///
+    /// To test if a class *instance* is of a given type, see is_of_type.
+    fn has_class_in_chain(
+        &self,
+        test_class: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<bool, Error> {
+        let my_class: Object<'gc> = (*self).into();
+        let mut my_class = Some(my_class);
 
         while let Some(class) = my_class {
             if Object::ptr_eq(class, test_class) {
@@ -1032,6 +1039,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             for interface in class.interfaces() {
                 if Object::ptr_eq(interface, test_class) {
                     return Ok(true);
+                }
+            }
+
+            if let (Some(my_params), Some(test_params)) =
+                (class.as_class_params(), test_class.as_class_params())
+            {
+                if my_params.len() == test_params.len() {
+                    let mut are_all_params_coercible = true;
+
+                    for (my_param, test_param) in my_params.iter().zip(test_params.iter()) {
+                        are_all_params_coercible |=
+                            my_param.has_class_in_chain(*test_param, activation)?;
+                    }
+
+                    if are_all_params_coercible {
+                        return Ok(true);
+                    }
                 }
             }
 
