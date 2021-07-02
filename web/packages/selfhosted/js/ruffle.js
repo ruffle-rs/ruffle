@@ -1,4 +1,4 @@
-const { PublicAPI, SourceAPI, publicPath } = require("ruffle-core");
+import { PublicAPI, SourceAPI, publicPath } from "ruffle-core";
 
 window.RufflePlayer = PublicAPI.negotiate(
     window.RufflePlayer,
