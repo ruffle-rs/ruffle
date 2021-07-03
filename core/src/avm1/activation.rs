@@ -1345,7 +1345,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             }
             return Ok(FrameControl::Continue);
-        } else if window_target.starts_with("_level") && url.len() > 6 {
+        } else if window_target.starts_with("_level") && window_target.len() > 6 {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
