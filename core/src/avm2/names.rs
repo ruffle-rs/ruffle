@@ -526,6 +526,11 @@ impl<'gc> Multiname<'gc> {
 
         ns_match && name_match
     }
+
+    /// List the parameters that the selected class must match.
+    pub fn params(&self) -> &[Multiname<'gc>] {
+        &self.params[..]
+    }
 }
 
 impl<'gc> From<QName<'gc>> for Multiname<'gc> {
