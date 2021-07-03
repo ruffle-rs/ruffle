@@ -1000,10 +1000,10 @@ pub fn goto_frame<'gc>(
         }
     }
 
-    if let Some((clip, mut frame)) = call_frame {
-        frame = frame.wrapping_sub(1);
-        frame = frame.wrapping_add(i32::from(scene_offset));
-        frame = frame.saturating_add(1);
+    if let Some((clip, frame)) = call_frame {
+        let frame = frame.wrapping_sub(1);
+        let frame = frame.wrapping_add(i32::from(scene_offset));
+        let frame = frame.saturating_add(1);
         if frame > 0 {
             clip.goto_frame(&mut activation.context, frame as u16, stop);
         }

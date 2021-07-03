@@ -88,15 +88,15 @@ pub fn set_selection<'gc>(
             .get(0)
             .map(|v| v.coerce_to_i32(activation))
             .transpose()?
-            .unwrap_or(0);
+            .unwrap_or(0)
+            .max(0);
         let end = args
             .get(1)
             .map(|v| v.coerce_to_i32(activation))
             .transpose()?
-            .unwrap_or(i32::max_value());
-        let start = if start < 0 { 0 } else { start as usize };
-        let end = if end < 0 { 0 } else { end as usize };
-        let selection = TextSelection::for_range(start, end);
+            .unwrap_or(i32::MAX)
+            .max(0);
+        let selection = TextSelection::for_range(start as usize, end as usize);
         edit_box.set_selection(Some(selection), activation.context.gc_context);
     }
     Ok(Value::Undefined)
