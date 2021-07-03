@@ -220,6 +220,22 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Err(format!("Resolved parameter type {:?} is not a class", type_name).into());
         }
 
+        // Type parameters should specialize the returned class.
+        // Unresolvable parameter types are treated as Any, which is treated as
+        // Object.
+        if !type_name.params().is_empty() {
+            let mut param_types = vec![];
+
+            for param in type_name.params() {
+                param_types.push(
+                    self.resolve_type(param.clone())?
+                        .unwrap_or_else(|| self.avm2().classes().object),
+                );
+            }
+
+            return Ok(Some(class.apply(self, &param_types[..])?));
+        }
+
         Ok(Some(class))
     }
 
