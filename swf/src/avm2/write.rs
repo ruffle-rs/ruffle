@@ -316,11 +316,11 @@ impl<W: Write> Writer<W> {
                 ref parameters,
             } => {
                 self.write_u8(0x1d)?;
-                self.write_index(&base_type)?;
+                self.write_index(base_type)?;
                 self.write_u30(parameters.len() as u32)?;
 
                 for param in parameters {
-                    self.write_index(&param)?;
+                    self.write_index(param)?;
                 }
             }
         }
