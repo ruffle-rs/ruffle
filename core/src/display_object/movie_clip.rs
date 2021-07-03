@@ -717,7 +717,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn goto_frame(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut frame: FrameNumber,
+        frame: FrameNumber,
         stop: bool,
     ) {
         // Stop first, in case we need to kill and restart the stream sound.
@@ -728,9 +728,7 @@ impl<'gc> MovieClip<'gc> {
         }
 
         // Clamp frame number in bounds.
-        if frame < 1 {
-            frame = 1;
-        }
+        let frame = frame.max(1);
 
         if frame != self.current_frame() {
             self.run_goto(context, frame, false);
@@ -1260,11 +1258,7 @@ impl<'gc> MovieClip<'gc> {
 
         // Sanity; let's make sure we don't seek way too far.
         // TODO: This should be self.frames_loaded() when we implement that.
-        let clamped_frame = if frame <= mc.total_frames() {
-            frame
-        } else {
-            mc.total_frames()
-        };
+        let clamped_frame = frame.min(mc.total_frames());
         drop(mc);
 
         let mut reader = data.read_from(frame_pos);

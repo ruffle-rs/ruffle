@@ -641,7 +641,7 @@ impl<'gc> Default for ChildContainer<'gc> {
 
 impl<'gc> ChildContainer<'gc> {
     pub fn new() -> Self {
-        ChildContainer {
+        Self {
             render_list: Vec::new(),
             depth_list: BTreeMap::new(),
         }
