@@ -1,0 +1,10 @@
+/// var a: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b: Vector.<Boolean> = new <Boolean>[true, true];
+/// a.indexOf(true);
+0
+/// a.indexOf(false));
+1
+/// b.indexOf(true);
+0
+/// b.indexOf(false);
+-1

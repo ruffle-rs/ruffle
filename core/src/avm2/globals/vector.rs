@@ -433,6 +433,34 @@ pub fn for_each<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.indexOf`
+pub fn index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let from_index = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| 0.into())
+            .coerce_to_i32(activation)?;
+        let mut iter = ArrayIter::new(activation, this)?;
+        iter.index = if from_index > 0 { from_index as u32 } else { 0 };
+
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            if item == search_for {
+                return Ok(i.into());
+            }
+        }
+    }
+
+    Ok((-1).into())
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -466,6 +494,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("some", some),
         ("forEach", for_each),
         ("filter", filter),
+        ("indexOf", index_of),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
