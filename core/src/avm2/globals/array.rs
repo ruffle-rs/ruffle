@@ -255,7 +255,7 @@ pub fn value_of<'gc>(
 /// that.
 pub struct ArrayIter<'gc> {
     array_object: Object<'gc>,
-    index: u32,
+    pub index: u32,
     length: u32,
 }
 

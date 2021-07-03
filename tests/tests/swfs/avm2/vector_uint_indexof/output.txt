@@ -1,0 +1,14 @@
+/// var a: Vector.<uint> = new <uint>[1,2];
+/// var b: Vector.<uint> = new <uint>[5,16];
+/// a.indexOf(0);
+-1
+/// a.indexOf(1);
+0
+/// a.indexOf(2);
+1
+/// b.indexOf(3);
+-1
+/// b.indexOf(5);
+0
+/// b.indexOf(12);
+-1

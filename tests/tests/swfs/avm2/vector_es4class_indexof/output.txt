@@ -1,0 +1,22 @@
+/// var a: Vector.<Superclass> = new <Superclass>[];
+/// a.length = 2;
+/// var a0 = new Superclass();
+/// a[0] = a0;
+/// var a1 = new Subclass();
+/// a[1] = a1;
+/// var b: Vector.<Subclass> = new <Subclass>[];
+/// b.length = 1;
+/// var b0 = new Subclass();
+/// b[0] = b0;
+/// a.indexOf(a0);
+0
+/// a.indexOf(a1);
+1
+/// a.indexOf(b0);
+-1
+/// b.indexOf(a0);
+-1
+/// b.indexOf(a1);
+-1
+/// b.indexOf(b0);
+0
