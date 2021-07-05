@@ -1,0 +1,46 @@
+/// var a: Vector.<Superclass> = new <Superclass>[];
+/// a.length = 2;
+/// var a0 = new Superclass();
+/// a[0] = a0;
+/// var a1 = new Subclass();
+/// a[1] = a1;
+/// var b: Vector.<Subclass> = new <Subclass>[];
+/// b.length = 1;
+/// var b0 = new Subclass();
+/// b[0] = b0;
+/// a.lastIndexOf(a0);
+0
+/// a.lastIndexOf(a1);
+1
+/// a.lastIndexOf(b0);
+-1
+/// b.lastIndexOf(a0);
+-1
+/// b.lastIndexOf(a1);
+-1
+/// b.lastIndexOf(b0);
+0
+/// a.lastIndexOf(a0, 0);
+0
+/// a.lastIndexOf(a1, 0);
+-1
+/// a.lastIndexOf(b0, 0);
+-1
+/// b.lastIndexOf(a0, 0);
+-1
+/// b.lastIndexOf(a1, 0);
+-1
+/// b.lastIndexOf(b0, 0);
+0
+/// a.lastIndexOf(a0, -1);
+0
+/// a.lastIndexOf(a1, -1);
+1
+/// a.lastIndexOf(b0, -1);
+-1
+/// b.lastIndexOf(a0, -1);
+-1
+/// b.lastIndexOf(a1, -1);
+-1
+/// b.lastIndexOf(b0, -1);
+0

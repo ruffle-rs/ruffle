@@ -12,3 +12,27 @@
 2
 /// b.indexOf(NaN);
 -1
+/// a.indexOf(0, 2);
+-1
+/// a.indexOf(1, 2);
+-1
+/// a.indexOf(2, 2);
+-1
+/// b.indexOf(3, 2);
+-1
+/// b.indexOf(-5, 2);
+2
+/// b.indexOf(NaN, 2);
+-1
+/// a.indexOf(0, -1);
+-1
+/// a.indexOf(1, -1);
+-1
+/// a.indexOf(2, -1);
+-1
+/// b.indexOf(3, -1);
+-1
+/// b.indexOf(-5, -1);
+-1
+/// b.indexOf(NaN, -1);
+-1

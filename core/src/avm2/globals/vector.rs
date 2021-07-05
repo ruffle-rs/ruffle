@@ -12,6 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
+use std::cmp::max;
 
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -439,17 +440,63 @@ pub fn index_of<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
+    if let Some(mut this) = this {
         let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from_index = args
             .get(1)
             .cloned()
             .unwrap_or_else(|| 0.into())
             .coerce_to_i32(activation)?;
-        let mut iter = ArrayIter::new(activation, this)?;
-        iter.index = if from_index > 0 { from_index as u32 } else { 0 };
+
+        let from_index = if from_index < 0 {
+            let length = this
+                .get_property(this, &QName::new(Namespace::public(), "length"), activation)?
+                .coerce_to_i32(activation)?;
+            max(length + from_index, 0) as u32
+        } else {
+            from_index as u32
+        };
+
+        let mut iter = ArrayIter::with_bounds(activation, this, from_index, u32::MAX)?;
 
         while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            if item == search_for {
+                return Ok(i.into());
+            }
+        }
+    }
+
+    Ok((-1).into())
+}
+
+/// Implements `Vector.lastIndexOf`
+pub fn last_index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let from_index = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| i32::MAX.into())
+            .coerce_to_i32(activation)?;
+
+        let from_index = if from_index < 0 {
+            let length = this
+                .get_property(this, &QName::new(Namespace::public(), "length"), activation)?
+                .coerce_to_i32(activation)?;
+            max(length + from_index, 0) as u32
+        } else {
+            from_index as u32
+        };
+
+        let mut iter = ArrayIter::with_bounds(activation, this, 0, from_index)?;
+
+        while let Some(r) = iter.next_back(activation) {
             let (i, item) = r?;
 
             if item == search_for {
@@ -495,6 +542,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("forEach", for_each),
         ("filter", filter),
         ("indexOf", index_of),
+        ("lastIndexOf", last_index_of),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

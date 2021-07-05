@@ -256,7 +256,7 @@ pub fn value_of<'gc>(
 pub struct ArrayIter<'gc> {
     array_object: Object<'gc>,
     pub index: u32,
-    length: u32,
+    pub rev_index: u32,
 }
 
 impl<'gc> ArrayIter<'gc> {
@@ -264,6 +264,16 @@ impl<'gc> ArrayIter<'gc> {
     pub fn new(
         activation: &mut Activation<'_, 'gc, '_>,
         array_object: Object<'gc>,
+    ) -> Result<Self, Error> {
+        Self::with_bounds(activation, array_object, 0, u32::MAX)
+    }
+
+    /// Construct a new `ArrayIter` that is bounded to a given range.
+    pub fn with_bounds(
+        activation: &mut Activation<'_, 'gc, '_>,
+        mut array_object: Object<'gc>,
+        start_index: u32,
+        end_index: u32,
     ) -> Result<Self, Error> {
         let length = array_object
             .get_property(
@@ -275,12 +285,20 @@ impl<'gc> ArrayIter<'gc> {
 
         Ok(Self {
             array_object,
-            index: 0,
-            length,
+            index: if start_index < length {
+                start_index
+            } else {
+                length
+            },
+            rev_index: if end_index < length {
+                end_index + 1
+            } else {
+                length
+            },
         })
     }
 
-    /// Get the next item in the array.
+    /// Get the next item from the front of the array
     ///
     /// Since this isn't a real iterator, this comes pre-enumerated; it yields
     /// a pair of the index and then the value.
@@ -288,10 +306,40 @@ impl<'gc> ArrayIter<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Result<(u32, Value<'gc>), Error>> {
-        if self.index < self.length {
+        if self.index < self.rev_index {
             let i = self.index;
 
             self.index += 1;
+
+            Some(
+                self.array_object
+                    .get_property(
+                        self.array_object,
+                        &QName::new(
+                            Namespace::public(),
+                            AvmString::new(activation.context.gc_context, i.to_string()),
+                        ),
+                        activation,
+                    )
+                    .map(|val| (i, val)),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Get the next item from the back of the array.
+    ///
+    /// Since this isn't a real iterator, this comes pre-enumerated; it yields
+    /// a pair of the index and then the value.
+    pub fn next_back(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Result<(u32, Value<'gc>), Error>> {
+        if self.index < self.rev_index {
+            self.rev_index -= 1;
+
+            let i = self.rev_index;
 
             Some(
                 self.array_object

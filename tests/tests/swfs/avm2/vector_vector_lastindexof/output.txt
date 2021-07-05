@@ -1,0 +1,78 @@
+/// var a0 = new <int>[1,2];
+/// var a1 = new <int>[4,3];
+/// var a:Vector.<Vector.<int>> = new <Vector.<int>>[a0, a1];
+/// var b0 = new <int>[5,16];
+/// var b1 = new <int>[19,8];
+/// var b:Vector.<Vector.<int>> = new <Vector.<int>>[b0, b1];
+/// a.lastIndexOf(a0)
+0
+/// a.lastIndexOf(a1)
+1
+/// a.lastIndexOf(new <int>[4,3])
+-1
+/// a.lastIndexOf(b0)
+-1
+/// a.lastIndexOf(b1)
+-1
+/// a.lastIndexOf(new <int>[19,8])
+-1
+/// b.lastIndexOf(a0)
+-1
+/// b.lastIndexOf(a1)
+-1
+/// b.lastIndexOf(new <int>[4,3])
+-1
+/// b.lastIndexOf(b0)
+0
+/// b.lastIndexOf(b1)
+1
+/// b.lastIndexOf(new <int>[19,8])
+-1
+/// a.lastIndexOf(a0, 0)
+0
+/// a.lastIndexOf(a1, 0)
+-1
+/// a.lastIndexOf(new <int>[4,3], 0)
+-1
+/// a.lastIndexOf(b0, 0)
+-1
+/// a.lastIndexOf(b1, 0)
+-1
+/// a.lastIndexOf(new <int>[19,8], 0)
+-1
+/// b.lastIndexOf(a0, 0)
+-1
+/// b.lastIndexOf(a1, 0)
+-1
+/// b.lastIndexOf(new <int>[4,3], 0)
+-1
+/// b.lastIndexOf(b0, 0)
+0
+/// b.lastIndexOf(b1, 0)
+-1
+/// b.lastIndexOf(new <int>[19,8], 0)
+-1
+/// a.lastIndexOf(a0, -1)
+0
+/// a.lastIndexOf(a1, -1)
+1
+/// a.lastIndexOf(new <int>[4,3], -1)
+-1
+/// a.lastIndexOf(b0, -1)
+-1
+/// a.lastIndexOf(b1, -1)
+-1
+/// a.lastIndexOf(new <int>[19,8], -1)
+-1
+/// b.lastIndexOf(a0, -1)
+-1
+/// b.lastIndexOf(a1, -1)
+-1
+/// b.lastIndexOf(new <int>[4,3], -1)
+-1
+/// b.lastIndexOf(b0, -1)
+0
+/// b.lastIndexOf(b1, -1)
+1
+/// b.lastIndexOf(new <int>[19,8], -1)
+-1
