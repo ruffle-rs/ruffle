@@ -1,0 +1,38 @@
+/// var a: Vector.<int> = new <int>[1,2];
+/// var b: Vector.<int> = new <int>[5,16];
+/// a.lastIndexOf(0);
+-1
+/// a.lastIndexOf(1);
+0
+/// a.lastIndexOf(2);
+1
+/// b.lastIndexOf(3);
+-1
+/// b.lastIndexOf(5);
+0
+/// b.lastIndexOf(15);
+-1
+/// a.lastIndexOf(0, 0);
+-1
+/// a.lastIndexOf(1, 0);
+0
+/// a.lastIndexOf(2, 0);
+-1
+/// b.lastIndexOf(3, 0);
+-1
+/// b.lastIndexOf(5, 0);
+0
+/// b.lastIndexOf(15, 0);
+-1
+/// a.lastIndexOf(0, -2);
+-1
+/// a.lastIndexOf(1, -2);
+0
+/// a.lastIndexOf(2, -2);
+-1
+/// b.lastIndexOf(3, -2);
+-1
+/// b.lastIndexOf(5, -2);
+0
+/// b.lastIndexOf(15, -2);
+-1
