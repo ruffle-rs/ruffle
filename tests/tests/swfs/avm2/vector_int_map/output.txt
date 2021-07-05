@@ -1,0 +1,10 @@
+/// var a: Vector.<int> = new <int>[1,2];
+/// var b: Vector.<int> = new <int>[5,16];
+/// a.map(function (v) { return v * 2; }));
+2,4
+/// a.map(function (v) { return v * -.5; }));
+0,-1
+/// b.map(function (v) { return v * 3; }));
+15,48
+/// b.map(function (v) { return v * -6; }));
+-30,-96

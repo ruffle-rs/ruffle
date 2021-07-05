@@ -508,6 +508,52 @@ pub fn last_index_of<'gc>(
     Ok((-1).into())
 }
 
+/// Implements `Vector.map`
+pub fn map<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let callback = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let receiver = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+
+        let value_type = this
+            .as_class_object()
+            .and_then(|c| c.as_class_params().and_then(|p| p.get(0).copied()))
+            .ok_or("Cannot filter unparameterized vector")?;
+        let mut new_storage = VectorStorage::new(0, false, value_type);
+        let mut iter = ArrayIter::new(activation, this)?;
+
+        while let Some(r) = iter.next(activation) {
+            let (i, item) = r?;
+
+            let new_item = callback.call(
+                receiver,
+                &[item.clone(), i.into(), this.into()],
+                activation,
+                receiver.and_then(|r| r.proto()),
+            )?;
+            let coerced_item = new_item.coerce_to_type(activation, value_type)?;
+
+            new_storage.push(Some(coerced_item));
+        }
+
+        return Ok(VectorObject::from_vector(new_storage, activation)?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -543,6 +589,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("filter", filter),
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
+        ("map", map),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
