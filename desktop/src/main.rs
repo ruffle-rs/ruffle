@@ -103,6 +103,9 @@ struct Opt {
 
     #[clap(long, case_insensitive = true, takes_value = false)]
     timedemo: bool,
+
+    #[clap(long, case_insensitive = true, takes_value = false)]
+    dont_warn_on_unsupported_content: bool,
 }
 
 #[cfg(feature = "render_trace")]
@@ -285,6 +288,7 @@ impl App {
 
         {
             let mut player_lock = player.lock().unwrap();
+            player_lock.set_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content);
             if let Some(movie) = &movie {
                 player_lock.set_root_movie(movie.to_owned());
                 player_lock.set_is_playing(true); // Desktop player will auto-play.
