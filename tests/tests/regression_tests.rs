@@ -690,6 +690,13 @@ swf_tests! {
     (as3_vector_bool_lastindexof, "avm2/vector_bool_lastindexof", 1),
     (as3_vector_es4class_lastindexof, "avm2/vector_es4class_lastindexof", 1),
     (as3_vector_vector_lastindexof, "avm2/vector_vector_lastindexof", 1),
+    (as3_vector_int_map, "avm2/vector_int_map", 1),
+    (as3_vector_uint_map, "avm2/vector_uint_map", 1),
+    (as3_vector_number_map, "avm2/vector_number_map", 1),
+    (as3_vector_string_map, "avm2/vector_string_map", 1),
+    (as3_vector_bool_map, "avm2/vector_bool_map", 1),
+    (as3_vector_es4class_map, "avm2/vector_es4class_map", 1),
+    (as3_vector_vector_map, "avm2/vector_vector_map", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

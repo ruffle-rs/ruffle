@@ -1,0 +1,18 @@
+/// var a: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b: Vector.<Boolean> = new <Boolean>[true, true];
+/// a.map(function(v) { return v; });
+2 elements
+true
+false
+/// a.map(function(v) { return !v; });
+2 elements
+false
+true
+/// b.map(function(v) { return v; });
+2 elements
+true
+true
+/// b.map(function(v) { return !v; });
+2 elements
+false
+false

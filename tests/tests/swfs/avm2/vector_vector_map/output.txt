@@ -1,0 +1,10 @@
+/// var a:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a.map(function (v) { return v.map(function (v) { return v * -6; }); });
+-6,-12,-24,-18
+/// a.map(function (v) { return v.map(function (v) { return v * 2; }); });
+2,4,8,6
+/// b.map(function (v) { return v.map(function (v) { return v * 4; }); });
+20,64,76,32
+/// b.map(function (v) { return v.map(function (v) { return v * 6.5; }); });
+32,104,123,52
