@@ -1,0 +1,29 @@
+/// var a: Vector.<int> = new <int>[1,2];
+/// var b: Vector.<int> = new <int>[5,16];
+/// a.pop();
+2
+/// a.push(5);
+2
+/// (contents of a)...
+2 elements
+1
+5
+/// a.pop();
+5
+/// a.pop();
+1
+/// a.push(-15, 32, true, false, "63");
+5
+/// (contents of a)...
+5 elements
+-15
+32
+1
+0
+63
+/// b.pop();
+16
+/// b.pop();
+5
+/// b.pop();
+0

@@ -1,0 +1,30 @@
+/// var a0 = new Superclass();
+/// var a1 = new Subclass();
+/// var a: Vector.<Superclass> = new <Superclass>[a0, a1];
+/// var b: Vector.<Subclass> = new <Subclass>[];
+/// b.length = 1;
+/// b[0] = new Subclass();
+/// a.pop();
+[object Subclass]
+/// a.pop();
+[object Superclass]
+/// a.pop();
+undefined
+/// a.push(a1, a0, a0, a1);
+4
+/// a[0] === a[3];
+true
+/// a[1] === a[2];
+true
+/// (contents of a...)
+4 elements
+[object Subclass]
+[object Superclass]
+[object Superclass]
+[object Subclass]
+/// b.push(new Subclass());
+2
+/// (contents of b...)
+2 elements
+[object Subclass]
+[object Subclass]

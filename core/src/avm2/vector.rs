@@ -136,12 +136,44 @@ impl<'gc> VectorStorage<'gc> {
 
     /// Push a value to the end of the vector.
     ///
+    /// This function returns an error if the vector is fixed.
+    ///
     /// This function does no coercion as calling it requires mutably borrowing
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn push(&mut self, value: Option<Value<'gc>>) {
-        self.storage.push(value)
+    pub fn push(&mut self, value: Option<Value<'gc>>) -> Result<(), Error> {
+        if self.is_fixed {
+            return Err("RangeError: Vector is fixed".into());
+        }
+
+        self.storage.push(value);
+
+        Ok(())
+    }
+
+    /// Pop a value off the end of the vector.
+    ///
+    /// This function returns an error if the vector is fixed.
+    ///
+    /// If the value popped is a vector hole, then the default value will be
+    /// returned.
+    pub fn pop(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+        if self.is_fixed {
+            return Err("RangeError: Vector is fixed".into());
+        }
+
+        match self.storage.pop() {
+            Some(Some(v)) => Ok(v),
+            Some(None) => Ok(self.default(activation)),
+            None if Object::ptr_eq(self.value_type(), activation.avm2().classes().uint) => {
+                Ok(Value::Unsigned(0))
+            }
+            None if Object::ptr_eq(self.value_type(), activation.avm2().classes().int) => {
+                Ok(Value::Integer(0))
+            }
+            None => Ok(Value::Undefined),
+        }
     }
 
     /// Iterate over vector values.
