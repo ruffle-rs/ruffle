@@ -1,0 +1,63 @@
+/// var a:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// (contents of a.pop()...)
+2 elements
+4
+3
+/// (contents of a.pop()...)
+2 elements
+1
+2
+/// a.pop();
+undefined
+/// a.push(new <int>[15,9], new <int>[-1,-94], new <int>[2], new <int>[16]);
+4
+/// (contents of a...)
+4 elements
+/// (contents of index 0 )
+2 elements
+15
+9
+/// (contents of index 1 )
+2 elements
+-1
+-94
+/// (contents of index 2 )
+1 elements
+2
+/// (contents of index 3 )
+1 elements
+16
+/// (contents of b.pop()...)
+2 elements
+19
+8
+/// b.push(new <int>[-1,-94]);
+2
+/// (contents of b...)
+2 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+-16
+-4
+/// b.length = 6;
+6
+/// b.pop()
+null
+/// (contents of b...)
+5 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+-16
+-4
+null
+null
+null

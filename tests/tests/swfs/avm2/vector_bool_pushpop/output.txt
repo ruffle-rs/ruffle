@@ -1,0 +1,33 @@
+/// var a: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// a.pop();
+false
+/// a.pop();
+true
+/// a.pop();
+undefined
+/// a.push(0, "true", -1, 3.5, "false", false, true);
+7
+/// (contents of a...)
+7 elements
+false
+true
+true
+true
+true
+false
+true
+/// b.push(0, "true", -1, 3.5, "false", false, true);
+10
+/// (contents of b...)
+10 elements
+false
+true
+false
+false
+true
+true
+true
+true
+false
+true

@@ -188,9 +188,9 @@ pub fn concat<'gc>(
                     }
 
                     let coerced_val = val.coerce_to_type(activation, val_class)?;
-                    new_vector_storage.push(Some(coerced_val));
+                    new_vector_storage.push(Some(coerced_val))?;
                 } else {
-                    new_vector_storage.push(None);
+                    new_vector_storage.push(None)?;
                 }
             }
         }
@@ -389,7 +389,7 @@ pub fn filter<'gc>(
                 .coerce_to_boolean();
 
             if result {
-                new_storage.push(Some(item));
+                new_storage.push(Some(item))?;
             }
         }
 
@@ -545,7 +545,7 @@ pub fn map<'gc>(
             )?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
-            new_storage.push(Some(coerced_item));
+            new_storage.push(Some(coerced_item))?;
         }
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());
@@ -554,7 +554,45 @@ pub fn map<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Construct `Sprite`'s class.
+/// Implements `Vector.pop`
+pub fn pop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            return vs.pop(activation);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Vector.push`
+pub fn push<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let value_type = vs.value_type();
+
+            for arg in args {
+                let coerced_arg = arg.coerce_to_type(activation, value_type)?;
+
+                vs.push(Some(coerced_arg))?;
+            }
+
+            return Ok(vs.length().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package(NS_VECTOR), "Vector"),
@@ -590,6 +628,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
         ("map", map),
+        ("pop", pop),
+        ("push", push),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
