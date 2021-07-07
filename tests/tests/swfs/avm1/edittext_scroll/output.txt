@@ -39,3 +39,16 @@
 5
 // title_txt.scroll = 767100486418433
 1
+
+// right-aligned text box
+// right_text.text = A longer test for scroll. This entry has more than one line, so we must scroll to see more.
+// right_text.maxscroll
+5
+// right_text.bottomScroll
+2
+
+// text box with multiple font combinations
+// funny_fonts.maxscroll
+3
+// funny_fonts.bottomScroll
+2
