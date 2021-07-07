@@ -335,7 +335,7 @@ impl<'gc> EditText<'gc> {
                 has_focus: false,
                 render_settings: Default::default(),
                 hscroll: 0.0,
-                line_data: line_data,
+                line_data,
                 scroll: 1,
             },
         ));
