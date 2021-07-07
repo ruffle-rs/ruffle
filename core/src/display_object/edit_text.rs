@@ -1230,8 +1230,17 @@ impl<'gc> EditText<'gc> {
         self.0.read().scroll
     }
 
-    pub fn set_scroll(self, scroll: usize, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).scroll = scroll;
+    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
+        // Checked in SWF 6, AVM1. Same in AVM2.
+        const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
+        let scroll_lines = if scroll.is_nan() || scroll < 0.0 || scroll >= SCROLL_OVERFLOW_LIMIT {
+            1
+        } else {
+            scroll as usize
+        };
+        let clamped = scroll_lines.clamp(1, self.maxscroll());
+        self.0.write(context.gc_context).scroll = clamped;
     }
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {

@@ -634,16 +634,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
-    // Checked in SWF 6.
-    const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
-    let scroll_lines = if input.is_nan() || input < 0.0 || input >= SCROLL_OVERFLOW_LIMIT {
-        1
-    } else {
-        input as usize
-    };
-    let clamped = scroll_lines.clamp(1, this.maxscroll());
-    this.set_scroll(clamped, &mut activation.context);
+    this.set_scroll(input, &mut activation.context);
     Ok(())
 }
 
