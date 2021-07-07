@@ -163,7 +163,10 @@ pub struct EditTextData<'gc> {
     scroll: usize,
 }
 
+// TODO: would be nicer to compute (and return) this during layout, instead of afterwards
+/// Compute line (index, offset, extent) from the layout data.
 fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
+    // if there are no boxes, there are no lines
     if layout.is_empty() {
         return Vec::new();
     }
@@ -179,6 +182,7 @@ fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
     for layout_box in layout.get(1..).unwrap() {
         let bounds = layout_box.bounds();
 
+        // if the top of the new box is lower than the bottom of the old box, it's a new line
         if bounds.offset_y() > extent {
             // save old line and reset
             line_data.push(LineData {
@@ -197,6 +201,7 @@ fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
         }
     }
 
+    // save the final line
     line_data.push(LineData {
         index,
         offset,
@@ -1919,7 +1924,9 @@ pub struct TextSelection {
 #[collect(require_static)]
 pub struct LineData {
     index: usize,
+    /// How many twips down the highest point of the line is
     offset: Twips,
+    /// How many twips down the lowest point of the line is
     extent: Twips,
 }
 
