@@ -179,7 +179,7 @@ fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
     for layout_box in layout.get(1..).unwrap() {
         let bounds = layout_box.bounds();
 
-        if bounds.offset_x() == Twips::ZERO {
+        if bounds.offset_y() > extent {
             // save old line and reset
             line_data.push(LineData {
                 index,
