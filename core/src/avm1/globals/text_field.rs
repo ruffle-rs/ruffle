@@ -634,8 +634,10 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    // the greatest input has a fractional part as well, but I didn't compute it
-    let scroll_lines = if input.is_nan() || input < 0.0 || input >= 767100486418433.0 {
+    // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
+    // Checked in SWF 6.
+    const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
+    let scroll_lines = if input.is_nan() || input < 0.0 || input >= SCROLL_OVERFLOW_LIMIT {
         1
     } else {
         input as usize
