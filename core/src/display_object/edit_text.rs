@@ -1701,17 +1701,17 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.renderer.activate_mask();
 
-        let mut scroll_offset = Twips::ZERO;
-
-        if edit_text.scroll > 1 {
+        let scroll_offset = if edit_text.scroll > 1 {
             let line_data = self.get_line_data(&edit_text.layout);
 
-            scroll_offset = if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
+            if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
                 line_data.offset
             } else {
                 Twips::ZERO
-            };
-        }
+            }
+        } else {
+            Twips::ZERO
+        };
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
