@@ -2197,7 +2197,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm1.pop();
 
         let value = match val {
-            Value::Undefined | Value::Null | Value::Object(_) => 0.0,
+            Value::Undefined | Value::Null | Value::Object(_) | Value::String(_) => 0.0,
             _ => val.coerce_to_f64(self)?,
         };
 
