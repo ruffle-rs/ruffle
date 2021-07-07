@@ -156,8 +156,54 @@ pub struct EditTextData<'gc> {
     /// How many pixels right the text is offset by. 0-based index.
     hscroll: f64,
 
+    /// Information about the layout's current lines. Used by scroll properties.
+    line_data: Vec<LineData>,
+
     /// How many lines down the text is offset by. 1-based index.
     scroll: usize,
+}
+
+fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
+    if layout.is_empty() {
+        return Vec::new();
+    }
+
+    let first_box = &layout[0];
+
+    let mut index = 1;
+    let mut offset = first_box.bounds().offset_y();
+    let mut extent = first_box.bounds().extent_y();
+
+    let mut line_data = Vec::new();
+
+    for layout_box in layout.get(1..).unwrap() {
+        let bounds = layout_box.bounds();
+
+        if bounds.offset_x() == Twips::ZERO {
+            // save old line and reset
+            line_data.push(LineData {
+                index,
+                offset,
+                extent,
+            });
+
+            index += 1;
+            offset = bounds.offset_y();
+            extent = bounds.extent_y();
+        } else {
+            // otherwise we continue from the previous box
+            offset = offset.min(bounds.offset_y());
+            extent = extent.max(bounds.extent_y());
+        }
+    }
+
+    line_data.push(LineData {
+        index,
+        offset,
+        extent,
+    });
+
+    line_data
 }
 
 impl<'gc> EditText<'gc> {
@@ -210,6 +256,7 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_word_wrap,
             swf_tag.is_device_font,
         );
+        let line_data = get_line_data(&layout);
 
         let has_background = swf_tag.has_border;
         let background_color = 0xFFFFFF; // Default is white
@@ -288,6 +335,7 @@ impl<'gc> EditText<'gc> {
                 has_focus: false,
                 render_settings: Default::default(),
                 hscroll: 0.0,
+                line_data: line_data,
                 scroll: 1,
             },
         ));
@@ -774,6 +822,7 @@ impl<'gc> EditText<'gc> {
             edit_text.is_device_font,
         );
 
+        edit_text.line_data = get_line_data(&new_layout);
         edit_text.layout = new_layout;
         edit_text.intrinsic_bounds = intrinsic_bounds;
         // reset scroll
@@ -859,7 +908,7 @@ impl<'gc> EditText<'gc> {
     pub fn maxscroll(self) -> usize {
         let edit_text = self.0.read();
 
-        let line_data = self.get_line_data(&edit_text.layout);
+        let line_data = &edit_text.line_data;
 
         if line_data.is_empty() {
             return 1;
@@ -881,7 +930,7 @@ impl<'gc> EditText<'gc> {
     pub fn bottom_scroll(self) -> usize {
         let edit_text = self.0.read();
 
-        let line_data = self.get_line_data(&edit_text.layout);
+        let line_data = &edit_text.line_data;
 
         if line_data.is_empty() {
             return 1;
@@ -900,49 +949,6 @@ impl<'gc> EditText<'gc> {
             // all lines are visible
             line_data.last().unwrap().index
         }
-    }
-
-    fn get_line_data(self, layout: &[LayoutBox<'gc>]) -> Vec<LineData> {
-        if layout.is_empty() {
-            return Vec::new();
-        }
-
-        let first_box = &layout[0];
-
-        let mut index = 1;
-        let mut offset = first_box.bounds().offset_y();
-        let mut extent = first_box.bounds().extent_y();
-
-        let mut line_data = Vec::new();
-
-        for layout_box in layout.get(1..).unwrap() {
-            let bounds = layout_box.bounds();
-
-            if bounds.offset_x() == Twips::ZERO {
-                // save old line and reset
-                line_data.push(LineData {
-                    index,
-                    offset,
-                    extent,
-                });
-
-                index += 1;
-                offset = bounds.offset_y();
-                extent = bounds.extent_y();
-            } else {
-                // otherwise we continue from the previous box
-                offset = offset.min(bounds.offset_y());
-                extent = extent.max(bounds.extent_y());
-            }
-        }
-
-        line_data.push(LineData {
-            index,
-            offset,
-            extent,
-        });
-
-        line_data
     }
 
     /// Render a layout box, plus its children.
@@ -1711,7 +1717,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context.renderer.activate_mask();
 
         let scroll_offset = if edit_text.scroll > 1 {
-            let line_data = self.get_line_data(&edit_text.layout);
+            let line_data = &edit_text.line_data;
 
             if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
                 line_data.offset
