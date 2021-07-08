@@ -14,3 +14,13 @@
 0
 // int(hello)
 0
+// int(ten)
+10
+// int(float)
+10
+// int(negative)
+-10
+// int(NaN)
+0
+// int(valof)
+42
