@@ -1,5 +1,0 @@
-/// var a: Vector.<int> = new <int>[1,2];
-/// a[0] = "5";
-/// a[1] = "not a number";
-5
-0
