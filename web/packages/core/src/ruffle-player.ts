@@ -32,6 +32,7 @@ enum PanicError {
     JavascriptConfiguration,
     JavascriptConflict,
     WasmCors,
+    WasmDownload,
     WasmMimeType,
     WasmNotFound,
 }
@@ -396,6 +397,11 @@ export class RufflePlayer extends HTMLElement {
                     e.name === "CompileError"
                 ) {
                     e.ruffleIndexError = PanicError.InvalidWasm;
+                } else if (
+                    message.includes("could not download wasm module") &&
+                    e.name === "TypeError"
+                ) {
+                    e.ruffleIndexError = PanicError.WasmDownload;
                 } else if (
                     !message.includes("magic") &&
                     (e.name === "CompileError" || e.name === "TypeError")
@@ -1068,6 +1074,17 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case PanicError.WasmDownload:
+                // Usually a transient network error or botched deployment
+                errorBody = `
+                    <p>Ruffle has encountered a major issue whilst trying to initialize.</p>
+                    <p>This can often resolve itself, so you can try reloading the page.</p>
+                    <p>Otherwise, please contact the website administrator.</p>
+                `;
+                errorFooter = `
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
