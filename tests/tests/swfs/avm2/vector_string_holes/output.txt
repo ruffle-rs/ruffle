@@ -1,4 +1,0 @@
-/// var a: Vector.<String> = new <String>[];
-/// a.length = 2;
-null
-null

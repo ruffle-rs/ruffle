@@ -1,0 +1,58 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// a_bool.join('...');
+true...false
+/// b_bool.join('...');
+false...true...false
+/// var a_class: Vector.<Superclass> = new <Superclass>[];
+/// a_class.length = 2;
+/// a_class[0] = new Superclass();
+/// a_class[1] = new Subclass();
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.join('...');
+[object Superclass]...[object Subclass]
+/// b_class.join('...');
+[object Subclass]
+/// var a_iface: Vector.<Interface> = new <Interface>[];
+/// a_iface.length = 1;
+/// a_iface[0] = new Implementation();
+/// var b_iface: Vector.<Implementation> = new <Implementation>[];
+/// b_iface.length = 2;
+/// b_iface[0] = new Implementation();
+/// b_iface[1] = new Implementation();
+/// a_iface.join('...');
+[object Implementation]
+/// b_iface.join('...');
+[object Implementation]...[object Implementation]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.join('...');
+1...2
+/// b_int.join('...');
+5...16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.join('...');
+1...2...3...4
+/// b_number.join('...');
+5...NaN...-5...0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.join('...');
+a...c...d...f
+/// b_string.join('...');
+986...B4...Q...rrr
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.join('...');
+1...2
+/// b_uint.join('...');
+5...16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.join('...');
+1,2...4,3
+/// b_vector.join('...');
+5,16...19,8

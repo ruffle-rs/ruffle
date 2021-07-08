@@ -1,0 +1,96 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[true, true];
+/// a_bool.filter(function(v) { return v; });
+1 elements
+true
+/// a_bool.filter(function(v) { return !v; });
+1 elements
+false
+/// b_bool.filter(function(v) { return v; });
+2 elements
+true
+true
+/// b_bool.filter(function(v) { return !v; });
+0 elements
+/// var a_class: Vector.<Superclass> = new <Superclass>[];
+/// a_class.length = 2;
+/// a_class[0] = new Superclass();
+/// a_class[1] = new Subclass();
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.filter(function (v) { return v is Subclass; }));
+[object Subclass]
+/// a_class.filter(function (v) { return v is Superclass; }));
+[object Superclass],[object Subclass]
+/// b_class.filter(function (v) { return v is Subclass; }));
+[object Subclass]
+/// b_class.filter(function (v) { return v is Superclass; }));
+[object Subclass]
+/// var a_iface: Vector.<Interface> = new <Interface>[];
+/// a_iface.length = 1;
+/// a_iface[0] = new Implementer();
+/// var b_iface: Vector.<Implementer> = new <Implementer>[];
+/// b_iface.length = 2;
+/// b_iface[0] = new Implementer();
+/// b_iface[1] = new Implementer();
+/// a_iface.filter(function (v) { return v is Implementer; }));
+[object Implementer]
+/// a_iface.filter(function (v) { return v is Interface; }));
+[object Implementer]
+/// b_iface.filter(function (v) { return v is Implementer; }));
+[object Implementer],[object Implementer]
+/// b_iface.filter(function (v) { return v is Interface; }));
+[object Implementer],[object Implementer]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.filter(function (v) { return v > 0; }));
+1,2
+/// a_int.filter(function (v) { return v > 2; }));
+
+/// b_int.filter(function (v) { return v > 4; }));
+5,16
+/// b_int.filter(function (v) { return v > 10; }));
+16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.filter(function (v) { return v > 0; }));
+1,2,3,4
+/// a_number.filter(function (v) { return v > 2; }));
+3,4
+/// b_number.filter(function (v) { return v > 4; }));
+5
+/// b_number.filter(function (v) { return v > 10; }));
+
+/// b_number.filter(function (v) { return v > -6 || isNaN(v); }));
+5,NaN,-5,0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.filter(function (v) { return v.length > 0; }));
+a,c,d,f
+/// a_string.filter(function (v) { return v.length > 2; }));
+
+/// b_string.filter(function (v) { return v.length > 0; }));
+986,B4,Q,rrr
+/// b_string.filter(function (v) { return v.length > 4; }));
+
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.filter(function (v) { return v > 0; }));
+1,2
+/// a_uint.filter(function (v) { return v > 2; }));
+
+/// b_uint.filter(function (v) { return v > 4; }));
+5,16
+/// b_uint.filter(function (v) { return v > 10; }));
+16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.filter(function (v) { return v.filter(function (v) { return v > 0; }).length > 0; });
+1,2,4,3
+/// a_vector.filter(function (v) { return v.filter(function (v) { return v > 2; }).length > 0; });
+4,3
+/// b_vector.filter(function (v) { return v.filter(function (v) { return v > 4; }).length > 0; });
+5,16,19,8
+/// b_vector.filter(function (v) { return v.filter(function (v) { return v > 25; }).length > 0; });
+

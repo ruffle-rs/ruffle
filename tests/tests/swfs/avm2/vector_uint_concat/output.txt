@@ -1,8 +1,0 @@
-/// var a: Vector.<uint> = new <uint>[1,2];
-/// var b: Vector.<uint> = new <uint>[5,16];
-/// var c = a.concat(b);
-/// (contents of c...)
-1
-2
-5
-16

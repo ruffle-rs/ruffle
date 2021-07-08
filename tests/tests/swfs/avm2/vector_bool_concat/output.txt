@@ -1,9 +1,0 @@
-/// var a: Vector.<Boolean> = new <Boolean>[true, false];
-/// var b: Vector.<Boolean> = new <Boolean>[false, true, false];
-/// var c = a.concat(b);
-/// (contents of c...)
-true
-false
-false
-true
-false

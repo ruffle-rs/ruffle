@@ -1,6 +1,0 @@
-/// var a: Vector.<String> = new <String>["a","c","d","f"];
-/// var b: Vector.<String> = new <String>["986","B4","Q","rrr"];
-/// a.join('...');
-a...c...d...f
-/// b.join('...');
-986...B4...Q...rrr

@@ -1,6 +1,0 @@
-/// var a: Vector.<Number> = new <Number>[1,2,3,4];
-/// var b: Vector.<Number> = new <Number>[5, NaN, -5, 0];
-/// a.join('...');
-1...2...3...4
-/// b.join('...');
-5...NaN...-5...0

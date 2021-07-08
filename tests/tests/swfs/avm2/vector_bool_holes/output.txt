@@ -1,4 +1,0 @@
-/// var a: Vector.<Boolean> = new <Boolean>[];
-/// a.length = 2;
-null
-null
