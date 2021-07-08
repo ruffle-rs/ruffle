@@ -153,8 +153,62 @@ pub struct EditTextData<'gc> {
     /// Which rendering engine this text field will use.
     render_settings: TextRenderSettings,
 
-    /// How many pixels right the text is offset by
+    /// How many pixels right the text is offset by. 0-based index.
     hscroll: f64,
+
+    /// Information about the layout's current lines. Used by scroll properties.
+    line_data: Vec<LineData>,
+
+    /// How many lines down the text is offset by. 1-based index.
+    scroll: usize,
+}
+
+// TODO: would be nicer to compute (and return) this during layout, instead of afterwards
+/// Compute line (index, offset, extent) from the layout data.
+fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
+    // if there are no boxes, there are no lines
+    if layout.is_empty() {
+        return Vec::new();
+    }
+
+    let first_box = &layout[0];
+
+    let mut index = 1;
+    let mut offset = first_box.bounds().offset_y();
+    let mut extent = first_box.bounds().extent_y();
+
+    let mut line_data = Vec::new();
+
+    for layout_box in layout.get(1..).unwrap() {
+        let bounds = layout_box.bounds();
+
+        // if the top of the new box is lower than the bottom of the old box, it's a new line
+        if bounds.offset_y() > extent {
+            // save old line and reset
+            line_data.push(LineData {
+                index,
+                offset,
+                extent,
+            });
+
+            index += 1;
+            offset = bounds.offset_y();
+            extent = bounds.extent_y();
+        } else {
+            // otherwise we continue from the previous box
+            offset = offset.min(bounds.offset_y());
+            extent = extent.max(bounds.extent_y());
+        }
+    }
+
+    // save the final line
+    line_data.push(LineData {
+        index,
+        offset,
+        extent,
+    });
+
+    line_data
 }
 
 impl<'gc> EditText<'gc> {
@@ -207,6 +261,7 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_word_wrap,
             swf_tag.is_device_font,
         );
+        let line_data = get_line_data(&layout);
 
         let has_background = swf_tag.has_border;
         let background_color = 0xFFFFFF; // Default is white
@@ -285,6 +340,8 @@ impl<'gc> EditText<'gc> {
                 has_focus: false,
                 render_settings: Default::default(),
                 hscroll: 0.0,
+                line_data,
+                scroll: 1,
             },
         ));
 
@@ -770,10 +827,12 @@ impl<'gc> EditText<'gc> {
             edit_text.is_device_font,
         );
 
+        edit_text.line_data = get_line_data(&new_layout);
         edit_text.layout = new_layout;
         edit_text.intrinsic_bounds = intrinsic_bounds;
         // reset scroll
         edit_text.hscroll = 0.0;
+        edit_text.scroll = 1;
 
         match autosize {
             AutoSizeMode::None => {}
@@ -847,6 +906,53 @@ impl<'gc> EditText<'gc> {
             base + 41.0
         } else {
             base
+        }
+    }
+
+    /// How many lines the text can be scrolled down
+    pub fn maxscroll(self) -> usize {
+        let edit_text = self.0.read();
+
+        let line_data = &edit_text.line_data;
+
+        if line_data.is_empty() {
+            return 1;
+        }
+
+        let target = line_data.last().unwrap().extent - edit_text.bounds.height();
+
+        // minimum line n such that n.offset > max.extent - bounds.height()
+        let max_line = line_data.iter().find(|&&l| target < l.offset);
+        if let Some(line) = max_line {
+            line.index
+        } else {
+            // I don't know how this could happen, so return the limit
+            line_data.last().unwrap().index
+        }
+    }
+
+    /// The lowest visible line of text
+    pub fn bottom_scroll(self) -> usize {
+        let edit_text = self.0.read();
+
+        let line_data = &edit_text.line_data;
+
+        if line_data.is_empty() {
+            return 1;
+        }
+
+        let scroll_offset = line_data
+            .get(edit_text.scroll - 1)
+            .map_or(Twips::ZERO, |l| l.offset);
+        let target = edit_text.bounds.height() + scroll_offset;
+
+        // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
+        let too_far = line_data.iter().find(|&&l| l.extent > target);
+        if let Some(line) = too_far {
+            line.index - 1
+        } else {
+            // all lines are visible
+            line_data.last().unwrap().index
         }
     }
 
@@ -1129,6 +1235,23 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).hscroll = hscroll;
+    }
+
+    pub fn scroll(self) -> usize {
+        self.0.read().scroll
+    }
+
+    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
+        // Checked in SWF 6, AVM1. Same in AVM2.
+        const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
+        let scroll_lines = if scroll.is_nan() || scroll < 0.0 || scroll >= SCROLL_OVERFLOW_LIMIT {
+            1
+        } else {
+            scroll as usize
+        };
+        let clamped = scroll_lines.clamp(1, self.maxscroll());
+        self.0.write(context.gc_context).scroll = clamped;
     }
 
     pub fn screen_position_to_index(self, position: (Twips, Twips)) -> Option<usize> {
@@ -1598,13 +1721,24 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         );
         context.renderer.activate_mask();
 
+        let scroll_offset = if edit_text.scroll > 1 {
+            let line_data = &edit_text.line_data;
+
+            if let Some(line_data) = line_data.get(edit_text.scroll - 1) {
+                line_data.offset
+            } else {
+                Twips::ZERO
+            }
+        } else {
+            Twips::ZERO
+        };
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
             matrix: Matrix {
                 tx: Twips::from_pixels(Self::INTERNAL_PADDING)
                     - Twips::from_pixels(edit_text.hscroll),
-                ty: Twips::from_pixels(Self::INTERNAL_PADDING),
+                ty: Twips::from_pixels(Self::INTERNAL_PADDING) - scroll_offset,
                 ..Default::default()
             },
             ..Default::default()
@@ -1783,6 +1917,17 @@ struct EditTextStaticData {
 pub struct TextSelection {
     from: usize,
     to: usize,
+}
+
+/// Information about the start and end y-coordinates of a given line of text
+#[derive(Copy, Clone, Debug, Collect)]
+#[collect(require_static)]
+pub struct LineData {
+    index: usize,
+    /// How many twips down the highest point of the line is
+    offset: Twips,
+    /// How many twips down the lowest point of the line is
+    extent: Twips,
 }
 
 impl TextSelection {

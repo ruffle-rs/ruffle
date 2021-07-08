@@ -1,0 +1,54 @@
+// text field with width 100
+// text: A test for scroll
+// title_txt.maxscroll
+1
+// title_txt.bottomScroll
+1
+// title_txt.scroll = -10
+1
+// title_txt.scroll = 10
+1
+// text: A longer test for scroll. This entry has more than one line, so we must scroll to see more.
+// title_txt.maxscroll
+5
+// title_txt.bottomScroll
+2
+// title_txt.scroll = -10
+1
+// title_txt.scroll = 2
+2
+// title_txt.bottomScroll
+3
+// title_txt.scroll = 100
+5
+// title_txt.bottomScroll
+6
+// title_txt.scroll = null
+1
+// title_txt.scroll = undefined
+1
+// title_txt.scroll = 1.5
+1
+// title_txt.scroll = "4"
+4
+// title_txt.scroll = 2147483647
+5
+// title_txt.scroll = 767100486418432
+5
+// title_txt.scroll = 767100486418432.9
+5
+// title_txt.scroll = 767100486418433
+1
+
+// right-aligned text box
+// right_text.text = A longer test for scroll. This entry has more than one line, so we must scroll to see more.
+// right_text.maxscroll
+5
+// right_text.bottomScroll
+2
+
+// text box with multiple font combinations
+// funny_fonts.maxscroll
+3
+// funny_fonts.bottomScroll
+2

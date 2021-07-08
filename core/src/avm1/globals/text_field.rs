@@ -78,6 +78,9 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "password" => property(tf_getter!(password), tf_setter!(set_password));
     "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
     "maxhscroll" => property(tf_getter!(maxhscroll));
+    "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll));
+    "maxscroll" => property(tf_getter!(maxscroll));
+    "bottomScroll" => property(tf_getter!(bottom_scroll));
 };
 
 /// Implements `TextField`
@@ -616,4 +619,35 @@ pub fn maxhscroll<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.maxhscroll().into())
+}
+
+pub fn scroll<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.scroll().into())
+}
+
+pub fn set_scroll<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let input = value.coerce_to_f64(activation)?;
+    this.set_scroll(input, &mut activation.context);
+    Ok(())
+}
+
+pub fn maxscroll<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.maxscroll().into())
+}
+
+pub fn bottom_scroll<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.bottom_scroll().into())
 }
