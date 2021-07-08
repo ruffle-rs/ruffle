@@ -592,6 +592,44 @@ pub fn push<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.shift`
+pub fn shift<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            return vs.shift(activation);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Vector.unshift`
+pub fn unshift<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let value_type = vs.value_type();
+
+            for arg in args.iter().rev() {
+                let coerced_arg = arg.coerce_to_type(activation, value_type)?;
+
+                vs.unshift(Some(coerced_arg))?;
+            }
+
+            return Ok(vs.length().into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -630,6 +668,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("map", map),
         ("pop", pop),
         ("push", push),
+        ("shift", shift),
+        ("unshift", unshift),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
