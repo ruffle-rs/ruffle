@@ -2194,14 +2194,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.context.avm1.pop();
-
-        let value = match val {
-            Value::Undefined | Value::Null | Value::Object(_) => 0.0,
-            _ => val.coerce_to_f64(self)?,
-        };
-
-        self.context.avm1.push(value.trunc());
+        let val = self.context.avm1.pop().coerce_to_i32(self)?;
+        self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
 
