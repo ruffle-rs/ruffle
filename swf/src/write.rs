@@ -1,9 +1,4 @@
-#![allow(
-    clippy::cognitive_complexity,
-    clippy::float_cmp,
-    clippy::inconsistent_digit_grouping,
-    clippy::unreadable_literal
-)]
+#![allow(clippy::unusual_byte_groupings)]
 
 use crate::{
     error::{Error, Result},
@@ -22,16 +17,16 @@ use std::io::{self, Write};
 /// use swf::*;
 ///
 /// let header = Header {
-///         compression: Compression::Zlib,
-///         version: 6,
-///         stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
-///         frame_rate: Fixed8::from_f32(60.0),
-///         num_frames: 1,
-///     };
+///     compression: Compression::Zlib,
+///     version: 6,
+///     stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
+///     frame_rate: Fixed8::from_f32(60.0),
+///     num_frames: 1,
+/// };
 /// let tags = [
-///         Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
-///         Tag::ShowFrame
-///     ];
+///     Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
+///     Tag::ShowFrame,
+/// ];
 /// let output = Vec::new();
 /// swf::write_swf(&header, &tags, output).unwrap();
 /// ```
@@ -63,22 +58,16 @@ pub fn write_swf<W: Write>(header: &Header, tags: &[Tag<'_>], mut output: W) -> 
 
     // Compress SWF body.
     match header.compression {
-        Compression::None => {
-            output.write_all(&swf_body)?;
-        }
+        Compression::None => output.write_all(&swf_body)?,
 
         Compression::Zlib => write_zlib_swf(&mut output, &swf_body)?,
 
-        // LZMA header.
-        // SWF format has a mangled LZMA header, so we have to do some magic to convert the
-        // standard LZMA header to SWF format.
-        // https://adobe.ly/2s8oYzn
         Compression::Lzma => {
             write_lzma_swf(&mut output, &swf_body)?;
             // 5 bytes of garbage data?
             //output.write_all(&[0xFF, 0xB5, 0xE6, 0xF8, 0xCB])?;
         }
-    };
+    }
 
     Ok(())
 }
@@ -265,13 +254,8 @@ impl<W: Write> SwfWriteExt for Writer<W> {
 }
 
 impl<W: Write> Writer<W> {
-    fn new(output: W, version: u8) -> Writer<W> {
-        Writer { output, version }
-    }
-
-    #[allow(dead_code)]
-    fn into_inner(self) -> W {
-        self.output
+    fn new(output: W, version: u8) -> Self {
+        Self { output, version }
     }
 
     #[inline]
@@ -281,10 +265,12 @@ impl<W: Write> Writer<W> {
         }
     }
 
+    #[inline]
     fn write_fixed8(&mut self, n: Fixed8) -> io::Result<()> {
         self.write_i16(n.get())
     }
 
+    #[inline]
     fn write_fixed16(&mut self, n: Fixed16) -> io::Result<()> {
         self.write_i32(n.get())
     }

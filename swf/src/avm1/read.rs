@@ -42,6 +42,18 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
+    fn read_f64_me(&mut self) -> Result<f64> {
+        // Flash weirdly stores (some?) f64 as two LE 32-bit chunks.
+        // First word is the hi-word, second word is the lo-word.
+        let mut bytes = self.read_u64()?.to_le_bytes();
+        bytes.swap(0, 4);
+        bytes.swap(1, 5);
+        bytes.swap(2, 6);
+        bytes.swap(3, 7);
+        Ok(f64::from_le_bytes(bytes))
+    }
+
+    #[inline]
     pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
         let (opcode, mut length) = self.read_opcode_and_length()?;
         let start = self.input;
@@ -79,7 +91,6 @@ impl<'a> Reader<'a> {
     /// The `length` passed in should be the length excluding any sub-blocks.
     /// The final `length` returned will be total length of the action, including sub-blocks.
     #[inline]
-    #[allow(clippy::inconsistent_digit_grouping)]
     fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Option<Action<'a>>> {
         use num_traits::FromPrimitive;
         let action = if let Some(op) = OpCode::from_u8(opcode) {

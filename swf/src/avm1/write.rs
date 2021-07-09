@@ -1,90 +1,86 @@
-#![allow(clippy::cognitive_complexity, clippy::unreadable_literal)]
-
 use crate::avm1::opcode::OpCode;
 use crate::avm1::types::*;
 use crate::string::SwfStr;
 use crate::write::SwfWriteExt;
 use byteorder::{LittleEndian, WriteBytesExt};
-use std::io::{self, Result, Write};
+use std::io::{Result, Write};
 
-#[allow(dead_code)]
 pub struct Writer<W: Write> {
     output: W,
+    #[allow(dead_code)]
     version: u8,
 }
 
 impl<W: Write> SwfWriteExt for Writer<W> {
     #[inline]
-    fn write_u8(&mut self, n: u8) -> io::Result<()> {
+    fn write_u8(&mut self, n: u8) -> Result<()> {
         self.output.write_u8(n)
     }
 
     #[inline]
-    fn write_u16(&mut self, n: u16) -> io::Result<()> {
+    fn write_u16(&mut self, n: u16) -> Result<()> {
         self.output.write_u16::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_u32(&mut self, n: u32) -> io::Result<()> {
+    fn write_u32(&mut self, n: u32) -> Result<()> {
         self.output.write_u32::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_u64(&mut self, n: u64) -> io::Result<()> {
+    fn write_u64(&mut self, n: u64) -> Result<()> {
         self.output.write_u64::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_i8(&mut self, n: i8) -> io::Result<()> {
+    fn write_i8(&mut self, n: i8) -> Result<()> {
         self.output.write_i8(n)
     }
 
     #[inline]
-    fn write_i16(&mut self, n: i16) -> io::Result<()> {
+    fn write_i16(&mut self, n: i16) -> Result<()> {
         self.output.write_i16::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_i32(&mut self, n: i32) -> io::Result<()> {
+    fn write_i32(&mut self, n: i32) -> Result<()> {
         self.output.write_i32::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_f32(&mut self, n: f32) -> io::Result<()> {
+    fn write_f32(&mut self, n: f32) -> Result<()> {
         self.output.write_f32::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_f64(&mut self, n: f64) -> io::Result<()> {
+    fn write_f64(&mut self, n: f64) -> Result<()> {
         self.output.write_f64::<LittleEndian>(n)
     }
 
     #[inline]
-    fn write_string(&mut self, s: &'_ SwfStr) -> io::Result<()> {
+    fn write_string(&mut self, s: &'_ SwfStr) -> Result<()> {
         self.output.write_all(s.as_bytes())?;
         self.write_u8(0)
     }
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(output: W, version: u8) -> Writer<W> {
-        Writer { output, version }
+    pub fn new(output: W, version: u8) -> Self {
+        Self { output, version }
     }
 
     #[inline]
-    fn write_f64_me(&mut self, n: f64) -> io::Result<()> {
+    fn write_f64_me(&mut self, n: f64) -> Result<()> {
         // Flash weirdly stores f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
-        let mut num = [0u8; 8];
-        (&mut num[..]).write_f64::<LittleEndian>(n)?;
-        num.swap(0, 4);
-        num.swap(1, 5);
-        num.swap(2, 6);
-        num.swap(3, 7);
-        self.output.write_all(&num)
+        let mut bytes = n.to_le_bytes();
+        bytes.swap(0, 4);
+        bytes.swap(1, 5);
+        bytes.swap(2, 6);
+        bytes.swap(3, 7);
+        self.output.write_all(&bytes)
     }
 
-    #[allow(clippy::inconsistent_digit_grouping)]
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
         match *action {
             Action::Add => self.write_action_header(OpCode::Add, 0)?,

@@ -1,4 +1,4 @@
-#![allow(clippy::inconsistent_digit_grouping, clippy::unreadable_literal)]
+#![allow(clippy::unusual_byte_groupings)]
 
 use crate::avm1::types::*;
 use crate::avm2::read::tests::read_abc_from_file;

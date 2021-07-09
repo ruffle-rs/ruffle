@@ -1,3 +1,5 @@
+#![allow(clippy::unusual_byte_groupings)]
+
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;

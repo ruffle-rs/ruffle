@@ -1,8 +1,7 @@
-use crate::byteorder::{LittleEndian, ReadBytesExt};
 use crate::error::Result;
 use crate::string::SwfStr;
-use crate::{Fixed16, Fixed8};
-use std::io::{self, Read};
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io;
 
 pub trait ReadSwfExt<'a> {
     fn as_mut_slice(&mut self) -> &mut &'a [u8];
@@ -15,9 +14,9 @@ pub trait ReadSwfExt<'a> {
 
     // TODO: Make this fallible?
     fn seek(&mut self, data: &'a [u8], relative_offset: isize) {
-        let mut pos = self.pos(data);
-        pos = (pos as isize + relative_offset) as usize;
-        pos = pos.min(data.len());
+        let pos = self.pos(data);
+        let pos = (pos as isize + relative_offset) as usize;
+        let pos = pos.min(data.len());
         *self.as_mut_slice() = &data[pos..];
     }
 
@@ -67,16 +66,6 @@ pub trait ReadSwfExt<'a> {
     }
 
     #[inline]
-    fn read_fixed8(&mut self) -> Result<Fixed8> {
-        Ok(Fixed8::from_bits(self.read_i16()?))
-    }
-
-    #[inline]
-    fn read_fixed16(&mut self) -> Result<Fixed16> {
-        Ok(Fixed16::from_bits(self.read_i32()?))
-    }
-
-    #[inline]
     fn read_encoded_u32(&mut self) -> Result<u32> {
         let mut val: u32 = 0;
         for i in (0..35).step_by(7) {
@@ -87,19 +76,6 @@ pub trait ReadSwfExt<'a> {
             }
         }
         Ok(val)
-    }
-
-    #[inline]
-    fn read_f64_me(&mut self) -> Result<f64> {
-        // Flash weirdly stores (some?) f64 as two LE 32-bit chunks.
-        // First word is the hi-word, second word is the lo-word.
-        let mut num = [0u8; 8];
-        self.as_mut_slice().read_exact(&mut num)?;
-        num.swap(0, 4);
-        num.swap(1, 5);
-        num.swap(2, 6);
-        num.swap(3, 7);
-        Ok(ReadBytesExt::read_f64::<LittleEndian>(&mut &num[..])?)
     }
 
     fn read_slice(&mut self, len: usize) -> Result<&'a [u8]> {

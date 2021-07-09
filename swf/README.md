@@ -18,7 +18,7 @@ use std::fs::File;
 
 let file = File::open("file.swf").unwrap();
 let reader = BufReader::new(file);
-let swf = swf::read_swf(reader).unwrap();
+let swf = swf::parse_swf(reader).unwrap();
 println!("The SWF has {} frames", swf.header.num_frames);
 ```
 
