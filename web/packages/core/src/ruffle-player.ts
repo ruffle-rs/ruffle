@@ -148,6 +148,13 @@ export class RufflePlayer extends HTMLElement {
     static LOADED_METADATA = "loadedmetadata";
 
     /**
+     * Triggered when a movie is fully loaded.
+     *
+     * @event RufflePlayer#loadeddata
+     */
+    static LOADED_DATA = "loadeddata";
+
+    /**
      * A movie can communicate with the hosting page using fscommand
      * as long as script access is allowed.
      *
@@ -1232,6 +1239,8 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
+        // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
+        this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
     }
 
     setIsExtension(isExtension: boolean): void {
