@@ -6,6 +6,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+byteorder = "1.4"
 bitstream-io = "1.1.0"
 flate2 = "1.0.20"
 fnv = "1.0.7"
