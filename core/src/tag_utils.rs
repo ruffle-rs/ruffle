@@ -51,23 +51,6 @@ impl SwfMovie {
         }
     }
 
-    /// Construct a movie from an existing movie with any particular data on
-    /// it.
-    ///
-    /// Use of this method is discouraged. SWF data should be borrowed or
-    /// sliced as necessary to refer to partial sections of a file.
-    pub fn from_movie_and_subdata(&self, data: Vec<u8>, source: &SwfMovie) -> Self {
-        Self {
-            header: self.header.clone(),
-            data,
-            url: source.url.clone(),
-            loader_url: source.loader_url.clone(),
-            parameters: source.parameters.clone(),
-            encoding: source.encoding,
-            compressed_len: source.compressed_len,
-        }
-    }
-
     /// Utility method to construct a movie from a file on disk.
     pub fn from_path<P: AsRef<Path>>(path: P, loader_url: Option<String>) -> Result<Self, Error> {
         let mut url = path.as_ref().to_string_lossy().to_owned().to_string();
