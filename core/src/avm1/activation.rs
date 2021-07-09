@@ -2194,7 +2194,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.context.avm1.pop().coerce_to_f64(self)? as i64 as f64;
+        let val = self.context.avm1.pop().coerce_to_i32(self)?;
         self.context.avm1.push(val);
         Ok(FrameControl::Continue)
     }
