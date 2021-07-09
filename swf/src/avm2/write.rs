@@ -1,3 +1,5 @@
+#![allow(clippy::unusual_byte_groupings)]
+
 use crate::avm2::opcode::OpCode;
 use crate::avm2::types::*;
 use crate::string::SwfStr;
@@ -63,8 +65,8 @@ impl<W: Write> SwfWriteExt for Writer<W> {
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(output: W) -> Writer<W> {
-        Writer { output }
+    pub fn new(output: W) -> Self {
+        Self { output }
     }
 
     pub fn write(&mut self, abc_file: AbcFile) -> Result<()> {

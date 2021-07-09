@@ -13,7 +13,7 @@ pub use fixed::*;
 pub use matrix::Matrix;
 
 /// A complete header and tags in the SWF file.
-/// This is returned by the `swf::read_swf` convenience method.
+/// This is returned by the `swf::parse_swf` convenience method.
 #[derive(Debug)]
 pub struct Swf<'a> {
     pub header: HeaderExt,
