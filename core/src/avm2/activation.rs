@@ -80,6 +80,9 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// activation frame is a programming error.
     is_executing: bool,
 
+    /// Amount of actions performed since the last timeout check
+    actions_since_timeout_check: u16,
+
     /// Local registers.
     ///
     /// All activations have local registers, but it is possible for multiple
@@ -136,6 +139,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: None,
             arguments: None,
             is_executing: false,
+            actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
@@ -176,6 +180,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: Some(script_scope),
             arguments: None,
             is_executing: false,
+            actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
@@ -246,6 +251,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this,
             arguments: None,
             is_executing: false,
+            actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
@@ -320,6 +326,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this,
             arguments: None,
             is_executing: false,
+            actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
             local_scope: ScriptObject::bare_object(context.gc_context),
@@ -565,11 +572,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         reader: &mut Reader<'b>,
         full_data: &'b [u8],
     ) -> Result<FrameControl<'gc>, Error> {
-        if self.context.update_start.elapsed() >= self.context.max_execution_duration {
-            return Err(
-                "A script in this movie has taken too long to execute and has been terminated."
-                    .into(),
-            );
+        self.actions_since_timeout_check += 1;
+        if self.actions_since_timeout_check >= 2000 {
+            self.actions_since_timeout_check = 0;
+            if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+                return Err(
+                    "A script in this movie has taken too long to execute and has been terminated."
+                        .into(),
+                );
+            }
         }
 
         let instruction_start = reader.pos(full_data);
