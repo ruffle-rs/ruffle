@@ -1,4 +1,5 @@
 use super::{Decoder, SeekableDecoder};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, Read};
 
 /// Decoder for PCM audio data in a Flash file.
@@ -13,47 +14,36 @@ pub struct PcmDecoder<R: Read> {
 
 impl<R: Read> PcmDecoder<R> {
     pub fn new(inner: R, is_stereo: bool, sample_rate: u16, is_16_bit: bool) -> Self {
-        PcmDecoder {
+        Self {
             inner,
             is_stereo,
             sample_rate,
             is_16_bit,
         }
     }
+
+    #[inline]
+    fn read_sample(&mut self) -> Option<i16> {
+        let sample = if self.is_16_bit {
+            self.inner.read_i16::<LittleEndian>().ok()?
+        } else {
+            (i16::from(self.inner.read_u8().ok()?) - 127) * 128
+        };
+        Some(sample)
+    }
 }
 
 impl<R: Read> Iterator for PcmDecoder<R> {
     type Item = [i16; 2];
 
-    #[allow(unknown_lints, clippy::branches_sharing_code)]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.is_stereo {
-            if self.is_16_bit {
-                let mut left = [0u8; 2];
-                let mut right = [0u8; 2];
-                self.inner.read_exact(&mut left).ok()?;
-                self.inner.read_exact(&mut right).ok()?;
-                let left = i16::from_le_bytes(left);
-                let right = i16::from_le_bytes(right);
-                Some([left, right])
-            } else {
-                let mut bytes = [0u8; 2];
-                self.inner.read_exact(&mut bytes).ok()?;
-                let left = (i16::from(bytes[0]) - 127) * 128;
-                let right = (i16::from(bytes[1]) - 127) * 128;
-                Some([left, right])
-            }
-        } else if self.is_16_bit {
-            let mut bytes = [0u8; 2];
-            self.inner.read_exact(&mut bytes).ok()?;
-            let sample = i16::from_le_bytes(bytes);
-            Some([sample, sample])
+        let left = self.read_sample()?;
+        let right = if self.is_stereo {
+            self.read_sample()?
         } else {
-            let mut bytes = [0u8];
-            self.inner.read_exact(&mut bytes).ok()?;
-            let sample = (i16::from(bytes[0]) - 127) * 128;
-            Some([sample, sample])
-        }
+            left
+        };
+        Some([left, right])
     }
 }
 
