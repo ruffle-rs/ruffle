@@ -5,6 +5,7 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
+use std::cmp::max;
 
 /// The vector storage portion of a vector object.
 ///
@@ -222,6 +223,34 @@ impl<'gc> VectorStorage<'gc> {
             }
             None => Ok(Value::Undefined),
         }
+    }
+
+    /// Insert a value at a specific position in the vector.
+    ///
+    /// This function returns an error if the vector is fixed.
+    ///
+    /// This function does no coercion as calling it requires mutably borrowing
+    /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
+    /// things). You must use the associated `coerce` fn before storing things
+    /// in the vector.
+    pub fn insert(&mut self, position: i32, value: Option<Value<'gc>>) -> Result<(), Error> {
+        if self.is_fixed {
+            return Err("RangeError: Vector is fixed".into());
+        }
+
+        let position = if position < 0 {
+            max(position + self.storage.len() as i32, 0) as usize
+        } else {
+            position as usize
+        };
+
+        if position >= self.storage.len() {
+            self.storage.push(value);
+        } else {
+            self.storage.insert(position, value);
+        }
+
+        Ok(())
     }
 
     /// Iterate over vector values.
