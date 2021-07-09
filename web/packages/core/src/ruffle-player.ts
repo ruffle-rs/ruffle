@@ -129,7 +129,6 @@ export class RufflePlayer extends HTMLElement {
     private swfUrl?: string;
     private instance: Ruffle | null;
     private options: BaseLoadOptions | null;
-    private _trace_observer: ((message: string) => void) | null;
     private lastActivePlayingState: boolean;
 
     private _metadata: MovieMetadata | null;
@@ -209,7 +208,6 @@ export class RufflePlayer extends HTMLElement {
         this.instance = null;
         this.options = null;
         this.onFSCommand = null;
-        this._trace_observer = null;
 
         this._readyState = ReadyState.HaveNothing;
         this._metadata = null;
