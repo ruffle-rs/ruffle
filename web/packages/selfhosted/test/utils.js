@@ -55,17 +55,9 @@ function play_and_monitor(browser, player, expected_output) {
 
     // TODO: better way to test for this in the API
     browser.waitUntil(
-        () => {
-            return (
-                has_error(browser) ||
-                browser.execute((player) => {
-                    return (
-                        player.playButtonClicked !== undefined &&
-                        player.instance
-                    );
-                }, player)
-            );
-        },
+        () =>
+            has_error(browser) ||
+            browser.execute((player) => player.instance, player),
         {
             timeoutMsg: "Expected player to have initialized",
         }
@@ -76,9 +68,7 @@ function play_and_monitor(browser, player, expected_output) {
         player.traceObserver = (msg) => {
             player.__ruffle_log__ += msg + "\n";
         };
-
-        // TODO: make this an actual intended api...
-        player.playButtonClicked();
+        player.play();
     }, player);
 
     if (expected_output === undefined) {
@@ -86,13 +76,9 @@ function play_and_monitor(browser, player, expected_output) {
     }
 
     browser.waitUntil(
-        () => {
-            return (
-                browser.execute((player) => {
-                    return player.__ruffle_log__;
-                }, player) === expected_output
-            );
-        },
+        () =>
+            browser.execute((player) => player.__ruffle_log__, player) ===
+            expected_output,
         {
             timeoutMsg: "Expected Ruffle to trace a message",
         }
@@ -115,6 +101,7 @@ function open_test(browser, absolute_dir, file_name) {
 /** Test set-up for JS API testing. */
 function js_api_before(swf) {
     let player = null;
+
     before("Loads the test", () => {
         browser.url("http://localhost:4567/test_assets/js_api.html");
 
@@ -135,7 +122,6 @@ function js_api_before(swf) {
             play_and_monitor(browser, player);
         }
     });
-    return player;
 }
 
 module.exports = {
