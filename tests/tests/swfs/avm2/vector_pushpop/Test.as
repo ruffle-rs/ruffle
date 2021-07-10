@@ -16,6 +16,9 @@ var a_bool:Vector.<Boolean> = new <Boolean>[true, false];
 trace("/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];");
 var b_bool:Vector.<Boolean> = new <Boolean>[false, true, false];
 
+trace("/// var c_bool: Vector.<Boolean> = new <Boolean>[];");
+var c_bool:Vector.<Boolean> = new <Boolean>[];
+
 trace("/// a_bool.pop();");
 trace(a_bool.pop());
 
@@ -36,6 +39,18 @@ trace(b_bool.push(0, "true", -1, 3.5, "false", false, true));
 
 trace("/// (contents of b_bool...)");
 trace_vector(b_bool);
+
+trace("/// c_bool.push();");
+trace(c_bool.push());
+
+trace("/// (contents of c_bool...)");
+trace_vector(c_bool);
+
+trace("/// c_bool.push(false);");
+trace(c_bool.push(false));
+
+trace("/// (contents of c_bool...)");
+trace_vector(c_bool);
 
 class Superclass {
 	
