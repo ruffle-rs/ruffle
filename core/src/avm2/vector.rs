@@ -293,6 +293,11 @@ impl<'gc> VectorStorage<'gc> {
         }
     }
 
+    /// Reverse the vector's storage.
+    pub fn reverse(&mut self) {
+        self.storage.reverse();
+    }
+
     /// Iterate over vector values.
     pub fn iter<'a>(
         &'a self,

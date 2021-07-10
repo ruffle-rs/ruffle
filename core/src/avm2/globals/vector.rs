@@ -678,6 +678,23 @@ pub fn remove_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.reverse`
+pub fn reverse<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            vs.reverse();
+
+            return Ok(this.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -720,6 +737,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("unshift", unshift),
         ("insertAt", insert_at),
         ("removeAt", remove_at),
+        ("reverse", reverse),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
