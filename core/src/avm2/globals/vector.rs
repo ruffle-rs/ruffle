@@ -657,6 +657,27 @@ pub fn insert_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.removeAt`
+pub fn remove_at<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let index = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+
+            return vs.remove(index, activation);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -698,6 +719,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("shift", shift),
         ("unshift", unshift),
         ("insertAt", insert_at),
+        ("removeAt", remove_at),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
