@@ -73,12 +73,7 @@ impl<W: Write> Writer<W> {
     fn write_f64_me(&mut self, n: f64) -> Result<()> {
         // Flash weirdly stores f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
-        let mut bytes = n.to_le_bytes();
-        bytes.swap(0, 4);
-        bytes.swap(1, 5);
-        bytes.swap(2, 6);
-        bytes.swap(3, 7);
-        self.output.write_all(&bytes)
+        self.write_u64(n.to_bits().rotate_left(32))
     }
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {

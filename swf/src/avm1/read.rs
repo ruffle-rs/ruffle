@@ -45,12 +45,7 @@ impl<'a> Reader<'a> {
     fn read_f64_me(&mut self) -> Result<f64> {
         // Flash weirdly stores (some?) f64 as two LE 32-bit chunks.
         // First word is the hi-word, second word is the lo-word.
-        let mut bytes = self.read_u64()?.to_le_bytes();
-        bytes.swap(0, 4);
-        bytes.swap(1, 5);
-        bytes.swap(2, 6);
-        bytes.swap(3, 7);
-        Ok(f64::from_le_bytes(bytes))
+        Ok(f64::from_bits(self.read_u64()?.rotate_left(32)))
     }
 
     #[inline]
