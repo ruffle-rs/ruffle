@@ -62,11 +62,17 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "backgroundColor" => property(tf_getter!(background_color), tf_setter!(set_background_color); DONT_DELETE);
     "border" => property(tf_getter!(border), tf_setter!(set_border); DONT_DELETE);
     "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color); DONT_DELETE);
+    "bottomScroll" => property(tf_getter!(bottom_scroll); DONT_DELETE | READ_ONLY);
     "embedFonts" => property(tf_getter!(embed_fonts), tf_setter!(set_embed_fonts); DONT_DELETE);
+    "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll); DONT_DELETE);
     "html" => property(tf_getter!(html), tf_setter!(set_html); DONT_DELETE);
     "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text); DONT_DELETE);
     "length" => property(tf_getter!(length); DONT_DELETE | READ_ONLY);
+    "maxhscroll" => property(tf_getter!(maxhscroll); DONT_DELETE | READ_ONLY);
+    "maxscroll" => property(tf_getter!(maxscroll); DONT_DELETE | READ_ONLY);
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline); DONT_DELETE);
+    "password" => property(tf_getter!(password), tf_setter!(set_password); DONT_DELETE);
+    "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll); DONT_DELETE);
     "selectable" => property(tf_getter!(selectable), tf_setter!(set_selectable); DONT_DELETE);
     "text" => property(tf_getter!(text), tf_setter!(set_text); DONT_DELETE);
     "textColor" => property(tf_getter!(text_color), tf_setter!(set_text_color); DONT_DELETE);
@@ -75,12 +81,6 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "type" => property(tf_getter!(get_type), tf_setter!(set_type); DONT_DELETE);
     "variable" => property(tf_getter!(variable), tf_setter!(set_variable); DONT_DELETE);
     "wordWrap" => property(tf_getter!(word_wrap), tf_setter!(set_word_wrap); DONT_DELETE);
-    "password" => property(tf_getter!(password), tf_setter!(set_password); DONT_DELETE);
-    "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll); DONT_DELETE);
-    "maxhscroll" => property(tf_getter!(maxhscroll); DONT_DELETE | READ_ONLY);
-    "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll); DONT_DELETE);
-    "maxscroll" => property(tf_getter!(maxscroll); DONT_DELETE | READ_ONLY);
-    "bottomScroll" => property(tf_getter!(bottom_scroll); DONT_DELETE | READ_ONLY);
 };
 
 /// Implements `TextField`
