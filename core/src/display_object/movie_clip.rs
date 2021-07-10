@@ -1007,20 +1007,19 @@ impl<'gc> MovieClip<'gc> {
             let clip = self.0.read();
             let mut reader = clip.static_data.swf.read_from(0);
             while cur_frame <= frame && !reader.get_ref().is_empty() {
-                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| {
-                    match tag_code {
-                        TagCode::ShowFrame => cur_frame += 1,
-                        TagCode::DoAction if cur_frame == frame => {
-                            // On the target frame, add any DoAction tags to the array.
-                            if let Some(code) =
-                                clip.static_data.swf.resize_to_reader(reader, tag_len)
-                            {
-                                actions.push(code)
-                            }
-                        }
-                        _ => (),
+                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| match tag_code {
+                    TagCode::ShowFrame => {
+                        cur_frame += 1;
+                        Ok(())
                     }
-                    Ok(())
+                    TagCode::DoAction if cur_frame == frame => {
+                        // On the target frame, add any DoAction tags to the array.
+                        if let Some(code) = clip.static_data.swf.resize_to_reader(reader, tag_len) {
+                            actions.push(code);
+                        }
+                        Ok(())
+                    }
+                    _ => Ok(()),
                 };
 
                 let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
