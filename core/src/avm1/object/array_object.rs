@@ -1,4 +1,5 @@
 use crate::avm1::property::Attribute;
+use crate::avm1::object::Watcher;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -176,6 +177,14 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0
             .read()
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self.0.read().get_watcher(activation, name)
     }
 
     fn watch(

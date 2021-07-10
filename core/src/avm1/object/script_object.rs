@@ -217,12 +217,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        let watcher = self
-            .0
-            .read()
-            .watchers
-            .get(name, activation.is_case_sensitive())
-            .cloned();
+        let watcher = self.get_watcher(activation, name);
         let mut result = Ok(());
         if let Some(watcher) = watcher {
             let old_value = self.get(name, activation)?;
@@ -353,6 +348,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
             Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
         }
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self
+            .0
+            .read()
+            .watchers
+            .get(name, activation.is_case_sensitive())
+            .cloned()
     }
 
     fn watch(

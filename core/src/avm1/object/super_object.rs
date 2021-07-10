@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
-use crate::avm1::object::search_prototype;
+use crate::avm1::object::{search_prototype, Watcher};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
@@ -171,6 +171,14 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _attributes: Attribute,
     ) {
         //`super` cannot have properties defined on it
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self.0.read().this.get_watcher(activation, name)
     }
 
     fn watch(

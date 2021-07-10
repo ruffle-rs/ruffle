@@ -2,6 +2,7 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use crate::avm1::object::script_object::Watcher;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -324,6 +325,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         set: Option<Object<'gc>>,
         attributes: Attribute,
     );
+
+    /// Get the 'watcher' of a given property, if it exists.
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>>;
 
     /// Set the 'watcher' of a given property.
     ///
