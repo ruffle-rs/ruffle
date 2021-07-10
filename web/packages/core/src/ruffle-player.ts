@@ -129,7 +129,6 @@ export class RufflePlayer extends HTMLElement {
     private swfUrl?: string;
     private instance: Ruffle | null;
     private options: BaseLoadOptions | null;
-    private _trace_observer: ((message: string) => void) | null;
     private lastActivePlayingState: boolean;
 
     private _metadata: MovieMetadata | null;
@@ -196,10 +195,7 @@ export class RufflePlayer extends HTMLElement {
         this.container = this.shadow.getElementById("container")!;
         this.playButton = this.shadow.getElementById("play_button")!;
         if (this.playButton) {
-            this.playButton.addEventListener(
-                "click",
-                this.playButtonClicked.bind(this)
-            );
+            this.playButton.addEventListener("click", () => this.play());
         }
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
@@ -212,7 +208,6 @@ export class RufflePlayer extends HTMLElement {
         this.instance = null;
         this.options = null;
         this.onFSCommand = null;
-        this._trace_observer = null;
 
         this._readyState = ReadyState.HaveNothing;
         this._metadata = null;
@@ -588,10 +583,6 @@ export class RufflePlayer extends HTMLElement {
             console.error(`Serious error occurred loading SWF file: ${err}`);
             throw err;
         }
-    }
-
-    private playButtonClicked(): void {
-        this.play();
     }
 
     /**

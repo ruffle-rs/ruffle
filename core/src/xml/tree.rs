@@ -212,6 +212,31 @@ impl<'gc> XmlNode<'gc> {
         Ok(())
     }
 
+    /// Escape any ampersands in the string that do not represent valid entities.
+    /// A new type of XML parser is a TODO; this will let things function well enough until then.
+    pub fn fix_string_escaping(data: &str) -> Cow<str> {
+        let mut new_data = String::from("");
+        for (pos, word) in data.split('&').enumerate() {
+            if pos == 0 {
+                new_data.push_str(word);
+                continue;
+            }
+            let mut data_piece = String::from("&");
+            data_piece.push_str(word);
+            if htmlescape::decode_html(&data_piece).is_err() {
+                new_data.push_str("&amp;");
+                new_data.push_str(word);
+            } else {
+                new_data.push_str(&data_piece);
+            }
+        }
+        if !new_data.is_empty() {
+            Cow::Owned(new_data)
+        } else {
+            Cow::Borrowed(data)
+        }
+    }
+
     /// Replace the contents of this node with the result of parsing a string.
     ///
     /// Node replacements are only supported on document root nodes; elements
@@ -220,8 +245,7 @@ impl<'gc> XmlNode<'gc> {
     /// Also, this method does not yet actually remove existing node contents.
     ///
     /// If `process_entity` is `true`, then entities will be processed by this
-    /// function. Invalid or unrecognized entities will cause parsing to fail
-    /// with an `Err`.
+    /// function. Invalid or unrecognized entities will have the ampersands converted.
     pub fn replace_with_str(
         &mut self,
         mc: MutationContext<'gc, '_>,
@@ -229,7 +253,14 @@ impl<'gc> XmlNode<'gc> {
         process_entity: bool,
         ignore_white: bool,
     ) -> Result<(), Error> {
-        let mut parser = Reader::from_str(data);
+        let new_data_string = {
+            if process_entity {
+                XmlNode::fix_string_escaping(data)
+            } else {
+                Cow::Borrowed(data)
+            }
+        };
+        let mut parser = Reader::from_str(new_data_string.as_ref());
         let mut buf = Vec::new();
         let document = self.document();
         let mut open_tags: Vec<XmlNode<'gc>> = Vec::new();
