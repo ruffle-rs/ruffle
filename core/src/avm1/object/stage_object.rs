@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
 use crate::avm1::object::Watcher;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;

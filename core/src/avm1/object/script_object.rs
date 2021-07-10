@@ -355,8 +355,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
     ) -> Option<Watcher<'gc>> {
-        self
-            .0
+        self.0
             .read()
             .watchers
             .get(name, activation.is_case_sensitive())

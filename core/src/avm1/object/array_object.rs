@@ -1,5 +1,5 @@
-use crate::avm1::property::Attribute;
 use crate::avm1::object::Watcher;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use gc_arena::{Collect, GcCell, MutationContext};

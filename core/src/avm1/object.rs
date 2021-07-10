@@ -132,7 +132,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set(
         &self,
         name: &str,
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         if name.is_empty() {
@@ -146,6 +146,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
+                    // some properties, e.g. TextField.text, should call an associated watcher
+                    let watcher = self.get_watcher(activation, name);
+                    if let Some(watcher) = watcher {
+                        // for all text_field callbacks this is undefined. Some, like button.enabled, pass the
+                        // real value, but I haven't seen any examples of that being used in the wild.
+                        match watcher.call(
+                            activation,
+                            name,
+                            Value::Undefined,
+                            value,
+                            this,
+                            Some(this),
+                        ) {
+                            Ok(v) => value = v,
+                            Err(_) => value = Value::Undefined,
+                        };
+                    }
                     if let Some(setter) = this_proto.setter(name, activation) {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
