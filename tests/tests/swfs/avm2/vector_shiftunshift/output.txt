@@ -1,5 +1,6 @@
 /// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
 /// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// var c_bool: Vector.<Boolean> = new <Boolean>[];
 /// a_bool.shift();
 true
 /// a_bool.shift();
@@ -30,6 +31,15 @@ false
 true
 false
 true
+false
+/// c_bool.unshift();
+0
+/// (contents of c_bool...)
+0 elements
+/// c_bool.unshift(false);
+1
+/// (contents of c_bool...)
+1 elements
 false
 /// var a0_class = new Superclass();
 /// var a1_class = new Subclass();
