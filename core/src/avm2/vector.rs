@@ -233,6 +233,9 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
+    ///
+    /// Negative bounds are supported and treated as indexing from the end of
+    /// the array, backwards.
     pub fn insert(&mut self, position: i32, value: Option<Value<'gc>>) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
@@ -251,6 +254,43 @@ impl<'gc> VectorStorage<'gc> {
         }
 
         Ok(())
+    }
+
+    /// Remove a value from a specific position in the vector.
+    ///
+    /// This function returns an error if the vector is fixed, empty, or being
+    /// indexed out of bounds. Otherwise, it returns the removed value.
+    ///
+    /// Negative bounds are supported and treated as indexing from the end of
+    /// the array, backwards. Negative arrays are *not* subject to the bounds
+    /// check error.
+    pub fn remove(
+        &mut self,
+        position: i32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        if self.is_fixed {
+            return Err("RangeError: Vector is fixed".into());
+        }
+
+        let position = if position < 0 {
+            max(position + self.storage.len() as i32, 0) as usize
+        } else {
+            position as usize
+        };
+
+        if position >= self.storage.len() {
+            Err(format!(
+                "RangeError: Index {} extends beyond the end of the vector",
+                position
+            )
+            .into())
+        } else {
+            Ok(self
+                .storage
+                .remove(position)
+                .unwrap_or_else(|| self.default(activation)))
+        }
     }
 
     /// Iterate over vector values.

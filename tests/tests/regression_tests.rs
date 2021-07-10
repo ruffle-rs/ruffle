@@ -644,6 +644,7 @@ swf_tests! {
     (as3_vector_pushpop, "avm2/vector_pushpop", 1),
     (as3_vector_shiftunshift, "avm2/vector_shiftunshift", 1),
     (as3_vector_insertat, "avm2/vector_insertat", 1),
+    (as3_vector_removeat, "avm2/vector_removeat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
