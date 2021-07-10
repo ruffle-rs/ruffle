@@ -1,5 +1,5 @@
-use crate::avm1::property::Attribute;
 use crate::avm1::object::Watcher;
+use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -146,7 +146,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.0.read().call_setter(name, value, activation, watcher, this, base_proto)
+        self.0
+            .read()
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(

@@ -258,7 +258,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.0.read().base.call_setter(name, value, activation, watcher, this, base_proto)
+        self.0
+            .read()
+            .base
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(

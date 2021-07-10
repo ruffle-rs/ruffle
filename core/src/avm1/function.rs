@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::script_object::Watcher;
+use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
@@ -663,7 +663,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.base.call_setter(name, value, activation, watcher, this, base_proto)
+        self.base
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(

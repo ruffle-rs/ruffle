@@ -157,7 +157,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if this_proto.has_own_virtual(activation, name) {
                     // some properties, e.g. TextField.text, should call an associated watcher
                     let watcher = self.get_watcher(activation, name);
-                    if let Some(setter) = this_proto.call_setter(name, value, activation, watcher, this, Some(this)) {
+                    if let Some(setter) =
+                        this_proto.call_setter(name, value, activation, watcher, this, Some(this))
+                    {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
                                 "[Setter]",

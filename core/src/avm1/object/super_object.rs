@@ -142,7 +142,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.0.read().child.call_setter(name, value, activation, watcher, this, base_proto)
+        self.0
+            .read()
+            .child
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(
