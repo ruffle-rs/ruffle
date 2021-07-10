@@ -1,0 +1,10 @@
+// text_field.watch("text", callback)
+true
+// text_field.text = "hello"
+called callback
+prop
+text
+oldVal
+undefined
+newVal
+hello
