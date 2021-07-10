@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
+use crate::avm1::object::Watcher;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -332,6 +333,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .read()
             .base
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self.0.read().base.get_watcher(activation, name)
     }
 
     fn set_watcher(
