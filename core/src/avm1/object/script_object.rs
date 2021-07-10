@@ -286,9 +286,20 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn call_setter(
         &self,
         name: &str,
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        watcher: Option<Watcher<'gc>>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
+        if let Some(watcher) = watcher {
+            // for all text_field callbacks this is undefined. Some, like button.enabled, pass the
+            // real value, but I haven't seen any examples of that being used in the wild.
+            match watcher.call(activation, name, Value::Undefined, value, this, base_proto) {
+                Ok(v) => value = v,
+                Err(_) => value = Value::Undefined,
+            };
+        }
         match self
             .0
             .write(activation.context.gc_context)

@@ -142,8 +142,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        watcher: Option<Watcher<'gc>>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.0.read().call_setter(name, value, activation)
+        self.0.read().call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(
