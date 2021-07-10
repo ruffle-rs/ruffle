@@ -204,12 +204,12 @@ impl SwfSlice {
     ///
     /// This function returns None if the given slice is not a subslice of the
     /// current slice.
-    pub fn to_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
+    pub fn to_subslice(&self, slice: &[u8]) -> Option<Self> {
         let self_pval = self.movie.data().as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
 
         if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
-            Some(SwfSlice {
+            Some(Self {
                 movie: self.movie.clone(),
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
@@ -223,13 +223,13 @@ impl SwfSlice {
     ///
     /// This function allows subslices outside the current slice to be formed,
     /// as long as they are valid subslices of the movie itself.
-    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Option<SwfSlice> {
+    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Option<Self> {
         let self_pval = self.movie.data().as_ptr() as usize;
         let self_len = self.movie.data().len();
         let slice_pval = slice.as_ptr() as usize;
 
         if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Some(SwfSlice {
+            Some(Self {
                 movie: self.movie.clone(),
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
@@ -249,7 +249,7 @@ impl SwfSlice {
     /// If the resulting slice would be outside the bounds of the underlying
     /// movie, or the given reader refers to a different underlying movie, this
     /// function returns None.
-    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Option<SwfSlice> {
+    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Option<Self> {
         if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
             && (reader.get_ref().as_ptr() as usize)
                 < self.movie.data().as_ptr() as usize + self.movie.data().len()
@@ -262,7 +262,7 @@ impl SwfSlice {
             let len = self.movie.data().len();
 
             if new_start < len && new_end < len {
-                Some(SwfSlice {
+                Some(Self {
                     movie: self.movie.clone(),
                     start: new_start,
                     end: new_end,
@@ -281,7 +281,7 @@ impl SwfSlice {
     /// Furthermore, this function will yield None if the calculated slice
     /// would be invalid (e.g. negative length) or would extend past the end of
     /// the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Option<SwfSlice> {
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Option<Self> {
         let new_start = self.start + start;
         let new_end = self.start + end;
 
@@ -314,7 +314,7 @@ pub fn decode_tags<'a, F>(
     reader: &mut SwfStream<'a>,
     mut tag_callback: F,
     stop_tag: TagCode,
-) -> Result<(), Box<dyn std::error::Error>>
+) -> Result<(), Error>
 where
     F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> DecodeResult,
 {
@@ -326,10 +326,9 @@ where
             break;
         }
 
-        let tag = TagCode::from_u16(tag_code);
         let tag_slice = &reader.get_ref()[..tag_len];
         let end_slice = &reader.get_ref()[tag_len..];
-        if let Some(tag) = tag {
+        if let Some(tag) = TagCode::from_u16(tag_code) {
             *reader.get_mut() = tag_slice;
             let result = tag_callback(reader, tag, tag_len);
 
