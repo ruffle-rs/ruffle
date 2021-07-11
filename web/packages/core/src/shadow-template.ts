@@ -187,7 +187,8 @@ ruffleShadowTemplate.innerHTML = `
             display: none;
             color: black;
             background: #fafafa;
-            border: 1px solid gray;
+            border: 1px solid lightgray;
+            border-radius: 8px
             box-shadow: 0px 5px 10px -5px black;
             position: absolute;
             font-size: 14px;
@@ -199,6 +200,7 @@ ruffleShadowTemplate.innerHTML = `
 
         #context-menu .menu_item {
             padding: 5px 10px;
+            margin: 2px
         }
 
         #context-menu .active {
@@ -213,12 +215,13 @@ ruffleShadowTemplate.innerHTML = `
 
         #context-menu .active:hover {
             background: lightgray;
+            border-radius: 8px
         }
 
         #context-menu .menu_separator hr {
             border: none;
             border-bottom: 1px solid lightgray;
-            margin: 2px;
+            margin: 4px 12px;
         }
     </style>
     <style id="dynamic_styles"></style>
