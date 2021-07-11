@@ -1104,6 +1104,7 @@ impl<'gc> EditText<'gc> {
                     {
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
+                            let property = AvmString::new(activation.context.gc_context, property);
                             // If the property exists on the object, we overwrite the text with the property's value.
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
@@ -1188,6 +1189,7 @@ impl<'gc> EditText<'gc> {
                         self.avm1_parent().unwrap(),
                         activation.context.swf.version(),
                         |activation| {
+                            let property = AvmString::new(activation.context.gc_context, property);
                             let _ = object.set(
                                 property,
                                 AvmString::new(activation.context.gc_context, text).into(),
@@ -1455,7 +1457,7 @@ impl<'gc> EditText<'gc> {
     fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc, '_>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
-                "broadcastMessage",
+                "broadcastMessage".into(),
                 &["onChanged".into(), object.into()],
                 activation,
             );

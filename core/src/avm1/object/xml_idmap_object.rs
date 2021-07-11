@@ -4,11 +4,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, Value};
+use crate::avm1::{AvmString, Object, ScriptObject, Value};
 use crate::avm_warn;
 use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::{Collect, MutationContext};
-use std::borrow::Cow;
 use std::fmt;
 
 /// An Object that is inherently tied to an XML document's ID map.
@@ -58,11 +57,12 @@ impl fmt::Debug for XmlIdMapObject<'_> {
 impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     fn get_local(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        if let Some(mut node) = self.document().get_node_by_id(name) {
+        let name = name.into();
+        if let Some(mut node) = self.document().get_node_by_id(&name) {
             Some(Ok(node
                 .script_object(
                     activation.context.gc_context,
@@ -76,7 +76,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -87,7 +87,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     }
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -98,7 +98,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
 
     fn call_setter(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
@@ -115,14 +115,14 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         Ok(Value::Undefined.coerce_to_object(activation))
     }
 
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base().delete(activation, name)
     }
 
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -134,7 +134,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -146,7 +146,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     fn set_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
@@ -154,14 +154,18 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
             .set_watcher(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().remove_watcher(activation, name)
     }
 
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     ) {
@@ -172,7 +176,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     ) {
@@ -188,26 +192,43 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         self.base().set_proto(gc_context, prototype);
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.base().has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
-        self.document().get_node_by_id(name).is_some()
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
+        self.document().get_node_by_id(&name).is_some()
             || self.base().has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.base().is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         let mut keys = self.base().get_keys(activation);
-        keys.extend(self.document().get_node_ids().into_iter());
+        keys.extend(
+            self.document()
+                .get_node_ids()
+                .into_iter()
+                .map(|n| AvmString::new(activation.context.gc_context, n)),
+        );
         keys
     }
 

@@ -313,7 +313,7 @@ impl<'gc> Avm1<'gc> {
         obj: Object<'gc>,
         swf_version: u8,
         context: &'a mut UpdateContext<'b, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
         if context.avm1.halted {
@@ -325,7 +325,8 @@ impl<'gc> Avm1<'gc> {
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),
-            ActivationIdentifier::root(name.to_owned()),
+            // TODO(moulins): remove this alloc
+            ActivationIdentifier::root(name.to_string()),
             swf_version,
             globals,
             active_clip,
@@ -342,8 +343,8 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        broadcaster_name: &str,
-        method: &str,
+        broadcaster_name: AvmString<'gc>,
+        method: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
         let global = context.avm1.global_object_cell();

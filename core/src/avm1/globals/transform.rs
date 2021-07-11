@@ -140,7 +140,7 @@ fn set_matrix<'gc>(
     // Assignment only occurs for an object with Matrix properties (a, b, c, d, tx, ty).
     let is_matrix = ["a", "b", "c", "d", "tx", "ty"]
         .iter()
-        .all(|p| as_matrix.has_own_property(activation, p));
+        .all(|p| as_matrix.has_own_property(activation, (*p).into()));
     if is_matrix {
         let swf_matrix = matrix::object_to_matrix(as_matrix, activation)?;
         clip.set_matrix(activation.context.gc_context, &swf_matrix);

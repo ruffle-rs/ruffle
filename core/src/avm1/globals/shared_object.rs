@@ -115,10 +115,10 @@ fn recursive_serialize<'gc>(
     elements: &mut Vec<Element>,
 ) {
     // Reversed to match flash player ordering
-    for element_name in obj.get_keys(activation).iter().rev() {
+    for element_name in obj.get_keys(activation).into_iter().rev() {
         if let Ok(elem) = obj.get(element_name, activation) {
             if let Some(v) = serialize_value(activation, elem) {
-                elements.push(Element::new(element_name, v));
+                elements.push(Element::new(element_name.as_str(), v));
             }
         }
     }
@@ -145,7 +145,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
                     } else {
                         obj.define_value(
                             activation.context.gc_context,
-                            &entry.name,
+                            AvmString::new(activation.context.gc_context, entry.name.clone()),
                             value,
                             Attribute::empty(),
                         );
@@ -159,20 +159,21 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
         }
         AmfValue::Object(elements, _) => {
             // Deserialize Object
-            let obj = ScriptObject::object(
-                activation.context.gc_context,
-                Some(activation.context.avm1.prototypes.object),
-            );
-            for entry in elements {
-                let value = deserialize_value(activation, entry.value());
-                obj.define_value(
-                    activation.context.gc_context,
-                    &entry.name,
-                    value,
-                    Attribute::empty(),
-                );
+            let obj_proto = activation.context.avm1.prototypes.object;
+            if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
+                for entry in elements {
+                    let value = deserialize_value(activation, entry.value());
+                    obj.define_value(
+                        activation.context.gc_context,
+                        AvmString::new(activation.context.gc_context, entry.name.clone()),
+                        value,
+                        Attribute::empty(),
+                    );
+                }
+                obj.into()
+            } else {
+                Value::Undefined
             }
-            obj.into()
         }
         AmfValue::Date(time, _) => {
             let date_proto = activation.context.avm1.prototypes.date_constructor;
@@ -216,7 +217,7 @@ fn deserialize_lso<'gc>(
     for child in &lso.body {
         obj.define_value(
             activation.context.gc_context,
-            &child.name,
+            AvmString::new(activation.context.gc_context, child.name.clone()),
             deserialize_value(activation, child.value()),
             Attribute::empty(),
         );
@@ -255,20 +256,21 @@ fn deserialize_object_json<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     // Deserialize Object
-    let obj = ScriptObject::object(
-        activation.context.gc_context,
-        Some(activation.context.avm1.prototypes.object),
-    );
-    for entry in json_obj.iter() {
-        let value = recursive_deserialize_json(entry.1.clone(), activation);
-        obj.define_value(
-            activation.context.gc_context,
-            entry.0,
-            value,
-            Attribute::empty(),
-        );
+    let obj_proto = activation.context.avm1.prototypes.object;
+    if let Ok(obj) = obj_proto.create_bare_object(activation, obj_proto) {
+        for entry in json_obj.iter() {
+            let value = recursive_deserialize_json(entry.1.clone(), activation);
+            obj.define_value(
+                activation.context.gc_context,
+                AvmString::new(activation.context.gc_context, entry.0),
+                value,
+                Attribute::empty(),
+            );
+        }
+        obj.into()
+    } else {
+        Value::Undefined
     }
-    obj.into()
 }
 
 /// Deserialize an Array and any children from a JSON object
@@ -291,9 +293,10 @@ fn deserialize_array_json<'gc>(
             if let Ok(i) = entry.0.parse::<i32>() {
                 obj.set_element(activation, i, value).unwrap();
             } else {
+                let name = AvmString::new(activation.context.gc_context, entry.0);
                 obj.define_value(
                     activation.context.gc_context,
-                    entry.0,
+                    name,
                     value,
                     Attribute::empty(),
                 );
@@ -526,7 +529,7 @@ pub fn clear<'gc>(
     let data = this.get("data", activation)?.coerce_to_object(activation);
 
     for k in &data.get_keys(activation) {
-        data.delete(activation, k);
+        data.delete(activation, *k);
     }
 
     let so = this.as_shared_object().unwrap();

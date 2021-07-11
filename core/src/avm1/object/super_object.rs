@@ -6,11 +6,10 @@ use crate::avm1::function::Executable;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::borrow::Cow;
 
 /// Implementation of the `super` object in AS2.
 ///
@@ -80,7 +79,7 @@ impl<'gc> SuperObject<'gc> {
 impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local(
         &self,
-        _name: &str,
+        _name: impl Into<AvmString<'gc>>,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
@@ -89,7 +88,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn set_local(
         &self,
-        _name: &str,
+        _name: AvmString<'gc>,
         _value: Value<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
@@ -100,7 +99,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
@@ -119,7 +118,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn call_method(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -135,7 +134,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn call_setter(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
@@ -156,7 +155,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
     }
 
-    fn delete(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: &str) -> bool {
+    fn delete(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: AvmString<'gc>) -> bool {
         //`super` cannot have properties deleted from it
         false
     }
@@ -174,7 +173,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn define_value(
         &self,
         _gc_context: MutationContext<'gc, '_>,
-        _name: &str,
+        _name: impl Into<AvmString<'gc>>,
         _value: Value<'gc>,
         _attributes: Attribute,
     ) {
@@ -184,7 +183,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn set_attributes(
         &self,
         _gc_context: MutationContext<'gc, '_>,
-        _name: Option<&str>,
+        _name: Option<AvmString<'gc>>,
         _set_attributes: Attribute,
         _clear_attributes: Attribute,
     ) {
@@ -194,7 +193,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn add_property(
         &self,
         _gc_context: MutationContext<'gc, '_>,
-        _name: &str,
+        _name: AvmString<'gc>,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
         _attributes: Attribute,
@@ -205,7 +204,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn add_property_with_case(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _name: &str,
+        _name: AvmString<'gc>,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
         _attributes: Attribute,
@@ -216,35 +215,51 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn set_watcher(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _name: Cow<str>,
+        _name: AvmString<'gc>,
         _callback: Object<'gc>,
         _user_data: Value<'gc>,
     ) {
         //`super` cannot have properties defined on it
     }
 
-    fn remove_watcher(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: Cow<str>) -> bool {
+    fn remove_watcher(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _name: AvmString<'gc>,
+    ) -> bool {
         //`super` cannot have properties defined on it
         false
     }
 
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.0.read().child.has_property(activation, name)
     }
 
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().child.has_own_property(activation, name)
     }
 
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().child.has_own_virtual(activation, name)
     }
 
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.0.read().child.is_property_enumerable(activation, name)
     }
 
-    fn get_keys(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Vec<String> {
+    fn get_keys(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         vec![]
     }
 

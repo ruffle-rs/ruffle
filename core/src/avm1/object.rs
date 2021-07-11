@@ -25,13 +25,12 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::object::xml_object::XmlObject;
-use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
+use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
-use std::borrow::Cow;
 use std::fmt::Debug;
 
 pub mod array_object;
@@ -103,7 +102,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// to do ordinary property look-up and resolution.
     fn get_local(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>>;
@@ -111,9 +110,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Retrieve a named property from the object, or its prototype.
     fn get(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
+        let name = name.into();
         if name == "__proto__" {
             return Ok(self.proto());
         }
@@ -124,7 +124,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     fn set_local(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
@@ -134,10 +134,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set a named property on this object, or its prototype.
     fn set(
         &self,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
+        let name = name.into();
         if name.is_empty() {
             return Ok(());
         }
@@ -184,7 +185,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// it can be changed by `Function.apply`/`Function.call`.
     fn call(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
@@ -220,7 +221,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `this` parameter.
     fn call_method(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -245,7 +246,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `super` will be invoked following said guidance.
     fn call_setter(
         &self,
-        name: &str,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>>;
@@ -266,7 +267,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
+    fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool;
 
     /// Retrieve the `__proto__` of a given object.
     ///
@@ -296,7 +297,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn define_value(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
         attributes: Attribute,
     );
@@ -311,7 +312,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_attributes(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: Option<&str>,
+        name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
         clear_attributes: Attribute,
     );
@@ -329,7 +330,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn add_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -348,7 +349,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &str,
+        name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
         attributes: Attribute,
@@ -360,7 +361,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: Cow<str>,
+        name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     );
@@ -369,24 +370,40 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The return value will indicate if there was a watcher present before this method was
     /// called.
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool;
+    fn remove_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool;
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
+    fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool;
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool;
 
     /// Checks if the object has a given named property on itself that is
     /// virtual.
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool;
 
     /// Checks if a named property appears when enumerating the object.
-    fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
+    fn is_property_enumerable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+    ) -> bool;
 
     /// Enumerate the object.
-    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<String>;
+    fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>>;
 
     /// Get the object's type string.
     fn type_of(&self) -> &'static str;
@@ -620,7 +637,7 @@ impl<'gc> Object<'gc> {
 /// property necessary to make `super` work.
 pub fn search_prototype<'gc>(
     mut proto: Value<'gc>,
-    name: &str,
+    name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
 ) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {

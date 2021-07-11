@@ -6,7 +6,7 @@ use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 
 fn map_defined_to_string<'gc>(
-    name: &str,
+    name: AvmString<'gc>,
     this: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
@@ -28,7 +28,7 @@ fn map_defined_to_string<'gc>(
 }
 
 fn map_defined_to_number<'gc>(
-    name: &str,
+    name: AvmString<'gc>,
     this: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
@@ -46,7 +46,7 @@ fn map_defined_to_number<'gc>(
 }
 
 fn map_defined_to_bool<'gc>(
-    name: &str,
+    name: AvmString<'gc>,
     this: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     val: Option<Value<'gc>>,
@@ -69,19 +69,24 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    map_defined_to_string("font", this, activation, args.get(0).cloned())?;
-    map_defined_to_number("size", this, activation, args.get(1).cloned())?;
-    map_defined_to_number("color", this, activation, args.get(2).cloned())?;
-    map_defined_to_bool("bold", this, activation, args.get(3).cloned())?;
-    map_defined_to_bool("italic", this, activation, args.get(4).cloned())?;
-    map_defined_to_bool("underline", this, activation, args.get(5).cloned())?;
-    map_defined_to_string("url", this, activation, args.get(6).cloned())?;
-    map_defined_to_string("target", this, activation, args.get(7).cloned())?;
-    map_defined_to_string("align", this, activation, args.get(8).cloned())?;
-    map_defined_to_number("leftMargin", this, activation, args.get(9).cloned())?;
-    map_defined_to_number("rightMargin", this, activation, args.get(10).cloned())?;
-    map_defined_to_number("indent", this, activation, args.get(11).cloned())?;
-    map_defined_to_number("leading", this, activation, args.get(12).cloned())?;
+    map_defined_to_string("font".into(), this, activation, args.get(0).cloned())?;
+    map_defined_to_number("size".into(), this, activation, args.get(1).cloned())?;
+    map_defined_to_number("color".into(), this, activation, args.get(2).cloned())?;
+    map_defined_to_bool("bold".into(), this, activation, args.get(3).cloned())?;
+    map_defined_to_bool("italic".into(), this, activation, args.get(4).cloned())?;
+    map_defined_to_bool("underline".into(), this, activation, args.get(5).cloned())?;
+    map_defined_to_string("url".into(), this, activation, args.get(6).cloned())?;
+    map_defined_to_string("target".into(), this, activation, args.get(7).cloned())?;
+    map_defined_to_string("align".into(), this, activation, args.get(8).cloned())?;
+    map_defined_to_number("leftMargin".into(), this, activation, args.get(9).cloned())?;
+    map_defined_to_number(
+        "rightMargin".into(),
+        this,
+        activation,
+        args.get(10).cloned(),
+    )?;
+    map_defined_to_number("indent".into(), this, activation, args.get(11).cloned())?;
+    map_defined_to_number("leading".into(), this, activation, args.get(12).cloned())?;
 
     Ok(this.into())
 }

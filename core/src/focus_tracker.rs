@@ -48,8 +48,8 @@ impl<'gc> FocusTracker<'gc> {
             level0,
             context.swf.version(),
             context,
-            "Selection",
-            "onSetFocus",
+            "Selection".into(),
+            "onSetFocus".into(),
             &[
                 old.map(|v| v.object()).unwrap_or(Value::Null),
                 focused_element.map(|v| v.object()).unwrap_or(Value::Null),

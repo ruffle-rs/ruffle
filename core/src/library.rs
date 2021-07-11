@@ -1,5 +1,5 @@
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
+use crate::avm1::{function::FunctionObject, AvmString};
 use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
 use crate::backend::{audio::SoundHandle, render};
 use crate::character::Character;
@@ -19,7 +19,7 @@ use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Avm1ConstructorRegistry<'gc> {
-    symbol_map: GcCell<'gc, Avm1PropertyMap<FunctionObject<'gc>>>,
+    symbol_map: GcCell<'gc, Avm1PropertyMap<'gc, FunctionObject<'gc>>>,
     is_case_sensitive: bool,
 }
 
@@ -40,7 +40,7 @@ impl<'gc> Avm1ConstructorRegistry<'gc> {
 
     pub fn set(
         &self,
-        symbol: &str,
+        symbol: AvmString<'gc>,
         constructor: Option<FunctionObject<'gc>>,
         gc_context: MutationContext<'gc, '_>,
     ) {
@@ -131,7 +131,7 @@ impl<'gc> Avm2ConstructorRegistry<'gc> {
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
     characters: HashMap<CharacterId, Character<'gc>>,
-    export_characters: Avm1PropertyMap<Character<'gc>>,
+    export_characters: Avm1PropertyMap<'gc, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
@@ -173,7 +173,7 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn register_export(
         &mut self,
         id: CharacterId,
-        export_name: &str,
+        export_name: AvmString<'gc>,
     ) -> Option<&Character<'gc>> {
         if let Some(character) = self.characters.get(&id) {
             self.export_characters
