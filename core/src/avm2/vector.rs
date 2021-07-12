@@ -100,6 +100,19 @@ impl<'gc> VectorStorage<'gc> {
         pos < self.storage.len()
     }
 
+    /// Change an arbitrary i32 into a positive parameter index.
+    ///
+    /// This converts negative indicies into positive indicies indexed from the
+    /// end of the array. Negative indicies that point before the start of the
+    /// array are clamped to zero.
+    pub fn clamp_parameter_index(&self, pos: i32) -> usize {
+        if pos < 0 {
+            max(pos + self.storage.len() as i32, 0) as usize
+        } else {
+            pos as usize
+        }
+    }
+
     /// Retrieve a value from the vector.
     ///
     /// If the value is `None`, the type default value will be substituted.
@@ -241,12 +254,7 @@ impl<'gc> VectorStorage<'gc> {
             return Err("RangeError: Vector is fixed".into());
         }
 
-        let position = if position < 0 {
-            max(position + self.storage.len() as i32, 0) as usize
-        } else {
-            position as usize
-        };
-
+        let position = self.clamp_parameter_index(position);
         if position >= self.storage.len() {
             self.storage.push(value);
         } else {

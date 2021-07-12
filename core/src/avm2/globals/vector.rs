@@ -695,6 +695,46 @@ pub fn reverse<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.slice`
+pub fn slice<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let from = args
+                .get(0)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_i32(activation)?;
+            let to = args
+                .get(1)
+                .cloned()
+                .unwrap_or_else(|| 16777215.into())
+                .coerce_to_i32(activation)?;
+            let value_type = vs.value_type();
+
+            let from = vs.clamp_parameter_index(from);
+            let to = vs.clamp_parameter_index(to);
+
+            let mut new_vs = VectorStorage::new(0, false, value_type);
+
+            if to > from {
+                for value in vs.iter().skip(from).take(to - from) {
+                    new_vs.push(value)?;
+                }
+            }
+
+            let new_vector = VectorObject::from_vector(new_vs, activation)?;
+
+            return Ok(new_vector.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -738,6 +778,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("insertAt", insert_at),
         ("removeAt", remove_at),
         ("reverse", reverse),
+        ("slice", slice),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

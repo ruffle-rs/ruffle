@@ -1,0 +1,331 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// var c_bool: Vector.<Boolean> = new <Boolean>[];
+/// (contents of a_bool.slice()...)
+2 elements
+true
+false
+/// (contents of a_bool.slice(1)...)
+1 elements
+false
+/// (contents of a_bool.slice(0, 1)...)
+1 elements
+true
+/// (contents of a_bool.slice(15)...)
+0 elements
+/// (contents of a_bool.slice(0, 0)...)
+0 elements
+/// (contents of a_bool...)
+2 elements
+true
+false
+/// (contents of b_bool.slice()...)
+3 elements
+false
+true
+false
+/// (contents of b_bool.slice(-1)...)
+1 elements
+false
+/// (contents of b_bool.slice(-1, -4)...)
+0 elements
+/// (contents of b_bool.slice(-1, 2)...)
+0 elements
+/// (contents of b_bool.slice(-3, 1)...)
+1 elements
+false
+/// (contents of b_bool.slice(1, -2)...)
+0 elements
+/// (contents of b_bool...)
+3 elements
+false
+true
+false
+/// (contents of c_bool.slice()...)
+0 elements
+/// (contents of c_bool...)
+0 elements
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+/// var a_class: Vector.<Superclass> = new <Superclass>[a0_class, a1_class];
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// var a_sliced = a_class.slice();
+/// (contents of a_sliced...)
+2 elements
+[object Superclass]
+[object Subclass]
+/// a0_class === a_sliced[0];
+true
+/// a1_class === a_sliced[1];
+true
+/// (contents of a_class.slice(1)...)
+1 elements
+[object Subclass]
+/// (contents of a_class.slice(0, 1)...)
+1 elements
+[object Superclass]
+/// (contents of a_class.slice(0, 3)...)
+2 elements
+[object Superclass]
+[object Subclass]
+/// (contents of a_class...)
+2 elements
+[object Superclass]
+[object Subclass]
+/// (contents of b_class.slice(-1, -16777216)...)
+0 elements
+/// (contents of b_class.slice(-1)...)
+1 elements
+[object Subclass]
+/// (contents of b_class.slice(-2)...)
+1 elements
+[object Subclass]
+/// (contents of b_class...)
+1 elements
+[object Subclass]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// (contents of a_int.slice())...
+2 elements
+1
+2
+/// (contents of a_int.slice(1))...
+1 elements
+2
+/// (contents of a_int.slice(0, 1))...
+1 elements
+1
+/// (contents of a_int.slice(0, 2))...
+2 elements
+1
+2
+/// (contents of a_int.slice(0, 0))...
+0 elements
+/// (contents of a_int)...
+2 elements
+1
+2
+/// (contents of b_int.slice(-1))...
+1 elements
+16
+/// (contents of b_int.slice(0, -3))...
+0 elements
+/// (contents of b_int.slice(0, -1))...
+1 elements
+5
+/// (contents of b_int.slice(-1, -1))...
+0 elements
+/// (contents of b_int)...
+2 elements
+5
+16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// (contents of a_number.slice()...)
+4 elements
+1
+2
+3
+4
+/// (contents of a_number.slice(2)...)
+2 elements
+3
+4
+/// (contents of a_number.slice(0, 2)...)
+2 elements
+1
+2
+/// (contents of a_number.slice(16, 32)...)
+0 elements
+/// (contents of a_number...)
+4 elements
+1
+2
+3
+4
+/// (contents of b_number.slice(-1)...)
+1 elements
+0
+/// (contents of b_number.slice(-2, 4)...)
+2 elements
+-5
+0
+/// (contents of b_number.slice(2, -4)...)
+0 elements
+/// (contents of b_number.slice(-16, 0)...)
+0 elements
+/// (contents of b_number...)
+4 elements
+5
+NaN
+-5
+0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// (contents of a_string.slice()...)
+4 elements
+a
+c
+d
+f
+/// (contents of a_string.slice(0)...)
+4 elements
+a
+c
+d
+f
+/// (contents of a_string.slice(2)...)
+2 elements
+d
+f
+/// (contents of a_string.slice(4, 2)...)
+0 elements
+/// (contents of a_string.slice(0, 16)...)
+4 elements
+a
+c
+d
+f
+/// (contents of a_string...)
+4 elements
+a
+c
+d
+f
+/// (contents of b_string.slice(-1)...)
+1 elements
+rrr
+/// (contents of b_string.slice(-3, -1)...)
+2 elements
+B4
+Q
+/// (contents of b_string.slice(-16, 32)...)
+4 elements
+986
+B4
+Q
+rrr
+/// (contents of b_string.slice(1, -32)...)
+0 elements
+/// (contents of b_string...)
+4 elements
+986
+B4
+Q
+rrr
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// (contents of a_uint.slice()...)
+2 elements
+1
+2
+/// (contents of a_uint.slice(0, 2)...)
+2 elements
+1
+2
+/// (contents of a_uint.slice(15, 0)...)
+0 elements
+/// (contents of a_uint.slice(0, 0)...)
+0 elements
+/// (contents of a_uint...)
+2 elements
+1
+2
+/// (contents of b_uint.slice()...)
+2 elements
+5
+16
+/// (contents of b_uint.slice(-1)...)
+1 elements
+16
+/// (contents of b_uint.slice(-2, -1)...)
+1 elements
+5
+/// (contents of b_uint.slice(0, -16)...)
+0 elements
+/// (contents of b_uint.slice(-16, 0)...)
+0 elements
+/// (contents of b_uint...)
+2 elements
+5
+16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// (contents of a_vector.slice()...)
+2 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+4
+3
+/// (contents of a_vector.slice(1)...)
+1 elements
+/// (contents of index 0 )
+2 elements
+4
+3
+/// (contents of a_vector.slice(0, 3)...)
+2 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+4
+3
+/// (contents of a_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+4
+3
+/// (contents of b_vector.slice()...)
+2 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+19
+8
+/// (contents of b_vector.slice(-1)...)
+1 elements
+/// (contents of index 0 )
+2 elements
+19
+8
+/// (contents of b_vector.slice(-16)...)
+2 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+19
+8
+/// (contents of b_vector.slice(0, -13)...)
+0 elements
+/// (contents of b_vector.slice(-16, 0)...)
+0 elements
+/// (contents of b_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+19
+8
