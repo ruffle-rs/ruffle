@@ -100,12 +100,10 @@ impl<'a> Reader<'a> {
     }
 
     fn read_string(&mut self) -> Result<String> {
-        let len = self.read_u30()? as usize;
-        let mut s = String::with_capacity(len);
-        self.input
-            .by_ref()
-            .take(len as u64)
-            .read_to_string(&mut s)?;
+        let len = self.read_u30()?;
+        // TODO: Avoid allocating a String.
+        let mut s = String::with_capacity(len as usize);
+        self.read_slice(len as usize)?.read_to_string(&mut s)?;
         Ok(s)
     }
 
@@ -474,11 +472,8 @@ impl<'a> Reader<'a> {
 
         // Read the code data.
         let code_len = self.read_u30()?;
-        let mut code = Vec::with_capacity(code_len as usize);
-        self.input
-            .by_ref()
-            .take(code_len.into())
-            .read_to_end(&mut code)?;
+        // TODO: Avoid allocating a Vec.
+        let code = self.read_slice(code_len as usize)?.to_vec();
 
         let num_exceptions = self.read_u30()? as usize;
         let mut exceptions = Vec::with_capacity(num_exceptions);
