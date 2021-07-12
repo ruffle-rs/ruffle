@@ -131,7 +131,7 @@ macro_rules! test_method {
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            assert_eq!(function.call($name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(function.call($name, activation, object, 0, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

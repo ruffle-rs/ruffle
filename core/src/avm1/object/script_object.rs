@@ -32,7 +32,7 @@ impl<'gc> Watcher<'gc> {
         old_value: Value<'gc>,
         new_value: Value<'gc>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
             Value::String(AvmString::new(
@@ -48,7 +48,7 @@ impl<'gc> Watcher<'gc> {
                 name,
                 activation,
                 this,
-                base_proto,
+                depth,
                 &args,
                 ExecutionReason::Special,
                 self.callback,
@@ -173,6 +173,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         let getter = match self
             .0
@@ -190,7 +191,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 "[Getter]",
                 activation,
                 this,
-                Some((*self).into()),
+                depth,
                 &[],
                 ExecutionReason::Special,
                 getter,
@@ -216,7 +217,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>> {
         let watcher = self
             .0
@@ -227,7 +228,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         let mut result = Ok(());
         if let Some(watcher) = watcher {
             let old_value = self.get(name, activation)?;
-            match watcher.call(activation, name, old_value, value, this, base_proto) {
+            match watcher.call(activation, name, old_value, value, this, depth) {
                 Ok(v) => value = v,
                 Err(Error::ThrownValue(e)) => {
                     value = Value::Undefined;
@@ -259,7 +260,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                     "[Setter]",
                     activation,
                     this,
-                    base_proto,
+                    depth,
                     &[value],
                     ExecutionReason::Special,
                     setter,
@@ -282,7 +283,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _name: &str,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _base_proto: Option<Object<'gc>>,
+        _depth: u8,
         _args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)

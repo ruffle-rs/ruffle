@@ -98,8 +98,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.0.read().get_local(name, activation, this)
+        self.0.read().get_local(name, activation, this, depth)
     }
 
     fn set_local(
@@ -108,7 +109,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>> {
         if name == "length" {
             let new_length = value.coerce_to_i32(activation)?;
@@ -122,7 +123,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
 
         self.0
             .read()
-            .set_local(name, value, activation, this, base_proto)
+            .set_local(name, value, activation, this, depth)
     }
 
     fn call(
@@ -130,10 +131,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().call(name, activation, this, base_proto, args)
+        self.0.read().call(name, activation, this, depth, args)
     }
 
     fn call_setter(

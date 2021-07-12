@@ -61,6 +61,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
+        _depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         self.node()
             .attribute_value(&XmlName::from_str(name))
@@ -73,7 +74,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _base_proto: Option<Object<'gc>>,
+        _depth: u8,
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             activation.context.gc_context,
@@ -82,15 +83,16 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         );
         Ok(())
     }
+
     fn call(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(name, activation, this, base_proto, args)
+        self.base().call(name, activation, this, depth, args)
     }
 
     fn call_setter(

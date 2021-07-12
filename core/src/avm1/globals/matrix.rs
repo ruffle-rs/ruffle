@@ -111,32 +111,32 @@ pub fn object_to_matrix_or_default<'gc>(
 ) -> Result<Matrix, Error<'gc>> {
     // This works with raw properties (`get_local`).
     // TODO: This should ignore virtual properties.
-    let a = if let Some(val) = object.get_local("a", activation, object) {
+    let a = if let Some(val) = object.get_local("a", activation, object, 0) {
         val?.coerce_to_f64(activation)? as f32
     } else {
         return Ok(Default::default());
     };
-    let b = if let Some(val) = object.get_local("b", activation, object) {
+    let b = if let Some(val) = object.get_local("b", activation, object, 0) {
         val?.coerce_to_f64(activation)? as f32
     } else {
         return Ok(Default::default());
     };
-    let c = if let Some(val) = object.get_local("c", activation, object) {
+    let c = if let Some(val) = object.get_local("c", activation, object, 0) {
         val?.coerce_to_f64(activation)? as f32
     } else {
         return Ok(Default::default());
     };
-    let d = if let Some(val) = object.get_local("d", activation, object) {
+    let d = if let Some(val) = object.get_local("d", activation, object, 0) {
         val?.coerce_to_f64(activation)? as f32
     } else {
         return Ok(Default::default());
     };
-    let tx = if let Some(val) = object.get_local("tx", activation, object) {
+    let tx = if let Some(val) = object.get_local("tx", activation, object, 0) {
         Twips::from_pixels(val?.coerce_to_f64(activation)?)
     } else {
         return Ok(Default::default());
     };
-    let ty = if let Some(val) = object.get_local("ty", activation, object) {
+    let ty = if let Some(val) = object.get_local("ty", activation, object, 0) {
         Twips::from_pixels(val?.coerce_to_f64(activation)?)
     } else {
         return Ok(Default::default());

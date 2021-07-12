@@ -238,7 +238,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => object.call_method("valueOf", &[], activation)?,
+            Value::Object(object) => object.call_method("valueOf", 0, &[], activation)?,
             val => val.to_owned(),
         })
     }
@@ -436,7 +436,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => match object.call_method("toString", &[], activation)? {
+            Value::Object(object) => match object.call_method("toString", 0, &[], activation)? {
                 Value::String(s) => s,
                 _ => "[type Object]".into(),
             },
@@ -495,11 +495,11 @@ impl<'gc> Value<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Value::Object(object) = self {
-            object.call(name, activation, this, base_proto, args)
+            object.call(name, activation, this, depth, args)
         } else {
             Ok(Value::Undefined)
         }

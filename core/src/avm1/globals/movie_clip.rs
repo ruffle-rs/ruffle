@@ -1163,10 +1163,10 @@ fn local_to_global<'gc>(
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local("x", activation, *point)
+                .get_local("x", activation, *point, 0)
                 .unwrap_or(Ok(Value::Undefined))?,
             point
-                .get_local("y", activation, *point)
+                .get_local("y", activation, *point, 0)
                 .unwrap_or(Ok(Value::Undefined))?,
         ) {
             let x = Twips::from_pixels(x);
@@ -1298,10 +1298,10 @@ fn global_to_local<'gc>(
         // It does not search the prototype chain.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local("x", activation, *point)
+                .get_local("x", activation, *point, 0)
                 .unwrap_or(Ok(Value::Undefined))?,
             point
-                .get_local("y", activation, *point)
+                .get_local("y", activation, *point, 0)
                 .unwrap_or(Ok(Value::Undefined))?,
         ) {
             let x = Twips::from_pixels(x);

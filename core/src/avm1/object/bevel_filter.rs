@@ -118,7 +118,6 @@ impl<'gc> BevelFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for BevelFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: bevel_filter);
         bare_object(as_bevel_filter_object -> BevelFilterObject::empty_object);
     });
 }

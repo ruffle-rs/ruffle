@@ -71,7 +71,7 @@ pub fn add_listener<'gc>(
         let length = listeners.length(activation)?;
         let exists = (0..length).any(|i| listeners.get_element(activation, i) == new_listener);
         if !exists {
-            listeners.call_method("push", &[new_listener], activation)?;
+            listeners.call_method("push", 0, &[new_listener], activation)?;
         }
     }
 
@@ -91,7 +91,7 @@ pub fn remove_listener<'gc>(
         if let Some(index) =
             (0..length).find(|&i| listeners.get_element(activation, i) == old_listener)
         {
-            listeners.call_method("splice", &[index.into(), 1.into()], activation)?;
+            listeners.call_method("splice", 0, &[index.into(), 1.into()], activation)?;
             return Ok(true.into());
         }
     }
@@ -128,7 +128,7 @@ pub fn broadcast_internal<'gc>(
             let listener = listeners.get_element(activation, i);
 
             if let Value::Object(listener) = listener {
-                listener.call_method(method_name, call_args, activation)?;
+                listener.call_method(method_name, 0, call_args, activation)?;
             }
         }
 

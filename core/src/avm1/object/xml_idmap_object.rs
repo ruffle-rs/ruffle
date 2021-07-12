@@ -61,6 +61,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         if let Some(mut node) = self.document().get_node_by_id(name) {
             Some(Ok(node
@@ -70,7 +71,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
                 )
                 .into()))
         } else {
-            self.base().get_local(name, activation, this)
+            self.base().get_local(name, activation, this, depth)
         }
     }
 
@@ -80,20 +81,20 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>> {
-        self.base()
-            .set_local(name, value, activation, this, base_proto)
+        self.base().set_local(name, value, activation, this, depth)
     }
+
     fn call(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(name, activation, this, base_proto, args)
+        self.base().call(name, activation, this, depth, args)
     }
 
     fn call_setter(

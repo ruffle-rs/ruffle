@@ -106,6 +106,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>>;
 
     /// Retrieve a named property from the object, or its prototype.
@@ -128,7 +129,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>>;
 
     /// Set a named property on this object, or its prototype.
@@ -151,6 +152,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if !self.has_own_property(activation, name) {
             // Before actually inserting a new property, we need to crawl the
             // prototype chain for virtual setters.
+            let mut depth = 0;
             let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
@@ -160,7 +162,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                                 "[Setter]",
                                 activation,
                                 this,
-                                Some(this_proto),
+                                depth,
                                 &[value],
                                 ExecutionReason::Special,
                                 setter,
@@ -171,10 +173,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
 
                 proto = this_proto.proto();
+
+                depth += 1;
+                // TODO: max depth
             }
         }
 
-        self.set_local(name, value, activation, this, Some(this))
+        self.set_local(name, value, activation, this, 0)
     }
 
     /// Call the underlying object.
@@ -187,7 +192,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -221,17 +226,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn call_method(
         &self,
         name: &str,
+        depth: u8,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
-        let (method, base_proto) = search_prototype(Value::Object(this), name, activation, this)?;
+        let (method, d) = search_prototype(Value::Object(this), name, activation, this)?;
 
         if method.is_primitive() {
             avm_warn!(activation, "Object method {} is not callable", name);
         }
 
-        method.call(name, activation, this, base_proto, args)
+        method.call(name, activation, this, depth + d.max(1), args)
     }
 
     /// Call a setter defined in this object.
@@ -240,9 +246,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// should be resolved and discarded. Attempts to call a non-virtual setter
     /// or non-existent setter fail silently.
     ///
-    /// The setter will be invoked with the provided `this`. It is assumed that
-    /// this function is being called on the appropriate `base_proto` and
-    /// `super` will be invoked following said guidance.
+    /// The setter will be invoked with the provided `this`.
     fn call_setter(
         &self,
         name: &str,
@@ -616,28 +620,27 @@ impl<'gc> Object<'gc> {
 /// generated the value. If the property did not resolve, then it returns
 /// `undefined` and `None` for the prototype.
 ///
-/// The second return value can and should be used to populate the `base_proto`
+/// The second return value can and should be used to populate the `depth`
 /// property necessary to make `super` work.
 pub fn search_prototype<'gc>(
     mut proto: Value<'gc>,
     name: &str,
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
+) -> Result<(Value<'gc>, u8), Error<'gc>> {
     let mut depth = 0;
-
     while let Value::Object(p) = proto {
-        if depth == 255 {
-            return Err(Error::PrototypeRecursionLimit);
-        }
-
-        if let Some(value) = p.get_local(name, activation, this) {
-            return Ok((value?, Some(p)));
+        if let Some(value) = p.get_local(name, activation, this, depth) {
+            return Ok((value?, depth));
         }
 
         proto = p.proto();
+
         depth += 1;
+        if depth == u8::MAX {
+            return Err(Error::PrototypeRecursionLimit);
+        }
     }
 
-    Ok((Value::Undefined, None))
+    Ok((Value::Undefined, 0))
 }

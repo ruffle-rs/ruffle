@@ -59,7 +59,6 @@ impl<'gc> SharedObject<'gc> {
 
 impl<'gc> TObject<'gc> for SharedObject<'gc> {
     impl_custom_object!(base {
-        set(proto: self);
         bare_object(as_shared_object -> SharedObject::empty_shared_obj);
     });
 }

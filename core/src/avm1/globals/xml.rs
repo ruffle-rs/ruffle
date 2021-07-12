@@ -759,18 +759,19 @@ pub fn xml_on_data<'gc>(
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
-        this.call_method("onLoad", &[false.into()], activation)?;
+        this.call_method("onLoad", 0, &[false.into()], activation)?;
     } else {
         let src = src.coerce_to_string(activation)?;
         this.call_method(
             "parseXML",
+            0,
             &[AvmString::new(activation.context.gc_context, src.to_string()).into()],
             activation,
         )?;
 
         this.set("loaded", true.into(), activation)?;
 
-        this.call_method("onLoad", &[true.into()], activation)?;
+        this.call_method("onLoad", 0, &[true.into()], activation)?;
     }
 
     Ok(Value::Undefined)

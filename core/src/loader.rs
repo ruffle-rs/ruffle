@@ -690,16 +690,17 @@ impl<'gc> Loader<'gc> {
                         // Fire the onData method with the loaded string.
                         let string_data =
                             AvmString::new(activation.context.gc_context, UTF_8.decode(&data).0);
-                        let _ = that.call_method("onData", &[string_data.into()], &mut activation);
+                        let _ =
+                            that.call_method("onData", 0, &[string_data.into()], &mut activation);
                     }
                     Err(_) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
                         // Simulate 404 HTTP status. This should probably be fired elsewhere
                         // because a failed local load doesn't fire a 404.
-                        let _ = that.call_method("onHTTPStatus", &[404.into()], &mut activation);
+                        let _ = that.call_method("onHTTPStatus", 0, &[404.into()], &mut activation);
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
-                        let _ = that.call_method("onData", &[Value::Undefined], &mut activation);
+                        let _ = that.call_method("onData", 0, &[Value::Undefined], &mut activation);
                     }
                 }
 

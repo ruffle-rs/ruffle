@@ -232,7 +232,7 @@ impl<'gc> Executable<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
         reason: ExecutionReason,
         callee: Object<'gc>,
@@ -271,14 +271,7 @@ impl<'gc> Executable<'gc> {
                 let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> =
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
-                        Some(
-                            SuperObject::from_this_and_base_proto(
-                                this,
-                                base_proto.unwrap_or(this),
-                                activation,
-                            )?
-                            .into(),
-                        )
+                        Some(SuperObject::new(activation, this, depth).into())
                     } else {
                         None
                     };
@@ -531,8 +524,9 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.base.get_local(name, activation, this)
+        self.base.get_local(name, activation, this, depth)
     }
 
     fn set_local(
@@ -541,10 +535,9 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>> {
-        self.base
-            .set_local(name, value, activation, this, base_proto)
+        self.base.set_local(name, value, activation, this, depth)
     }
 
     fn call(
@@ -552,7 +545,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(exec) = self.as_executable() {
@@ -560,7 +553,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 name,
                 activation,
                 this,
-                base_proto,
+                depth,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
@@ -597,13 +590,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 "[ctor]",
                 activation,
                 this,
-                None,
+                1,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
         } else {
-            let _ = self.call("[ctor]", activation, this, None, args)?;
+            let _ = self.call("[ctor]", activation, this, 1, args)?;
         }
         Ok(())
     }
@@ -641,14 +634,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 "[ctor]",
                 activation,
                 this,
-                None,
+                1,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
             Ok(this)
         } else {
-            let _ = self.call("[ctor]", activation, this, None, args)?;
+            let _ = self.call("[ctor]", activation, this, 1, args)?;
             Ok(this.into())
         }
     }

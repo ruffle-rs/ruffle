@@ -664,7 +664,7 @@ impl Player {
             "[Context Menu Callback]",
             &mut activation,
             undefined,
-            None,
+            0,
             &params,
         );
     }

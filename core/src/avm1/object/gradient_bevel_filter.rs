@@ -99,7 +99,6 @@ impl<'gc> GradientBevelFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for GradientBevelFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: gradient_bevel_filter);
         bare_object(as_gradient_bevel_filter_object -> GradientBevelFilterObject::empty_object);
     });
 }

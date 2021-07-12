@@ -116,7 +116,6 @@ impl fmt::Debug for ValueObject<'_> {
 
 impl<'gc> TObject<'gc> for ValueObject<'gc> {
     impl_custom_object!(base {
-        set(proto: self);
         bare_object(as_value_object -> ValueObject::empty_box);
     });
 }

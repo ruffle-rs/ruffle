@@ -166,6 +166,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
+        depth: u8,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
@@ -173,7 +174,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         // Property search order for DisplayObjects:
         if self.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            self.0.read().base.get_local(name, activation, this)
+            self.0.read().base.get_local(name, activation, this, depth)
         } else if let Some(level) =
             Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
@@ -200,7 +201,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
@@ -224,28 +225,26 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            base.set_local(name, value, activation, this, base_proto)
+            base.set_local(name, value, activation, this, depth)
         } else if let Some(property) = props.read().get_by_name(name) {
             // 2) Display object properties such as _x, _y
             property.set(activation, display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            base.set_local(name, value, activation, this, base_proto)
+            base.set_local(name, value, activation, this, depth)
         }
     }
+
     fn call(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0
-            .read()
-            .base
-            .call(name, activation, this, base_proto, args)
+        self.0.read().base.call(name, activation, this, depth, args)
     }
 
     fn call_setter(

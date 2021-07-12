@@ -680,7 +680,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [*a, *b];
     let ret = compare_fn
-        .call("[Compare]", activation, this, None, &args)
+        .call("[Compare]", activation, this, 0, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,

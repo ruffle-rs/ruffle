@@ -6,7 +6,6 @@
 //!
 //! TODO: Could we use this for AVM2 timers as well?
 
-use crate::avm1::object::search_prototype;
 use crate::avm1::{Activation, ActivationIdentifier, Object, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
@@ -49,10 +48,6 @@ impl<'gc> Timers<'gc> {
             level0,
         );
 
-        // TODO: `this` is undefined for non-method timer callbacks, but our VM
-        // currently doesn't allow `this` to be a Value (#843).
-        let undefined = Value::Undefined.coerce_to_object(&mut activation);
-
         let mut tick_count = 0;
         let cur_time = activation.context.timers.cur_time;
 
@@ -88,32 +83,19 @@ impl<'gc> Timers<'gc> {
             let params = timer.params.clone();
             let callback = timer.callback.clone();
 
-            let callback = match callback {
-                TimerCallback::Function(f) => Some((undefined, None, f)),
+            match callback {
+                TimerCallback::Function(function) => {
+                    // TODO: `this` is undefined for non-method timer callbacks, but our VM
+                    // currently doesn't allow `this` to be a Value (#843).
+                    let this = Value::Undefined.coerce_to_object(&mut activation);
+                    let _ = function.call("[Timer Callback]", &mut activation, this, 0, &params);
+                }
                 TimerCallback::Method { this, method_name } => {
-                    // Fetch the callback method from the object.
-                    if let Ok((f, base_proto)) =
-                        search_prototype(Value::Object(this), &method_name, &mut activation, this)
-                    {
-                        let f = f.coerce_to_object(&mut activation);
-                        Some((this, base_proto, f))
-                    } else {
-                        None
-                    }
+                    let _ = this.call_method(&method_name, 0, &params, &mut activation);
                 }
             };
 
-            if let Some((this, base_proto, function)) = callback {
-                let _ = function.call(
-                    "[Timer Callback]",
-                    &mut activation,
-                    this,
-                    base_proto,
-                    &params,
-                );
-
-                crate::player::Player::run_actions(&mut activation.context);
-            }
+            crate::player::Player::run_actions(&mut activation.context);
 
             let mut timer = activation.context.timers.peek_mut().unwrap();
             if timer.is_timeout {

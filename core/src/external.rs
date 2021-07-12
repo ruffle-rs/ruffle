@@ -211,7 +211,7 @@ impl<'gc> Callback<'gc> {
                     .map(|v| v.into_avm1(&mut activation))
                     .collect();
                 if let Ok(result) = method
-                    .call(name, &mut activation, this, None, &args)
+                    .call(name, &mut activation, this, 0, &args)
                     .and_then(|value| Value::from_avm1(&mut activation, value))
                 {
                     result
