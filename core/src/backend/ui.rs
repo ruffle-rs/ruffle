@@ -1,13 +1,8 @@
 use crate::events::KeyCode;
-use downcast_rs::Downcast;
+use crate::prelude::*;
+use std::collections::HashSet;
 
-pub trait UiBackend: Downcast {
-    fn is_key_down(&self, key: KeyCode) -> bool;
-
-    fn last_key_code(&self) -> KeyCode;
-
-    fn last_key_char(&self) -> Option<char>;
-
+pub trait UiBackend {
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
@@ -15,7 +10,7 @@ pub trait UiBackend: Downcast {
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
 
-    /// Set the clipboard to the given content
+    /// Sets the clipboard to the given content.
     fn set_clipboard_content(&mut self, content: String);
 
     fn is_fullscreen(&self) -> bool;
@@ -23,10 +18,10 @@ pub trait UiBackend: Downcast {
     /// Displays a warning about unsupported content in Ruffle.
     /// The user can still click an "OK" or "run anyway" message to dismiss the warning.
     fn display_unsupported_message(&self);
-    // Unused, but kept in case we need it later
+
+    // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
 }
-impl_downcast!(UiBackend);
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
@@ -49,6 +44,50 @@ pub enum MouseCursor {
     Grab,
 }
 
+pub struct InputManager {
+    keys_down: HashSet<KeyCode>,
+    last_key: KeyCode,
+    pub mouse_position: (Twips, Twips),
+}
+
+impl InputManager {
+    pub fn new() -> Self {
+        Self {
+            keys_down: HashSet::new(),
+            last_key: KeyCode::Unknown,
+            mouse_position: (Twips::ZERO, Twips::ZERO),
+        }
+    }
+
+    pub fn key_down(&mut self, key: KeyCode) {
+        self.last_key = key;
+        self.keys_down.insert(key);
+    }
+
+    pub fn key_up(&mut self, key: KeyCode) {
+        self.last_key = key;
+        self.keys_down.remove(&key);
+    }
+
+    pub fn is_key_down(&self, key: KeyCode) -> bool {
+        self.keys_down.contains(&key)
+    }
+
+    pub fn last_key_code(&self) -> KeyCode {
+        self.last_key
+    }
+
+    pub fn is_mouse_down(&self) -> bool {
+        self.is_key_down(KeyCode::MouseLeft)
+    }
+}
+
+impl Default for InputManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// UiBackend that does nothing.
 pub struct NullUiBackend {}
 
@@ -59,18 +98,6 @@ impl NullUiBackend {
 }
 
 impl UiBackend for NullUiBackend {
-    fn is_key_down(&self, _key: KeyCode) -> bool {
-        false
-    }
-
-    fn last_key_code(&self) -> KeyCode {
-        KeyCode::Unknown
-    }
-
-    fn last_key_char(&self) -> Option<char> {
-        None
-    }
-
     fn mouse_visible(&self) -> bool {
         true
     }

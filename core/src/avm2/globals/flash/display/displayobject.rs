@@ -468,7 +468,7 @@ pub fn mouse_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.global_to_local(activation.context.input.mouse_position);
 
         return Ok(local_mouse.0.to_pixels().into());
     }
@@ -483,7 +483,7 @@ pub fn mouse_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let local_mouse = dobj.global_to_local(*activation.context.mouse_position);
+        let local_mouse = dobj.global_to_local(activation.context.input.mouse_position);
 
         return Ok(local_mouse.1.to_pixels().into());
     }

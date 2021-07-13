@@ -12,14 +12,14 @@ use crate::backend::{
     navigator::{NavigatorBackend, RequestOptions},
     render::RenderBackend,
     storage::StorageBackend,
-    ui::{MouseCursor, UiBackend},
+    ui::{InputManager, MouseCursor, UiBackend},
     video::VideoBackend,
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
@@ -198,8 +198,7 @@ pub struct Player {
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
     time_offset: u32,
 
-    mouse_pos: (Twips, Twips),
-    is_mouse_down: bool,
+    input: InputManager,
 
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
@@ -228,7 +227,6 @@ pub struct Player {
     current_frame: Option<u16>,
 }
 
-#[allow(clippy::too_many_arguments)]
 impl Player {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -291,8 +289,8 @@ impl Player {
             recent_run_frame_timings: VecDeque::with_capacity(10),
             time_offset: 0,
 
-            mouse_pos: (Twips::ZERO, Twips::ZERO),
-            is_mouse_down: false,
+            input: InputManager::new(),
+
             mouse_cursor: MouseCursor::Arrow,
 
             renderer,
@@ -759,11 +757,12 @@ impl Player {
 
     pub fn handle_event(&mut self, event: PlayerEvent) {
         if cfg!(feature = "avm_debug") {
-            if let PlayerEvent::KeyDown {
-                key_code: KeyCode::V,
-            } = event
-            {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
+            match event {
+                PlayerEvent::KeyDown {
+                    key_code: KeyCode::V,
+                } if self.input.is_key_down(KeyCode::Control)
+                    && self.input.is_key_down(KeyCode::Alt) =>
+                {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
                         let levels: Vec<_> = context.stage.iter_depth_list().collect();
@@ -792,13 +791,11 @@ impl Player {
                         log::info!("Variable dump:\n{}", dumper.output());
                     });
                 }
-            }
-
-            if let PlayerEvent::KeyDown {
-                key_code: KeyCode::D,
-            } = event
-            {
-                if self.ui.is_key_down(KeyCode::Control) && self.ui.is_key_down(KeyCode::Alt) {
+                PlayerEvent::KeyDown {
+                    key_code: KeyCode::D,
+                } if self.input.is_key_down(KeyCode::Control)
+                    && self.input.is_key_down(KeyCode::Alt) =>
+                {
                     self.mutate_with_update_context(|context| {
                         if context.avm1.show_debug_output() {
                             log::info!(
@@ -815,15 +812,32 @@ impl Player {
                         }
                     });
                 }
+                _ => {}
             }
         }
+
+        let is_mouse_down = self.input.is_mouse_down();
+        match event {
+            PlayerEvent::KeyDown { key_code } => {
+                self.input.key_down(key_code);
+            }
+            PlayerEvent::KeyUp { key_code } => {
+                self.input.key_up(key_code);
+            }
+            PlayerEvent::MouseDown { button, .. } => {
+                self.input.key_down(button.into());
+            }
+            PlayerEvent::MouseUp { button, .. } => {
+                self.input.key_up(button.into());
+            }
+            _ => {}
+        }
+        let is_mouse_button_changed = self.input.is_mouse_down() != is_mouse_down;
 
         // Propagate button events.
         let button_event = match event {
             // ASCII characters convert directly to keyPress button events.
-            PlayerEvent::TextInput { codepoint }
-                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
-            {
+            PlayerEvent::TextInput { codepoint } if (32..127).contains(&u32::from(codepoint)) => {
                 Some(ClipEvent::KeyPress {
                     key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
                 })
@@ -841,25 +855,23 @@ impl Player {
         };
 
         let mut key_press_handled = false;
-        if button_event.is_some() {
+        if let Some(button_event) = button_event {
             self.mutate_with_update_context(|context| {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
                 for (_depth, level) in levels {
-                    if let Some(button_event) = button_event {
-                        let state = level.handle_clip_event(context, button_event);
-                        if state == ClipEventResult::Handled {
+                    let state = level.handle_clip_event(context, button_event);
+                    if state == ClipEventResult::Handled {
+                        key_press_handled = true;
+                        return;
+                    } else if let Some(text) =
+                        context.focus_tracker.get().and_then(|o| o.as_edit_text())
+                    {
+                        // Text fields listen for arrow key presses, etc.
+                        if text.handle_text_control_event(context, button_event)
+                            == ClipEventResult::Handled
+                        {
                             key_press_handled = true;
                             return;
-                        } else if let Some(text) =
-                            context.focus_tracker.get().and_then(|o| o.as_edit_text())
-                        {
-                            // Text fields listen for arrow key presses, etc.
-                            if text.handle_text_control_event(context, button_event)
-                                == ClipEventResult::Handled
-                            {
-                                key_press_handled = true;
-                                return;
-                            }
                         }
                     }
                 }
@@ -890,11 +902,17 @@ impl Player {
                     Some(ClipEvent::MouseMove),
                     Some(("Mouse", "onMouseMove", vec![])),
                 ),
-                PlayerEvent::MouseUp { .. } => (
+                PlayerEvent::MouseUp {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseUp),
                     Some(("Mouse", "onMouseUp", vec![])),
                 ),
-                PlayerEvent::MouseDown { .. } => (
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseDown),
                     Some(("Mouse", "onMouseDown", vec![])),
                 ),
@@ -930,15 +948,33 @@ impl Player {
         });
 
         // Update mouse state.
-        // This fires button rollover/press events, which should run after the above mouseMove events.
-        if self.update_mouse_state(Some(&event)) {
-            self.needs_render = true;
+        if let PlayerEvent::MouseMove { x, y }
+        | PlayerEvent::MouseDown {
+            x,
+            y,
+            button: MouseButton::Left,
+        }
+        | PlayerEvent::MouseUp {
+            x,
+            y,
+            button: MouseButton::Left,
+        } = event
+        {
+            let inverse_view_matrix =
+                self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
+            self.input.mouse_position =
+                inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
+
+            // This fires button rollover/press events, which should run after the above mouseMove events.
+            if self.update_mouse_state(is_mouse_button_changed) {
+                self.needs_render = true;
+            }
         }
     }
 
     /// Update dragged object, if any.
     fn update_drag(&mut self) {
-        let mouse_pos = self.mouse_pos;
+        let (mouse_x, mouse_y) = self.input.mouse_position;
         self.mutate_with_update_context(|context| {
             if let Some(drag_object) = &mut context.drag_object {
                 let display_object = drag_object.display_object;
@@ -946,10 +982,8 @@ impl Player {
                     // Be sure to clear the drag if the object was removed.
                     *context.drag_object = None;
                 } else {
-                    let mut drag_point = (
-                        mouse_pos.0 + drag_object.offset.0,
-                        mouse_pos.1 + drag_object.offset.1,
-                    );
+                    let (offset_x, offset_y) = drag_object.offset;
+                    let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
                     if let Some(parent) = display_object.parent() {
                         drag_point = parent.global_to_local(drag_point);
                     }
@@ -969,7 +1003,7 @@ impl Player {
                             .iter_depth_list()
                             .rev()
                             .filter_map(|(_depth, level)| {
-                                level.mouse_pick(context, *context.mouse_position, false)
+                                level.mouse_pick(context, context.input.mouse_position, false)
                             })
                             .next();
                         movie_clip.set_drop_target(context.gc_context, drop_target_object);
@@ -981,35 +1015,7 @@ impl Player {
     }
 
     /// Updates the hover state of buttons.
-    fn update_mouse_state(&mut self, event: Option<&PlayerEvent>) -> bool {
-        let inverse_view_matrix =
-            self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
-
-        // Update mouse state based on event type.
-        let mut is_mouse_down = self.is_mouse_down;
-        let mut new_mouse_pos = None;
-        match event {
-            Some(&PlayerEvent::MouseMove { x, y }) => {
-                new_mouse_pos = Some((x, y));
-            }
-            Some(&PlayerEvent::MouseDown { x, y }) => {
-                new_mouse_pos = Some((x, y));
-                is_mouse_down = true;
-            }
-            Some(&PlayerEvent::MouseUp { x, y }) => {
-                new_mouse_pos = Some((x, y));
-                is_mouse_down = false;
-            }
-            // Explicity requested an update.
-            None => (),
-            // Don't care about non-mouse events.
-            _ => return false,
-        }
-        if let Some((x, y)) = new_mouse_pos {
-            self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y))
-        }
-        let is_mouse_button_changed = self.is_mouse_down != is_mouse_down;
-        self.is_mouse_down = is_mouse_down;
+    fn update_mouse_state(&mut self, is_mouse_button_changed: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
 
         // Determine the display object the mouse is hovering over.
@@ -1020,7 +1026,7 @@ impl Player {
                 .iter_depth_list()
                 .rev()
                 .filter_map(|(_depth, level)| {
-                    level.mouse_pick(context, *context.mouse_position, true)
+                    level.mouse_pick(context, context.input.mouse_position, true)
                 })
                 .next();
 
@@ -1044,7 +1050,7 @@ impl Player {
             if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignroed.
-                if is_mouse_down {
+                if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
                         if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
@@ -1078,7 +1084,7 @@ impl Player {
 
             // Handle presses and releases.
             if is_mouse_button_changed {
-                if is_mouse_down {
+                if context.input.is_mouse_down() {
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_over_object {
                         events.push((over_object, ClipEvent::Press));
@@ -1392,7 +1398,7 @@ impl Player {
             navigator,
             ui,
             rng,
-            mouse_position,
+            input,
             player,
             system_properties,
             instance_counter,
@@ -1413,7 +1419,7 @@ impl Player {
             self.navigator.deref_mut(),
             self.ui.deref_mut(),
             &mut self.rng,
-            &self.mouse_pos,
+            &self.input,
             self.self_reference.clone(),
             &mut self.system,
             &mut self.instance_counter,
@@ -1463,7 +1469,7 @@ impl Player {
                 stage,
                 mouse_over_object: mouse_hovered_object,
                 mouse_down_object: mouse_pressed_object,
-                mouse_position,
+                input,
                 drag_object,
                 player,
                 load_manager,
@@ -1559,7 +1565,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_mouse_state(None);
+        self.update_mouse_state(false);
 
         // GC
         self.gc_arena.collect_debt();

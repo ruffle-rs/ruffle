@@ -18,12 +18,11 @@ use ruffle_core::backend::{
     audio::{AudioBackend, NullAudioBackend},
     render::RenderBackend,
     storage::{MemoryStorageBackend, StorageBackend},
-    ui::UiBackend,
     video::SoftwareVideoBackend,
 };
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseWheelDelta};
+use ruffle_core::events::{MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
@@ -556,22 +555,26 @@ impl Ruffle {
             // Create mouse down handler.
             let mouse_down_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance(move |instance| {
-                    // Only fire player mouse event for left clicks.
-                    if js_event.button() == 0 {
-                        if let Some(target) = js_event.current_target() {
-                            let _ = target
-                                .unchecked_ref::<Element>()
-                                .set_pointer_capture(js_event.pointer_id());
-                        }
-                        let device_pixel_ratio = instance.device_pixel_ratio;
-                        let event = PlayerEvent::MouseDown {
-                            x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                        };
-                        let _ = instance.with_core_mut(|core| {
-                            core.handle_event(event);
-                        });
+                    let button = match js_event.button() {
+                        0 => MouseButton::Left,
+                        1 => MouseButton::Middle,
+                        2 => MouseButton::Right,
+                        _ => MouseButton::Unknown,
+                    };
+                    if let Some(target) = js_event.current_target() {
+                        let _ = target
+                            .unchecked_ref::<Element>()
+                            .set_pointer_capture(js_event.pointer_id());
                     }
+                    let device_pixel_ratio = instance.device_pixel_ratio;
+                    let event = PlayerEvent::MouseDown {
+                        x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                        y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                        button,
+                    };
+                    let _ = instance.with_core_mut(|core| {
+                        core.handle_event(event);
+                    });
 
                     js_event.prevent_default();
                 });
@@ -628,21 +631,25 @@ impl Ruffle {
             // Create mouse up handler.
             let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance_mut(|instance| {
-                    // Only fire player mouse event for left clicks.
-                    if js_event.button() == 0 {
-                        if let Some(target) = js_event.current_target() {
-                            let _ = target
-                                .unchecked_ref::<Element>()
-                                .release_pointer_capture(js_event.pointer_id());
-                        }
-                        let event = PlayerEvent::MouseUp {
-                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                        };
-                        let _ = instance.with_core_mut(|core| {
-                            core.handle_event(event);
-                        });
+                    let button = match js_event.button() {
+                        0 => MouseButton::Left,
+                        1 => MouseButton::Middle,
+                        2 => MouseButton::Right,
+                        _ => MouseButton::Unknown,
+                    };
+                    if let Some(target) = js_event.current_target() {
+                        let _ = target
+                            .unchecked_ref::<Element>()
+                            .release_pointer_capture(js_event.pointer_id());
                     }
+                    let event = PlayerEvent::MouseUp {
+                        x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                        y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                        button,
+                    };
+                    let _ = instance.with_core_mut(|core| {
+                        core.handle_event(event);
+                    });
 
                     if instance.has_focus {
                         js_event.prevent_default();
@@ -693,23 +700,10 @@ impl Ruffle {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
-                            let ui = if let Some(ui) =
-                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
-                            {
-                                ui
-                            } else {
-                                return;
-                            };
-                            ui.keydown(&js_event);
+                            let key_code = ui::web_to_ruffle_key_code(&js_event.code());
+                            core.handle_event(PlayerEvent::KeyDown { key_code });
 
-                            let key_code = ui.last_key_code();
-                            let key_char = ui.last_key_char();
-
-                            if key_code != KeyCode::Unknown {
-                                core.handle_event(PlayerEvent::KeyDown { key_code });
-                            }
-
-                            if let Some(codepoint) = key_char {
+                            if let Some(codepoint) = ui::web_key_to_codepoint(&js_event.key()) {
                                 core.handle_event(PlayerEvent::TextInput { codepoint });
                             }
                         });
@@ -732,19 +726,8 @@ impl Ruffle {
                 let _ = ruffle.with_instance(|instance| {
                     if instance.has_focus {
                         let _ = instance.with_core_mut(|core| {
-                            let ui = if let Some(ui) =
-                                core.ui_mut().downcast_mut::<ui::WebUiBackend>()
-                            {
-                                ui
-                            } else {
-                                return;
-                            };
-                            ui.keyup(&js_event);
-
-                            let key_code = ui.last_key_code();
-                            if key_code != KeyCode::Unknown {
-                                core.handle_event(PlayerEvent::KeyUp { key_code });
-                            }
+                            let key_code = ui::web_to_ruffle_key_code(&js_event.code());
+                            core.handle_event(PlayerEvent::KeyUp { key_code });
                         });
                         js_event.prevent_default();
                     }

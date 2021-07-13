@@ -9,7 +9,7 @@ use crate::backend::log::NullLogBackend;
 use crate::backend::navigator::NullNavigatorBackend;
 use crate::backend::render::NullRenderer;
 use crate::backend::storage::MemoryStorageBackend;
-use crate::backend::ui::NullUiBackend;
+use crate::backend::ui::{InputManager, NullUiBackend};
 use crate::backend::video::NullVideoBackend;
 use crate::context::ActionQueue;
 use crate::display_object::{MovieClip, Stage, TDisplayObject};
@@ -61,7 +61,7 @@ where
             video: &mut NullVideoBackend::new(),
             mouse_over_object: None,
             mouse_down_object: None,
-            mouse_position: &(Twips::ZERO, Twips::ZERO),
+            input: &InputManager::new(),
             drag_object: &mut None,
             player: None,
             load_manager: &mut LoadManager::new(),
