@@ -736,7 +736,7 @@ export class RufflePlayer extends HTMLElement {
             } else {
                 const { text, onClick, enabled } = item;
                 const menuItem = document.createElement("li");
-                menuItem.className = "menu_item active";
+                menuItem.className = "menu_item";
                 menuItem.textContent = text;
                 this.contextMenuElement.appendChild(menuItem);
 

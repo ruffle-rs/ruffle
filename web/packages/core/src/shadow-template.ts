@@ -21,7 +21,7 @@ ruffleShadowTemplate.innerHTML = `
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
-        
+
         /* Ruffle's width/height CSS interferes Safari fullscreen CSS. */
         /* Ensure that Safari's fullscreen mode actually fills the screen. */
         :host(:-webkit-full-screen) {
@@ -199,19 +199,16 @@ ruffleShadowTemplate.innerHTML = `
 
         #context-menu .menu_item {
             padding: 5px 10px;
-        }
-
-        #context-menu .active {
             cursor: pointer;
             color: black;
         }
 
-        #context-menu .disabled {
+        #context-menu .menu_item.disabled {
             cursor: default;
             color: gray;
         }
 
-        #context-menu .active:hover {
+        #context-menu .menu_item:not(.disabled):hover {
             background: lightgray;
         }
 
