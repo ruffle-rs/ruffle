@@ -421,10 +421,10 @@ fn sort<'gc>(
     let (compare_fn, flags) = match args {
         [Value::Number(_), Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),
         [Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),
-        [compare_fn @ Value::Object(_), Value::Number(n), ..] => {
+        [Value::Object(compare_fn), Value::Number(n), ..] => {
             (Some(compare_fn), f64_to_wrapping_i32(*n))
         }
-        [compare_fn @ Value::Object(_), ..] => (Some(compare_fn), 0),
+        [Value::Object(compare_fn), ..] => (Some(compare_fn), 0),
         [] => (None, 0),
         _ => return Ok(Value::Undefined),
     };
@@ -675,7 +675,7 @@ fn sort_compare_custom<'gc>(
     this: Object<'gc>,
     a: &Value<'gc>,
     b: &Value<'gc>,
-    compare_fn: &Value<'gc>,
+    compare_fn: &Object<'gc>,
 ) -> Ordering {
     // TODO: Handle errors.
     let args = [*a, *b];
