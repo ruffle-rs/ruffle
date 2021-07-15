@@ -213,7 +213,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
         _name: Cow<str>,
@@ -223,7 +223,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn remove_watcher(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: Cow<str>) -> bool {
+    fn unwatch(&self, _activation: &mut Activation<'_, 'gc, '_>, _name: Cow<str>) -> bool {
         //`super` cannot have properties defined on it
         false
     }

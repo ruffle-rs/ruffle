@@ -333,7 +333,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
@@ -343,11 +343,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .set_watcher(activation, name, callback, user_data);
+            .watch(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
-        self.0.read().base.remove_watcher(activation, name)
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+        self.0.read().base.unwatch(activation, name)
     }
 
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {

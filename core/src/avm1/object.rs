@@ -357,7 +357,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Set the 'watcher' of a given property.
     ///
     /// The property does not need to exist at the time of this being called.
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
@@ -369,7 +369,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The return value will indicate if there was a watcher present before this method was
     /// called.
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool;
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool;
 
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool;
