@@ -5,15 +5,32 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_instance};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates array objects.
+pub fn array_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(ArrayObject(GcCell::allocate(
+        activation.context.gc_context,
+        ArrayObjectData {
+            base,
+            array: ArrayStorage::new(0),
+        },
+    ))
+    .into())
+}
 
 /// An Object which stores numerical properties in an array.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -31,56 +48,38 @@ pub struct ArrayObjectData<'gc> {
 }
 
 impl<'gc> ArrayObject<'gc> {
-    /// Construct a fresh array.
-    pub fn construct(base_proto: Object<'gc>, mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
-
-        ArrayObject(GcCell::allocate(
-            mc,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into()
+    /// Construct an empty array.
+    pub fn empty(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        Self::from_storage(activation, ArrayStorage::new(0))
     }
 
-    /// Construct a primitive subclass.
-    pub fn derive(
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
-
-        Ok(ArrayObject(GcCell::allocate(
-            mc,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into())
-    }
-
-    /// Wrap an existing array in an object.
-    pub fn from_array(
+    /// Build an array object from storage.
+    ///
+    /// This will produce an instance of the system `Array` class.
+    pub fn from_storage(
+        activation: &mut Activation<'_, 'gc, '_>,
         array: ArrayStorage<'gc>,
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(Some(base_proto), ScriptObjectClass::NoClass);
+    ) -> Result<Object<'gc>, Error> {
+        let class = activation.avm2().classes().array;
+        let proto = activation.avm2().prototypes().array;
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
-        ArrayObject(GcCell::allocate(mc, ArrayObjectData { base, array })).into()
+        let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
+            activation.context.gc_context,
+            ArrayObjectData { base, array },
+        ))
+        .into();
+        instance.install_instance_traits(activation, class)?;
+
+        class.call_native_init(Some(instance), &[], activation, Some(class))?;
+
+        Ok(instance)
     }
 }
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn get_property_local(
         self,
@@ -167,6 +166,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.write(gc_context).base.is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().base.is_property_final(name)
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
@@ -198,13 +201,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        self.0.read().base.resolve_any_trait(local_name)
-    }
-
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
@@ -224,35 +220,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ArrayObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
-
-        Ok(ArrayObject(GcCell::allocate(
-            activation.context.gc_context,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into())
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ArrayObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base = ScriptObjectData::base_new(Some(this), None);
 
         Ok(ArrayObject(GcCell::allocate(
             activation.context.gc_context,

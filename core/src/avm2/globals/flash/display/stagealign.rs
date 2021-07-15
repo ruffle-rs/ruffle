@@ -36,8 +36,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "StageAlign"),
         Some(QName::new(Namespace::package(""), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<StageAlign instance initializer>", mc),
+        Method::from_builtin(class_init, "<StageAlign class initializer>", mc),
         mc,
     );
 

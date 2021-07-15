@@ -1,0 +1,198 @@
+// == int tests == 
+//undefined is int
+false
+//null is int
+false
+//true is int
+false
+//false is int
+false
+//0 is int
+true
+//1 is int
+true
+//5.12 is int
+false
+//(5.12 - .12) is int
+true
+//-6 is int
+true
+//"12.23" is int
+false
+//"true" is int
+false
+//"false" is int
+false
+//new CoercibleAsIntString() is int
+false
+//new CoercibleAsNonIntString() is int
+false
+//new CoercibleAsValue() is int
+false
+//new NotCoercibleAsValue() is int
+false
+// == uint tests == 
+//undefined is uint
+false
+//null is uint
+false
+//true is uint
+false
+//false is uint
+false
+//0 is uint
+true
+//1 is uint
+true
+//5.12 is uint
+false
+//(5.12 - .12) is uint
+true
+//-6 is uint
+false
+//"12.23" is uint
+false
+//"true" is uint
+false
+//"false" is uint
+false
+//new CoercibleAsIntString() is uint
+false
+//new CoercibleAsNonIntString() is uint
+false
+//new CoercibleAsValue() is uint
+false
+//new NotCoercibleAsValue() is uint
+false
+// == Number tests == 
+//undefined is Number
+false
+//null is Number
+false
+//true is Number
+false
+//false is Number
+false
+//0 is Number
+true
+//1 is Number
+true
+//5.12 is Number
+true
+//(5.12 - .12) is Number
+true
+//-6 is Number
+true
+//"12.23" is Number
+false
+//"true" is Number
+false
+//"false" is Number
+false
+//new CoercibleAsIntString() is Number
+false
+//new CoercibleAsNonIntString() is Number
+false
+//new CoercibleAsValue() is Number
+false
+//new NotCoercibleAsValue() is Number
+false
+// == Boolean tests == 
+//undefined is Boolean
+false
+//null is Boolean
+false
+//true is Boolean
+true
+//false is Boolean
+true
+//0 is Boolean
+false
+//1 is Boolean
+false
+//5.12 is Boolean
+false
+//(5.12 - .12) is Boolean
+false
+//-6 is Boolean
+false
+//"12.23" is Boolean
+false
+//"true" is Boolean
+false
+//"false" is Boolean
+false
+//new CoercibleAsIntString() is Boolean
+false
+//new CoercibleAsNonIntString() is Boolean
+false
+//new CoercibleAsValue() is Boolean
+false
+//new NotCoercibleAsValue() is Boolean
+false
+// == String tests == 
+//undefined is String
+false
+//null is String
+false
+//true is String
+false
+//false is String
+false
+//0 is String
+false
+//1 is String
+false
+//5.12 is String
+false
+//(5.12 - .12) is String
+false
+//-6 is String
+false
+//"12.23" is String
+true
+//"true" is String
+true
+//"false" is String
+true
+//new CoercibleAsIntString() is String
+false
+//new CoercibleAsNonIntString() is String
+false
+//new CoercibleAsValue() is String
+false
+//new NotCoercibleAsValue() is String
+false
+// == Object tests == 
+//undefined is Object
+false
+//null is Object
+false
+//true is Object
+true
+//false is Object
+true
+//0 is Object
+true
+//1 is Object
+true
+//5.12 is Object
+true
+//(5.12 - .12) is Object
+true
+//-6 is Object
+true
+//"12.23" is Object
+true
+//"true" is Object
+true
+//"false" is Object
+true
+//new CoercibleAsIntString() is Object
+true
+//new CoercibleAsNonIntString() is Object
+true
+//new CoercibleAsValue() is Object
+true
+//new NotCoercibleAsValue() is Object
+true

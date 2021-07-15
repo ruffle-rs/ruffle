@@ -3,9 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -96,18 +96,7 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     array: ArrayStorage<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    Ok(ArrayObject::from_array(
-        array,
-        activation
-            .context
-            .avm2
-            .system_prototypes
-            .as_ref()
-            .map(|sp| sp.array)
-            .unwrap(),
-        activation.context.gc_context,
-    )
-    .into())
+    Ok(ArrayObject::from_storage(activation, array)?.into())
 }
 
 /// Implements `Array.concat`
@@ -1222,25 +1211,30 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Array"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<Array instance initializer>", mc),
+        Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    write.set_instance_allocator(array_allocator);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), Some(set_length))];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), Some(set_length))];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
         ("join", join),
         ("forEach", for_each),
@@ -1260,7 +1254,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("sortOn", sort_on),
     ];
-    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     const CONSTANTS: &[(&str, u32)] = &[
         (

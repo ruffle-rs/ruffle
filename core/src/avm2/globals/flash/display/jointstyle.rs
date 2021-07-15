@@ -36,8 +36,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "JointStyle"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<JointStyle instance initializer>", mc),
+        Method::from_builtin(class_init, "<JointStyle class initializer>", mc),
         mc,
     );
 

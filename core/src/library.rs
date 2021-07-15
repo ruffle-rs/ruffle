@@ -75,54 +75,58 @@ impl WeakElement for WeakMovieSymbol {
     }
 }
 
-/// The mappings between constructors and library characters defined by
+/// The mappings between class objects and library characters defined by
 /// `SymbolClass`.
-pub struct Avm2ConstructorRegistry<'gc> {
-    /// A list of AVM2 class constructors and the character IDs they are expected
-    /// to instantiate.
-    constr_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
+pub struct Avm2ClassRegistry<'gc> {
+    /// A list of AVM2 class objects and the character IDs they are expected to
+    /// instantiate.
+    class_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
 }
 
-unsafe impl Collect for Avm2ConstructorRegistry<'_> {
+unsafe impl Collect for Avm2ClassRegistry<'_> {
     fn trace(&self, cc: gc_arena::CollectionContext) {
-        for (k, _) in self.constr_map.iter() {
+        for (k, _) in self.class_map.iter() {
             k.trace(cc);
         }
     }
 }
 
-impl Default for Avm2ConstructorRegistry<'_> {
+impl Default for Avm2ClassRegistry<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'gc> Avm2ConstructorRegistry<'gc> {
+impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
-            constr_map: WeakValueHashMap::new(),
+            class_map: WeakValueHashMap::new(),
         }
     }
 
-    /// Retrieve the library symbol for a given AVM2 class constructor.
+    /// Retrieve the library symbol for a given AVM2 class object.
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn constr_symbol(&self, proto: Avm2Object<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
-        match self.constr_map.get(&proto) {
+    pub fn class_symbol(
+        &self,
+        class_object: Avm2Object<'gc>,
+    ) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        match self.class_map.get(&class_object) {
             Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
             None => None,
         }
     }
 
-    /// Associate an AVM2 class constructor with a given library symbol.
-    pub fn set_constr_symbol(
+    /// Associate an AVM2 class object with a given library symbol.
+    pub fn set_class_symbol(
         &mut self,
-        proto: Avm2Object<'gc>,
+        class_object: Avm2Object<'gc>,
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
-        self.constr_map.insert(proto, MovieSymbol(movie, symbol));
+        self.class_map
+            .insert(class_object, MovieSymbol(movie, symbol));
     }
 }
 
@@ -397,7 +401,7 @@ pub struct Library<'gc> {
 
     /// A list of the symbols associated with specific AVM2 constructor
     /// prototypes.
-    avm2_constructor_registry: Avm2ConstructorRegistry<'gc>,
+    avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
 unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
@@ -409,7 +413,7 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
         self.device_font.trace(cc);
         self.constructor_registry_case_insensitive.trace(cc);
         self.constructor_registry_case_sensitive.trace(cc);
-        self.avm2_constructor_registry.trace(cc);
+        self.avm2_class_registry.trace(cc);
     }
 }
 
@@ -426,7 +430,7 @@ impl<'gc> Library<'gc> {
                 gc_context,
                 Avm1ConstructorRegistry::new(true, gc_context),
             ),
-            avm2_constructor_registry: Default::default(),
+            avm2_class_registry: Default::default(),
         }
     }
 
@@ -473,13 +477,13 @@ impl<'gc> Library<'gc> {
         }
     }
 
-    /// Get the AVM2 constructor registry.
-    pub fn avm2_constructor_registry(&self) -> &Avm2ConstructorRegistry<'gc> {
-        &self.avm2_constructor_registry
+    /// Get the AVM2 class registry.
+    pub fn avm2_class_registry(&self) -> &Avm2ClassRegistry<'gc> {
+        &self.avm2_class_registry
     }
 
-    /// Mutate the AVM2 constructor registry.
-    pub fn avm2_constructor_registry_mut(&mut self) -> &mut Avm2ConstructorRegistry<'gc> {
-        &mut self.avm2_constructor_registry
+    /// Mutate the AVM2 class registry.
+    pub fn avm2_class_registry_mut(&mut self) -> &mut Avm2ClassRegistry<'gc> {
+        &mut self.avm2_class_registry
     }
 }

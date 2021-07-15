@@ -86,8 +86,4 @@ impl<'gc> Slot<'gc> {
             }
         }
     }
-
-    pub fn is_occupied(&self) -> bool {
-        matches!(self, Slot::Occupied { .. })
-    }
 }

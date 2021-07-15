@@ -2,16 +2,33 @@ use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::impl_avm2_custom_object;
+use crate::{impl_avm2_custom_object, impl_avm2_custom_object_instance};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates ByteArray objects.
+pub fn bytearray_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(ByteArrayObject(GcCell::allocate(
+        activation.context.gc_context,
+        ByteArrayObjectData {
+            base,
+            storage: ByteArrayStorage::new(),
+        },
+    ))
+    .into())
+}
 
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
@@ -26,49 +43,9 @@ pub struct ByteArrayObjectData<'gc> {
     storage: ByteArrayStorage,
 }
 
-impl<'gc> ByteArrayObject<'gc> {
-    pub fn new(
-        mc: MutationContext<'gc, '_>,
-        base_proto: Option<Object<'gc>>,
-    ) -> ByteArrayObject<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
-
-        ByteArrayObject(GcCell::allocate(
-            mc,
-            ByteArrayObjectData {
-                base,
-                storage: ByteArrayStorage::new(),
-            },
-        ))
-    }
-
-    pub fn construct(mc: MutationContext<'gc, '_>, base_proto: Option<Object<'gc>>) -> Object<'gc> {
-        Self::new(mc, base_proto).into()
-    }
-
-    pub fn derive(
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
-
-        Ok(ByteArrayObject(GcCell::allocate(
-            mc,
-            ByteArrayObjectData {
-                base,
-                storage: ByteArrayStorage::new(),
-            },
-        ))
-        .into())
-    }
-}
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     impl_avm2_custom_object!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn get_property_local(
         self,
@@ -163,6 +140,10 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.write(gc_context).base.is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().base.is_property_final(name)
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
@@ -194,36 +175,9 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        self.0.read().base.resolve_any_trait(local_name)
-    }
-
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ByteArrayObject(*self);
-        Ok(ByteArrayObject::construct(
-            activation.context.gc_context,
-            Some(this),
-        ))
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ByteArrayObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base = ScriptObjectData::base_new(Some(this), None);
 
         Ok(ByteArrayObject(GcCell::allocate(
             activation.context.gc_context,
