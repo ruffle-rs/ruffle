@@ -1,0 +1,24 @@
+/// var a_object: Vector.<Object> = new <Object>[];
+/// a_object.length = 2;
+null
+null
+/// var a_bool: Vector.<Boolean> = new <Boolean>[];
+/// a_bool.length = 2;
+null
+null
+/// var a_int: Vector.<int> = new <int>[];
+/// a_int.length = 2;
+0
+0
+/// var a_number: Vector.<Number> = new <Number>[];
+/// a_number.length = 2;
+0
+0
+/// var a_string: Vector.<String> = new <String>[];
+/// a_string.length = 2;
+null
+null
+/// var a_uint: Vector.<uint> = new <uint>[];
+/// a_uint.length = 2;
+0
+0

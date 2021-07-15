@@ -1,0 +1,172 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// a_bool.removeAt(1);
+false
+/// (contents of a_bool...)
+1 elements
+true
+/// a_bool.removeAt(0);
+true
+/// (contents of a_bool...)
+0 elements
+/// b_bool.removeAt(-2);
+true
+/// (contents of b_bool...)
+2 elements
+false
+false
+/// b_bool.removeAt(-5);
+false
+/// (contents of b_bool...)
+1 elements
+false
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+/// var a_class: Vector.<Superclass> = new <Superclass>[a0_class, a1_class];
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.removeAt(0);
+[object Superclass]
+/// a1_class === a_class[0];
+true
+/// b_class.removeAt(-3);
+[object Subclass]
+/// (contents of b_class...)
+0 elements
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.removeAt(0);
+1
+/// (contents of a_int)...
+1 elements
+2
+/// a_int.removeAt(0);
+2
+/// (contents of a_int)...
+0 elements
+/// b_int.removeAt(-5);
+5
+/// (contents of b_int)...
+1 elements
+16
+/// b_int.removeAt(-4);
+16
+/// (contents of b_int)...
+0 elements
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.removeAt(2);
+3
+/// (contents of a_number...)
+3 elements
+1
+2
+4
+/// a_number.removeAt(1);
+2
+/// (contents of a_number...)
+2 elements
+1
+4
+/// a_number.removeAt(1);
+4
+/// (contents of a_number...)
+1 elements
+1
+/// b_number.removeAt(-1);
+0
+/// (contents of b_number...)
+3 elements
+5
+NaN
+-5
+/// b_number.removeAt(-5);
+5
+/// (contents of b_number...)
+2 elements
+NaN
+-5
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.removeAt(1);
+c
+/// (contents of a_string...)
+3 elements
+a
+d
+f
+/// a_string.removeAt(0);
+a
+/// (contents of a_string...)
+2 elements
+d
+f
+/// a_string.removeAt(1);
+f
+/// (contents of a_string...)
+1 elements
+d
+/// a_string.removeAt(0);
+d
+/// (contents of a_string...)
+0 elements
+/// b_string.removeAt(-9);
+986
+/// (contents of b_string...)
+3 elements
+B4
+Q
+rrr
+/// b_string.removeAt(-2);
+Q
+/// (contents of b_string...)
+2 elements
+B4
+rrr
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.removeAt(1);
+2
+/// (contents of a_uint...)
+1 elements
+1
+/// a_uint.removeAt(0);
+1
+/// (contents of a_uint...)
+0 elements
+/// b_uint.removeAt(-8);
+5
+/// (contents of b_uint...)
+1 elements
+16
+/// b_uint.removeAt(-2);
+16
+/// (contents of b_uint...)
+0 elements
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.removeAt(1);
+4,3
+/// (contents of a_vector...)
+1 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// a_vector.removeAt(0);
+1,2
+/// (contents of a_vector...)
+0 elements
+/// b_vector.removeAt(-6);
+5,16
+/// (contents of b_vector...)
+1 elements
+/// (contents of index 0 )
+2 elements
+19
+8
+/// b_vector.removeAt(-2);
+19,8
+/// (contents of b_vector...)
+0 elements

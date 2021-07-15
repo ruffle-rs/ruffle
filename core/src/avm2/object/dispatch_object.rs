@@ -4,14 +4,15 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::events::DispatchList;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -57,7 +58,7 @@ pub struct DispatchObjectData<'gc> {
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
     pub fn empty_list(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(None, ScriptObjectClass::NoClass);
+        let base = ScriptObjectData::base_new(None, None);
 
         DispatchObject(GcCell::allocate(
             mc,
@@ -73,21 +74,17 @@ impl<'gc> DispatchObject<'gc> {
 impl<'gc> TObject<'gc> for DispatchObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
     fn construct(
-        &self,
+        self,
         _activation: &mut Activation<'_, 'gc, '_>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         Err("Cannot construct internal event dispatcher structures.".into())
     }
 
-    fn derive(
-        &self,
-        _activation: &mut Activation<'_, 'gc, '_>,
-        _class: GcCell<'gc, Class<'gc>>,
-        _scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         Err("Cannot subclass internal event dispatcher structures.".into())
     }
 

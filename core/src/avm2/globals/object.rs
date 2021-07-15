@@ -2,14 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::GcCell;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -155,38 +154,8 @@ pub fn set_property_is_enumerable<'gc>(
 /// This function creates a suitable class and object prototype attached to it,
 /// but does not actually fill it with methods. That requires a valid function
 /// prototype, and is thus done by `fill_proto` below.
-pub fn create_proto<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    globals: Object<'gc>,
-) -> (Object<'gc>, GcCell<'gc, Class<'gc>>) {
-    let object_class = Class::new(
-        QName::new(Namespace::public(), "Object"),
-        None,
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
-        activation.context.gc_context,
-    );
-    let mut write = object_class.write(activation.context.gc_context);
-
-    write.define_class_trait(Trait::from_const(
-        QName::new(Namespace::public(), "length"),
-        QName::new(Namespace::public(), "int").into(),
-        None,
-    ));
-
-    // Fixed traits (in AS3 namespace)
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
-        ("hasOwnProperty", has_own_property),
-        ("isPrototypeOf", is_prototype_of),
-        ("propertyIsEnumerable", property_is_enumerable),
-    ];
-    write.define_as3_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
-
-    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
-    let proto =
-        ScriptObject::bare_prototype(activation.context.gc_context, object_class, Some(scope));
-
-    (proto, object_class)
+pub fn create_proto<'gc>(activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+    ScriptObject::bare_object(activation.context.gc_context)
 }
 
 /// Finish constructing `Object.prototype`, and also construct `Object`.
@@ -198,49 +167,139 @@ pub fn create_proto<'gc>(
 /// Since Object and Function are so heavily intertwined, this function does
 /// not allocate an object to store either proto. Instead, you must allocate
 /// bare objects for both and let this function fill Object for you.
+///
+/// This function returns both the class object and it's class initializer
+/// method, which must be called before user code runs.
 pub fn fill_proto<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
+    globals: Object<'gc>,
     mut object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
-) -> Result<Object<'gc>, Error> {
+) -> Result<(Object<'gc>, Object<'gc>), Error> {
     let gc_context = activation.context.gc_context;
+
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "hasOwnProperty"),
-        FunctionObject::from_builtin(gc_context, has_own_property, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "propertyIsEnumerable"),
-        FunctionObject::from_builtin(gc_context, property_is_enumerable, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "setPropertyIsEnumerable"),
-        FunctionObject::from_builtin(gc_context, set_property_is_enumerable, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(
+                set_property_is_enumerable,
+                "setPropertyIsEnumerable",
+                gc_context,
+            ),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "isPrototypeOf"),
-        FunctionObject::from_builtin(gc_context, is_prototype_of, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "toString"),
-        FunctionObject::from_builtin(gc_context, to_string, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(to_string, "toString", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "toLocaleString"),
-        FunctionObject::from_builtin(gc_context, to_locale_string, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
     object_proto.install_dynamic_property(
         gc_context,
         QName::new(Namespace::public(), "valueOf"),
-        FunctionObject::from_builtin(gc_context, value_of, fn_proto).into(),
+        FunctionObject::from_method_and_proto(
+            gc_context,
+            Method::from_builtin(value_of, "valueOf", gc_context),
+            None,
+            fn_proto,
+            None,
+        )
+        .into(),
     )?;
 
-    let object_constr =
-        FunctionObject::from_builtin_constr(gc_context, instance_init, object_proto, fn_proto)?;
-    Ok(object_constr)
+    let object_class = Class::new(
+        QName::new(Namespace::public(), "Object"),
+        None,
+        Method::from_builtin(instance_init, "<Object instance initializer>", gc_context),
+        Method::from_builtin(class_init, "<Object class initializer>", gc_context),
+        gc_context,
+    );
+    let mut write = object_class.write(gc_context);
+
+    write.define_class_trait(Trait::from_const(
+        QName::new(Namespace::public(), "length"),
+        QName::new(Namespace::public(), "int").into(),
+        None,
+    ));
+
+    // Fixed traits (in AS3 namespace)
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("hasOwnProperty", has_own_property),
+        ("isPrototypeOf", is_prototype_of),
+        ("propertyIsEnumerable", property_is_enumerable),
+    ];
+    write.define_as3_builtin_instance_methods(gc_context, PUBLIC_INSTANCE_METHODS);
+
+    drop(write);
+
+    let scope = Scope::push_scope(globals.get_scope(), globals, gc_context);
+
+    ClassObject::from_builtin_class(
+        gc_context,
+        None,
+        object_class,
+        Some(scope),
+        object_proto,
+        fn_proto,
+    )
 }

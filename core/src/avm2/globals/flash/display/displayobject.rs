@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{LoaderInfoObject, Object, TObject};
+use crate::avm2::object::{stage_allocator, LoaderInfoObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -16,27 +16,32 @@ use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("You cannot construct DisplayObject directly.".into())
+}
+
+/// Implements `flash.display.DisplayObject`'s native instance constructor.
+pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let constructor = this
-                .get_property(
-                    this,
-                    &QName::new(Namespace::public(), "constructor"),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
+            let class_object = this
+                .as_class_object()
+                .ok_or("Attempted to construct non-instance DisplayObject.")?;
 
             if let Some((movie, symbol)) = activation
                 .context
                 .library
-                .avm2_constructor_registry()
-                .constr_symbol(constructor)
+                .avm2_class_registry()
+                .class_symbol(class_object)
             {
                 let mut child = activation
                     .context
@@ -565,14 +570,7 @@ pub fn loader_info<'gc>(
                 let movie = dobj.movie();
 
                 if let Some(movie) = movie {
-                    let obj = LoaderInfoObject::from_movie(
-                        movie,
-                        root,
-                        activation.context.avm2.prototypes().loaderinfo,
-                        activation.context.gc_context,
-                    )?;
-
-                    activation.super_init(obj, &[])?;
+                    let obj = LoaderInfoObject::from_movie(activation, movie, root)?;
 
                     return Ok(obj.into());
                 }
@@ -580,11 +578,7 @@ pub fn loader_info<'gc>(
         }
 
         if DisplayObject::ptr_eq(dobj, activation.context.stage.into()) {
-            return Ok(LoaderInfoObject::from_stage(
-                activation.context.avm2.prototypes().loaderinfo,
-                activation.context.gc_context,
-            )
-            .into());
+            return Ok(LoaderInfoObject::from_stage(activation)?.into());
         }
     }
 
@@ -596,14 +590,25 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.display"), "DisplayObject"),
         Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<DisplayObject instance initializer>", mc),
+        Method::from_builtin(class_init, "<DisplayObject class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    write.set_instance_allocator(stage_allocator);
+    write.set_native_instance_init(Method::from_builtin(
+        native_instance_init,
+        "<DisplayObject native instance initializer>",
+        mc,
+    ));
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
         ("height", Some(height), Some(set_height)),
         ("scaleY", Some(scale_y), Some(set_scale_y)),
@@ -621,13 +626,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("mouseY", Some(mouse_y), None),
         ("loaderInfo", Some(loader_info), None),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("hitTestPoint", hit_test_point),
         ("hitTestObject", hit_test_object),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

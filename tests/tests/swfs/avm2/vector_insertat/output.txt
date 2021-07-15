@@ -1,0 +1,270 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// a_bool.insertAt(3, false);
+undefined
+/// (contents of a_bool...)
+3 elements
+true
+false
+false
+/// a_bool.insertAt(0, false);
+undefined
+/// (contents of a_bool...)
+4 elements
+false
+true
+false
+false
+/// b_bool.insertAt(-2, false);
+undefined
+/// (contents of b_bool...)
+4 elements
+false
+false
+true
+false
+/// b_bool.insertAt(-5, false);
+undefined
+/// (contents of b_bool...)
+5 elements
+false
+false
+false
+true
+false
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+/// var a_class: Vector.<Superclass> = new <Superclass>[a0_class, a1_class];
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.insertAt(0, new Subclass());
+undefined
+/// a0_class === a_class[1];
+true
+/// a1_class === a_class[2];
+true
+/// b_class.insertAt(-3, new Subclass());
+undefined
+/// (contents of b_class...)
+2 elements
+[object Subclass]
+[object Subclass]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.insertAt(1, 3);
+undefined
+/// (contents of a_int)...
+3 elements
+1
+3
+2
+/// a_int.insertAt(6, 4);
+undefined
+/// (contents of a_int)...
+4 elements
+1
+3
+2
+4
+/// b_int.insertAt(-5, 3);
+undefined
+/// (contents of b_int)...
+3 elements
+3
+5
+16
+/// b_int.insertAt(-1, 3);
+undefined
+/// (contents of b_int)...
+4 elements
+3
+5
+3
+16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.insertAt(1, 5);
+undefined
+/// (contents of a_number...)
+5 elements
+1
+5
+2
+3
+4
+/// a_number.insertAt(9, 6);
+undefined
+/// (contents of a_number...)
+6 elements
+1
+5
+2
+3
+4
+6
+/// b_number.insertAt(-4, 23);
+undefined
+/// (contents of b_number...)
+5 elements
+23
+5
+NaN
+-5
+0
+/// b_number.insertAt(-8, 99);
+undefined
+/// (contents of b_number...)
+6 elements
+99
+23
+5
+NaN
+-5
+0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.insertAt(1, "g");
+undefined
+/// (contents of a_string...)
+5 elements
+a
+g
+c
+d
+f
+/// a_string.insertAt(8, "h");
+undefined
+/// (contents of a_string...)
+6 elements
+a
+g
+c
+d
+f
+h
+/// b_string.insertAt(-9, "i");
+undefined
+/// (contents of b_string...)
+5 elements
+i
+986
+B4
+Q
+rrr
+/// b_string.insertAt(-2, "j");
+undefined
+/// (contents of b_string...)
+6 elements
+i
+986
+B4
+j
+Q
+rrr
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.insertAt(1, 4);
+undefined
+/// (contents of a_uint...)
+3 elements
+1
+4
+2
+/// a_uint.insertAt(6, -4);
+undefined
+/// (contents of a_uint...)
+4 elements
+1
+4
+2
+4294967292
+/// b_uint.insertAt(-8, 9);
+undefined
+/// (contents of b_uint...)
+3 elements
+9
+5
+16
+/// b_uint.insertAt(-2, 93);
+undefined
+/// (contents of b_uint...)
+4 elements
+9
+93
+5
+16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.insertAt(1, new <int>[5,6]);
+undefined
+/// (contents of a_vector...)
+3 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+5
+6
+/// (contents of index 2 )
+2 elements
+4
+3
+/// a_vector.insertAt(5, new <int>[8,9]);
+undefined
+/// (contents of a_vector...)
+4 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+5
+6
+/// (contents of index 2 )
+2 elements
+4
+3
+/// (contents of index 3 )
+2 elements
+8
+9
+/// b_vector.insertAt(-6, new <int>[10,11]);
+undefined
+/// (contents of b_vector...)
+3 elements
+/// (contents of index 0 )
+2 elements
+10
+11
+/// (contents of index 1 )
+2 elements
+5
+16
+/// (contents of index 2 )
+2 elements
+19
+8
+/// b_vector.insertAt(-2, new <int>[12,13]);
+undefined
+/// (contents of b_vector...)
+4 elements
+/// (contents of index 0 )
+2 elements
+10
+11
+/// (contents of index 1 )
+2 elements
+12
+13
+/// (contents of index 2 )
+2 elements
+5
+16
+/// (contents of index 3 )
+2 elements
+19
+8

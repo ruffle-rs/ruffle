@@ -3,9 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -96,18 +96,7 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     array: ArrayStorage<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    Ok(ArrayObject::from_array(
-        array,
-        activation
-            .context
-            .avm2
-            .system_prototypes
-            .as_ref()
-            .map(|sp| sp.array)
-            .unwrap(),
-        activation.context.gc_context,
-    )
-    .into())
+    Ok(ArrayObject::from_storage(activation, array)?.into())
 }
 
 /// Implements `Array.concat`
@@ -264,17 +253,27 @@ pub fn value_of<'gc>(
 /// mutate the array under iteration. Normally, holding an `Iterator` on the
 /// array while this happens would cause a panic; this code exists to prevent
 /// that.
-struct ArrayIter<'gc> {
+pub struct ArrayIter<'gc> {
     array_object: Object<'gc>,
-    index: u32,
-    length: u32,
+    pub index: u32,
+    pub rev_index: u32,
 }
 
 impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter`.
     pub fn new(
         activation: &mut Activation<'_, 'gc, '_>,
+        array_object: Object<'gc>,
+    ) -> Result<Self, Error> {
+        Self::with_bounds(activation, array_object, 0, u32::MAX)
+    }
+
+    /// Construct a new `ArrayIter` that is bounded to a given range.
+    pub fn with_bounds(
+        activation: &mut Activation<'_, 'gc, '_>,
         mut array_object: Object<'gc>,
+        start_index: u32,
+        end_index: u32,
     ) -> Result<Self, Error> {
         let length = array_object
             .get_property(
@@ -286,23 +285,61 @@ impl<'gc> ArrayIter<'gc> {
 
         Ok(Self {
             array_object,
-            index: 0,
-            length,
+            index: if start_index < length {
+                start_index
+            } else {
+                length
+            },
+            rev_index: if end_index < length {
+                end_index + 1
+            } else {
+                length
+            },
         })
     }
 
-    /// Get the next item in the array.
+    /// Get the next item from the front of the array
     ///
     /// Since this isn't a real iterator, this comes pre-enumerated; it yields
     /// a pair of the index and then the value.
-    fn next(
+    pub fn next(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Result<(u32, Value<'gc>), Error>> {
-        if self.index < self.length {
+        if self.index < self.rev_index {
             let i = self.index;
 
             self.index += 1;
+
+            Some(
+                self.array_object
+                    .get_property(
+                        self.array_object,
+                        &QName::new(
+                            Namespace::public(),
+                            AvmString::new(activation.context.gc_context, i.to_string()),
+                        ),
+                        activation,
+                    )
+                    .map(|val| (i, val)),
+            )
+        } else {
+            None
+        }
+    }
+
+    /// Get the next item from the back of the array.
+    ///
+    /// Since this isn't a real iterator, this comes pre-enumerated; it yields
+    /// a pair of the index and then the value.
+    pub fn next_back(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Result<(u32, Value<'gc>), Error>> {
+        if self.index < self.rev_index {
+            self.rev_index -= 1;
+
+            let i = self.rev_index;
 
             Some(
                 self.array_object
@@ -457,13 +494,12 @@ pub fn every<'gc>(
             .unwrap_or(Value::Null)
             .coerce_to_object(activation)
             .ok();
-        let mut is_every = true;
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            is_every &= callback
+            let result = callback
                 .call(
                     receiver,
                     &[item, i.into(), this.into()],
@@ -471,9 +507,13 @@ pub fn every<'gc>(
                     receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
+
+            if !result {
+                return Ok(false.into());
+            }
         }
 
-        return Ok(is_every.into());
+        return Ok(true.into());
     }
 
     Ok(Value::Undefined)
@@ -497,13 +537,12 @@ pub fn some<'gc>(
             .unwrap_or(Value::Null)
             .coerce_to_object(activation)
             .ok();
-        let mut is_some = false;
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            is_some |= callback
+            let result = callback
                 .call(
                     receiver,
                     &[item, i.into(), this.into()],
@@ -511,9 +550,13 @@ pub fn some<'gc>(
                     receiver.and_then(|r| r.proto()),
                 )?
                 .coerce_to_boolean();
+
+            if result {
+                return Ok(true.into());
+            }
         }
 
-        return Ok(is_some.into());
+        return Ok(false.into());
     }
 
     Ok(Value::Undefined)
@@ -793,7 +836,7 @@ bitflags! {
     /// The array options that a given sort operation may use.
     ///
     /// These are provided as a number by the VM and converted into bitflags.
-    struct SortOptions: u8 {
+    pub struct SortOptions: u8 {
         /// Request case-insensitive string value sort.
         const CASE_INSENSITIVE     = 1 << 0;
 
@@ -877,7 +920,7 @@ where
     Ok(!options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied)
 }
 
-fn compare_string_case_sensitive<'gc>(
+pub fn compare_string_case_sensitive<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
@@ -888,7 +931,7 @@ fn compare_string_case_sensitive<'gc>(
     Ok(string_a.cmp(&string_b))
 }
 
-fn compare_string_case_insensitive<'gc>(
+pub fn compare_string_case_insensitive<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
@@ -899,7 +942,7 @@ fn compare_string_case_insensitive<'gc>(
     Ok(string_a.cmp(&string_b))
 }
 
-fn compare_numeric<'gc>(
+pub fn compare_numeric<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
@@ -1222,25 +1265,30 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Array"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<Array instance initializer>", mc),
+        Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    write.set_instance_allocator(array_allocator);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), Some(set_length))];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), Some(set_length))];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
         ("join", join),
         ("forEach", for_each),
@@ -1260,7 +1308,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("sortOn", sort_on),
     ];
-    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     const CONSTANTS: &[(&str, u32)] = &[
         (

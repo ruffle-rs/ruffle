@@ -1,0 +1,232 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// var c_bool: Vector.<Boolean> = new <Boolean>[];
+/// a_bool.reverse();
+false,true
+/// (contents of a_bool...)
+2 elements
+false
+true
+/// a_bool.reverse();
+true,false
+/// (contents of a_bool...)
+2 elements
+true
+false
+/// b_bool.reverse();
+false,true,false
+/// (contents of b_bool...)
+3 elements
+false
+true
+false
+/// b_bool.reverse();
+false,true,false
+/// (contents of b_bool...)
+3 elements
+false
+true
+false
+/// c_bool.reverse();
+
+/// (contents of c_bool...)
+0 elements
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+/// var a_class: Vector.<Superclass> = new <Superclass>[a0_class, a1_class];
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.reverse();
+[object Subclass],[object Superclass]
+/// a1_class === a_class[0];
+true
+/// a0_class === a_class[1];
+true
+/// b_class.reverse();
+[object Subclass]
+/// (contents of b_class...)
+1 elements
+[object Subclass]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.reverse();
+2,1
+/// (contents of a_int)...
+2 elements
+2
+1
+/// a_int.reverse();
+1,2
+/// (contents of a_int)...
+2 elements
+1
+2
+/// b_int.reverse();
+16,5
+/// (contents of b_int)...
+2 elements
+16
+5
+/// b_int.reverse();
+5,16
+/// (contents of b_int)...
+2 elements
+5
+16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.reverse();
+4,3,2,1
+/// (contents of a_number...)
+4 elements
+4
+3
+2
+1
+/// a_number.reverse();
+1,2,3,4
+/// (contents of a_number...)
+4 elements
+1
+2
+3
+4
+/// b_number.reverse();
+0,-5,NaN,5
+/// (contents of b_number...)
+4 elements
+0
+-5
+NaN
+5
+/// b_number.reverse();
+5,NaN,-5,0
+/// (contents of b_number...)
+4 elements
+5
+NaN
+-5
+0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.reverse();
+f,d,c,a
+/// (contents of a_string...)
+4 elements
+f
+d
+c
+a
+/// a_string.reverse();
+a,c,d,f
+/// (contents of a_string...)
+4 elements
+a
+c
+d
+f
+/// b_string.reverse();
+rrr,Q,B4,986
+/// (contents of b_string...)
+4 elements
+rrr
+Q
+B4
+986
+/// b_string.reverse();
+986,B4,Q,rrr
+/// (contents of b_string...)
+4 elements
+986
+B4
+Q
+rrr
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.reverse();
+2,1
+/// (contents of a_uint...)
+2 elements
+2
+1
+/// a_uint.reverse();
+1,2
+/// (contents of a_uint...)
+2 elements
+1
+2
+/// b_uint.reverse();
+16,5
+/// (contents of b_uint...)
+2 elements
+16
+5
+/// b_uint.reverse();
+5,16
+/// (contents of b_uint...)
+2 elements
+5
+16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.reverse();
+4,3,1,2
+/// (contents of a_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+4
+3
+/// (contents of index 1 )
+2 elements
+1
+2
+/// a_vector.reverse();
+1,2,4,3
+/// (contents of a_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+1
+2
+/// (contents of index 1 )
+2 elements
+4
+3
+/// b_vector.reverse();
+19,8,5,16
+/// (contents of b_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+19
+8
+/// (contents of index 1 )
+2 elements
+5
+16
+/// b_vector.reverse();
+5,16,19,8
+/// (contents of b_vector...)
+2 elements
+/// (contents of index 0 )
+2 elements
+5
+16
+/// (contents of index 1 )
+2 elements
+19
+8
+/// (contents of b_vector.reverse()...)
+2 elements
+/// (contents of index 0 )
+2 elements
+19
+8
+/// (contents of index 1 )
+2 elements
+5
+16
+/// b_vector === b_vector.reverse()
+true

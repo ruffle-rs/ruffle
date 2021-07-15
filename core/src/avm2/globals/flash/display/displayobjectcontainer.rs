@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -14,6 +14,15 @@ use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s instance constructor.
 pub fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("You cannot construct DisplayObjectContainer directly.".into())
+}
+
+/// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
+pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -578,18 +587,31 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             "DisplayObjectContainer",
         ),
         Some(QName::new(Namespace::package("flash.display"), "InteractiveObject").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(
+            instance_init,
+            "<DisplayObjectContainer instance initializer>",
+            mc,
+        ),
+        Method::from_builtin(class_init, "<DisplayObjectContainer class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("numChildren", Some(num_children), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.set_native_instance_init(Method::from_builtin(
+        native_instance_init,
+        "<DisplayObjectContainer native instance initializer>",
+        mc,
+    ));
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("numChildren", Some(num_children), None)];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("getChildAt", get_child_at),
         ("getChildByName", get_child_by_name),
         ("addChild", add_child),
@@ -609,7 +631,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             are_inaccessible_objects_under_point,
         ),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

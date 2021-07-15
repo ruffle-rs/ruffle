@@ -4,7 +4,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
-use crate::avm2::{Avm2, Domain as Avm2Domain};
+use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     locale::LocaleBackend,
@@ -389,13 +389,20 @@ impl Player {
                 context.swf.width().to_pixels() as u32,
                 context.swf.height().to_pixels() as u32,
             );
-            let domain = Avm2Domain::movie_domain(context.gc_context, context.avm2.global_domain());
+
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let global_domain = activation.avm2().global_domain();
+            let domain = Avm2Domain::movie_domain(&mut activation, global_domain);
+
+            drop(activation);
+
+            context
+                .library
+                .library_for_movie_mut(context.swf.clone())
+                .set_avm2_domain(domain);
+
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
-
-            let library = context.library.library_for_movie_mut(context.swf.clone());
-
-            library.set_avm2_domain(domain);
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {

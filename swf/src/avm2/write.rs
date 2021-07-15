@@ -311,6 +311,18 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0x1c)?;
                 self.write_index(namespace_set)?;
             }
+            Multiname::TypeName {
+                ref base_type,
+                ref parameters,
+            } => {
+                self.write_u8(0x1d)?;
+                self.write_index(base_type)?;
+                self.write_u30(parameters.len() as u32)?;
+
+                for param in parameters {
+                    self.write_index(param)?;
+                }
+            }
         }
         Ok(())
     }
@@ -591,6 +603,10 @@ impl<W: Write> Writer<W> {
         match *op {
             Op::Add => self.write_opcode(OpCode::Add)?,
             Op::AddI => self.write_opcode(OpCode::AddI)?,
+            Op::ApplyType { num_types } => {
+                self.write_opcode(OpCode::ApplyType)?;
+                self.write_u30(num_types)?;
+            }
             Op::AsType { ref type_name } => {
                 self.write_opcode(OpCode::AsType)?;
                 self.write_index(type_name)?;

@@ -82,6 +82,10 @@ pub enum Multiname {
     MultinameLA {
         namespace_set: Index<NamespaceSet>,
     },
+    TypeName {
+        base_type: Index<Multiname>,
+        parameters: Vec<Index<Multiname>>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -229,6 +233,9 @@ pub struct Script {
 pub enum Op {
     Add,
     AddI,
+    ApplyType {
+        num_types: u32,
+    },
     AsType {
         type_name: Index<Multiname>,
     },

@@ -171,6 +171,20 @@ impl<'a> Reader<'a> {
             0x1c => Multiname::MultinameLA {
                 namespace_set: self.read_index()?,
             },
+            0x1d => {
+                let base_type = self.read_index()?;
+                let count = self.read_u30()?;
+                let mut parameters = Vec::new();
+
+                for _ in 0..count {
+                    parameters.push(self.read_index()?);
+                }
+
+                Multiname::TypeName {
+                    base_type,
+                    parameters,
+                }
+            }
             _ => return Err(Error::invalid_data("Invalid multiname kind")),
         })
     }
@@ -259,9 +273,12 @@ impl<'a> Reader<'a> {
 
         if flags & 0x08 != 0 {
             let num_optional_params = self.read_u30()? as usize;
-            #[allow(clippy::needless_range_loop)]
-            for i in 0..num_optional_params {
-                params[i].default_value = Some(self.read_constant_value()?);
+            if let Some(start) = params.len().checked_sub(num_optional_params) {
+                for param in &mut params[start..] {
+                    param.default_value = Some(self.read_constant_value()?);
+                }
+            } else {
+                return Err(Error::invalid_data("Too many optional parameters"));
             }
         }
 
@@ -517,6 +534,9 @@ impl<'a> Reader<'a> {
         let op = match opcode {
             OpCode::Add => Op::Add,
             OpCode::AddI => Op::AddI,
+            OpCode::ApplyType => Op::ApplyType {
+                num_types: self.read_u30()?,
+            },
             OpCode::AsType => Op::AsType {
                 type_name: self.read_index()?,
             },
