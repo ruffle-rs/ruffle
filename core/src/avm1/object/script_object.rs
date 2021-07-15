@@ -215,9 +215,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
+        let this = (*self).into();
+
         let watcher = self
             .0
             .read()
@@ -369,7 +370,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         );
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
@@ -383,7 +384,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         );
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
         let old = self
             .0
             .write(activation.context.gc_context)

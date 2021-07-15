@@ -27,14 +27,12 @@ pub fn constructor<'gc>(
     // The target display object that this color will modify.
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
     // Set undocumented `target` property
-    this.set("target", target, activation)?;
-    this.set_attributes(
+    this.define_value(
         activation.context.gc_context,
-        Some("target"),
+        "target",
+        target,
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-        Attribute::empty(),
     );
-
     Ok(this.into())
 }
 

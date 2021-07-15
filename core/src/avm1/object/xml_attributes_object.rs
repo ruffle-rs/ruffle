@@ -72,7 +72,6 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
         _base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
@@ -82,6 +81,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         );
         Ok(())
     }
+
     fn call(
         &self,
         name: &str,
@@ -142,19 +142,18 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
-        self.base()
-            .set_watcher(activation, name, callback, user_data);
+        self.base().watch(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
-        self.base().remove_watcher(activation, name)
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+        self.base().unwatch(activation, name)
     }
 
     fn define_value(

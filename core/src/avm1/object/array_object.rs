@@ -107,7 +107,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if name == "length" {
@@ -120,9 +119,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0
-            .read()
-            .set_local(name, value, activation, this, base_proto)
+        self.0.read().set_local(name, value, activation, base_proto)
     }
 
     fn call(
@@ -183,20 +180,18 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
     ) {
-        self.0
-            .read()
-            .set_watcher(activation, name, callback, user_data);
+        self.0.read().watch(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
-        self.0.read().remove_watcher(activation, name)
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+        self.0.read().unwatch(activation, name)
     }
 
     fn define_value(

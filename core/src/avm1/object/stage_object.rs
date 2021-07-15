@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::Executable;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
@@ -199,7 +198,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
@@ -224,16 +222,17 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         if base.has_own_property(activation, name) {
             // 1) Actual properties on the underlying object
-            base.set_local(name, value, activation, this, base_proto)
+            base.set_local(name, value, activation, base_proto)
         } else if let Some(property) = props.read().get_by_name(name) {
             // 2) Display object properties such as _x, _y
             property.set(activation, display_object, value)?;
             Ok(())
         } else {
             // 3) TODO: Prototype
-            base.set_local(name, value, activation, this, base_proto)
+            base.set_local(name, value, activation, base_proto)
         }
     }
+
     fn call(
         &self,
         name: &str,
@@ -334,7 +333,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn set_watcher(
+    fn watch(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: Cow<str>,
@@ -344,11 +343,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0
             .read()
             .base
-            .set_watcher(activation, name, callback, user_data);
+            .watch(activation, name, callback, user_data);
     }
 
-    fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
-        self.0.read().base.remove_watcher(activation, name)
+    fn unwatch(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
+        self.0.read().base.unwatch(activation, name)
     }
 
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
@@ -462,6 +461,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn type_of(&self) -> &'static str {
         self.0.read().base.type_of()
     }
+
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(self.0.read().base)
     }
@@ -473,9 +473,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         Some(self.0.read().display_object)
-    }
-    fn as_executable(&self) -> Option<Executable<'gc>> {
-        None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

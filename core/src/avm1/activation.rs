@@ -1132,20 +1132,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let super_prototype = superclass.get("prototype", self)?.coerce_to_object(self);
         let sub_prototype = super_prototype.create_bare_object(self, super_prototype)?;
 
-        sub_prototype.set("constructor", superclass.into(), self)?;
-        sub_prototype.set_attributes(
+        sub_prototype.define_value(
             self.context.gc_context,
-            Some("constructor"),
+            "constructor",
+            superclass.into(),
             Attribute::DONT_ENUM,
-            Attribute::empty(),
         );
 
-        sub_prototype.set("__constructor__", superclass.into(), self)?;
-        sub_prototype.set_attributes(
+        sub_prototype.define_value(
             self.context.gc_context,
-            Some("__constructor__"),
+            "__constructor__",
+            superclass.into(),
             Attribute::DONT_ENUM,
-            Attribute::empty(),
         );
 
         subclass.set("prototype", sub_prototype.into(), self)?;

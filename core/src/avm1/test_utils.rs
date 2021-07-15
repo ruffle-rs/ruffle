@@ -127,11 +127,10 @@ macro_rules! test_method {
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
                         let object = $object(activation);
-                        let function = crate::avm1::object::TObject::get(&object, $name, activation)?;
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            assert_eq!(function.call($name, activation, object, None, &args)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            assert_eq!(crate::avm1::object::TObject::call_method(&object, $name, &args, activation)?, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
                         Ok(())

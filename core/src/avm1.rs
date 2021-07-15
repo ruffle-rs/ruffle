@@ -1,5 +1,5 @@
 use crate::avm1::globals::create_globals;
-use crate::avm1::object::{search_prototype, stage_object};
+use crate::avm1::object::stage_object;
 use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -331,11 +331,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        if let Ok((callback, base_proto)) =
-            search_prototype(Value::Object(obj), name, &mut activation, obj)
-        {
-            let _ = callback.call(name, &mut activation, obj, base_proto, args);
-        }
+        let _ = obj.call_method(name, args, &mut activation);
     }
 
     pub fn notify_system_listeners(

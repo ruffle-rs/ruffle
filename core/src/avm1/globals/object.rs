@@ -213,7 +213,7 @@ fn watch<'gc>(
     }
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);
 
-    this.set_watcher(activation, Cow::Borrowed(&name), callback, user_data);
+    this.watch(activation, Cow::Borrowed(&name), callback, user_data);
 
     Ok(true.into())
 }
@@ -230,7 +230,7 @@ fn unwatch<'gc>(
         return Ok(false.into());
     };
 
-    let result = this.remove_watcher(activation, Cow::Borrowed(&name));
+    let result = this.unwatch(activation, Cow::Borrowed(&name));
 
     Ok(result.into())
 }
