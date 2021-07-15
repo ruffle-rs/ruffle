@@ -1049,7 +1049,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     let mut are_all_params_coercible = true;
 
                     for (my_param, test_param) in my_params.iter().zip(test_params.iter()) {
-                        are_all_params_coercible |=
+                        are_all_params_coercible &=
                             my_param.has_class_in_chain(*test_param, activation)?;
                     }
 
