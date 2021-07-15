@@ -2,7 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::array::ArrayIter;
+use crate::avm2::globals::array::{
+    compare_numeric, compare_string_case_insensitive, compare_string_case_sensitive, ArrayIter,
+    SortOptions,
+};
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
@@ -12,7 +15,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
-use std::cmp::max;
+use std::cmp::{max, Ordering};
 
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -735,6 +738,98 @@ pub fn slice<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.sort`
+pub fn sort<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
+
+            let (compare_fnc, options) = if fn_or_options
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_executable())
+                .is_some()
+            {
+                (
+                    Some(fn_or_options.coerce_to_object(activation)?),
+                    SortOptions::empty(),
+                )
+            } else {
+                (
+                    None,
+                    SortOptions::from_bits_truncate(fn_or_options.coerce_to_u32(activation)? as u8),
+                )
+            };
+
+            //NOTE: RETURNINDEXEDARRAY is actually unimplemented in Flash Player
+            //and will turn the sort into a no-op.
+            if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
+                return Ok(this.into());
+            }
+
+            let compare = move |activation: &mut Activation<'_, 'gc, '_>, a, b| {
+                if let Some(compare_fnc) = compare_fnc {
+                    let order = compare_fnc
+                        .call(Some(this), &[a, b], activation, None)?
+                        .coerce_to_number(activation)?;
+
+                    if order > 0.0 {
+                        Ok(Ordering::Greater)
+                    } else if order < 0.0 {
+                        Ok(Ordering::Less)
+                    } else {
+                        Ok(Ordering::Equal)
+                    }
+                } else if options.contains(SortOptions::NUMERIC) {
+                    compare_numeric(activation, a, b)
+                } else if options.contains(SortOptions::CASE_INSENSITIVE) {
+                    compare_string_case_insensitive(activation, a, b)
+                } else {
+                    compare_string_case_sensitive(activation, a, b)
+                }
+            };
+
+            let mut values: Vec<_> = vs
+                .iter()
+                .map(|v| v.unwrap_or_else(|| vs.default(activation)))
+                .collect();
+            drop(vs);
+
+            let mut unique_sort_satisfied = true;
+            let mut error_signal = Ok(());
+            values.sort_unstable_by(|a, b| match compare(activation, a.clone(), b.clone()) {
+                Ok(Ordering::Equal) => {
+                    unique_sort_satisfied = false;
+                    Ordering::Equal
+                }
+                Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
+                Ok(v) => v,
+                Err(e) => {
+                    error_signal = Err(e);
+                    Ordering::Less
+                }
+            });
+
+            error_signal?;
+
+            if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
+                let mut vs = this
+                    .as_vector_storage_mut(activation.context.gc_context)
+                    .unwrap();
+                vs.replace_storage(values.into_iter().map(Some).collect());
+            }
+
+            return Ok(this.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -779,6 +874,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("removeAt", remove_at),
         ("reverse", reverse),
         ("slice", slice),
+        ("sort", sort),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

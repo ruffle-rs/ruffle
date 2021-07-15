@@ -647,6 +647,7 @@ swf_tests! {
     (as3_vector_removeat, "avm2/vector_removeat", 1),
     (as3_vector_reverse, "avm2/vector_reverse", 1),
     (as3_vector_slice, "avm2/vector_slice", 1),
+    (as3_vector_sort, "avm2/vector_sort", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
