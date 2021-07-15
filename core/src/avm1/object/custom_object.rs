@@ -251,7 +251,7 @@ macro_rules! impl_custom_object {
             self.0.read().$field.delete_element(activation, index)
         }
 
-        fn set_watcher(
+        fn watch(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             name: std::borrow::Cow<str>,
@@ -261,15 +261,15 @@ macro_rules! impl_custom_object {
             self.0
                 .read()
                 .$field
-                .set_watcher(activation, name, callback, user_data);
+                .watch(activation, name, callback, user_data);
         }
 
-        fn remove_watcher(
+        fn unwatch(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             name: std::borrow::Cow<str>,
         ) -> bool {
-            self.0.read().$field.remove_watcher(activation, name)
+            self.0.read().$field.unwatch(activation, name)
         }
     };
 }
