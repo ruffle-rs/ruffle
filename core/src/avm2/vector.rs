@@ -55,6 +55,22 @@ impl<'gc> VectorStorage<'gc> {
         }
     }
 
+    /// Create a new vector storage from a list of values.
+    ///
+    /// The values are assumed to already have been coerced to the value type
+    /// given.
+    pub fn from_values(
+        storage: Vec<Option<Value<'gc>>>,
+        is_fixed: bool,
+        value_type: Object<'gc>,
+    ) -> Self {
+        VectorStorage {
+            storage,
+            is_fixed,
+            value_type,
+        }
+    }
+
     pub fn is_fixed(&self) -> bool {
         self.is_fixed
     }
@@ -78,7 +94,7 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Get the default value for this vector.
-    fn default(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn default(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
         if Object::ptr_eq(self.value_type, activation.avm2().classes().int) {
             Value::Integer(0)
         } else if Object::ptr_eq(self.value_type, activation.avm2().classes().uint) {
@@ -313,5 +329,10 @@ impl<'gc> VectorStorage<'gc> {
            + ExactSizeIterator<Item = Option<Value<'gc>>>
            + 'a {
         self.storage.iter().cloned()
+    }
+
+    /// Replace this vector's storage with new values.
+    pub fn replace_storage(&mut self, new_storage: Vec<Option<Value<'gc>>>) {
+        self.storage = new_storage;
     }
 }

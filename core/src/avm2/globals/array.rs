@@ -836,7 +836,7 @@ bitflags! {
     /// The array options that a given sort operation may use.
     ///
     /// These are provided as a number by the VM and converted into bitflags.
-    struct SortOptions: u8 {
+    pub struct SortOptions: u8 {
         /// Request case-insensitive string value sort.
         const CASE_INSENSITIVE     = 1 << 0;
 
@@ -920,7 +920,7 @@ where
     Ok(!options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied)
 }
 
-fn compare_string_case_sensitive<'gc>(
+pub fn compare_string_case_sensitive<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
@@ -931,7 +931,7 @@ fn compare_string_case_sensitive<'gc>(
     Ok(string_a.cmp(&string_b))
 }
 
-fn compare_string_case_insensitive<'gc>(
+pub fn compare_string_case_insensitive<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
@@ -942,7 +942,7 @@ fn compare_string_case_insensitive<'gc>(
     Ok(string_a.cmp(&string_b))
 }
 
-fn compare_numeric<'gc>(
+pub fn compare_numeric<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     a: Value<'gc>,
     b: Value<'gc>,
