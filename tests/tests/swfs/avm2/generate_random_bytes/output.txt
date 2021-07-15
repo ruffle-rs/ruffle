@@ -1,0 +1,3 @@
+// var ba: ByteArray = generateRandomBytes(5);
+// ByteArray length: 
+5

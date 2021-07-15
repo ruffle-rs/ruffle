@@ -234,6 +234,11 @@ impl ByteArrayStorage {
     }
 
     #[inline]
+    pub fn bytes_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes
+    }
+
+    #[inline]
     pub fn len(&self) -> usize {
         self.bytes.len()
     }
