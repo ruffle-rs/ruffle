@@ -10,7 +10,7 @@
     ],
     "scripts": {
         "build": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt && npm run build:ts",
-        "build:cargo": "cargo build --release --target wasm32-unknown-unknown",
+        "build:cargo": "cross-env-shell \"cargo build --release --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\"\"",
         "build:wasm-bindgen": "wasm-bindgen ../../../target/wasm32-unknown-unknown/release/ruffle_web.wasm --target web --out-dir ./pkg --out-name ruffle_web",
         "build:wasm-opt": "wasm-opt -o ./pkg/ruffle_web_bg.wasm -O -g ./pkg/ruffle_web_bg.wasm || npm run build:wasm-opt-failed",
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$GITHUB_ACTIONS\" != true ] # > nul",
@@ -22,7 +22,6 @@
         "@types/mocha": "^8.2.2",
         "@typescript-eslint/eslint-plugin": "^4.28.1",
         "@typescript-eslint/parser": "^4.28.1",
-        "cross-env": "^7.0.3",
         "eslint": "^7.29.0",
         "eslint-plugin-jsdoc": "^35.4.1",
         "mocha": "^9.0.1",
