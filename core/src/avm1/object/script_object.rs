@@ -123,16 +123,12 @@ impl<'gc> ScriptObject<'gc> {
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
     pub fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        if let Some(Property::Stored { value, .. }) = self
-            .0
+        self.0
             .read()
             .values
             .get(name, activation.is_case_sensitive())
-        {
-            value.to_owned()
-        } else {
-            Value::Undefined
-        }
+            .and_then(|property| property.data())
+            .unwrap_or(Value::Undefined)
     }
 
     /// Sets a data property on this object.
@@ -152,15 +148,8 @@ impl<'gc> ScriptObject<'gc> {
             .values
             .entry(name, activation.is_case_sensitive())
         {
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().set(value);
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(Property::Stored {
-                    value,
-                    attributes: Attribute::empty(),
-                });
-            }
+            Entry::Occupied(mut entry) => entry.get_mut().set_data(value),
+            Entry::Vacant(entry) => entry.insert(Property::new_stored(value, Attribute::empty())),
         }
         Ok(())
     }
@@ -180,8 +169,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .values
             .get(name, activation.is_case_sensitive())
         {
-            Some(Property::Virtual { get, .. }) => get.to_owned(),
-            Some(Property::Stored { value, .. }) => return Some(Ok(value.to_owned())),
+            Some(property) => {
+                if let Some(getter) = property.getter() {
+                    getter
+                } else {
+                    return property.data().map(Ok);
+                }
+            }
             None => return None,
         };
 
@@ -245,10 +239,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         {
             Entry::Occupied(mut entry) => entry.get_mut().set(value),
             Entry::Vacant(entry) => {
-                entry.insert(Property::Stored {
-                    value,
-                    attributes: Attribute::empty(),
-                });
+                entry.insert(Property::new_stored(value, Attribute::empty()));
                 None
             }
         };
@@ -291,18 +282,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn call_setter(
         &self,
         name: &str,
-        value: Value<'gc>,
+        _value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Object<'gc>> {
-        match self
-            .0
-            .write(activation.context.gc_context)
+        self.0
+            .read()
             .values
-            .get_mut(name, activation.is_case_sensitive())
-        {
-            Some(propref) if propref.is_virtual() => propref.set(value),
-            _ => None,
-        }
+            .get(name, activation.is_case_sensitive())
+            .and_then(|property| property.setter())
     }
 
     fn create_bare_object(
@@ -335,38 +322,33 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         gc_context: MutationContext<'gc, '_>,
         name: &str,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
+        getter: Object<'gc>,
+        setter: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
-        self.0.write(gc_context).values.insert(
-            name,
-            Property::Virtual {
-                get,
-                set,
-                attributes,
-            },
-            false,
-        );
+        match self.0.write(gc_context).values.entry(name, false) {
+            Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
+            Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
+        }
     }
 
     fn add_property_with_case(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
+        getter: Object<'gc>,
+        setter: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
-        self.0.write(activation.context.gc_context).values.insert(
-            name,
-            Property::Virtual {
-                get,
-                set,
-                attributes,
-            },
-            activation.is_case_sensitive(),
-        );
+        match self
+            .0
+            .write(activation.context.gc_context)
+            .values
+            .entry(name, activation.is_case_sensitive())
+        {
+            Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
+            Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
+        }
     }
 
     fn set_watcher(
@@ -384,12 +366,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn remove_watcher(&self, activation: &mut Activation<'_, 'gc, '_>, name: Cow<str>) -> bool {
-        let old = self
-            .0
+        self.0
             .write(activation.context.gc_context)
             .watchers
-            .remove(name.as_ref(), activation.is_case_sensitive());
-        old.is_some()
+            .remove(name.as_ref(), activation.is_case_sensitive())
+            .is_some()
     }
 
     fn define_value(
@@ -402,7 +383,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0
             .write(gc_context)
             .values
-            .insert(name, Property::Stored { value, attributes }, true);
+            .insert(name, Property::new_stored(value, attributes), true);
     }
 
     fn set_attributes(

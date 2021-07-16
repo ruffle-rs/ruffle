@@ -17,115 +17,117 @@ bitflags! {
     }
 }
 
-#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub enum Property<'gc> {
-    Virtual {
-        get: Object<'gc>,
-        set: Option<Object<'gc>>,
-        attributes: Attribute,
-    },
-    Stored {
-        value: Value<'gc>,
-        attributes: Attribute,
-    },
+pub struct Property<'gc> {
+    data: Option<Value<'gc>>,
+    getter: Option<Object<'gc>>,
+    setter: Option<Object<'gc>>,
+    attributes: Attribute,
 }
 
 impl<'gc> Property<'gc> {
-    /// Set a property slot.
-    ///
-    /// This function may return an `Executable` of the property's virtual
-    /// function, if any happen to exist. It should be resolved, and its value
-    /// discarded.
-    pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Object<'gc>> {
-        match self {
-            Property::Virtual { set, .. } => {
-                if let Some(function) = set {
-                    Some(function.to_owned())
-                } else {
-                    None
-                }
-            }
-            Property::Stored {
-                value, attributes, ..
-            } => {
-                if !attributes.contains(Attribute::READ_ONLY) {
-                    *value = new_value.into();
-                }
+    pub fn new_stored(data: Value<'gc>, attributes: Attribute) -> Self {
+        Self {
+            data: Some(data),
+            getter: None,
+            setter: None,
+            attributes,
+        }
+    }
 
-                None
+    pub fn new_virtual(
+        getter: Object<'gc>,
+        setter: Option<Object<'gc>>,
+        attributes: Attribute,
+    ) -> Self {
+        Self {
+            data: None,
+            getter: Some(getter),
+            setter,
+            attributes,
+        }
+    }
+
+    pub fn data(&self) -> Option<Value<'gc>> {
+        self.data
+    }
+
+    pub fn getter(&self) -> Option<Object<'gc>> {
+        self.getter
+    }
+
+    pub fn setter(&self) -> Option<Object<'gc>> {
+        self.setter
+    }
+
+    /// Store data on this property, ignoring virtual setters.
+    ///
+    /// Read-only properties are not affected.
+    pub fn set_data(&mut self, data: Value<'gc>) {
+        // Not using `is_overwritable` because virtual properties without a setter
+        // should be changed as well.
+        if !self.attributes.contains(Attribute::READ_ONLY) {
+            self.data = Some(data);
+        }
+    }
+
+    /// Make this property virtual by attaching a getter/setter to it.
+    pub fn set_virtual(&mut self, getter: Object<'gc>, setter: Option<Object<'gc>>) {
+        self.getter = Some(getter);
+        self.setter = setter;
+    }
+
+    /// Assign this property to a value.
+    ///
+    /// This function may return an `Object` of the property's virtual
+    /// setter, if it exists. It should be called by the caller.
+    pub fn set(&mut self, value: Value<'gc>) -> Option<Object<'gc>> {
+        if let Some(setter) = self.setter {
+            Some(setter)
+        } else {
+            if self.is_overwritable() {
+                self.data = Some(value);
             }
+            None
         }
     }
 
     /// List this property's attributes.
     pub fn attributes(&self) -> Attribute {
-        match self {
-            Property::Virtual { attributes, .. } => *attributes,
-            Property::Stored { attributes, .. } => *attributes,
-        }
+        self.attributes
     }
 
     /// Re-define this property's attributes.
-    pub fn set_attributes(&mut self, new_attributes: Attribute) {
-        match self {
-            Property::Virtual {
-                ref mut attributes, ..
-            } => *attributes = new_attributes,
-            Property::Stored {
-                ref mut attributes, ..
-            } => *attributes = new_attributes,
-        }
-    }
-
-    pub fn can_delete(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DONT_DELETE),
-        }
+    pub fn set_attributes(&mut self, attributes: Attribute) {
+        self.attributes = attributes;
     }
 
     pub fn is_enumerable(&self) -> bool {
-        match self {
-            Property::Virtual { attributes, .. } => !attributes.contains(Attribute::DONT_ENUM),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::DONT_ENUM),
-        }
+        !self.attributes.contains(Attribute::DONT_ENUM)
     }
 
-    #[allow(dead_code)]
+    pub fn can_delete(&self) -> bool {
+        !self.attributes.contains(Attribute::DONT_DELETE)
+    }
+
     pub fn is_overwritable(&self) -> bool {
-        match self {
-            Property::Virtual {
-                attributes, set, ..
-            } => !attributes.contains(Attribute::READ_ONLY) && !set.is_none(),
-            Property::Stored { attributes, .. } => !attributes.contains(Attribute::READ_ONLY),
-        }
+        !(self.attributes.contains(Attribute::READ_ONLY)
+            || self.is_virtual() && self.setter.is_none())
     }
 
     pub fn is_virtual(&self) -> bool {
-        matches!(self, Property::Virtual { .. })
+        self.getter.is_some()
     }
 }
 
 impl fmt::Debug for Property<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Property::Virtual {
-                get: _,
-                set,
-                attributes,
-            } => f
-                .debug_struct("Property::Virtual")
-                .field("get", &true)
-                .field("set", &set.is_some())
-                .field("attributes", &attributes)
-                .finish(),
-            Property::Stored { value, attributes } => f
-                .debug_struct("Property::Stored")
-                .field("value", &value)
-                .field("attributes", &attributes)
-                .finish(),
-        }
+        f.debug_struct("Property")
+            .field("data", &self.data)
+            .field("getter", &self.getter)
+            .field("setter", &self.setter)
+            .field("attributes", &self.attributes)
+            .finish()
     }
 }
