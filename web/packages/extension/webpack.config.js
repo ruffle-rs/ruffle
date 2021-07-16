@@ -37,12 +37,8 @@ function transformManifest(content, env) {
     return JSON.stringify(manifest);
 }
 
-module.exports = (env, argv) => {
-    let mode = "production";
-    if (argv && argv.mode) {
-        mode = argv.mode;
-    }
-
+module.exports = (env, _argv) => {
+    const mode = process.env.NODE_ENV || "production";
     console.log(`Building ${mode}...`);
 
     return {

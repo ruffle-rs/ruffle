@@ -17,6 +17,7 @@
         "chai-html": "^2.0.1",
         "chromedriver": "^91.0.1",
         "copy-webpack-plugin": "^9.0.0",
+        "cross-env": "^7.0.3",
         "eslint": "^7.29.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^3.4.0",
@@ -34,8 +35,7 @@
     "scripts": {
         "bootstrap": "npm install && lerna bootstrap --hoist",
         "build": "lerna run build --stream",
-        "buildProduction": "lerna run build --stream -- --mode=production",
-        "build:avm_debug": "lerna run build --stream -- -- --env features=avm_debug",
+        "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm_debug npm run build",
         "demo": "lerna run --scope ruffle-demo serve --stream",
         "test": "lerna run test --stream",
         "docs": "lerna run docs --stream",
