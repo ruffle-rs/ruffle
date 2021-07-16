@@ -402,7 +402,7 @@ impl<'gc> Loader<'gc> {
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
                 Ok(())
             } else {
-                Err(Error::FetchError(url))
+                panic!("FetchError")
             }
         })
     }
