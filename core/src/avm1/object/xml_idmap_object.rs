@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::{ObjectPtr, TObject};
+use crate::avm1::object::{ObjectPtr, TObject, Watcher};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::avm_warn;
@@ -101,8 +101,12 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        watcher: Option<Watcher<'gc>>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.base().call_setter(name, value, activation)
+        self.base()
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(
@@ -141,6 +145,14 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     ) {
         self.base()
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self.base().get_watcher(activation, name)
     }
 
     fn set_watcher(

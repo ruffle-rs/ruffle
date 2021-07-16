@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::Executable;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
-use crate::avm1::object::search_prototype;
+use crate::avm1::object::{search_prototype, Watcher};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
@@ -138,8 +138,14 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        watcher: Option<Watcher<'gc>>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>> {
-        self.0.read().child.call_setter(name, value, activation)
+        self.0
+            .read()
+            .child
+            .call_setter(name, value, activation, watcher, this, base_proto)
     }
 
     fn create_bare_object(
@@ -211,6 +217,14 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _attributes: Attribute,
     ) {
         //`super` cannot have properties defined on it
+    }
+
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>> {
+        self.0.read().child.get_watcher(activation, name)
     }
 
     fn set_watcher(

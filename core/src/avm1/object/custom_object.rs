@@ -81,8 +81,11 @@ macro_rules! impl_custom_object {
             name: &str,
             value: crate::avm1::Value<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+            watcher: Option<crate::avm1::object::script_object::Watcher<'gc>>,
+            this: crate::avm1::Object<'gc>,
+            base_proto: Option<crate::avm1::Object<'gc>>,
         ) -> Option<crate::avm1::object::Object<'gc>> {
-            self.0.read().$field.call_setter(name, value, activation)
+            self.0.read().$field.call_setter(name, value, activation, watcher, this, base_proto)
         }
 
         fn delete(
@@ -249,6 +252,14 @@ macro_rules! impl_custom_object {
 
         fn delete_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32) -> bool {
             self.0.read().$field.delete_element(activation, index)
+        }
+
+        fn get_watcher(
+            &self,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+            name: &str,
+        ) -> Option<crate::avm1::object::script_object::Watcher<'gc>> {
+            self.0.read().$field.get_watcher(activation, name)
         }
 
         fn set_watcher(

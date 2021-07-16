@@ -2,6 +2,7 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use crate::avm1::object::script_object::Watcher;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -154,7 +155,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    if let Some(setter) = this_proto.call_setter(name, value, activation) {
+                    // some properties, e.g. TextField.text, should call an associated watcher
+                    let watcher = self.get_watcher(activation, name);
+                    if let Some(setter) =
+                        this_proto.call_setter(name, value, activation, watcher, this, Some(this))
+                    {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
                                 "[Setter]",
@@ -248,6 +253,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &str,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
+        watcher: Option<Watcher<'gc>>,
+        this: Object<'gc>,
+        base_proto: Option<Object<'gc>>,
     ) -> Option<Object<'gc>>;
 
     /// Construct a host object of some kind and return its cell.
@@ -353,6 +361,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         set: Option<Object<'gc>>,
         attributes: Attribute,
     );
+
+    /// Get the 'watcher' of a given property, if it exists.
+    fn get_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+    ) -> Option<Watcher<'gc>>;
 
     /// Set the 'watcher' of a given property.
     ///
