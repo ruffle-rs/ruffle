@@ -1,3 +1,4 @@
+use crate::avm1::opcode::OpCode;
 use crate::tag_code::TagCode;
 use std::{borrow, error, fmt, io};
 
@@ -73,30 +74,21 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use crate::num_traits::FromPrimitive;
         match self {
             Self::Avm1ParseError { opcode, source } => {
-                let op = crate::avm1::opcode::OpCode::from_u8(*opcode);
-                "Error parsing AVM1 action ".fmt(f)?;
-                if let Some(op) = op {
-                    write!(f, "{:?}", op)?;
-                } else {
-                    write!(f, "Unknown({})", opcode)?;
-                };
+                write!(f, "Error parsing AVM1 action {}", OpCode::format(*opcode))?;
                 if let Some(source) = source {
                     write!(f, ": {}", source)?;
                 }
                 Ok(())
             }
             Self::SwfParseError { tag_code, source } => {
-                "Error parsing SWF tag ".fmt(f)?;
-                if let Some(tag_code) = TagCode::from_u16(*tag_code) {
-                    write!(f, "{:?}", tag_code)?;
-                } else {
-                    write!(f, "Unknown({})", tag_code)?;
-                };
-                write!(f, ": {}", source)?;
-                Ok(())
+                write!(
+                    f,
+                    "Error parsing SWF tag {}: {}",
+                    TagCode::format(*tag_code),
+                    source
+                )
             }
             Self::IoError(e) => e.fmt(f),
             Self::InvalidData(message) => write!(f, "Invalid data: {}", message),

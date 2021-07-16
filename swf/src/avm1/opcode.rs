@@ -1,4 +1,3 @@
-#[allow(dead_code, clippy::useless_attribute)]
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum OpCode {
     End = 0x00,
@@ -115,4 +114,18 @@ pub enum OpCode {
     If = 0x9D,
     Call = 0x9E,
     GotoFrame2 = 0x9F,
+}
+
+impl OpCode {
+    pub fn from_u8(n: u8) -> Option<Self> {
+        num_traits::FromPrimitive::from_u8(n)
+    }
+
+    pub fn format(opcode: u8) -> String {
+        if let Some(op) = Self::from_u8(opcode) {
+            format!("{:?}", op)
+        } else {
+            format!("Unknown({})", opcode)
+        }
+    }
 }
