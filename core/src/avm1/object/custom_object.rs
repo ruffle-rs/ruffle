@@ -93,16 +93,16 @@ macro_rules! impl_custom_object {
             self.0.read().$field.delete(activation, name)
         }
 
-        fn proto(&self) -> crate::avm1::Value<'gc> {
-            self.0.read().$field.proto()
+        fn proto(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>) -> crate::avm1::Value<'gc> {
+            self.0.read().$field.proto(activation)
         }
 
         fn set_proto(
             &self,
-            gc_context: gc_arena::MutationContext<'gc, '_>,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             prototype: crate::avm1::Value<'gc>,
-        ) {
-            self.0.read().$field.set_proto(gc_context, prototype);
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.set_proto(activation, prototype)
         }
 
         fn define_value(

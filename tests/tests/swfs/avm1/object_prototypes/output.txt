@@ -57,3 +57,19 @@ undefined
 // typeof obj.__proto__
 object
 
+// Object.prototype.hasOwnProperty("__proto__")
+false
+
+// o.__proto__ = "foo";
+watcher called
+
+// delete o.__proto__;
+// o.__proto__
+undefined
+
+// o.__PROTO__
+[object Object]
+
+// o.__Proto__
+[object Object]
+
