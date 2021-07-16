@@ -764,8 +764,8 @@ pub fn splice<'gc>(
                     .as_array_storage()
                     .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
                     .unwrap();
-                let mut resolved = Vec::new();
 
+                let mut resolved = Vec::with_capacity(contents.len());
                 for (i, v) in contents.iter().enumerate() {
                     resolved.push(resolve_array_hole(activation, this, i, v.clone())?);
                 }
@@ -936,15 +936,18 @@ fn sort_postprocess<'gc>(
             );
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.context.gc_context) {
-                let mut new_vec = Vec::new();
-
-                for (src, v) in values.iter() {
-                    if old_array.get(*src).is_none() && !matches!(v, Value::Undefined) {
-                        new_vec.push(Some(v.clone()));
-                    } else {
-                        new_vec.push(old_array.get(*src).clone());
-                    }
-                }
+                let new_vec = values
+                    .iter()
+                    .map(|(src, v)| {
+                        if let Some(old_value) = old_array.get(*src) {
+                            Some(old_value)
+                        } else if !matches!(v, Value::Undefined) {
+                            Some(v.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
 
                 let mut new_array = ArrayStorage::from_storage(new_vec);
 
@@ -968,13 +971,7 @@ fn extract_array_values<'gc>(
     let object = value.coerce_to_object(activation).ok();
     let holey_vec = if let Some(object) = object {
         if let Some(field_array) = object.as_array_storage() {
-            let mut array = Vec::new();
-
-            for v in field_array.iter() {
-                array.push(v);
-            }
-
-            array
+            field_array.clone()
         } else {
             return Ok(None);
         }
@@ -982,7 +979,7 @@ fn extract_array_values<'gc>(
         return Ok(None);
     };
 
-    let mut unholey_vec = Vec::new();
+    let mut unholey_vec = Vec::with_capacity(holey_vec.length());
     for (i, v) in holey_vec.iter().enumerate() {
         unholey_vec.push(resolve_array_hole(
             activation,
@@ -1104,12 +1101,12 @@ fn extract_maybe_array_strings<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Vec<AvmString<'gc>>, Error> {
-    let mut out = Vec::new();
+    let values = extract_maybe_array_values(activation, value)?;
 
-    for value in extract_maybe_array_values(activation, value)? {
+    let mut out = Vec::with_capacity(values.len());
+    for value in values {
         out.push(value.coerce_to_string(activation)?);
     }
-
     Ok(out)
 }
 
@@ -1123,14 +1120,14 @@ fn extract_maybe_array_sort_options<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Vec<SortOptions>, Error> {
-    let mut out = Vec::new();
+    let values = extract_maybe_array_values(activation, value)?;
 
-    for value in extract_maybe_array_values(activation, value)? {
+    let mut out = Vec::with_capacity(values.len());
+    for value in values {
         out.push(SortOptions::from_bits_truncate(
             value.coerce_to_u32(activation)? as u8,
         ));
     }
-
     Ok(out)
 }
 

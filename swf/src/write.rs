@@ -615,7 +615,7 @@ impl<W: Write> Writer<W> {
 
             Tag::DefineFont(ref font) => {
                 let num_glyphs = font.glyphs.len();
-                let mut offsets = vec![];
+                let mut offsets = Vec::with_capacity(num_glyphs);
                 let mut buf = vec![];
                 {
                     let mut writer = Writer::new(&mut buf, self.version);
@@ -2132,7 +2132,7 @@ impl<W: Write> Writer<W> {
 
             // We must write the glyph shapes into a temporary buffer
             // so that we can calculate their offsets.
-            let mut offsets = vec![];
+            let mut offsets = Vec::with_capacity(num_glyphs);
             let mut has_wide_offsets = false;
             let has_wide_codes = !font.is_ansi;
             let mut shape_buf = Vec::new();

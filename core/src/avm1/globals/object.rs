@@ -275,18 +275,17 @@ pub fn as_set_prop_flags<'gc>(
 
     let properties = match args.get(1) {
         Some(Value::Object(ob)) => {
-            //Convert to native array.
-            //TODO: Can we make this an iterator?
-            let mut array = vec![];
-            let length = ob.get("length", activation)?.coerce_to_f64(activation)? as usize;
+            // Convert to native array.
+            // TODO: Can we make this an iterator?
+            let length = ob.length(activation)?;
+            let mut array = Vec::with_capacity(length as usize);
             for i in 0..length {
                 array.push(
-                    ob.get(&format!("{}", i), activation)?
+                    ob.get_element(activation, i)
                         .coerce_to_string(activation)?
                         .to_string(),
                 )
             }
-
             Some(array)
         }
         Some(Value::String(s)) => Some(s.split(',').map(String::from).collect()),

@@ -304,8 +304,6 @@ impl<'gc> XmlNode<'gc> {
             );
         }
 
-        let children = Vec::new();
-
         Ok(XmlNode(GcCell::allocate(
             mc,
             XmlNodeData::Element {
@@ -317,7 +315,7 @@ impl<'gc> XmlNode<'gc> {
                 tag_name,
                 attributes,
                 attributes_script_object: None,
-                children,
+                children: Vec::new(),
             },
         )))
     }

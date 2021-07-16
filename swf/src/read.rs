@@ -862,6 +862,7 @@ impl<'a> Reader<'a> {
         let mut filters = vec![];
         if (flags & 0b1_0000) != 0 {
             let num_filters = self.read_u8()?;
+            filters.reserve(num_filters as usize);
             for _ in 0..num_filters {
                 filters.push(self.read_filter()?);
             }
@@ -964,28 +965,25 @@ impl<'a> Reader<'a> {
         let id = self.read_u16()?;
         let num_glyphs = self.read_u16()? / 2;
 
-        let mut glyphs = vec![];
-        if num_glyphs > 0 {
-            for _ in 0..(num_glyphs - 1) {
-                self.read_u16()?;
-            }
+        for _ in 0..num_glyphs.saturating_sub(1) {
+            self.read_u16()?;
+        }
 
-            let swf_version = self.version;
-            for _ in 0..num_glyphs {
-                let mut glyph = vec![];
-                let num_bits = self.read_u8()?;
-                let mut shape_context = ShapeContext {
-                    swf_version,
-                    shape_version: 1,
-                    num_fill_bits: num_bits >> 4,
-                    num_line_bits: num_bits & 0b1111,
-                };
-                let mut bits = self.bits();
-                while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
-                    glyph.push(record);
-                }
-                glyphs.push(glyph);
+        let mut glyphs = Vec::with_capacity(num_glyphs as usize);
+        for _ in 0..num_glyphs {
+            let mut glyph = vec![];
+            let num_bits = self.read_u8()?;
+            let mut shape_context = ShapeContext {
+                swf_version: self.version,
+                shape_version: 1,
+                num_fill_bits: num_bits >> 4,
+                num_line_bits: num_bits & 0b1111,
+            };
+            let mut bits = self.bits();
+            while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
+                glyph.push(record);
             }
+            glyphs.push(glyph);
         }
 
         Ok(FontV1 { id, glyphs })
@@ -1951,8 +1949,8 @@ impl<'a> Reader<'a> {
 
         // PlaceObject3
         let filters = if (flags & 0b1_00000000) != 0 {
-            let mut filters = vec![];
             let num_filters = self.read_u8()?;
+            let mut filters = Vec::with_capacity(num_filters as usize);
             for _ in 0..num_filters {
                 filters.push(self.read_filter()?);
             }

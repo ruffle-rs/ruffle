@@ -206,13 +206,10 @@ impl BitmapData {
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {
-        let mut output = Vec::new();
-
-        for p in &self.pixels {
-            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
-        }
-
-        output
+        self.pixels
+            .iter()
+            .flat_map(|p| [p.red(), p.green(), p.blue(), p.alpha()])
+            .collect()
     }
 
     pub fn width(&self) -> u32 {

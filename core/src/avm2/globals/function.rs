@@ -77,7 +77,7 @@ fn apply<'gc>(
             .map(|a| a.iter().collect())
             .ok_or_else(|| Error::from("Second parameter of apply must be an array"))?;
 
-        let mut resolved_args = Vec::new();
+        let mut resolved_args = Vec::with_capacity(arg_storage.len());
         for (i, v) in arg_storage.iter().enumerate() {
             resolved_args.push(resolve_array_hole(activation, arg_array, i, v.clone())?);
         }

@@ -215,8 +215,8 @@ impl<'gc> Class<'gc> {
             None
         };
 
-        let mut interfaces = Vec::new();
-        for interface_name in abc_instance.interfaces.iter() {
+        let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
+        for interface_name in &abc_instance.interfaces {
             interfaces.push(Multiname::from_abc_multiname_static(
                 unit,
                 interface_name.clone(),
@@ -302,9 +302,9 @@ impl<'gc> Class<'gc> {
         body: &AbcMethodBody,
     ) -> Result<GcCell<'gc, Self>, Error> {
         let name = translation_unit.pool_string(method.name.as_u30(), mc)?;
-        let mut traits = Vec::new();
 
-        for trait_entry in body.traits.iter() {
+        let mut traits = Vec::with_capacity(body.traits.len());
+        for trait_entry in &body.traits {
             traits.push(Trait::from_abc_trait(
                 translation_unit,
                 trait_entry,

@@ -257,11 +257,12 @@ fn getfloatarray_from_avm2_object<'gc>(
             Avm2Value::Undefined => None,
             Avm2Value::Null => None,
             v => {
-                let mut output = Vec::new();
                 let mut v = v.coerce_to_object(activation)?;
                 let length = v.as_array_storage().map(|v| v.length());
 
+                let mut output = Vec::new();
                 if let Some(length) = length {
+                    output.reserve(length);
                     for i in 0..length {
                         output.push(
                             v.get_property(

@@ -1583,11 +1583,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .as_node()
             .duplicate(context.gc_context, true)
             .document();
-
-        let mut new_layout = Vec::new();
-        for layout_box in text.layout.iter() {
-            new_layout.push(layout_box.duplicate(context.gc_context));
-        }
         drop(text);
 
         let movie = self.movie().unwrap();

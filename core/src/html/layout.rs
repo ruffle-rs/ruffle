@@ -8,7 +8,7 @@ use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::shape_utils::DrawCommand;
 use crate::string_utils;
 use crate::tag_utils::SwfMovie;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::Collect;
 use std::cmp::{max, min};
 use std::sync::Arc;
 use swf::Twips;
@@ -823,16 +823,5 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
-    }
-
-    /// Construct a duplicate layout box structure.
-    pub fn duplicate(&self, gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Self> {
-        GcCell::allocate(
-            gc_context,
-            Self {
-                bounds: self.bounds,
-                content: self.content.clone(),
-            },
-        )
     }
 }

@@ -827,26 +827,15 @@ impl<'gc> MovieClip<'gc> {
     ///
     /// Scenes will be sorted in playback order.
     pub fn scenes(self) -> Vec<Scene> {
-        let read = self.0.read();
-        let mut out = Vec::new();
-
-        for (_, scene) in read.static_data.scene_labels.iter() {
-            out.push(scene.clone());
-        }
-
-        out.sort_unstable_by(
-            |Scene {
-                 name: _,
-                 start: a,
-                 length: _,
-             },
-             Scene {
-                 name: _,
-                 start: b,
-                 length: _,
-             }| a.cmp(b),
-        );
-
+        let mut out: Vec<_> = self
+            .0
+            .read()
+            .static_data
+            .scene_labels
+            .values()
+            .cloned()
+            .collect();
+        out.sort_unstable_by(|Scene { start: a, .. }, Scene { start: b, .. }| a.cmp(b));
         out
     }
 
