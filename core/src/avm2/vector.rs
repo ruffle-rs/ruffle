@@ -5,7 +5,9 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
-use std::cmp::max;
+use std::cmp::{max, min};
+use std::ops::{Index, RangeBounds};
+use std::slice::SliceIndex;
 
 /// The vector storage portion of a vector object.
 ///
@@ -125,7 +127,7 @@ impl<'gc> VectorStorage<'gc> {
         if pos < 0 {
             max(pos + self.storage.len() as i32, 0) as usize
         } else {
-            pos as usize
+            min(pos as usize, self.storage.len())
         }
     }
 
@@ -334,5 +336,22 @@ impl<'gc> VectorStorage<'gc> {
     /// Replace this vector's storage with new values.
     pub fn replace_storage(&mut self, new_storage: Vec<Option<Value<'gc>>>) {
         self.storage = new_storage;
+    }
+
+    pub fn splice<R>(
+        &mut self,
+        range: R,
+        replace_with: Vec<Option<Value<'gc>>>,
+    ) -> Result<Vec<Option<Value<'gc>>>, Error>
+    where
+        R: Clone
+            + SliceIndex<[Option<Value<'gc>>], Output = [Option<Value<'gc>>]>
+            + RangeBounds<usize>,
+    {
+        if self.is_fixed && self.storage.index(range.clone()).len() != replace_with.len() {
+            return Err("RangeError: Vector is fixed".into());
+        }
+
+        Ok(self.storage.splice(range, replace_with).collect())
     }
 }

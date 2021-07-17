@@ -15,7 +15,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
-use std::cmp::{max, Ordering};
+use std::cmp::{max, min, Ordering};
 
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -830,6 +830,55 @@ pub fn sort<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Vector.splice`
+pub fn splice<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
+            let start_len = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let delete_len = args
+                .get(1)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let value_type = vs.value_type();
+
+            let start = vs.clamp_parameter_index(start_len);
+            let end = max(
+                start,
+                min(
+                    if delete_len < 0 {
+                        vs.clamp_parameter_index(delete_len)
+                    } else {
+                        start + delete_len as usize
+                    },
+                    vs.length(),
+                ),
+            );
+            let mut to_coerce = Vec::new();
+
+            for value in args[2..].iter() {
+                to_coerce.push(Some(value.coerce_to_type(activation, value_type)?));
+            }
+
+            let new_vs =
+                VectorStorage::from_values(vs.splice(start..end, to_coerce)?, false, value_type);
+            let new_vector = VectorObject::from_vector(new_vs, activation)?;
+
+            return Ok(new_vector.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Vector`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -875,6 +924,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("reverse", reverse),
         ("slice", slice),
         ("sort", sort),
+        ("splice", splice),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
