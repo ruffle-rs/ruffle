@@ -1,0 +1,107 @@
+///var a_bool = new Vector.<Boolean>(2);
+///var b_bool = new Vector.<Boolean>(3, true);
+///var c_bool = new Vector.<Boolean>();
+///a_bool.length
+2
+///a_bool.fixed
+false
+///b_bool.length
+3
+///b_bool.fixed
+true
+///c_bool.length
+0
+///c_bool.fixed
+false
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+///var a_class = new Vector.<Superclass>(2);
+///var b_class = new Vector.<Superclass>(3, true);
+///var c_class = new Vector.<Superclass>();
+///a_class.length
+2
+///a_class.fixed
+false
+///b_class.length
+3
+///b_class.fixed
+true
+///c_class.length
+0
+///c_class.fixed
+false
+///var a_int = new Vector.<int>(2);
+///var b_int = new Vector.<int>(3, true);
+///var c_int = new Vector.<int>();
+///a_int.length
+2
+///a_int.fixed
+false
+///b_int.length
+3
+///b_int.fixed
+true
+///c_int.length
+0
+///c_int.fixed
+false
+///var a_number = new Vector.<Number>(2);
+///var b_number = new Vector.<Number>(3, true);
+///var c_number = new Vector.<Number>();
+///a_number.length
+2
+///a_number.fixed
+false
+///b_number.length
+3
+///b_number.fixed
+true
+///c_number.length
+0
+///c_number.fixed
+false
+///var a_string = new Vector.<String>(2);
+///var b_string = new Vector.<String>(3, true);
+///var c_string = new Vector.<String>();
+///a_string.length
+2
+///a_string.fixed
+false
+///b_string.length
+3
+///b_string.fixed
+true
+///c_string.length
+0
+///c_string.fixed
+false
+///var a_uint = new Vector.<uint>(2);
+///var b_uint = new Vector.<uint>(3, true);
+///var c_uint = new Vector.<uint>();
+///a_uint.length
+2
+///a_uint.fixed
+false
+///b_uint.length
+3
+///b_uint.fixed
+true
+///c_uint.length
+0
+///c_uint.fixed
+false
+///var a_vector = new Vector.<Vector.<int>>(2);
+///var b_vector = new Vector.<Vector.<int>>(3, true);
+///var c_vector = new Vector.<Vector.<int>>();
+///a_vector.length
+2
+///a_vector.fixed
+false
+///b_vector.length
+3
+///b_vector.fixed
+true
+///c_vector.length
+0
+///c_vector.fixed
+false
