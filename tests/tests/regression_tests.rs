@@ -80,6 +80,7 @@ swf_tests! {
     (as_transformed_flag, "avm1/as_transformed_flag", 3),
     (as_broadcaster, "avm1/as_broadcaster", 1),
     (as_broadcaster_initialize, "avm1/as_broadcaster_initialize", 1),
+    (as_set_prop_flags, "avm1/as_set_prop_flags", 1),
     (attach_movie, "avm1/attach_movie", 1),
     (as2_bitor, "avm1/bitor", 1),
     (as2_bitand, "avm1/bitand", 1),

@@ -1,0 +1,79 @@
+// ASSetPropFlags
+[type Function]
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 0, 0);
+o.a: enumerable,writable,configurable
+// ASSetPropFlags(o, "a", 1, 0);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 1, 0);
+o.a: writable,configurable
+// ASSetPropFlags(o, "a", 1, 1);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 2, 0);
+o.a: enumerable,writable
+// ASSetPropFlags(o, "a", 1, 2);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 3, 0);
+o.a: writable
+// ASSetPropFlags(o, "a", 1, 3);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 4, 0);
+o.a: enumerable,configurable
+// ASSetPropFlags(o, "a", 1, 4);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 5, 0);
+o.a: configurable
+// ASSetPropFlags(o, "a", 1, 5);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 6, 0);
+o.a: enumerable
+// ASSetPropFlags(o, "a", 1, 6);
+o.a: writable,configurable
+
+// var o = { a: 3 };
+
+// ASSetPropFlags(o, "a", 7, 0);
+o.a: 
+// ASSetPropFlags(o, "a", 1, 7);
+o.a: writable,configurable
+
+// var o = { a: 3, b: 4, c: 5 };
+
+// ASSetPropFlags(o, { ... }, { ... }, { ... });
+in set_flags valueOf
+in clear_flags valueOf
+in prop_name toString
+o.a: writable,configurable
+o.b: writable,configurable
+o.c: enumerable,writable,configurable
+
+// var o = { a: 3, b: 4 };
+
+// ASSetPropFlags(o, null, 1, 0);
+o.a: writable,configurable
+o.b: writable,configurable
+// var o = { a: 3, "undefined": 4 };
+
+// ASSetPropFlags(o, undefined, 1, 0);
+o.a: enumerable,writable,configurable
+o.undefined: writable,configurable
