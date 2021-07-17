@@ -267,6 +267,23 @@ pub fn to_string<'gc>(
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
+/// Implements `Vector.toLocaleString`
+pub fn to_locale_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    join_inner(activation, this, &[",".into()], |v, act| {
+        if let Ok(mut o) = v.coerce_to_object(act) {
+            let ls = o.get_property(o, &QName::new(Namespace::public(), "toLocaleString"), act)?;
+
+            ls.coerce_to_object(act)?.call(Some(o), &[], act, None)
+        } else {
+            Ok(v)
+        }
+    })
+}
+
 /// Implements `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -908,6 +925,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("concat", concat),
         ("join", join),
         ("toString", to_string),
+        ("toLocaleString", to_locale_string),
         ("every", every),
         ("some", some),
         ("forEach", for_each),

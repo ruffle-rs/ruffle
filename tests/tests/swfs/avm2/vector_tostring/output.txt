@@ -1,0 +1,79 @@
+/// var a_bool: Vector.<Boolean> = new <Boolean>[true, false];
+/// var b_bool: Vector.<Boolean> = new <Boolean>[false, true, false];
+/// var c_bool: Vector.<Boolean> = new <Boolean>[];
+/// a_bool.toString()
+true,false
+/// a_bool.toLocaleString()
+[object Boolean],[object Boolean]
+/// b_bool.toString()
+false,true,false
+/// b_bool.toLocaleString()
+[object Boolean],[object Boolean],[object Boolean]
+/// c_bool.toString()
+
+/// c_bool.toLocaleString()
+
+/// var a0_class = new Superclass();
+/// var a1_class = new Subclass();
+/// var a_class: Vector.<Superclass> = new <Superclass>[a0_class, a1_class];
+/// var b_class: Vector.<Subclass> = new <Subclass>[];
+/// b_class.length = 1;
+/// b_class[0] = new Subclass();
+/// a_class.toString()
+[object Superclass],[object Subclass]
+/// a_class.toLocaleString()
+[object Superclass],[object Subclass]
+/// b_class.toString()
+[object Subclass]
+/// b_class.toLocaleString()
+[object Subclass]
+/// var a_int: Vector.<int> = new <int>[1,2];
+/// var b_int: Vector.<int> = new <int>[5,16];
+/// a_int.toString()
+1,2
+/// a_int.toLocaleString()
+1,2
+/// b_int.toString()
+5,16
+/// b_int.toLocaleString()
+5,16
+/// var a_number: Vector.<Number> = new <Number>[1,2,3,4];
+/// var b_number: Vector.<Number> = new <Number>[5, NaN, -5, 0];
+/// a_number.toString()
+1,2,3,4
+/// a_number.toLocaleString()
+1,2,3,4
+/// b_number.toString()
+5,NaN,-5,0
+/// b_number.toLocaleString()
+5,NaN,-5,0
+/// var a_string: Vector.<String> = new <String>["a","c","d","f"];
+/// var b_string: Vector.<String> = new <String>["986","B4","Q","rrr"];
+/// a_string.toString()
+a,c,d,f
+/// a_string.toLocaleString()
+[object String],[object String],[object String],[object String]
+/// b_string.toString()
+986,B4,Q,rrr
+/// b_string.toLocaleString()
+[object String],[object String],[object String],[object String]
+/// var a_uint: Vector.<uint> = new <uint>[1,2];
+/// var b_uint: Vector.<uint> = new <uint>[5,16];
+/// a_uint.toString()
+1,2
+/// a_uint.toLocaleString()
+1,2
+/// b_uint.toString()
+5,16
+/// b_uint.toLocaleString()
+5,16
+/// var a_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[1,2], new <int>[4,3]];
+/// var b_vector:Vector.<Vector.<int>> = new <Vector.<int>>[new <int>[5,16], new <int>[19,8]];
+/// a_vector.toString()
+1,2,4,3
+/// a_vector.toLocaleString()
+1,2,4,3
+/// b_vector.toString()
+5,16,19,8
+/// b_vector.toLocaleString()
+5,16,19,8
