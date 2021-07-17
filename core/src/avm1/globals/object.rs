@@ -263,38 +263,14 @@ pub fn as_set_prop_flags<'gc>(
     _: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let object = if let Some(object) = args.get(0).map(|v| v.coerce_to_object(activation)) {
-        object
+    let object = if let Some(v) = args.get(0) {
+        v.coerce_to_object(activation)
     } else {
         avm_warn!(
             activation,
             "ASSetPropFlags called without object to apply to!"
         );
         return Ok(Value::Undefined);
-    };
-
-    let properties = match args.get(1) {
-        Some(Value::Object(ob)) => {
-            //Convert to native array.
-            //TODO: Can we make this an iterator?
-            let mut array = vec![];
-            let length = ob.get("length", activation)?.coerce_to_f64(activation)? as usize;
-            for i in 0..length {
-                array.push(
-                    ob.get(&format!("{}", i), activation)?
-                        .coerce_to_string(activation)?
-                        .to_string(),
-                )
-            }
-
-            Some(array)
-        }
-        Some(Value::String(s)) => Some(s.split(',').map(String::from).collect()),
-        Some(_) => None,
-        None => {
-            avm_warn!(activation, "ASSetPropFlags called without object list!");
-            return Ok(Value::Undefined);
-        }
     };
 
     let set_flags = args.get(2).unwrap_or(&0.into()).coerce_to_f64(activation)? as u8;
@@ -310,23 +286,26 @@ pub fn as_set_prop_flags<'gc>(
         );
     }
 
-    match properties {
-        Some(properties) => {
-            for prop_name in properties {
-                object.set_attributes(
-                    activation.context.gc_context,
-                    Some(&prop_name),
-                    set_attributes,
-                    clear_attributes,
-                )
-            }
-        }
-        None => object.set_attributes(
+    match args.get(1) {
+        Some(&Value::Null) => object.set_attributes(
             activation.context.gc_context,
             None,
             set_attributes,
             clear_attributes,
         ),
+        Some(v) => {
+            for prop_name in v.coerce_to_string(activation)?.split(',') {
+                object.set_attributes(
+                    activation.context.gc_context,
+                    Some(prop_name),
+                    set_attributes,
+                    clear_attributes,
+                )
+            }
+        }
+        None => {
+            avm_warn!(activation, "ASSetPropFlags called without property list!");
+        }
     }
 
     Ok(Value::Undefined)
