@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{primitive_allocator, Object};
+use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -40,6 +40,21 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Number.toLocaleString`
+pub fn to_locale_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            return Ok(this.coerce_to_string(activation)?.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Number`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -57,6 +72,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<Number native instance initializer>",
         mc,
     ));
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("toLocaleString", to_locale_string)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }
