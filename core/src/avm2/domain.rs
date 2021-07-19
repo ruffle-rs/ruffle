@@ -143,7 +143,7 @@ impl<'gc> Domain<'gc> {
         let (name, mut script) = self
             .get_defining_script(&name.clone().into())?
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
-        let mut globals = script.globals(&mut activation.context)?;
+        let globals = script.globals(&mut activation.context)?;
 
         globals.get_property(globals, &name, activation)
     }

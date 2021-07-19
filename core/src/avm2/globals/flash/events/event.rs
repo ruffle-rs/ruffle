@@ -158,7 +158,7 @@ pub fn format_to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     use std::fmt::Write;
 
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let class_name = args
             .get(0)
             .cloned()

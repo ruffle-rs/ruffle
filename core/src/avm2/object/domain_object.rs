@@ -130,7 +130,7 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
     }
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let mut this: Object<'gc> = Object::DomainObject(*self);
+        let this: Object<'gc> = Object::DomainObject(*self);
         let constr = this
             .get_property(
                 this,

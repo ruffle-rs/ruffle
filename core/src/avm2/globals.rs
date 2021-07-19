@@ -330,7 +330,7 @@ fn class<'gc>(
     let class_name = class_read.name().clone();
     drop(class_read);
 
-    let mut class_object =
+    let class_object =
         ClassObject::from_class(activation, class_def, super_class, Some(global_scope))?;
     global.install_const(
         activation.context.gc_context,

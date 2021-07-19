@@ -55,7 +55,7 @@ impl<'gc> EventObject<'gc> {
     /// we will pull the `prototype` off the `class` given to us.
     pub fn from_event(
         activation: &mut Activation<'_, 'gc, '_>,
-        mut class: Object<'gc>,
+        class: Object<'gc>,
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let proto = class

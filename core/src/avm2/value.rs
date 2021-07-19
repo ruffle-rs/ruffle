@@ -300,7 +300,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = self.clone();
-                let mut object = *o;
+                let object = *o;
 
                 if let Value::Object(f) =
                     object.get_property(*o, &QName::dynamic_name("toString"), activation)?
@@ -326,7 +326,7 @@ impl<'gc> Value<'gc> {
             }
             Value::Object(o) if hint == Hint::Number => {
                 let mut prim = self.clone();
-                let mut object = *o;
+                let object = *o;
 
                 if let Value::Object(f) =
                     object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?

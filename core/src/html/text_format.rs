@@ -190,7 +190,7 @@ fn getfloatarray_from_avm1_object<'gc>(
 }
 
 fn getstr_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<String>, Avm2Error> {
@@ -208,7 +208,7 @@ fn getstr_from_avm2_object<'gc>(
 }
 
 fn getfloat_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<f64>, Avm2Error> {
@@ -226,7 +226,7 @@ fn getfloat_from_avm2_object<'gc>(
 }
 
 fn getbool_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<bool>, Avm2Error> {
@@ -244,7 +244,7 @@ fn getbool_from_avm2_object<'gc>(
 }
 
 fn getfloatarray_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, Avm2Error> {
@@ -257,7 +257,7 @@ fn getfloatarray_from_avm2_object<'gc>(
             Avm2Value::Undefined => None,
             Avm2Value::Null => None,
             v => {
-                let mut v = v.coerce_to_object(activation)?;
+                let v = v.coerce_to_object(activation)?;
                 let length = v.as_array_storage().map(|v| v.length());
 
                 let mut output = Vec::new();

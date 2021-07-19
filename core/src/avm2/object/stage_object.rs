@@ -59,7 +59,7 @@ impl<'gc> StageObject<'gc> {
     pub fn for_display_object(
         activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        mut class: Object<'gc>,
+        class: Object<'gc>,
     ) -> Result<Self, Error> {
         let proto = class
             .get_property(

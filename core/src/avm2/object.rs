@@ -89,7 +89,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a property by its QName.
     fn get_property(
-        &mut self,
+        self,
         receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -100,7 +100,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return self.get_property_local(receiver, name, activation);
         }
 
-        if let Some(mut proto) = self.proto() {
+        if let Some(proto) = self.proto() {
             return proto.get_property(receiver, name, activation);
         }
 
@@ -695,7 +695,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             callee.call(reciever, arguments, activation, Some(superclass_object))
         } else {
-            if let Some(mut reciever) = reciever {
+            if let Some(reciever) = reciever {
                 if let Ok(callee) = reciever
                     .get_property(reciever, name, activation)
                     .and_then(|v| v.coerce_to_object(activation))
@@ -760,7 +760,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
 
             callee.call(reciever, &[], activation, Some(superclass_object))
-        } else if let Some(mut reciever) = reciever {
+        } else if let Some(reciever) = reciever {
             reciever.get_property(reciever, name, activation)
         } else {
             Err(format!(

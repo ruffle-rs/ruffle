@@ -211,7 +211,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let class = self
             .scope()
             .ok_or("Cannot resolve parameter types without a scope stack")?
-            .write(self.context.gc_context)
+            .read()
             .resolve(&type_name, self)?
             .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
             .coerce_to_object(self)?;
@@ -1076,7 +1076,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
-        let mut receiver = self.context.avm2.pop().coerce_to_object(self)?;
+        let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
@@ -1104,7 +1104,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
-        let mut receiver = self.context.avm2.pop().coerce_to_object(self)?;
+        let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
@@ -1126,7 +1126,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
-        let mut receiver = self.context.avm2.pop().coerce_to_object(self)?;
+        let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let name: Result<QName, Error> = receiver
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
@@ -1241,7 +1241,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index)?;
-        let mut object = self.context.avm2.pop().coerce_to_object(self)?;
+        let object = self.context.avm2.pop().coerce_to_object(self)?;
 
         let name: Result<QName, Error> = object.resolve_multiname(&multiname)?.ok_or_else(|| {
             format!("Could not resolve property {:?}", multiname.local_name()).into()
@@ -1512,9 +1512,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname_static(method, index)?;
         avm_debug!(self.avm2(), "Resolving {:?}", multiname);
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
-            scope
-                .write(self.context.gc_context)
-                .resolve(&multiname, self)?
+            scope.read().resolve(&multiname, self)?
         } else {
             None
         }
@@ -1583,7 +1581,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
-        let mut source = self.context.avm2.pop().coerce_to_object(self)?;
+        let source = self.context.avm2.pop().coerce_to_object(self)?;
 
         let ctor_name: Result<QName, Error> =
             source.resolve_multiname(&multiname)?.ok_or_else(|| {
@@ -2393,7 +2391,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_next_value(&mut self) -> Result<FrameControl<'gc>, Error> {
         let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
-        let mut object = self.context.avm2.pop().coerce_to_object(self)?;
+        let object = self.context.avm2.pop().coerce_to_object(self)?;
 
         let name = object.get_enumerant_name(cur_index as u32);
         let value = if let Some(name) = name {
@@ -2416,9 +2414,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
-            scope
-                .write(self.context.gc_context)
-                .resolve(&multiname, self)?
+            scope.read().resolve(&multiname, self)?
         } else {
             None
         }
@@ -2457,9 +2453,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
         let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
-            scope
-                .write(self.context.gc_context)
-                .resolve(&multiname, self)?
+            scope.read().resolve(&multiname, self)?
         } else {
             None
         }

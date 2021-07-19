@@ -130,7 +130,7 @@ pub fn resolve_array_hole<'gc>(
 ) -> Result<Value<'gc>, Error> {
     item.map(Ok).unwrap_or_else(|| {
         this.proto()
-            .map(|mut p| {
+            .map(|p| {
                 p.get_property(
                     p,
                     &QName::new(
@@ -213,7 +213,7 @@ pub fn to_locale_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     join_inner(act, this, &[",".into()], |v, activation| {
-        let mut o = v.coerce_to_object(activation)?;
+        let o = v.coerce_to_object(activation)?;
 
         let tls = o.get_property(
             o,
@@ -263,7 +263,7 @@ impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter`.
     pub fn new(
         activation: &mut Activation<'_, 'gc, '_>,
-        mut array_object: Object<'gc>,
+        array_object: Object<'gc>,
     ) -> Result<Self, Error> {
         let length = array_object
             .get_property(
@@ -1159,14 +1159,14 @@ pub fn sort_on<'gc>(
                 first_option,
                 constrain(|activation, a, b| {
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
-                        let mut a_object = a.coerce_to_object(activation)?;
+                        let a_object = a.coerce_to_object(activation)?;
                         let a_field = a_object.get_property(
                             a_object,
                             &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
-                        let mut b_object = b.coerce_to_object(activation)?;
+                        let b_object = b.coerce_to_object(activation)?;
                         let b_field = b_object.get_property(
                             b_object,
                             &QName::new(Namespace::public(), *field_name),

@@ -61,7 +61,7 @@ pub fn name<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         return this.get_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "name"),
@@ -78,7 +78,7 @@ pub fn frame<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         return this.get_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "frame"),

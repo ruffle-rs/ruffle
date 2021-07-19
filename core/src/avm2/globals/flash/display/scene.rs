@@ -68,7 +68,7 @@ pub fn labels<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         this.get_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "labels"),
@@ -85,7 +85,7 @@ pub fn name<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         this.get_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "name"),
@@ -102,7 +102,7 @@ pub fn num_frames<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         this.get_property(
             this,
             &QName::new(Namespace::Private("ruffle".into()), "numFrames"),

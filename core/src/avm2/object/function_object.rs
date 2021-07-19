@@ -155,7 +155,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     }
 
     fn construct(
-        mut self,
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {

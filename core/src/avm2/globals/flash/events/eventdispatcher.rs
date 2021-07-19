@@ -49,7 +49,7 @@ pub fn add_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -96,7 +96,7 @@ pub fn remove_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -135,7 +135,7 @@ pub fn has_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -165,7 +165,7 @@ pub fn will_trigger<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,

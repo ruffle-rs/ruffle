@@ -90,7 +90,7 @@ impl<'gc> ClassObject<'gc> {
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by the class allocator, but instead should be
         //regular objects
-        let mut class_proto = if let Some(mut superclass_object) = superclass_object {
+        let mut class_proto = if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object
                 .get_property(
                     superclass_object,
@@ -152,9 +152,7 @@ impl<'gc> ClassObject<'gc> {
         let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
             let interface = if let Some(scope) = scope {
-                scope
-                    .write(activation.context.gc_context)
-                    .resolve(&interface_name, activation)?
+                scope.read().resolve(&interface_name, activation)?
             } else {
                 None
             };
@@ -349,7 +347,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     }
 
     fn construct(
-        mut self,
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
