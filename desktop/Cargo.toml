@@ -11,7 +11,7 @@ clap = "3.0.0-beta.2"
 cpal = "0.13.3"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-env_logger = "0.8.4"
+env_logger = "0.9.0"
 generational-arena = "0.2.8"
 log = "0.4"
 dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"] }
