@@ -64,7 +64,7 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().vector;
 
-        let mut applied_class = vector_class.apply(activation, &[value_type])?;
+        let applied_class = vector_class.apply(activation, &[value_type])?;
         let applied_proto = applied_class
             .get_property(
                 applied_class,

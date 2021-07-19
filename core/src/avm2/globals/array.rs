@@ -271,7 +271,7 @@ impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter` that is bounded to a given range.
     pub fn with_bounds(
         activation: &mut Activation<'_, 'gc, '_>,
-        mut array_object: Object<'gc>,
+        array_object: Object<'gc>,
         start_index: u32,
         end_index: u32,
     ) -> Result<Self, Error> {

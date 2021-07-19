@@ -274,7 +274,7 @@ pub fn to_locale_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     join_inner(activation, this, &[",".into()], |v, act| {
-        if let Ok(mut o) = v.coerce_to_object(act) {
+        if let Ok(o) = v.coerce_to_object(act) {
             let ls = o.get_property(o, &QName::new(Namespace::public(), "toLocaleString"), act)?;
 
             ls.coerce_to_object(act)?.call(Some(o), &[], act, None)
@@ -460,7 +460,7 @@ pub fn index_of<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from_index = args
             .get(1)
@@ -497,7 +497,7 @@ pub fn last_index_of<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
         let from_index = args
             .get(1)
