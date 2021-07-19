@@ -12,4 +12,4 @@ ruffle_core = { path = "../core" }
 [dev-dependencies]
 approx = "0.5.0"
 pretty_assertions = "0.6.1"
-env_logger = "0.8.4"
+env_logger = "0.9.0"
