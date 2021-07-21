@@ -4,15 +4,32 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
+
+/// A class instance allocator that allocates Stage objects.
+pub fn stage_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(StageObject(GcCell::allocate(
+        activation.context.gc_context,
+        StageObjectData {
+            base,
+            display_object: None,
+        },
+    ))
+    .into())
+}
 
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
@@ -29,40 +46,77 @@ pub struct StageObjectData<'gc> {
 }
 
 impl<'gc> StageObject<'gc> {
+    /// Allocate the AVM2 side of a display object intended to be of a given
+    /// class's type.
+    ///
+    /// This function makes no attempt to construct the returned object. You
+    /// are responsible for calling the native initializer of the given
+    /// class at a later time. Typically, a display object that can contain
+    /// movie-constructed children must first allocate itself (using this
+    /// function), construct it's children, and then finally initialize itself.
+    /// Display objects that do not need to use this flow should use
+    /// `for_display_object_childless`.
     pub fn for_display_object(
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         display_object: DisplayObject<'gc>,
-        proto: Object<'gc>,
-    ) -> Self {
-        Self(GcCell::allocate(
-            mc,
+        class: Object<'gc>,
+    ) -> Result<Self, Error> {
+        let proto = class
+            .get_property(
+                class,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+
+        let mut instance = Self(GcCell::allocate(
+            activation.context.gc_context,
             StageObjectData {
-                base: ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
+                base: ScriptObjectData::base_new(Some(proto), Some(class)),
                 display_object: Some(display_object),
             },
-        ))
+        ));
+        instance.install_instance_traits(activation, class)?;
+
+        Ok(instance)
     }
 
-    /// Construct a stage object subclass.
-    pub fn derive(
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+    /// Allocate and construct the AVM2 side of a display object intended to be
+    /// of a given class's type.
+    ///
+    /// This function is intended for display objects that do not have children
+    /// and thus do not need to be allocated and initialized in separate phases.
+    pub fn for_display_object_childless(
+        activation: &mut Activation<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+        class: Object<'gc>,
+    ) -> Result<Self, Error> {
+        let this = Self::for_display_object(activation, display_object, class)?;
 
-        Ok(StageObject(GcCell::allocate(
-            mc,
+        class.call_native_init(Some(this.into()), &[], activation, Some(class))?;
+
+        Ok(this)
+    }
+
+    /// Create a `graphics` object for a given display object.
+    pub fn graphics(
+        activation: &mut Activation<'_, 'gc, '_>,
+        display_object: DisplayObject<'gc>,
+    ) -> Result<Self, Error> {
+        let class = activation.avm2().classes().graphics;
+        let proto = activation.avm2().prototypes().graphics;
+        let mut this = Self(GcCell::allocate(
+            activation.context.gc_context,
             StageObjectData {
-                base,
-                display_object: None,
+                base: ScriptObjectData::base_new(Some(proto), Some(class)),
+                display_object: Some(display_object),
             },
-        ))
-        .into())
+        ));
+        this.install_instance_traits(activation, class)?;
+
+        class.call_native_init(Some(this.into()), &[], activation, Some(class))?;
+
+        Ok(this)
     }
 }
 
@@ -127,6 +181,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(gc_context).base.is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().base.is_property_final(name)
+    }
+
     fn delete_property(
         &self,
         gc_context: MutationContext<'gc, '_>,
@@ -135,54 +193,30 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(gc_context).base.delete_property(multiname)
     }
 
-    fn has_slot_local(self, id: u32) -> bool {
-        self.0.read().base.has_slot_local(id)
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().base.get_slot(id)
     }
 
-    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
-        self.0.read().base.get_slot_local(id)
-    }
-
-    fn set_slot_local(
+    fn set_slot(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.set_slot_local(id, value, mc)
+        self.0.write(mc).base.set_slot(id, value, mc)
     }
 
-    fn init_slot_local(
+    fn init_slot(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).base.init_slot_local(id, value, mc)
+        self.0.write(mc).base.init_slot(id, value, mc)
     }
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {
         self.0.read().base.get_method(id)
-    }
-
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        self.0.read().base.get_trait(name)
-    }
-
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().base.get_trait_slot(id)
-    }
-
-    fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        self.0.read().base.get_provided_trait(name, known_traits)
-    }
-
-    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().base.get_provided_trait_slot(id)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
@@ -206,14 +240,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().base.has_trait(name)
-    }
-
-    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().base.provides_trait(name)
-    }
-
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-        self.0.read().base.has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
@@ -264,6 +290,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.as_class()
     }
 
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.0.read().base.as_class_object()
+    }
+
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+        self.0.write(mc).base.set_class_object(class_object);
+    }
+
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
     }
@@ -282,35 +316,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         Err("Not a callable function!".into())
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::StageObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), ScriptObjectClass::NoClass);
-
-        Ok(StageObject(GcCell::allocate(
-            activation.context.gc_context,
-            StageObjectData {
-                base,
-                display_object: None,
-            },
-        ))
-        .into())
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::StageObject(*self);
-        let base = ScriptObjectData::base_new(
-            Some(this),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
+        let base = ScriptObjectData::base_new(Some(this), None);
 
         Ok(StageObject(GcCell::allocate(
             activation.context.gc_context,
@@ -332,11 +340,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) {
         self.0
             .write(mc)
             .base
-            .install_method(name, disp_id, function)
+            .install_method(name, disp_id, function, is_final)
     }
 
     fn install_getter(
@@ -345,11 +354,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         self.0
             .write(mc)
             .base
-            .install_getter(name, disp_id, function)
+            .install_getter(name, disp_id, function, is_final)
     }
 
     fn install_setter(
@@ -358,11 +368,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         self.0
             .write(mc)
             .base
-            .install_setter(name, disp_id, function)
+            .install_setter(name, disp_id, function, is_final)
     }
 
     fn install_dynamic_property(
@@ -380,8 +391,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).base.install_slot(name, id, value)
+        self.0
+            .write(mc)
+            .base
+            .install_slot(name, id, value, is_final)
     }
 
     fn install_const(
@@ -390,8 +405,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).base.install_const(name, id, value)
+        self.0
+            .write(mc)
+            .base
+            .install_const(name, id, value, is_final)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {

@@ -2,9 +2,8 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Event as Avm2Event, Namespace as Avm2Namespace,
-    Object as Avm2Object, QName as Avm2QName, ScriptObject as Avm2ScriptObject,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, Event as Avm2Event, Object as Avm2Object,
+    ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::ui::UiBackend;
 use crate::config::Letterbox;
@@ -518,32 +517,24 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        let stage_proto = context.avm2.prototypes().stage;
-        let avm2_stage =
-            Avm2StageObject::for_display_object(context.gc_context, (*self).into(), stage_proto);
+        let stage_constr = context.avm2.classes().stage;
 
         // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
-        use crate::avm2::TObject;
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-        let mut proto = activation.context.avm2.prototypes().stage;
-        if let Err(e) = proto
-            .get_property(
-                proto,
-                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                &mut activation,
-            )
-            .and_then(|v| v.coerce_to_object(&mut activation))
-            .and_then(|constr| {
-                // TODO: Stage's AS-visible constructor actually throws. Have to call non-throwing native constructor here.
-                constr.call(Some(avm2_stage.into()), &[], &mut activation, Some(proto))
-            })
-        {
-            log::error!("Unable to construct AVM2 Stage: {}", e);
-        }
+        let avm2_stage = Avm2StageObject::for_display_object_childless(
+            &mut activation,
+            (*self).into(),
+            stage_constr,
+        );
 
-        self.0.write(context.gc_context).avm2_object = avm2_stage.into();
+        match avm2_stage {
+            Ok(avm2_stage) => {
+                self.0.write(activation.context.gc_context).avm2_object = avm2_stage.into()
+            }
+            Err(e) => log::error!("Unable to construct AVM2 Stage: {}", e),
+        }
     }
 
     fn id(&self) -> CharacterId {

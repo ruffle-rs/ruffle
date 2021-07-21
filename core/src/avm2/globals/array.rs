@@ -3,9 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -96,18 +96,7 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     array: ArrayStorage<'gc>,
 ) -> Result<Value<'gc>, Error> {
-    Ok(ArrayObject::from_array(
-        array,
-        activation
-            .context
-            .avm2
-            .system_prototypes
-            .as_ref()
-            .map(|sp| sp.array)
-            .unwrap(),
-        activation.context.gc_context,
-    )
-    .into())
+    Ok(ArrayObject::from_storage(activation, array)?.into())
 }
 
 /// Implements `Array.concat`
@@ -141,7 +130,7 @@ pub fn resolve_array_hole<'gc>(
 ) -> Result<Value<'gc>, Error> {
     item.map(Ok).unwrap_or_else(|| {
         this.proto()
-            .map(|mut p| {
+            .map(|p| {
                 p.get_property(
                     p,
                     &QName::new(
@@ -224,7 +213,7 @@ pub fn to_locale_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     join_inner(act, this, &[",".into()], |v, activation| {
-        let mut o = v.coerce_to_object(activation)?;
+        let o = v.coerce_to_object(activation)?;
 
         let tls = o.get_property(
             o,
@@ -274,7 +263,7 @@ impl<'gc> ArrayIter<'gc> {
     /// Construct a new `ArrayIter`.
     pub fn new(
         activation: &mut Activation<'_, 'gc, '_>,
-        mut array_object: Object<'gc>,
+        array_object: Object<'gc>,
     ) -> Result<Self, Error> {
         let length = array_object
             .get_property(
@@ -1170,14 +1159,14 @@ pub fn sort_on<'gc>(
                 first_option,
                 constrain(|activation, a, b| {
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
-                        let mut a_object = a.coerce_to_object(activation)?;
+                        let a_object = a.coerce_to_object(activation)?;
                         let a_field = a_object.get_property(
                             a_object,
                             &QName::new(Namespace::public(), *field_name),
                             activation,
                         )?;
 
-                        let mut b_object = b.coerce_to_object(activation)?;
+                        let b_object = b.coerce_to_object(activation)?;
                         let b_field = b_object.get_property(
                             b_object,
                             &QName::new(Namespace::public(), *field_name),
@@ -1219,25 +1208,30 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "Array"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<Array instance initializer>", mc),
+        Method::from_builtin(class_init, "<Array class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    write.set_instance_allocator(array_allocator);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toString", to_string),
         ("toLocaleString", to_locale_string),
         ("valueOf", value_of),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), Some(set_length))];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), Some(set_length))];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
         ("join", join),
         ("forEach", for_each),
@@ -1257,7 +1251,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("sortOn", sort_on),
     ];
-    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     const CONSTANTS: &[(&str, u32)] = &[
         (

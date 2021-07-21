@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::class::Class;
+use crate::avm2::class::{AllocatorFn, Class};
 use crate::avm2::domain::Domain;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
@@ -23,6 +23,7 @@ use std::hash::{Hash, Hasher};
 
 mod array_object;
 mod bytearray_object;
+mod class_object;
 mod custom_object;
 mod dispatch_object;
 mod domain_object;
@@ -36,19 +37,22 @@ mod script_object;
 mod stage_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::ArrayObject;
-pub use crate::avm2::object::bytearray_object::ByteArrayObject;
+pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
+pub use crate::avm2::object::bytearray_object::{bytearray_allocator, ByteArrayObject};
+pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::dispatch_object::DispatchObject;
-pub use crate::avm2::object::domain_object::DomainObject;
-pub use crate::avm2::object::event_object::EventObject;
-pub use crate::avm2::object::function_object::{implicit_deriver, FunctionObject};
-pub use crate::avm2::object::loaderinfo_object::{LoaderInfoObject, LoaderStream};
-pub use crate::avm2::object::namespace_object::NamespaceObject;
-pub use crate::avm2::object::primitive_object::PrimitiveObject;
-pub use crate::avm2::object::regexp_object::RegExpObject;
+pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::event_object::{event_allocator, EventObject};
+pub use crate::avm2::object::function_object::FunctionObject;
+pub use crate::avm2::object::loaderinfo_object::{
+    loaderinfo_allocator, LoaderInfoObject, LoaderStream,
+};
+pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
+pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
+pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
-pub use crate::avm2::object::stage_object::StageObject;
-pub use crate::avm2::object::xml_object::XmlObject;
+pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
+pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -70,6 +74,7 @@ pub use crate::avm2::object::xml_object::XmlObject;
         RegExpObject(RegExpObject<'gc>),
         ByteArrayObject(ByteArrayObject<'gc>),
         LoaderInfoObject(LoaderInfoObject<'gc>),
+        ClassObject(ClassObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -84,41 +89,42 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a property by its QName.
     fn get_property(
-        &mut self,
+        self,
         receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
         let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
 
         if self.has_own_property(name)? && !has_no_getter {
             return self.get_property_local(receiver, name, activation);
         }
 
-        if let Some(mut proto) = self.proto() {
+        if let Some(proto) = self.proto() {
             return proto.get_property(receiver, name, activation);
         }
 
         Ok(Value::Undefined)
     }
 
-    /// Retrieve the base prototype that a particular QName trait is defined in.
+    /// Retrieve the class object that a particular QName trait is defined in.
+    ///
+    /// Must be called on a class object; will error out if called on
+    /// anything else.
     ///
     /// This function returns `None` for non-trait properties, such as actually
     /// defined prototype methods for ES3-style classes.
-    fn get_base_proto(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
-        if self.provides_trait(name)? {
+    fn find_class_for_trait(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
+        let class = self
+            .as_class()
+            .ok_or("Cannot get base traits on non-class object")?;
+
+        if class.read().has_instance_trait(name) {
             return Ok(Some(self.into()));
         }
 
-        if let Some(proto) = self.proto() {
-            return proto.get_base_proto(name);
+        if let Some(base) = self.superclass_object() {
+            return base.find_class_for_trait(name);
         }
 
         Ok(None)
@@ -141,29 +147,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
-        if self.has_own_virtual_setter(name) {
-            return self.set_property_local(receiver, name, value, activation);
-        }
-
-        let mut proto = self.proto();
-        while let Some(mut my_proto) = proto {
-            //NOTE: This only works because we validate ahead-of-time that
-            //we're calling a virtual setter. If you call `set_property` on
-            //a non-virtual you will actually alter the prototype.
-            if my_proto.has_own_virtual_setter(name) {
-                return my_proto.set_property(receiver, name, value, activation);
-            }
-
-            proto = my_proto.proto();
-        }
-
-        receiver.set_property_local(receiver, name, value, activation)
+        self.set_property_local(receiver, name, value, activation)
     }
 
     /// Init a property on this specific object.
@@ -183,12 +167,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if !self.has_instantiated_property(name) {
-            for abc_trait in self.get_trait(name)? {
-                self.install_trait(activation, abc_trait, receiver)?;
-            }
-        }
-
         if self.has_own_virtual_setter(name) {
             return self.init_property_local(receiver, name, value, activation);
         }
@@ -208,49 +186,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         receiver.init_property_local(receiver, name, value, activation)
     }
 
-    /// Determines if a local slot already exists and is occupied.
-    fn has_slot_local(self, id: u32) -> bool;
-
     /// Retrieve a slot by its index.
-    #[allow(unused_mut)]
-    fn get_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-    ) -> Result<Value<'gc>, Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
-        self.get_slot_local(id)
-    }
-
-    /// Retrieve a slot by its index, ignoring uninstalled traits.
-    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error>;
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
 
     /// Set a slot by its index.
-    #[allow(unused_mut)]
     fn set_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
-        self.set_slot_local(id, value, activation.context.gc_context)
-    }
-
-    /// Set a slot by its index, ignoring uninstalled traits.
-    fn set_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
@@ -258,25 +198,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error>;
 
     /// Initialize a slot by its index.
-    #[allow(unused_mut)]
     fn init_slot(
-        mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        if !self.has_slot_local(id) {
-            let slot_trait = self
-                .get_trait_slot(id)?
-                .ok_or_else(|| format!("Slot index {} out of bounds!", id))?;
-            self.install_trait(activation, slot_trait, self.into())?;
-        }
-
-        self.init_slot_local(id, value, activation.context.gc_context)
-    }
-
-    /// Initialize a slot by its index, ignoring uninstalled traits.
-    fn init_slot_local(
         self,
         id: u32,
         value: Value<'gc>,
@@ -285,40 +207,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a method by its index.
     fn get_method(self, id: u32) -> Option<Object<'gc>>;
-
-    /// Retrieves a trait entry by name.
-    ///
-    /// This function returns an empty `Vec` if no such trait exists, or the
-    /// object does not have traits. It returns `Err` if *any* trait in the
-    /// object's prototype chain bearing this name is malformed in some way.
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error>;
-
-    /// Retrieves a trait entry by slot ID.
-    ///
-    /// This function returns `None` if no such trait exists, or the object
-    /// does not have traits. It returns `Err` if *any* trait in the object's
-    /// prototype chain bearing this name is malformed in some way.
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error>;
-
-    /// Populate a list of traits that this object provides for a given name.
-    ///
-    /// This function yields traits for class constructors and prototypes, but
-    /// not instances. For resolving traits for normal `TObject` methods, use
-    /// `get_trait` and `has_trait` as it will tell you if the current object
-    /// has a given trait.
-    fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error>;
-
-    /// Populate a list of traits that this object provides for a given slot.
-    ///
-    /// This function yields traits for class constructors and prototypes, but
-    /// not instances. For resolving traits for normal `TObject` methods, use
-    /// `get_trait` and `has_trait` as it will tell you if the current object
-    /// has a given trait.
-    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error>;
 
     /// Retrieves the scope chain of the object at time of its creation.
     ///
@@ -361,9 +249,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The `Namespace` must not be `Namespace::Any`, as this function exists
     /// specifically resolve names in that namespace.
     ///
-    /// Trait names will be resolve on class constructors and object instances,
-    /// but not prototypes. If you want to search a prototype's provided traits
-    /// you must walk the prototype chain using `resolve_any_trait`.
+    /// Trait names will be resolve on class objects and object instances, but
+    /// not prototypes. If you want to search a prototype's provided traits you
+    /// must walk the prototype chain using `resolve_any_trait`.
     fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error>;
 
     /// Given a local name of a trait, find the namespace it resides in, if any.
@@ -392,18 +280,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Returns true if an object has one or more traits of a given name.
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
 
-    /// Returns true if an object is part of a class that defines a trait of a
-    /// given name on itself (as opposed to merely inheriting a superclass
-    /// trait.)
-    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
-
-    /// Indicates whether or not a property or *instantiated* trait exists on
-    /// an object and is not part of the prototype chain.
-    ///
-    /// Unlike `has_own_property`, this will not yield `true` for traits this
-    /// object can have but has not yet instantiated.
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool;
-
     /// Check if a particular object contains a virtual getter by the given
     /// name.
     fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool;
@@ -418,6 +294,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         gc_context: MutationContext<'gc, '_>,
         _name: &QName<'gc>,
     ) -> bool;
+
+    /// Indicates whether or not a property is final.
+    fn is_property_final(self, _name: &QName<'gc>) -> bool;
 
     /// Delete a named property from the object.
     ///
@@ -469,6 +348,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     );
 
     /// Install a getter method on an object property.
@@ -478,6 +358,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error>;
 
     /// Install a setter method on an object property.
@@ -487,6 +368,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error>;
 
     /// Install a dynamic or built-in value property on an object.
@@ -504,6 +386,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     );
 
     /// Install a const on an object property.
@@ -513,46 +396,108 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     );
 
-    /// Install a trait from the current object.
+    /// Install all instance traits provided by a class.
     ///
-    /// This function should only be called once, as reinstalling a trait may
-    /// also unset already set properties. It may either be called immediately
-    /// when the object is instantiated or lazily; this behavior is ostensibly
-    /// controlled by the `lazy_init` flag provided to `load_abc`, but in
-    /// practice every version of Flash and Animate uses lazy trait
-    /// installation.
+    /// This method will also install superclass instance traits first. By
+    /// calling this method with the lowest class in the chain, you will ensure
+    /// all instance traits are installed.
     ///
-    /// The `reciever` property allows specifying the object that methods are
-    /// bound to. It should always be `self` except when doing things with
-    /// `super`, which needs to create bound methods pointing to a different
-    /// object.
+    /// Read the documentation for `install_trait` to learn more about exactly
+    /// how traits are instantiated.
+    fn install_instance_traits(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        from_class_object: Object<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(superclass_object) = from_class_object.superclass_object() {
+            self.install_instance_traits(activation, superclass_object)?;
+        }
+
+        if let Some(class) = from_class_object.as_class() {
+            self.install_traits(activation, class.read().instance_traits())?;
+        }
+
+        Ok(())
+    }
+
+    /// Install a list of traits into this object.
+    ///
+    /// This function should be called immediately after object allocation and
+    /// before any constructors have a chance to run.
+    ///
+    /// Read the documentation for `install_trait` to learn more about exactly
+    /// how traits are instantiated.
+    fn install_traits(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        traits: &[Trait<'gc>],
+    ) -> Result<(), Error> {
+        for trait_entry in traits {
+            self.install_trait(activation, trait_entry)?;
+        }
+
+        Ok(())
+    }
+
+    /// Install a single trait into this object.
+    ///
+    /// This function should be called immediately after object allocation and
+    /// before any constructors have a chance to run. It should also only be
+    /// called once per name and/or slot ID, as reinstalling a trait may unset
+    /// already set properties.
+    ///
+    /// Class and function traits are *not* instantiated at installation time.
+    /// Instead, installing such traits is treated as installing a const with
+    /// `undefined` as it's value.
+    ///
+    /// All traits that are instantiated at install time will be instantiated
+    /// with this object's current scope stack and this object as a bound
+    /// receiver.
     ///
     /// The value of the trait at the time of installation will be returned
-    /// here.
+    /// here, or `undefined` for classes and functions.
     fn install_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        trait_entry: Trait<'gc>,
-        receiver: Object<'gc>,
+        trait_entry: &Trait<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        self.install_foreign_trait(activation, trait_entry, self.get_scope(), receiver)
-    }
-
-    /// Install a trait from anywyere.
-    ///
-    /// The value of the trait at the time of installation will be returned
-    /// here.
-    fn install_foreign_trait(
-        &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        trait_entry: Trait<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        receiver: Object<'gc>,
-    ) -> Result<Value<'gc>, Error> {
-        let fn_proto = activation.avm2().prototypes().function;
+        let receiver = (*self).into();
+        let scope = self.get_scope();
         let trait_name = trait_entry.name().clone();
+
+        if trait_entry.is_override() && !self.has_own_property(&trait_name)? {
+            return Err(format!(
+                "Attempted to override property {:?}, which is not already defined",
+                trait_name
+            )
+            .into());
+        }
+
+        //AS3 considers the setter and getter half of a final property to be
+        //separate from one another and *not* overriding each other, which can
+        //cause false verify errors if we don't exempt this particular case.
+        //
+        //TODO: We should actually check to see *what* this trait is overriding.
+        //TODO: We should also tighten the override check above using the same
+        //rationale.
+        let is_final = trait_entry.is_final();
+        let is_second_half_of_property = (self.has_own_virtual_getter(&trait_name)
+            && !self.has_own_virtual_setter(&trait_name))
+            || (!self.has_own_virtual_getter(&trait_name)
+                && self.has_own_virtual_setter(&trait_name));
+        let is_overriding_final =
+            self.has_own_property(&trait_name)? && self.is_property_final(&trait_name);
+        if is_overriding_final && !is_second_half_of_property {
+            return Err(format!(
+                "Attempted to override property {:?}, which is final",
+                trait_name
+            )
+            .into());
+        }
+
         avm_debug!(
             activation.avm2(),
             "Installing trait {:?} of kind {:?}",
@@ -572,6 +517,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     value.clone(),
+                    is_final,
                 );
 
                 Ok(value)
@@ -579,18 +525,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Method {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_method(
                     activation.context.gc_context,
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 );
 
                 Ok(function.into())
@@ -598,18 +540,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Getter {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_getter(
                     activation.context.gc_context,
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 )?;
 
                 Ok(function.into())
@@ -617,91 +555,39 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Setter {
                 disp_id, method, ..
             } => {
-                let function = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    method.clone(),
-                    scope,
-                    fn_proto,
-                    Some(receiver),
-                );
+                let function =
+                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
                 self.install_setter(
                     activation.context.gc_context,
                     trait_name,
                     *disp_id,
                     function,
+                    is_final,
                 )?;
 
                 Ok(function.into())
             }
-            TraitKind::Class { slot_id, class } => {
-                let class_read = class.read();
-                let super_class = if let Some(sc_name) = class_read.super_class_name() {
-                    let super_name = self
-                        .resolve_multiname(sc_name)?
-                        .unwrap_or_else(|| QName::dynamic_name("Object"));
-
-                    let super_class = if let Some(scope) = scope {
-                        scope
-                            .write(activation.context.gc_context)
-                            .resolve(&super_name.clone().into(), activation)?
-                    } else {
-                        None
-                    };
-
-                    Some(
-                        super_class
-                            .ok_or_else(|| {
-                                format!(
-                                    "Could not resolve superclass {:?}",
-                                    super_name.local_name()
-                                )
-                            })?
-                            .coerce_to_object(activation)?,
-                    )
-                } else {
-                    None
-                };
-
-                let (class_object, _cinit) =
-                    FunctionObject::from_class(activation, *class, super_class, scope)?;
-                self.install_const(
-                    activation.context.gc_context,
-                    class_read.name().clone(),
-                    *slot_id,
-                    class_object.into(),
-                );
-
-                Ok(class_object.into())
-            }
-            TraitKind::Function {
-                slot_id, function, ..
-            } => {
-                let mut fobject = FunctionObject::from_method(
-                    activation.context.gc_context,
-                    function.clone(),
-                    scope,
-                    fn_proto,
-                    None,
-                );
-                let es3_proto = ScriptObject::object(
-                    activation.context.gc_context,
-                    activation.avm2().prototypes().object,
-                );
-
-                fobject.install_slot(
-                    activation.context.gc_context,
-                    QName::new(Namespace::public(), "prototype"),
-                    0,
-                    es3_proto.into(),
-                );
+            TraitKind::Class { slot_id, .. } => {
                 self.install_const(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    fobject.into(),
+                    Value::Undefined,
+                    is_final,
                 );
 
-                Ok(fobject.into())
+                Ok(Value::Undefined)
+            }
+            TraitKind::Function { slot_id, .. } => {
+                self.install_const(
+                    activation.context.gc_context,
+                    trait_name,
+                    *slot_id,
+                    Value::Undefined,
+                    is_final,
+                );
+
+                Ok(Value::Undefined)
             }
             TraitKind::Const {
                 slot_id,
@@ -714,6 +600,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     value.clone(),
+                    is_final,
                 );
 
                 Ok(value)
@@ -727,49 +614,254 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _base_proto: Option<Object<'gc>>,
+        _subclass_object: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         Err("Object is not callable".into())
     }
 
-    /// Construct a host object of some kind and return its cell.
+    /// Call the instance initializer.
+    fn call_init(
+        self,
+        _reciever: Option<Object<'gc>>,
+        _arguments: &[Value<'gc>],
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _subclass_object: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        Err("Object is not a Class".into())
+    }
+
+    /// Call the instance's native initializer.
+    ///
+    /// The native initializer is called when native code needs to construct an
+    /// object, or when supercalling into a parent constructor (as there are
+    /// classes that cannot be constructed but can be supercalled).
+    fn call_native_init(
+        self,
+        _reciever: Option<Object<'gc>>,
+        _arguments: &[Value<'gc>],
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _subclass_object: Option<Object<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        Err("Object is not a Class".into())
+    }
+
+    /// Supercall a method defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same method will call parent and
+    /// grandparent methods, and so on.
+    ///
+    /// If no method exists with the given name, this falls back to calling a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a method trait with the given name. If it
+    /// is found, it will be called with the reciever and arguments you
+    /// provided, as if it were defined on the target instance object.
+    ///
+    /// The class that defined the method being called will also be provided to
+    /// the `Activation` that the method runs on so that further supercalls
+    /// will work as expected.
+    fn supercall_method(
+        self,
+        name: &QName<'gc>,
+        reciever: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .as_class()
+            .unwrap()
+            .read()
+            .lookup_instance_traits(name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+
+            callee.call(reciever, arguments, activation, Some(superclass_object))
+        } else {
+            if let Some(reciever) = reciever {
+                if let Ok(callee) = reciever
+                    .get_property(reciever, name, activation)
+                    .and_then(|v| v.coerce_to_object(activation))
+                {
+                    return callee.call(Some(reciever), arguments, activation, None);
+                }
+            }
+
+            Err(format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                name
+            )
+            .into())
+        }
+    }
+
+    /// Supercall a getter defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same getter will call parent and
+    /// grandparent getters, and so on.
+    ///
+    /// If no getter exists with the given name, this falls back to getting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a getter trait with the given name. If it
+    /// is found, it will be called with the reciever you provided, as if it
+    /// were defined on the target instance object.
+    ///
+    /// The class that defined the getter being called will also be provided to
+    /// the `Activation` that the getter runs on so that further supercalls
+    /// will work as expected.
+    fn supercall_getter(
+        self,
+        name: &QName<'gc>,
+        reciever: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .as_class()
+            .unwrap()
+            .read()
+            .lookup_instance_traits(name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+
+            callee.call(reciever, &[], activation, Some(superclass_object))
+        } else if let Some(reciever) = reciever {
+            reciever.get_property(reciever, name, activation)
+        } else {
+            Err(format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                name
+            )
+            .into())
+        }
+    }
+
+    /// Supercall a setter defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same setter will call parent and
+    /// grandparent setter, and so on.
+    ///
+    /// If no setter exists with the given name, this falls back to setting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a setter trait with the given name. If it
+    /// is found, it will be called with the reciever and value you provided,
+    /// as if it were defined on the target instance object.
+    ///
+    /// The class that defined the setter being called will also be provided to
+    /// the `Activation` that the setter runs on so that further supercalls
+    /// will work as expected.
+    fn supercall_setter(
+        self,
+        name: &QName<'gc>,
+        value: Value<'gc>,
+        reciever: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .as_class()
+            .unwrap()
+            .read()
+            .lookup_instance_traits(name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+
+            callee.call(reciever, &[value], activation, Some(superclass_object))?;
+
+            Ok(())
+        } else if let Some(mut reciever) = reciever {
+            reciever.set_property(reciever, name, value, activation)
+        } else {
+            Err(format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                name
+            )
+            .into())
+        }
+    }
+
+    /// Construct a Class or Function and return an instance of it.
     ///
     /// As the first step in object construction, the `construct` method is
-    /// called on the prototype to create a new object. The prototype may
-    /// construct any object implementation it wants, however, it's expected
-    /// to produce a like `TObject` implementor with itself as the new object's
-    /// proto.
+    /// called on the class object to produce an instance of that class. The
+    /// constructor is then expected to perform the following steps, in order:
     ///
-    /// After construction, the constructor function is `call`ed with the new
-    /// object as `this` to initialize the object.
-    ///
-    /// `construct`ed objects should instantiate instance traits of the class
-    /// that this prototype represents.
-    ///
-    /// The arguments passed to the constructor are provided here; however, all
-    /// object construction should happen in `call`, not `new`. `new` exists
-    /// purely so that host objects can be constructed by the VM.
+    /// 1. Allocate the instance object. For ES4 classes, the class's instance
+    /// allocator is used to allocate the object. ES3-style classes use the
+    /// prototype to derive instances.
+    /// 2. Associate the instance object with the class's explicit `prototype`.
+    /// 3. If the class has instance traits, install them at this time.
+    /// 4. Call the constructor method with the newly-allocated object as
+    /// reciever. For ES3 classes, this is just the function's associated
+    /// method.
+    /// 5. Yield the allocated object. (The return values of constructors are
+    /// ignored.)
     fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error>;
+        self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _args: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error> {
+        Err("Object is not constructable".into())
+    }
 
     /// Construct a host object prototype of some kind and return it.
     ///
-    /// This is called specifically to construct prototypes. The primary
-    /// difference is that a new class and scope closure are defined here.
-    /// Objects constructed from the new prototype should use that new class
-    /// and scope closure when instantiating non-prototype traits.
-    ///
-    /// Unlike `construct`, `derive`d objects should *not* instantiate instance
-    /// traits.
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error>;
+    /// This is called specifically to allocate old-style ES3 instances. The
+    /// returned object should have no properties upon it.
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error>;
 
     /// Determine the type of primitive coercion this object would prefer, in
     /// the case that there is no obvious reason to prefer one type over the
@@ -791,7 +883,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions.
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .as_proto_class()
+            .as_class()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -808,7 +900,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// of the class that created this object).
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .as_proto_class()
+            .as_class()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -822,43 +914,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// primitive value. Typically, this would be a number of some kind.
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
-    /// Enumerate all interfaces implemented by this object.
+    /// Enumerate all interfaces implemented by this class object.
+    ///
+    /// Non-classes do not implement interfaces.
     fn interfaces(&self) -> Vec<Object<'gc>>;
 
-    /// Set the interface list for this object.
+    /// Set the interface list for this class object.
     fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
 
     /// Determine if this object is an instance of a given type.
     ///
-    /// The given object should be the constructor for the given type we are
-    /// checking against this object. Its prototype will be searched in the
-    /// prototype chain of this object. If `check_interfaces` is enabled, then
-    /// the interfaces listed on each prototype will also be checked.
+    /// This uses the ES3 definition of instance, which walks the prototype
+    /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
+    /// the class object chain and accounts for interfaces.
+    ///
+    /// The given object should be the class object for the given type we are
+    /// checking against this object. Its prototype will be extracted and
+    /// searched in the prototype chain of this object.
     #[allow(unused_mut)] //it's not unused
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        mut constructor: Object<'gc>,
-        check_interfaces: bool,
+        mut class: Object<'gc>,
     ) -> Result<bool, Error> {
-        let type_proto = constructor
-            .get_property(constructor, &QName::dynamic_name("prototype"), activation)?
+        let type_proto = class
+            .get_property(class, &QName::dynamic_name("prototype"), activation)?
             .coerce_to_object(activation)?;
 
-        self.has_prototype_in_chain(type_proto, check_interfaces)
+        self.has_prototype_in_chain(type_proto)
     }
 
     /// Determine if this object has a given prototype in its prototype chain.
     ///
-    /// The given object should be the prototype we are checking against this
-    /// object. Its prototype will be searched in the
-    /// prototype chain of this object. If `check_interfaces` is enabled, then
-    /// the interfaces listed on each prototype will also be checked.
-    fn has_prototype_in_chain(
-        &self,
-        type_proto: Object<'gc>,
-        check_interfaces: bool,
-    ) -> Result<bool, Error> {
+    /// The given object `type_proto` should be the prototype we are checking
+    /// against this object.
+    fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error> {
         let mut my_proto = self.proto();
 
         //TODO: Is it a verification error to do `obj instanceof bare_object`?
@@ -867,15 +957,44 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            if check_interfaces {
-                for interface in proto.interfaces() {
-                    if Object::ptr_eq(interface, type_proto) {
-                        return Ok(true);
-                    }
+            my_proto = proto.proto()
+        }
+
+        Ok(false)
+    }
+
+    /// Determine if this object is an instance of a given type.
+    ///
+    /// This uses the ES4 definition of instance, which walks the class object
+    /// chain and accounts for interfaces. For the ES3 definition of instance,
+    /// use `is_instance_of`, which uses the prototype chain.
+    ///
+    /// The given object should be the class object for the given type we are
+    /// checking against this object.
+    #[allow(unused_mut)] //it's not unused
+    fn is_of_type(&self, mut test_class: Object<'gc>) -> Result<bool, Error> {
+        self.has_class_in_chain(test_class)
+    }
+
+    /// Determine if this object has a given class in its class object chain.
+    ///
+    /// The given object `test_class` should be either a superclass or
+    /// interface we are checking against this object.
+    fn has_class_in_chain(&self, test_class: Object<'gc>) -> Result<bool, Error> {
+        let mut my_class = self.as_class_object();
+
+        while let Some(class) = my_class {
+            if Object::ptr_eq(class, test_class) {
+                return Ok(true);
+            }
+
+            for interface in class.interfaces() {
+                if Object::ptr_eq(interface, test_class) {
+                    return Ok(true);
                 }
             }
 
-            my_proto = proto.proto()
+            my_class = class.superclass_object()
         }
 
         Ok(false)
@@ -887,21 +1006,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
 
-    /// Get this object's `Class`, or any `Class` on its prototype chain.
+    /// Get this object's class object, if it has one.
+    fn as_class_object(&self) -> Option<Object<'gc>>;
+
+    /// Associate the object with a particular class object.
     ///
-    /// This only yields `None` for bare objects.
-    fn as_proto_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        let mut class = self.as_class();
+    /// This turns the object into an instance of that class. It should only be
+    /// used in situations where the object cannot be made an instance of the
+    /// class at allocation time, such as during early runtime setup.
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>);
 
-        while class.is_none() {
-            if let Some(proto) = self.proto() {
-                class = proto.as_class();
-            } else {
-                return None;
-            }
-        }
+    /// Get the superclass object of this object.
+    fn superclass_object(self) -> Option<Object<'gc>> {
+        None
+    }
 
-        class
+    /// Get this class's instance allocator.
+    fn instance_allocator(self) -> Option<AllocatorFn> {
+        None
     }
 
     /// Get this object's `Executable`, if it has one.
@@ -973,6 +1095,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable list of event handlers.
     fn as_dispatch_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<DispatchList<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object as an immutable primitive value.
+    ///
+    /// This function should not be called in cases where a normal `Value`
+    /// coercion would do. It *only* accounts for boxed primitives, and not
+    /// `valueOf`.
+    fn as_primitive(&self) -> Option<Ref<Value<'gc>>> {
         None
     }
 

@@ -244,9 +244,13 @@ impl<'a> Reader<'a> {
         let flags = self.read_u8()?;
 
         if flags & 0x08 != 0 {
-            let num_optional_params = self.read_u30()?;
-            for param in &mut params[..num_optional_params as usize] {
-                param.default_value = Some(self.read_constant_value()?);
+            let num_optional_params = self.read_u30()? as usize;
+            if let Some(start) = params.len().checked_sub(num_optional_params) {
+                for param in &mut params[start..] {
+                    param.default_value = Some(self.read_constant_value()?);
+                }
+            } else {
+                return Err(Error::invalid_data("Too many optional parameters"));
             }
         }
 

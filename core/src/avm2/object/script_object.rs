@@ -10,38 +10,27 @@ use crate::avm2::return_value::ReturnValue;
 use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+/// A class instance allocator that allocates `ScriptObject`s.
+pub fn scriptobject_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
+}
+
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
-
-/// Information necessary for a script object to have a class attached to it.
-///
-/// Classes can be attached to a `ScriptObject` such that the class's traits
-/// are instantiated on-demand. Either class or instance traits can be
-/// instantiated.
-///
-/// Trait instantiation obeys prototyping rules: prototypes provide their
-/// instances with classes to pull traits from.
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
-pub enum ScriptObjectClass<'gc> {
-    /// Instantiate instance traits, for prototypes.
-    InstancePrototype(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
-
-    /// Instantiate class traits, for class constructors.
-    ClassConstructor(GcCell<'gc, Class<'gc>>, Option<GcCell<'gc, Scope<'gc>>>),
-
-    /// Do not instantiate any class or instance traits.
-    NoClass,
-}
 
 /// Base data common to all `TObject` implementations.
 ///
@@ -63,13 +52,14 @@ pub struct ScriptObjectData<'gc> {
     /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
 
-    /// The class that this script object represents.
-    class: ScriptObjectClass<'gc>,
+    /// The class object that this is an instance of.
+    /// If `None`, this is either a class itself, or not an ES4 object at all.
+    instance_of: Option<Object<'gc>>,
 
     /// Enumeratable property names.
     enumerants: Vec<QName<'gc>>,
 
-    /// Interfaces implemented by this object. (prototypes only)
+    /// Interfaces implemented by this object. (classes only)
     interfaces: Vec<Object<'gc>>,
 }
 
@@ -130,58 +120,38 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(gc_context).is_property_overwritable(name)
     }
 
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        self.0.read().is_property_final(name)
+    }
+
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         self.0.write(gc_context).delete_property(name)
     }
 
-    fn has_slot_local(self, id: u32) -> bool {
-        self.0.read().has_slot_local(id)
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+        self.0.read().get_slot(id)
     }
 
-    fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
-        self.0.read().get_slot_local(id)
-    }
-
-    fn set_slot_local(
+    fn set_slot(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).set_slot_local(id, value, mc)
+        self.0.write(mc).set_slot(id, value, mc)
     }
 
-    fn init_slot_local(
+    fn init_slot(
         self,
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        self.0.write(mc).init_slot_local(id, value, mc)
+        self.0.write(mc).init_slot(id, value, mc)
     }
 
     fn get_method(self, id: u32) -> Option<Object<'gc>> {
         self.0.read().get_method(id)
-    }
-
-    fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        self.0.read().get_trait(name)
-    }
-
-    fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().get_trait_slot(id)
-    }
-
-    fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        self.0.read().get_provided_trait(name, known_traits)
-    }
-
-    fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        self.0.read().get_provided_trait_slot(id)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
@@ -205,14 +175,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         self.0.read().has_trait(name)
-    }
-
-    fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().provides_trait(name)
-    }
-
-    fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-        self.0.read().has_instantiated_property(name)
     }
 
     fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
@@ -254,32 +216,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::ScriptObject(*self);
         Ok(ScriptObject::object(activation.context.gc_context, this))
     }
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ScriptObject(*self);
-        Ok(ScriptObject::prototype(
-            activation.context.gc_context,
-            this,
-            class,
-            scope,
-        ))
-    }
-
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.as_proto_class() {
+        if let Some(class) = self.as_class() {
             Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
         } else {
             Ok("[object Object]".into())
@@ -296,8 +239,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).install_method(name, disp_id, function)
+        self.0
+            .write(mc)
+            .install_method(name, disp_id, function, is_final)
     }
 
     fn install_getter(
@@ -306,8 +252,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
-        self.0.write(mc).install_getter(name, disp_id, function)
+        self.0
+            .write(mc)
+            .install_getter(name, disp_id, function, is_final)
     }
 
     fn install_setter(
@@ -316,8 +265,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
-        self.0.write(mc).install_setter(name, disp_id, function)
+        self.0
+            .write(mc)
+            .install_setter(name, disp_id, function, is_final)
     }
 
     fn install_dynamic_property(
@@ -335,8 +287,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).install_slot(name, id, value)
+        self.0.write(mc).install_slot(name, id, value, is_final)
     }
 
     fn install_const(
@@ -345,8 +298,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
+        is_final: bool,
     ) {
-        self.0.write(mc).install_const(name, id, value)
+        self.0.write(mc).install_const(name, id, value, is_final)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {
@@ -360,6 +314,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         self.0.read().as_class()
     }
+
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.0.read().as_class_object()
+    }
+
+    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+        self.0.write(mc).set_class_object(class_object);
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -368,67 +330,40 @@ impl<'gc> ScriptObject<'gc> {
     /// This is *not* the same thing as an object literal, which actually does
     /// have a base class: `Object`.
     pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(None, ScriptObjectClass::NoClass),
-        ))
-        .into()
-    }
-
-    /// Construct a bare class prototype with no base class.
-    ///
-    /// This is used in cases where a prototype needs to exist, but it does not
-    /// need to extend `Object`. This is the case for interfaces and activation
-    /// objects, both of which need to participate in the class mechanism but
-    /// are not `Object`s.
-    pub fn bare_prototype(
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Object<'gc> {
-        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
-
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(None, script_class),
-        ))
-        .into()
+        ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None, None))).into()
     }
 
     /// Construct an object with a prototype.
     pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), ScriptObjectClass::NoClass),
+            ScriptObjectData::base_new(Some(proto), None),
         ))
         .into()
     }
 
-    /// Construct a prototype for an ES4 class.
-    pub fn prototype(
+    /// Construct an instance with a class and scope stack.
+    pub fn instance(
         mc: MutationContext<'gc, '_>,
+        class: Object<'gc>,
         proto: Object<'gc>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Object<'gc> {
-        let script_class = ScriptObjectClass::InstancePrototype(class, scope);
-
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), script_class),
+            ScriptObjectData::base_new(Some(proto), Some(class)),
         ))
         .into()
     }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(proto: Option<Object<'gc>>, trait_source: ScriptObjectClass<'gc>) -> Self {
+    pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<Object<'gc>>) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
             methods: Vec::new(),
             proto,
-            class: trait_source,
+            instance_of,
             enumerants: Vec::new(),
             interfaces: Vec::new(),
         }
@@ -443,7 +378,15 @@ impl<'gc> ScriptObjectData<'gc> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(receiver, activation.base_proto().or(self.proto))
+            prop.get(
+                receiver,
+                Some(
+                    activation
+                        .subclass_object()
+                        .or_else(|| self.as_class_object())
+                        .unwrap_or(receiver),
+                ),
+            )
         } else {
             Ok(Value::Undefined.into())
         }
@@ -456,6 +399,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        let class = self.as_class_object();
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
                 Some(slot_id)
@@ -467,14 +411,15 @@ impl<'gc> ScriptObjectData<'gc> {
         };
 
         if let Some(slot_id) = slot_id {
-            // This doesn't need the non-local version of this property because
-            // by the time this has called the slot was already installed
-            self.set_slot_local(slot_id, value, activation.context.gc_context)?;
+            self.set_slot(slot_id, value, activation.context.gc_context)?;
             Ok(Value::Undefined.into())
         } else if self.values.contains_key(name) {
             let prop = self.values.get_mut(name).unwrap();
-            let proto = self.proto;
-            prop.set(receiver, activation.base_proto().or(proto), value)
+            prop.set(
+                receiver,
+                Some(activation.subclass_object().or(class).unwrap_or(receiver)),
+                value,
+            )
         } else {
             //TODO: Not all classes are dynamic like this
             self.enumerants.push(name.clone());
@@ -492,16 +437,17 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
+        let class = self.as_class_object();
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
-                // This doesn't need the non-local version of this property
-                // because by the time this has called the slot was already
-                // installed
-                self.init_slot_local(slot_id, value, activation.context.gc_context)?;
+                self.init_slot(slot_id, value, activation.context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
-                let proto = self.proto;
-                prop.init(receiver, activation.base_proto().or(proto), value)
+                prop.init(
+                    receiver,
+                    Some(activation.subclass_object().or(class).unwrap_or(receiver)),
+                    value,
+                )
             }
         } else {
             //TODO: Not all classes are dynamic like this
@@ -519,6 +465,10 @@ impl<'gc> ScriptObjectData<'gc> {
             .unwrap_or(true)
     }
 
+    pub fn is_property_final(&self, name: &QName<'gc>) -> bool {
+        self.values.get(name).map(|p| p.is_final()).unwrap_or(false)
+    }
+
     pub fn delete_property(&mut self, name: &QName<'gc>) -> bool {
         let can_delete = if let Some(prop) = self.values.get(name) {
             prop.can_delete()
@@ -533,14 +483,7 @@ impl<'gc> ScriptObjectData<'gc> {
         can_delete
     }
 
-    pub fn has_slot_local(&self, id: u32) -> bool {
-        self.slots
-            .get(id as usize)
-            .map(|s| s.is_occupied())
-            .unwrap_or(false)
-    }
-
-    pub fn get_slot_local(&self, id: u32) -> Result<Value<'gc>, Error> {
+    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error> {
         self.slots
             .get(id as usize)
             .cloned()
@@ -549,7 +492,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Set a slot by its index.
-    pub fn set_slot_local(
+    pub fn set_slot(
         &mut self,
         id: u32,
         value: Value<'gc>,
@@ -563,7 +506,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Initialize a slot by its index.
-    pub fn init_slot_local(
+    pub fn init_slot(
         &mut self,
         id: u32,
         value: Value<'gc>,
@@ -581,141 +524,36 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn get_trait(&self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-        match &self.class {
-            //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(..) => {
-                let mut known_traits = Vec::new();
-                self.get_provided_trait(name, &mut known_traits)?;
-
-                Ok(known_traits)
-            }
-
-            //Prototypes do not have traits available locally, but they provide
-            //traits instead.
-            ScriptObjectClass::InstancePrototype(..) => Ok(Vec::new()),
-
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut known_traits = Vec::new();
-                let mut chain = Vec::new();
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    chain.push(p);
-                    proto = p.proto();
-                }
-
-                for proto in chain.iter().rev() {
-                    proto.get_provided_trait(name, &mut known_traits)?;
-                }
-
-                Ok(known_traits)
-            }
-        }
-    }
-
-    pub fn get_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        match &self.class {
-            //Class constructors have local slot traits only.
-            ScriptObjectClass::ClassConstructor(..) => self.get_provided_trait_slot(id),
-
-            //Prototypes do not have traits available locally, but they provide
-            //traits instead.
-            ScriptObjectClass::InstancePrototype(..) => Ok(None),
-
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    if let Some(trait_val) = p.get_provided_trait_slot(id)? {
-                        return Ok(Some(trait_val));
-                    }
-
-                    proto = p.proto();
-                }
-
-                Ok(None)
-            }
-        }
-    }
-
-    pub fn get_provided_trait(
-        &self,
-        name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.read().lookup_class_traits(name, known_traits)
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                class.read().lookup_instance_traits(name, known_traits)
-            }
-            ScriptObjectClass::NoClass => Ok(()),
-        }
-    }
-
-    pub fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                class.read().lookup_class_traits_by_slot(id)
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                class.read().lookup_instance_traits_by_slot(id)
-            }
-            ScriptObjectClass::NoClass => Ok(None),
-        }
-    }
-
     pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
-        match &self.class {
-            //Class constructors have local traits only.
-            ScriptObjectClass::ClassConstructor(..) => self.provides_trait(name),
+        match self.instance_of {
+            //Class instances have instance traits from any class in the base
+            //class chain.
+            Some(class) => {
+                let mut cur_class = Some(class);
 
-            //Prototypes do not have traits available locally, but we walk
-            //through them to find traits (see `provides_trait`)
-            ScriptObjectClass::InstancePrototype(..) => Ok(false),
-
-            //Instances walk the prototype chain to build a list of known
-            //traits provided by the classes attached to those prototypes.
-            ScriptObjectClass::NoClass => {
-                let mut proto = self.proto();
-
-                while let Some(p) = proto {
-                    if p.provides_trait(name)? {
+                while let Some(class) = cur_class {
+                    let cur_static_class = class
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    if cur_static_class.read().has_instance_trait(name) {
                         return Ok(true);
                     }
 
-                    proto = p.proto();
+                    cur_class = class.superclass_object();
                 }
 
                 Ok(false)
             }
-        }
-    }
 
-    pub fn provides_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.read().has_class_trait(name))
-            }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                Ok(class.read().has_instance_trait(name))
-            }
-            ScriptObjectClass::NoClass => Ok(false),
+            // Bare objects, ES3 objects, and prototypes do not have traits.
+            None => Ok(false),
         }
     }
 
     pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(_class, scope) => *scope,
-            ScriptObjectClass::InstancePrototype(_class, scope) => *scope,
-            ScriptObjectClass::NoClass => self.proto().and_then(|proto| proto.get_scope()),
-        }
+        self.instance_of
+            .as_ref()
+            .and_then(|class| class.get_scope())
     }
 
     pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
@@ -725,11 +563,7 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        let trait_ns = match self.class {
-            ScriptObjectClass::ClassConstructor(..) => self.resolve_any_trait(local_name)?,
-            ScriptObjectClass::NoClass => self.resolve_any_trait(local_name)?,
-            _ => None,
-        };
+        let trait_ns = self.resolve_any_trait(local_name)?;
 
         if trait_ns.is_none() {
             if let Some(proto) = self.proto() {
@@ -753,23 +587,32 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        match &self.class {
-            ScriptObjectClass::ClassConstructor(class, ..) => {
-                Ok(class.read().resolve_any_class_trait(local_name))
+        match &self.instance_of {
+            Some(class) => {
+                let mut cur_class = Some(*class);
+
+                while let Some(class) = cur_class {
+                    let cur_static_class = class
+                        .as_class()
+                        .ok_or("Object is not a class constructor")?;
+                    if let Some(ns) = cur_static_class
+                        .read()
+                        .resolve_any_instance_trait(local_name)
+                    {
+                        return Ok(Some(ns));
+                    }
+
+                    cur_class = class.superclass_object();
+                }
+
+                Ok(None)
             }
-            ScriptObjectClass::InstancePrototype(class, ..) => {
-                Ok(class.read().resolve_any_instance_trait(local_name))
-            }
-            ScriptObjectClass::NoClass => Ok(None),
+            None => Ok(None),
         }
     }
 
     pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {
         Ok(self.values.get(name).is_some() || self.has_trait(name)?)
-    }
-
-    pub fn has_instantiated_property(&self, name: &QName<'gc>) -> bool {
-        self.values.get(name).is_some()
     }
 
     pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {
@@ -815,12 +658,12 @@ impl<'gc> ScriptObjectData<'gc> {
         name: &QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
-        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
-            // Traits are never enumerable
-            if self.has_trait(name)? {
-                return Ok(());
-            }
+        // Traits are never enumerable
+        if self.has_trait(name)? {
+            return Ok(());
+        }
 
+        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
             self.enumerants.push(name.clone());
         } else if !is_enumerable && self.enumerants.contains(name) {
             let mut index = None;
@@ -838,12 +681,14 @@ impl<'gc> ScriptObjectData<'gc> {
         Ok(())
     }
 
-    pub fn class(&self) -> &ScriptObjectClass<'gc> {
-        &self.class
-    }
-
     /// Install a method into the object.
-    pub fn install_method(&mut self, name: QName<'gc>, disp_id: u32, function: Object<'gc>) {
+    pub fn install_method(
+        &mut self,
+        name: QName<'gc>,
+        disp_id: u32,
+        function: Object<'gc>,
+        is_final: bool,
+    ) {
         if disp_id > 0 {
             if self.methods.len() <= disp_id as usize {
                 self.methods
@@ -853,7 +698,8 @@ impl<'gc> ScriptObjectData<'gc> {
             *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
         }
 
-        self.values.insert(name, Property::new_method(function));
+        self.values
+            .insert(name, Property::new_method(function, is_final));
     }
 
     /// Install a getter into the object.
@@ -866,6 +712,7 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         function
             .as_executable()
@@ -881,7 +728,8 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !self.values.contains_key(&name) {
-            self.values.insert(name.clone(), Property::new_virtual());
+            self.values
+                .insert(name.clone(), Property::new_virtual(is_final));
         }
 
         self.values
@@ -900,6 +748,7 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
+        is_final: bool,
     ) -> Result<(), Error> {
         function
             .as_executable()
@@ -915,7 +764,8 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !self.values.contains_key(&name) {
-            self.values.insert(name.clone(), Property::new_virtual());
+            self.values
+                .insert(name.clone(), Property::new_virtual(is_final));
         }
 
         self.values
@@ -929,6 +779,16 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error> {
+        if let Some(class) = self.as_class() {
+            if class.read().is_sealed() {
+                return Err(format!(
+                    "Objects of type {:?} are not dynamic",
+                    class.read().name().local_name()
+                )
+                .into());
+            }
+        }
+
         self.values
             .insert(name, Property::new_dynamic_property(value));
 
@@ -940,11 +800,12 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_slot(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
+    pub fn install_slot(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>, is_final: bool) {
         if id == 0 {
-            self.values.insert(name, Property::new_stored(value));
+            self.values
+                .insert(name, Property::new_stored(value, is_final));
         } else {
-            self.values.insert(name, Property::new_slot(id));
+            self.values.insert(name, Property::new_slot(id, is_final));
             if self.slots.len() < id as usize + 1 {
                 self.slots.resize_with(id as usize + 1, Default::default);
             }
@@ -960,11 +821,12 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_const(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
+    pub fn install_const(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>, is_final: bool) {
         if id == 0 {
-            self.values.insert(name, Property::new_const(value));
+            self.values
+                .insert(name, Property::new_const(value, is_final));
         } else {
-            self.values.insert(name, Property::new_slot(id));
+            self.values.insert(name, Property::new_slot(id, is_final));
             if self.slots.len() < id as usize + 1 {
                 self.slots.resize_with(id as usize + 1, Default::default);
             }
@@ -987,10 +849,20 @@ impl<'gc> ScriptObjectData<'gc> {
 
     /// Get the class for this object, if it has one.
     pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        match self.class {
-            ScriptObjectClass::ClassConstructor(class, _) => Some(class),
-            ScriptObjectClass::InstancePrototype(class, _) => Some(class),
-            ScriptObjectClass::NoClass => None,
-        }
+        self.instance_of.and_then(|class| class.as_class())
+    }
+
+    /// Get the class object for this object, if it has one.
+    pub fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.instance_of
+    }
+
+    /// Associate the object with a particular class object.
+    ///
+    /// This turns the object into an instance of that class. It should only be
+    /// used in situations where the object cannot be made an instance of the
+    /// class at allocation time, such as during early runtime setup.
+    pub fn set_class_object(&mut self, class_object: Object<'gc>) {
+        self.instance_of = Some(class_object)
     }
 }

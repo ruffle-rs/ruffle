@@ -589,6 +589,12 @@ swf_tests! {
     (as3_simplebutton_constr_params, "avm2/simplebutton_constr_params", 1),
     (as3_place_object_replace, "avm2/place_object_replace", 2),
     (as3_place_object_replace_2, "avm2/place_object_replace_2", 3),
+    (as3_function_call_default, "avm2/function_call_default", 1),
+    (as3_function_call_types, "avm2/function_call_types", 1),
+    (as3_function_call_coercion, "avm2/function_call_coercion", 1),
+    (as3_istypelate_coerce, "avm2/istypelate_coerce", 1),
+    (as3_class_cast_call, "avm2/class_cast_call", 1),
+    (as3_class_supercalls_mismatched, "avm2/class_supercalls_mismatched", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

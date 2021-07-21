@@ -1,13 +1,14 @@
 //! Active trait definitions
 
+use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, GcCell};
 use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
 
 bitflags! {
@@ -179,9 +180,9 @@ impl<'gc> Trait<'gc> {
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
-        avm2: &mut Avm2<'gc>,
-        mc: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
+        let mc = activation.context.gc_context;
         let name = QName::from_abc_multiname(unit, abc_trait.name.clone(), mc)?;
 
         Ok(match &abc_trait.kind {
@@ -200,7 +201,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, activation)?)
                     } else {
                         None
                     },
@@ -211,7 +212,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, false, activation)?,
                 },
             },
             AbcTraitKind::Getter { disp_id, method } => Trait {
@@ -219,7 +220,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, false, activation)?,
                 },
             },
             AbcTraitKind::Setter { disp_id, method } => Trait {
@@ -227,7 +228,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, mc)?,
+                    method: unit.load_method(method.0, false, activation)?,
                 },
             },
             AbcTraitKind::Class { slot_id, class } => Trait {
@@ -235,7 +236,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Class {
                     slot_id: *slot_id,
-                    class: unit.load_class(class.0, avm2, mc)?,
+                    class: unit.load_class(class.0, activation)?,
                 },
             },
             AbcTraitKind::Function { slot_id, function } => Trait {
@@ -243,7 +244,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Function {
                     slot_id: *slot_id,
-                    function: unit.load_method(function.0, mc)?,
+                    function: unit.load_method(function.0, true, activation)?,
                 },
             },
             AbcTraitKind::Const {
@@ -261,7 +262,7 @@ impl<'gc> Trait<'gc> {
                         Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
                     },
                     default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, avm2, mc)?)
+                        Some(abc_default_value(unit, dv, activation)?)
                     } else {
                         None
                     },

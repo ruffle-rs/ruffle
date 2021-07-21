@@ -3,17 +3,36 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::regexp::RegExp;
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates RegExp objects.
+pub fn regexp_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(RegExpObject(GcCell::allocate(
+        activation.context.gc_context,
+        RegExpObjectData {
+            base,
+            regexp: RegExp::new(""),
+        },
+    ))
+    .into())
+}
 
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
@@ -30,68 +49,42 @@ pub struct RegExpObjectData<'gc> {
 
 impl<'gc> RegExpObject<'gc> {
     pub fn from_regexp(
-        mc: MutationContext<'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
         regexp: RegExp<'gc>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
+    ) -> Result<Object<'gc>, Error> {
+        let class = activation.avm2().classes().regexp;
+        let proto = activation.avm2().prototypes().regexp;
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
-        RegExpObject(GcCell::allocate(mc, RegExpObjectData { base, regexp })).into()
-    }
-
-    /// Instantiate a regexp subclass.
-    pub fn derive(
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
-
-        RegExpObject(GcCell::allocate(
-            mc,
-            RegExpObjectData {
-                base,
-                regexp: RegExp::new(""),
-            },
+        let mut this: Object<'gc> = RegExpObject(GcCell::allocate(
+            activation.context.gc_context,
+            RegExpObjectData { base, regexp },
         ))
-        .into()
+        .into();
+        this.install_instance_traits(activation, class)?;
+
+        class.call_native_init(Some(this), &[], activation, Some(class))?;
+
+        Ok(this)
     }
 }
 
 impl<'gc> TObject<'gc> for RegExpObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::RegExpObject(*self);
-        Ok(RegExpObject::from_regexp(
-            activation.context.gc_context,
-            Some(this),
-            RegExp::new(""),
-        ))
-    }
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(Some((*self).into()), None);
 
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::RegExpObject(*self);
-        Ok(Self::derive(
-            this,
+        Ok(RegExpObject(GcCell::allocate(
             activation.context.gc_context,
-            class,
-            scope,
+            RegExpObjectData {
+                base,
+                regexp: RegExp::new(""),
+            },
         ))
+        .into())
     }
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {

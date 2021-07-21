@@ -250,6 +250,9 @@ impl<'gc> Multiname<'gc> {
 
     /// Read a multiname from the ABC constant pool, copying it into the most
     /// general form of multiname.
+    ///
+    /// Multiname index zero is also treated as an error, you must check for it
+    /// and substitute it with whatever default is called for by AVM2.
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
@@ -328,6 +331,9 @@ impl<'gc> Multiname<'gc> {
     ///
     /// This function prohibits the use of runtime-qualified and late-bound
     /// names. Runtime multinames will instead result in an error.
+    ///
+    /// Multiname index zero is also treated as an error, you must check for it
+    /// and substitute it with whatever default is called for by AVM2.
     pub fn from_abc_multiname_static(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
@@ -395,6 +401,22 @@ impl<'gc> Multiname<'gc> {
         }
 
         false
+    }
+
+    /// Indicates if this multiname matches any type in any namespace.
+    pub fn is_any(&self) -> bool {
+        self.ns.contains(&Namespace::Any) && self.name.is_none()
+    }
+
+    /// Determine if this multiname matches a given QName.
+    pub fn contains_name(&self, name: &QName<'gc>) -> bool {
+        let ns_match = self
+            .ns
+            .iter()
+            .any(|ns| ns == &Namespace::Any || ns == name.namespace());
+        let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
+
+        ns_match && name_match
     }
 }
 

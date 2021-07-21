@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{DomainObject, Object, TObject};
+use crate::avm2::object::{appdomain_allocator, DomainObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -39,13 +39,9 @@ pub fn current_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let globals = activation.scope().map(|s| s.read().globals());
     let appdomain = globals.and_then(|g| g.as_application_domain());
+
     if let Some(appdomain) = appdomain {
-        return Ok(DomainObject::from_domain(
-            activation.context.gc_context,
-            Some(activation.context.avm2.prototypes().application_domain),
-            appdomain,
-        )
-        .into());
+        return Ok(DomainObject::from_domain(activation, appdomain)?.into());
     }
 
     Ok(Value::Undefined)
@@ -59,12 +55,7 @@ pub fn parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(appdomain) = this.and_then(|this| this.as_application_domain()) {
         if let Some(parent_domain) = appdomain.parent_domain() {
-            return Ok(DomainObject::from_domain(
-                activation.context.gc_context,
-                Some(activation.context.avm2.prototypes().application_domain),
-                parent_domain,
-            )
-            .into());
+            return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
         }
     }
 
@@ -88,7 +79,7 @@ pub fn get_definition<'gc>(
         let (qname, mut defined_script) = appdomain
             .get_defining_script(&qname.into())?
             .ok_or_else(|| format!("No definition called {} exists", local_name))?;
-        let mut globals = defined_script.globals(&mut activation.context)?;
+        let globals = defined_script.globals(&mut activation.context)?;
         let definition = globals.get_property(globals, &qname, activation)?;
 
         return Ok(definition);
@@ -153,24 +144,32 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.system"), "ApplicationDomain"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(
+            instance_init,
+            "<ApplicationDomain instance initializer>",
+            mc,
+        ),
+        Method::from_builtin(class_init, "<ApplicationDomain class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
+    write.set_instance_allocator(appdomain_allocator);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("currentDomain", current_domain),
         ("parentDomain", parent_domain),
         ("getDefinition", get_definition),
         ("hasDefinition", has_definition),
     ];
-    write.define_public_builtin_class_methods(PUBLIC_CLASS_METHODS);
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

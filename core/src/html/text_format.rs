@@ -7,8 +7,8 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
-    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
-    ScriptObject as Avm2ScriptObject, TObject as Avm2TObject, Value as Avm2Value,
+    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
+    Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
@@ -190,7 +190,7 @@ fn getfloatarray_from_avm1_object<'gc>(
 }
 
 fn getstr_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<String>, Avm2Error> {
@@ -208,7 +208,7 @@ fn getstr_from_avm2_object<'gc>(
 }
 
 fn getfloat_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<f64>, Avm2Error> {
@@ -226,7 +226,7 @@ fn getfloat_from_avm2_object<'gc>(
 }
 
 fn getbool_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<bool>, Avm2Error> {
@@ -244,7 +244,7 @@ fn getbool_from_avm2_object<'gc>(
 }
 
 fn getfloatarray_from_avm2_object<'gc>(
-    mut object: Avm2Object<'gc>,
+    object: Avm2Object<'gc>,
     pubname: &'static str,
     activation: &mut Avm2Activation<'_, 'gc, '_>,
 ) -> Result<Option<Vec<f64>>, Avm2Error> {
@@ -257,7 +257,7 @@ fn getfloatarray_from_avm2_object<'gc>(
             Avm2Value::Undefined => None,
             Avm2Value::Null => None,
             v => {
-                let mut v = v.coerce_to_object(activation)?;
+                let v = v.coerce_to_object(activation)?;
                 let length = v.as_array_storage().map(|v| v.length());
 
                 let mut output = Vec::new();
@@ -698,17 +698,8 @@ impl TextFormat {
         &self,
         activation: &mut Avm2Activation<'_, 'gc, '_>,
     ) -> Result<Avm2Object<'gc>, Avm2Error> {
-        let mut proto = activation.context.avm2.prototypes().textformat;
-        let constr = proto
-            .get_property(
-                proto,
-                &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
-        let mut object = Avm2ScriptObject::object(activation.context.gc_context, proto);
-
-        constr.call(Some(object), &[], activation, Some(proto))?;
+        let constr = activation.context.avm2.classes().textformat;
+        let mut object = constr.construct(activation, &[])?;
 
         object.set_property(
             object,
@@ -849,11 +840,8 @@ impl TextFormat {
 
         if let Some(ts) = &self.tab_stops {
             let tab_stop_storage = ts.iter().copied().collect();
-            let tab_stops = Avm2ArrayObject::from_array(
-                tab_stop_storage,
-                activation.context.avm2.prototypes().array,
-                activation.context.gc_context,
-            );
+
+            let tab_stops = Avm2ArrayObject::from_storage(activation, tab_stop_storage)?;
 
             object.set_property(
                 object,

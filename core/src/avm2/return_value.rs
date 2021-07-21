@@ -33,11 +33,14 @@ pub enum ReturnValue<'gc> {
     ///
     /// This exists for functions that do need to reference the result of user
     /// code in order to produce their result.
+    ///
+    /// The properties of this enum struct will be passed onto the callee's
+    /// executable at resolution time.
     ResultOf {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     },
 }
 
@@ -49,13 +52,13 @@ impl fmt::Debug for ReturnValue<'_> {
                 callee,
                 unbound_reciever,
                 arguments,
-                base_proto,
+                subclass_object,
             } => f
                 .debug_struct("ReturnValue")
                 .field("callee", callee)
                 .field("unbound_reciever", unbound_reciever)
                 .field("arguments", arguments)
-                .field("base_proto", base_proto)
+                .field("subclass_object", subclass_object)
                 .finish(),
         }
     }
@@ -67,13 +70,13 @@ impl<'gc> ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     ) -> Self {
         Self::ResultOf {
             callee,
             unbound_reciever,
             arguments,
-            base_proto,
+            subclass_object,
         }
     }
 
@@ -88,12 +91,12 @@ impl<'gc> ReturnValue<'gc> {
                 callee,
                 unbound_reciever,
                 arguments,
-                base_proto,
+                subclass_object,
             } => callee.as_executable().unwrap().exec(
                 unbound_reciever,
                 &arguments,
                 activation,
-                base_proto,
+                subclass_object,
                 callee,
             ),
         }

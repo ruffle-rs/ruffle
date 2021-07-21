@@ -6,7 +6,7 @@ use crate::avm2::events::{
     dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
 };
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
@@ -49,7 +49,7 @@ pub fn add_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -96,7 +96,7 @@ pub fn remove_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -135,7 +135,7 @@ pub fn has_event_listener<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -165,7 +165,7 @@ pub fn will_trigger<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let dispatch_list = this
             .get_property(
                 this,
@@ -242,8 +242,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "EventDispatcher"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<EventDispatcher instance initializer>", mc),
+        Method::from_builtin(class_init, "<EventDispatcher class initializer>", mc),
         mc,
     );
 
@@ -253,14 +253,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.implements(QName::new(Namespace::package("flash.events"), "IEventDispatcher").into());
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("addEventListener", add_event_listener),
         ("removeEventListener", remove_event_listener),
         ("hasEventListener", has_event_listener),
         ("willTrigger", will_trigger),
         ("dispatchEvent", dispatch_event),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),

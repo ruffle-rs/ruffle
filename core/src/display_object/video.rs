@@ -1,7 +1,9 @@
 //! Video player display object
 
 use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
-use crate::avm2::{Object as Avm2Object, StageObject as Avm2StageObject};
+use crate::avm2::{
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+};
 use crate::backend::render::BitmapInfo;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::bounding_box::BoundingBox;
@@ -381,13 +383,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let vm_type = self.avm_type();
         if vm_type == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
-            let object: Avm2Object<'_> = Avm2StageObject::for_display_object(
-                context.gc_context,
+            let video_constr = context.avm2.classes().video;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            match Avm2StageObject::for_display_object_childless(
+                &mut activation,
                 (*self).into(),
-                context.avm2.prototypes().video,
-            )
-            .into();
-            self.0.write(context.gc_context).object = Some(object.into());
+                video_constr,
+            ) {
+                Ok(object) => {
+                    let object: Avm2Object<'gc> = object.into();
+                    self.0.write(context.gc_context).object = Some(object.into())
+                }
+                Err(e) => log::error!("Got {} when constructing AVM2 side of video player", e),
+            }
         }
     }
 

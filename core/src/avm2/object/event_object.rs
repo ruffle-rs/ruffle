@@ -4,16 +4,35 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::events::Event;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::script_object::{ScriptObjectClass, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::string::AvmString;
-use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
+use crate::{
+    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
+};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+
+/// A class instance allocator that allocates Event objects.
+pub fn event_allocator<'gc>(
+    class: Object<'gc>,
+    proto: Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Object<'gc>, Error> {
+    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+    Ok(EventObject(GcCell::allocate(
+        activation.context.gc_context,
+        EventObjectData {
+            base,
+            event: Event::new(""),
+        },
+    ))
+    .into())
+}
 
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
@@ -31,70 +50,53 @@ pub struct EventObjectData<'gc> {
 
 impl<'gc> EventObject<'gc> {
     /// Convert a bare event into it's object representation.
+    ///
+    /// This function supports constructing subclasses of `Event`; as a result,
+    /// we will pull the `prototype` off the `class` given to us.
     pub fn from_event(
-        mc: MutationContext<'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        activation: &mut Activation<'_, 'gc, '_>,
+        class: Object<'gc>,
         event: Event<'gc>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(base_proto, ScriptObjectClass::NoClass);
+    ) -> Result<Object<'gc>, Error> {
+        let proto = class
+            .get_property(
+                class,
+                &QName::new(Namespace::public(), "prototype"),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
-        EventObject(GcCell::allocate(mc, EventObjectData { base, event })).into()
-    }
-
-    /// Instantiate an event subclass.
-    pub fn derive(
-        base_proto: Object<'gc>,
-        mc: MutationContext<'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(
-            Some(base_proto),
-            ScriptObjectClass::InstancePrototype(class, scope),
-        );
-
-        EventObject(GcCell::allocate(
-            mc,
-            EventObjectData {
-                base,
-                event: Event::new(""),
-            },
+        let mut event_object: Object<'gc> = EventObject(GcCell::allocate(
+            activation.context.gc_context,
+            EventObjectData { base, event },
         ))
-        .into()
+        .into();
+        event_object.install_instance_traits(activation, class)?;
+
+        //TODO: Find a way to call the constructor's default initializer
+        //without overwriting the event we just put on the object.
+
+        Ok(event_object)
     }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     impl_avm2_custom_object!(base);
     impl_avm2_custom_object_properties!(base);
+    impl_avm2_custom_object_instance!(base);
 
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::EventObject(*self);
-        Ok(EventObject::from_event(
+    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+        let base = ScriptObjectData::base_new(Some((*self).into()), None);
+
+        Ok(EventObject(GcCell::allocate(
             activation.context.gc_context,
-            Some(this),
-            Event::new(""),
+            EventObjectData {
+                base,
+                event: Event::new(""),
+            },
         ))
-    }
-
-    fn derive(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        class: GcCell<'gc, Class<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::EventObject(*self);
-
-        Ok(Self::derive(
-            this,
-            activation.context.gc_context,
-            class,
-            scope,
-        ))
+        .into())
     }
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {

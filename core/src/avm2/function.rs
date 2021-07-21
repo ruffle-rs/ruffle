@@ -27,25 +27,31 @@ pub struct BytecodeExecutable<'gc> {
     receiver: Option<Object<'gc>>,
 }
 
+#[derive(Clone)]
+pub struct NativeExecutable<'gc> {
+    /// The method associated with the executable.
+    method: Gc<'gc, NativeMethod<'gc>>,
+
+    /// The bound reciever for this method.
+    bound_receiver: Option<Object<'gc>>,
+}
+
+unsafe impl<'gc> Collect for NativeExecutable<'gc> {
+    fn trace(&self, cc: CollectionContext) {
+        self.method.trace(cc);
+        self.bound_receiver.trace(cc);
+    }
+}
+
 /// Represents code that can be executed by some means.
-#[derive(Copy, Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
-    ///
-    /// The second parameter stores the bound receiver for this function.
-    Native(NativeMethod, Option<Object<'gc>>),
+    Native(Gc<'gc, NativeExecutable<'gc>>),
 
     /// Code defined in a loaded ABC file.
     Action(Gc<'gc, BytecodeExecutable<'gc>>),
-}
-
-unsafe impl<'gc> Collect for Executable<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        match self {
-            Self::Action(be) => be.trace(cc),
-            Self::Native(_nf, receiver) => receiver.trace(cc),
-        }
-    }
 }
 
 impl<'gc> Executable<'gc> {
@@ -57,8 +63,14 @@ impl<'gc> Executable<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
-            Method::Native(nf) => Self::Native(nf, receiver),
-            Method::Entry(method) => Self::Action(Gc::allocate(
+            Method::Native(method) => Self::Native(Gc::allocate(
+                mc,
+                NativeExecutable {
+                    method,
+                    bound_receiver: receiver,
+                },
+            )),
+            Method::Bytecode(method) => Self::Action(Gc::allocate(
                 mc,
                 BytecodeExecutable {
                     method,
@@ -77,36 +89,63 @@ impl<'gc> Executable<'gc> {
     ///
     /// It is a panicking logic error to attempt to execute user code while any
     /// reachable object is currently under a GcCell write lock.
+    ///
+    /// Passed-in arguments will be conformed to the set of method parameters
+    /// declared on the function.
     pub fn exec(
         &self,
-        unbound_reciever: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
+        unbound_receiver: Option<Object<'gc>>,
+        mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
-            Executable::Native(nf, receiver) => {
-                let receiver = receiver.or(unbound_reciever);
+            Executable::Native(bm) => {
+                let method = bm.method.method;
+                let receiver = bm.bound_receiver.or(unbound_receiver);
                 let scope = activation.scope();
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     scope,
                     receiver,
-                    base_proto,
+                    subclass_object,
                 )?;
 
-                nf(&mut activation, receiver, arguments)
+                if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {
+                    return Err(format!(
+                        "Attempted to call {:?} with {} arguments (more than {} is prohibited)",
+                        bm.method.name,
+                        arguments.len(),
+                        bm.method.signature.len()
+                    )
+                    .into());
+                }
+
+                let arguments = activation.resolve_parameters(
+                    bm.method.name,
+                    arguments,
+                    &bm.method.signature,
+                )?;
+
+                method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
-                let receiver = bm.receiver.or(unbound_reciever);
+                if bm.method.is_unchecked() {
+                    let max_args = bm.method.signature().len();
+                    if arguments.len() > max_args && !bm.method.is_variadic() {
+                        arguments = &arguments[..max_args];
+                    }
+                }
+
+                let receiver = bm.receiver.or(unbound_receiver);
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
                     bm.method,
                     bm.scope,
                     receiver,
                     arguments,
-                    base_proto,
+                    subclass_object,
                     callee,
                 )?;
 
@@ -125,10 +164,10 @@ impl<'gc> fmt::Debug for Executable<'gc> {
                 .field("scope", &be.scope)
                 .field("receiver", &be.receiver)
                 .finish(),
-            Self::Native(nf, receiver) => fmt
-                .debug_tuple("Executable::Native")
-                .field(&format!("{:p}", nf))
-                .field(receiver)
+            Self::Native(bm) => fmt
+                .debug_struct("Executable::Native")
+                .field("method", &bm.method)
+                .field("bound_receiver", &bm.bound_receiver)
                 .finish(),
         }
     }

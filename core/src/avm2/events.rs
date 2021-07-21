@@ -362,7 +362,7 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// call the wrong handlers.
 pub fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut target: Object<'gc>,
+    target: Object<'gc>,
     event: Object<'gc>,
 ) -> Result<(), Error> {
     avm_debug!(
@@ -422,7 +422,7 @@ pub fn dispatch_event_to_target<'gc>(
 
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    mut this: Object<'gc>,
+    this: Object<'gc>,
     event: Object<'gc>,
 ) -> Result<bool, Error> {
     let target = this

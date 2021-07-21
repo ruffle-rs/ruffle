@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -21,11 +21,13 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if let Some(mut value) = this.as_primitive_mut(activation.context.gc_context) {
-            *value = args
-                .get(0)
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?
-                .into();
+            if !matches!(*value, Value::String(_)) {
+                *value = args
+                    .get(0)
+                    .unwrap_or(&Value::String("".into()))
+                    .coerce_to_string(activation)?
+                    .into();
+            }
         }
     }
 
@@ -121,21 +123,25 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::public(), "String"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<String instance initializer>", mc),
+        Method::from_builtin(class_init, "<String class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
+    write.set_instance_allocator(primitive_allocator);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] =
-        &[("length", Some(length), None)];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("length", Some(length), None)];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethod)] =
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("charAt", char_at), ("charCodeAt", char_code_at)];
-    write.define_as3_builtin_instance_methods(AS3_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
 }

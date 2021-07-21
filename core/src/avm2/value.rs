@@ -6,7 +6,7 @@ use crate::avm2::names::QName;
 use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Avm2, Error};
+use crate::avm2::Error;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
@@ -184,14 +184,15 @@ pub fn abc_double(translation_unit: TranslationUnit<'_>, index: Index<f64>) -> R
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
-    avm2: &mut Avm2<'gc>,
-    mc: MutationContext<'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
-        AbcDefaultValue::String(s) => translation_unit.pool_string(s.0, mc).map(|v| v.into()),
+        AbcDefaultValue::String(s) => translation_unit
+            .pool_string(s.0, activation.context.gc_context)
+            .map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -203,9 +204,12 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
-            Namespace::from_abc_namespace(translation_unit, ns.clone(), mc)?,
-            avm2.prototypes().namespace,
-            mc,
+            activation,
+            Namespace::from_abc_namespace(
+                translation_unit,
+                ns.clone(),
+                activation.context.gc_context,
+            )?,
         )?
         .into()),
     }
@@ -296,7 +300,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Object(o) if hint == Hint::String => {
                 let mut prim = self.clone();
-                let mut object = *o;
+                let object = *o;
 
                 if let Value::Object(f) =
                     object.get_property(*o, &QName::dynamic_name("toString"), activation)?
@@ -322,7 +326,7 @@ impl<'gc> Value<'gc> {
             }
             Value::Object(o) if hint == Hint::Number => {
                 let mut prim = self.clone();
-                let mut object = *o;
+                let object = *o;
 
                 if let Value::Object(f) =
                     object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?
@@ -561,16 +565,131 @@ impl<'gc> Value<'gc> {
             _ => {}
         };
 
-        let proto = match self {
-            Value::Bool(_) => activation.avm2().prototypes().boolean,
-            Value::Number(_) => activation.avm2().prototypes().number,
-            Value::Unsigned(_) => activation.avm2().prototypes().uint,
-            Value::Integer(_) => activation.avm2().prototypes().int,
-            Value::String(_) => activation.avm2().prototypes().string,
-            _ => unreachable!(),
-        };
+        PrimitiveObject::from_primitive(self.clone(), activation)
+    }
 
-        PrimitiveObject::from_primitive(self.clone(), proto, activation.context.gc_context)
+    /// Coerce the value to another value by type name.
+    ///
+    /// This function implements a handful of coercion rules that appear to be
+    /// in use when parameters are typechecked. `op_coerce` appears to use
+    /// these as well. If `class` is the class corresponding to a primitive
+    /// type, then this function will coerce the given value to that type.
+    ///
+    /// If the type is not coercible to the given type, an error is thrown.
+    pub fn coerce_to_type(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        class: Object<'gc>,
+    ) -> Result<Value<'gc>, Error> {
+        if Object::ptr_eq(class, activation.avm2().classes().int) {
+            return Ok(self.coerce_to_i32(activation)?.into());
+        }
+
+        if Object::ptr_eq(class, activation.avm2().classes().uint) {
+            return Ok(self.coerce_to_u32(activation)?.into());
+        }
+
+        if Object::ptr_eq(class, activation.avm2().classes().number) {
+            return Ok(self.coerce_to_number(activation)?.into());
+        }
+
+        if Object::ptr_eq(class, activation.avm2().classes().boolean) {
+            return Ok(self.coerce_to_boolean().into());
+        }
+
+        if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
+            return Ok(Value::Null);
+        }
+
+        if Object::ptr_eq(class, activation.avm2().classes().string) {
+            return Ok(self.coerce_to_string(activation)?.into());
+        }
+
+        if let Ok(object) = self.coerce_to_object(activation) {
+            if object.is_of_type(class)? {
+                return Ok(object.into());
+            }
+        }
+
+        if let Some(static_class) = class.as_class() {
+            return Err(format!(
+                "Cannot coerce {:?} to an {:?}",
+                self,
+                static_class.read().name()
+            )
+            .into());
+        } else {
+            return Err(format!("Cannot coerce {:?} to {:?}", self, class).into());
+        }
+    }
+
+    /// Determine if this value is any kind of number.
+    pub fn is_number(&self) -> bool {
+        match self {
+            Value::Number(_) => true,
+            Value::Integer(_) => true,
+            Value::Unsigned(_) => true,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_number()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is a number representable as a u32 without loss
+    /// of precision.
+    #[allow(clippy::float_cmp)]
+    pub fn is_u32(&self) -> bool {
+        match self {
+            Value::Number(n) => *n == (*n as u32 as f64),
+            Value::Integer(i) => *i >= 0,
+            Value::Unsigned(_) => true,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is a number representable as an i32 without
+    /// loss of precision.
+    #[allow(clippy::float_cmp)]
+    pub fn is_i32(&self) -> bool {
+        match self {
+            Value::Number(n) => *n == (*n as i32 as f64),
+            Value::Integer(_) => true,
+            Value::Unsigned(u) => *u <= i32::MAX as u32,
+            Value::Object(o) => o.as_primitive().map(|p| p.is_i32()).unwrap_or(false),
+            _ => false,
+        }
+    }
+
+    /// Determine if this value is of a given type.
+    ///
+    /// This implements a particularly unusual rule: primitive numeric values
+    /// considered instances of all numeric types that can represent them. For
+    /// example, 5 is simultaneously an instance of `int`, `uint`, and
+    /// `Number`.
+    pub fn is_of_type(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        type_object: Object<'gc>,
+    ) -> Result<bool, Error> {
+        if let Some(type_class) = type_object.as_class() {
+            if type_class.read().name() == &QName::new(Namespace::public(), "Number") {
+                return Ok(self.is_number());
+            }
+
+            if type_class.read().name() == &QName::new(Namespace::public(), "uint") {
+                return Ok(self.is_u32());
+            }
+
+            if type_class.read().name() == &QName::new(Namespace::public(), "int") {
+                return Ok(self.is_i32());
+            }
+        }
+
+        if let Ok(o) = self.coerce_to_object(activation) {
+            o.is_of_type(type_object)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Determine if two values are abstractly equal to each other.

@@ -14,8 +14,14 @@ bitflags! {
     #[derive(Collect)]
     #[collect(require_static)]
     pub struct Attribute: u8 {
+        /// Property cannot be deleted in user code.
         const DONT_DELETE = 1 << 0;
+
+        /// Property cannot be set.
         const READ_ONLY   = 1 << 1;
+
+        /// Property cannot be overridden in subclasses.
+        const FINAL       = 1 << 2;
     }
 }
 
@@ -40,18 +46,30 @@ pub enum Property<'gc> {
 
 impl<'gc> Property<'gc> {
     /// Create a new stored property.
-    pub fn new_stored(value: impl Into<Value<'gc>>) -> Self {
+    pub fn new_stored(value: impl Into<Value<'gc>>, is_final: bool) -> Self {
+        let mut attributes = Attribute::DONT_DELETE;
+
+        if is_final {
+            attributes |= Attribute::FINAL;
+        }
+
         Property::Stored {
             value: value.into(),
-            attributes: Attribute::DONT_DELETE,
+            attributes,
         }
     }
 
     /// Create a new stored property.
-    pub fn new_const(value: impl Into<Value<'gc>>) -> Self {
+    pub fn new_const(value: impl Into<Value<'gc>>, is_final: bool) -> Self {
+        let mut attributes = Attribute::DONT_DELETE | Attribute::READ_ONLY;
+
+        if is_final {
+            attributes |= Attribute::FINAL;
+        }
+
         Property::Stored {
             value: value.into(),
-            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
+            attributes,
         }
     }
 
@@ -66,24 +84,42 @@ impl<'gc> Property<'gc> {
     /// Convert a function into a method.
     ///
     /// This applies READ_ONLY/DONT_DELETE to the property.
-    pub fn new_method(fn_obj: Object<'gc>) -> Self {
+    pub fn new_method(fn_obj: Object<'gc>, is_final: bool) -> Self {
+        let mut attributes = Attribute::DONT_DELETE | Attribute::READ_ONLY;
+
+        if is_final {
+            attributes |= Attribute::FINAL;
+        }
+
         Property::Stored {
             value: fn_obj.into(),
-            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
+            attributes,
         }
     }
 
     /// Create a new, unconfigured virtual property item.
-    pub fn new_virtual() -> Self {
+    pub fn new_virtual(is_final: bool) -> Self {
+        let mut attributes = Attribute::DONT_DELETE | Attribute::READ_ONLY;
+
+        if is_final {
+            attributes |= Attribute::FINAL;
+        }
+
         Property::Virtual {
             get: None,
             set: None,
-            attributes: Attribute::DONT_DELETE | Attribute::READ_ONLY,
+            attributes,
         }
     }
 
     /// Create a new slot property.
-    pub fn new_slot(slot_id: u32) -> Self {
+    pub fn new_slot(slot_id: u32, is_final: bool) -> Self {
+        let mut attributes = Attribute::DONT_DELETE;
+
+        if is_final {
+            attributes |= Attribute::FINAL;
+        }
+
         Property::Slot {
             slot_id,
             attributes: Attribute::DONT_DELETE,
@@ -131,21 +167,21 @@ impl<'gc> Property<'gc> {
     pub fn get(
         &self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
             Property::Virtual { get: Some(get), .. } => Ok(ReturnValue::defer_execution(
                 *get,
                 Some(this),
                 vec![],
-                base_proto,
+                subclass_object,
             )),
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
 
             // This doesn't need the non-local version of this property because
             // by the time this has called the slot was already installed
-            Property::Slot { slot_id, .. } => this.get_slot_local(*slot_id).map(|v| v.into()),
+            Property::Slot { slot_id, .. } => this.get_slot(*slot_id).map(|v| v.into()),
         }
     }
 
@@ -159,7 +195,7 @@ impl<'gc> Property<'gc> {
     pub fn set(
         &mut self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -169,7 +205,7 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        base_proto,
+                        subclass_object,
                     ));
                 }
 
@@ -203,7 +239,7 @@ impl<'gc> Property<'gc> {
     pub fn init(
         &mut self,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        subclass_object: Option<Object<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -213,7 +249,7 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        base_proto,
+                        subclass_object,
                     ));
                 }
 
@@ -261,5 +297,14 @@ impl<'gc> Property<'gc> {
             Property::Slot { attributes, .. } => attributes,
         };
         !attributes.contains(Attribute::READ_ONLY)
+    }
+
+    pub fn is_final(&self) -> bool {
+        let attributes = match self {
+            Property::Virtual { attributes, .. } => attributes,
+            Property::Stored { attributes, .. } => attributes,
+            Property::Slot { attributes, .. } => attributes,
+        };
+        attributes.contains(Attribute::FINAL)
     }
 }

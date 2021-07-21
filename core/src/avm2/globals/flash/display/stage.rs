@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::string::AvmString;
@@ -15,12 +15,21 @@ use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    Err("You cannot construct new instances of the Stage.".into())
+}
+
+/// Implements `flash.display.Stage`'s native instance constructor.
+pub fn native_instance_init<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        activation.super_init(this, &[])?;
+        activation.super_init(this, args)?;
     }
 
     Ok(Value::Undefined)
@@ -622,19 +631,24 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             )
             .into(),
         ),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<Stage instance initializer>", mc),
+        Method::from_builtin(class_init, "<Stage class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+    write.set_native_instance_init(Method::from_builtin(
+        native_instance_init,
+        "<Stage native instance initializer>",
+        mc,
+    ));
 
     const PUBLIC_OVERRIDE_INSTANCE_PROPERTIES: &[(
         &str,
-        Option<NativeMethod>,
-        Option<NativeMethod>,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
     )] = &[
         (
             "accessibilityProperties",
@@ -669,7 +683,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             write.define_instance_trait(
                 Trait::from_getter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin(getter),
+                    Method::from_builtin(getter, name, mc),
                 )
                 .with_override(),
             );
@@ -678,14 +692,18 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             write.define_instance_trait(
                 Trait::from_setter(
                     QName::new(Namespace::public(), name),
-                    Method::from_builtin(setter),
+                    Method::from_builtin(setter, name, mc),
                 )
                 .with_override(),
             );
         }
     }
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("align", Some(align), Some(set_align)),
         ("browserZoomFactor", Some(browser_zoom_factor), None),
         ("color", Some(color), Some(set_color)),
@@ -709,7 +727,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("quality", Some(quality), Some(set_quality)),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

@@ -138,7 +138,7 @@ impl<'gc> Scope<'gc> {
     /// This function yields `None` if no such scope exists to provide the
     /// property's value.
     pub fn resolve(
-        &mut self,
+        &self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Value<'gc>>, Error> {
@@ -153,16 +153,14 @@ impl<'gc> Scope<'gc> {
         }
 
         if let Some(parent) = self.parent {
-            return parent
-                .write(activation.context.gc_context)
-                .resolve(name, activation);
+            return parent.read().resolve(name, activation);
         }
 
         if let Some(domain) = self.locals().as_application_domain() {
             let script = domain.get_defining_script(name)?;
 
             if let Some((qname, mut script)) = script {
-                let mut script_scope = script.globals(&mut activation.context)?;
+                let script_scope = script.globals(&mut activation.context)?;
 
                 return Ok(Some(script_scope.get_property(
                     script_scope,

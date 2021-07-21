@@ -1,8 +1,6 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, Namespace as Avm2Namespace,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
-    TObject as Avm2TObject,
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
@@ -116,31 +114,17 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
-            let mut allocator = || {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                let mut proto = activation.context.avm2.prototypes().shape;
-                let constr = proto
-                    .get_property(
-                        proto,
-                        &Avm2QName::new(Avm2Namespace::public(), "constructor"),
-                        &mut activation,
-                    )?
-                    .coerce_to_object(&mut activation)?;
+            let shape_constr = context.avm2.classes().shape;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                let object = Avm2StageObject::for_display_object(
-                    activation.context.gc_context,
-                    (*self).into(),
-                    proto,
-                )
-                .into();
-                constr.call(Some(object), &[], &mut activation, Some(proto))?;
-
-                Ok(object)
-            };
-            let result: Result<Avm2Object<'gc>, Avm2Error> = allocator();
-
-            match result {
-                Ok(object) => self.0.write(context.gc_context).avm2_object = Some(object),
+            match Avm2StageObject::for_display_object_childless(
+                &mut activation,
+                (*self).into(),
+                shape_constr,
+            ) {
+                Ok(object) => {
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                }
                 Err(e) => log::error!("Got {} when constructing AVM2 side of display object", e),
             }
         }

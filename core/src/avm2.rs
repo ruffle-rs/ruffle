@@ -1,6 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::globals::SystemPrototypes;
+use crate::avm2::globals::{SystemClasses, SystemPrototypes};
 use crate::avm2::method::Method;
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -72,6 +72,9 @@ pub struct Avm2<'gc> {
     /// System prototypes.
     system_prototypes: Option<SystemPrototypes<'gc>>,
 
+    /// System classes.
+    system_classes: Option<SystemClasses<'gc>>,
+
     /// A list of objects which are capable of recieving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
@@ -95,6 +98,7 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_prototypes: None,
+            system_classes: None,
             broadcast_list: HashMap::new(),
 
             #[cfg(feature = "avm_debug")]
@@ -115,6 +119,13 @@ impl<'gc> Avm2<'gc> {
         self.system_prototypes.as_ref().unwrap()
     }
 
+    /// Return the current set of system classes.
+    ///
+    /// This function panics if the interpreter has not yet been initialized.
+    pub fn classes(&self) -> &SystemClasses<'gc> {
+        self.system_classes.as_ref().unwrap()
+    }
+
     /// Run a script's initializer method.
     pub fn run_script_initializer(
         script: Script<'gc>,
@@ -124,10 +135,14 @@ impl<'gc> Avm2<'gc> {
 
         let (method, scope) = script.init();
         match method {
-            Method::Native(nf) => {
-                nf(&mut init_activation, Some(scope), &[])?;
+            Method::Native(method) => {
+                //This exists purely to check if the builtin is OK with being called with
+                //no parameters.
+                init_activation.resolve_parameters(method.name, &[], &method.signature)?;
+
+                (method.method)(&mut init_activation, Some(scope), &[])?;
             }
-            Method::Entry(_) => {
+            Method::Bytecode(_) => {
                 init_activation.run_stack_frame_for_script(script)?;
             }
         };
@@ -144,9 +159,11 @@ impl<'gc> Avm2<'gc> {
         target: Object<'gc>,
     ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
-        let event_proto = context.avm2.system_prototypes.as_ref().unwrap().event;
-        let event_object = EventObject::from_event(context.gc_context, Some(event_proto), event);
+
+        let event_constr = context.avm2.classes().event;
         let mut activation = Activation::from_nothing(context.reborrow());
+
+        let event_object = EventObject::from_event(&mut activation, event_constr, event)?;
 
         dispatch_event(&mut activation, target, event_object)
     }
@@ -180,16 +197,17 @@ impl<'gc> Avm2<'gc> {
 
     /// Dispatch an event on all objects in the current execution list.
     ///
-    /// `on_class_proto` specifies a class or interface prototype whose
-    /// instances, implementers, and/or subclasses define the set of objects
-    /// that will recieve the event. You can broadcast to just display objects,
-    /// or specific interfaces, and so on.
+    /// `on_type` specifies a class or interface constructor whose instances,
+    /// implementers, and/or subclasses define the set of objects that will
+    /// receive the event. You can broadcast to just display objects, or
+    /// specific interfaces, and so on.
     ///
-    /// Attempts to broadcast a non-broadcast event will do nothing.
+    /// Attempts to broadcast a non-broadcast event will do nothing. To add a
+    /// new broadcast type, you must add it to the `BROADCAST_WHITELIST` first.
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Event<'gc>,
-        on_class_proto: Object<'gc>,
+        on_type: Object<'gc>,
     ) -> Result<(), Error> {
         let event_name = event.event_type();
         if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
@@ -213,7 +231,7 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object {
-                if object.has_prototype_in_chain(on_class_proto, true)? {
+                if object.is_of_type(on_type)? {
                     Avm2::dispatch_event(context, event.clone(), object)?;
                 }
             }
@@ -255,7 +273,7 @@ impl<'gc> Avm2<'gc> {
         let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
 
         for i in (0..abc_file.scripts.len()).rev() {
-            let mut script = tunit.load_script(i as u32, context.avm2, context.gc_context)?;
+            let mut script = tunit.load_script(i as u32, context)?;
 
             if !lazy_init {
                 script.globals(context)?;

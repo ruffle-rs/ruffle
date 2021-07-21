@@ -2,10 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethod};
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{EventObject, Object, TObject};
-use crate::avm2::scope::Scope;
+use crate::avm2::object::{event_allocator, EventObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -143,14 +142,9 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(evt) = this.unwrap().as_event() {
-        let evt_proto = activation.avm2().system_prototypes.as_ref().unwrap().event;
+        let evt_class = activation.avm2().classes().event;
 
-        return Ok(EventObject::from_event(
-            activation.context.gc_context,
-            Some(evt_proto),
-            evt.clone(),
-        )
-        .into());
+        return Ok(EventObject::from_event(activation, evt_class, evt.clone())?.into());
     }
 
     Ok(Value::Undefined)
@@ -164,7 +158,7 @@ pub fn format_to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     use std::fmt::Write;
 
-    if let Some(mut this) = this {
+    if let Some(this) = this {
         let class_name = args
             .get(0)
             .cloned()
@@ -272,16 +266,21 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "Event"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin(instance_init, "<Event instance initializer>", mc),
+        Method::from_builtin(class_init, "<Event class initializer>", mc),
         mc,
     );
 
     let mut write = class.write(mc);
 
     write.set_attributes(ClassAttributes::SEALED);
+    write.set_instance_allocator(event_allocator);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(&str, Option<NativeMethod>, Option<NativeMethod>)] = &[
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
         ("bubbles", Some(bubbles), None),
         ("cancelable", Some(cancelable), None),
         ("type", Some(get_type), None),
@@ -289,9 +288,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("currentTarget", Some(current_target), None),
         ("eventPhase", Some(event_phase), None),
     ];
-    write.define_public_builtin_instance_properties(PUBLIC_INSTANCE_PROPERTIES);
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethod)] = &[
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("clone", clone),
         ("formatToString", format_to_string),
         ("isDefaultPrevented", is_default_prevented),
@@ -300,7 +299,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("stopImmediatePropagation", stop_immediate_propagation),
         ("toString", to_string),
     ];
-    write.define_public_builtin_instance_methods(PUBLIC_INSTANCE_METHODS);
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     const CONSTANTS: &[(&str, &str)] = &[
         ("ACTIVATE", "activate"),
@@ -364,19 +363,4 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
-}
-
-/// Object deriver for `Event`
-pub fn event_deriver<'gc>(
-    base_proto: Object<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
-    class: GcCell<'gc, Class<'gc>>,
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
-) -> Result<Object<'gc>, Error> {
-    Ok(EventObject::derive(
-        base_proto,
-        activation.context.gc_context,
-        class,
-        scope,
-    ))
 }

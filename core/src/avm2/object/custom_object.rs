@@ -1,5 +1,7 @@
 //! Custom object macro
 
+/// Implement defaults for `TObject` methods that deal with property retrieval,
+/// storage, and deletion.
 #[macro_export]
 macro_rules! impl_avm2_custom_object_properties {
     ($field:ident) => {
@@ -66,6 +68,10 @@ macro_rules! impl_avm2_custom_object_properties {
                 .is_property_overwritable(name)
         }
 
+        fn is_property_final(self, name: &QName<'gc>) -> bool {
+            self.0.read().$field.is_property_final(name)
+        }
+
         fn delete_property(
             &self,
             gc_context: MutationContext<'gc, '_>,
@@ -81,6 +87,21 @@ macro_rules! impl_avm2_custom_object_properties {
         fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
             self.0.read().$field.resolve_any(local_name)
         }
+    };
+}
+
+/// Implement defaults for `TObject` methods that mark this object as an
+/// instance of a class.
+#[macro_export]
+macro_rules! impl_avm2_custom_object_instance {
+    ($field:ident) => {
+        fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
+            self.0.read().$field.has_trait(name)
+        }
+
+        fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+            self.0.read().$field.get_scope()
+        }
 
         fn resolve_any_trait(
             self,
@@ -88,76 +109,62 @@ macro_rules! impl_avm2_custom_object_properties {
         ) -> Result<Option<Namespace<'gc>>, Error> {
             self.0.read().$field.resolve_any_trait(local_name)
         }
+
+        fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+            self.0.read().$field.as_class()
+        }
+
+        fn as_class_object(&self) -> Option<Object<'gc>> {
+            self.0.read().$field.as_class_object()
+        }
+
+        fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
+            self.0.write(mc).$field.set_class_object(class_object);
+        }
+
+        fn set_local_property_is_enumerable(
+            &self,
+            mc: MutationContext<'gc, '_>,
+            name: &QName<'gc>,
+            is_enumerable: bool,
+        ) -> Result<(), Error> {
+            self.0
+                .write(mc)
+                .$field
+                .set_local_property_is_enumerable(name, is_enumerable)
+        }
     };
 }
 
+/// Implement defaults for `TObject` methods not separated out into a separate
+/// macro.
 #[macro_export]
 macro_rules! impl_avm2_custom_object {
     ($field:ident) => {
-        fn has_slot_local(self, id: u32) -> bool {
-            self.0.read().$field.has_slot_local(id)
+        fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+            self.0.read().$field.get_slot(id)
         }
 
-        fn get_slot_local(self, id: u32) -> Result<Value<'gc>, Error> {
-            self.0.read().$field.get_slot_local(id)
-        }
-
-        fn set_slot_local(
+        fn set_slot(
             self,
             id: u32,
             value: Value<'gc>,
             mc: MutationContext<'gc, '_>,
         ) -> Result<(), Error> {
-            self.0.write(mc).$field.set_slot_local(id, value, mc)
+            self.0.write(mc).$field.set_slot(id, value, mc)
         }
 
-        fn init_slot_local(
+        fn init_slot(
             self,
             id: u32,
             value: Value<'gc>,
             mc: MutationContext<'gc, '_>,
         ) -> Result<(), Error> {
-            self.0.write(mc).$field.init_slot_local(id, value, mc)
+            self.0.write(mc).$field.init_slot(id, value, mc)
         }
 
         fn get_method(self, id: u32) -> Option<Object<'gc>> {
             self.0.read().$field.get_method(id)
-        }
-
-        fn get_trait(self, name: &QName<'gc>) -> Result<Vec<Trait<'gc>>, Error> {
-            self.0.read().$field.get_trait(name)
-        }
-
-        fn get_trait_slot(self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-            self.0.read().$field.get_trait_slot(id)
-        }
-
-        fn get_provided_trait(
-            &self,
-            name: &QName<'gc>,
-            known_traits: &mut Vec<Trait<'gc>>,
-        ) -> Result<(), Error> {
-            self.0.read().$field.get_provided_trait(name, known_traits)
-        }
-
-        fn get_provided_trait_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
-            self.0.read().$field.get_provided_trait_slot(id)
-        }
-
-        fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
-            self.0.read().$field.get_scope()
-        }
-
-        fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-            self.0.read().$field.has_trait(name)
-        }
-
-        fn provides_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-            self.0.read().$field.provides_trait(name)
-        }
-
-        fn has_instantiated_property(self, name: &QName<'gc>) -> bool {
-            self.0.read().$field.has_instantiated_property(name)
         }
 
         fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
@@ -184,24 +191,8 @@ macro_rules! impl_avm2_custom_object {
             self.0.read().$field.property_is_enumerable(name)
         }
 
-        fn set_local_property_is_enumerable(
-            &self,
-            mc: MutationContext<'gc, '_>,
-            name: &QName<'gc>,
-            is_enumerable: bool,
-        ) -> Result<(), Error> {
-            self.0
-                .write(mc)
-                .$field
-                .set_local_property_is_enumerable(name, is_enumerable)
-        }
-
         fn as_ptr(&self) -> *const ObjectPtr {
             self.0.as_ptr() as *const ObjectPtr
-        }
-
-        fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-            self.0.read().base.as_class()
         }
 
         fn install_method(
@@ -210,11 +201,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) {
             self.0
                 .write(mc)
                 .$field
-                .install_method(name, disp_id, function)
+                .install_method(name, disp_id, function, is_final)
         }
 
         fn install_getter(
@@ -223,11 +215,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) -> Result<(), Error> {
             self.0
                 .write(mc)
                 .$field
-                .install_getter(name, disp_id, function)
+                .install_getter(name, disp_id, function, is_final)
         }
 
         fn install_setter(
@@ -236,11 +229,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             disp_id: u32,
             function: Object<'gc>,
+            is_final: bool,
         ) -> Result<(), Error> {
             self.0
                 .write(mc)
                 .$field
-                .install_setter(name, disp_id, function)
+                .install_setter(name, disp_id, function, is_final)
         }
 
         fn install_dynamic_property(
@@ -261,8 +255,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             id: u32,
             value: Value<'gc>,
+            is_final: bool,
         ) {
-            self.0.write(mc).$field.install_slot(name, id, value)
+            self.0
+                .write(mc)
+                .$field
+                .install_slot(name, id, value, is_final)
         }
 
         fn install_const(
@@ -271,8 +269,12 @@ macro_rules! impl_avm2_custom_object {
             name: QName<'gc>,
             id: u32,
             value: Value<'gc>,
+            is_final: bool,
         ) {
-            self.0.write(mc).$field.install_const(name, id, value)
+            self.0
+                .write(mc)
+                .$field
+                .install_const(name, id, value, is_final)
         }
 
         fn interfaces(&self) -> Vec<Object<'gc>> {

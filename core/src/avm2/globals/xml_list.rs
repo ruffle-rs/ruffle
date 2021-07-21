@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{xml_allocator, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -28,11 +28,26 @@ pub fn class_init<'gc>(
 }
 
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    Class::new(
+    let class = Class::new(
         QName::new(Namespace::public(), "XMLList"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(instance_init),
-        Method::from_builtin(class_init),
+        Method::from_builtin_and_params(
+            instance_init,
+            "<XMLList instance initializer>",
+            vec![ParamConfig::optional(
+                "value",
+                QName::new(Namespace::public(), "Object").into(),
+                Value::Undefined,
+            )],
+            false,
+            mc,
+        ),
+        Method::from_builtin(class_init, "<XMLList class initializer>", mc),
         mc,
-    )
+    );
+
+    let mut write = class.write(mc);
+    write.set_instance_allocator(xml_allocator);
+
+    class
 }
