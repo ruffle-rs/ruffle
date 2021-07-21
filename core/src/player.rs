@@ -1329,7 +1329,11 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            root.as_movie_clip().unwrap().preload(context);
+            let mut preload_done = false;
+
+            while !preload_done {
+                preload_done = root.as_movie_clip().unwrap().preload(context);
+            }
         });
         if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
             self.ui.display_unsupported_message();

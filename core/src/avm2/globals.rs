@@ -683,7 +683,7 @@ fn load_playerglobal<'gc>(
         Ok(())
     };
 
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, None);
     macro_rules! avm2_system_classes_playerglobal {
         ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
             $(
