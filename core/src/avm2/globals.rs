@@ -766,5 +766,16 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    // package `flash.crypto`
+    function(
+        mc,
+        "flash.crypto",
+        "generateRandomBytes",
+        flash::crypto::generate_random_bytes,
+        fn_proto,
+        domain,
+        script,
+    )?;
+
     Ok(())
 }
