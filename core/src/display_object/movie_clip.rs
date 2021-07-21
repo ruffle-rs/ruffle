@@ -237,19 +237,30 @@ impl<'gc> MovieClip<'gc> {
             .replace_with_movie(gc_context, movie)
     }
 
+    /// Preload a chunk of the movie.
+    ///
+    /// A "chunk" is an implementor-chosen number of tags that are parsed
+    /// before this function returns. This function will only parse up to a
+    /// certain number of tags, and then return. If this function returns false,
+    /// then the preload didn't complete and further preloads should occur
+    /// until this returns true.
+    ///
+    /// The chunked preload assumes that preloading is happening within the
+    /// context of an event loop. As such, multiple chunks should be processed
+    /// in between yielding to the underlying event loop, either through
+    /// `await`, returning to the loop directly, or some other mechanism.
     pub fn preload(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-    ) {
+    ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
-        let mut reader = data.read_from(0);
-        let mut cur_frame = 1;
-        let mut ids = fnv::FnvHashMap::default();
+        let mut reader = data.read_from(static_data.next_preload_chunk);
+        let mut cur_frame = static_data.cur_preload_frame;
         let mut preload_stream_handle = None;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::CsmTextSettings => self
@@ -391,7 +402,7 @@ impl<'gc> MovieClip<'gc> {
                 context,
                 reader,
                 tag_len,
-                &mut ids,
+                &mut static_data.cur_preload_ids,
                 morph_shapes,
                 1,
             ),
@@ -399,7 +410,7 @@ impl<'gc> MovieClip<'gc> {
                 context,
                 reader,
                 tag_len,
-                &mut ids,
+                &mut static_data.cur_preload_ids,
                 morph_shapes,
                 2,
             ),
@@ -407,7 +418,7 @@ impl<'gc> MovieClip<'gc> {
                 context,
                 reader,
                 tag_len,
-                &mut ids,
+                &mut static_data.cur_preload_ids,
                 morph_shapes,
                 3,
             ),
@@ -415,18 +426,22 @@ impl<'gc> MovieClip<'gc> {
                 context,
                 reader,
                 tag_len,
-                &mut ids,
+                &mut static_data.cur_preload_ids,
                 morph_shapes,
                 4,
             ),
-            TagCode::RemoveObject => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 1),
-            TagCode::RemoveObject2 => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 2),
+            TagCode::RemoveObject => self.0.write(context.gc_context).preload_remove_object(
+                context,
+                reader,
+                &mut static_data.cur_preload_ids,
+                1,
+            ),
+            TagCode::RemoveObject2 => self.0.write(context.gc_context).preload_remove_object(
+                context,
+                reader,
+                &mut static_data.cur_preload_ids,
+                2,
+            ),
             TagCode::ShowFrame => {
                 self.0
                     .write(context.gc_context)
@@ -467,7 +482,13 @@ impl<'gc> MovieClip<'gc> {
             }
             _ => Ok(()),
         };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+        let is_chunked = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, None);
+
+        // These variables will be persisted to be picked back up in the next
+        // chunk.
+        static_data.next_preload_chunk =
+            (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64);
+        static_data.cur_preload_frame = cur_frame;
 
         // Finalize audio stream.
         if let Some(stream) = preload_stream_handle {
@@ -478,6 +499,8 @@ impl<'gc> MovieClip<'gc> {
 
         self.0.write(context.gc_context).static_data =
             Gc::allocate(context.gc_context, static_data);
+
+        is_chunked.unwrap_or(true)
     }
 
     #[inline]
@@ -1011,7 +1034,7 @@ impl<'gc> MovieClip<'gc> {
                     _ => Ok(()),
                 };
 
-                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
             }
         }
 
@@ -1084,7 +1107,7 @@ impl<'gc> MovieClip<'gc> {
             }
             _ => Ok(()),
         };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+        let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
 
         self.0.write(context.gc_context).tag_stream_pos =
             reader.get_ref().as_ptr() as u64 - tag_stream_start;
@@ -1288,7 +1311,7 @@ impl<'gc> MovieClip<'gc> {
                 }
                 _ => Ok(()),
             };
-            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
         }
         let hit_target_frame = self.0.read().current_frame == frame;
 
@@ -1717,7 +1740,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
                     _ => Ok(()),
                 };
-                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
             }
 
             if needs_construction {
@@ -3308,6 +3331,16 @@ impl Default for Scene {
 struct MovieClipStatic {
     id: CharacterId,
     swf: SwfSlice,
+
+    /// The address to start the next preload chunk from.
+    next_preload_chunk: u64,
+
+    /// The current frame being preloaded.
+    cur_preload_frame: u16,
+
+    /// The current state of the root timeline.
+    cur_preload_ids: fnv::FnvHashMap<Depth, CharacterId>,
+
     frame_labels: HashMap<String, FrameNumber>,
     scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
@@ -3327,6 +3360,9 @@ impl MovieClipStatic {
         Self {
             id,
             swf,
+            next_preload_chunk: 0,
+            cur_preload_frame: 1,
+            cur_preload_ids: Default::default(),
             total_frames,
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),

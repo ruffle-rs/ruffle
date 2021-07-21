@@ -533,19 +533,57 @@ impl<'gc> Loader<'gc> {
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
                         mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
-                        let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
+                        Ok(())
+                    })?;
 
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library
-                                .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
-                                );
-                        }
+                let mut preload_done = false;
+
+                while !preload_done {
+                    player
+                        .lock()
+                        .expect("Could not lock player!!")
+                        .update(|uc| {
+                            let clip = match uc.load_manager.get_loader(handle) {
+                                Some(Loader::Movie { target_clip, .. }) => *target_clip,
+                                None => return Err(Error::Cancelled),
+                                _ => unreachable!(),
+                            };
+
+                            let mc = clip
+                                .as_movie_clip()
+                                .expect("Attempted to load movie into not movie clip");
+
+                            let mut morph_shapes = fnv::FnvHashMap::default();
+                            preload_done = mc.preload(uc, &mut morph_shapes);
+
+                            // Finalize morph shapes.
+                            for (id, static_data) in morph_shapes {
+                                let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                                uc.library
+                                    .library_for_movie_mut(movie.clone())
+                                    .register_character(
+                                        id,
+                                        crate::character::Character::MorphShape(morph_shape),
+                                    );
+                            }
+
+                            Ok(())
+                        })?;
+                }
+
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|uc| {
+                        let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::Movie {
+                                target_clip,
+                                target_broadcaster,
+                                ..
+                            }) => (*target_clip, *target_broadcaster),
+                            None => return Err(Error::Cancelled),
+                            _ => unreachable!(),
+                        };
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
