@@ -537,6 +537,7 @@ impl<'gc> Loader<'gc> {
                     })?;
 
                 let mut preload_done = false;
+                let mut morph_shapes = fnv::FnvHashMap::default();
 
                 while !preload_done {
                     player
@@ -553,19 +554,7 @@ impl<'gc> Loader<'gc> {
                                 .as_movie_clip()
                                 .expect("Attempted to load movie into not movie clip");
 
-                            let mut morph_shapes = fnv::FnvHashMap::default();
-                            preload_done = mc.preload(uc, &mut morph_shapes);
-
-                            // Finalize morph shapes.
-                            for (id, static_data) in morph_shapes {
-                                let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                                uc.library
-                                    .library_for_movie_mut(movie.clone())
-                                    .register_character(
-                                        id,
-                                        crate::character::Character::MorphShape(morph_shape),
-                                    );
-                            }
+                            preload_done = mc.preload(uc, &mut morph_shapes, Some(1));
 
                             Ok(())
                         })?;
@@ -584,6 +573,17 @@ impl<'gc> Loader<'gc> {
                             None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
+
+                        // Finalize morph shapes.
+                        for (id, static_data) in morph_shapes {
+                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                            uc.library
+                                .library_for_movie_mut(movie.clone())
+                                .register_character(
+                                    id,
+                                    crate::character::Character::MorphShape(morph_shape),
+                                );
+                        }
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(

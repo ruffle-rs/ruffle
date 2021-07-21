@@ -1150,13 +1150,13 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let mut morph_shapes = fnv::FnvHashMap::default();
             let root = context.stage.root_clip();
-            let mut preload_done = false;
-
-            while !preload_done {
-                preload_done = root
-                    .as_movie_clip()
+            let preload_done =
+                root.as_movie_clip()
                     .unwrap()
-                    .preload(context, &mut morph_shapes);
+                    .preload(context, &mut morph_shapes, None);
+
+            if !preload_done {
+                log::warn!("Preloading of root clip did not complete in a single call.");
             }
 
             let lib = context

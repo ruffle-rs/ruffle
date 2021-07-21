@@ -253,6 +253,7 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
+        chunk_limit: Option<usize>,
     ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
@@ -482,7 +483,8 @@ impl<'gc> MovieClip<'gc> {
             }
             _ => Ok(()),
         };
-        let is_chunked = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, None);
+        let is_chunked =
+            tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, chunk_limit);
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -2979,9 +2981,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        let mut is_finished = false;
-        while !is_finished {
-            is_finished = movie_clip.preload(context, morph_shapes);
+        // NOTE: We don't support partial preloading of defined sprites yet.
+        let preload_done = movie_clip.preload(context, morph_shapes, None);
+        if !preload_done {
+            log::warn!(
+                "Preloading of movieclip {} did not complete in a single call.",
+                id
+            );
         }
 
         context
