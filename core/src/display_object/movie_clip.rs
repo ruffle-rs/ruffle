@@ -196,7 +196,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf, num_frames, None, None, gc_context),
+                    MovieClipStatic::with_data(id, swf, num_frames, None, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -256,10 +256,6 @@ impl<'gc> MovieClip<'gc> {
                         movie.clone().into(),
                         num_frames,
                         loader_info,
-                        Some(GcCell::allocate(
-                            activation.context.gc_context,
-                            PreloadProgress::default(),
-                        )),
                         activation.context.gc_context,
                     ),
                 ),
@@ -338,10 +334,6 @@ impl<'gc> MovieClip<'gc> {
                 movie.into(),
                 total_frames,
                 loader_info.map(|l| l.into()),
-                Some(GcCell::allocate(
-                    context.gc_context,
-                    PreloadProgress::default(),
-                )),
                 context.gc_context,
             ),
         );
@@ -366,22 +358,20 @@ impl<'gc> MovieClip<'gc> {
     /// context of an event loop. As such, multiple chunks should be processed
     /// in between yielding to the underlying event loop, either through
     /// `await`, returning to the loop directly, or some other mechanism.
-    pub fn preload(self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
+    pub fn preload(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        chunk_limit: Option<usize>,
+    ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
         let mut static_data = (&*self.0.read().static_data).clone();
         let data = self.0.read().static_data.swf.clone();
         let mut reader = data.read_from(0);
-        let (mut cur_frame, mut start_pos) = if let Some(progress) = static_data.preload_progress {
-            (
-                progress.read().cur_preload_frame,
-                progress.read().last_frame_start_pos,
-            )
-        } else {
-            log::warn!("Preloading a non-root movie.");
-
-            (1, 0)
+        let (mut cur_frame, mut start_pos) = {
+            let read = static_data.preload_progress.read();
+            (read.cur_preload_frame, read.last_frame_start_pos)
         };
 
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
@@ -542,12 +532,13 @@ impl<'gc> MovieClip<'gc> {
                 .define_binary_data(context, reader),
             _ => Ok(()),
         };
-        let is_finished = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, None);
+        let is_finished =
+            tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, chunk_limit);
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
-        if let Some(progress) = static_data.preload_progress {
-            let mut write = progress.write(context.gc_context);
+        {
+            let mut write = static_data.preload_progress.write(context.gc_context);
 
             write.next_preload_chunk =
                 (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64);
@@ -3258,9 +3249,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        let mut is_finished = false;
-        while !is_finished {
-            is_finished = movie_clip.preload(context);
+        // NOTE: We don't support partial preloading of defined sprites yet.
+        let preload_done = movie_clip.preload(context, None);
+        if !preload_done {
+            log::warn!(
+                "Preloading of movieclip {} did not complete in a single call.",
+                id
+            );
         }
 
         context
@@ -3679,7 +3674,7 @@ impl Default for Scene {
     }
 }
 
-/// The load progress for a given SWF.
+/// The load progress for a given SWF or substream of that SWF.
 #[derive(Clone, Collect)]
 #[collect(require_static)]
 struct PreloadProgress {
@@ -3731,15 +3726,13 @@ struct MovieClipStatic<'gc> {
     /// via `Loader`
     loader_info: Option<Avm2Object<'gc>>,
 
-    /// Preload progress for a given SWF.
-    ///
-    /// Only present for root movies in AVM1 or AVM2.
-    preload_progress: Option<GcCell<'gc, PreloadProgress>>,
+    /// Preload progress for the given clip's tag stream.
+    preload_progress: GcCell<'gc, PreloadProgress>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
     fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self::with_data(0, SwfSlice::empty(movie), 1, None, None, gc_context)
+        Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context)
     }
 
     fn with_data(
@@ -3747,7 +3740,6 @@ impl<'gc> MovieClipStatic<'gc> {
         swf: SwfSlice,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
-        preload_progress: Option<GcCell<'gc, PreloadProgress>>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
         Self {
@@ -3760,7 +3752,7 @@ impl<'gc> MovieClipStatic<'gc> {
             audio_stream_handle: None,
             exported_name: GcCell::allocate(gc_context, None),
             loader_info,
-            preload_progress,
+            preload_progress: GcCell::allocate(gc_context, Default::default()),
         }
     }
 }
