@@ -1329,10 +1329,10 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            let mut preload_done = false;
+            let preload_done = root.as_movie_clip().unwrap().preload(context, None);
 
-            while !preload_done {
-                preload_done = root.as_movie_clip().unwrap().preload(context);
+            if !preload_done {
+                log::warn!("Preloading of root clip did not complete in a single call.");
             }
         });
         if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
