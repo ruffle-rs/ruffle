@@ -262,7 +262,8 @@ impl<'gc> MovieClip<'gc> {
         let data = self.0.read().static_data.swf.clone();
         let mut reader = data.read_from(static_data.next_preload_chunk);
         let mut cur_frame = static_data.cur_preload_frame;
-        let mut preload_stream_handle = None;
+        let mut preload_stream_handle = static_data.cur_preload_stream;
+
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::CsmTextSettings => self
                 .0
@@ -483,26 +484,30 @@ impl<'gc> MovieClip<'gc> {
             }
             _ => Ok(()),
         };
-        let is_chunked =
-            tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, chunk_limit);
+        let is_finished =
+            tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, chunk_limit)
+                .unwrap_or(true);
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
         static_data.next_preload_chunk =
             (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64);
         static_data.cur_preload_frame = cur_frame;
+        static_data.cur_preload_stream = preload_stream_handle;
 
-        // Finalize audio stream.
-        if let Some(stream) = preload_stream_handle {
-            if let Some(sound) = context.audio.preload_sound_stream_end(stream) {
-                static_data.audio_stream_handle = Some(sound);
+        if is_finished {
+            // Finalize audio stream.
+            if let Some(stream) = preload_stream_handle {
+                if let Some(sound) = context.audio.preload_sound_stream_end(stream) {
+                    static_data.audio_stream_handle = Some(sound);
+                }
             }
         }
 
         self.0.write(context.gc_context).static_data =
             Gc::allocate(context.gc_context, static_data);
 
-        is_chunked.unwrap_or(true)
+        is_finished
     }
 
     #[inline]
@@ -3350,6 +3355,9 @@ struct MovieClipStatic {
     /// The current state of the root timeline.
     cur_preload_ids: fnv::FnvHashMap<Depth, CharacterId>,
 
+    /// The currently preloaded sound stream ID.
+    cur_preload_stream: Option<PreloadStreamHandle>,
+
     frame_labels: HashMap<String, FrameNumber>,
     scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
@@ -3372,6 +3380,7 @@ impl MovieClipStatic {
             next_preload_chunk: 0,
             cur_preload_frame: 1,
             cur_preload_ids: Default::default(),
+            cur_preload_stream: None,
             total_frames,
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),
