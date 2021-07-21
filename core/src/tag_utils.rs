@@ -341,15 +341,43 @@ impl SwfSlice {
     }
 }
 
+/// Decode tags from a SWF stream reader.
+///
+/// The given `tag_callback` will be called for each decoded tag. It will be
+/// provided with the stream to read from, the tag code read, and the tag's
+/// size. The callback is responsible for (optionally) parsing the contents of
+/// the tag; otherwise, it will be skipped.
+///
+/// Decoding will terminate when the following conditions occur:
+///
+///  * After the given `stop_tag` is encountered and passed to the callback
+///  * The decoder encounters a tag longer than the underlying SWF slice
+///  * The decoder decodes more than `chunk_limit` tags (if provided), in which
+///    case this function also returns `false`
+///  * The SWF stream is otherwise corrupt or unreadable (indicated as an error
+///    result)
+///
+/// Decoding will also log tags longer than the SWF slice, error messages
+/// yielded from the tag callback, and unknown tags. It will *only* return an
+/// error message if the SWF tag itself could not be parsed. Otherwise, it
+/// returns `true` if decoding progressed to the stop tag or EOF, or `false` if
+/// the chunk limit was reached.
 pub fn decode_tags<'a, F>(
     reader: &mut SwfStream<'a>,
     mut tag_callback: F,
     stop_tag: TagCode,
-) -> Result<(), Error>
+    mut chunk_limit: Option<usize>,
+) -> Result<bool, Error>
 where
     F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> DecodeResult,
 {
     loop {
+        if let Some(chunk_limit) = chunk_limit {
+            if chunk_limit < 1 {
+                return Ok(false);
+            }
+        }
+
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         if tag_len > reader.get_ref().len() {
             log::error!("Unexpected EOF when reading tag");
@@ -376,7 +404,11 @@ where
         }
 
         *reader.get_mut() = end_slice;
+
+        if let Some(ref mut chunk_limit) = chunk_limit {
+            *chunk_limit -= 1;
+        }
     }
 
-    Ok(())
+    Ok(true)
 }

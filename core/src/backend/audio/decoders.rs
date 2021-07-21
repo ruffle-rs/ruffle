@@ -329,7 +329,8 @@ impl Iterator for StreamTagReader {
                 };
 
             let mut reader = self.swf_data.read_from(self.pos as u64);
-            let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+            let _ =
+                crate::tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
             self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
             // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.
