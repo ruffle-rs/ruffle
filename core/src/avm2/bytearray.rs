@@ -228,7 +228,7 @@ impl ByteArrayStorage {
     }
 
     #[inline]
-    pub fn bytes(&self) -> &Vec<u8> {
+    pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
@@ -250,11 +250,6 @@ impl ByteArrayStorage {
     #[inline]
     pub fn set_position(&self, pos: usize) {
         self.position.set(pos);
-    }
-
-    #[inline]
-    pub fn add_position(&self, amnt: usize) {
-        self.position.set(self.position.get() + amnt);
     }
 
     #[inline]
