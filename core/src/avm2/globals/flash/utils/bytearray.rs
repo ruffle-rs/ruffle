@@ -82,12 +82,11 @@ pub fn write_bytes<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(Value::Object(second_array)) = args.get(0) {
-        let combining_bytes = match second_array.as_bytearray() {
-            Some(b) => b.bytes().clone(),
-            None => return Err("ArgumentError: Parameter must be a bytearray".into()),
-        };
-
+    if let Some(this) = this {
+        let bytearray = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
         let offset = args
             .get(1)
             .unwrap_or(&Value::Unsigned(0))
@@ -97,19 +96,27 @@ pub fn write_bytes<'gc>(
             .unwrap_or(&Value::Unsigned(0))
             .coerce_to_u32(activation)? as usize;
 
-        // In the docs it says "If offset or length is out of range, they are clamped to the beginning and end of the bytes array."
-        // However, in the actual flash player, it seems to just raise an error.
-        if offset + length > combining_bytes.len() {
-            return Err("EOFError: Reached EOF".into());
-        }
-        if let Some(this) = this {
-            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-                bytearray.write_bytes(if length != 0 {
-                    &combining_bytes[offset..length + offset]
+        let ba_read = bytearray
+            .as_bytearray()
+            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+        // We need to clone the bytes that we are going to be writing because the ByteArray we are reading from
+        // could be the same ByteArray we are writing to
+        let to_write = ba_read
+            .read_at(
+                // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
+                if length != 0 {
+                    length
                 } else {
-                    &combining_bytes[offset..]
-                })?;
-            }
+                    ba_read.len().saturating_sub(offset)
+                },
+                offset,
+            )
+            .map(|bytes| bytes.to_vec())?;
+
+        // Drop our bytearray ref so that writing to the given ByteArray will never panic
+        drop(ba_read);
+        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+            bytearray.write_bytes(&*to_write)?;
         }
     }
 
@@ -123,48 +130,47 @@ pub fn read_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let current_bytes = this
-            .as_bytearray_mut(activation.context.gc_context)
-            .unwrap()
-            .bytes()
-            .clone();
-        let position = this
-            .as_bytearray_mut(activation.context.gc_context)
-            .unwrap()
-            .position();
-        let mut merging_offset = 0;
-        if let Some(Value::Object(second_array)) = args.get(0) {
-            let offset = args
-                .get(1)
-                .unwrap_or(&Value::Unsigned(0))
-                .coerce_to_u32(activation)? as usize;
-            let length = args
-                .get(2)
-                .unwrap_or(&Value::Unsigned(0))
-                .coerce_to_u32(activation)? as usize;
+        let offset = args
+            .get(1)
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
+        let length = args
+            .get(2)
+            .unwrap_or(&Value::Unsigned(0))
+            .coerce_to_u32(activation)? as usize;
 
-            if position + length > current_bytes.len() {
-                return Err("EOFError: Reached EOF".into());
+        if let Some(bytearray) = this.as_bytearray() {
+            // We need to clone the bytes that we are going to be writing because the ByteArray we are reading from
+            // could be the same ByteArray we are writing to
+            let to_write = bytearray
+                .read_bytes(
+                    // If length is 0, lets read the remaining bytes of ByteArray
+                    if length != 0 {
+                        length
+                    } else {
+                        bytearray.bytes_available()
+                    },
+                )
+                .map(|bytes| bytes.to_vec())?;
+
+            // Drop our bytearray ref so that writing to the given ByteArray will never panic
+            drop(bytearray);
+
+            let bytearray = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_object(activation)?;
+            let mut ba_write = bytearray
+                .as_bytearray_mut(activation.context.gc_context)
+                .ok_or("ArgumentError: Parameter must be a bytearray")?;
+
+            // Weird undocumented behavior: If offset is greater than the length of the ByteArray we are writing to, we do nothing.
+            if offset > ba_write.len() {
+                return Ok(Value::Undefined);
             }
-            if let Some(mut merging_storage) =
-                second_array.as_bytearray_mut(activation.context.gc_context)
-            {
-                let to_write = if length != 0 {
-                    &current_bytes[position..length + position]
-                } else {
-                    &current_bytes[position..]
-                };
-                merging_offset = to_write.len();
-                merging_storage.write_at(to_write, offset)?;
-            } else {
-                return Err("ArgumentError: Parameter must be a bytearray".into());
-            }
+            ba_write.write_at(&*to_write, offset)?;
         }
-        this.as_bytearray_mut(activation.context.gc_context)
-            .unwrap()
-            .add_position(merging_offset);
     }
-
     Ok(Value::Undefined)
 }
 pub fn write_utf<'gc>(
