@@ -301,24 +301,19 @@ impl<'gc> Scope<'gc> {
     pub fn define_local(
         &self,
         name: &str,
-        value: impl Into<Value<'gc>>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        self.locals().set(name, value.into(), activation)
+        self.locals().set(name, value, activation)
     }
 
     /// Create a local property on the activation.
     ///
     /// This inserts a value as a stored property on the local scope. If the property already
     /// exists, it will be forcefully overwritten. Used internally to initialize objects.
-    pub fn force_define_local(
-        &self,
-        name: &str,
-        value: impl Into<Value<'gc>>,
-        mc: MutationContext<'gc, '_>,
-    ) {
+    pub fn force_define_local(&self, name: &str, value: Value<'gc>, mc: MutationContext<'gc, '_>) {
         self.locals()
-            .define_value(mc, name, value.into(), Attribute::empty());
+            .define_value(mc, name, value, Attribute::empty());
     }
 
     /// Delete a value from scope

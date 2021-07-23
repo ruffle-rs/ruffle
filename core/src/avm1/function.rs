@@ -265,7 +265,6 @@ impl<'gc> Executable<'gc> {
                     Attribute::DONT_ENUM,
                 );
 
-                let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> =
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
                         Some(SuperObject::new(activation, this, base_proto.unwrap_or(this)).into())
@@ -317,7 +316,7 @@ impl<'gc> Executable<'gc> {
                     base_clip,
                     this,
                     Some(callee),
-                    Some(argcell),
+                    Some(arguments.into()),
                 );
 
                 frame.allocate_local_registers(af.register_count(), frame.context.gc_context);
@@ -327,25 +326,25 @@ impl<'gc> Executable<'gc> {
                 if af.flags.contains(FunctionFlags::PRELOAD_THIS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
-                    frame.set_local_register(preload_r, this);
+                    frame.set_local_register(preload_r, this.into());
                     preload_r += 1;
                 }
 
                 if af.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for arguments?
-                    frame.set_local_register(preload_r, argcell);
+                    frame.set_local_register(preload_r, arguments.into());
                     preload_r += 1;
                 }
 
                 if let Some(super_object) = super_object {
                     if af.flags.contains(FunctionFlags::PRELOAD_SUPER) {
-                        frame.set_local_register(preload_r, super_object);
+                        frame.set_local_register(preload_r, super_object.into());
                         //TODO: What happens if you specify both suppress and
                         //preload for super?
                         preload_r += 1;
                     } else {
-                        frame.force_define_local("super", super_object);
+                        frame.force_define_local("super", super_object.into());
                     }
                 }
 
