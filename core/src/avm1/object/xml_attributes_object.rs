@@ -182,14 +182,6 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         self.base().proto(activation)
     }
 
-    fn set_proto(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        prototype: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.base().set_proto(activation, prototype)
-    }
-
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.base().has_property(activation, name)
     }

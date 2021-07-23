@@ -266,17 +266,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// `get`.
     fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc>;
 
-    /// Sets the `__proto__` of a given object.
-    ///
-    /// The proto is another object used to resolve methods across a class of
-    /// multiple objects. It should also be accessible as `__proto__` in
-    /// `set`.
-    fn set_proto(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        prototype: Value<'gc>,
-    ) -> Result<(), Error<'gc>>;
-
     /// Define a value on an object.
     ///
     /// Unlike setting a value, this function is intended to replace any
