@@ -423,7 +423,7 @@ pub fn get_local<'gc>(
     if let Some(saved) = activation.context.storage.get(&full_name) {
         // Attempt to load it as an Lso
         if let Ok(lso) = flash_lso::read::Reader::default().parse(&saved) {
-            data = deserialize_lso(activation, &lso)?.into();
+            data = deserialize_lso(activation, &lso.1)?.into();
         } else {
             // Attempt to load legacy Json
             if let Ok(saved_string) = String::from_utf8(saved) {
@@ -567,7 +567,7 @@ pub fn flush<'gc>(
         AMFVersion::AMF0,
     );
 
-    let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
+    let bytes = flash_lso::write::write_to_bytes(&mut lso);
 
     Ok(activation.context.storage.put(&name, &bytes).into())
 }
