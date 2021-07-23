@@ -206,10 +206,21 @@ impl BitmapData {
     }
 
     pub fn pixels_rgba(&self) -> Vec<u8> {
-        self.pixels
-            .iter()
-            .flat_map(|p| [p.red(), p.green(), p.blue(), p.alpha()])
-            .collect()
+        // TODO: This could have been implemented as follows:
+        //
+        // self.pixels
+        //     .iter()
+        //     .flat_map(|p| [p.red(), p.green(), p.blue(), p.alpha()])
+        //     .collect()
+        //
+        // But currently Rust emits suboptimal code in that case. For now we use
+        // `Vec::with_capacity` manually to avoid unnecessary re-allocations.
+
+        let mut output = Vec::with_capacity(self.pixels.len() * 4);
+        for p in &self.pixels {
+            output.extend_from_slice(&[p.red(), p.green(), p.blue(), p.alpha()])
+        }
+        output
     }
 
     pub fn width(&self) -> u32 {
