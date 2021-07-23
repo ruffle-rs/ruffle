@@ -40,6 +40,31 @@ pub struct ByteArrayObjectData<'gc> {
     storage: ByteArrayStorage,
 }
 
+impl<'gc> ByteArrayObject<'gc> {
+    pub fn from_storage(
+        activation: &mut Activation<'_, 'gc, '_>,
+        bytes: ByteArrayStorage,
+    ) -> Result<Object<'gc>, Error> {
+        let class = activation.avm2().classes().bytearray;
+        let proto = activation.avm2().prototypes().bytearray;
+        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+
+        let mut instance: Object<'gc> = ByteArrayObject(GcCell::allocate(
+            activation.context.gc_context,
+            ByteArrayObjectData {
+                base,
+                storage: bytes,
+            },
+        ))
+        .into();
+        instance.install_instance_traits(activation, class)?;
+
+        class.call_native_init(Some(instance), &[], activation, Some(class))?;
+
+        Ok(instance)
+    }
+}
+
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
         Ref::map(self.0.read(), |read| &read.base)
