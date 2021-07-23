@@ -55,7 +55,7 @@ We recommend using the currently active LTS 14, but we do also run tests with ma
 #### wasm-bindgen
 
 <!-- Be sure to also update the wasm-bindgen-cli version in .github/workflows/*.yaml and web/Cargo.toml -->
-This can be installed with `cargo install wasm-bindgen-cli --version 0.2.73`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.74`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 

@@ -7,13 +7,13 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 fnv = "1.0.7"
-js-sys = "0.3.50"
+js-sys = "0.3.51"
 log = "0.4"
 percent-encoding = "2.1.0"
 png = "0.16.8"
 ruffle_render_common_tess = { path = "../common_tess" }
 ruffle_web_common = { path = "../../web/common" }
-wasm-bindgen = "=0.2.73"
+wasm-bindgen = "=0.2.74"
 bytemuck = { version = "1.7.0", features = ["derive"] }
 
 [dependencies.jpeg-decoder]
@@ -25,7 +25,7 @@ path = "../../core"
 default-features = false
 
 [dependencies.web-sys]
-version = "0.3.45"
+version = "0.3.50"
 features = ["HtmlCanvasElement", "HtmlElement", "Node", "OesVertexArrayObject", "WebGlBuffer", "WebglDebugRendererInfo",
             "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGl2RenderingContext",
             "WebGlShader", "WebGlTexture", "WebGlUniformLocation", "WebGlVertexArrayObject"]

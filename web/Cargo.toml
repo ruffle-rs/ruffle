@@ -26,14 +26,14 @@ console_error_panic_hook = { version = "0.1.1", optional = true }
 console_log = { version = "0.2", optional = true }
 fnv = "1.0.7"
 generational-arena = "0.2.8"
-js-sys = "0.3.50"
+js-sys = "0.3.51"
 log = { version = "0.4", features = ["serde"] }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 url = "2.2.2"
-wasm-bindgen = { version = "=0.2.73", features = ["serde-serialize"] }
-wasm-bindgen-futures = "0.4.19"
+wasm-bindgen = { version = "=0.2.74", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4.24"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.126", features = ["derive"] }
@@ -46,7 +46,7 @@ default-features = false
 features = ["serde", "wasm-bindgen"]
 
 [dependencies.web-sys]
-version = "0.3.45"
+version = "0.3.50"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode",
     "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
