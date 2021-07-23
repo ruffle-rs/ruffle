@@ -15,7 +15,7 @@ mod task;
 mod ui;
 
 use crate::custom_event::RuffleEvent;
-use crate::executor::GlutinAsyncExecutor;
+use crate::executor::{GlutinAsyncExecutor, GlutinSuspendSource};
 use clap::Clap;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
@@ -186,6 +186,7 @@ struct App {
     window: Rc<Window>,
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
+    suspender: Arc<Mutex<GlutinSuspendSource>>,
     player: Arc<Mutex<Player>>,
     movie: Option<Arc<SwfMovie>>,
 }
@@ -269,10 +270,12 @@ impl App {
                 Box::new(NullAudioBackend::new())
             }
         };
-        let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
+        let (executor, future_channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
+        let (suspender, suspend_channel) = GlutinSuspendSource::new();
         let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
             movie.as_ref().unwrap().1.clone(), // TODO: Get rid of this parameter.
-            channel,
+            future_channel,
+            suspend_channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
@@ -306,6 +309,7 @@ impl App {
             window,
             event_loop,
             executor,
+            suspender,
             player,
             movie,
         })
@@ -316,6 +320,7 @@ impl App {
         let window = self.window;
         let player = self.player;
         let executor = self.executor;
+        let suspender = self.suspender;
         let movie = self.movie;
 
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
@@ -387,6 +392,11 @@ impl App {
                         },
                         _ => (),
                     }
+
+                    suspender
+                        .lock()
+                        .expect("Unlocked suspender")
+                        .unsuspend_tasks();
 
                     if movie.is_none() {
                         return;

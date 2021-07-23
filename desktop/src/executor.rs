@@ -1,6 +1,7 @@
 //! Async executor
 
 use crate::custom_event::RuffleEvent;
+use crate::navigator::SuspendFutureState;
 use crate::task::Task;
 use generational_arena::{Arena, Index};
 use ruffle_core::backend::navigator::OwnedFuture;
@@ -214,6 +215,36 @@ impl GlutinAsyncExecutor {
             }
         } else {
             log::warn!("Attempted to wake an already-finished task");
+        }
+    }
+}
+
+/// Event source for the event loop ending.
+pub struct GlutinSuspendSource {
+    /// Source of tasks sent to us by the `NavigatorBackend`.
+    channel: Receiver<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+}
+
+impl GlutinSuspendSource {
+    /// Build an event source for suspending until the event loop clears.
+    ///
+    /// This function returns the executor itself, plus the `Sender` that you
+    /// queue wakers on in order for them to be unsuspended.
+    pub fn new() -> (
+        Arc<Mutex<Self>>,
+        Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+    ) {
+        let (send, recv) = channel();
+        let new_self = Arc::new(Mutex::new(Self { channel: recv }));
+
+        (new_self, send)
+    }
+
+    /// Wake all tasks that are waiting for the event queue to empty.
+    pub fn unsuspend_tasks(&mut self) {
+        while let Ok((waker, future)) = self.channel.try_recv() {
+            future.lock().unwrap().event_loop_resolved = true;
+            waker.wake();
         }
     }
 }

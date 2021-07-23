@@ -8,18 +8,68 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
+use std::convert::Infallible;
 use std::fs;
+use std::future::Future;
+use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Waker};
 use std::time::{Duration, Instant};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
+
+/// The internal shared state of a single SuspendFuture.
+pub struct SuspendFutureState {
+    /// Whether or not the event loop has resolved.
+    pub event_loop_resolved: bool,
+
+    /// What to send wakers into.
+    waker_sender: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+}
+
+/// A future that suspends it's awaited task until the event loop clears out.
+pub struct SuspendFuture(Arc<Mutex<SuspendFutureState>>);
+
+impl SuspendFuture {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(
+        waker_sender: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+    ) -> OwnedFuture<(), Infallible> {
+        Box::pin(Self(Arc::new(Mutex::new(SuspendFutureState {
+            event_loop_resolved: false,
+            waker_sender,
+        }))))
+    }
+}
+
+impl Future for SuspendFuture {
+    type Output = Result<(), Infallible>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let guard = self.0.lock().unwrap();
+        if guard.event_loop_resolved {
+            Poll::Ready(Ok(()))
+        } else {
+            guard
+                .waker_sender
+                .send((cx.waker().clone(), self.0.clone()))
+                .unwrap();
+
+            Poll::Pending
+        }
+    }
+}
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
 pub struct ExternalNavigatorBackend {
     /// Sink for tasks sent to us through `spawn_future`.
-    channel: Sender<OwnedFuture<(), Error>>,
+    future_channel: Sender<OwnedFuture<(), Error>>,
+
+    /// Sink for suspended task notifications.
+    suspend_channel: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
 
     /// Event sink to trigger a new task poll.
     event_loop: EventLoopProxy<RuffleEvent>,
@@ -41,7 +91,8 @@ impl ExternalNavigatorBackend {
     /// Construct a navigator backend with fetch and async capability.
     pub fn new(
         movie_url: Url,
-        channel: Sender<OwnedFuture<(), Error>>,
+        future_channel: Sender<OwnedFuture<(), Error>>,
+        suspend_channel: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
         upgrade_to_https: bool,
@@ -54,7 +105,8 @@ impl ExternalNavigatorBackend {
         let client = builder.build().ok().map(Rc::new);
 
         Self {
-            channel,
+            future_channel,
+            suspend_channel,
             event_loop,
             client,
             movie_url,
@@ -170,13 +222,19 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
-        self.channel.send(future).expect("working channel send");
+        self.future_channel
+            .send(future)
+            .expect("working channel send");
 
         if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
             log::warn!(
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
         }
+    }
+
+    fn suspend(&self) -> OwnedFuture<(), Infallible> {
+        SuspendFuture::new(self.suspend_channel.clone())
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {

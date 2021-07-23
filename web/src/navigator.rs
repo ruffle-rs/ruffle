@@ -6,11 +6,62 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
+use std::convert::Infallible;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll};
 use std::time::Duration;
 use url::Url;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{closure::Closure, JsCast};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
+
+/// The internal shared state of a single SuspendFuture.
+struct SuspendFutureState {
+    /// Whether or not the macrotask was already resolved.
+    macrotask_resolved: bool,
+}
+
+/// A future that suspends it's awaited task on the JavaScript macrotask queue.
+pub struct SuspendFuture(Arc<Mutex<SuspendFutureState>>);
+
+impl SuspendFuture {
+    #[allow(clippy::new_ret_no_self)]
+    fn new() -> OwnedFuture<(), Infallible> {
+        Box::pin(Self(Arc::new(Mutex::new(SuspendFutureState {
+            macrotask_resolved: false,
+        }))))
+    }
+}
+
+impl Future for SuspendFuture {
+    type Output = Result<(), Infallible>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let guard = self.0.lock().unwrap();
+        if guard.macrotask_resolved {
+            Poll::Ready(Ok(()))
+        } else {
+            let my_state = self.0.clone();
+            let my_waker = cx.waker().clone();
+            let timeout_cb = Closure::once(Box::new(move || {
+                my_waker.wake();
+                my_state.lock().unwrap().macrotask_resolved = true;
+            }) as Box<dyn FnOnce()>);
+
+            let window = web_sys::window().unwrap();
+            window
+                .set_timeout_with_callback_and_timeout_and_arguments_0(
+                    timeout_cb.as_ref().unchecked_ref(),
+                    1,
+                )
+                .unwrap();
+
+            Poll::Pending
+        }
+    }
+}
 
 pub struct WebNavigatorBackend {
     performance: Performance,
@@ -203,6 +254,10 @@ impl NavigatorBackend for WebNavigatorBackend {
                 log::error!("Asynchronous error occurred: {}", e);
             }
         })
+    }
+
+    fn suspend(&self) -> OwnedFuture<(), Infallible> {
+        SuspendFuture::new()
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {

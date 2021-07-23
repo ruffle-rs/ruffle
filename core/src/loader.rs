@@ -538,6 +538,7 @@ impl<'gc> Loader<'gc> {
 
                 let mut preload_done = false;
                 let mut morph_shapes = fnv::FnvHashMap::default();
+                let mut suspender = None;
 
                 while !preload_done {
                     player
@@ -555,9 +556,14 @@ impl<'gc> Loader<'gc> {
                                 .expect("Attempted to load movie into not movie clip");
 
                             preload_done = mc.preload(uc, &mut morph_shapes, Some(1));
+                            suspender = Some(uc.navigator.suspend());
 
                             Ok(())
                         })?;
+
+                    if let Some(suspender) = suspender.take() {
+                        suspender.await.unwrap();
+                    }
                 }
 
                 player

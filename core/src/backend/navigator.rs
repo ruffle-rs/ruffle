@@ -4,6 +4,7 @@ use crate::loader::Error;
 use indexmap::IndexMap;
 use std::borrow::Cow;
 use std::collections::VecDeque;
+use std::convert::Infallible;
 use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -188,6 +189,17 @@ pub trait NavigatorBackend {
     /// TODO: For some reason, `wasm_bindgen_futures` wants unpinnable futures.
     /// This seems highly limiting.
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>);
+
+    /// Suspend an asynchronous function until a later time.
+    ///
+    /// This is intended to allow async code to yield execution to the event
+    /// loop. When the future in question is awaited, other events are allowed
+    /// to be processed.
+    ///
+    /// In contexts where Ruffle is not running in an event loop, this future
+    /// is permitted to yield it's result immediately instead of suspending the
+    /// current task.
+    fn suspend(&self) -> OwnedFuture<(), Infallible>;
 
     /// Resolve a relative URL.
     ///
@@ -374,6 +386,10 @@ impl NavigatorBackend for NullNavigatorBackend {
         if let Some(channel) = self.channel.as_ref() {
             channel.send(future).unwrap();
         }
+    }
+
+    fn suspend(&self) -> OwnedFuture<(), Infallible> {
+        Box::pin(async { Ok(()) })
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
