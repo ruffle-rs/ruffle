@@ -54,7 +54,3 @@ features = [
     "Navigator", "Node", "Performance", "PointerEvent", "ScriptProcessorNode", "UiEvent", "Window", "Location", "HtmlFormElement",
     "KeyboardEvent", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement", "Response", "Request", "RequestInit",
     "Blob", "BlobPropertyBag", "Storage", "WheelEvent", "ImageData"]
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3.23"
-
