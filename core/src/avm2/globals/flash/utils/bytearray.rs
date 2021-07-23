@@ -1,17 +1,92 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::bytearray::{CompressionAlgorithm, Endian};
+use crate::avm2::array::ArrayStorage;
+use crate::avm2::bytearray::{ByteArrayStorage, CompressionAlgorithm, Endian, ObjectEncoding};
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{bytearray_allocator, Object, TObject};
+use crate::avm2::object::{bytearray_allocator, ArrayObject, ByteArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
 use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
+use flash_lso::amf0::read::parse_single_element as parse_amf0;
+use flash_lso::amf3::read::AMF3Decoder;
+use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
 use std::str::FromStr;
+
+pub fn deserialize_value<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: &AmfValue,
+) -> Result<Value<'gc>, Error> {
+    Ok(match value {
+        AmfValue::Undefined => Value::Undefined,
+        AmfValue::Null => Value::Null,
+        AmfValue::Bool(b) => Value::Bool(*b),
+        AmfValue::Integer(i) => Value::Integer(*i),
+        AmfValue::Number(n) => Value::Number(*n),
+        AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        AmfValue::ByteArray(bytes) => {
+            let storage = ByteArrayStorage::from_vec(bytes.clone());
+            let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+            bytearray.into()
+        }
+        AmfValue::StrictArray(values) => {
+            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
+            for value in values {
+                arr.push(Some(deserialize_value(activation, &value)?));
+            }
+            let storage = ArrayStorage::from_storage(arr);
+            let array = ArrayObject::from_storage(activation, storage)?;
+            array.into()
+        }
+        AmfValue::ECMAArray(values, elements, _) => {
+            // First lets create an array out of `values` (dense portion), then we add the elements onto it.
+            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
+            for value in values {
+                arr.push(Some(deserialize_value(activation, &value)?));
+            }
+            let storage = ArrayStorage::from_storage(arr);
+            let mut array = ArrayObject::from_storage(activation, storage)?;
+            // Now lets add each element as a property
+            for element in elements {
+                array.set_property(
+                    array,
+                    &QName::new(
+                        Namespace::public(),
+                        AvmString::new(activation.context.gc_context, element.name()),
+                    )
+                    .into(),
+                    deserialize_value(activation, element.value())?,
+                    activation,
+                )?;
+            }
+            array.into()
+        }
+        AmfValue::Object(properties, _class_definition) => {
+            let obj_class = activation.avm2().classes().object;
+            let mut obj = obj_class.construct(activation, &[])?;
+            for property in properties {
+                obj.set_property(
+                    obj,
+                    &QName::new(
+                        Namespace::public(),
+                        AvmString::new(activation.context.gc_context, property.name()),
+                    )
+                    .into(),
+                    deserialize_value(activation, property.value())?,
+                    activation,
+                )?;
+            }
+            obj.into()
+            // TODO: Handle class_defintion
+        }
+        // TODO: Dictionary, Vector, XML, Date, etc...
+        _ => Value::Undefined,
+    })
+}
 
 /// Implements `flash.utils.ByteArray`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -744,6 +819,75 @@ pub fn inflate<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn read_object<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(bytearray) = this.as_bytearray() {
+            let bytes = bytearray.read_at(bytearray.bytes_available(), bytearray.position())?;
+            let (bytes_left, value) = match bytearray.object_encoding() {
+                ObjectEncoding::Amf0 => {
+                    let (extra, amf) = parse_amf0(bytes).map_err(|_| "EOFError: Reached EOF")?;
+                    (extra.len(), deserialize_value(activation, &amf)?)
+                }
+                ObjectEncoding::Amf3 => {
+                    let mut decoder = AMF3Decoder::default();
+                    let (extra, amf) = decoder
+                        .parse_single_element(bytes)
+                        .map_err(|_| "EOFError: Reached EOF")?;
+                    (extra.len(), deserialize_value(activation, &amf)?)
+                }
+            };
+
+            bytearray.set_position(bytearray.len() - bytes_left);
+            return Ok(value);
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn object_encoding<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(bytearray) = this.as_bytearray() {
+            return Ok(match bytearray.object_encoding() {
+                ObjectEncoding::Amf0 => 0.into(),
+                ObjectEncoding::Amf3 => 3.into(),
+            });
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_object_encoding<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+            let new_encoding = args
+                .get(0)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_u32(activation)?;
+            match new_encoding {
+                0 => bytearray.set_object_encoding(ObjectEncoding::Amf0),
+                3 => bytearray.set_object_encoding(ObjectEncoding::Amf3),
+                _ => return Err("Parameter type must be one of the accepted values.".into()),
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.utils"), "ByteArray"),
@@ -789,6 +933,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("readMultiByte", read_multibyte),
         ("writeUTFBytes", write_utf_bytes),
         ("readUTFBytes", read_utf_bytes),
+        ("readObject", read_object),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
@@ -801,8 +946,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("length", Some(length), Some(set_length)),
         ("position", Some(position), Some(set_position)),
         ("endian", Some(endian), Some(set_endian)),
+        (
+            "objectEncoding",
+            Some(object_encoding),
+            Some(set_object_encoding),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const CONSTANTS: &[(&str, u32)] = &[("defaultObjectEncoding", 3)];
+
+    write.define_public_constant_uint_class_traits(CONSTANTS);
 
     class
 }

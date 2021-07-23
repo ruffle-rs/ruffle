@@ -9,7 +9,7 @@ use std::io::prelude::*;
 use std::io::{self, Read, SeekFrom};
 use std::str::FromStr;
 
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub enum Endian {
     Big,
@@ -47,6 +47,13 @@ impl FromStr for CompressionAlgorithm {
     }
 }
 
+#[derive(Clone, Collect, Debug, Copy)]
+#[collect(no_drop)]
+pub enum ObjectEncoding {
+    Amf0,
+    Amf3,
+}
+
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct ByteArrayStorage {
@@ -58,6 +65,9 @@ pub struct ByteArrayStorage {
 
     /// This represents what endian to use while reading/writing data.
     endian: Endian,
+
+    /// The encoding used when serializing/deserializing using readObject/writeObject
+    object_encoding: ObjectEncoding,
 }
 
 impl ByteArrayStorage {
@@ -67,6 +77,17 @@ impl ByteArrayStorage {
             bytes: Vec::new(),
             position: Cell::new(0),
             endian: Endian::Big,
+            object_encoding: ObjectEncoding::Amf3,
+        }
+    }
+
+    /// Create a new ByteArrayStorage using an already existing vector
+    pub fn from_vec(bytes: Vec<u8>) -> ByteArrayStorage {
+        ByteArrayStorage {
+            bytes: bytes,
+            position: Cell::new(0),
+            endian: Endian::Big,
+            object_encoding: ObjectEncoding::Amf3,
         }
     }
 
@@ -253,13 +274,23 @@ impl ByteArrayStorage {
     }
 
     #[inline]
-    pub fn endian(&self) -> &Endian {
-        &self.endian
+    pub fn endian(&self) -> Endian {
+        self.endian
     }
 
     #[inline]
     pub fn set_endian(&mut self, new_endian: Endian) {
         self.endian = new_endian;
+    }
+
+    #[inline]
+    pub fn object_encoding(&self) -> ObjectEncoding {
+        self.object_encoding
+    }
+
+    #[inline]
+    pub fn set_object_encoding(&mut self, new_object_encoding: ObjectEncoding) {
+        self.object_encoding = new_object_encoding;
     }
 
     #[inline]
