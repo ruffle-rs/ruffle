@@ -439,14 +439,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.get_data("__proto__", activation)
     }
 
-    fn set_proto(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        prototype: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set_data("__proto__", prototype, activation)
-    }
-
     /// Checks if the object has a given named property.
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.has_own_property(activation, name)

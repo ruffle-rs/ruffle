@@ -161,17 +161,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         self.0.read().base_proto.proto(activation)
     }
 
-    fn set_proto(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        prototype: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if let Value::Object(prototype) = prototype {
-            self.0.write(activation.context.gc_context).base_proto = prototype;
-        }
-        Ok(())
-    }
-
     fn define_value(
         &self,
         _gc_context: MutationContext<'gc, '_>,

@@ -225,14 +225,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().proto(activation)
     }
 
-    fn set_proto(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        prototype: Value<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.0.read().set_proto(activation, prototype)
-    }
-
     fn has_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0.read().has_property(activation, name)
     }
