@@ -20,13 +20,7 @@ async function fetchRuffle(): Promise<typeof Ruffle> {
     // libraries, if needed.
     setPolyfillsOnLoad();
 
-    // wasm files are set to be resource assets,
-    // so this import will resolve to the URL of the wasm file.
-    const ruffleWasm = await import(
-        /* webpackMode: "eager" */
-        "../pkg/ruffle_web_bg.wasm"
-    );
-    await init(ruffleWasm.default);
+    await init();
 
     return Ruffle;
 }
