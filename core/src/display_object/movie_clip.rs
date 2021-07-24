@@ -999,8 +999,12 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn frames_loaded(self) -> FrameNumber {
-        // TODO(Herschel): root needs to progressively stream in frames.
-        self.0.read().static_data.total_frames
+        self.0
+            .read()
+            .static_data
+            .preload_progress
+            .read()
+            .cur_preload_frame
     }
 
     pub fn set_avm2_class(
@@ -1140,9 +1144,19 @@ impl<'gc> MovieClip<'gc> {
     ) {
         let next_frame = self.determine_next_frame();
         match next_frame {
-            // AS3 removals need to happen before frame advance (see below)
-            NextFrame::Next if context.is_action_script_3() => {}
-            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
+            NextFrame::Next => {
+                let mut write = self.0.write(context.gc_context);
+                if (write.current_frame + 1)
+                    >= write.static_data.preload_progress.read().cur_preload_frame
+                {
+                    return;
+                }
+
+                // AS3 removals need to happen before frame advance (see below)
+                if !context.is_action_script_3() {
+                    write.current_frame += 1
+                }
+            }
             NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         }
