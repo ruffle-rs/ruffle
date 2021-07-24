@@ -1,7 +1,7 @@
 //! Async executor
 
 use crate::custom_event::RuffleEvent;
-use crate::navigator::SuspendFutureState;
+use crate::navigator::BackgroundTaskHandle;
 use crate::task::Task;
 use generational_arena::{Arena, Index};
 use ruffle_core::backend::navigator::OwnedFuture;
@@ -222,7 +222,7 @@ impl GlutinAsyncExecutor {
 /// Event source for the event loop ending.
 pub struct GlutinSuspendSource {
     /// Source of tasks sent to us by the `NavigatorBackend`.
-    channel: Receiver<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+    channel: Receiver<BackgroundTaskHandle>,
 }
 
 impl GlutinSuspendSource {
@@ -230,10 +230,7 @@ impl GlutinSuspendSource {
     ///
     /// This function returns the executor itself, plus the `Sender` that you
     /// queue wakers on in order for them to be unsuspended.
-    pub fn new() -> (
-        Arc<Mutex<Self>>,
-        Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
-    ) {
+    pub fn new() -> (Arc<Mutex<Self>>, Sender<BackgroundTaskHandle>) {
         let (send, recv) = channel();
         let new_self = Arc::new(Mutex::new(Self { channel: recv }));
 

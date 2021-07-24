@@ -20,13 +20,15 @@ use std::time::{Duration, Instant};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 
+pub type BackgroundTaskHandle = (Waker, Arc<Mutex<SuspendFutureState>>);
+
 /// The internal shared state of a single SuspendFuture.
 pub struct SuspendFutureState {
     /// Whether or not the event loop has resolved.
     pub event_loop_resolved: bool,
 
     /// What to send wakers into.
-    waker_sender: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+    waker_sender: Sender<BackgroundTaskHandle>,
 }
 
 /// A future that suspends it's awaited task until the event loop clears out.
@@ -34,9 +36,7 @@ pub struct SuspendFuture(Arc<Mutex<SuspendFutureState>>);
 
 impl SuspendFuture {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new(
-        waker_sender: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
-    ) -> OwnedFuture<(), Infallible> {
+    pub fn new(waker_sender: Sender<BackgroundTaskHandle>) -> OwnedFuture<(), Infallible> {
         Box::pin(Self(Arc::new(Mutex::new(SuspendFutureState {
             event_loop_resolved: false,
             waker_sender,
@@ -69,7 +69,7 @@ pub struct ExternalNavigatorBackend {
     future_channel: Sender<OwnedFuture<(), Error>>,
 
     /// Sink for suspended task notifications.
-    suspend_channel: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+    suspend_channel: Sender<BackgroundTaskHandle>,
 
     /// Event sink to trigger a new task poll.
     event_loop: EventLoopProxy<RuffleEvent>,
@@ -92,7 +92,7 @@ impl ExternalNavigatorBackend {
     pub fn new(
         movie_url: Url,
         future_channel: Sender<OwnedFuture<(), Error>>,
-        suspend_channel: Sender<(Waker, Arc<Mutex<SuspendFutureState>>)>,
+        suspend_channel: Sender<BackgroundTaskHandle>,
         event_loop: EventLoopProxy<RuffleEvent>,
         proxy: Option<Url>,
         upgrade_to_https: bool,
