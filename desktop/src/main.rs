@@ -393,11 +393,6 @@ impl App {
                         _ => (),
                     }
 
-                    suspender
-                        .lock()
-                        .expect("Unlocked suspender")
-                        .unsuspend_tasks();
-
                     if movie.is_none() {
                         return;
                     }
@@ -424,6 +419,14 @@ impl App {
                             if !minimized {
                                 player.lock().unwrap().render();
                             }
+                        }
+
+                        // Schedule background tasks
+                        winit::event::Event::RedrawEventsCleared => {
+                            suspender
+                                .lock()
+                                .expect("Unlocked suspender")
+                                .unsuspend_tasks();
                         }
 
                         winit::event::Event::WindowEvent { event, .. } => match event {
