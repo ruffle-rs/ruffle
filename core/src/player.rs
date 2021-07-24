@@ -18,7 +18,7 @@ use crate::backend::{
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
-use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
+use crate::display_object::{EditText, MovieClip, Stage};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
@@ -380,7 +380,7 @@ impl Player {
         );
 
         self.frame_rate = movie.frame_rate().into();
-        self.swf = movie;
+        self.swf = movie.clone();
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
@@ -453,9 +453,19 @@ impl Player {
 
             let stage = activation.context.stage;
             stage.build_matrices(&mut activation.context);
+
+            let process = activation
+                .context
+                .load_manager
+                .preload_root_movie(activation.context.player.clone().unwrap(), movie);
+
+            activation.context.navigator.spawn_future(process);
         });
 
-        self.preload();
+        if self.swf.avm_type() == AvmType::Avm2 && self.warn_on_unsupported_content {
+            self.ui.display_unsupported_message();
+        }
+
         self.audio.set_frame_rate(self.frame_rate);
     }
 
@@ -1140,38 +1150,6 @@ impl Player {
         }
 
         needs_render
-    }
-
-    /// Preload the first movie in the player.
-    ///
-    /// This should only be called once. Further movie loads should preload the
-    /// specific `MovieClip` referenced.
-    fn preload(&mut self) {
-        self.mutate_with_update_context(|context| {
-            let mut morph_shapes = fnv::FnvHashMap::default();
-            let root = context.stage.root_clip();
-            let preload_done =
-                root.as_movie_clip()
-                    .unwrap()
-                    .preload(context, &mut morph_shapes, None);
-
-            if !preload_done {
-                log::warn!("Preloading of root clip did not complete in a single call.");
-            }
-
-            let lib = context
-                .library
-                .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap());
-
-            // Finalize morph shapes.
-            for (id, static_data) in morph_shapes {
-                let morph_shape = MorphShape::new(context.gc_context, static_data);
-                lib.register_character(id, crate::character::Character::MorphShape(morph_shape));
-            }
-        });
-        if self.swf.avm_type() == AvmType::Avm2 && self.warn_on_unsupported_content {
-            self.ui.display_unsupported_message();
-        }
     }
 
     pub fn run_frame(&mut self) {

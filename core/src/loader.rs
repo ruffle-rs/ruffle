@@ -138,6 +138,28 @@ impl<'gc> LoadManager<'gc> {
         loader.root_movie_loader(player, fetch, url, parameters, on_metadata)
     }
 
+    /// Preload the root movie.
+    ///
+    /// This needs to be run after the movie is loaded and added to the display
+    /// hierarchy.
+    ///
+    /// Non-root movie loads do this automatically, but because root movies can
+    /// be loaded from external (non-fetch) sources, we also need to expose
+    /// this path, too.
+    pub fn preload_root_movie(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        movie: Arc<SwfMovie>,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::RootMovie { self_handle: None };
+        let handle = self.add_loader(loader);
+
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.introduce_loader_handle(handle);
+
+        loader.async_preload(player, movie)
+    }
+
     /// Kick off a movie clip load.
     ///
     /// Returns the loader's async process, which you will need to spawn.
@@ -359,6 +381,80 @@ impl<'gc> Loader<'gc> {
         }
     }
 
+    /// Asynchronously preload the loader's clip.
+    ///
+    /// This task can run on a movie or a root movie loader. It is provided as
+    /// a separate task to facilitate externally-loaded root movies, which
+    /// should still preload asynchronously.
+    fn async_preload(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        movie: Arc<SwfMovie>,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::RootMovie { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let mut preload_done = false;
+            let mut morph_shapes = fnv::FnvHashMap::default();
+            let mut suspender = None;
+
+            while !preload_done {
+                player
+                    .lock()
+                    .expect("Could not lock player!!")
+                    .update(|uc| {
+                        let clip = match uc.load_manager.get_loader(handle) {
+                            Some(Loader::Movie { target_clip, .. }) => *target_clip,
+                            Some(Loader::RootMovie { .. }) => uc.stage.root_clip(),
+                            None => return Err(Error::Cancelled),
+                            _ => unreachable!(),
+                        };
+
+                        let mc = clip
+                            .as_movie_clip()
+                            .expect("Attempted to load movie into not movie clip");
+
+                        preload_done = mc.preload(uc, &mut morph_shapes, Some(1));
+                        suspender = Some(uc.navigator.suspend());
+
+                        Ok(())
+                    })?;
+
+                if let Some(suspender) = suspender.take() {
+                    suspender.await.unwrap();
+                }
+            }
+
+            player
+                .lock()
+                .expect("Could not lock player!!")
+                .update(|uc| {
+                    // Finalize morph shapes.
+                    for (id, static_data) in morph_shapes {
+                        let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                        uc.library
+                            .library_for_movie_mut(movie.clone())
+                            .register_character(
+                                id,
+                                crate::character::Character::MorphShape(morph_shape),
+                            );
+                    }
+                });
+
+            Ok(())
+        })
+    }
+
     /// Construct a future for the root movie loader.
     pub fn root_movie_loader(
         &mut self,
@@ -399,7 +495,10 @@ impl<'gc> Loader<'gc> {
             if let Ok((_length, mut movie)) = data {
                 on_metadata(movie.header());
                 movie.append_parameters(parameters);
-                player.lock().unwrap().set_root_movie(Arc::new(movie));
+
+                let movie = Arc::new(movie);
+                player.lock().unwrap().set_root_movie(movie);
+
                 Ok(())
             } else {
                 player
@@ -421,7 +520,7 @@ impl<'gc> Loader<'gc> {
     /// error immediately once spawned.
     pub fn movie_loader(
         &mut self,
-        player: Weak<Mutex<Player>>,
+        weak_player: Weak<Mutex<Player>>,
         fetch: OwnedFuture<Vec<u8>, Error>,
         mut url: String,
         loader_url: Option<String>,
@@ -431,7 +530,7 @@ impl<'gc> Loader<'gc> {
             _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
         };
 
-        let player = player
+        let player = weak_player
             .upgrade()
             .expect("Could not upgrade weak reference to player");
 
@@ -533,38 +632,13 @@ impl<'gc> Loader<'gc> {
                         mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
                         mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
-                        Ok(())
-                    })?;
-
-                let mut preload_done = false;
-                let mut morph_shapes = fnv::FnvHashMap::default();
-                let mut suspender = None;
-
-                while !preload_done {
-                    player
-                        .lock()
-                        .expect("Could not lock player!!")
-                        .update(|uc| {
-                            let clip = match uc.load_manager.get_loader(handle) {
-                                Some(Loader::Movie { target_clip, .. }) => *target_clip,
-                                None => return Err(Error::Cancelled),
-                                _ => unreachable!(),
-                            };
-
-                            let mc = clip
-                                .as_movie_clip()
-                                .expect("Attempted to load movie into not movie clip");
-
-                            preload_done = mc.preload(uc, &mut morph_shapes, Some(1));
-                            suspender = Some(uc.navigator.suspend());
-
-                            Ok(())
-                        })?;
-
-                    if let Some(suspender) = suspender.take() {
-                        suspender.await.unwrap();
-                    }
-                }
+                        Ok(uc
+                            .load_manager
+                            .get_loader_mut(handle)
+                            .unwrap()
+                            .async_preload(weak_player, movie))
+                    })?
+                    .await?;
 
                 player
                     .lock()
@@ -579,17 +653,6 @@ impl<'gc> Loader<'gc> {
                             None => return Err(Error::Cancelled),
                             _ => unreachable!(),
                         };
-
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library
-                                .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
-                                );
-                        }
 
                         if let Some(broadcaster) = broadcaster {
                             Avm1::run_stack_frame_for_method(
