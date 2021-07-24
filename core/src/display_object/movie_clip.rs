@@ -930,8 +930,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn frames_loaded(self) -> FrameNumber {
-        // TODO(Herschel): root needs to progressively stream in frames.
-        self.0.read().static_data.total_frames
+        self.0.read().static_data.cur_preload_frame
     }
 
     pub fn set_avm2_class(
@@ -1075,7 +1074,15 @@ impl<'gc> MovieClip<'gc> {
         run_display_actions: bool,
     ) {
         match self.determine_next_frame() {
-            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
+            NextFrame::Next => {
+                let mut write = self.0.write(context.gc_context);
+
+                if (write.current_frame + 1) >= write.static_data.cur_preload_frame {
+                    return;
+                }
+
+                write.current_frame += 1
+            }
             NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         }
