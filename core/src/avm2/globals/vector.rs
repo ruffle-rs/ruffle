@@ -48,10 +48,93 @@ pub fn instance_init<'gc>(
 
 /// Implements `Vector`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let mut globals = this.get_scope().map(|s| s.read().globals()).unwrap();
+        let mut domain = globals.as_application_domain().unwrap();
+
+        //We have to grab Object's defining script instead of our own, because
+        //at this point Vector hasn't actually been defined yet. It doesn't
+        //matter because we only have one script for our globals.
+        let (_, script) = domain
+            .get_defining_script(&QName::new(Namespace::public(), "Object").into())?
+            .unwrap();
+
+        let int_class = activation.avm2().classes().int;
+        let int_vector_class = this.apply(activation, &[int_class.into()])?;
+        let int_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$int");
+        int_vector_class
+            .as_class()
+            .unwrap()
+            .write(activation.context.gc_context)
+            .set_name(int_vector_name.clone());
+
+        globals.install_const(
+            activation.context.gc_context,
+            int_vector_name.clone(),
+            0,
+            int_vector_class.into(),
+            false,
+        );
+        domain.export_definition(int_vector_name, script, activation.context.gc_context)?;
+
+        let uint_class = activation.avm2().classes().uint;
+        let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
+        let uint_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$uint");
+        uint_vector_class
+            .as_class()
+            .unwrap()
+            .write(activation.context.gc_context)
+            .set_name(uint_vector_name.clone());
+
+        globals.install_const(
+            activation.context.gc_context,
+            uint_vector_name.clone(),
+            0,
+            uint_vector_class.into(),
+            false,
+        );
+        domain.export_definition(uint_vector_name, script, activation.context.gc_context)?;
+
+        let number_class = activation.avm2().classes().number;
+        let number_vector_class = this.apply(activation, &[number_class.into()])?;
+        let number_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$double");
+        number_vector_class
+            .as_class()
+            .unwrap()
+            .write(activation.context.gc_context)
+            .set_name(number_vector_name.clone());
+
+        globals.install_const(
+            activation.context.gc_context,
+            number_vector_name.clone(),
+            0,
+            number_vector_class.into(),
+            false,
+        );
+        domain.export_definition(number_vector_name, script, activation.context.gc_context)?;
+
+        let object_vector_class = this.apply(activation, &[Value::Null])?;
+        let object_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$object");
+        object_vector_class
+            .as_class()
+            .unwrap()
+            .write(activation.context.gc_context)
+            .set_name(object_vector_name.clone());
+
+        globals.install_const(
+            activation.context.gc_context,
+            object_vector_name.clone(),
+            0,
+            object_vector_class.into(),
+            false,
+        );
+        domain.export_definition(object_vector_name, script, activation.context.gc_context)?;
+    }
+
     Ok(Value::Undefined)
 }
 

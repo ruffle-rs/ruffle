@@ -1,0 +1,10 @@
+///Vector$int === Vector.<int>
+true
+///Vector$uint === Vector.<uint>
+true
+///Vector$double === Vector.<Number>
+true
+///Vector$object === Vector.<Object>
+false
+///Vector$object === Vector.<*>
+true

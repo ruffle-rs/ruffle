@@ -1,0 +1,106 @@
+script
+ sinit
+  name ""
+  refid "Test/init"
+  body
+   maxstack 4
+   localcount 2
+   initscopedepth 1
+   maxscopedepth 3
+   code
+    getlocal0
+    pushscope
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\vector_legacy;;Test.as"
+    debugline           2
+    findpropstrict      Multiname("Test", [PackageNamespace("")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              Multiname("Object", [PackageNamespace(""), PrivateNamespace("Test.as$40"), PackageInternalNs(""), Namespace("http://adobe.com/AS3/2006/builtin")])
+    newclass            "Test"
+    popscope
+    initproperty        QName(PackageNamespace(""), "Test")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\vector_legacy;;Test.as"
+    debugline           6
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///Vector$int === Vector.<int>"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           7
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("Vector$int", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("__AS3__.vec")])
+    getlex              Multiname("Vector", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("__AS3__.vec")])
+    getlex              Multiname("int", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    applytype           1
+    strictequals
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           9
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///Vector$uint === Vector.<uint>"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           10
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("Vector$uint", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("__AS3__.vec")])
+    getlex              Multiname("Vector", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("__AS3__.vec")])
+    getlex              Multiname("uint", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    applytype           1
+    strictequals
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           12
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///Vector$double === Vector.<Number>"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           13
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("Vector$double", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("__AS3__.vec")])
+    getlex              Multiname("Vector", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("__AS3__.vec")])
+    getlex              Multiname("Number", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    applytype           1
+    strictequals
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           15
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///Vector$object === Vector.<Object>"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           16
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("Vector$object", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("__AS3__.vec")])
+    getlex              Multiname("Vector", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("__AS3__.vec")])
+    getlex              Multiname("Object", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    applytype           1
+    strictequals
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           18
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///Vector$object === Vector.<*>"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           19
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("Vector$object", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("__AS3__.vec")])
+    getlex              Multiname("Vector", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("__AS3__.vec")])
+    pushnull
+    applytype           1
+    strictequals
+    callproperty        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$40"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+    coerce_a
+    setlocal1
+
+    getlocal1
+    returnvalue
+   end ; code
+  end ; body
+ end ; method
+ trait class QName(PackageNamespace(""), "Test")
+  #include "Test.class.asasm"
+ end ; trait
+end ; script
