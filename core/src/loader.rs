@@ -588,57 +588,59 @@ impl<'gc> Loader<'gc> {
                     return Ok(());
                 }
 
-                player
-                    .lock()
-                    .expect("Could not lock player!!")
-                    .update(|uc| {
-                        let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::Movie {
-                                target_clip,
-                                target_broadcaster,
-                                ..
-                            }) => (*target_clip, *target_broadcaster),
-                            None => return Err(Error::Cancelled),
-                            _ => unreachable!(),
-                        };
+                let async_preload =
+                    player
+                        .lock()
+                        .expect("Could not lock player!!")
+                        .update(|uc| {
+                            let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
+                                Some(Loader::Movie {
+                                    target_clip,
+                                    target_broadcaster,
+                                    ..
+                                }) => (*target_clip, *target_broadcaster),
+                                None => return Err(Error::Cancelled),
+                                _ => unreachable!(),
+                            };
 
-                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                        let parent_domain = activation.avm2().global_domain();
-                        let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
-                        uc.library
-                            .library_for_movie_mut(movie.clone())
-                            .set_avm2_domain(domain);
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                            let parent_domain = activation.avm2().global_domain();
+                            let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
+                            uc.library
+                                .library_for_movie_mut(movie.clone())
+                                .set_avm2_domain(domain);
 
-                        if let Some(broadcaster) = broadcaster {
-                            Avm1::run_stack_frame_for_method(
-                                clip,
-                                broadcaster,
-                                NEWEST_PLAYER_VERSION,
-                                uc,
-                                "broadcastMessage",
-                                &[
-                                    "onLoadProgress".into(),
-                                    Value::Object(broadcaster),
-                                    length.into(),
-                                    length.into(),
-                                ],
-                            );
-                        }
+                            if let Some(broadcaster) = broadcaster {
+                                Avm1::run_stack_frame_for_method(
+                                    clip,
+                                    broadcaster,
+                                    NEWEST_PLAYER_VERSION,
+                                    uc,
+                                    "broadcastMessage",
+                                    &[
+                                        "onLoadProgress".into(),
+                                        Value::Object(broadcaster),
+                                        length.into(),
+                                        length.into(),
+                                    ],
+                                );
+                            }
 
-                        let mut mc = clip
-                            .as_movie_clip()
-                            .expect("Attempted to load movie into not movie clip");
+                            let mut mc = clip
+                                .as_movie_clip()
+                                .expect("Attempted to load movie into not movie clip");
 
-                        mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
+                            mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
+                            mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
-                        Ok(uc
-                            .load_manager
-                            .get_loader_mut(handle)
-                            .unwrap()
-                            .async_preload(weak_player, movie))
-                    })?
-                    .await?;
+                            Ok(uc
+                                .load_manager
+                                .get_loader_mut(handle)
+                                .unwrap()
+                                .async_preload(weak_player, movie))
+                        })?;
+
+                async_preload.await?;
 
                 player
                     .lock()
