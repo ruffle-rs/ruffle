@@ -227,10 +227,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut param_types = vec![];
 
             for param in type_name.params() {
-                param_types.push(
-                    self.resolve_type(param.clone())?
-                        .unwrap_or_else(|| self.avm2().classes().object),
-                );
+                param_types.push(match self.resolve_type(param.clone())? {
+                    Some(o) => Value::Object(o),
+                    None => Value::Null,
+                });
             }
 
             return Ok(Some(class.apply(self, &param_types[..])?));
@@ -1698,12 +1698,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(num_types);
         let base = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let mut args_classes = Vec::new();
-        for arg in args {
-            args_classes.push(arg.coerce_to_object(self)?)
-        }
-
-        let applied = base.apply(self, &args_classes[..])?;
+        let applied = base.apply(self, &args[..])?;
         self.context.avm2.push(applied);
 
         Ok(FrameControl::Continue)
