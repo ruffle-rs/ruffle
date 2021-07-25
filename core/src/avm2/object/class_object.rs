@@ -51,12 +51,20 @@ pub struct ClassObjectData<'gc> {
     /// The parameters of this specialized class.
     ///
     /// None flags that this class has not been specialized.
-    params: Option<Vec<Object<'gc>>>,
+    ///
+    /// An individual parameter of `None` signifies the parameter `*`, which is
+    /// represented in AVM2 as `null` with regards to type application.
+    params: Option<Vec<Option<Object<'gc>>>>,
 
     /// List of all applications of this class.
     ///
     /// Only applicable if this class is generic.
-    applications: HashMap<Object<'gc>, Object<'gc>>,
+    ///
+    /// It is legal to apply a type with the value `null`, which is represented
+    /// as `None` here. AVM2 considers both applications to be separate
+    /// classes, though we consider the parameter to be the class `Object` when
+    /// we get a param of `null`.
+    applications: HashMap<Option<Object<'gc>>, Object<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -470,7 +478,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         None //AS3 does not have metaclasses
     }
 
-    fn as_class_params(&self) -> Option<Ref<[Object<'gc>]>> {
+    fn as_class_params(&self) -> Option<Ref<[Option<Object<'gc>>]>> {
         let read = self.0.read();
 
         if read.params.is_some() {
@@ -509,7 +517,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn apply(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        params: &[Object<'gc>],
+        nullable_params: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let self_class = self
             .as_class()
@@ -523,25 +531,41 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             return Err(format!("Class {:?} was already applied", self_class.read().name()).into());
         }
 
-        if params.len() != 1 {
+        if nullable_params.len() != 1 {
             return Err(format!(
                 "Class {:?} only accepts one type parameter, {} given",
                 self_class.read().name(),
-                params.len()
+                nullable_params.len()
             )
             .into());
         }
 
-        if let Some(application) = self.0.read().applications.get(&params[0]) {
+        //Because `null` is a valid parameter, we have to accept values as
+        //parameters instead of objects. We coerce them to objects now.
+        let mut object_params = Vec::new();
+        for param in nullable_params {
+            object_params.push(match param {
+                Value::Null => None,
+                Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
+                v => Some(v.coerce_to_object(activation)?),
+            });
+        }
+
+        if let Some(application) = self.0.read().applications.get(&object_params[0]) {
             return Ok(*application);
         }
 
         let mut class_params = Vec::new();
-        for param in params {
-            class_params.push(param.as_class().ok_or(format!(
-                "Cannot apply class {:?} with non-class parameter",
-                self_class.read().name()
-            ))?);
+        for param in object_params.iter() {
+            class_params.push(
+                param
+                    .unwrap_or(activation.avm2().classes().object)
+                    .as_class()
+                    .ok_or(format!(
+                        "Cannot apply class {:?} with non-class parameter",
+                        self_class.read().name()
+                    ))?,
+            );
         }
 
         let parameterized_class = self_class
@@ -583,7 +607,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
-                params: Some(params.to_vec()),
+                params: Some(object_params.to_vec()),
                 applications: HashMap::new(),
             },
         ));
@@ -596,7 +620,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0
             .write(activation.context.gc_context)
             .applications
-            .insert(params[0], class_object.into());
+            .insert(object_params[0], class_object.into());
 
         Ok(class_object.into())
     }

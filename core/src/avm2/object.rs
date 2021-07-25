@@ -876,7 +876,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// If the object is not a parameterized type, this yields an error. In
     /// practice, this means only `Vector` can use this method. Parameters must
-    /// be class objects.
+    /// be class objects or `null`, which indicates any type.
     ///
     /// When a given type is parameterized with the same parameters multiple
     /// times, each application must return the same object. This is because
@@ -885,7 +885,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn apply(
         &self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _params: &[Object<'gc>],
+        _params: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         Err("Not a parameterized type".into())
     }
@@ -1049,8 +1049,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     let mut are_all_params_coercible = true;
 
                     for (my_param, test_param) in my_params.iter().zip(test_params.iter()) {
-                        are_all_params_coercible &=
-                            my_param.has_class_in_chain(*test_param, activation)?;
+                        are_all_params_coercible &= match (my_param, test_param) {
+                            (Some(my_param), Some(test_param)) => {
+                                my_param.has_class_in_chain(*test_param, activation)?
+                            }
+                            (None, Some(_)) => false,
+                            _ => true,
+                        }
                     }
 
                     if are_all_params_coercible {
@@ -1077,7 +1082,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the parameters of this class object, if present.
     ///
     /// Only specialized generic classes will yield their parameters.
-    fn as_class_params(&self) -> Option<Ref<[Object<'gc>]>> {
+    fn as_class_params(&self) -> Option<Ref<[Option<Object<'gc>>]>> {
         None
     }
 

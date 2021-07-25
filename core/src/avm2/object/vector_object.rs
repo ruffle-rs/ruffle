@@ -28,6 +28,7 @@ pub fn vector_allocator<'gc>(
     let param_type = class
         .as_class_params()
         .and_then(|p| p.get(0).copied())
+        .flatten()
         .unwrap_or_else(|| activation.avm2().classes().object);
 
     Ok(VectorObject(GcCell::allocate(
@@ -64,7 +65,7 @@ impl<'gc> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().vector;
 
-        let applied_class = vector_class.apply(activation, &[value_type])?;
+        let applied_class = vector_class.apply(activation, &[value_type.into()])?;
         let applied_proto = applied_class
             .get_property(
                 applied_class,
