@@ -1,4 +1,5 @@
 //! Navigator backend for web
+use js_sys::Function;
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
@@ -45,15 +46,15 @@ impl Future for SuspendFuture {
         } else {
             let my_state = self.0.clone();
             let my_waker = cx.waker().clone();
-            let timeout_cb = Closure::once(Box::new(move || {
-                my_waker.wake();
+            let timeout_cb = Closure::once_into_js(Box::new(move || {
                 my_state.lock().unwrap().macrotask_resolved = true;
+                my_waker.wake();
             }) as Box<dyn FnOnce()>);
 
             let window = web_sys::window().unwrap();
             window
                 .set_timeout_with_callback_and_timeout_and_arguments_0(
-                    timeout_cb.as_ref().unchecked_ref(),
+                    &Function::unchecked_from_js(timeout_cb),
                     1,
                 )
                 .unwrap();
