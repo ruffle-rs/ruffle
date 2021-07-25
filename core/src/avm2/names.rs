@@ -75,6 +75,10 @@ impl<'gc> Namespace<'gc> {
         Self::Package(package_name.into())
     }
 
+    pub fn internal(package_name: impl Into<AvmString<'gc>>) -> Self {
+        Self::PackageInternal(package_name.into())
+    }
+
     pub fn private(name: impl Into<AvmString<'gc>>) -> Self {
         Self::Private(name.into())
     }

@@ -651,6 +651,7 @@ swf_tests! {
     (as3_vector_splice, "avm2/vector_splice", 1),
     (as3_vector_tostring, "avm2/vector_tostring", 1),
     (as3_vector_constr, "avm2/vector_constr", 1),
+    (as3_vector_legacy, "avm2/vector_legacy", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

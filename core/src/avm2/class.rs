@@ -450,6 +450,10 @@ impl<'gc> Class<'gc> {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: QName<'gc>) {
+        self.name = name;
+    }
+
     pub fn super_class_name(&self) -> &Option<Multiname<'gc>> {
         &self.super_class
     }
