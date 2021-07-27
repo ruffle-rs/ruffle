@@ -18,6 +18,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 mod array;
 mod boolean;
 mod class;
+mod date;
 mod flash;
 mod function;
 mod global_scope;
@@ -120,6 +121,7 @@ pub struct SystemPrototypes<'gc> {
     pub soundchannel: Object<'gc>,
     pub bitmap: Object<'gc>,
     pub bitmapdata: Object<'gc>,
+    pub date: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -174,6 +176,7 @@ impl<'gc> SystemPrototypes<'gc> {
             soundchannel: empty,
             bitmap: empty,
             bitmapdata: empty,
+            date: empty,
         }
     }
 }
@@ -219,6 +222,7 @@ pub struct SystemClasses<'gc> {
     pub soundchannel: Object<'gc>,
     pub bitmap: Object<'gc>,
     pub bitmapdata: Object<'gc>,
+    pub date: Object<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -273,6 +277,7 @@ impl<'gc> SystemClasses<'gc> {
             soundchannel: empty,
             bitmap: empty,
             bitmapdata: empty,
+            date: empty,
         }
     }
 }
@@ -554,6 +559,8 @@ pub fn load_player_globals<'gc>(
         domain,
         script
     );
+
+    avm2_system_class!(date, activation, date::create_class(mc), domain, script);
 
     // package `flash.system`
     avm2_system_class!(
