@@ -17,6 +17,14 @@ module.exports = (_env, _argv) => {
             chunkFilename: "core.ruffle.[contenthash].js",
             clean: true,
         },
+        module: {
+            rules: [
+                {
+                    test: /\.wasm$/i,
+                    type: "asset/resource",
+                },
+            ],
+        },
         devtool: "source-map",
         plugins: [
             new CopyPlugin({
