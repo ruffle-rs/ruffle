@@ -15,7 +15,7 @@ This document serves as a general guide for contributing to Ruffle. Follow your 
  * [Reporting Bugs](#reporting-bugs)
  * [Debugging ActionScript Content](#debugging-actionscript-content)
  * [Code Guidelines](#code-guidelines)
- * [Commit Message Guidelines](#commit-guidelines)
+ * [Commit Message Guidelines](#commit-message-guidelines)
  * [Pull Requests](#pull-requests)
 
 ## Getting Started
