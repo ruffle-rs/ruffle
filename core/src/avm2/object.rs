@@ -29,6 +29,7 @@ mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
 mod custom_object;
+mod date_object;
 mod dispatch_object;
 mod domain_object;
 mod event_object;
@@ -48,6 +49,7 @@ pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
 pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDataObject};
 pub use crate::avm2::object::bytearray_object::{bytearray_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
+pub use crate::avm2::object::date_object::{date_allocator, DateObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
@@ -90,6 +92,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         SoundObject(SoundObject<'gc>),
         SoundChannelObject(SoundChannelObject<'gc>),
         BitmapDataObject(BitmapDataObject<'gc>),
+        DateObject(DateObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
