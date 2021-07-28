@@ -72,305 +72,92 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
         self
     }
 
-    #[allow(dead_code)]
     fn year(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.year = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn year_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.year = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn year_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.year = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn month(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.month = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn month_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.month = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn month_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.month = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn day(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.day = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn day_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.day = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn day_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.day = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn hour(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.hour = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn hour_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.hour = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn hour_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.hour = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn minute(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.minute = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    fn minute_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.minute = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn minute_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.minute = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn second(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.second = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn second_or(&mut self, value: Option<&Value<'gc>>, default: f64) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.second = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn second_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.second = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
     }
 
-    #[allow(dead_code)]
     fn millisecond(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
         if !self.ignore_next {
-            self.millisecond = Some(if let Some(value) = value {
-                Some(value.coerce_to_number(self.activation)?)
-            } else {
-                None
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn millisecond_or(
-        &mut self,
-        value: Option<&Value<'gc>>,
-        default: f64,
-    ) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.millisecond = Some(if let Some(value) = value {
-                let value = value.coerce_to_number(self.activation)?;
-                if value.is_finite() {
-                    Some(value)
-                } else {
-                    Some(default)
-                }
-            } else {
-                Some(default)
-            });
-        }
-        Ok(self)
-    }
-
-    #[allow(dead_code)]
-    fn millisecond_opt(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
             self.millisecond = match value {
-                Some(&Value::Undefined) | None => {
+                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+                None => {
                     self.ignore_next = true;
                     None
                 }
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
             };
         }
         Ok(self)
@@ -472,13 +259,13 @@ pub fn instance_init<'gc>(
                     );
 
                     DateAdjustment::new(activation, &timezone)
-                        .year_opt(args.get(0))?
-                        .month_opt(args.get(1))?
-                        .day_opt(args.get(2))?
-                        .hour_opt(args.get(3))?
-                        .minute_opt(args.get(4))?
-                        .second_opt(args.get(5))?
-                        .millisecond_opt(args.get(6))?
+                        .year(args.get(0))?
+                        .month(args.get(1))?
+                        .day(args.get(2))?
+                        .hour(args.get(3))?
+                        .minute(args.get(4))?
+                        .second(args.get(5))?
+                        .millisecond(args.get(6))?
                         .adjust_year(|year| if year < 100 { year + 1900 } else { year })
                         .apply(date);
                 } else {
@@ -557,42 +344,6 @@ pub fn set_time<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `seconds` property's getter, and the `getSeconds` method.
-pub fn seconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this.and_then(|this| this.as_date_object()) {
-        if let Some(date) = this
-            .date_time()
-            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
-        {
-            return Ok((date.second() as f64).into());
-        } else {
-            return Ok(f64::NAN.into());
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `seconds` property's setter, and the `setSeconds` method.
-pub fn set_seconds<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this.and_then(|this| this.as_date_object()) {
-        let timezone = activation.context.locale.get_timezone();
-        let timestamp = DateAdjustment::new(activation, &timezone)
-            .second(args.get(0))?
-            .apply(this);
-        return Ok(timestamp.into());
-    }
-    Ok(Value::Undefined)
-}
-
 /// Implements `milliseconds` property's getter, and the `getMilliseconds` method.
 pub fn milliseconds<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -629,6 +380,43 @@ pub fn set_milliseconds<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `seconds` property's getter, and the `getSeconds` method.
+pub fn seconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.second() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `seconds` property's setter, and the `setSeconds` method.
+pub fn set_seconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timezone = activation.context.locale.get_timezone();
+        let timestamp = DateAdjustment::new(activation, &timezone)
+            .second(args.get(0))?
+            .millisecond(args.get(1))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Implements `minutes` property's getter, and the `getMinutes` method.
 pub fn minutes<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -659,6 +447,8 @@ pub fn set_minutes<'gc>(
         let timezone = activation.context.locale.get_timezone();
         let timestamp = DateAdjustment::new(activation, &timezone)
             .minute(args.get(0))?
+            .second(args.get(1))?
+            .millisecond(args.get(2))?
             .apply(this);
         return Ok(timestamp.into());
     }
@@ -695,6 +485,9 @@ pub fn set_hours<'gc>(
         let timezone = activation.context.locale.get_timezone();
         let timestamp = DateAdjustment::new(activation, &timezone)
             .hour(args.get(0))?
+            .minute(args.get(1))?
+            .second(args.get(2))?
+            .millisecond(args.get(3))?
             .apply(this);
         return Ok(timestamp.into());
     }
