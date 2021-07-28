@@ -605,6 +605,26 @@ pub fn set_full_year<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `day` property's getter, and the `getDay` method.
+pub fn day<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.weekday().num_days_from_sunday() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `millisecondsUTC` property's getter, and the `getUTCMilliseconds` method.
 pub fn milliseconds_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -838,6 +858,25 @@ pub fn set_full_year_utc<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `dayUTC` property's getter, and the `getUTCDay` method.
+pub fn day_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+        {
+            return Ok((date.weekday().num_days_from_sunday() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -869,12 +908,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(milliseconds_utc),
             Some(set_milliseconds_utc),
         ),
+        ("day", Some(day), None),
         ("secondsUTC", Some(seconds_utc), Some(set_seconds_utc)),
         ("minutesUTC", Some(minutes_utc), Some(set_minutes_utc)),
         ("hoursUTC", Some(hours_utc), Some(set_hours_utc)),
         ("dateUTC", Some(date_utc), Some(set_date_utc)),
         ("monthUTC", Some(month_utc), Some(set_month_utc)),
         ("fullYearUTC", Some(full_year_utc), Some(set_full_year_utc)),
+        ("dayUTC", Some(day_utc), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
@@ -895,6 +936,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setMonth", set_month),
         ("getFullYear", full_year),
         ("setFullYear", set_full_year),
+        ("getDay", day),
         ("getUTCMilliseconds", milliseconds_utc),
         ("setUTCMilliseconds", set_milliseconds_utc),
         ("getUTCSeconds", seconds_utc),
@@ -909,6 +951,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setUTCMonth", set_month_utc),
         ("getUTCFullYear", full_year_utc),
         ("setUTCFullYear", set_full_year_utc),
+        ("getUTCDay", day_utc),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
