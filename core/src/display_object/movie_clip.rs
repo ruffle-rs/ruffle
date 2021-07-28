@@ -1028,6 +1028,7 @@ impl<'gc> MovieClip<'gc> {
             .preload_progress
             .read()
             .cur_preload_frame
+            .saturating_sub(1)
     }
 
     pub fn set_avm2_class(
