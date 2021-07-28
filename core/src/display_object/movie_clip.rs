@@ -549,7 +549,8 @@ impl<'gc> MovieClip<'gc> {
 
             Ok(ControlFlow::Continue)
         };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+        let result = tag_utils::decode_tags(&mut reader, tag_callback);
+        let is_finished = is_finished || result.is_err() || !result.unwrap();
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -558,7 +559,13 @@ impl<'gc> MovieClip<'gc> {
 
             write.next_preload_chunk =
                 (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64);
-            write.cur_preload_frame = cur_frame;
+            write.cur_preload_frame = if is_finished {
+                // Flag the movie as fully preloaded when we hit the end of the
+                // tag stream.
+                static_data.total_frames + 1
+            } else {
+                cur_frame
+            };
             write.last_frame_start_pos = start_pos;
         }
 
