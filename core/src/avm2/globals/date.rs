@@ -605,7 +605,7 @@ pub fn set_full_year<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `millisecondsUTC` property's getter, and the `getMillisecondsUTC` method.
+/// Implements `millisecondsUTC` property's getter, and the `getUTCMilliseconds` method.
 pub fn milliseconds_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -622,7 +622,7 @@ pub fn milliseconds_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `millisecondsUTC` property's setter, and the `setMillisecondsUTC` method.
+/// Implements `millisecondsUTC` property's setter, and the `setUTCMilliseconds` method.
 pub fn set_milliseconds_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -637,7 +637,7 @@ pub fn set_milliseconds_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `secondsUTC` property's getter, and the `getSecondsUTC` method.
+/// Implements `secondsUTC` property's getter, and the `getUTCSeconds` method.
 pub fn seconds_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -654,7 +654,7 @@ pub fn seconds_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `secondsUTC` property's setter, and the `setSecondsUTC` method.
+/// Implements `secondsUTC` property's setter, and the `setUTCSeconds` method.
 pub fn set_seconds_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -670,7 +670,7 @@ pub fn set_seconds_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `minutesUTC` property's getter, and the `getMinutesUTC` method.
+/// Implements `minutesUTC` property's getter, and the `getUTCMinutes` method.
 pub fn minutes_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -687,7 +687,7 @@ pub fn minutes_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `minutesUTC` property's setter, and the `setMinutesUTC` method.
+/// Implements `minutesUTC` property's setter, and the `setUTCMinutes` method.
 pub fn set_minutes_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -704,7 +704,7 @@ pub fn set_minutes_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `hourUTC` property's getter, and the `getHoursUTC` method.
+/// Implements `hourUTC` property's getter, and the `getUTCHours` method.
 pub fn hours_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -721,7 +721,7 @@ pub fn hours_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `hoursUTC` property's setter, and the `setHoursUTC` method.
+/// Implements `hoursUTC` property's setter, and the `setUTCHours` method.
 pub fn set_hours_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -739,7 +739,7 @@ pub fn set_hours_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `dateUTC` property's getter, and the `getDateUTC` method.
+/// Implements `dateUTC` property's getter, and the `getUTCDate` method.
 pub fn date_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -756,7 +756,7 @@ pub fn date_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `dateUTC` property's setter, and the `setDateUTC` method.
+/// Implements `dateUTC` property's setter, and the `setUTCDate` method.
 pub fn set_date_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -771,7 +771,7 @@ pub fn set_date_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `monthUTC` property's getter, and the `getMonthUTC` method.
+/// Implements `monthUTC` property's getter, and the `getUTCMonth` method.
 pub fn month_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -788,7 +788,7 @@ pub fn month_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `monthUTC` property's setter, and the `setMonthUTC` method.
+/// Implements `monthUTC` property's setter, and the `setUTCMonth` method.
 pub fn set_month_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -804,7 +804,7 @@ pub fn set_month_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `fullYearUTC` property's getter, and the `getFullYearUTC` method.
+/// Implements `fullYearUTC` property's getter, and the `getUTCFullYear` method.
 pub fn full_year_utc<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -821,7 +821,7 @@ pub fn full_year_utc<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `fullYearUtc` property's setter, and the `setFullYearUtc` method.
+/// Implements `fullYearUTC` property's setter, and the `setUTCFullYear` method.
 pub fn set_full_year_utc<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
