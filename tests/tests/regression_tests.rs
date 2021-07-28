@@ -989,6 +989,8 @@ fn run_swf(
 
     before_start(player.clone())?;
 
+    executor.block_all().unwrap();
+
     for _ in 0..num_frames {
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);

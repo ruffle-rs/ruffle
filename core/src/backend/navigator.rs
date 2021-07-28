@@ -273,7 +273,7 @@ impl NullExecutor {
     /// If any task in the executor yields an error, then this function will
     /// stop polling futures and return that error. Otherwise, it will yield
     /// `Ok`, indicating that no errors occurred. More work may still be
-    /// available,
+    /// available, you can check so with `has_work`.
     pub fn poll_all(&mut self) -> Result<(), Error> {
         self.flush_channel();
 
