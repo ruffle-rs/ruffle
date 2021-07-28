@@ -12,7 +12,7 @@ pub use mp3::Mp3Decoder;
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{ControlFlow, SwfSlice};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 
@@ -266,7 +266,7 @@ impl Iterator for StreamTagReader {
         let tag_callback = |reader: &mut swf::read::Reader<'_>, tag_code, tag_len| match tag_code {
             TagCode::ShowFrame => {
                 *current_frame += 1;
-                Ok(())
+                Ok(ControlFlow::Continue)
             }
             TagCode::SoundStreamBlock => {
                 // TODO: Implement index ops on `SwfSlice`.
@@ -279,19 +279,14 @@ impl Iterator for StreamTagReader {
                 } else {
                     *audio_data = swf_data.to_subslice(&reader.get_ref()[..tag_len]).unwrap()
                 };
-                Ok(())
+                Ok(ControlFlow::Exit)
             }
-            _ => Ok(()),
+            _ => Ok(ControlFlow::Continue),
         };
 
         let version = swf_data.version();
         let mut reader = swf::read::Reader::new(&self.swf_data.as_ref()[self.pos..], version);
-        let _ = crate::tag_utils::decode_tags(
-            &mut reader,
-            tag_callback,
-            TagCode::SoundStreamBlock,
-            None,
-        );
+        let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback);
         self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
         if found {
