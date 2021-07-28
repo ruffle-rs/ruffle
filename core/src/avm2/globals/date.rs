@@ -530,6 +530,81 @@ pub fn set_date<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `month` property's getter, and the `getMonth` method.
+pub fn month<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.month0() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `month` property's setter, and the `setMonth` method.
+pub fn set_month<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timezone = activation.context.locale.get_timezone();
+        let timestamp = DateAdjustment::new(activation, &timezone)
+            .month(args.get(0))?
+            .day(args.get(1))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `full_year` property's getter, and the `getFullYear` method.
+pub fn full_year<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.year() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `full_year` property's setter, and the `setFullYear` method.
+pub fn set_full_year<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timezone = activation.context.locale.get_timezone();
+        let timestamp = DateAdjustment::new(activation, &timezone)
+            .year(args.get(0))?
+            .month(args.get(1))?
+            .day(args.get(2))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -554,6 +629,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("minutes", Some(minutes), Some(set_minutes)),
         ("hours", Some(hours), Some(set_hours)),
         ("date", Some(date), Some(set_date)),
+        ("month", Some(month), Some(set_month)),
+        ("fullYear", Some(full_year), Some(set_full_year)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
@@ -570,6 +647,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setHours", set_hours),
         ("getDate", date),
         ("setDate", set_date),
+        ("getMonth", month),
+        ("setMonth", set_month),
+        ("getFullYear", full_year),
+        ("setFullYear", set_full_year),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
