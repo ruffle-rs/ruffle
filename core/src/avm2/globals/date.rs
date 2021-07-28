@@ -567,7 +567,7 @@ pub fn set_month<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `full_year` property's getter, and the `getFullYear` method.
+/// Implements `fullYear` property's getter, and the `getFullYear` method.
 pub fn full_year<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -587,7 +587,7 @@ pub fn full_year<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `full_year` property's setter, and the `setFullYear` method.
+/// Implements `fullYear` property's setter, and the `setFullYear` method.
 pub fn set_full_year<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -596,6 +596,239 @@ pub fn set_full_year<'gc>(
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
         let timezone = activation.context.locale.get_timezone();
         let timestamp = DateAdjustment::new(activation, &timezone)
+            .year(args.get(0))?
+            .month(args.get(1))?
+            .day(args.get(2))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `millisecondsUTC` property's getter, and the `getMillisecondsUTC` method.
+pub fn milliseconds_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.timestamp_subsec_millis() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `millisecondsUTC` property's setter, and the `setMillisecondsUTC` method.
+pub fn set_milliseconds_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .millisecond(args.get(0))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `secondsUTC` property's getter, and the `getSecondsUTC` method.
+pub fn seconds_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.second() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `secondsUTC` property's setter, and the `setSecondsUTC` method.
+pub fn set_seconds_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .second(args.get(0))?
+            .millisecond(args.get(1))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `minutesUTC` property's getter, and the `getMinutesUTC` method.
+pub fn minutes_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.minute() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `minutesUTC` property's setter, and the `setMinutesUTC` method.
+pub fn set_minutes_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .minute(args.get(0))?
+            .second(args.get(1))?
+            .millisecond(args.get(2))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `hourUTC` property's getter, and the `getHoursUTC` method.
+pub fn hours_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.hour() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `hoursUTC` property's setter, and the `setHoursUTC` method.
+pub fn set_hours_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .hour(args.get(0))?
+            .minute(args.get(1))?
+            .second(args.get(2))?
+            .millisecond(args.get(3))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `dateUTC` property's getter, and the `getDateUTC` method.
+pub fn date_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.day() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `dateUTC` property's setter, and the `setDateUTC` method.
+pub fn set_date_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .day(args.get(0))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `monthUTC` property's getter, and the `getMonthUTC` method.
+pub fn month_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.month0() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `monthUTC` property's setter, and the `setMonthUTC` method.
+pub fn set_month_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
+            .month(args.get(0))?
+            .day(args.get(1))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `fullYearUTC` property's getter, and the `getFullYearUTC` method.
+pub fn full_year_utc<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.year() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `fullYearUtc` property's setter, and the `setFullYearUtc` method.
+pub fn set_full_year_utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timestamp = DateAdjustment::new(activation, &Utc)
             .year(args.get(0))?
             .month(args.get(1))?
             .day(args.get(2))?
@@ -631,6 +864,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("date", Some(date), Some(set_date)),
         ("month", Some(month), Some(set_month)),
         ("fullYear", Some(full_year), Some(set_full_year)),
+        (
+            "millisecondsUTC",
+            Some(milliseconds_utc),
+            Some(set_milliseconds_utc),
+        ),
+        ("secondsUTC", Some(seconds_utc), Some(set_seconds_utc)),
+        ("minutesUTC", Some(minutes_utc), Some(set_minutes_utc)),
+        ("hoursUTC", Some(hours_utc), Some(set_hours_utc)),
+        ("dateUTC", Some(date_utc), Some(set_date_utc)),
+        ("monthUTC", Some(month_utc), Some(set_month_utc)),
+        ("fullYearUTC", Some(full_year_utc), Some(set_full_year_utc)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
@@ -651,6 +895,20 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setMonth", set_month),
         ("getFullYear", full_year),
         ("setFullYear", set_full_year),
+        ("getUTCMilliseconds", milliseconds_utc),
+        ("setUTCMilliseconds", set_milliseconds_utc),
+        ("getUTCSeconds", seconds_utc),
+        ("setUTCSeconds", set_seconds_utc),
+        ("getUTCMinutes", minutes_utc),
+        ("setUTCMinutes", set_minutes_utc),
+        ("getUTCHours", hours_utc),
+        ("setUTCHours", set_hours_utc),
+        ("getUTCDate", date_utc),
+        ("setUTCDate", set_date_utc),
+        ("getUTCMonth", month_utc),
+        ("setUTCMonth", set_month_utc),
+        ("getUTCFullYear", full_year_utc),
+        ("setUTCFullYear", set_full_year_utc),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
