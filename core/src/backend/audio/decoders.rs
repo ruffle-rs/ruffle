@@ -16,7 +16,7 @@ pub use mp3::symphonia::{mp3_metadata, Mp3Decoder};
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{ControlFlow, SwfSlice};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 use thiserror::Error;
@@ -319,18 +319,17 @@ impl Iterator for StreamTagReader {
                             audio_block = &audio_block[4..];
                         }
                         *audio_data = swf_data.to_subslice(audio_block);
-                        Ok(())
+                        Ok(ControlFlow::Exit)
                     }
                     TagCode::ShowFrame if compression == AudioCompression::Mp3 => {
                         self.mp3_samples_buffered -= i32::from(self.mp3_samples_per_block);
-                        Ok(())
+                        Ok(ControlFlow::Continue)
                     }
-                    _ => Ok(()),
+                    _ => Ok(ControlFlow::Continue),
                 };
 
             let mut reader = self.swf_data.read_from(self.pos as u64);
-            let _ =
-                crate::tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame, None);
+            let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback);
             self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
             // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.

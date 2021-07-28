@@ -14,7 +14,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::string::AvmString;
-use crate::tag_utils::{self, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::sync::Arc;
 use swf::TagCode;
@@ -680,10 +680,10 @@ fn load_playerglobal<'gc>(
                 tag_code
             )
         }
-        Ok(())
+        Ok(ControlFlow::Continue)
     };
 
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End, None);
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
     macro_rules! avm2_system_classes_playerglobal {
         ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
             $(
