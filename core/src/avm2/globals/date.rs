@@ -188,47 +188,48 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
         }
     }
 
-    fn calculate(&mut self, current: DateObject<'gc>) -> Option<DateTime<Utc>> {
-        if let Some(current) = current.date_time().map(|v| v.with_timezone(self.timezone)) {
-            let month_rem = self
-                .month
-                .flatten()
-                .map(|v| v as i64)
-                .unwrap_or_default()
-                .div_euclid(12);
-            let month =
-                self.check_mapped_value(self.month, |v| v.rem_euclid(12), current.month0())?;
-            let year = self
-                .check_mapped_value(self.year, |v| self.year_type.adjust(v), current.year())?
-                .wrapping_add(month_rem) as i32;
-            let day = self.check_value(self.day, current.day())?;
-            let hour = self.check_value(self.hour, current.hour())?;
-            let minute = self.check_value(self.minute, current.minute())?;
-            let second = self.check_value(self.second, current.second())?;
-            let millisecond =
-                self.check_value(self.millisecond, current.timestamp_subsec_millis())?;
+    fn calculate(&mut self, current: DateTime<T>) -> Option<DateTime<Utc>> {
+        let month_rem = self
+            .month
+            .flatten()
+            .map(|v| v as i64)
+            .unwrap_or_default()
+            .div_euclid(12);
+        let month = self.check_mapped_value(self.month, |v| v.rem_euclid(12), current.month0())?;
+        let year = self
+            .check_mapped_value(self.year, |v| self.year_type.adjust(v), current.year())?
+            .wrapping_add(month_rem) as i32;
+        let day = self.check_value(self.day, current.day())?;
+        let hour = self.check_value(self.hour, current.hour())?;
+        let minute = self.check_value(self.minute, current.minute())?;
+        let second = self.check_value(self.second, current.second())?;
+        let millisecond = self.check_value(self.millisecond, current.timestamp_subsec_millis())?;
 
-            let duration = Duration::days(day - 1)
-                + Duration::hours(hour)
-                + Duration::minutes(minute)
-                + Duration::seconds(second)
-                + Duration::milliseconds(millisecond);
+        let duration = Duration::days(day - 1)
+            + Duration::hours(hour)
+            + Duration::minutes(minute)
+            + Duration::seconds(second)
+            + Duration::milliseconds(millisecond);
 
-            if let LocalResult::Single(Some(result)) = current
-                .timezone()
-                .ymd_opt(year, (month + 1) as u32, 1)
-                .and_hms_opt(0, 0, 0)
-                .map(|date| date.checked_add_signed(duration))
-            {
-                return Some(result.with_timezone(&Utc));
-            }
+        if let LocalResult::Single(Some(result)) = current
+            .timezone()
+            .ymd_opt(year, (month + 1) as u32, 1)
+            .and_hms_opt(0, 0, 0)
+            .map(|date| date.checked_add_signed(duration))
+        {
+            Some(result.with_timezone(&Utc))
+        } else {
+            None
         }
-
-        None
     }
 
     fn apply(&mut self, object: DateObject<'gc>) -> f64 {
-        let date = self.calculate(object);
+        let date = if let Some(current) = object.date_time().map(|v| v.with_timezone(self.timezone))
+        {
+            self.calculate(current)
+        } else {
+            None
+        };
         object.set_date_time(self.activation.context.gc_context, date);
         if let Some(date) = date {
             date.timestamp_millis() as f64
@@ -896,6 +897,30 @@ pub fn timezone_offset<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements the `UTC` class method.
+pub fn utc<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let date = DateAdjustment::new(activation, &Utc)
+        .year(args.get(0))?
+        .month(args.get(1))?
+        .day(args.get(2))?
+        .hour(args.get(3))?
+        .minute(args.get(4))?
+        .second(args.get(5))?
+        .millisecond(args.get(6))?
+        .calculate(Utc.ymd(0, 1, 1).and_hms(0, 0, 0).into());
+    let millis = if let Some(date) = date {
+        date.timestamp_millis() as f64
+    } else {
+        f64::NAN
+    };
+
+    Ok(millis.into())
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -975,6 +1000,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getTimezoneOffset", timezone_offset),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc)];
+
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
