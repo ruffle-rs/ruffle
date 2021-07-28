@@ -911,7 +911,7 @@ pub fn utc<'gc>(
         .minute(args.get(4))?
         .second(args.get(5))?
         .millisecond(args.get(6))?
-        .calculate(Utc.ymd(0, 1, 1).and_hms(0, 0, 0).into());
+        .calculate(Utc.ymd(0, 1, 1).and_hms(0, 0, 0));
     let millis = if let Some(date) = date {
         date.timestamp_millis() as f64
     } else {
