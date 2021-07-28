@@ -3453,8 +3453,21 @@ struct MovieClipStatic {
 }
 
 impl MovieClipStatic {
+    /// Construct static data for an empty movie clip.
+    ///
+    /// The associated `swf` may either be an empty movie or a 0-length slice
+    /// of a valid movie. In either case, you will get back static data
+    /// corresponding to a movieclip with a character ID of zero, one valid
+    /// frame, and one loaded frame.
+    ///
+    /// You should not preload any movie clips associated with the static data
+    /// returned by this function.
     fn empty(swf: SwfSlice) -> Self {
-        Self::with_data(0, swf, 1)
+        let mut s = Self::with_data(0, swf, 1);
+
+        s.cur_preload_frame = s.total_frames + 1;
+
+        s
     }
 
     fn with_data(id: CharacterId, swf: SwfSlice, total_frames: FrameNumber) -> Self {
