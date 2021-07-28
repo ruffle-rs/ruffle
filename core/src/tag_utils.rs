@@ -24,7 +24,16 @@ pub enum Error {
     InvalidSwfUrl,
 }
 
-pub type DecodeResult = Result<(), Error>;
+/// Whether or not to end tag decoding.
+pub enum ControlFlow {
+    /// Stop decoding after this tag.
+    Exit,
+
+    /// Continue decoding the next tag.
+    Continue,
+}
+
+pub type DecodeResult = Result<ControlFlow, Error>;
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
@@ -350,34 +359,19 @@ impl SwfSlice {
 ///
 /// Decoding will terminate when the following conditions occur:
 ///
-///  * After the given `stop_tag` is encountered and passed to the callback
+///  * The `tag_callback` calls for the decoding to finish.
 ///  * The decoder encounters a tag longer than the underlying SWF slice
-///  * The decoder decodes more than `chunk_limit` tags (if provided), in which
-///    case this function also returns `false`
 ///  * The SWF stream is otherwise corrupt or unreadable (indicated as an error
 ///    result)
 ///
 /// Decoding will also log tags longer than the SWF slice, error messages
 /// yielded from the tag callback, and unknown tags. It will *only* return an
-/// error message if the SWF tag itself could not be parsed. Otherwise, it
-/// returns `true` if decoding progressed to the stop tag or EOF, or `false` if
-/// the chunk limit was reached.
-pub fn decode_tags<'a, F>(
-    reader: &mut SwfStream<'a>,
-    mut tag_callback: F,
-    stop_tag: TagCode,
-    mut chunk_limit: Option<usize>,
-) -> Result<bool, Error>
+/// error message if the SWF tag itself could not be parsed.
+pub fn decode_tags<'a, F>(reader: &mut SwfStream<'a>, mut tag_callback: F) -> Result<(), Error>
 where
-    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> DecodeResult,
+    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> Result<ControlFlow, Error>,
 {
     loop {
-        if let Some(chunk_limit) = chunk_limit {
-            if chunk_limit < 1 {
-                return Ok(false);
-            }
-        }
-
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
         if tag_len > reader.get_ref().len() {
             log::error!("Unexpected EOF when reading tag");
@@ -391,24 +385,22 @@ where
             *reader.get_mut() = tag_slice;
             let result = tag_callback(reader, tag, tag_len);
 
-            if let Err(e) = result {
-                log::error!("Error running definition tag: {:?}, got {}", tag, e);
-            }
-
-            if stop_tag == tag {
-                *reader.get_mut() = end_slice;
-                break;
+            match result {
+                Err(e) => {
+                    log::error!("Error running definition tag: {:?}, got {}", tag, e)
+                }
+                Ok(ControlFlow::Exit) => {
+                    *reader.get_mut() = end_slice;
+                    break;
+                }
+                Ok(ControlFlow::Continue) => {}
             }
         } else {
             log::warn!("Unknown tag code: {:?}", tag_code);
         }
 
         *reader.get_mut() = end_slice;
-
-        if let Some(ref mut chunk_limit) = chunk_limit {
-            *chunk_limit -= 1;
-        }
     }
 
-    Ok(true)
+    Ok(())
 }
