@@ -361,13 +361,15 @@ impl SwfSlice {
 ///
 ///  * The `tag_callback` calls for the decoding to finish.
 ///  * The decoder encounters a tag longer than the underlying SWF slice
+///    (indicated by returning false)
 ///  * The SWF stream is otherwise corrupt or unreadable (indicated as an error
 ///    result)
 ///
 /// Decoding will also log tags longer than the SWF slice, error messages
 /// yielded from the tag callback, and unknown tags. It will *only* return an
-/// error message if the SWF tag itself could not be parsed.
-pub fn decode_tags<'a, F>(reader: &mut SwfStream<'a>, mut tag_callback: F) -> Result<(), Error>
+/// error message if the SWF tag itself could not be parsed. Other forms of
+/// irregular decoding will be signalled by returning false.
+pub fn decode_tags<'a, F>(reader: &mut SwfStream<'a>, mut tag_callback: F) -> Result<bool, Error>
 where
     F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> Result<ControlFlow, Error>,
 {
@@ -376,7 +378,7 @@ where
         if tag_len > reader.get_ref().len() {
             log::error!("Unexpected EOF when reading tag");
             *reader.get_mut() = &reader.get_ref()[reader.get_ref().len()..];
-            break;
+            return Ok(false);
         }
 
         let tag_slice = &reader.get_ref()[..tag_len];
@@ -402,5 +404,5 @@ where
         *reader.get_mut() = end_slice;
     }
 
-    Ok(())
+    Ok(true)
 }
