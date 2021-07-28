@@ -865,10 +865,29 @@ pub fn day_utc<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.weekday().num_days_from_sunday() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `timezoneOffset` property's getter, and the `getTimezoneOffset` method.
+pub fn timezone_offset<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
         if let Some(date) = this
             .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok((date.weekday().num_days_from_sunday() as f64).into());
+            let offset = date.offset().utc_minus_local() as f64;
+            return Ok((offset / 60.0).into());
         } else {
             return Ok(f64::NAN.into());
         }
@@ -916,6 +935,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("monthUTC", Some(month_utc), Some(set_month_utc)),
         ("fullYearUTC", Some(full_year_utc), Some(set_full_year_utc)),
         ("dayUTC", Some(day_utc), None),
+        ("timezoneOffset", Some(timezone_offset), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
@@ -952,6 +972,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getUTCFullYear", full_year_utc),
         ("setUTCFullYear", set_full_year_utc),
         ("getUTCDay", day_utc),
+        ("getTimezoneOffset", timezone_offset),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
