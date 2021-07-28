@@ -3812,7 +3812,11 @@ struct MovieClipStatic<'gc> {
 
 impl<'gc> MovieClipStatic<'gc> {
     fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context)
+        let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context);
+
+        s.preload_progress.write(gc_context).cur_preload_frame = s.total_frames + 1;
+
+        s
     }
 
     fn with_data(
