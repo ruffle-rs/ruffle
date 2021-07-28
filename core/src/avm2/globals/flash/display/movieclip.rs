@@ -35,6 +35,8 @@ pub fn instance_init<'gc>(
                 activation.context.gc_context,
             );
 
+            new_do.preload(&mut activation.context, &mut Default::default(), None);
+
             this.init_display_object(activation.context.gc_context, new_do.into());
         }
     }
