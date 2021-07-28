@@ -952,7 +952,11 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn frames_loaded(self) -> FrameNumber {
-        self.0.read().static_data.cur_preload_frame
+        self.0
+            .read()
+            .static_data
+            .cur_preload_frame
+            .saturating_sub(1)
     }
 
     pub fn set_avm2_class(
