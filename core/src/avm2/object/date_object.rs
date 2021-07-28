@@ -9,6 +9,7 @@ use crate::string::AvmString;
 use crate::{
     impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
 };
+use chrono::{DateTime, Utc};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance allocator that allocates Date objects.
@@ -21,7 +22,10 @@ pub fn date_allocator<'gc>(
 
     Ok(DateObject(GcCell::allocate(
         activation.context.gc_context,
-        DateObjectData { base },
+        DateObjectData {
+            base,
+            date_time: None,
+        },
     ))
     .into())
 }
@@ -29,11 +33,28 @@ pub fn date_allocator<'gc>(
 #[collect(no_drop)]
 pub struct DateObject<'gc>(GcCell<'gc, DateObjectData<'gc>>);
 
+impl<'gc> DateObject<'gc> {
+    pub fn date_time(self) -> Option<DateTime<Utc>> {
+        self.0.read().date_time
+    }
+
+    pub fn set_date_time(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        date_time: Option<DateTime<Utc>>,
+    ) {
+        self.0.write(gc_context).date_time = date_time;
+    }
+}
+
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub struct DateObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
+
+    #[collect(require_static)]
+    date_time: Option<DateTime<Utc>>,
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
@@ -47,12 +68,19 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
 
         Ok(DateObject(GcCell::allocate(
             activation.context.gc_context,
-            DateObjectData { base },
+            DateObjectData {
+                base,
+                date_time: None,
+            },
         ))
         .into())
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
+    }
+
+    fn as_date_object(&self) -> Option<DateObject<'gc>> {
+        Some(*self)
     }
 }
