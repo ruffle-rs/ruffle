@@ -504,7 +504,8 @@ impl<'gc> MovieClip<'gc> {
 
             Ok(ControlFlow::Continue)
         };
-        let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+        let result = tag_utils::decode_tags(&mut reader, tag_callback);
+        let is_finished = is_finished || result.is_err() || !result.unwrap();
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -520,6 +521,9 @@ impl<'gc> MovieClip<'gc> {
                     static_data.audio_stream_handle = Some(sound);
                 }
             }
+
+            //Flag the movie as fully preloaded.
+            static_data.cur_preload_frame = static_data.total_frames + 1;
         }
 
         self.0.write(context.gc_context).static_data =
