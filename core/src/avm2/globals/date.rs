@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{date_allocator, DateObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -516,6 +516,123 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `time` property's getter, and the `getTime` method.
+pub fn time<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this.date_time() {
+            return Ok((date.timestamp_millis() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `time` property's setter, and the `setTime` method.
+pub fn set_time<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let new_time = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_number(activation)?;
+        if new_time.is_finite() {
+            let time = Utc.timestamp_millis(new_time as i64);
+            this.set_date_time(activation.context.gc_context, Some(time));
+            return Ok((time.timestamp_millis() as f64).into());
+        } else {
+            this.set_date_time(activation.context.gc_context, None);
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `seconds` property's getter, and the `getSeconds` method.
+pub fn seconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.second() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+
+
+/// Implements `seconds` property's setter, and the `setSeconds` method.
+pub fn set_seconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timezone = activation.context.locale.get_timezone();
+        let timestamp = DateAdjustment::new(activation, &timezone)
+            .second(args.get(0))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `milliseconds` property's getter, and the `getMilliseconds` method.
+pub fn milliseconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok((date.timestamp_subsec_millis() as f64).into());
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+
+
+/// Implements `milliseconds` property's setter, and the `setMilliseconds` method.
+pub fn set_milliseconds<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        let timezone = activation.context.locale.get_timezone();
+        let timestamp = DateAdjustment::new(activation, &timezone)
+            .millisecond(args.get(0))?
+            .apply(this);
+        return Ok(timestamp.into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -528,6 +645,27 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
     write.set_instance_allocator(date_allocator);
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
+        ("time", Some(time), Some(set_time)),
+        ("milliseconds", Some(milliseconds), Some(set_milliseconds)),
+        ("seconds", Some(seconds), Some(set_seconds)),
+    ];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("getTime", time),
+        ("setTime", set_time),
+        ("getMilliseconds", milliseconds),
+        ("setMilliseconds", set_milliseconds),
+        ("getSeconds", seconds),
+        ("setSeconds", set_seconds),
+    ];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }
