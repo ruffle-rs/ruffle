@@ -1258,6 +1258,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _new_bitmap: GcCell<'gc, BitmapData<'gc>>,
     ) {
     }
+
+    /// Get this objects `DateObject`, if it has one.
+    fn as_date_object(&self) -> Option<DateObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
