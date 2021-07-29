@@ -8,7 +8,7 @@ use crate::avm2::object::{date_allocator, DateObject, Object, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use chrono::{DateTime, Datelike, Duration, LocalResult, TimeZone, Timelike, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{GcCell, MutationContext};
 use num_traits::ToPrimitive;
 
@@ -1059,6 +1059,224 @@ pub fn to_date_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Parse a date, in any of the three formats: YYYY/MM/DD, MM/DD/YYYY, Mon/DD/YYYY.
+/// The output will always be: (year, month, day), or None if format is invalid.
+fn parse_date(item: &str) -> Option<(u32, u32, u32)> {
+    let mut iter = item.split('/');
+    let first = iter.next()?;
+    let parsed = if first.len() == 4 {
+        // If the first item in this date is 4 characters long, we parse as YYYY/MM/DD
+        let month = iter.next()?;
+        if month.len() != 2 {
+            return None;
+        }
+        let day = iter.next()?;
+        if day.len() != 2 {
+            return None;
+        }
+        (
+            first.parse::<u32>().ok()?,
+            month.parse::<u32>().ok()?.checked_sub(1)?,
+            day.parse::<u32>().ok()?,
+        )
+    } else if first.len() == 2 {
+        // If the first item in this date is 2 characters long, we parse as MM/DD/YYYY
+        let day = iter.next()?;
+        if day.len() != 2 {
+            return None;
+        }
+        let year = iter.next()?;
+        if year.len() != 4 {
+            return None;
+        }
+        (
+            year.parse::<u32>().ok()?,
+            first.parse::<u32>().ok()?.checked_sub(1)?,
+            day.parse::<u32>().ok()?,
+        )
+    } else if first.len() == 3 {
+        // If the first item in this date is 3 characters long, we parse as Mon/DD/YYYY
+
+        // First lets parse the Month
+        let month = parse_mon(first)?;
+        let day = iter.next()?;
+        if day.len() != 2 {
+            return None;
+        }
+        let year = iter.next()?;
+        if year.len() != 4 {
+            return None;
+        }
+        (
+            year.parse::<u32>().ok()?,
+            month as u32,
+            day.parse::<u32>().ok()?,
+        )
+    } else {
+        return None;
+    };
+    if iter.next().is_some() {
+        // the iterator should have been empty
+        return None;
+    }
+    Some(parsed)
+}
+
+/// Convert a month abbrevation to a number.
+fn parse_mon(item: &str) -> Option<usize> {
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    MONTHS.iter().position(|&x| x == item)
+}
+
+/// Parses HH:MM:SS. The output is always (hours, minutes, seconds), or None if format was invalid.
+fn parse_hms(item: &str) -> Option<(u32, u32, u32)> {
+    let mut iter = item.split(':');
+    let hours = iter.next()?;
+    if hours.len() != 2 {
+        return None;
+    }
+    let minutes = iter.next()?;
+    if minutes.len() != 2 {
+        return None;
+    }
+    let seconds = iter.next()?;
+    if seconds.len() != 2 {
+        return None;
+    }
+    if iter.next().is_some() {
+        // the iterator should have been empty
+        return None;
+    }
+    Some((
+        hours.parse::<u32>().ok()?,
+        minutes.parse::<u32>().ok()?,
+        seconds.parse::<u32>().ok()?,
+    ))
+}
+
+/// Implements the `parse` class method.
+pub fn parse<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    const DAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    let date_str = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let timezone = activation.context.locale.get_timezone();
+    let mut final_time = DateAdjustment::new(activation, &timezone);
+    let mut new_timezone = None;
+    // The Date parser is flash is super flexible, so we need to go through each item individually and parse it to match Flash.
+    // NOTE: DateTime::parse_from_str is not flexible enough for this, so we need to parse manually.
+    for item in date_str.as_str().split_whitespace() {
+        if let Some((year, month, day)) = parse_date(item) {
+            // Parse YYYY/MM/DD, MM/DD/YYYY, Mon/DD/YYYY
+
+            // First we check if the fields we are going to set have already been set, if they are, we return NaN.
+            // The same logic applies for all other if/else branches.
+            if final_time.year.is_some() || final_time.month.is_some() || final_time.day.is_some() {
+                return Ok(f64::NAN.into());
+            }
+            final_time.year = Some(Some(year as f64));
+            final_time.month = Some(Some(month as f64));
+            final_time.day = Some(Some(day as f64));
+        } else if let Some((hours, minutes, seconds)) = parse_hms(item) {
+            // Parse HH:MM:SS
+
+            if final_time.hour.is_some()
+                || final_time.minute.is_some()
+                || final_time.second.is_some()
+            {
+                return Ok(f64::NAN.into());
+            }
+            final_time.hour = Some(Some(hours as f64));
+            final_time.minute = Some(Some(minutes as f64));
+            final_time.second = Some(Some(seconds as f64));
+        } else if DAYS.contains(&item) {
+            // Parse abbreviated weekname (Sun, Mon, etc...)
+            // DO NOTHING
+        } else if let Some(month) = parse_mon(item) {
+            // Parse abbreviated month name (Jan, Feb, etc...)
+
+            final_time.month = Some(Some(month as f64));
+        } else if item.starts_with("GMT") || item.starts_with("UTC") {
+            // Parse GMT-HHMM/GMT+HHMM or UTC-HHMM/UTC+HHMM
+
+            if new_timezone.is_some() || item.len() != 8 {
+                return Ok(f64::NAN.into());
+            }
+            let (other, tzn) = item.split_at(4);
+            if tzn.len() != 4 {
+                return Ok(f64::NAN.into());
+            }
+            let (hours, minutes) = tzn.split_at(2);
+            let hours = if let Ok(hours) = hours.parse::<u32>() {
+                hours
+            } else {
+                return Ok(f64::NAN.into());
+            };
+            let minutes = if let Ok(minutes) = minutes.parse::<u32>() {
+                minutes
+            } else {
+                return Ok(f64::NAN.into());
+            };
+            let sign = other.chars().nth(3).unwrap();
+            // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
+            // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
+            new_timezone = Some(if sign == '-' {
+                FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)
+                    .ok_or("Error: Invalid timezone")?
+            } else if sign == '+' {
+                FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)
+                    .ok_or("Error: Invalid timezone")?
+            } else {
+                return Ok(f64::NAN.into());
+            });
+        } else if let Ok(mut num) = item.parse::<u32>() {
+            // Parse either a day or a year
+
+            // If the number is greater than 70, lets parse as a year
+            if num >= 70 {
+                if final_time.year.is_some() {
+                    return Ok(f64::NAN.into());
+                }
+                // If the number is less than 100, we add 1900 to it.
+                if num < 100 {
+                    num += 1900;
+                }
+                final_time.year = Some(Some(num as f64));
+            // Otherwise, lets parse as a day
+            } else {
+                if final_time.day.is_some() {
+                    return Ok(f64::NAN.into());
+                }
+                final_time.day = Some(Some(num as f64))
+            }
+        } else {
+            return Ok(f64::NAN.into());
+        }
+    }
+    // It is required that year, month, and day all have data.
+    if final_time.year.is_none() || final_time.month.is_none() || final_time.day.is_none() {
+        return Ok(f64::NAN.into());
+    }
+    if let Some(timestamp) = final_time.calculate(
+        new_timezone
+            .unwrap_or(timezone)
+            .ymd(0, 1, 1)
+            .and_hms(0, 0, 0),
+    ) {
+        Ok((timestamp.timestamp_millis() as f64).into())
+    } else {
+        Ok(f64::NAN.into())
+    }
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -1147,7 +1365,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc)];
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc), ("parse", parse)];
 
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
