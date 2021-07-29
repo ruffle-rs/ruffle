@@ -78,9 +78,9 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         if let Some(date) = self.date_time() {
-            return Ok((date.timestamp_millis() as f64).into());
+            Ok((date.timestamp_millis() as f64).into())
         } else {
-            return Ok(f64::NAN.into());
+            Ok(f64::NAN.into())
         }
     }
 

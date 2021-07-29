@@ -5,6 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{date_allocator, DateObject, Object, TObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use chrono::{DateTime, Datelike, Duration, LocalResult, TimeZone, Timelike, Utc};
@@ -917,6 +918,54 @@ pub fn utc<'gc>(
     Ok(millis.into())
 }
 
+/// Implements the `toString` method.
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                date.format("%a %b %-d %T GMT%z %-Y").to_string(),
+            )
+            .into());
+        } else {
+            return Ok("Invalid Date".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements the `toTimeString` method.
+pub fn to_time_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                date.format("%T GMT%z").to_string(),
+            )
+            .into());
+        } else {
+            return Ok("Invalid Date".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Date`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -995,6 +1044,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getUTCDay", day_utc),
         ("getTimezoneOffset", timezone_offset),
         ("valueOf", time),
+        ("toString", to_string),
+        ("toTimeString", to_time_string),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
