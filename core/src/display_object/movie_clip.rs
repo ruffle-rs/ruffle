@@ -26,7 +26,7 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -253,7 +253,7 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-        mut chunk_limit: Option<usize>,
+        chunk_limit: &mut Option<usize>,
     ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
@@ -264,8 +264,35 @@ impl<'gc> MovieClip<'gc> {
         let mut cur_frame = static_data.cur_preload_frame;
         let mut preload_stream_handle = static_data.cur_preload_stream;
 
+        if let Some(cur_preload_symbol) = static_data.cur_preload_symbol {
+            if let Some(movie) = self.movie() {
+                match context
+                    .library
+                    .library_for_movie_mut(movie)
+                    .character_by_id(cur_preload_symbol)
+                {
+                    Some(Character::MovieClip(mc)) => {
+                        let sub_preload_done = mc.preload(context, morph_shapes, chunk_limit);
+                        if sub_preload_done {
+                            static_data.cur_preload_symbol = None;
+                        }
+                    }
+                    Some(unk) => log::warn!(
+                        "Symbol {} changed to unexpected type {:?}",
+                        cur_preload_symbol,
+                        unk
+                    ),
+                    None => log::warn!(
+                        "Symbol {} disappeared during preloading",
+                        cur_preload_symbol
+                    ),
+                }
+            }
+        }
+
         let mut is_finished = false;
 
+        let chunk_exhausted = chunk_limit.map(|v| v == 0).unwrap_or(false);
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::CsmTextSettings => self
@@ -368,12 +395,16 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_video_stream(context, reader),
-                TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
-                    context,
-                    reader,
-                    tag_len,
-                    morph_shapes,
-                ),
+                TagCode::DefineSprite => {
+                    return self.0.write(context.gc_context).define_sprite(
+                        context,
+                        reader,
+                        tag_len,
+                        morph_shapes,
+                        chunk_limit,
+                        &mut static_data,
+                    )
+                }
                 TagCode::DefineText => self
                     .0
                     .write(context.gc_context)
@@ -494,17 +525,22 @@ impl<'gc> MovieClip<'gc> {
                 _ => Ok(()),
             }?;
 
-            if let Some(ref mut chunk_limit) = chunk_limit {
-                if *chunk_limit < 1 {
+            if let Some(chunk_limit) = chunk_limit {
+                *chunk_limit -= 1;
+
+                if *chunk_limit == 0 {
                     return Ok(ControlFlow::Exit);
                 }
-
-                *chunk_limit -= 1;
             }
 
             Ok(ControlFlow::Continue)
         };
-        let result = tag_utils::decode_tags(&mut reader, tag_callback);
+
+        let result = if !chunk_exhausted {
+            tag_utils::decode_tags(&mut reader, tag_callback)
+        } else {
+            Ok(true)
+        };
         let is_finished = is_finished || result.is_err() || !result.unwrap();
 
         // These variables will be persisted to be picked back up in the next
@@ -3048,7 +3084,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-    ) -> Result<(), Error> {
+        chunk_limit: &mut Option<usize>,
+        static_data: &mut MovieClipStatic,
+    ) -> DecodeResult {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
         let movie_clip = MovieClip::new_with_data(
@@ -3066,21 +3104,32 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        // NOTE: We don't support partial preloading of defined sprites yet.
-        let preload_done = movie_clip.preload(context, morph_shapes, None);
-        if !preload_done {
-            log::warn!(
-                "Preloading of movieclip {} did not complete in a single call.",
-                id
-            );
-        }
-
         context
             .library
             .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
-        Ok(())
+        if let Some(chunk_limit) = chunk_limit {
+            *chunk_limit -= 1;
+            static_data.cur_preload_symbol = Some(id);
+
+            if *chunk_limit == 0 {
+                return Ok(ControlFlow::Exit);
+            }
+        }
+
+        let preload_done = movie_clip.preload(context, morph_shapes, chunk_limit);
+        if preload_done {
+            static_data.cur_preload_symbol = None;
+        }
+
+        if let Some(chunk_limit) = chunk_limit {
+            if *chunk_limit == 0 {
+                return Ok(ControlFlow::Exit);
+            }
+        }
+
+        Ok(ControlFlow::Continue)
     }
 
     #[inline]
@@ -3442,6 +3491,9 @@ struct MovieClipStatic {
     /// The currently preloaded sound stream ID.
     cur_preload_stream: Option<PreloadStreamHandle>,
 
+    /// The symbol we are currently asynchronously preloading.
+    cur_preload_symbol: Option<CharacterId>,
+
     frame_labels: HashMap<String, FrameNumber>,
     scene_labels: HashMap<String, Scene>,
     audio_stream_info: Option<swf::SoundStreamHead>,
@@ -3478,6 +3530,7 @@ impl MovieClipStatic {
             cur_preload_frame: 1,
             cur_preload_ids: Default::default(),
             cur_preload_stream: None,
+            cur_preload_symbol: None,
             total_frames,
             frame_labels: HashMap::new(),
             scene_labels: HashMap::new(),

@@ -424,7 +424,7 @@ impl<'gc> Loader<'gc> {
                             .as_movie_clip()
                             .expect("Attempted to load movie into not movie clip");
 
-                        preload_done = mc.preload(uc, &mut morph_shapes, Some(1));
+                        preload_done = mc.preload(uc, &mut morph_shapes, &mut Some(1));
                         suspender = Some(uc.navigator.suspend());
 
                         Ok(())
