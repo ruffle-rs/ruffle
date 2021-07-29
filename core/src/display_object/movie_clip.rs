@@ -34,7 +34,7 @@ use crate::font::Font;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
-use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -361,7 +361,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn preload(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut chunk_limit: Option<usize>,
+        chunk_limit: &mut Option<usize>,
     ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
@@ -374,7 +374,39 @@ impl<'gc> MovieClip<'gc> {
             (read.cur_preload_frame, read.last_frame_start_pos)
         };
 
+        let preload_symbol = static_data.preload_progress.read().cur_preload_symbol;
+        if let Some(cur_preload_symbol) = preload_symbol {
+            if let Some(movie) = self.movie() {
+                match context
+                    .library
+                    .library_for_movie_mut(movie)
+                    .character_by_id(cur_preload_symbol)
+                {
+                    Some(Character::MovieClip(mc)) => {
+                        let sub_preload_done = mc.preload(context, chunk_limit);
+                        if sub_preload_done {
+                            static_data
+                                .preload_progress
+                                .write(context.gc_context)
+                                .cur_preload_symbol = None;
+                        }
+                    }
+                    Some(unk) => log::warn!(
+                        "Symbol {} changed to unexpected type {:?}",
+                        cur_preload_symbol,
+                        unk
+                    ),
+                    None => log::warn!(
+                        "Symbol {} disappeared during preloading",
+                        cur_preload_symbol
+                    ),
+                }
+            }
+        }
+
         let mut is_finished = false;
+
+        let chunk_exhausted = chunk_limit.map(|v| v == 0).unwrap_or(false);
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::CsmTextSettings => self
@@ -473,10 +505,14 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_video_stream(context, reader),
-                TagCode::DefineSprite => self
-                    .0
-                    .write(context.gc_context)
-                    .define_sprite(context, reader, tag_len),
+                TagCode::DefineSprite => {
+                    return self.0.write(context.gc_context).define_sprite(
+                        context,
+                        reader,
+                        tag_len,
+                        chunk_limit,
+                    )
+                }
                 TagCode::DefineText => self
                     .0
                     .write(context.gc_context)
@@ -539,17 +575,22 @@ impl<'gc> MovieClip<'gc> {
                 _ => Ok(()),
             }?;
 
-            if let Some(ref mut chunk_limit) = chunk_limit {
-                if *chunk_limit < 1 {
+            if let Some(chunk_limit) = chunk_limit {
+                *chunk_limit -= 1;
+
+                if *chunk_limit == 0 {
                     return Ok(ControlFlow::Exit);
                 }
-
-                *chunk_limit -= 1;
             }
 
             Ok(ControlFlow::Continue)
         };
-        let result = tag_utils::decode_tags(&mut reader, tag_callback);
+
+        let result = if !chunk_exhausted {
+            tag_utils::decode_tags(&mut reader, tag_callback)
+        } else {
+            Ok(true)
+        };
         let is_finished = is_finished || result.is_err() || !result.unwrap();
 
         // These variables will be persisted to be picked back up in the next
@@ -3310,7 +3351,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
-    ) -> Result<(), Error> {
+        chunk_limit: &mut Option<usize>,
+    ) -> DecodeResult {
         let start = reader.as_slice();
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
@@ -3326,7 +3368,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
 
         // NOTE: We don't support partial preloading of defined sprites yet.
-        let preload_done = movie_clip.preload(context, None);
+        let preload_done = movie_clip.preload(context, &mut None);
         if !preload_done {
             log::warn!(
                 "Preloading of movieclip {} did not complete in a single call.",
@@ -3339,7 +3381,33 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
-        Ok(())
+        if let Some(chunk_limit) = chunk_limit {
+            *chunk_limit -= 1;
+            self.static_data
+                .preload_progress
+                .write(context.gc_context)
+                .cur_preload_symbol = Some(id);
+
+            if *chunk_limit == 0 {
+                return Ok(ControlFlow::Exit);
+            }
+        }
+
+        let preload_done = movie_clip.preload(context, chunk_limit);
+        if preload_done {
+            self.static_data
+                .preload_progress
+                .write(context.gc_context)
+                .cur_preload_symbol = None;
+        }
+
+        if let Some(chunk_limit) = chunk_limit {
+            if *chunk_limit == 0 {
+                return Ok(ControlFlow::Exit);
+            }
+        }
+
+        Ok(ControlFlow::Continue)
     }
 
     #[inline]
@@ -3766,6 +3834,9 @@ struct PreloadProgress {
 
     /// The SWF offset that the current frame started in.
     last_frame_start_pos: u64,
+
+    /// The symbol we are currently asynchronously preloading.
+    cur_preload_symbol: Option<CharacterId>,
 }
 
 impl Default for PreloadProgress {
@@ -3774,6 +3845,7 @@ impl Default for PreloadProgress {
             next_preload_chunk: 0,
             cur_preload_frame: 1,
             last_frame_start_pos: 0,
+            cur_preload_symbol: None,
         }
     }
 }

@@ -1329,7 +1329,7 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            let preload_done = root.as_movie_clip().unwrap().preload(context, None);
+            let preload_done = root.as_movie_clip().unwrap().preload(context, &mut None);
 
             if !preload_done {
                 log::warn!("Preloading of root clip did not complete in a single call.");
