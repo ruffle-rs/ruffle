@@ -1114,6 +1114,26 @@ impl<'gc> MovieClip<'gc> {
             .saturating_sub(1)
     }
 
+    pub fn total_bytes(self) -> u32 {
+        // For a loaded SWF, returns the uncompressed size of the SWF.
+        // Otherwise, returns the size of the tag list in the clip's DefineSprite tag.
+        if self.is_root() {
+            self.movie()
+                .map(|mv| mv.uncompressed_len())
+                .unwrap_or_default()
+        } else {
+            self.tag_stream_len() as u32
+        }
+    }
+
+    pub fn loaded_bytes(self) -> u32 {
+        let read = self.0.read();
+        let progress_read = read.static_data.preload_progress.read();
+        let swf_header_size = self.total_bytes() - self.tag_stream_len() as u32;
+
+        swf_header_size + progress_read.next_preload_chunk as u32
+    }
+
     pub fn set_avm2_class(
         self,
         gc_context: MutationContext<'gc, '_>,
