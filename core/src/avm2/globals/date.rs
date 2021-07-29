@@ -942,6 +942,30 @@ pub fn to_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements the `toLocaleString` method.
+pub fn to_locale_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                date.format("%a %b %-d %-Y %T %p").to_string(),
+            )
+            .into());
+        } else {
+            return Ok("Invalid Date".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements the `toTimeString` method.
 pub fn to_time_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -956,6 +980,54 @@ pub fn to_time_string<'gc>(
             return Ok(AvmString::new(
                 activation.context.gc_context,
                 date.format("%T GMT%z").to_string(),
+            )
+            .into());
+        } else {
+            return Ok("Invalid Date".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements the `toLocaleTimeString` method.
+pub fn to_locale_time_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                date.format("%T %p").to_string(),
+            )
+            .into());
+        } else {
+            return Ok("Invalid Date".into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements the `toDateString` & `toLocaleDateString` method.
+pub fn to_date_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_date_object()) {
+        if let Some(date) = this
+            .date_time()
+            .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
+        {
+            return Ok(AvmString::new(
+                activation.context.gc_context,
+                date.format("%a %b %-d %-Y").to_string(),
             )
             .into());
         } else {
@@ -1045,7 +1117,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("getTimezoneOffset", timezone_offset),
         ("valueOf", time),
         ("toString", to_string),
+        ("toLocaleString", to_locale_string),
         ("toTimeString", to_time_string),
+        ("toLocaleTimeString", to_locale_time_string),
+        ("toDateString", to_date_string),
+        ("toLocaleDateString", to_date_string),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
