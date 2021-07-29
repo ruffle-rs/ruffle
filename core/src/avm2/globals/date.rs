@@ -304,18 +304,14 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `time` property's getter, and the `getTime` method.
+/// Implements `time` property's getter, and the `getTime` method. This will also be used for `valueOf`.
 pub fn time<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
-        if let Some(date) = this.date_time() {
-            return Ok((date.timestamp_millis() as f64).into());
-        } else {
-            return Ok(f64::NAN.into());
-        }
+        return this.value_of(activation.context.gc_context);
     }
 
     Ok(Value::Undefined)
@@ -998,6 +994,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("setUTCFullYear", set_full_year_utc),
         ("getUTCDay", day_utc),
         ("getTimezoneOffset", timezone_offset),
+        ("valueOf", time),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
