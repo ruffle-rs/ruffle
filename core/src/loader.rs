@@ -622,7 +622,7 @@ impl<'gc> Loader<'gc> {
                                         loader_info,
                                     );
                                     // FIXME - do we need to call 'set_place_frame'
-                                    mc.preload(&mut activation.context, None);
+                                    mc.preload(&mut activation.context, &mut None);
                                     mc.post_instantiation(
                                         &mut activation.context,
                                         None,
