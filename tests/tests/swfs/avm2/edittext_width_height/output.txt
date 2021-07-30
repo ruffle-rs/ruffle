@@ -1,0 +1,104 @@
+// default values
+// txt values
+// width:
+100
+// height:
+30
+// scaleX:
+1
+// scaleY:
+1
+// rotation:
+0
+
+// set width
+// txt values
+// width:
+20
+// height:
+30
+// scaleX:
+1
+// scaleY:
+1
+// rotation:
+0
+
+// set height
+// txt values
+// width:
+100
+// height:
+20
+// scaleX:
+1
+// scaleY:
+1
+// rotation:
+0
+
+// set rotation
+// txt values
+// width:
+104.2
+// height:
+62.4
+// scaleX:
+1
+// scaleY:
+1
+// rotation:
+20
+
+// set scaleX
+// txt values
+// width:
+200
+// height:
+30
+// scaleX:
+2
+// scaleY:
+1
+// rotation:
+0
+
+// set scaleY
+// txt values
+// width:
+100
+// height:
+60
+// scaleX:
+1
+// scaleY:
+2
+// rotation:
+0
+
+// set scaleX and width
+// txt values
+// width:
+40
+// height:
+30
+// scaleX:
+2
+// scaleY:
+1
+// rotation:
+0
+
+// set scaleY and height
+// txt values
+// width:
+100
+// height:
+40
+// scaleX:
+1
+// scaleY:
+2
+// rotation:
+0
+
