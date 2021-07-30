@@ -101,9 +101,6 @@ pub fn application_domain<'gc>(
 }
 
 /// `bytesTotal` getter
-///
-/// TODO: This is also the getter for `bytesLoaded` as we don't yet support
-/// streaming loads yet. When we do, we'll need another property for this.
 pub fn bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -117,6 +114,46 @@ pub fn bytes_total<'gc>(
                     return Ok(movie.compressed_len().into());
                 }
             }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// `bytesLoaded` getter
+pub fn bytes_loaded<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(loader_stream) = this.as_loader_stream() {
+            let (uncompressed_bytes_loaded, uncompressed_bytes_total, compressed_bytes_total) =
+                match &*loader_stream {
+                    LoaderStream::Stage => {
+                        let root_mc = activation.context.stage.root_clip().as_movie_clip();
+                        (
+                            root_mc.map(|mc| mc.loaded_bytes()).unwrap_or_default(),
+                            root_mc.map(|mc| mc.total_bytes()).unwrap_or_default(),
+                            activation.context.swf.compressed_len(),
+                        )
+                    }
+                    LoaderStream::Swf(movie, root) => (
+                        root.as_movie_clip()
+                            .map(|mc| mc.loaded_bytes())
+                            .unwrap_or_default(),
+                        root.as_movie_clip()
+                            .map(|mc| mc.total_bytes())
+                            .unwrap_or_default(),
+                        movie.compressed_len(),
+                    ),
+                };
+
+            let compressed_bytes_loaded = (uncompressed_bytes_loaded as f64
+                * compressed_bytes_total as f64
+                / uncompressed_bytes_total as f64)
+                .floor() as u32;
+            return Ok(compressed_bytes_loaded.into());
         }
     }
 
@@ -430,7 +467,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[
         ("actionScriptVersion", Some(action_script_version), None),
         ("applicationDomain", Some(application_domain), None),
-        ("bytesLoaded", Some(bytes_total), None),
+        ("bytesLoaded", Some(bytes_loaded), None),
         ("bytesTotal", Some(bytes_total), None),
         ("content", Some(content), None),
         ("contentType", Some(content_type), None),
