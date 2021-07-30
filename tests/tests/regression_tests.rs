@@ -469,6 +469,8 @@ swf_tests! {
     (as3_urshift, "avm2/urshift", 1),
     (as3_in, "avm2/in", 1),
     (as3_bytearray, "avm2/bytearray", 1),
+    (as3_date, "avm2/date", 1),
+    (as3_date_parse, "avm2/date_parse", 1),
     (as3_generate_random_bytes, "avm2/generate_random_bytes", 1),
     (as3_get_definition_by_name, "avm2/get_definition_by_name", 1),
     (as3_get_qualified_class_name, "avm2/get_qualified_class_name", 1),

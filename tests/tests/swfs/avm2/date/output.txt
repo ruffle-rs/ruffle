@@ -1,0 +1,14 @@
+// Date with specific time stamp
+// Date(929156400000)
+1999 5 12 6 3 0 0
+// Date with fields chosen
+// Date(2021, 7, 29, 4, 22, 55, 11)
+2021 7 29 0 4 22 55
+// Setting the date after construction
+1999 2 31
+// Setting the date after construction using setter methods
+// Using getter methods
+1988 5 2 4 22 55 11
+1999 5 3 4 9 8 5 3
+// Using getter methods
+1999 5 3 9 8 5 3
