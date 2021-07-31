@@ -30,6 +30,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
+use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
 use crate::locale::get_current_date_time;
 use crate::prelude::*;
@@ -1329,7 +1330,10 @@ impl Player {
     fn preload(&mut self) {
         self.mutate_with_update_context(|context| {
             let root = context.stage.root_clip();
-            let preload_done = root.as_movie_clip().unwrap().preload(context, &mut None);
+            let preload_done = root
+                .as_movie_clip()
+                .unwrap()
+                .preload(context, &mut ExecutionLimit::none());
 
             if !preload_done {
                 log::warn!("Preloading of root clip did not complete in a single call.");

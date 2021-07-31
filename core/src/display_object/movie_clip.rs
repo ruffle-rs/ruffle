@@ -32,6 +32,7 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::limits::ExecutionLimit;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
@@ -361,7 +362,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn preload(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        chunk_limit: &mut Option<usize>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> bool {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
@@ -391,22 +392,45 @@ impl<'gc> MovieClip<'gc> {
                                 .cur_preload_symbol = None;
                         }
                     }
-                    Some(unk) => log::warn!(
-                        "Symbol {} changed to unexpected type {:?}",
-                        cur_preload_symbol,
-                        unk
-                    ),
-                    None => log::warn!(
-                        "Symbol {} disappeared during preloading",
-                        cur_preload_symbol
-                    ),
+                    Some(unk) => {
+                        log::error!(
+                            "Symbol {} changed to unexpected type {:?}",
+                            cur_preload_symbol,
+                            unk
+                        );
+
+                        static_data
+                            .preload_progress
+                            .write(context.gc_context)
+                            .cur_preload_symbol = None;
+                    }
+                    None => {
+                        log::error!(
+                            "Symbol {} disappeared during preloading",
+                            cur_preload_symbol
+                        );
+
+                        static_data
+                            .preload_progress
+                            .write(context.gc_context)
+                            .cur_preload_symbol = None;
+                    }
                 }
+            } else {
+                log::error!(
+                    "Attempted to preload symbol {} in movie clip not associated with movie!",
+                    cur_preload_symbol
+                );
             }
         }
 
-        let mut is_finished = false;
+        let mut end_tag_found = false;
 
-        let chunk_exhausted = chunk_limit.map(|v| v == 0).unwrap_or(false);
+        let sub_preload_done = static_data
+            .preload_progress
+            .read()
+            .cur_preload_symbol
+            .is_none();
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::CsmTextSettings => self
@@ -569,29 +593,26 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_binary_data(context, reader),
                 TagCode::End => {
-                    is_finished = true;
+                    end_tag_found = true;
                     return Ok(ControlFlow::Exit);
                 }
                 _ => Ok(()),
             }?;
 
-            if let Some(chunk_limit) = chunk_limit {
-                *chunk_limit -= 1;
-
-                if *chunk_limit == 0 {
-                    return Ok(ControlFlow::Exit);
-                }
+            // Each preloaded byte is treated as an action.
+            if chunk_limit.did_actions_breach_limit(context, tag_len) {
+                return Ok(ControlFlow::Exit);
             }
 
             Ok(ControlFlow::Continue)
         };
 
-        let result = if !chunk_exhausted {
+        let result = if sub_preload_done {
             tag_utils::decode_tags(&mut reader, tag_callback)
         } else {
             Ok(true)
         };
-        let is_finished = is_finished || result.is_err() || !result.unwrap();
+        let is_finished = end_tag_found || result.is_err() || !result.unwrap();
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -3351,7 +3372,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
-        chunk_limit: &mut Option<usize>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> DecodeResult {
         let start = reader.as_slice();
         let id = reader.read_character_id()?;
@@ -3368,7 +3389,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         );
 
         // NOTE: We don't support partial preloading of defined sprites yet.
-        let preload_done = movie_clip.preload(context, &mut None);
+        let preload_done = movie_clip.preload(context, &mut ExecutionLimit::none());
         if !preload_done {
             log::warn!(
                 "Preloading of movieclip {} did not complete in a single call.",
@@ -3381,33 +3402,26 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library_for_movie_mut(self.movie())
             .register_character(id, Character::MovieClip(movie_clip));
 
-        if let Some(chunk_limit) = chunk_limit {
-            *chunk_limit -= 1;
-            self.static_data
-                .preload_progress
-                .write(context.gc_context)
-                .cur_preload_symbol = Some(id);
+        self.static_data
+            .preload_progress
+            .write(context.gc_context)
+            .cur_preload_symbol = Some(id);
 
-            if *chunk_limit == 0 {
-                return Ok(ControlFlow::Exit);
-            }
+        let should_exit = chunk_limit.did_actions_breach_limit(context, 4);
+        if should_exit {
+            return Ok(ControlFlow::Exit);
         }
 
-        let preload_done = movie_clip.preload(context, chunk_limit);
-        if preload_done {
+        if movie_clip.preload(context, chunk_limit) {
             self.static_data
                 .preload_progress
                 .write(context.gc_context)
                 .cur_preload_symbol = None;
-        }
 
-        if let Some(chunk_limit) = chunk_limit {
-            if *chunk_limit == 0 {
-                return Ok(ControlFlow::Exit);
-            }
+            Ok(ControlFlow::Continue)
+        } else {
+            Ok(ControlFlow::Exit)
         }
-
-        Ok(ControlFlow::Continue)
     }
 
     #[inline]

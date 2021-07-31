@@ -20,6 +20,7 @@ use crate::display_object::{
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::limits::ExecutionLimit;
 use crate::player::Player;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -622,7 +623,10 @@ impl<'gc> Loader<'gc> {
                                         loader_info,
                                     );
                                     // FIXME - do we need to call 'set_place_frame'
-                                    mc.preload(&mut activation.context, &mut None);
+                                    mc.preload(
+                                        &mut activation.context,
+                                        &mut ExecutionLimit::none(),
+                                    );
                                     mc.post_instantiation(
                                         &mut activation.context,
                                         None,
