@@ -30,6 +30,7 @@ mod font;
 mod frame_lifecycle;
 mod html;
 mod library;
+mod limits;
 pub mod loader;
 mod locale;
 mod player;
