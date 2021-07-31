@@ -429,7 +429,10 @@ impl<'gc> Loader<'gc> {
                         preload_done = mc.preload(
                             uc,
                             &mut morph_shapes,
-                            &mut ExecutionLimit::with_max_actions_and_time(1, Duration::ZERO),
+                            &mut ExecutionLimit::with_max_actions_and_time(
+                                10000,
+                                Duration::from_millis(5),
+                            ),
                         );
                         suspender = Some(uc.navigator.suspend());
 
