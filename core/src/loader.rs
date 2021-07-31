@@ -6,6 +6,7 @@ use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
+use crate::limits::ExecutionLimit;
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -15,6 +16,7 @@ use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
 use thiserror::Error;
 use url::form_urlencoded;
 
@@ -424,7 +426,11 @@ impl<'gc> Loader<'gc> {
                             .as_movie_clip()
                             .expect("Attempted to load movie into not movie clip");
 
-                        preload_done = mc.preload(uc, &mut morph_shapes, &mut Some(1));
+                        preload_done = mc.preload(
+                            uc,
+                            &mut morph_shapes,
+                            &mut ExecutionLimit::with_max_actions_and_time(1, Duration::ZERO),
+                        );
                         suspender = Some(uc.navigator.suspend());
 
                         Ok(())

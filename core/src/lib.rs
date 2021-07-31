@@ -37,6 +37,7 @@ pub mod focus_tracker;
 mod font;
 mod html;
 mod library;
+mod limits;
 pub mod loader;
 pub mod matrix;
 mod player;
