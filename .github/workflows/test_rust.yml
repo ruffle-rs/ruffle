@@ -38,7 +38,7 @@ jobs:
           sudo add-apt-repository ppa:kisak/kisak-mesa -y
           sudo apt-get update
           sudo apt-get dist-upgrade
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev mesa-vulkan-drivers=21.1.5~kisak1~f
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev mesa-vulkan-drivers
 
       - name: Run tests with image tests
         if: ${{ matrix.os.img_tests }}
