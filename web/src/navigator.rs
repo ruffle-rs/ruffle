@@ -18,25 +18,25 @@ use wasm_bindgen::{closure::Closure, JsCast};
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{window, Blob, BlobPropertyBag, Performance, Request, RequestInit, Response};
 
-/// The internal shared state of a single SuspendFuture.
-struct SuspendFutureState {
+/// The internal shared state of a single BackgroundFuture.
+struct BackgroundFutureState {
     /// Whether or not the macrotask was already resolved.
     macrotask_resolved: bool,
 }
 
 /// A future that suspends it's awaited task on the JavaScript macrotask queue.
-pub struct SuspendFuture(Arc<Mutex<SuspendFutureState>>);
+pub struct BackgroundFuture(Arc<Mutex<BackgroundFutureState>>);
 
-impl SuspendFuture {
+impl BackgroundFuture {
     #[allow(clippy::new_ret_no_self)]
     fn new() -> OwnedFuture<(), Infallible> {
-        Box::pin(Self(Arc::new(Mutex::new(SuspendFutureState {
+        Box::pin(Self(Arc::new(Mutex::new(BackgroundFutureState {
             macrotask_resolved: false,
         }))))
     }
 }
 
-impl Future for SuspendFuture {
+impl Future for BackgroundFuture {
     type Output = Result<(), Infallible>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -257,8 +257,8 @@ impl NavigatorBackend for WebNavigatorBackend {
         })
     }
 
-    fn suspend(&self) -> OwnedFuture<(), Infallible> {
-        SuspendFuture::new()
+    fn background(&self) -> OwnedFuture<(), Infallible> {
+        BackgroundFuture::new()
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {

@@ -408,7 +408,7 @@ impl<'gc> Loader<'gc> {
         Box::pin(async move {
             let mut preload_done = false;
             let mut morph_shapes = fnv::FnvHashMap::default();
-            let mut suspender = None;
+            let mut background = None;
 
             while !preload_done {
                 player
@@ -434,13 +434,13 @@ impl<'gc> Loader<'gc> {
                                 Duration::from_millis(5),
                             ),
                         );
-                        suspender = Some(uc.navigator.suspend());
+                        background = Some(uc.navigator.background());
 
                         Ok(())
                     })?;
 
-                if let Some(suspender) = suspender.take() {
-                    suspender.await.unwrap();
+                if let Some(background) = background.take() {
+                    background.await.unwrap();
                 }
             }
 

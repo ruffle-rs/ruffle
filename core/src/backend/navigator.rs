@@ -190,7 +190,7 @@ pub trait NavigatorBackend {
     /// This seems highly limiting.
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>);
 
-    /// Suspend an asynchronous function until a later time.
+    /// Schedule async code to be executed in the background.
     ///
     /// This is intended to allow async code to yield execution to the event
     /// loop. When the future in question is awaited, other events are allowed
@@ -199,7 +199,7 @@ pub trait NavigatorBackend {
     /// In contexts where Ruffle is not running in an event loop, this future
     /// is permitted to yield it's result immediately instead of suspending the
     /// current task.
-    fn suspend(&self) -> OwnedFuture<(), Infallible>;
+    fn background(&self) -> OwnedFuture<(), Infallible>;
 
     /// Resolve a relative URL.
     ///
@@ -388,7 +388,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         }
     }
 
-    fn suspend(&self) -> OwnedFuture<(), Infallible> {
+    fn background(&self) -> OwnedFuture<(), Infallible> {
         Box::pin(async { Ok(()) })
     }
 

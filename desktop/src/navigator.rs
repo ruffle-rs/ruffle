@@ -20,10 +20,10 @@ use std::time::{Duration, Instant};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 
-pub type BackgroundTaskHandle = (Waker, Arc<Mutex<SuspendFutureState>>);
+pub type BackgroundTaskHandle = (Waker, Arc<Mutex<BackgroundFutureState>>);
 
-/// The internal shared state of a single SuspendFuture.
-pub struct SuspendFutureState {
+/// The internal shared state of a single BackgroundFuture.
+pub struct BackgroundFutureState {
     /// Whether or not the event loop has resolved.
     pub event_loop_resolved: bool,
 
@@ -32,19 +32,19 @@ pub struct SuspendFutureState {
 }
 
 /// A future that suspends it's awaited task until the event loop clears out.
-pub struct SuspendFuture(Arc<Mutex<SuspendFutureState>>);
+pub struct BackgroundFuture(Arc<Mutex<BackgroundFutureState>>);
 
-impl SuspendFuture {
+impl BackgroundFuture {
     #[allow(clippy::new_ret_no_self)]
     pub fn new(waker_sender: Sender<BackgroundTaskHandle>) -> OwnedFuture<(), Infallible> {
-        Box::pin(Self(Arc::new(Mutex::new(SuspendFutureState {
+        Box::pin(Self(Arc::new(Mutex::new(BackgroundFutureState {
             event_loop_resolved: false,
             waker_sender,
         }))))
     }
 }
 
-impl Future for SuspendFuture {
+impl Future for BackgroundFuture {
     type Output = Result<(), Infallible>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -233,8 +233,8 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         }
     }
 
-    fn suspend(&self) -> OwnedFuture<(), Infallible> {
-        SuspendFuture::new(self.suspend_channel.clone())
+    fn background(&self) -> OwnedFuture<(), Infallible> {
+        BackgroundFuture::new(self.suspend_channel.clone())
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
