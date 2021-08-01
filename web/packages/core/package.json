@@ -19,7 +19,7 @@
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
     },
     "devDependencies": {
-        "@types/mocha": "^8.2.2",
+        "@types/mocha": "^9.0.0",
         "@typescript-eslint/eslint-plugin": "^4.28.1",
         "@typescript-eslint/parser": "^4.28.1",
         "eslint": "^7.29.0",
