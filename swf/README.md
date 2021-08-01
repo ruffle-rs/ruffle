@@ -18,8 +18,10 @@ use std::fs::File;
 
 let file = File::open("file.swf").unwrap();
 let reader = BufReader::new(file);
-let swf = swf::parse_swf(reader).unwrap();
-println!("The SWF has {} frames", swf.header.num_frames);
+let swf_buf = swf::decompress_swf(reader).unwrap();
+let swf = swf::parse_swf(&swf_buf).unwrap();
+println!("The SWF has {} frame(s).", swf.header.num_frames());
+println!("The SWF has {} tag(s).", swf.tags.len());
 ```
 
 Try `cargo run --example reading` in this repository to run this example.
@@ -28,25 +30,23 @@ Try `cargo run --example reading` in this repository to run this example.
 
 ```rust,no_run
 use swf::*;
-let swf = Swf {
-    header: Header {
-        version: 6,
-        compression: Compression::Zlib,
-        stage_size: Rectangle { 
-            x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0),
-            y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0)
-        },
-        frame_rate: 60.0,
-        num_frames: 1,
+let header = Header {
+    compression: Compression::Zlib,
+    version: 6,
+    stage_size: Rectangle {
+        x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0),
+        y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0)
     },
-    tags: vec![
-        Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
-        Tag::ShowFrame
-    ]
+    frame_rate: Fixed8::from_f32(60.0),
+    num_frames: 1,
 };
+let tags = [
+    Tag::SetBackgroundColor(Color { r: 255, g: 0, b: 0, a: 255 }),
+    Tag::ShowFrame
+];
 let file = std::fs::File::create("file.swf").unwrap();
 let writer = std::io::BufWriter::new(file);
-swf::write_swf(&swf, writer).unwrap();
+swf::write_swf(&header, &tags, writer).unwrap();
 ```
 
 Try `cargo run --example writing` in this repository to run this example.
