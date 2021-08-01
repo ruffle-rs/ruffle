@@ -697,8 +697,10 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         items.push(null);
+
+        const extensionString = this.isExtension ? "extension" : "";
         items.push({
-            text: `About Ruffle (%VERSION_NAME%)`,
+            text: `About Ruffle ${extensionString} (%VERSION_NAME%)`,
             onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
@@ -975,6 +977,7 @@ export class RufflePlayer extends HTMLElement {
         errorArray.push(`Channel: %VERSION_CHANNEL%\n`);
         errorArray.push(`Built: %BUILD_DATE%\n`);
         errorArray.push(`Commit: %COMMIT_HASH%\n`);
+        errorArray.push(`Is extension: ${this.isExtension}\n`);
 
         const errorText = errorArray.join("");
 

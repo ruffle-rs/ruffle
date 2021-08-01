@@ -40,6 +40,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     player = ruffle.createPlayer();
     player.id = "player";
+    player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
     player.load({ url: swfUrl, ...config });
