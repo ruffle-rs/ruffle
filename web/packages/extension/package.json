@@ -14,7 +14,7 @@
     },
     "devDependencies": {
         "@tsconfig/recommended": "^1.0.1",
-        "@types/chrome": "^0.0.145",
+        "@types/chrome": "^0.0.149",
         "@types/firefox-webext-browser": "^82.0.0",
         "archiver": "^5.3.0",
         "json5": "^2.2.0",
