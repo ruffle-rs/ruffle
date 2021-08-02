@@ -285,16 +285,8 @@ impl<'gc> ArrayIter<'gc> {
 
         Ok(Self {
             array_object,
-            index: if start_index < length {
-                start_index
-            } else {
-                length
-            },
-            rev_index: if end_index < length {
-                end_index + 1
-            } else {
-                length
-            },
+            index: start_index.min(length),
+            rev_index: end_index.saturating_add(1).min(length),
         })
     }
 
