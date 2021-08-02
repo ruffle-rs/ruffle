@@ -426,13 +426,14 @@ impl<'gc> Loader<'gc> {
                             .as_movie_clip()
                             .expect("Attempted to load movie into not movie clip");
 
+                        //Time limit is 75% of the frame time of the current movie.
+                        let frame_time =
+                            Duration::from_nanos((750_000_000.0 / *uc.frame_rate) as u64);
+
                         preload_done = mc.preload(
                             uc,
                             &mut morph_shapes,
-                            &mut ExecutionLimit::with_max_actions_and_time(
-                                10000,
-                                Duration::from_millis(5),
-                            ),
+                            &mut ExecutionLimit::with_max_actions_and_time(10000, frame_time),
                         );
                         background = Some(uc.navigator.background());
 
