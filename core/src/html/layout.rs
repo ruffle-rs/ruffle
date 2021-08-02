@@ -279,7 +279,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.font_leading_adjustment()
         };
 
-        if self.current_line_span.bullet {
+        if self.current_line_span.bullet && self.is_first_line {
             self.append_bullet(context, &self.current_line_span.clone());
         }
 
@@ -383,9 +383,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn newspan(&mut self, first_span: &TextSpan) {
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
+            self.max_font_size = Twips::from_pixels(first_span.size);
+        } else {
+            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
         }
-
-        self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
     }
 
     fn resolve_font(
@@ -465,7 +466,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         {
             let mut bullet_cursor = self.cursor;
 
-            bullet_cursor.set_x(Twips::from_pixels(18.0));
+            bullet_cursor.set_x(
+                Twips::from_pixels(18.0)
+                    + Self::left_alignment_offset_without_bullet(span, self.is_first_line),
+            );
 
             let params = EvalParameters::from_span(span);
             let text_size = Size::from(bullet_font.measure("\u{2022}", params, false));
@@ -490,6 +494,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Calculate the left-align offset of a given line of text given the span
     /// active at the start of the line and if we're at the start of a
     /// paragraph.
+    fn left_alignment_offset_without_bullet(span: &TextSpan, is_first_line: bool) -> Twips {
+        if is_first_line {
+            Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
+        } else {
+            Twips::from_pixels(span.left_margin + span.block_indent)
+        }
+    }
+
+    /// Calculate the left-align offset of a given line of text given the span
+    /// active at the start of the line and if we're at the start of a
+    /// paragraph.
     fn left_alignment_offset(span: &TextSpan, is_first_line: bool) -> Twips {
         if span.bullet {
             if is_first_line {
@@ -497,10 +512,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             } else {
                 Twips::from_pixels(35.0 + span.left_margin + span.block_indent)
             }
-        } else if is_first_line {
-            Twips::from_pixels(span.left_margin + span.block_indent + span.indent)
         } else {
-            Twips::from_pixels(span.left_margin + span.block_indent)
+            Self::left_alignment_offset_without_bullet(span, is_first_line)
         }
     }
 
