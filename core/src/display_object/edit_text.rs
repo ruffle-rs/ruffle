@@ -839,6 +839,9 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::Left => {
                 if !is_word_wrap {
                     edit_text.bounds.set_width(intrinsic_bounds.width());
+                } else {
+                    let orig_bounds = edit_text.static_data.text.bounds.clone();
+                    edit_text.bounds.set_width(orig_bounds.x_max);
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
@@ -853,6 +856,9 @@ impl<'gc> EditText<'gc> {
                         .bounds
                         .set_x(center - intrinsic_bounds.width() / 2);
                     edit_text.bounds.set_width(intrinsic_bounds.width());
+                } else {
+                    let orig_bounds = edit_text.static_data.text.bounds.clone();
+                    edit_text.bounds.set_width(orig_bounds.x_max);
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
@@ -865,6 +871,9 @@ impl<'gc> EditText<'gc> {
                     let new_x = edit_text.bounds.x_max - intrinsic_bounds.width();
                     edit_text.bounds.set_x(new_x);
                     edit_text.bounds.set_width(intrinsic_bounds.width());
+                } else {
+                    let orig_bounds = edit_text.static_data.text.bounds.clone();
+                    edit_text.bounds.set_width(orig_bounds.x_max);
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
