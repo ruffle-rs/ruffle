@@ -34,7 +34,7 @@ chrono = "0.4"
 instant = "0.1"
 encoding_rs = "0.8.28"
 rand = { version = "0.8.4", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.126", features = ["derive"], optional = true }
+serde = { version = "1.0.127", features = ["derive"], optional = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
 regress = "0.4"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "e39a8abc897289696672858e30bbc9e43b1c98ac" }
