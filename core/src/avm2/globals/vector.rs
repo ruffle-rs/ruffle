@@ -35,7 +35,7 @@ pub fn instance_init<'gc>(
             let is_fixed = args
                 .get(1)
                 .cloned()
-                .unwrap_or(Value::Bool(false))
+                .unwrap_or_else(|| false.into())
                 .coerce_to_boolean();
 
             vector.resize(length)?;
