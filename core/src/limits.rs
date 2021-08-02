@@ -65,10 +65,10 @@ impl ExecutionLimit {
         context: &mut UpdateContext<'_, '_, '_>,
         actions: usize,
     ) -> bool {
-        if let Some(mut action_limit) = self.current_action_limit {
-            action_limit = action_limit.saturating_sub(actions);
+        if let Some(ref mut action_limit) = self.current_action_limit {
+            *action_limit = action_limit.saturating_sub(actions);
 
-            if action_limit == 0 {
+            if *action_limit == 0 {
                 if context.update_start.elapsed() >= self.time_limit {
                     return true;
                 }
