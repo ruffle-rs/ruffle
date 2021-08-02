@@ -224,7 +224,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Unresolvable parameter types are treated as Any, which is treated as
         // Object.
         if !type_name.params().is_empty() {
-            let mut param_types = vec![];
+            let mut param_types = Vec::with_capacity(type_name.params().len());
 
             for param in type_name.params() {
                 param_types.push(match self.resolve_type(param.clone())? {
