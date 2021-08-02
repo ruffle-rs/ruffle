@@ -36,7 +36,7 @@ wasm-bindgen = { version = "=0.2.74", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.24"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0.126", features = ["derive"] }
+serde = { version = "1.0.127", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.13.0"
 
