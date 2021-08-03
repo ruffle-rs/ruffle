@@ -867,12 +867,6 @@ pub fn sort<'gc>(
                 )
             };
 
-            //NOTE: RETURNINDEXEDARRAY is actually unimplemented in Flash Player
-            //and will turn the sort into a no-op.
-            if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
-                return Ok(this.into());
-            }
-
             let compare = move |activation: &mut Activation<'_, 'gc, '_>, a, b| {
                 if let Some(compare_fnc) = compare_fnc {
                     let order = compare_fnc
@@ -917,6 +911,12 @@ pub fn sort<'gc>(
             });
 
             error_signal?;
+
+            //NOTE: RETURNINDEXEDARRAY does NOT actually return anything useful.
+            //The actual sorting still happens, but the results are discarded.
+            if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
+                return Ok(this.into());
+            }
 
             if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
                 let mut vs = this
