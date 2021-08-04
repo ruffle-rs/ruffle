@@ -12,20 +12,6 @@ use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, T
 use gc_arena::{GcCell, MutationContext};
 use num_traits::ToPrimitive;
 
-enum YearType {
-    Full,
-    Adjust(Box<dyn Fn(i64) -> i64>),
-}
-
-impl YearType {
-    fn adjust(&self, year: i64) -> i64 {
-        match self {
-            YearType::Full => year,
-            YearType::Adjust(function) => function(year),
-        }
-    }
-}
-
 struct DateAdjustment<
     'builder,
     'activation_a: 'builder,
@@ -34,7 +20,6 @@ struct DateAdjustment<
     T: TimeZone + 'builder,
 > {
     activation: &'builder mut Activation<'activation_a, 'gc, 'gc_context>,
-    year_type: YearType,
     timezone: &'builder T,
     year: Option<Option<f64>>,
     month: Option<Option<f64>>,
@@ -56,7 +41,6 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
         Self {
             activation,
             timezone,
-            year_type: YearType::Full,
             year: None,
             month: None,
             day: None,
@@ -68,8 +52,10 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
         }
     }
 
-    fn adjust_year(&mut self, adjuster: impl Fn(i64) -> i64 + 'static) -> &mut Self {
-        self.year_type = YearType::Adjust(Box::new(adjuster));
+    fn map_year(&mut self, data_fn: impl Fn(f64) -> f64) -> &mut Self {
+        if let Some(year) = self.year.flatten() {
+            self.year = Some(Some(data_fn(year)));
+        }
         self
     }
 
@@ -198,7 +184,7 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
             .div_euclid(12);
         let month = self.check_mapped_value(self.month, |v| v.rem_euclid(12), current.month0())?;
         let year = self
-            .check_mapped_value(self.year, |v| self.year_type.adjust(v), current.year())?
+            .check_value(self.year, current.year())?
             .wrapping_add(month_rem) as i32;
         let day = self.check_value(self.day, current.day())?;
         let hour = self.check_value(self.hour, current.hour())?;
@@ -268,7 +254,7 @@ pub fn instance_init<'gc>(
                         .minute(args.get(4))?
                         .second(args.get(5))?
                         .millisecond(args.get(6))?
-                        .adjust_year(|year| if year < 100 { year + 1900 } else { year })
+                        .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
                         .apply(date);
                 } else {
                     let timestamp = timestamp.coerce_to_number(activation)?;
@@ -908,6 +894,7 @@ pub fn utc<'gc>(
         .minute(args.get(4))?
         .second(args.get(5))?
         .millisecond(args.get(6))?
+        .map_year(|year| if year < 100.0 { year + 1900.0 } else { year })
         .calculate(Utc.ymd(0, 1, 1).and_hms(0, 0, 0));
     let millis = if let Some(date) = date {
         date.timestamp_millis() as f64
