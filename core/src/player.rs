@@ -400,6 +400,7 @@ impl Player {
                 .library
                 .library_for_movie_mut(context.swf.clone())
                 .set_avm2_domain(domain);
+            context.ui.set_mouse_visible(true);
 
             let root: DisplayObject =
                 MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
