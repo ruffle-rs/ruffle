@@ -28,7 +28,6 @@ struct DateAdjustment<
     minute: Option<Option<f64>>,
     second: Option<Option<f64>>,
     millisecond: Option<Option<f64>>,
-    ignore_next: bool,
 }
 
 impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
@@ -48,7 +47,6 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
             minute: None,
             second: None,
             millisecond: None,
-            ignore_next: false,
         }
     }
 
@@ -60,93 +58,58 @@ impl<'builder, 'activation_a, 'gc, 'gc_context, T: TimeZone>
     }
 
     fn year(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.year = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.year = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn month(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.month = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.month = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn day(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.day = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.day = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn hour(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.hour = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.hour = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn minute(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.minute = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.minute = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn second(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.second = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.second = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
     fn millisecond(&mut self, value: Option<&Value<'gc>>) -> Result<&mut Self, Error> {
-        if !self.ignore_next {
-            self.millisecond = match value {
-                Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
-                None => {
-                    self.ignore_next = true;
-                    None
-                }
-            };
-        }
+        self.millisecond = match value {
+            Some(value) => Some(Some(value.coerce_to_number(self.activation)?)),
+            None => None,
+        };
         Ok(self)
     }
 
