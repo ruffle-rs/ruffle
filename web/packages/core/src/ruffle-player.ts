@@ -126,6 +126,8 @@ export class RufflePlayer extends HTMLElement {
     // Whether this device is a touch device.
     // Set to true when a touch event is encountered.
     private isTouch = false;
+    // Whether the user chose to hide the context menu.
+    private hiddenContextMenu = false;
 
     private swfUrl?: string;
     private instance: Ruffle | null;
@@ -661,8 +663,15 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    /**
+     * Makes the context menu hidden so long clicks can be used for other purposes.
+     */
+    setContextMenuHidden(): void {
+        this.hiddenContextMenu = true;
+    }
+
     private pointerDown(event: PointerEvent): void {
-        // Disable context menu when touch support is being used
+        // Give option to disable context menu when touch support is being used
         // to avoid a long press triggering the context menu. (#1972)
         if (event.pointerType === "touch" || event.pointerType === "pen") {
             this.isTouch = true;
@@ -712,13 +721,20 @@ export class RufflePlayer extends HTMLElement {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
         });
+        if (this.isTouch) {
+            items.push(null);
+            items.push({
+                text: "Hide this menu",
+                onClick: this.setContextMenuHidden.bind(this),
+            });
+        }
         return items;
     }
 
     private showContextMenu(e: MouseEvent): void {
         e.preventDefault();
 
-        if (!this.hasContextMenu || this.isTouch) {
+        if (!this.hasContextMenu || this.hiddenContextMenu) {
             return;
         }
 
