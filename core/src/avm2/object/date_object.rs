@@ -3,7 +3,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::value::Value;
+use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use crate::string::AvmString;
 use crate::{
@@ -82,6 +82,10 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
         } else {
             Ok(f64::NAN.into())
         }
+    }
+
+    fn default_hint(&self) -> Hint {
+        Hint::String
     }
 
     fn as_date_object(&self) -> Option<DateObject<'gc>> {
