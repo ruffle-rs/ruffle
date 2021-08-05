@@ -525,7 +525,7 @@ pub fn filter<'gc>(
 
         let value_type = this
             .as_class_object()
-            .and_then(|c| c.as_class_params().and_then(|p| p.get(0).copied()))
+            .and_then(|c| c.as_class_params())
             .ok_or("Cannot filter unparameterized vector")?
             .unwrap_or(activation.avm2().classes().object);
         let mut new_storage = VectorStorage::new(0, false, value_type);
@@ -684,7 +684,7 @@ pub fn map<'gc>(
 
         let value_type = this
             .as_class_object()
-            .and_then(|c| c.as_class_params().and_then(|p| p.get(0).copied()))
+            .and_then(|c| c.as_class_params())
             .ok_or("Cannot filter unparameterized vector")?
             .unwrap_or(activation.avm2().classes().object);
         let mut new_storage = VectorStorage::new(0, false, value_type);
