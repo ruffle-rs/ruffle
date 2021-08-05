@@ -38,7 +38,7 @@ pub fn instance_init<'gc>(
                 .unwrap_or_else(|| false.into())
                 .coerce_to_boolean();
 
-            vector.resize(length)?;
+            vector.resize(length, activation)?;
             vector.set_is_fixed(is_fixed);
         }
     }
@@ -218,7 +218,7 @@ pub fn set_length<'gc>(
                 .unwrap_or(Value::Unsigned(0))
                 .coerce_to_u32(activation)? as usize;
 
-            vector.resize(new_length)?;
+            vector.resize(new_length, activation)?;
         }
     }
 
@@ -298,37 +298,33 @@ pub fn concat<'gc>(
             }
 
             let old_vec = arg_obj.as_vector_storage();
-            let old_vec: Vec<Option<Value<'gc>>> = if let Some(old_vec) = old_vec {
+            let old_vec: Vec<Value<'gc>> = if let Some(old_vec) = old_vec {
                 old_vec.iter().collect()
             } else {
                 continue;
             };
 
             for val in old_vec {
-                if let Some(val) = val {
-                    if let Ok(val_obj) = val.coerce_to_object(activation) {
-                        if !val.is_of_type(activation, val_class)? {
-                            let other_val_class = val_obj
+                if let Ok(val_obj) = val.coerce_to_object(activation) {
+                    if !val.is_of_type(activation, val_class)? {
+                        let other_val_class = val_obj
+                            .as_class()
+                            .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
+                        return Err(format!(
+                            "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
+                            other_val_class.read().name(),
+                            val_class
                                 .as_class()
-                                .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
-                            return Err(format!(
-                                "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
-                                other_val_class.read().name(),
-                                val_class
-                                    .as_class()
-                                    .ok_or("TypeError: Tried to concat into a bare object")?
-                                    .read()
-                                    .name()
-                            )
-                            .into());
-                        }
+                                .ok_or("TypeError: Tried to concat into a bare object")?
+                                .read()
+                                .name()
+                        )
+                        .into());
                     }
-
-                    let coerced_val = val.coerce_to_type(activation, val_class)?;
-                    new_vector_storage.push(Some(coerced_val))?;
-                } else {
-                    new_vector_storage.push(None)?;
                 }
+
+                let coerced_val = val.coerce_to_type(activation, val_class)?;
+                new_vector_storage.push(coerced_val)?;
             }
         }
 
@@ -358,14 +354,11 @@ where
             let mut accum = Vec::with_capacity(vector.length());
 
             for (_, item) in vector.iter().enumerate() {
-                if matches!(item, Some(Value::Undefined))
-                    || matches!(item, Some(Value::Null))
-                    || item.is_none()
-                {
+                if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                     accum.push("".into());
                 } else {
                     accum.push(
-                        conv(item.unwrap(), activation)?
+                        conv(item, activation)?
                             .coerce_to_string(activation)?
                             .to_string(),
                     );
@@ -528,7 +521,7 @@ pub fn filter<'gc>(
             .and_then(|c| c.as_class_params())
             .ok_or("Cannot filter unparameterized vector")?
             .unwrap_or(activation.avm2().classes().object);
-        let mut new_storage = VectorStorage::new(0, false, value_type);
+        let mut new_storage = VectorStorage::new(0, false, value_type, activation);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -544,7 +537,7 @@ pub fn filter<'gc>(
                 .coerce_to_boolean();
 
             if result {
-                new_storage.push(Some(item))?;
+                new_storage.push(item)?;
             }
         }
 
@@ -687,7 +680,7 @@ pub fn map<'gc>(
             .and_then(|c| c.as_class_params())
             .ok_or("Cannot filter unparameterized vector")?
             .unwrap_or(activation.avm2().classes().object);
-        let mut new_storage = VectorStorage::new(0, false, value_type);
+        let mut new_storage = VectorStorage::new(0, false, value_type, activation);
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -701,7 +694,7 @@ pub fn map<'gc>(
             )?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
-            new_storage.push(Some(coerced_item))?;
+            new_storage.push(coerced_item)?;
         }
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());
@@ -738,7 +731,7 @@ pub fn push<'gc>(
             for arg in args {
                 let coerced_arg = arg.coerce_to_type(activation, value_type)?;
 
-                vs.push(Some(coerced_arg))?;
+                vs.push(coerced_arg)?;
             }
 
             return Ok(vs.length().into());
@@ -776,7 +769,7 @@ pub fn unshift<'gc>(
             for arg in args.iter().rev() {
                 let coerced_arg = arg.coerce_to_type(activation, value_type)?;
 
-                vs.unshift(Some(coerced_arg))?;
+                vs.unshift(coerced_arg)?;
             }
 
             return Ok(vs.length().into());
@@ -806,7 +799,7 @@ pub fn insert_at<'gc>(
                 .unwrap_or(Value::Undefined)
                 .coerce_to_type(activation, value_type)?;
 
-            vs.insert(index, Some(value))?;
+            vs.insert(index, value)?;
         }
     }
 
@@ -827,7 +820,7 @@ pub fn remove_at<'gc>(
                 .unwrap_or(Value::Undefined)
                 .coerce_to_i32(activation)?;
 
-            return vs.remove(index, activation);
+            return vs.remove(index);
         }
     }
 
@@ -874,7 +867,7 @@ pub fn slice<'gc>(
             let from = vs.clamp_parameter_index(from);
             let to = vs.clamp_parameter_index(to);
 
-            let mut new_vs = VectorStorage::new(0, false, value_type);
+            let mut new_vs = VectorStorage::new(0, false, value_type, activation);
 
             if to > from {
                 for value in vs.iter().skip(from).take(to - from) {
@@ -940,10 +933,7 @@ pub fn sort<'gc>(
                 }
             };
 
-            let mut values: Vec<_> = vs
-                .iter()
-                .map(|v| v.unwrap_or_else(|| vs.default(activation)))
-                .collect();
+            let mut values: Vec<_> = vs.iter().collect();
             drop(vs);
 
             let mut unique_sort_satisfied = true;
@@ -973,7 +963,7 @@ pub fn sort<'gc>(
                 let mut vs = this
                     .as_vector_storage_mut(activation.context.gc_context)
                     .unwrap();
-                vs.replace_storage(values.into_iter().map(Some).collect());
+                vs.replace_storage(values.into_iter().collect());
             }
 
             return Ok(this.into());
@@ -1018,7 +1008,7 @@ pub fn splice<'gc>(
             let mut to_coerce = Vec::new();
 
             for value in args[2..].iter() {
-                to_coerce.push(Some(value.coerce_to_type(activation, value_type)?));
+                to_coerce.push(value.coerce_to_type(activation, value_type)?);
             }
 
             let new_vs =
