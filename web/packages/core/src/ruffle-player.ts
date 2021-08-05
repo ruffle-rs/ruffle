@@ -397,20 +397,14 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmCors;
                 } else if (message.includes("disallowed by embedder")) {
                     e.ruffleIndexError = PanicError.CSPConflict;
-                } else if (
-                    message.includes("webassembly.instantiate") &&
-                    e.name === "CompileError"
-                ) {
+                } else if (e.name === "CompileError") {
                     e.ruffleIndexError = PanicError.InvalidWasm;
                 } else if (
                     message.includes("could not download wasm module") &&
                     e.name === "TypeError"
                 ) {
                     e.ruffleIndexError = PanicError.WasmDownload;
-                } else if (
-                    !message.includes("magic") &&
-                    (e.name === "CompileError" || e.name === "TypeError")
-                ) {
+                } else if (e.name === "TypeError") {
                     e.ruffleIndexError = PanicError.JavascriptConflict;
                 }
             }
