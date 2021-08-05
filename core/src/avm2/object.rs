@@ -455,7 +455,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// Class and function traits are *not* instantiated at installation time.
     /// Instead, installing such traits is treated as installing a const with
-    /// `undefined` as it's value.
+    /// `undefined` as its value.
     ///
     /// All traits that are instantiated at install time will be instantiated
     /// with this object's current scope stack and this object as a bound
@@ -1017,7 +1017,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    /// Determine if this class has a given type in it's superclass chain.
+    /// Determine if this class has a given type in its superclass chain.
     ///
     /// The given object `test_class` should be either a superclass or
     /// interface we are checking against this class.
