@@ -9,7 +9,7 @@ use crate::avm2::globals::array::{
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{vector_allocator, Object, TObject, VectorObject};
+use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
@@ -133,6 +133,57 @@ pub fn class_init<'gc>(
             false,
         );
         domain.export_definition(object_vector_name, script, activation.context.gc_context)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Vector`'s specialized-class constructor.
+pub fn specialized_class_init<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let mut proto = this
+            .get_property(this, &QName::dynamic_name("prototype"), activation)?
+            .coerce_to_object(activation)?;
+        let scope = this.get_scope();
+
+        const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
+            ("concat", concat),
+            ("join", join),
+            ("toString", to_string),
+            ("toLocaleString", to_locale_string),
+            ("every", every),
+            ("some", some),
+            ("forEach", for_each),
+            ("filter", filter),
+            ("indexOf", index_of),
+            ("lastIndexOf", last_index_of),
+            ("map", map),
+            ("pop", pop),
+            ("push", push),
+            ("shift", shift),
+            ("unshift", unshift),
+            ("reverse", reverse),
+            ("slice", slice),
+            ("sort", sort),
+            ("splice", splice),
+        ];
+        for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
+            proto.set_property(
+                this,
+                &QName::dynamic_name(*pubname),
+                FunctionObject::from_function(
+                    activation,
+                    Method::from_builtin(*func, pubname, activation.context.gc_context),
+                    scope,
+                )?
+                .into(),
+                activation,
+            )?;
+        }
     }
 
     Ok(Value::Undefined)
@@ -987,7 +1038,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         QName::new(Namespace::package(NS_VECTOR), "Vector"),
         Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init, "<Vector instance initializer>", mc),
-        Method::from_builtin(class_init, "<Vector instance initializer>", mc),
+        Method::from_builtin(class_init, "<Vector class initializer>", mc),
         mc,
     );
 
@@ -995,6 +1046,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
     write.set_instance_allocator(vector_allocator);
+    write.set_specialized_init(Method::from_builtin(
+        specialized_class_init,
+        "<Vector specialized class initializer>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -1006,7 +1062,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("concat", concat),
         ("join", join),
         ("toString", to_string),
@@ -1029,7 +1085,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("sort", sort),
         ("splice", splice),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
 }
