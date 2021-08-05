@@ -131,6 +131,12 @@ pub struct Class<'gc> {
     /// Whether or not the class initializer has already been called.
     class_initializer_called: bool,
 
+    /// The class initializer for specializations of this class.
+    ///
+    /// Only applies for generic classes. Must be called once and only once
+    /// per specialization, prior to any use of the specialized class.
+    specialized_class_init: Method<'gc>,
+
     /// Static traits for a given class.
     ///
     /// These are accessed as class object properties.
@@ -232,6 +238,11 @@ impl<'gc> Class<'gc> {
                 class_init,
                 class_initializer_called: false,
                 class_traits: Vec::new(),
+                specialized_class_init: Method::from_builtin(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Null specialization constructor>",
+                    mc,
+                ),
                 traits_loaded: true,
             },
         )
@@ -250,6 +261,8 @@ impl<'gc> Class<'gc> {
 
         new_class.params = params.to_vec();
         new_class.attributes.remove(ClassAttributes::GENERIC);
+        new_class.class_init = new_class.specialized_class_init.clone();
+        new_class.class_initializer_called = false;
 
         GcCell::allocate(mc, new_class)
     }
@@ -346,6 +359,11 @@ impl<'gc> Class<'gc> {
                 class_init,
                 class_initializer_called: false,
                 class_traits: Vec::new(),
+                specialized_class_init: Method::from_builtin(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Null specialization constructor>",
+                    activation.context.gc_context,
+                ),
                 traits_loaded: false,
             },
         ))
@@ -437,6 +455,11 @@ impl<'gc> Class<'gc> {
                 class_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
+                    activation.context.gc_context,
+                ),
+                specialized_class_init: Method::from_builtin(
+                    |_, _, _| Ok(Value::Undefined),
+                    "<Activation object specialization constructor>",
                     activation.context.gc_context,
                 ),
                 class_initializer_called: false,
@@ -764,6 +787,11 @@ impl<'gc> Class<'gc> {
     /// Mark the class as initialized.
     pub fn mark_class_initialized(&mut self) {
         self.class_initializer_called = true;
+    }
+
+    /// Set the class initializer for specializations of this class.
+    pub fn set_specialized_init(&mut self, specialized_init: Method<'gc>) {
+        self.specialized_class_init = specialized_init;
     }
 
     pub fn interfaces(&self) -> &[Multiname<'gc>] {
