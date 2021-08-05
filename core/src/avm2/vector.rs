@@ -22,13 +22,7 @@ use std::slice::SliceIndex;
 #[collect(no_drop)]
 pub struct VectorStorage<'gc> {
     /// The storage for vector values.
-    ///
-    /// While this is structured identically to `ArrayStorage`, the role of
-    /// `None` values is significantly different. Instead of being treated as a
-    /// hole to be resolved by reference to the prototype chain, vector holes
-    /// are treated as default values. The actual default changes based on the
-    /// type contained in the array.
-    storage: Vec<Option<Value<'gc>>>,
+    storage: Vec<Value<'gc>>,
 
     /// Whether or not the array length is fixed.
     is_fixed: bool,
@@ -39,33 +33,38 @@ pub struct VectorStorage<'gc> {
     /// Vector typing is enforced by one of two ways: either by generating
     /// exceptions on values that are not of the given type, or by coercing
     /// incorrectly typed values to the given type if possible. Values that do
-    /// not coerce would then be treated as vector holes and retrieved as a
-    /// default value.
+    /// not coerce are replaced with the default value for the given value
+    /// type.
     value_type: Object<'gc>,
 }
 
 impl<'gc> VectorStorage<'gc> {
-    pub fn new(length: usize, is_fixed: bool, value_type: Object<'gc>) -> Self {
-        let mut storage = Vec::new();
+    pub fn new(
+        length: usize,
+        is_fixed: bool,
+        value_type: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Self {
+        let storage = Vec::new();
 
-        storage.resize(length, None);
-
-        VectorStorage {
+        let mut self_vec = VectorStorage {
             storage,
             is_fixed,
             value_type,
-        }
+        };
+
+        self_vec
+            .storage
+            .resize(length, self_vec.default(activation));
+
+        self_vec
     }
 
     /// Create a new vector storage from a list of values.
     ///
     /// The values are assumed to already have been coerced to the value type
     /// given.
-    pub fn from_values(
-        storage: Vec<Option<Value<'gc>>>,
-        is_fixed: bool,
-        value_type: Object<'gc>,
-    ) -> Self {
+    pub fn from_values(storage: Vec<Value<'gc>>, is_fixed: bool, value_type: Object<'gc>) -> Self {
         VectorStorage {
             storage,
             is_fixed,
@@ -85,12 +84,16 @@ impl<'gc> VectorStorage<'gc> {
         self.storage.len()
     }
 
-    pub fn resize(&mut self, new_length: usize) -> Result<(), Error> {
+    pub fn resize(
+        &mut self,
+        new_length: usize,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
 
-        self.storage.resize(new_length, None);
+        self.storage.resize(new_length, self.default(activation));
 
         Ok(())
     }
@@ -132,17 +135,10 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Retrieve a value from the vector.
-    ///
-    /// If the value is `None`, the type default value will be substituted.
-    pub fn get(
-        &self,
-        pos: usize,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    pub fn get(&self, pos: usize) -> Result<Value<'gc>, Error> {
         self.storage
             .get(pos)
             .cloned()
-            .map(|v| v.unwrap_or_else(|| self.default(activation)))
             .ok_or_else(|| format!("RangeError: {} is outside the range of the vector", pos).into())
     }
 
@@ -155,9 +151,14 @@ impl<'gc> VectorStorage<'gc> {
     ///
     /// This function yields an error if the position is outside the length of
     /// the vector.
-    pub fn set(&mut self, pos: usize, value: Option<Value<'gc>>) -> Result<(), Error> {
+    pub fn set(
+        &mut self,
+        pos: usize,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
         if !self.is_fixed && pos >= self.length() {
-            self.storage.resize(pos + 1, None);
+            self.storage.resize(pos + 1, self.default(activation));
         }
 
         self.storage
@@ -174,7 +175,7 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn push(&mut self, value: Option<Value<'gc>>) -> Result<(), Error> {
+    pub fn push(&mut self, value: Value<'gc>) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -187,17 +188,13 @@ impl<'gc> VectorStorage<'gc> {
     /// Pop a value off the end of the vector.
     ///
     /// This function returns an error if the vector is fixed.
-    ///
-    /// If the value popped is a vector hole, then the default value will be
-    /// returned.
     pub fn pop(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
 
         match self.storage.pop() {
-            Some(Some(v)) => Ok(v),
-            Some(None) => Ok(self.default(activation)),
+            Some(v) => Ok(v),
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().uint) => {
                 Ok(Value::Unsigned(0))
             }
@@ -216,7 +213,7 @@ impl<'gc> VectorStorage<'gc> {
     /// the vector (and thus it is unwise to reenter the AVM2 runtime to coerce
     /// things). You must use the associated `coerce` fn before storing things
     /// in the vector.
-    pub fn unshift(&mut self, value: Option<Value<'gc>>) -> Result<(), Error> {
+    pub fn unshift(&mut self, value: Value<'gc>) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -229,9 +226,6 @@ impl<'gc> VectorStorage<'gc> {
     /// Pop a value off the start of the vector.
     ///
     /// This function returns an error if the vector is fixed.
-    ///
-    /// If the value popped is a vector hole, then the default value will be
-    /// returned.
     pub fn shift(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
@@ -244,8 +238,7 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         match unshifted {
-            Some(Some(v)) => Ok(v),
-            Some(None) => Ok(self.default(activation)),
+            Some(v) => Ok(v),
             None if Object::ptr_eq(self.value_type(), activation.avm2().classes().uint) => {
                 Ok(Value::Unsigned(0))
             }
@@ -267,7 +260,7 @@ impl<'gc> VectorStorage<'gc> {
     ///
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards.
-    pub fn insert(&mut self, position: i32, value: Option<Value<'gc>>) -> Result<(), Error> {
+    pub fn insert(&mut self, position: i32, value: Value<'gc>) -> Result<(), Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -290,11 +283,7 @@ impl<'gc> VectorStorage<'gc> {
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards. Negative arrays are *not* subject to the bounds
     /// check error.
-    pub fn remove(
-        &mut self,
-        position: i32,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
+    pub fn remove(&mut self, position: i32) -> Result<Value<'gc>, Error> {
         if self.is_fixed {
             return Err("RangeError: Vector is fixed".into());
         }
@@ -312,10 +301,7 @@ impl<'gc> VectorStorage<'gc> {
             )
             .into())
         } else {
-            Ok(self
-                .storage
-                .remove(position)
-                .unwrap_or_else(|| self.default(activation)))
+            Ok(self.storage.remove(position))
         }
     }
 
@@ -327,26 +313,23 @@ impl<'gc> VectorStorage<'gc> {
     /// Iterate over vector values.
     pub fn iter<'a>(
         &'a self,
-    ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
-           + ExactSizeIterator<Item = Option<Value<'gc>>>
-           + 'a {
+    ) -> impl DoubleEndedIterator<Item = Value<'gc>> + ExactSizeIterator<Item = Value<'gc>> + 'a
+    {
         self.storage.iter().cloned()
     }
 
     /// Replace this vector's storage with new values.
-    pub fn replace_storage(&mut self, new_storage: Vec<Option<Value<'gc>>>) {
+    pub fn replace_storage(&mut self, new_storage: Vec<Value<'gc>>) {
         self.storage = new_storage;
     }
 
     pub fn splice<R>(
         &mut self,
         range: R,
-        replace_with: Vec<Option<Value<'gc>>>,
-    ) -> Result<Vec<Option<Value<'gc>>>, Error>
+        replace_with: Vec<Value<'gc>>,
+    ) -> Result<Vec<Value<'gc>>, Error>
     where
-        R: Clone
-            + SliceIndex<[Option<Value<'gc>>], Output = [Option<Value<'gc>>]>
-            + RangeBounds<usize>,
+        R: Clone + SliceIndex<[Value<'gc>], Output = [Value<'gc>]> + RangeBounds<usize>,
     {
         if self.is_fixed && self.storage.index(range.clone()).len() != replace_with.len() {
             return Err("RangeError: Vector is fixed".into());

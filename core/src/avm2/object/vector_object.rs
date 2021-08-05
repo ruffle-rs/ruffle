@@ -34,7 +34,7 @@ pub fn vector_allocator<'gc>(
         activation.context.gc_context,
         VectorObjectData {
             base,
-            vector: VectorStorage::new(0, false, param_type),
+            vector: VectorStorage::new(0, false, param_type, activation),
         },
     ))
     .into())
@@ -102,10 +102,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
         if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
-                return Ok(read
-                    .vector
-                    .get(index, activation)
-                    .unwrap_or(Value::Undefined));
+                return Ok(read.vector.get(index).unwrap_or(Value::Undefined));
             }
         }
 
@@ -127,15 +124,15 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 let type_of = self.0.read().vector.value_type();
                 let value = match value.coerce_to_type(activation, type_of)? {
-                    Value::Undefined => None,
-                    Value::Null => None,
-                    v => Some(v),
+                    Value::Undefined => self.0.read().vector.default(activation),
+                    Value::Null => self.0.read().vector.default(activation),
+                    v => v,
                 };
 
                 self.0
                     .write(activation.context.gc_context)
                     .vector
-                    .set(index, value)?;
+                    .set(index, value, activation)?;
 
                 return Ok(());
             }
@@ -165,15 +162,15 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 let type_of = self.0.read().vector.value_type();
                 let value = match value.coerce_to_type(activation, type_of)? {
-                    Value::Undefined => None,
-                    Value::Null => None,
-                    v => Some(v),
+                    Value::Undefined => self.0.read().vector.default(activation),
+                    Value::Null => self.0.read().vector.default(activation),
+                    v => v,
                 };
 
                 self.0
                     .write(activation.context.gc_context)
                     .vector
-                    .set(index, value)?;
+                    .set(index, value, activation)?;
 
                 return Ok(());
             }
@@ -251,7 +248,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             activation.context.gc_context,
             VectorObjectData {
                 base,
-                vector: VectorStorage::new(0, false, param_type),
+                vector: VectorStorage::new(0, false, param_type, activation),
             },
         ))
         .into())
