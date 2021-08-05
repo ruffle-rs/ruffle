@@ -288,12 +288,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(Value::Undefined)
     }
 
-    fn call_setter(
-        &self,
-        name: &str,
-        _value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
+    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
         self.0
             .read()
             .values

@@ -136,13 +136,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().call(name, activation, this, base_proto, args)
     }
 
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().call_setter(name, value, activation)
+    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.0.read().setter(name, activation)
     }
 
     fn create_bare_object(

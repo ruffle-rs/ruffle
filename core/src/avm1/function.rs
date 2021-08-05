@@ -646,13 +646,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         }
     }
 
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.base.call_setter(name, value, activation)
+    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.base.setter(name, activation)
     }
 
     fn create_bare_object(

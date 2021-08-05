@@ -145,7 +145,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    if let Some(setter) = this_proto.call_setter(name, value, activation) {
+                    if let Some(setter) = this_proto.setter(name, activation) {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
                                 "[Setter]",
@@ -225,21 +225,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         method.call(name, activation, this, base_proto, args)
     }
 
-    /// Call a setter defined in this object.
-    ///
-    /// This function may return a `Executable` of the function to call; it
-    /// should be resolved and discarded. Attempts to call a non-virtual setter
-    /// or non-existent setter fail silently.
-    ///
-    /// The setter will be invoked with the provided `this`. It is assumed that
-    /// this function is being called on the appropriate `base_proto` and
-    /// `super` will be invoked following said guidance.
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>>;
+    /// Retrive a setter defined on this object.
+    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>>;
 
     /// Construct a host object of some kind and return its cell.
     ///

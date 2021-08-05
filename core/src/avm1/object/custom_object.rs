@@ -76,13 +76,12 @@ macro_rules! impl_custom_object {
                 .call(name, activation, this, base_proto, args)
         }
 
-        fn call_setter(
+        fn setter(
             &self,
             name: &str,
-            value: crate::avm1::Value<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
         ) -> Option<crate::avm1::object::Object<'gc>> {
-            self.0.read().$field.call_setter(name, value, activation)
+            self.0.read().$field.setter(name, activation)
         }
 
         fn delete(

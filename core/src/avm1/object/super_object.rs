@@ -34,13 +34,7 @@ pub struct SuperObjectData<'gc> {
 impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
     ///
-    /// `this` and `base_proto` must be the values provided to
-    /// `Executable.exec`.
-    ///
-    /// NOTE: This function must not borrow any `GcCell` data as it is
-    /// sometimes called while mutable borrows are held on cells. Specifically,
-    /// `Object.call_setter` will panic if this function attempts to borrow
-    /// *any* objects.
+    /// `this` and `base_proto` must be the values provided to `Executable::exec`.
     pub fn from_this_and_base_proto(
         this: Object<'gc>,
         base_proto: Object<'gc>,
@@ -129,13 +123,8 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         method.call(name, activation, child, base_proto, args)
     }
 
-    fn call_setter(
-        &self,
-        name: &str,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        self.0.read().child.call_setter(name, value, activation)
+    fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.0.read().child.setter(name, activation)
     }
 
     fn create_bare_object(
