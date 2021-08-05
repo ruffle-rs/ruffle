@@ -1042,25 +1042,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
 
-            if let (Some(my_params), Some(test_params)) =
+            if let (Some(my_param), Some(test_param)) =
                 (class.as_class_params(), test_class.as_class_params())
             {
-                if my_params.len() == test_params.len() {
-                    let mut are_all_params_coercible = true;
+                let mut are_all_params_coercible = true;
 
-                    for (my_param, test_param) in my_params.iter().zip(test_params.iter()) {
-                        are_all_params_coercible &= match (my_param, test_param) {
-                            (Some(my_param), Some(test_param)) => {
-                                my_param.has_class_in_chain(*test_param, activation)?
-                            }
-                            (None, Some(_)) => false,
-                            _ => true,
-                        }
+                are_all_params_coercible &= match (my_param, test_param) {
+                    (Some(my_param), Some(test_param)) => {
+                        my_param.has_class_in_chain(test_param, activation)?
                     }
+                    (None, Some(_)) => false,
+                    _ => true,
+                };
 
-                    if are_all_params_coercible {
-                        return Ok(true);
-                    }
+                if are_all_params_coercible {
+                    return Ok(true);
                 }
             }
 
@@ -1082,7 +1078,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get the parameters of this class object, if present.
     ///
     /// Only specialized generic classes will yield their parameters.
-    fn as_class_params(&self) -> Option<Ref<[Option<Object<'gc>>]>> {
+    fn as_class_params(&self) -> Option<Option<Object<'gc>>> {
         None
     }
 

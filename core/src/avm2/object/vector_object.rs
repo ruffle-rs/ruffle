@@ -27,7 +27,6 @@ pub fn vector_allocator<'gc>(
     //getting the parameter type for our storage.
     let param_type = class
         .as_class_params()
-        .and_then(|p| p.get(0).copied())
         .flatten()
         .unwrap_or_else(|| activation.avm2().classes().object);
 

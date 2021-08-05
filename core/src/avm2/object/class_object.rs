@@ -13,7 +13,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::cell::Ref;
 use std::collections::HashMap;
 
 /// An Object which can be called to execute its function code.
@@ -54,7 +53,7 @@ pub struct ClassObjectData<'gc> {
     ///
     /// An individual parameter of `None` signifies the parameter `*`, which is
     /// represented in AVM2 as `null` with regards to type application.
-    params: Option<Vec<Option<Object<'gc>>>>,
+    params: Option<Option<Object<'gc>>>,
 
     /// List of all applications of this class.
     ///
@@ -478,14 +477,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         None //AS3 does not have metaclasses
     }
 
-    fn as_class_params(&self) -> Option<Ref<[Option<Object<'gc>>]>> {
-        let read = self.0.read();
-
-        if read.params.is_some() {
-            Some(Ref::map(read, |r| &r.params.as_ref().unwrap()[..]))
-        } else {
-            None
-        }
+    fn as_class_params(&self) -> Option<Option<Object<'gc>>> {
+        self.0.read().params
     }
 
     fn set_class_object(self, _mc: MutationContext<'gc, '_>, _class_object: Object<'gc>) {
@@ -607,7 +600,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
-                params: Some(object_params.to_vec()),
+                params: Some(object_params[0]),
                 applications: HashMap::new(),
             },
         ));
