@@ -4,31 +4,22 @@ import { Config } from "./config";
  * Attempt to discover the public path of the current Ruffle source. This can
  * be used to configure Webpack.
  *
- * We have several points of configuration for how the Ruffle public path can
- * be determined:
+ * A global public path can be specified for all sources using the RufflePlayer
+ * config:
  *
- * 1. The public path can be specified on a per-source basis using the
- * RufflePlayer config, for example:
- * `window.RufflePlayer.config.publicPaths.local = "/dist/";`
- * 2. A global public path can be specified for all sources, also in config.
- * `window.RufflePlayer.config.publicPath = "/dist/";`
- * 3. If there is absolutely no configuration that yields a public path then we
- * return the parent path of where this script is hosted, which should be
- * the correct default in most cases.
+ * ```js
+ * window.RufflePlayer.config.publicPath = "/dist/";
+ * ```
+ *
+ * If no such config is specified, then the parent path of where this script is
+ * hosted is assumed, which should be the correct default in most cases.
  *
  * @param config The `window.RufflePlayer.config` object.
- * @param source_name The name of the source.
  * @returns The public path for the given source.
  */
-export function publicPath(config: Config, source_name: string): string {
+export function publicPath(config: Config): string {
     let path = "";
-    if (
-        config !== undefined &&
-        config.publicPaths !== undefined &&
-        config.publicPaths[source_name] !== undefined
-    ) {
-        path = config.publicPaths[source_name];
-    } else if (config !== undefined && config.publicPath !== undefined) {
+    if (config !== undefined && config.publicPath !== undefined) {
         path = config.publicPath;
     } else if (
         document.currentScript !== undefined &&
@@ -44,7 +35,7 @@ export function publicPath(config: Config, source_name: string): string {
         }
     }
 
-    // Webpack expects the paths to end with a /.
+    // Webpack expects the paths to end with a slash.
     if (path !== "" && !path.endsWith("/")) {
         path += "/";
     }

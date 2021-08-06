@@ -9,15 +9,7 @@ import { BaseLoadOptions } from "./load-options";
  */
 export interface Config extends BaseLoadOptions {
     /**
-     * A map of public paths from source name to URL.
-     */
-    publicPaths?: Record<string, string>;
-
-    /**
-     * The URL at which Ruffle can load its extra files (ie `.wasm`).
-     *
-     * [publicPaths] is consulted first for a source-specific URL,
-     * with this field being a fallback.
+     * The URL at which Ruffle can load its extra files (i.e. `.wasm`).
      */
     publicPath?: string;
 

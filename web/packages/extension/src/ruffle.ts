@@ -6,7 +6,7 @@ const api = PublicAPI.negotiate(
     new SourceAPI("extension")
 );
 window.RufflePlayer = api;
-__webpack_public_path__ = publicPath(api.config, "extension");
+__webpack_public_path__ = publicPath(api.config);
 
 let uniqueMessageSuffix: string | null = null;
 if (

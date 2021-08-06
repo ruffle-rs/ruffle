@@ -5,4 +5,4 @@ window.RufflePlayer = PublicAPI.negotiate(
     "local",
     new SourceAPI("local")
 );
-__webpack_public_path__ = publicPath(window.RufflePlayer.config, "local");
+__webpack_public_path__ = publicPath(window.RufflePlayer.config);
