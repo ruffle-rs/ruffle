@@ -22,10 +22,6 @@ module.exports = (_env, _argv) => {
                     test: /\.css$/i,
                     use: ["style-loader", "css-loader"],
                 },
-                {
-                    test: /\.wasm$/i,
-                    type: "asset/resource",
-                },
             ],
         },
         devtool: "source-map",
