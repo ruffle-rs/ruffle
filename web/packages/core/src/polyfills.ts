@@ -6,7 +6,7 @@ import { Config } from "./config";
 
 let isExtension: boolean;
 const globalConfig: Config = window.RufflePlayer?.config ?? {};
-const jsScriptUrl = publicPath(globalConfig, "ruffle.js") + "ruffle.js";
+const jsScriptUrl = publicPath(globalConfig) + "ruffle.js";
 
 /**
  * Polyfill native Flash elements with Ruffle equivalents.
