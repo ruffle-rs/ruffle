@@ -1,10 +1,4 @@
-import {
-    PublicAPI,
-    SourceAPI,
-    publicPath,
-    Letterbox,
-    LogLevel,
-} from "ruffle-core";
+import { PublicAPI, SourceAPI, Letterbox, LogLevel } from "ruffle-core";
 
 const api = PublicAPI.negotiate(
     window.RufflePlayer!,
@@ -12,7 +6,6 @@ const api = PublicAPI.negotiate(
     new SourceAPI("local")
 );
 window.RufflePlayer = api;
-__webpack_public_path__ = publicPath(api.config);
 const ruffle = api.newest()!;
 
 // Default config used by the player.

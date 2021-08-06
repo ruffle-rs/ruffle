@@ -137,7 +137,6 @@ export class RufflePlayer extends HTMLElement {
     private _metadata: MovieMetadata | null;
     private _readyState: ReadyState;
 
-    private ruffleConstructor: Promise<typeof Ruffle>;
     private panicked = false;
 
     private isExtension = false;
@@ -223,8 +222,6 @@ export class RufflePlayer extends HTMLElement {
 
         this._readyState = ReadyState.HaveNothing;
         this._metadata = null;
-
-        this.ruffleConstructor = loadRuffle();
 
         this.lastActivePlayingState = false;
         this.setupPauseOnTabHidden();
@@ -381,7 +378,7 @@ export class RufflePlayer extends HTMLElement {
     private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
         this.destroy();
 
-        const ruffleConstructor = await this.ruffleConstructor.catch((e) => {
+        const ruffleConstructor = await loadRuffle(config).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
 
             // Serious duck typing. In error conditions, let's not make assumptions.

@@ -60,10 +60,6 @@ module.exports = (env, _argv) => {
                     test: /\.ts$/i,
                     use: "ts-loader",
                 },
-                {
-                    test: /\.wasm$/i,
-                    type: "asset/resource",
-                },
             ],
         },
         resolve: {

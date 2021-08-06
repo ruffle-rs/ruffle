@@ -4,6 +4,12 @@
 
 import init, { Ruffle } from "../pkg/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
+import { publicPath } from "./public-path";
+import { Config } from "./config";
+
+declare global {
+    let __webpack_public_path__: string;
+}
 
 /**
  * Load ruffle from an automatically-detected location.
@@ -12,21 +18,17 @@ import { setPolyfillsOnLoad } from "./js-polyfills";
  * You should not use it directly; this module will memoize the resource
  * download.
  *
+ * @param config The `window.RufflePlayer.config` object.
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-async function fetchRuffle(): Promise<typeof Ruffle> {
+async function fetchRuffle(config: Config): Promise<typeof Ruffle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
 
-    // wasm files are set to be resource assets,
-    // so this import will resolve to the URL of the wasm file.
-    const ruffleWasm = await import(
-        /* webpackMode: "eager" */
-        "../pkg/ruffle_web_bg.wasm"
-    );
-    await init(ruffleWasm.default);
+    __webpack_public_path__ = publicPath(config);
+    await init();
 
     return Ruffle;
 }
@@ -38,12 +40,13 @@ let lastLoaded: Promise<typeof Ruffle> | null = null;
  *
  * This function returns a promise which yields `Ruffle` asynchronously.
  *
+ * @param config The `window.RufflePlayer.config` object.
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-export function loadRuffle(): Promise<typeof Ruffle> {
+export function loadRuffle(config: Config): Promise<typeof Ruffle> {
     if (lastLoaded == null) {
-        lastLoaded = fetchRuffle();
+        lastLoaded = fetchRuffle(config);
     }
 
     return lastLoaded;
