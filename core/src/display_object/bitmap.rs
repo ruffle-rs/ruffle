@@ -25,7 +25,7 @@ pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
-    bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+    bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
     smoothing: bool,
 }
 
@@ -36,7 +36,7 @@ impl<'gc> Bitmap<'gc> {
         bitmap_handle: BitmapHandle,
         width: u16,
         height: u16,
-        bitmap_data: Option<GcCell<'gc, crate::avm1::object::bitmap_data::BitmapData>>,
+        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
         smoothing: bool,
     ) -> Self {
         Bitmap(GcCell::allocate(
