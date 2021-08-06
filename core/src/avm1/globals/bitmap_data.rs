@@ -1,11 +1,12 @@
 //! flash.display.BitmapData object
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::bitmap_data::{BitmapDataObject, ChannelOptions, Color};
+use crate::avm1::object::bitmap_data::BitmapDataObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{activation::Activation, object::bitmap_data::BitmapData};
 use crate::avm1::{Object, TObject, Value};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, Color};
 use crate::character::Character;
 use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
