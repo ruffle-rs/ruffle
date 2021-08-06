@@ -157,7 +157,7 @@ impl<'gc> VectorStorage<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if !self.is_fixed && pos >= self.length() {
+        if !self.is_fixed && pos == self.length() {
             self.storage.resize(pos + 1, self.default(activation));
         }
 
