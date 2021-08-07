@@ -1,5 +1,21 @@
 import { Config } from "./config";
 
+// This must be in global scope because `document.currentScript`
+// works only while the script is initially being processed.
+let currentScriptURL = "";
+try {
+    if (
+        document.currentScript !== undefined &&
+        document.currentScript !== null &&
+        "src" in document.currentScript &&
+        document.currentScript.src !== ""
+    ) {
+        currentScriptURL = new URL(".", document.currentScript.src).href;
+    }
+} catch (e) {
+    console.warn("Unable to get currentScript URL");
+}
+
 /**
  * Attempt to discover the public path of the current Ruffle source. This can
  * be used to configure Webpack.
@@ -18,21 +34,10 @@ import { Config } from "./config";
  * @returns The public path for the given source.
  */
 export function publicPath(config: Config): string {
-    let path = "";
+    // Default to the directory where this script resides.
+    let path = currentScriptURL;
     if (config !== undefined && config.publicPath !== undefined) {
         path = config.publicPath;
-    } else if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
-        document.currentScript.src !== ""
-    ) {
-        // Default to the directory where this script resides.
-        try {
-            path = new URL(".", document.currentScript.src).href;
-        } catch (e) {
-            console.warn("Unable to get currentScript URL");
-        }
     }
 
     // Webpack expects the paths to end with a slash.
