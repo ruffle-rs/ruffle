@@ -58,6 +58,7 @@ impl<'gc> ColorTransformObject<'gc> {
     }
 
     add_field_accessors!(
+        [set_params, get_params, params, ColorTransformParams],
         [
             set_red_multiplier,
             get_red_multiplier,

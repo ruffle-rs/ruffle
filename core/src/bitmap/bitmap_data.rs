@@ -1,7 +1,7 @@
 use gc_arena::Collect;
 
-use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::backend::render::{BitmapHandle, RenderBackend};
+use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
 use downcast_rs::__std::fmt::Formatter;
@@ -434,7 +434,7 @@ impl BitmapData {
         min_y: u32,
         end_x: u32,
         end_y: u32,
-        color_transform: ColorTransformObject,
+        color_transform: &ColorTransformParams,
     ) {
         for x in min_x..end_x.min(self.width()) {
             for y in min_y..end_y.min(self.height()) {
@@ -443,14 +443,14 @@ impl BitmapData {
                     .unwrap_or_else(|| 0.into())
                     .to_un_multiplied_alpha();
 
-                let alpha = ((color.alpha() as f32 * color_transform.get_alpha_multiplier() as f32)
-                    + color_transform.get_alpha_offset() as f32) as u8;
-                let red = ((color.red() as f32 * color_transform.get_red_multiplier() as f32)
-                    + color_transform.get_red_offset() as f32) as u8;
-                let green = ((color.green() as f32 * color_transform.get_green_multiplier() as f32)
-                    + color_transform.get_green_offset() as f32) as u8;
-                let blue = ((color.blue() as f32 * color_transform.get_blue_multiplier() as f32)
-                    + color_transform.get_blue_offset() as f32) as u8;
+                let alpha = ((color.alpha() as f32 * color_transform.alpha_multiplier as f32)
+                    + color_transform.alpha_offset as f32) as u8;
+                let red = ((color.red() as f32 * color_transform.red_multiplier as f32)
+                    + color_transform.red_offset as f32) as u8;
+                let green = ((color.green() as f32 * color_transform.green_multiplier as f32)
+                    + color_transform.green_offset as f32) as u8;
+                let blue = ((color.blue() as f32 * color_transform.blue_multiplier as f32)
+                    + color_transform.blue_offset as f32) as u8;
 
                 self.set_pixel32_raw(
                     x,
