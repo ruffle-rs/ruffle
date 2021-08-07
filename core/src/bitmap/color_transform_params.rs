@@ -1,6 +1,6 @@
 use gc_arena::Collect;
 
-#[derive(Clone, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct ColorTransformParams {
     pub red_multiplier: f64,

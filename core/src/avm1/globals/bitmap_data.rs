@@ -583,10 +583,11 @@ pub fn color_transform<'gc>(
             let end_y = (y + height) as u32;
 
             if let Some(color_transform) = color_transform.as_color_transform_object() {
+                let params = color_transform.get_params();
                 bitmap_data
                     .bitmap_data()
                     .write(activation.context.gc_context)
-                    .color_transform(min_x, min_y, end_x, end_y, color_transform);
+                    .color_transform(min_x, min_y, end_x, end_y, &params);
             }
 
             return Ok(Value::Undefined);
