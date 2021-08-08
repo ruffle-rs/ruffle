@@ -112,6 +112,12 @@ main.addEventListener("drop", (event) => {
 });
 
 window.addEventListener("load", () => {
+    if (
+        navigator.userAgent.match(/iPad/i) ||
+        navigator.userAgent.match(/iPhone/i)
+    ) {
+        localFileInput.removeAttribute("accept");
+    }
     overlay.classList.remove("hidden");
 });
 
