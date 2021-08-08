@@ -138,6 +138,9 @@ pub struct Config {
     #[serde(rename = "upgradeToHttps")]
     upgrade_to_https: bool,
 
+    #[serde(rename = "base")]
+    base_url: Option<String>,
+
     #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
@@ -155,6 +158,7 @@ impl Default for Config {
             background_color: Default::default(),
             letterbox: Default::default(),
             upgrade_to_https: true,
+            base_url: None,
             warn_on_unsupported_content: true,
             log_level: log::Level::Error,
             max_execution_duration: Duration::from_secs(15),
@@ -457,6 +461,7 @@ impl Ruffle {
         let navigator = Box::new(navigator::WebNavigatorBackend::new(
             allow_script_access,
             config.upgrade_to_https,
+            config.base_url,
         ));
         let storage = match window.local_storage() {
             Ok(Some(s)) => {

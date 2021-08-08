@@ -112,6 +112,12 @@ export class RuffleObject extends RufflePlayer {
             this.getAttribute("bgcolor")
         );
 
+        const base = findCaseInsensitive(
+            this.params,
+            "base",
+            this.getAttribute("base")
+        );
+
         if (url) {
             const options: URLLoadOptions = { url };
             options.allowScriptAccess = isScriptAccessAllowed(
@@ -123,6 +129,9 @@ export class RuffleObject extends RufflePlayer {
             }
             if (backgroundColor) {
                 options.backgroundColor = backgroundColor;
+            }
+            if (base) {
+                options.base = base;
             }
 
             // Kick off the SWF download.

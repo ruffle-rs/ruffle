@@ -178,6 +178,14 @@ export interface BaseLoadOptions {
         secs: number;
         nanos: number;
     };
+
+    /**
+     * Specifies the base directory or URL used to resolve all relative path statements in the SWF file.
+     * null means the current directory.
+     *
+     * @default null
+     */
+    base?: string | null;
 }
 
 /**
