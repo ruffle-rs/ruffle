@@ -49,6 +49,7 @@ export class RuffleEmbed extends RufflePlayer {
                 ),
                 parameters: this.attributes.getNamedItem("flashvars")?.value,
                 backgroundColor: this.attributes.getNamedItem("bgcolor")?.value,
+                base: this.attributes.getNamedItem("base")?.value,
             });
         }
     }
@@ -105,7 +106,11 @@ export class RuffleEmbed extends RufflePlayer {
             }
             const src = this.attributes.getNamedItem("src");
             if (src) {
-                this.load({ url: src.value, parameters });
+                this.load({
+                    url: src.value,
+                    parameters,
+                    base: this.attributes.getNamedItem("base")?.value,
+                });
             }
         }
     }
