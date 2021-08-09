@@ -36,7 +36,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::StrictArray(values) => {
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
             for value in values {
-                arr.push(Some(deserialize_value(activation, &value)?));
+                arr.push(Some(deserialize_value(activation, value)?));
             }
             let storage = ArrayStorage::from_storage(arr);
             let array = ArrayObject::from_storage(activation, storage)?;
@@ -46,7 +46,7 @@ pub fn deserialize_value<'gc>(
             // First lets create an array out of `values` (dense portion), then we add the elements onto it.
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
             for value in values {
-                arr.push(Some(deserialize_value(activation, &value)?));
+                arr.push(Some(deserialize_value(activation, value)?));
             }
             let storage = ArrayStorage::from_storage(arr);
             let mut array = ArrayObject::from_storage(activation, storage)?;
