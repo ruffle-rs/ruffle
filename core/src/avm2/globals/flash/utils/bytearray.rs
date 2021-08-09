@@ -11,7 +11,7 @@ use crate::character::Character;
 use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
-use flash_lso::amf0::read::parse_single_element as parse_amf0;
+use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
@@ -829,14 +829,17 @@ pub fn read_object<'gc>(
             let bytes = bytearray.read_at(bytearray.bytes_available(), bytearray.position())?;
             let (bytes_left, value) = match bytearray.object_encoding() {
                 ObjectEncoding::Amf0 => {
-                    let (extra, amf) = parse_amf0(bytes).map_err(|_| "EOFError: Reached EOF")?;
+                    let mut decoder = AMF0Decoder::default();
+                    let (extra, amf) = decoder
+                        .parse_single_element(bytes)
+                        .map_err(|_| "Error: Invalid object")?;
                     (extra.len(), deserialize_value(activation, &amf)?)
                 }
                 ObjectEncoding::Amf3 => {
                     let mut decoder = AMF3Decoder::default();
                     let (extra, amf) = decoder
                         .parse_single_element(bytes)
-                        .map_err(|_| "EOFError: Reached EOF")?;
+                        .map_err(|_| "Error: Invalid object")?;
                     (extra.len(), deserialize_value(activation, &amf)?)
                 }
             };
