@@ -402,6 +402,14 @@ impl<'gc> Multiname<'gc> {
                 let mut base =
                     Self::resolve_multiname_params(translation_unit, base_multiname, activation)?;
 
+                if parameters.len() > 1 {
+                    return Err(format!(
+                        "VerifyError: Multiname has {} parameters, no more than 1 is allowed",
+                        parameters.len()
+                    )
+                    .into());
+                }
+
                 for param_type in parameters {
                     let param_multiname =
                         Self::from_abc_multiname(translation_unit, param_type.clone(), activation)?;
@@ -471,6 +479,14 @@ impl<'gc> Multiname<'gc> {
             } => {
                 let mut base =
                     Self::from_abc_multiname_static(translation_unit, base_type.clone(), mc)?;
+
+                if parameters.len() > 1 {
+                    return Err(format!(
+                        "VerifyError: Multiname has {} parameters, no more than 1 is allowed",
+                        parameters.len()
+                    )
+                    .into());
+                }
 
                 for param_type in parameters {
                     let param_multiname = if param_type.0 == 0 {
