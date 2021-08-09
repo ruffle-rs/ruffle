@@ -1698,6 +1698,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(num_types);
         let base = self.context.avm2.pop().coerce_to_object(self)?;
 
+        if args.len() > 1 {
+            return Err(format!(
+                "VerifyError: Cannot specialize classes with more than one parameter, {} given",
+                args.len()
+            )
+            .into());
+        }
+
         let applied = base.apply(self, &args[..])?;
         self.context.avm2.push(applied);
 
