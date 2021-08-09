@@ -84,7 +84,7 @@ impl ByteArrayStorage {
     /// Create a new ByteArrayStorage using an already existing vector
     pub fn from_vec(bytes: Vec<u8>) -> ByteArrayStorage {
         ByteArrayStorage {
-            bytes: bytes,
+            bytes,
             position: Cell::new(0),
             endian: Endian::Big,
             object_encoding: ObjectEncoding::Amf3,
