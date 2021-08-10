@@ -99,6 +99,13 @@ impl ByteArrayStorage {
         Ok(())
     }
 
+    #[inline]
+    pub fn write_bytes_within(&mut self, start: usize, amnt: usize) -> Result<(), Error> {
+        self.write_at_within(start, amnt, self.position.get())?;
+        self.position.set(self.position.get() + amnt);
+        Ok(())
+    }
+
     /// Reads any amount of bytes from the current position in the ByteArray
     #[inline]
     pub fn read_bytes(&self, amnt: usize) -> Result<&[u8], Error> {
@@ -129,8 +136,9 @@ impl ByteArrayStorage {
         // The storage is garunteed to be at least the size of new_len because we just resized it.
         unsafe {
             self.bytes
-                .get_unchecked_mut(offset..new_len)
-                .copy_from_slice(buf)
+                .as_mut_ptr()
+                .add(offset)
+                .copy_from_nonoverlapping(buf.as_ptr(), buf.len())
         }
         Ok(())
     }
@@ -138,11 +146,49 @@ impl ByteArrayStorage {
     /// Write bytes at any offset in the ByteArray
     /// Will return an error if the new buffer does not fit the ByteArray
     pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
-        self.bytes
-            .get_mut(offset..)
-            .and_then(|bytes| bytes.get_mut(..buf.len()))
-            .ok_or("RangeError: The specified range is invalid")?
-            .copy_from_slice(buf);
+        unsafe {
+            self.bytes
+                .get_mut(offset..)
+                .and_then(|bytes| bytes.get_mut(..buf.len()))
+                .ok_or("RangeError: The specified range is invalid")?
+                .as_mut_ptr()
+                // SAFETY: `buf` is garunteed to be the same length as the slice we are writing to.
+                .copy_from_nonoverlapping(buf.as_ptr(), buf.len());
+        }
+        Ok(())
+    }
+
+    /// Write bytes at any offset in the ByteArray from within the current ByteArray using a memmove.
+    /// Will automatically grow the ByteArray to fit the new buffer
+    pub fn write_at_within(
+        &mut self,
+        start: usize,
+        amnt: usize,
+        offset: usize,
+    ) -> Result<(), Error> {
+        // First verify that reading from `start` to `amnt` is valid
+        start
+            .checked_add(amnt)
+            .and_then(|result| (result <= self.len()).then(|| ()))
+            .ok_or("RangeError: Reached EOF")?;
+
+        // Second we resize our underlying buffer to ensure that writing `amnt` from `offset` is valid.
+        let new_len = offset
+            .checked_add(amnt)
+            .ok_or("RangeError: Cannot overflow usize")?;
+        if self.len() < new_len {
+            self.set_length(new_len);
+        }
+
+        unsafe {
+            let ptr = self.bytes.as_mut_ptr();
+            let src_ptr = ptr.add(start);
+            let dest_ptr = ptr.add(offset);
+            // SAFETY:
+            // 1. We validated that `start` is within the range of our underlying buffer up until `amnt`, so it is safe to read from `start` to `amnt`.
+            // 2. We are garunteed to have enough room in our underlying buffer for `amnt`, because we just resized it.
+            std::ptr::copy(src_ptr, dest_ptr, amnt);
+        }
         Ok(())
     }
 

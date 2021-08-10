@@ -170,14 +170,14 @@ pub fn write_bytes<'gc>(
             .get(2)
             .unwrap_or(&Value::Unsigned(0))
             .coerce_to_u32(activation)? as usize;
+        if !Object::ptr_eq(this, bytearray) {
+            // The ByteArray we are reading from is different than the ByteArray we are writing to,
+            // so we are allowed to borrow both at the same time without worrying about a panic
 
-        let ba_read = bytearray
-            .as_bytearray()
-            .ok_or("ArgumentError: Parameter must be a bytearray")?;
-        // We need to clone the bytes that we are going to be writing because the ByteArray we are reading from
-        // could be the same ByteArray we are writing to
-        let to_write = ba_read
-            .read_at(
+            let ba_read = bytearray
+                .as_bytearray()
+                .ok_or("ArgumentError: Parameter must be a bytearray")?;
+            let to_write = ba_read.read_at(
                 // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
                 if length != 0 {
                     length
@@ -185,13 +185,22 @@ pub fn write_bytes<'gc>(
                     ba_read.len().saturating_sub(offset)
                 },
                 offset,
-            )
-            .map(|bytes| bytes.to_vec())?;
+            )?;
 
-        // Drop our bytearray ref so that writing to the given ByteArray will never panic
-        drop(ba_read);
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            bytearray.write_bytes(&*to_write)?;
+            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+                bytearray.write_bytes(to_write)?;
+            }
+        } else {
+            // The ByteArray we are reading from is the same as the ByteArray we are writing to,
+            // so we only need to borrow once, and we can use `write_bytes_within` to write bytes from our own ByteArray
+            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+                let amnt = if length != 0 {
+                    length
+                } else {
+                    bytearray.len().saturating_sub(offset)
+                };
+                bytearray.write_bytes_within(offset, amnt)?;
+            }
         }
     }
 
@@ -205,6 +214,10 @@ pub fn read_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        let bytearray = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?;
         let offset = args
             .get(1)
             .unwrap_or(&Value::Unsigned(0))
@@ -214,32 +227,33 @@ pub fn read_bytes<'gc>(
             .unwrap_or(&Value::Unsigned(0))
             .coerce_to_u32(activation)? as usize;
 
-        if let Some(bytearray) = this.as_bytearray() {
-            // We need to clone the bytes that we are going to be writing because the ByteArray we are reading from
-            // could be the same ByteArray we are writing to
-            let to_write = bytearray
-                .read_bytes(
+        if !Object::ptr_eq(this, bytearray) {
+            if let Some(bytearray_read) = this.as_bytearray() {
+                let to_write = bytearray_read.read_bytes(
                     // If length is 0, lets read the remaining bytes of ByteArray
                     if length != 0 {
                         length
                     } else {
-                        bytearray.bytes_available()
+                        bytearray_read.bytes_available()
                     },
-                )
-                .map(|bytes| bytes.to_vec())?;
+                )?;
 
-            // Drop our bytearray ref so that writing to the given ByteArray will never panic
-            drop(bytearray);
+                let mut ba_write = bytearray
+                    .as_bytearray_mut(activation.context.gc_context)
+                    .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
-            let bytearray = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation)?;
-            let mut ba_write = bytearray
-                .as_bytearray_mut(activation.context.gc_context)
-                .ok_or("ArgumentError: Parameter must be a bytearray")?;
-
-            ba_write.write_at(&*to_write, offset)?;
+                ba_write.write_at(to_write, offset)?;
+            }
+        } else {
+            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+                let amnt = if length != 0 {
+                    length
+                } else {
+                    bytearray.bytes_available()
+                };
+                let pos = bytearray.position();
+                bytearray.write_at_within(pos, amnt, offset)?;
+            }
         }
     }
     Ok(Value::Undefined)
