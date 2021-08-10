@@ -190,17 +190,15 @@ pub fn write_bytes<'gc>(
             if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
                 bytearray.write_bytes(to_write)?;
             }
-        } else {
+        } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             // The ByteArray we are reading from is the same as the ByteArray we are writing to,
             // so we only need to borrow once, and we can use `write_bytes_within` to write bytes from our own ByteArray
-            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-                let amnt = if length != 0 {
-                    length
-                } else {
-                    bytearray.len().saturating_sub(offset)
-                };
-                bytearray.write_bytes_within(offset, amnt)?;
-            }
+            let amnt = if length != 0 {
+                length
+            } else {
+                bytearray.len().saturating_sub(offset)
+            };
+            bytearray.write_bytes_within(offset, amnt)?;
         }
     }
 
@@ -244,16 +242,14 @@ pub fn read_bytes<'gc>(
 
                 ba_write.write_at(to_write, offset)?;
             }
-        } else {
-            if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-                let amnt = if length != 0 {
-                    length
-                } else {
-                    bytearray.bytes_available()
-                };
-                let pos = bytearray.position();
-                bytearray.write_at_within(pos, amnt, offset)?;
-            }
+        } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+            let amnt = if length != 0 {
+                length
+            } else {
+                bytearray.bytes_available()
+            };
+            let pos = bytearray.position();
+            bytearray.write_at_within(pos, amnt, offset)?;
         }
     }
     Ok(Value::Undefined)
