@@ -239,10 +239,6 @@ pub fn read_bytes<'gc>(
                 .as_bytearray_mut(activation.context.gc_context)
                 .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
-            // Weird undocumented behavior: If offset is greater than the length of the ByteArray we are writing to, we do nothing.
-            if offset > ba_write.len() {
-                return Ok(Value::Undefined);
-            }
             ba_write.write_at(&*to_write, offset)?;
         }
     }
