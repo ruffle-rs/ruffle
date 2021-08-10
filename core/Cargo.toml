@@ -37,7 +37,7 @@ rand = { version = "0.8.4", features = ["std", "small_rng"], default-features = 
 serde = { version = "1.0.127", features = ["derive"], optional = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
 regress = "0.4"
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "e39a8abc897289696672858e30bbc9e43b1c98ac" }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "19fecd07b9888c4bdaa66771c468095783b52bed" }
 json = "0.12.4"
 lzma-rs = {version = "0.2.0", optional = true }
 
