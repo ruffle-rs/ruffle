@@ -126,6 +126,17 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        if matches!(args.get(0).unwrap_or(&Value::Undefined), Value::Undefined) {
+            log::warn!("string.split(undefined) - not implemented");
+        }
+        if let Some(_) = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation)?
+            .as_regexp()
+        {
+            log::warn!("string.split(regex) - not implemented");
+        }
         let this = Value::from(this).coerce_to_string(activation)?;
         let delimiter = args
             .get(0)

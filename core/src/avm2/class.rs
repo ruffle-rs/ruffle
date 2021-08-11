@@ -462,7 +462,7 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
-    pub fn define_public_builtin_class_traits(
+    pub fn define_public_builtin_class_properties(
         &mut self,
         mc: MutationContext<'gc, '_>,
         items: &[(

@@ -74,7 +74,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("version", Some(version), None),
     ];
 
-    write.define_public_builtin_class_traits(mc, PUBLIC_CLASS_TRAITS);
+    write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_TRAITS);
 
     class
 }
