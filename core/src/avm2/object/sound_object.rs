@@ -103,4 +103,11 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
     fn as_sound(self) -> Option<SoundHandle> {
         self.0.read().sound
     }
+
+    /// Associate the object with a particular sound handle.
+    ///
+    /// This does nothing if the object is not a sound.
+    fn set_sound(self, mc: MutationContext<'gc, '_>, sound: SoundHandle) {
+        self.0.write(mc).sound = Some(sound);
+    }
 }

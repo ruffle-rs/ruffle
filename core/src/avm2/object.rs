@@ -1221,6 +1221,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_sound(self) -> Option<SoundHandle> {
         None
     }
+
+    /// Associate the object with a particular sound handle.
+    ///
+    /// This does nothing if the object is not a sound.
+    fn set_sound(self, _mc: MutationContext<'gc, '_>, _sound: SoundHandle) {}
 }
 
 pub enum ObjectPtr {}
