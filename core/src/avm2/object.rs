@@ -15,6 +15,7 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::backend::audio::SoundHandle;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -35,6 +36,7 @@ mod namespace_object;
 mod primitive_object;
 mod regexp_object;
 mod script_object;
+mod sound_object;
 mod stage_object;
 mod vector_object;
 mod xml_object;
@@ -53,6 +55,7 @@ pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceOb
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
+pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
@@ -79,6 +82,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         LoaderInfoObject(LoaderInfoObject<'gc>),
         ClassObject(ClassObject<'gc>),
         VectorObject(VectorObject<'gc>),
+        SoundObject(SoundObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1210,6 +1214,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object's loader stream
     fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object's sound handle.
+    fn as_sound(self) -> Option<SoundHandle> {
         None
     }
 }
