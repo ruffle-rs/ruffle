@@ -615,6 +615,7 @@ impl<'gc> MovieClip<'gc> {
                             }
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
+                            Some(Character::Sound(_)) => {}
                             _ => {
                                 log::warn!(
                                     "Symbol class {} cannot be assigned to invalid character id {}",
