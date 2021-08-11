@@ -68,13 +68,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("os", os),
-        ("playerType", player_type),
-        ("version", version),
+    const PUBLIC_CLASS_TRAITS: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] = &[
+        ("os", Some(os), None),
+        ("playerType", Some(player_type), None),
+        ("version", Some(version), None),
     ];
 
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_public_builtin_class_traits(mc, PUBLIC_CLASS_TRAITS);
 
     class
 }

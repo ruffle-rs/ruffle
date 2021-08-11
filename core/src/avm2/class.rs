@@ -462,6 +462,31 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
+    pub fn define_public_builtin_class_traits(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        items: &[(
+            &'static str,
+            Option<NativeMethodImpl>,
+            Option<NativeMethodImpl>,
+        )],
+    ) {
+        for &(name, getter, setter) in items {
+            if let Some(getter) = getter {
+                self.define_class_trait(Trait::from_getter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(getter, name, mc),
+                ));
+            }
+            if let Some(setter) = setter {
+                self.define_class_trait(Trait::from_setter(
+                    QName::new(Namespace::public(), name),
+                    Method::from_builtin(setter, name, mc),
+                ));
+            }
+        }
+    }
+    #[inline(never)]
     pub fn define_public_builtin_instance_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,
