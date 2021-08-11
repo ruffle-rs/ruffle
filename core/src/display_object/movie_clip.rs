@@ -12,6 +12,7 @@ use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
+use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -465,6 +466,10 @@ impl<'gc> MovieClip<'gc> {
                     tag_len,
                 )
             }
+            TagCode::DefineBinaryData => self
+                .0
+                .write(context.gc_context)
+                .define_binary_data(context, reader),
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
@@ -602,14 +607,21 @@ impl<'gc> MovieClip<'gc> {
                         if id == 0 {
                             //TODO: This assumes only the root movie has `SymbolClass` tags.
                             self.set_avm2_class(activation.context.gc_context, Some(class_object));
-                        } else if let Some(Character::MovieClip(mc)) = library.character_by_id(id) {
-                            mc.set_avm2_class(activation.context.gc_context, Some(class_object));
                         } else {
-                            log::warn!(
-                                "Symbol class {} cannot be assigned to invalid character id {}",
-                                class_name,
-                                id
-                            );
+                            match library.character_by_id(id) {
+                                Some(Character::MovieClip(mc)) => mc.set_avm2_class(
+                                    activation.context.gc_context,
+                                    Some(class_object),
+                                ),
+                                Some(Character::BinaryData(_)) => {}
+                                _ => {
+                                    log::warn!(
+                                        "Symbol class {} cannot be assigned to invalid character id {}",
+                                        class_name,
+                                        id
+                                    );
+                                }
+                            }
                         }
                     }
                     Err(e) => log::warn!(
@@ -2983,6 +2995,21 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .register_character(text.id, Character::Text(text_object));
+        Ok(())
+    }
+
+    #[inline]
+    fn define_binary_data(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<'a>,
+    ) -> DecodeResult {
+        let tag_data = reader.read_define_binary_data()?;
+        let binary_data = BinaryData::from_swf_tag(self.movie(), &tag_data);
+        context
+            .library
+            .library_for_movie_mut(self.movie())
+            .register_character(tag_data.id, Character::BinaryData(binary_data));
         Ok(())
     }
 

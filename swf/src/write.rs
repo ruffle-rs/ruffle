@@ -499,12 +499,7 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0)?; // Reserved (0).
             }
 
-            Tag::DefineBinaryData { id, data } => {
-                self.write_tag_header(TagCode::DefineBinaryData, data.len() as u32 + 6)?;
-                self.write_u16(id)?;
-                self.write_u32(0)?; // Reserved
-                self.output.write_all(data)?;
-            }
+            Tag::DefineBinaryData(ref binary_data) => self.write_define_binary_data(binary_data)?,
 
             Tag::DefineBits { id, jpeg_data } => {
                 self.write_tag_header(TagCode::DefineBits, jpeg_data.len() as u32 + 2)?;
@@ -2281,6 +2276,14 @@ impl<W: Write> Writer<W> {
             self.write_u8(kerning.right_code as u8)?;
         }
         self.write_i16(kerning.adjustment.get() as i16)?; // TODO(Herschel): Handle overflow
+        Ok(())
+    }
+
+    fn write_define_binary_data(&mut self, binary_data: &DefineBinaryData) -> Result<()> {
+        self.write_tag_header(TagCode::DefineBinaryData, binary_data.data.len() as u32 + 6)?;
+        self.write_u16(binary_data.id)?;
+        self.write_u32(0)?; // Reserved
+        self.output.write_all(binary_data.data)?;
         Ok(())
     }
 

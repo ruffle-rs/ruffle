@@ -786,10 +786,7 @@ pub enum Tag<'a> {
     Protect(Option<&'a SwfStr>),
     CsmTextSettings(CsmTextSettings),
     DebugId(DebugId),
-    DefineBinaryData {
-        id: CharacterId,
-        data: &'a [u8],
-    },
+    DefineBinaryData(DefineBinaryData<'a>),
     DefineBits {
         id: CharacterId,
         jpeg_data: &'a [u8],
@@ -1299,6 +1296,12 @@ pub struct FontInfo<'a> {
     pub is_italic: bool,
     pub language: Language,
     pub code_table: Vec<u16>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefineBinaryData<'a> {
+    pub id: CharacterId,
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq)]
