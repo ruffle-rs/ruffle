@@ -363,10 +363,7 @@ impl<'a> Reader<'a> {
             TagCode::ShowFrame => Tag::ShowFrame,
             TagCode::CsmTextSettings => Tag::CsmTextSettings(tag_reader.read_csm_text_settings()?),
             TagCode::DefineBinaryData => {
-                let id = tag_reader.read_u16()?;
-                tag_reader.read_u32()?; // Reserved
-                let data = tag_reader.read_slice_to_end();
-                Tag::DefineBinaryData { id, data }
+                Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
             TagCode::DefineBits => {
                 let id = tag_reader.read_u16()?;
@@ -2340,6 +2337,13 @@ impl<'a> Reader<'a> {
             id: self.read_u16()?,
             sound_info: Box::new(self.read_sound_info()?),
         })
+    }
+
+    pub fn read_define_binary_data(&mut self) -> Result<DefineBinaryData<'a>> {
+        let id = self.read_u16()?;
+        self.read_u32()?; // Reserved
+        let data = self.read_slice_to_end();
+        Ok(DefineBinaryData { id, data })
     }
 
     pub fn read_define_text(&mut self, version: u8) -> Result<Text> {

@@ -1,4 +1,5 @@
 use crate::backend::audio::SoundHandle;
+use crate::binary_data::BinaryData;
 use crate::display_object::{
     Avm1Button, Avm2Button, Bitmap, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
@@ -19,4 +20,5 @@ pub enum Character<'gc> {
     Text(Text<'gc>),
     Sound(#[collect(require_static)] SoundHandle),
     Video(Video<'gc>),
+    BinaryData(BinaryData),
 }

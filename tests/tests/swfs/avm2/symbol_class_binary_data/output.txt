@@ -1,0 +1,8 @@
+ByteArray = 
+TestArrayContent
+ByteArray Position = 
+0
+ByteArray2 = 
+TestArray2Content
+ByteArray2 Position = 
+0
