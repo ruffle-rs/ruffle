@@ -10,10 +10,8 @@ pub struct AdpcmDecoder<R: Read> {
     sample_num: u16,
     left_sample: i16,
     left_step_index: i16,
-    left_step: u16,
     right_sample: i16,
     right_step_index: i16,
-    right_step: u16,
     decoder: fn(u16, i32) -> u16,
 }
 
@@ -102,10 +100,8 @@ impl<R: Read> AdpcmDecoder<R> {
             bits_per_sample,
             sample_num: 0,
             left_sample: 0,
-            left_step: 0,
             left_step_index: 0,
             right_sample: 0,
-            right_step: 0,
             right_step_index: 0,
             decoder: Self::SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2],
         }
@@ -116,25 +112,23 @@ impl<R: Read> AdpcmDecoder<R> {
             // The initial sample values are NOT byte-aligned.
             self.left_sample = self.inner.read_signed(16)?;
             self.left_step_index = self.inner.read::<u16>(6)? as i16;
-            self.left_step = Self::STEP_TABLE[self.left_step_index as usize];
             if self.is_stereo {
                 self.right_sample = self.inner.read_signed(16)?;
                 self.right_step_index = self.inner.read::<u16>(6)? as i16;
-                self.right_step = Self::STEP_TABLE[self.right_step_index as usize];
             }
         }
 
         self.sample_num = (self.sample_num + 1) % 4095;
 
         let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
-        self.left_step = Self::STEP_TABLE[self.left_step_index as usize];
+        let left_step = Self::STEP_TABLE[self.left_step_index as usize];
 
         // (data + 0.5) * step / 2^(bits_per_sample - 2)
         // Data is sign-magnitude, NOT two's complement.
         // TODO(Herschel): Other implementations use some bit-tricks for this.
         let sign_mask = 1 << (self.bits_per_sample - 1);
         let magnitude = data & !sign_mask;
-        let delta = (self.decoder)(self.left_step, magnitude);
+        let delta = (self.decoder)(left_step, magnitude);
 
         self.left_sample = if (data & sign_mask) != 0 {
             (self.left_sample as i32 - delta as i32).max(i16::MIN.into())
@@ -151,11 +145,11 @@ impl<R: Read> AdpcmDecoder<R> {
 
         if self.is_stereo {
             let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
-            self.right_step = Self::STEP_TABLE[self.right_step_index as usize];
+            let right_step = Self::STEP_TABLE[self.right_step_index as usize];
 
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
-            let delta = (self.decoder)(self.right_step, magnitude);
+            let delta = (self.decoder)(right_step, magnitude);
 
             self.right_sample = if (data & sign_mask) != 0 {
                 (self.right_sample as i32 - delta as i32).max(i16::MIN.into())
