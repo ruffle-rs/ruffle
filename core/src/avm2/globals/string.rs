@@ -129,11 +129,12 @@ fn split<'gc>(
         if matches!(args.get(0).unwrap_or(&Value::Undefined), Value::Undefined) {
             log::warn!("string.split(undefined) - not implemented");
         }
-        if let Some(_) = args
+        if args
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?
             .as_regexp()
+            .is_some()
         {
             log::warn!("string.split(regex) - not implemented");
         }
