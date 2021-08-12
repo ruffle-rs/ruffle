@@ -456,7 +456,10 @@ impl<W: Write> Writer<W> {
             bits.write_fbits(num_bits, m.c)?;
         }
         // Translate (always written)
-        let num_bits = max(count_sbits_twips(m.tx), count_sbits_twips(m.ty));
+        let num_bits = max(
+            count_sbits_twips_no_zero(m.tx),
+            count_sbits_twips_no_zero(m.ty),
+        );
         bits.write_ubits(5, num_bits)?;
         bits.write_sbits_twips(num_bits, m.tx)?;
         bits.write_sbits_twips(num_bits, m.ty)?;
@@ -1001,25 +1004,31 @@ impl<W: Write> Writer<W> {
                 }
                 writer_2.write_u8(0)?; // End button records
             }
-            writer.write_u16(record_data.len() as u16 + 2)?;
+            if button.actions.is_empty() {
+                writer.write_u16(0)?;
+            } else {
+                writer.write_u16(record_data.len() as u16 + 2)?;
+            }
             writer.output.write_all(&record_data)?;
 
-            let mut iter = button.actions.iter().peekable();
-            while let Some(action) = iter.next() {
-                if iter.peek().is_some() {
-                    let length = action.action_data.len() as u16 + 4;
-                    writer.write_u16(length)?;
-                } else {
-                    writer.write_u16(0)?;
-                }
-                let mut flags = action.conditions.bits();
-                if action.conditions.contains(ButtonActionCondition::KEY_PRESS) {
-                    if let Some(key_code) = action.key_code {
-                        flags |= (key_code as u16) << 9;
+            if !button.actions.is_empty() {
+                let mut iter = button.actions.iter().peekable();
+                while let Some(action) = iter.next() {
+                    if iter.peek().is_some() {
+                        let length = action.action_data.len() as u16 + 4;
+                        writer.write_u16(length)?;
+                    } else {
+                        writer.write_u16(0)?;
                     }
+                    let mut flags = action.conditions.bits();
+                    if action.conditions.contains(ButtonActionCondition::KEY_PRESS) {
+                        if let Some(key_code) = action.key_code {
+                            flags |= (key_code as u16) << 9;
+                        }
+                    }
+                    writer.write_u16(flags)?;
+                    writer.output.write_all(action.action_data)?;
                 }
-                writer.write_u16(flags)?;
-                writer.output.write_all(action.action_data)?;
             }
         }
         self.write_tag_header(TagCode::DefineButton2, buf.len() as u32)?;
@@ -1454,10 +1463,13 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_shape_styles(&mut self, styles: &ShapeStyles, shape_version: u8) -> Result<(u8, u8)> {
-        // TODO: Check shape_version.
-        if styles.fill_styles.len() >= 0xff {
-            self.write_u8(0xff)?;
-            self.write_u16(styles.fill_styles.len() as u16)?;
+        if shape_version >= 2 {
+            if styles.fill_styles.len() >= 0xff {
+                self.write_u8(0xff)?;
+                self.write_u16(styles.fill_styles.len() as u16)?;
+            } else {
+                self.write_u8(styles.fill_styles.len() as u8)?;
+            }
         } else {
             self.write_u8(styles.fill_styles.len() as u8)?;
         }
@@ -1539,7 +1551,10 @@ impl<W: Write> Writer<W> {
                 bits.write_bit(style_change.fill_style_0.is_some())?;
                 bits.write_bit(style_change.move_to.is_some())?;
                 if let Some((move_x, move_y)) = style_change.move_to {
-                    let num_bits = max(count_sbits_twips(move_x), count_sbits_twips(move_y));
+                    let num_bits = max(
+                        count_sbits_twips_no_zero(move_x),
+                        count_sbits_twips_no_zero(move_y),
+                    );
                     bits.write_ubits(5, num_bits)?;
                     bits.write_sbits_twips(num_bits, move_x)?;
                     bits.write_sbits_twips(num_bits, move_y)?;
@@ -1645,6 +1660,7 @@ impl<W: Write> Writer<W> {
             bits.write_ubits(5, 0)?;
             bits.write_bit(!line_style.allow_close)?;
             bits.write_ubits(2, line_style.end_cap as u32)?;
+            bits.flush()?;
             drop(bits);
             if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
                 self.write_fixed8(miter_factor)?;
@@ -1653,7 +1669,7 @@ impl<W: Write> Writer<W> {
                 None => self.write_rgba(&line_style.color)?,
                 Some(ref fill) => self.write_fill_style(fill, shape_version)?,
             }
-        } else if shape_version >= 3 {
+        } else if shape_version == 3 {
             // LineStyle1 with RGBA
             self.write_rgba(&line_style.color)?;
         } else {
@@ -2136,7 +2152,7 @@ impl<W: Write> Writer<W> {
             let mut has_wide_offsets = false;
             let has_wide_codes = !font.is_ansi;
             let mut shape_buf = Vec::new();
-            {
+            if font.version == 2 {
                 let mut shape_writer = Writer::new(&mut shape_buf, self.version);
 
                 // ShapeTable
@@ -2148,11 +2164,8 @@ impl<W: Write> Writer<W> {
                 };
                 for glyph in &font.glyphs {
                     // Store offset for later.
-                    let offset = num_glyphs * 4 + shape_writer.output.len();
+                    let offset = (num_glyphs + 1) * 4 + shape_writer.output.len();
                     offsets.push(offset);
-                    if offset > 0xFFFF {
-                        has_wide_offsets = true;
-                    }
 
                     shape_writer.write_u8(0b0001_0000)?;
                     let mut bits = shape_writer.bits();
@@ -2162,7 +2175,7 @@ impl<W: Write> Writer<W> {
                     // End shape record.
                     bits.write_ubits(6, 0)?;
                 }
-            }
+            };
 
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(font.id)?;
@@ -2171,7 +2184,7 @@ impl<W: Write> Writer<W> {
                     | if font.is_shift_jis { 0b1000000 } else { 0 }
                     | if font.is_small_text { 0b100000 } else { 0 }
                     | if font.is_ansi { 0b10000 } else { 0 }
-                    | if has_wide_offsets { 0b1000 } else { 0 }
+                    | 0b1000
                     | if has_wide_codes { 0b100 } else { 0 }
                     | if font.is_italic { 0b10 } else { 0 }
                     | if font.is_bold { 0b1 } else { 0 },
@@ -2183,23 +2196,40 @@ impl<W: Write> Writer<W> {
 
             // If there are no glyphs, then the following tables are omitted.
             if num_glyphs > 0 {
-                // OffsetTable
-                for offset in offsets {
-                    if has_wide_offsets {
-                        writer.write_u32(offset as u32)?;
-                    } else {
-                        writer.write_u16(offset as u16)?;
+                if font.version == 3 {
+                    let mut shape_writer = Writer::new(&mut shape_buf, self.version);
+
+                    // ShapeTable
+                    let mut shape_context = ShapeContext {
+                        swf_version: self.version,
+                        shape_version: 1,
+                        num_fill_bits: 1,
+                        num_line_bits: 0,
+                    };
+                    for glyph in &font.glyphs {
+                        // Store offset for later.
+                        let offset = (num_glyphs + 1) * 4 + shape_writer.output.len();
+                        offsets.push(offset);
+
+                        shape_writer.write_u8(0b0001_0000)?;
+                        let mut bits = shape_writer.bits();
+                        for shape_record in &glyph.shape_records {
+                            Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
+                        }
+                        // End shape record.
+                        bits.write_ubits(6, 0)?;
                     }
                 }
+            }
 
+            for offset in offsets {
+                writer.write_u32(offset as u32)?;
+            }
+
+            if num_glyphs > 0 {
                 // CodeTableOffset
-                let code_table_offset =
-                    (num_glyphs + 1) * if has_wide_offsets { 4 } else { 2 } + shape_buf.len();
-                if has_wide_offsets {
-                    writer.write_u32(code_table_offset as u32)?;
-                } else {
-                    writer.write_u16(code_table_offset as u16)?;
-                }
+                let code_table_offset = (num_glyphs + 1) * 4 + shape_buf.len();
+                writer.write_u32(code_table_offset as u32)?;
 
                 writer.output.write_all(&shape_buf)?;
 
@@ -2317,7 +2347,11 @@ impl<W: Write> Writer<W> {
                     writer.write_character_id(id)?;
                 }
                 if let Some(ref color) = record.color {
-                    writer.write_rgb(color)?;
+                    if text.version == 1 {
+                        writer.write_rgb(color)?;
+                    } else {
+                        writer.write_rgba(color)?;
+                    }
                 }
                 if let Some(x) = record.x_offset {
                     writer.write_i16(x.get() as i16)?; // TODO(Herschel): Handle overflow.
@@ -2337,7 +2371,14 @@ impl<W: Write> Writer<W> {
             }
             writer.write_u8(0)?; // End of text records.
         }
-        self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        self.write_tag_header(
+            match text.version {
+                1 => TagCode::DefineText,
+                2 => TagCode::DefineText2,
+                _ => return Err(Error::invalid_data("Invalid text version")),
+            },
+            buf.len() as u32,
+        )?;
         self.output.write_all(&buf)?;
         Ok(())
     }
@@ -2458,13 +2499,26 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_tag_header(&mut self, tag_code: TagCode, length: u32) -> Result<()> {
-        self.write_tag_code_and_length(tag_code as u16, length)
+        match tag_code {
+            TagCode::PlaceObject
+            | TagCode::PlaceObject3
+            | TagCode::PlaceObject4
+            | TagCode::DefineSprite
+            | TagCode::FrameLabel
+            | TagCode::DefineShape
+            | TagCode::DefineShape2
+            | TagCode::DefineShape3
+            | TagCode::DefineShape4 => {
+                self.write_tag_code_and_length_force_long(tag_code as u16, length)
+            }
+            _ => self.write_tag_code_and_length(tag_code as u16, length),
+        }
     }
 
     fn write_tag_code_and_length(&mut self, tag_code: u16, length: u32) -> Result<()> {
         // TODO: Test for tag code/length overflow.
         let mut tag_code_and_length = tag_code << 6;
-        if length < 0b111111 {
+        if length <= 62 {
             tag_code_and_length |= length as u16;
             self.write_u16(tag_code_and_length)?;
         } else {
@@ -2472,6 +2526,15 @@ impl<W: Write> Writer<W> {
             self.write_u16(tag_code_and_length)?;
             self.write_u32(length)?;
         }
+        Ok(())
+    }
+
+    fn write_tag_code_and_length_force_long(&mut self, tag_code: u16, length: u32) -> Result<()> {
+        // TODO: Test for tag code/length overflow.
+        let mut tag_code_and_length = tag_code << 6;
+        tag_code_and_length |= 0b111111;
+        self.write_u16(tag_code_and_length)?;
+        self.write_u32(length)?;
         Ok(())
     }
 
@@ -2498,30 +2561,25 @@ fn count_ubits(mut n: u32) -> u32 {
 fn count_sbits(n: i32) -> u32 {
     if n == 0 {
         0
-    } else if n == -1 {
-        1
     } else if n < 0 {
-        count_ubits((!n) as u32) + 1
+        count_ubits((-n) as u32) + 1
     } else {
         count_ubits(n as u32) + 1
     }
 }
 
 fn count_sbits_twips(n: Twips) -> u32 {
-    let n = n.get();
-    if n == 0 {
-        0
-    } else if n == -1 {
-        1
-    } else if n < 0 {
-        count_ubits((!n) as u32) + 1
-    } else {
-        count_ubits(n as u32) + 1
+    if n.get() == 0 {
+        return 1;
     }
+    count_sbits(n.get())
+}
+fn count_sbits_twips_no_zero(n: Twips) -> u32 {
+    count_sbits(n.get())
 }
 
 fn count_fbits(n: Fixed16) -> u32 {
-    count_sbits(n.get() as i32)
+    count_sbits(n.get())
 }
 
 #[cfg(test)]
@@ -2695,7 +2753,7 @@ mod tests {
 
     #[test]
     fn count_sbits() {
-        assert_eq!(super::count_sbits(0), 0);
+        assert_eq!(super::count_sbits(0), 1);
         assert_eq!(super::count_sbits(1), 2);
         assert_eq!(super::count_sbits(2), 3);
         assert_eq!(super::count_sbits(0b_00111101_00000000), 15);

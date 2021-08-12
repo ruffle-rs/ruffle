@@ -1307,6 +1307,7 @@ pub struct Text {
     pub bounds: Rectangle,
     pub matrix: Matrix,
     pub records: Vec<TextRecord>,
+    pub version: u8,
 }
 
 #[derive(Clone, Debug, PartialEq)]

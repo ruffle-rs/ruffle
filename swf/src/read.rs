@@ -2359,6 +2359,7 @@ impl<'a> Reader<'a> {
             bounds,
             matrix,
             records,
+            version,
         })
     }
 
