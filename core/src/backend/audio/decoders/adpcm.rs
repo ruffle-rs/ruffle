@@ -2,16 +2,18 @@ use super::{Decoder, SeekableDecoder};
 use bitstream_io::{BigEndian, BitRead, BitReader};
 use std::io::{Cursor, Read};
 
+#[derive(Clone, Default)]
+struct Channel {
+    sample: i16,
+    step_index: i16,
+}
+
 pub struct AdpcmDecoder<R: Read> {
     inner: BitReader<R, BigEndian>,
     sample_rate: u16,
-    is_stereo: bool,
     bits_per_sample: usize,
     sample_num: u16,
-    left_sample: i16,
-    left_step_index: i16,
-    right_sample: i16,
-    right_step_index: i16,
+    channels: Vec<Channel>,
     decoder: fn(u16, i32) -> u16,
 }
 
@@ -93,16 +95,14 @@ impl<R: Read> AdpcmDecoder<R> {
         }) as usize
             + 2;
 
+        let num_channels = if is_stereo { 2 } else { 1 };
+
         Self {
             inner: reader,
             sample_rate,
-            is_stereo,
             bits_per_sample,
             sample_num: 0,
-            left_sample: 0,
-            left_step_index: 0,
-            right_sample: 0,
-            right_step_index: 0,
+            channels: vec![Default::default(); num_channels],
             decoder: Self::SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2],
         }
     }
@@ -114,76 +114,45 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
-            self.left_sample = self.inner.read_signed(16).ok()?;
-            self.left_step_index = self.inner.read::<u16>(6).ok()? as i16;
-            if self.is_stereo {
-                self.right_sample = self.inner.read_signed(16).ok()?;
-                self.right_step_index = self.inner.read::<u16>(6).ok()? as i16;
+            for channel in &mut self.channels {
+                channel.sample = self.inner.read_signed(16).ok()?;
+                channel.step_index = self.inner.read::<u16>(6).ok()? as i16;
             }
         }
 
         self.sample_num = (self.sample_num + 1) % 4095;
 
-        let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()? as i32;
-        let left_step = Self::STEP_TABLE[self.left_step_index as usize];
-
-        // (data + 0.5) * step / 2^(bits_per_sample - 2)
-        // Data is sign-magnitude, NOT two's complement.
-        // TODO(Herschel): Other implementations use some bit-tricks for this.
-        let sign_mask = 1 << (self.bits_per_sample - 1);
-        let magnitude = data & !sign_mask;
-        let delta = (self.decoder)(left_step, magnitude);
-
-        self.left_sample = if (data & sign_mask) != 0 {
-            (self.left_sample as i32 - delta as i32).max(i16::MIN.into())
-        } else {
-            (self.left_sample as i32 + delta as i32).min(i16::MAX.into())
-        } as i16;
-
-        self.left_step_index += Self::INDEX_TABLE[self.bits_per_sample - 2][magnitude as usize];
-        if self.left_step_index < 0 {
-            self.left_step_index = 0;
-        } else if self.left_step_index >= Self::STEP_TABLE.len() as i16 {
-            self.left_step_index = Self::STEP_TABLE.len() as i16 - 1;
-        }
-
-        if self.is_stereo {
+        for channel in &mut self.channels {
             let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()? as i32;
-            let right_step = Self::STEP_TABLE[self.right_step_index as usize];
+            let step = Self::STEP_TABLE[channel.step_index as usize];
 
+            // (data + 0.5) * step / 2^(bits_per_sample - 2)
+            // `data` is sign-magnitude, NOT two's complement.
+            // TODO(Herschel): Other implementations use some bit-tricks for this.
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
-            let delta = (self.decoder)(right_step, magnitude);
+            let delta = (self.decoder)(step, magnitude);
 
-            self.right_sample = if (data & sign_mask) != 0 {
-                (self.right_sample as i32 - delta as i32).max(i16::MIN.into())
+            channel.sample = if (data & sign_mask) != 0 {
+                (channel.sample as i32 - delta as i32).max(i16::MIN.into())
             } else {
-                (self.right_sample as i32 + delta as i32).min(i16::MAX.into())
+                (channel.sample as i32 + delta as i32).min(i16::MAX.into())
             } as i16;
 
-            self.right_step_index +=
-                Self::INDEX_TABLE[self.bits_per_sample - 2][magnitude as usize];
-            if self.right_step_index < 0 {
-                self.right_step_index = 0;
-            } else if self.right_step_index >= Self::STEP_TABLE.len() as i16 {
-                self.right_step_index = Self::STEP_TABLE.len() as i16 - 1;
-            }
-
-            Some([self.left_sample, self.right_sample])
-        } else {
-            Some([self.left_sample, self.left_sample])
+            channel.step_index += Self::INDEX_TABLE[self.bits_per_sample - 2][magnitude as usize];
+            channel.step_index = channel.step_index.clamp(0, Self::STEP_TABLE.len() as i16 - 1);
         }
+
+        let left = self.channels[0].sample;
+        let right = self.channels.get(1).map_or(left, |c| c.sample);
+        Some([left, right])
     }
 }
 
 impl<R: std::io::Read> Decoder for AdpcmDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
-        if self.is_stereo {
-            2
-        } else {
-            1
-        }
+        self.channels.len() as u8
     }
 
     #[inline]
@@ -201,6 +170,6 @@ impl<R: AsRef<[u8]> + Default> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
         let bit_stream = std::mem::replace(&mut self.inner, BitReader::new(Default::default()));
         let mut cursor = bit_stream.into_reader();
         cursor.set_position(0);
-        *self = AdpcmDecoder::new(cursor, self.is_stereo, self.sample_rate());
+        *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate());
     }
 }
