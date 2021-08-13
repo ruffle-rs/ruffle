@@ -1027,13 +1027,13 @@ impl AudioBackend for WebAudioBackend {
         })
     }
 
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract `skip_sample_frames`.
             let num_sample_frames: f64 = sound.num_sample_frames.into();
             let sample_rate: f64 = sound.format.sample_rate.into();
-            let ms = (num_sample_frames * 1000.0 / sample_rate).round();
-            Some(ms as u32)
+            let ms = num_sample_frames * 1000.0 / sample_rate;
+            Some(ms)
         } else {
             None
         }
