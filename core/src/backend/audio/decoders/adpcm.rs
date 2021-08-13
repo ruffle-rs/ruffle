@@ -106,21 +106,25 @@ impl<R: Read> AdpcmDecoder<R> {
             decoder: Self::SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2],
         }
     }
+}
 
-    pub fn next_sample(&mut self) -> Result<(), std::io::Error> {
+impl<R: Read> Iterator for AdpcmDecoder<R> {
+    type Item = [i16; 2];
+
+    fn next(&mut self) -> Option<Self::Item> {
         if self.sample_num == 0 {
             // The initial sample values are NOT byte-aligned.
-            self.left_sample = self.inner.read_signed(16)?;
-            self.left_step_index = self.inner.read::<u16>(6)? as i16;
+            self.left_sample = self.inner.read_signed(16).ok()?;
+            self.left_step_index = self.inner.read::<u16>(6).ok()? as i16;
             if self.is_stereo {
-                self.right_sample = self.inner.read_signed(16)?;
-                self.right_step_index = self.inner.read::<u16>(6)? as i16;
+                self.right_sample = self.inner.read_signed(16).ok()?;
+                self.right_step_index = self.inner.read::<u16>(6).ok()? as i16;
             }
         }
 
         self.sample_num = (self.sample_num + 1) % 4095;
 
-        let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
+        let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()? as i32;
         let left_step = Self::STEP_TABLE[self.left_step_index as usize];
 
         // (data + 0.5) * step / 2^(bits_per_sample - 2)
@@ -144,7 +148,7 @@ impl<R: Read> AdpcmDecoder<R> {
         }
 
         if self.is_stereo {
-            let data = self.inner.read::<u32>(self.bits_per_sample as u32)? as i32;
+            let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()? as i32;
             let right_step = Self::STEP_TABLE[self.right_step_index as usize];
 
             let sign_mask = 1 << (self.bits_per_sample - 1);
@@ -164,18 +168,7 @@ impl<R: Read> AdpcmDecoder<R> {
             } else if self.right_step_index >= Self::STEP_TABLE.len() as i16 {
                 self.right_step_index = Self::STEP_TABLE.len() as i16 - 1;
             }
-        }
 
-        Ok(())
-    }
-}
-
-impl<R: Read> Iterator for AdpcmDecoder<R> {
-    type Item = [i16; 2];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next_sample().ok()?;
-        if self.is_stereo {
             Some([self.left_sample, self.right_sample])
         } else {
             Some([self.left_sample, self.left_sample])
