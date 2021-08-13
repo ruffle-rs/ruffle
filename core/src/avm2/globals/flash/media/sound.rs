@@ -73,6 +73,26 @@ pub fn bytes_total<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Sound.isBuffering`
+pub fn is_buffering<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    //STUB: We do not yet support network-loaded sounds.
+    Ok(false.into())
+}
+
+/// Implements `Sound.url`
+pub fn url<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    //STUB: We do not yet support network-loaded sounds.
+    Ok(Value::Null)
+}
+
 /// Construct `Sound`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -95,6 +115,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[
         ("bytesLoaded", Some(bytes_total), None),
         ("bytesTotal", Some(bytes_total), None),
+        ("isBuffering", Some(is_buffering), None),
+        ("isURLInaccessible", Some(is_buffering), None),
+        ("url", Some(url), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
