@@ -1,0 +1,26 @@
+///var silence = new Silence();
+///silence.bytesLoaded;
+4180
+///silence.bytesTotal;
+4180
+///silence.isBuffering;
+false
+///silence.isURLInaccessible;
+false
+///silence.length;
+1044.8979591836735
+///silence.url;
+null
+///var noise = new Noise();
+///noise.bytesLoaded;
+4180
+///noise.bytesTotal;
+4180
+///noise.isBuffering;
+false
+///noise.isURLInaccessible;
+false
+///noise.length;
+1044.8979591836735
+///noise.url;
+null

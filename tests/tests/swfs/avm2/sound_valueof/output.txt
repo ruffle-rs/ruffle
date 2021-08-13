@@ -1,0 +1,33 @@
+///var empty = new Sound();
+empty
+[object Sound]
+empty.toString();
+[object Sound]
+empty.valueOf();
+[object Sound]
+Object.prototype.toString.apply(empty);
+[object Sound]
+Object.prototype.valueOf.apply(empty);
+[object Sound]
+///var silence = new Silence();
+silence
+[object Silence]
+silence.toString();
+[object Silence]
+silence.valueOf();
+[object Silence]
+Object.prototype.toString.apply(silence);
+[object Silence]
+Object.prototype.valueOf.apply(silence);
+[object Silence]
+///var noise = new Noise();
+noise
+[object Noise]
+noise.toString();
+[object Noise]
+noise.valueOf();
+[object Noise]
+Object.prototype.toString.apply(noise);
+[object Noise]
+Object.prototype.valueOf.apply(noise);
+[object Noise]
