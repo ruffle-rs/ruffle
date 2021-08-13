@@ -93,6 +93,21 @@ pub fn url<'gc>(
     Ok(Value::Null)
 }
 
+/// Implements `Sound.length`
+pub fn length<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(sound) = this.and_then(|this| this.as_sound()) {
+        if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
+            return Ok((duration).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sound`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -118,6 +133,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("isBuffering", Some(is_buffering), None),
         ("isURLInaccessible", Some(is_buffering), None),
         ("url", Some(url), None),
+        ("length", Some(length), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
