@@ -70,16 +70,24 @@ fn apply<'gc>(
             .get(1)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let arg_storage: Vec<Option<Value<'gc>>> = arg_array
-            .as_array_storage()
-            .map(|a| a.iter().collect())
-            .ok_or_else(|| Error::from("Second parameter of apply must be an array"))?;
+            .coerce_to_object(activation);
+        let resolved_args = if let Ok(arg_array) = arg_array {
+            let arg_storage: Vec<Option<Value<'gc>>> = arg_array
+                .as_array_storage()
+                .map(|a| a.iter().collect())
+                .ok_or_else(|| {
+                    Error::from("Second parameter of apply must be an array or undefined")
+                })?;
 
-        let mut resolved_args = Vec::with_capacity(arg_storage.len());
-        for (i, v) in arg_storage.iter().enumerate() {
-            resolved_args.push(resolve_array_hole(activation, arg_array, i, v.clone())?);
-        }
+            let mut resolved_args = Vec::with_capacity(arg_storage.len());
+            for (i, v) in arg_storage.iter().enumerate() {
+                resolved_args.push(resolve_array_hole(activation, arg_array, i, v.clone())?);
+            }
+
+            resolved_args
+        } else {
+            Vec::new()
+        };
 
         Ok(func.call(this, &resolved_args, activation, base_proto)?)
     } else {
