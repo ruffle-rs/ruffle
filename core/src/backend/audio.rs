@@ -113,9 +113,14 @@ pub trait AudioBackend: Downcast {
 
 impl_downcast!(AudioBackend);
 
+struct NullSound {
+    duration: u32,
+    size: u32,
+}
+
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
-    sounds: Arena<u32>,
+    sounds: Arena<NullSound>,
 }
 
 impl NullAudioBackend {
@@ -130,7 +135,15 @@ impl AudioBackend for NullAudioBackend {
     fn play(&mut self) {}
     fn pause(&mut self) {}
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
-        Ok(self.sounds.insert(sound.data.len() as u32))
+        // AS duration does not subtract `skip_sample_frames`.
+        let num_sample_frames: f64 = sound.num_samples.into();
+        let sample_rate: f64 = sound.format.sample_rate.into();
+        let ms = (num_sample_frames * 1000.0 / sample_rate).round();
+
+        Ok(self.sounds.insert(NullSound {
+            duration: ms as u32,
+            size: sound.data.len() as u32,
+        }))
     }
 
     fn start_sound(
@@ -157,12 +170,16 @@ impl AudioBackend for NullAudioBackend {
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
         None
     }
-    fn get_sound_duration(&self, _sound: SoundHandle) -> Option<u32> {
-        None
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
+        if let Some(sound) = self.sounds.get(sound) {
+            Some(sound.duration)
+        } else {
+            None
+        }
     }
     fn get_sound_size(&self, sound: SoundHandle) -> Option<u32> {
         if let Some(sound) = self.sounds.get(sound) {
-            Some(*sound)
+            Some(sound.size)
         } else {
             None
         }
