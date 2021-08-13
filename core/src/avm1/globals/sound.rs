@@ -85,7 +85,11 @@ fn attach_sound<'gc>(
                 sound_object.set_sound(activation.context.gc_context, Some(*sound));
                 sound_object.set_duration(
                     activation.context.gc_context,
-                    activation.context.audio.get_sound_duration(*sound),
+                    activation
+                        .context
+                        .audio
+                        .get_sound_duration(*sound)
+                        .map(|d| d.round() as u32),
                 );
                 sound_object.set_position(activation.context.gc_context, 0);
             } else {

@@ -87,7 +87,7 @@ pub trait AudioBackend: Downcast {
 
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32>;
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64>;
 
     /// Get the size of the data stored within a given sound.
     ///
@@ -113,8 +113,12 @@ pub trait AudioBackend: Downcast {
 
 impl_downcast!(AudioBackend);
 
+/// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {
-    duration: u32,
+    /// The duration of the sound in milliseconds.
+    duration: f64,
+
+    /// The compressed size of the sound data, excluding MP3 latency seek data.
     size: u32,
 }
 
@@ -145,10 +149,10 @@ impl AudioBackend for NullAudioBackend {
         // AS duration does not subtract `skip_sample_frames`.
         let num_sample_frames: f64 = sound.num_samples.into();
         let sample_rate: f64 = sound.format.sample_rate.into();
-        let ms = (num_sample_frames * 1000.0 / sample_rate).round();
+        let duration = num_sample_frames * 1000.0 / sample_rate;
 
         Ok(self.sounds.insert(NullSound {
-            duration: ms as u32,
+            duration,
             size: data.len() as u32,
         }))
     }
@@ -177,7 +181,7 @@ impl AudioBackend for NullAudioBackend {
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
         None
     }
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32> {
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.duration)
         } else {
