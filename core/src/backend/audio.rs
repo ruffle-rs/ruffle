@@ -89,6 +89,11 @@ pub trait AudioBackend: Downcast {
     /// Returns `None` if sound is not registered.
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<u32>;
 
+    /// Get the size of the data stored within a given sound.
+    ///
+    /// This is specifically measured in compressed bytes.
+    fn get_sound_size(&self, sound: SoundHandle) -> Option<u32>;
+
     /// Set the volume transform for a sound instance.
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
 
@@ -110,7 +115,7 @@ impl_downcast!(AudioBackend);
 
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
-    sounds: Arena<()>,
+    sounds: Arena<u32>,
 }
 
 impl NullAudioBackend {
@@ -124,8 +129,8 @@ impl NullAudioBackend {
 impl AudioBackend for NullAudioBackend {
     fn play(&mut self) {}
     fn pause(&mut self) {}
-    fn register_sound(&mut self, _sound: &swf::Sound) -> Result<SoundHandle, Error> {
-        Ok(self.sounds.insert(()))
+    fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
+        Ok(self.sounds.insert(sound.data.len() as u32))
     }
 
     fn start_sound(
@@ -154,6 +159,13 @@ impl AudioBackend for NullAudioBackend {
     }
     fn get_sound_duration(&self, _sound: SoundHandle) -> Option<u32> {
         None
+    }
+    fn get_sound_size(&self, sound: SoundHandle) -> Option<u32> {
+        if let Some(sound) = self.sounds.get(sound) {
+            Some(*sound)
+        } else {
+            None
+        }
     }
 
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
