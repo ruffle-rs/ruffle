@@ -135,6 +135,13 @@ impl AudioBackend for NullAudioBackend {
     fn play(&mut self) {}
     fn pause(&mut self) {}
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
+        // Slice off latency seek for MP3 data.
+        let data = if sound.format.compression == swf::AudioCompression::Mp3 {
+            &sound.data[2..]
+        } else {
+            sound.data
+        };
+
         // AS duration does not subtract `skip_sample_frames`.
         let num_sample_frames: f64 = sound.num_samples.into();
         let sample_rate: f64 = sound.format.sample_rate.into();
@@ -142,7 +149,7 @@ impl AudioBackend for NullAudioBackend {
 
         Ok(self.sounds.insert(NullSound {
             duration: ms as u32,
-            size: sound.data.len() as u32,
+            size: data.len() as u32,
         }))
     }
 
