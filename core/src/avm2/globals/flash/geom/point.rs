@@ -6,7 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
 use gc_arena::{GcCell, MutationContext};
 
-fn create_point<'gc>(
+pub fn create_point<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     coords: (f64, f64),
 ) -> Result<Value<'gc>, Error> {

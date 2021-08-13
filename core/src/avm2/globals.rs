@@ -103,6 +103,7 @@ pub struct SystemPrototypes<'gc> {
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
     pub point: Object<'gc>,
+    pub rectangle: Object<'gc>,
     pub textfield: Object<'gc>,
     pub textformat: Object<'gc>,
     pub graphics: Object<'gc>,
@@ -151,6 +152,7 @@ impl<'gc> SystemPrototypes<'gc> {
             display_object: empty,
             shape: empty,
             point: empty,
+            rectangle: empty,
             textfield: empty,
             textformat: empty,
             graphics: empty,
@@ -190,6 +192,7 @@ pub struct SystemClasses<'gc> {
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
     pub point: Object<'gc>,
+    pub rectangle: Object<'gc>,
     pub textfield: Object<'gc>,
     pub textformat: Object<'gc>,
     pub graphics: Object<'gc>,
@@ -238,6 +241,7 @@ impl<'gc> SystemClasses<'gc> {
             display_object: empty,
             shape: empty,
             point: empty,
+            rectangle: empty,
             textfield: empty,
             textformat: empty,
             graphics: empty,
@@ -731,6 +735,13 @@ pub fn load_player_globals<'gc>(
         point,
         activation,
         flash::geom::point::create_class(mc),
+        domain,
+        script
+    );
+    avm2_system_class!(
+        rectangle,
+        activation,
+        flash::geom::rectangle::create_class(mc),
         domain,
         script
     );
