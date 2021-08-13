@@ -1,0 +1,9 @@
+// var text = "a.b.c";
+// text.split("a.b.c")
+,
+// text.split(".")
+a,b,c
+// text.split("")
+a,.,b,.,c
+// text.split() - unimplemented
+// text.split(regex) - unimplemented
