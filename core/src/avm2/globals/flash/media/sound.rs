@@ -64,9 +64,7 @@ pub fn bytes_total<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         if let Some(length) = activation.context.audio.get_sound_size(sound) {
-            //TODO: The length of the sound data is consistently off by two in SWFs.
-            //This probably needs to go away when we start decoding network sounds
-            return Ok((length - 2).into());
+            return Ok((length).into());
         }
     }
 
