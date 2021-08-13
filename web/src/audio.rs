@@ -71,6 +71,9 @@ struct Sound {
 
     /// If this is a stream sound, the frame numbers and sample counts for each segment of the stream.
     stream_segments: Vec<(u16, u32)>,
+
+    /// The length of the sound data as encoded in the SWF.
+    size: u32,
 }
 
 type Decoder = Box<dyn Iterator<Item = [i16; 2]>>;
@@ -812,6 +815,7 @@ impl AudioBackend for WebAudioBackend {
             num_sample_frames: sound.num_samples,
             skip_sample_frames,
             stream_segments: vec![],
+            size: data.len() as u32,
         };
         Ok(self.sounds.insert(sound))
     }
@@ -914,6 +918,7 @@ impl AudioBackend for WebAudioBackend {
                         num_sample_frames: stream.num_sample_frames,
                         skip_sample_frames: stream.skip_sample_frames,
                         stream_segments: stream.stream_segments,
+                        size: stream.audio_data.len() as u32,
                     });
                     return Some(handle);
                 }
@@ -1032,6 +1037,10 @@ impl AudioBackend for WebAudioBackend {
         } else {
             None
         }
+    }
+
+    fn get_sound_size(&self, sound: SoundHandle) -> Option<u32> {
+        self.sounds.get(sound).map(|s| s.size)
     }
 
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {

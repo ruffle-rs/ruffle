@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{sound_allocator, Object, TObject};
 use crate::avm2::value::Value;
@@ -56,6 +56,23 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Sound.bytesTotal`
+pub fn bytes_total<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(sound) = this.and_then(|this| this.as_sound()) {
+        if let Some(length) = activation.context.audio.get_sound_size(sound) {
+            //TODO: The length of the sound data is consistently off by two in SWFs.
+            //This probably needs to go away when we start decoding network sounds
+            return Ok((length - 2).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sound`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -70,6 +87,16 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_allocator(sound_allocator);
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
+        ("bytesLoaded", Some(bytes_total), None),
+        ("bytesTotal", Some(bytes_total), None),
+    ];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

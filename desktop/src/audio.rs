@@ -413,6 +413,10 @@ impl AudioBackend for CpalAudioBackend {
         }
     }
 
+    fn get_sound_size(&self, sound: SoundHandle) -> Option<u32> {
+        self.sounds.get(sound).map(|s| s.data.len() as u32)
+    }
+
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         if let Some(instance) = sound_instances.get_mut(instance) {
