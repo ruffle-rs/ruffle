@@ -116,6 +116,7 @@ pub struct SystemPrototypes<'gc> {
     pub simplebutton: Object<'gc>,
     pub regexp: Object<'gc>,
     pub vector: Object<'gc>,
+    pub soundtransform: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -166,6 +167,7 @@ impl<'gc> SystemPrototypes<'gc> {
             simplebutton: empty,
             regexp: empty,
             vector: empty,
+            soundtransform: empty,
         }
     }
 }
@@ -207,6 +209,7 @@ pub struct SystemClasses<'gc> {
     pub simplebutton: Object<'gc>,
     pub regexp: Object<'gc>,
     pub vector: Object<'gc>,
+    pub soundtransform: Object<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -257,6 +260,7 @@ impl<'gc> SystemClasses<'gc> {
             simplebutton: empty,
             regexp: empty,
             vector: empty,
+            soundtransform: empty,
         }
     }
 }
@@ -802,12 +806,13 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
-    class(
+    avm2_system_class!(
+        soundtransform,
         activation,
         flash::media::soundtransform::create_class(mc),
         domain,
-        script,
-    )?;
+        script
+    );
 
     // package `flash.text`
     avm2_system_class!(
