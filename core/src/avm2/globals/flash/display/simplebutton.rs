@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::globals::flash::media::soundmixer::{set_sound_transform, sound_transform};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -405,6 +406,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             "useHandCursor",
             Some(use_hand_cursor),
             Some(set_use_hand_cursor),
+        ),
+        (
+            "soundTransform",
+            Some(sound_transform),
+            Some(set_sound_transform),
         ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
