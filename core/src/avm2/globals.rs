@@ -544,6 +544,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        flash::events::mouseevent::create_class(mc),
+        domain,
+        script,
+    )?;
     // package `flash.utils`
     avm2_system_class!(
         bytearray,
