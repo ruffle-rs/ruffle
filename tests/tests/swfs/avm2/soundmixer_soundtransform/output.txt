@@ -1,0 +1,900 @@
+///(SoundMixer's global sound transform data...)
+///leftToLeft
+1
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+1
+///pan
+0
+///volume
+1
+///var st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.95
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.95
+///pan
+0.09750000000000003
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.9
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.9
+///pan
+0.18999999999999995
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.85
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.85
+///pan
+0.2775000000000001
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.8
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.8
+///pan
+0.3599999999999999
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.75
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.75
+///pan
+0.4375
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.7
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.7
+///pan
+0.51
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.65
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.65
+///pan
+0.5774999999999999
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.6
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.6
+///pan
+0.64
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.55
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.55
+///pan
+0.6975
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.5
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.5
+///pan
+0.75
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.45
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.45
+///pan
+0.7975
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.4
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.4
+///pan
+0.84
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.35
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.35
+///pan
+0.8775000000000001
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.3
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.3
+///pan
+0.91
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.25
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.25
+///pan
+0.9375
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.2
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.2
+///pan
+0.96
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.15
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.15
+///pan
+0.9775
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.1
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.1
+///pan
+0.99
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0.05
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0.05
+///pan
+0.9975
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+0
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+0
+///pan
+1
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.04
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.04
+///pan
+0.9984
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.08
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.08
+///pan
+0.9936
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.12
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.12
+///pan
+0.9856
+///volume
+1
+///(SoundMixer's global sound transform data...)
+///leftToLeft
+-0.12
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.12
+///pan
+0.9856
+///volume
+1
+///(SilencePlayer's sound transform data...)
+///leftToLeft
+-0.12
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.12
+///pan
+0.9856
+///volume
+1
+///(NoisePlayer's sound transform data...)
+///leftToLeft
+-0.12
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.12
+///pan
+0.9856
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.rightToRight = st.rightToRight - 1/24
+///SoundMixer.soundTransform = st;
+///(SilencePlayer's sound transform data...)
+///leftToLeft
+-0.16
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.16
+///pan
+0.9744
+///volume
+1
+///(NoisePlayer's sound transform data...)
+///leftToLeft
+-0.16
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.16
+///pan
+0.9744
+///volume
+1
+///(SoundMixer's global sound transform data...)
+///leftToLeft
+-0.16
+///leftToRight
+0
+///rightToLeft
+0
+///rightToRight
+-0.16
+///pan
+0.9744
+///volume
+1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.2
+///leftToRight
+0.04
+///rightToLeft
+-0.04
+///rightToRight
+-0.11
+///pan
+0
+///volume
+0.95
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.24
+///leftToRight
+0.08
+///rightToLeft
+-0.08
+///rightToRight
+-0.06
+///pan
+0
+///volume
+0.9
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.28
+///leftToRight
+0.12
+///rightToLeft
+-0.12
+///rightToRight
+-0.01
+///pan
+0
+///volume
+0.85
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.32
+///leftToRight
+0.16
+///rightToLeft
+-0.16
+///rightToRight
+0.03
+///pan
+0
+///volume
+0.8
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.36
+///leftToRight
+0.2
+///rightToLeft
+-0.2
+///rightToRight
+0.07
+///pan
+0
+///volume
+0.75
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.4
+///leftToRight
+0.24
+///rightToLeft
+-0.24
+///rightToRight
+0.11
+///pan
+0
+///volume
+0.7
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.44
+///leftToRight
+0.28
+///rightToLeft
+-0.28
+///rightToRight
+0.15
+///pan
+0
+///volume
+0.65
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.48
+///leftToRight
+0.32
+///rightToLeft
+-0.32
+///rightToRight
+0.19
+///pan
+0
+///volume
+0.6
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.52
+///leftToRight
+0.36
+///rightToLeft
+-0.36
+///rightToRight
+0.23
+///pan
+0
+///volume
+0.55
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.56
+///leftToRight
+0.4
+///rightToLeft
+-0.4
+///rightToRight
+0.27
+///pan
+0
+///volume
+0.5
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.6
+///leftToRight
+0.44
+///rightToLeft
+-0.44
+///rightToRight
+0.31
+///pan
+0
+///volume
+0.45
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.64
+///leftToRight
+0.48
+///rightToLeft
+-0.48
+///rightToRight
+0.35
+///pan
+0
+///volume
+0.4
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.68
+///leftToRight
+0.52
+///rightToLeft
+-0.52
+///rightToRight
+0.39
+///pan
+0
+///volume
+0.35
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.72
+///leftToRight
+0.56
+///rightToLeft
+-0.56
+///rightToRight
+0.43
+///pan
+0
+///volume
+0.3
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.76
+///leftToRight
+0.6
+///rightToLeft
+-0.6
+///rightToRight
+0.47
+///pan
+0
+///volume
+0.25
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.8
+///leftToRight
+0.64
+///rightToLeft
+-0.64
+///rightToRight
+0.51
+///pan
+0
+///volume
+0.2
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.84
+///leftToRight
+0.68
+///rightToLeft
+-0.68
+///rightToRight
+0.55
+///pan
+0
+///volume
+0.15
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.88
+///leftToRight
+0.72
+///rightToLeft
+-0.72
+///rightToRight
+0.59
+///pan
+0
+///volume
+0.1
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.92
+///leftToRight
+0.76
+///rightToLeft
+-0.76
+///rightToRight
+0.63
+///pan
+0
+///volume
+0.05
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-0.96
+///leftToRight
+0.8
+///rightToLeft
+-0.8
+///rightToRight
+0.67
+///pan
+0
+///volume
+0
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-1
+///leftToRight
+0.84
+///rightToLeft
+-0.84
+///rightToRight
+0.71
+///pan
+0
+///volume
+-0.04
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-1.04
+///leftToRight
+0.88
+///rightToLeft
+-0.88
+///rightToRight
+0.75
+///pan
+0
+///volume
+-0.08
+///st = SoundMixer.soundTransform
+///st.leftToLeft = st.leftToLeft - 1/24
+///st.leftToRight = st.leftToRight + 1/24
+///st.rightToLeft = st.rightToLeft - 1/24
+///st.rightToRight = st.rightToRight + 1/24
+///st.volume = st.volume - 1/24
+///SoundMixer.soundTransform = st;
+///leftToLeft
+-1.08
+///leftToRight
+0.92
+///rightToLeft
+-0.92
+///rightToRight
+0.79
+///pan
+0
+///volume
+-0.12
