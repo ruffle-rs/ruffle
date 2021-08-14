@@ -63,6 +63,19 @@
 1.140175425099138
 ///transform1.volume;
 1
+///transform1.rightToLeft = 0.5;
+///transform1.leftToLeft;
+0.8366600265340756
+///transform1.leftToRight;
+0
+///transform1.pan;
+0
+///transform1.rightToLeft;
+0.5
+///transform1.rightToRight;
+1.140175425099138
+///transform1.volume;
+1
 ///transform1.pan = -0.3;
 ///transform1.leftToLeft;
 1.140175425099138
@@ -72,6 +85,19 @@
 -0.30000000000000027
 ///transform1.rightToLeft;
 0
+///transform1.rightToRight;
+0.8366600265340756
+///transform1.volume;
+1
+///transform1.rightToLeft = -123;
+///transform1.leftToLeft;
+1.140175425099138
+///transform1.leftToRight;
+0
+///transform1.pan;
+0
+///transform1.rightToLeft;
+-123
 ///transform1.rightToRight;
 0.8366600265340756
 ///transform1.volume;

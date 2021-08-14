@@ -84,8 +84,40 @@ trace(transform1.rightToRight);
 trace("///transform1.volume;");
 trace(transform1.volume);
 
+trace("///transform1.rightToLeft = 0.5;");
+transform1.rightToLeft = 0.5;
+
+trace("///transform1.leftToLeft;");
+trace(transform1.leftToLeft);
+trace("///transform1.leftToRight;");
+trace(transform1.leftToRight);
+trace("///transform1.pan;");
+trace(transform1.pan);
+trace("///transform1.rightToLeft;");
+trace(transform1.rightToLeft);
+trace("///transform1.rightToRight;");
+trace(transform1.rightToRight);
+trace("///transform1.volume;");
+trace(transform1.volume);
+
 trace("///transform1.pan = -0.3;");
 transform1.pan = -0.3;
+
+trace("///transform1.leftToLeft;");
+trace(transform1.leftToLeft);
+trace("///transform1.leftToRight;");
+trace(transform1.leftToRight);
+trace("///transform1.pan;");
+trace(transform1.pan);
+trace("///transform1.rightToLeft;");
+trace(transform1.rightToLeft);
+trace("///transform1.rightToRight;");
+trace(transform1.rightToRight);
+trace("///transform1.volume;");
+trace(transform1.volume);
+
+trace("///transform1.rightToLeft = -123;");
+transform1.rightToLeft = -123;
 
 trace("///transform1.leftToLeft;");
 trace(transform1.leftToLeft);
