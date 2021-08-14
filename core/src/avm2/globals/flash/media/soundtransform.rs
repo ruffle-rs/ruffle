@@ -141,7 +141,7 @@ pub fn set_pan<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.media"), "SoundTransform"),
-        Some(QName::new(Namespace::package("flash.media"), "DisplayObject").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init, "<SoundTransform instance initializer>", mc),
         Method::from_builtin(class_init, "<SoundTransform class initializer>", mc),
         mc,
@@ -149,7 +149,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::SEALED);
+    write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -165,7 +165,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("rightToRight", None),
         ("volume", None),
     ];
-    write.define_public_slot_number_class_traits(PUBLIC_INSTANCE_SLOTS);
+    write.define_public_slot_number_instance_traits(PUBLIC_INSTANCE_SLOTS);
 
     class
 }
