@@ -505,6 +505,19 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
+    pub fn define_public_slot_number_class_traits(
+        &mut self,
+        items: &[(&'static str, Option<f64>)],
+    ) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_slot(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::public(), "Number").into(),
+                value.map(|v| v.into()),
+            ));
+        }
+    }
+    #[inline(never)]
     pub fn define_public_constant_uint_class_traits(&mut self, items: &[(&'static str, u32)]) {
         for &(name, value) in items {
             self.define_class_trait(Trait::from_const(
