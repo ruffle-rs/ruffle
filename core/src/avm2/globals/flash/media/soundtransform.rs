@@ -62,6 +62,25 @@ pub fn pan<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        let left_to_right = this
+            .get_property(
+                this,
+                &QName::new(Namespace::public(), "leftToRight"),
+                activation,
+            )?
+            .coerce_to_number(activation)?;
+        let right_to_left = this
+            .get_property(
+                this,
+                &QName::new(Namespace::public(), "rightToLeft"),
+                activation,
+            )?
+            .coerce_to_number(activation)?;
+
+        if left_to_right != 0.0 || right_to_left != 0.0 {
+            return Ok(0.0.into());
+        }
+
         let left_to_left = this
             .get_property(
                 this,
