@@ -813,6 +813,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script
     );
+    class(
+        activation,
+        flash::media::soundmixer::create_class(mc),
+        domain,
+        script,
+    )?;
 
     // package `flash.text`
     avm2_system_class!(
