@@ -70,7 +70,7 @@ pub fn pan<'gc>(
             )?
             .coerce_to_number(activation)?;
 
-        return Ok((1.0 - left_to_left.abs()).into());
+        return Ok((1.0 - left_to_left.powf(2.0).abs()).into());
     }
 
     Ok(Value::Undefined)
@@ -89,34 +89,18 @@ pub fn set_pan<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
 
-        if pan >= 0.0 {
-            this.set_property(
-                this,
-                &QName::new(Namespace::public(), "leftToLeft"),
-                (1.0 - pan).into(),
-                activation,
-            )?;
-            this.set_property(
-                this,
-                &QName::new(Namespace::public(), "rightToRight"),
-                (1.0).into(),
-                activation,
-            )?;
-        } else {
-            this.set_property(
-                this,
-                &QName::new(Namespace::public(), "leftToLeft"),
-                (1.0).into(),
-                activation,
-            )?;
-            this.set_property(
-                this,
-                &QName::new(Namespace::public(), "rightToRight"),
-                (1.0 + pan).into(),
-                activation,
-            )?;
-        }
-
+        this.set_property(
+            this,
+            &QName::new(Namespace::public(), "leftToLeft"),
+            (1.0 - pan).sqrt().into(),
+            activation,
+        )?;
+        this.set_property(
+            this,
+            &QName::new(Namespace::public(), "rightToRight"),
+            (1.0 + pan).sqrt().into(),
+            activation,
+        )?;
         this.set_property(
             this,
             &QName::new(Namespace::public(), "leftToRight"),
