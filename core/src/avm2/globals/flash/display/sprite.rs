@@ -124,10 +124,7 @@ pub fn set_sound_transform<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this
-        .and_then(|o| o.as_display_object())
-        .and_then(|dobj| dobj.as_movie_clip())
-    {
+    if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
         let as3_st = args
             .get(0)
             .cloned()
