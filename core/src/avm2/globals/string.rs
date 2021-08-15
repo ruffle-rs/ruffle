@@ -127,13 +127,13 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let delimiter = args
-            .get(0)
-            .unwrap_or(&Value::Undefined);
+        let delimiter = args.get(0).unwrap_or(&Value::Undefined);
         if matches!(delimiter, Value::Undefined) {
             let this = Value::from(this);
             let storage = ArrayStorage::from_args(&[this]);
-            return Ok(ArrayObject::from_storage(activation, storage).unwrap().into());
+            return Ok(ArrayObject::from_storage(activation, storage)
+                .unwrap()
+                .into());
         }
         if delimiter
             .coerce_to_object(activation)?
