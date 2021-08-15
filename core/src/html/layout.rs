@@ -216,6 +216,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The `final_line_of_para` parameter should be flagged if this the final
     /// line in the paragraph or layout operation (e.g. it wasn't caused by an
     /// automatic newline and no more text is to be expected).
+    #[allow(clippy::or_fun_call)]
     fn fixup_line(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -248,7 +249,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
-        let mut line_bounds = line_bounds.unwrap_or_else(Default::default);
+        let mut line_bounds = line_bounds.unwrap_or(Default::default());
 
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
@@ -533,6 +534,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 
     /// Destroy the layout context, returning the newly constructed layout list.
+    #[allow(clippy::or_fun_call)]
     fn end_layout(
         mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -541,7 +543,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         (
             self.boxes,
-            self.exterior_bounds.unwrap_or_else(Default::default),
+            self.exterior_bounds.unwrap_or(Default::default()),
         )
     }
 

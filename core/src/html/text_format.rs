@@ -1574,6 +1574,7 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
+    #[allow(clippy::or_fun_call)]
     pub fn lower_from_html(&mut self, tree: XmlDocument<'_>) {
         let mut format_stack = vec![self.default_format.clone()];
         let mut last_successful_format = None;
@@ -1615,10 +1616,7 @@ impl FormatSpans {
                             .eq_ignore_ascii_case("br") => {}
                 Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
                     node,
-                    format_stack
-                        .last()
-                        .cloned()
-                        .unwrap_or_else(Default::default),
+                    format_stack.last().cloned().unwrap_or(Default::default()),
                 )),
                 Step::Around(node) if node.is_text() => {
                     self.replace_text(
