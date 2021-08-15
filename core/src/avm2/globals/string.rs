@@ -1,6 +1,7 @@
 //! `String` impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
@@ -126,12 +127,15 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if matches!(args.get(0).unwrap_or(&Value::Undefined), Value::Undefined) {
-            log::warn!("string.split(undefined) - not implemented");
-        }
-        if args
+        let delimiter = args
             .get(0)
-            .unwrap_or(&Value::Undefined)
+            .unwrap_or(&Value::Undefined);
+        if matches!(delimiter, Value::Undefined) {
+            let this = Value::from(this);
+            let storage = ArrayStorage::from_args(&[this]);
+            return Ok(ArrayObject::from_storage(activation, storage).unwrap().into());
+        }
+        if delimiter
             .coerce_to_object(activation)?
             .as_regexp()
             .is_some()
@@ -139,10 +143,7 @@ fn split<'gc>(
             log::warn!("string.split(regex) - not implemented");
         }
         let this = Value::from(this).coerce_to_string(activation)?;
-        let delimiter = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let delimiter = delimiter.coerce_to_string(activation)?;
         let limit = match args.get(1).unwrap_or(&Value::Undefined) {
             Value::Undefined => usize::MAX,
             limit => limit.coerce_to_i32(activation)?.max(0) as usize,

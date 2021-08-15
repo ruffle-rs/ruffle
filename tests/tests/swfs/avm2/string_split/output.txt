@@ -5,5 +5,6 @@
 a,b,c
 // text.split("")
 a,.,b,.,c
-// text.split() - unimplemented
+// text.split()
+a.b.c
 // text.split(regex) - unimplemented
