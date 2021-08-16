@@ -270,6 +270,132 @@ pub fn set_bottom_right<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `topLeft`'s getter
+pub fn top_left<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let x = get_prop!(this, activation, "x")?;
+        let y = get_prop!(this, activation, "y")?;
+
+        return create_point(activation, (x, y));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `topLeft`'s setter
+pub fn set_top_left<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        if let Some(point) = args.get(0) {
+            let point_obj = point.coerce_to_object(activation)?;
+
+            let left = get_prop!(point_obj, activation, "x")?;
+            let top = get_prop!(point_obj, activation, "y")?;
+
+            let x = get_prop!(this, activation, "x")?;
+            let y = get_prop!(this, activation, "y")?;
+
+            let width = get_prop!(this, activation, "width")? - left + x;
+            let height = get_prop!(this, activation, "height")? - top + y;
+
+            set_prop!(this, activation, "x", left)?;
+            set_prop!(this, activation, "y", top)?;
+            set_prop!(this, activation, "width", width)?;
+            set_prop!(this, activation, "height", height)?;
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `size`'s getter
+pub fn size<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let width = get_prop!(this, activation, "width")?;
+        let height = get_prop!(this, activation, "height")?;
+
+        return create_point(activation, (width, height));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `size`'s setter
+pub fn set_size<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        if let Some(point) = args.get(0) {
+            let point_obj = point.coerce_to_object(activation)?;
+
+            let width = get_prop!(point_obj, activation, "x")?;
+            let height = get_prop!(point_obj, activation, "y")?;
+
+            set_prop!(this, activation, "width", width)?;
+            set_prop!(this, activation, "height", height)?;
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `clone`
+pub fn clone<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let x = get_prop!(this, activation, "x")?;
+        let y = get_prop!(this, activation, "y")?;
+
+        let width = get_prop!(this, activation, "width")?;
+        let height = get_prop!(this, activation, "height")?;
+
+        return create_rectangle(activation, (x, y, width, height));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `equals`
+#[allow(clippy::float_cmp)]
+pub fn equals<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(other) = args.get(0) {
+            let other = other.coerce_to_object(activation)?;
+
+            let x = get_prop!(this, activation, "x")? == get_prop!(other, activation, "x")?;
+            let y = get_prop!(this, activation, "y")? == get_prop!(other, activation, "y")?;
+            let width =
+                get_prop!(this, activation, "width")? == get_prop!(other, activation, "width")?;
+            let height =
+                get_prop!(this, activation, "height")? == get_prop!(other, activation, "height")?;
+
+            return Ok((x && y && width && height).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `setTo`
 pub fn set_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -357,14 +483,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("left", Some(left), Some(set_left)),
         ("right", Some(right), Some(set_right)),
         ("bottomRight", Some(bottom_right), Some(set_bottom_right)),
+        ("topLeft", Some(top_left), Some(set_top_left)),
+        ("size", Some(size), Some(set_size)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
-
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("setTo", set_to), ("toString", to_string)];
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("equals", equals),
+        ("clone", clone),
+        ("setTo", set_to),
+        ("toString", to_string),
+    ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
     class
 }
