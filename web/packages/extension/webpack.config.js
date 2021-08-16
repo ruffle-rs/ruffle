@@ -15,23 +15,21 @@ function transformManifest(content, env) {
 
     // The extension marketplaces require the version to monotonically increase,
     // so append the build date onto the end of the manifest version.
-    const version = process.env.BUILD_ID
+    manifest.version = process.env.BUILD_ID
         ? `${packageVersion}.${process.env.BUILD_ID}`
         : packageVersion;
 
-    const version_name =
-        versionChannel === "nightly"
-            ? `${packageVersion} nightly ${buildDate}`
-            : packageVersion;
-
-    Object.assign(manifest, { version, version_name });
     if (env.firefox) {
-        const id = process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";
-        Object.assign(manifest, {
-            browser_specific_settings: {
-                gecko: { id },
+        manifest.browser_specific_settings = {
+            gecko: {
+                id: process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs",
             },
-        });
+        };
+    } else {
+        manifest.version_name =
+            versionChannel === "nightly"
+                ? `${packageVersion} nightly ${buildDate}`
+                : packageVersion;
     }
 
     return JSON.stringify(manifest);
