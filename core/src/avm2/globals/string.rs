@@ -1,7 +1,6 @@
 //! `String` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
@@ -12,6 +11,7 @@ use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use crate::string_utils;
 use gc_arena::{GcCell, MutationContext};
+use std::iter;
 
 /// Implements `String`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -130,10 +130,11 @@ fn split<'gc>(
         let delimiter = args.get(0).unwrap_or(&Value::Undefined);
         if matches!(delimiter, Value::Undefined) {
             let this = Value::from(this);
-            let storage = ArrayStorage::from_args(&[this]);
-            return Ok(ArrayObject::from_storage(activation, storage)
-                .unwrap()
-                .into());
+            return Ok(
+                ArrayObject::from_storage(activation, iter::once(this).collect())
+                    .unwrap()
+                    .into(),
+            );
         }
         if delimiter
             .coerce_to_object(activation)?
