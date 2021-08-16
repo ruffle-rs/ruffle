@@ -2,7 +2,6 @@
     "manifest_version": 2,
     "name": "Ruffle",
     "version": null, // Filled by Webpack.
-    "version_name": null, // Filled by Webpack.
     "default_locale": "en",
     "description": "__MSG_description__",
     "homepage_url": "https://ruffle.rs/",
