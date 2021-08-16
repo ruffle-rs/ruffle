@@ -15,7 +15,7 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::backend::audio::SoundHandle;
+use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -37,6 +37,7 @@ mod primitive_object;
 mod regexp_object;
 mod script_object;
 mod sound_object;
+mod soundchannel_object;
 mod stage_object;
 mod vector_object;
 mod xml_object;
@@ -56,6 +57,7 @@ pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveOb
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::ScriptObject;
 pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
+pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
@@ -83,6 +85,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         ClassObject(ClassObject<'gc>),
         VectorObject(VectorObject<'gc>),
         SoundObject(SoundObject<'gc>),
+        SoundChannelObject(SoundChannelObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1226,6 +1229,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This does nothing if the object is not a sound.
     fn set_sound(self, _mc: MutationContext<'gc, '_>, _sound: SoundHandle) {}
+
+    /// Unwrap this object's sound instance handle.
+    fn as_sound_instance(self) -> Option<SoundInstanceHandle> {
+        None
+    }
+
+    /// Associate the object with a particular sound instance handle.
+    ///
+    /// This does nothing if the object is not a sound channel.
+    fn set_sound_instance(self, _mc: MutationContext<'gc, '_>, _sound: SoundInstanceHandle) {}
 }
 
 pub enum ObjectPtr {}
