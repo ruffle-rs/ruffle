@@ -2725,24 +2725,26 @@ impl<'gc, 'a> MovieClipData<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         let button_colors = reader.read_define_button_cxform(tag_len)?;
-        if let Some(button) = context
+        match context
             .library
             .library_for_movie_mut(self.movie())
             .character_by_id(button_colors.id)
         {
-            if let Character::Avm1Button(button) = button {
+            Some(Character::Avm1Button(button)) => {
                 button.set_colors(context.gc_context, &button_colors.color_transforms[..]);
-            } else {
+            }
+            Some(_) => {
                 log::warn!(
                     "DefineButtonCxform: Tried to apply on non-button ID {}",
                     button_colors.id
                 );
             }
-        } else {
-            log::warn!(
-                "DefineButtonCxform: Character ID {} doesn't exist",
-                button_colors.id
-            );
+            None => {
+                log::warn!(
+                    "DefineButtonCxform: Character ID {} doesn't exist",
+                    button_colors.id
+                );
+            }
         }
         Ok(())
     }
@@ -2754,24 +2756,26 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let button_sounds = reader.read_define_button_sound()?;
-        if let Some(button) = context
+        match context
             .library
             .library_for_movie_mut(self.movie())
             .character_by_id(button_sounds.id)
         {
-            if let Character::Avm1Button(button) = button {
+            Some(Character::Avm1Button(button)) => {
                 button.set_sounds(context.gc_context, button_sounds);
-            } else {
+            }
+            Some(_) => {
                 log::warn!(
                     "DefineButtonSound: Tried to apply on non-button ID {}",
                     button_sounds.id
                 );
             }
-        } else {
-            log::warn!(
-                "DefineButtonSound: Character ID {} doesn't exist",
-                button_sounds.id
-            );
+            None => {
+                log::warn!(
+                    "DefineButtonSound: Character ID {} doesn't exist",
+                    button_sounds.id
+                );
+            }
         }
         Ok(())
     }
