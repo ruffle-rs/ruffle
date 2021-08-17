@@ -40,13 +40,10 @@ impl<'gc> Property<'gc> {
     /// discarded.
     pub fn set(&mut self, new_value: impl Into<Value<'gc>>) -> Option<Object<'gc>> {
         match self {
-            Property::Virtual { set, .. } => {
-                if let Some(function) = set {
-                    Some(function.to_owned())
-                } else {
-                    None
-                }
-            }
+            Property::Virtual {
+                set: Some(function),
+                ..
+            } => Some(function.to_owned()),
             Property::Stored {
                 value, attributes, ..
             } => {
@@ -56,6 +53,7 @@ impl<'gc> Property<'gc> {
 
                 None
             }
+            _ => None,
         }
     }
 

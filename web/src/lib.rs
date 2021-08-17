@@ -947,18 +947,13 @@ impl Ruffle {
                 instance.animation_handler_id = None;
             }
 
-            // Calculate the dt from last tick.
-            dt = if let Some(prev_timestamp) = instance.timestamp {
-                instance.timestamp = Some(timestamp);
-                timestamp - prev_timestamp
-            } else {
-                // Store the timestamp from the initial tick.
-                // (I tried to use Performance.now() to get the initial timestamp,
-                // but this didn't seem to be accurate and caused negative dts on
-                // Chrome.)
-                instance.timestamp = Some(timestamp);
-                0.0
-            };
+            // Calculate the elapsed time since the last tick.
+            dt = instance
+                .timestamp
+                .map_or(0.0, |prev_timestamp| timestamp - prev_timestamp);
+
+            // Store the timestamp of the last tick.
+            instance.timestamp = Some(timestamp);
         });
 
         // Tick the Ruffle core.
