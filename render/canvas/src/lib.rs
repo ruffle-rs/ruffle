@@ -234,11 +234,11 @@ impl WebCanvasRenderBackend {
             let data = match bitmap.data {
                 BitmapFormat::Rgba(mut data) => {
                     ruffle_core::backend::render::unmultiply_alpha_rgba(&mut data[..]);
-                    encoder.set_color(png::ColorType::RGBA);
+                    encoder.set_color(png::ColorType::Rgba);
                     data
                 }
                 BitmapFormat::Rgb(data) => {
-                    encoder.set_color(png::ColorType::RGB);
+                    encoder.set_color(png::ColorType::Rgb);
                     data
                 }
             };
