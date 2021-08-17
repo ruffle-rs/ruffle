@@ -1,0 +1,289 @@
+/// Constructor
+
+ // new Rectangle()
+(top=0, right=0, bottom=0, left=0, topLeft=(x=0, y=0), bottomRight=(x=0, y=0), width=0, height=0, size=(x=0, y=0), x=0, y=0)
+
+ // new Rectangle(1)
+(top=0, right=1, bottom=0, left=1, topLeft=(x=1, y=0), bottomRight=(x=1, y=0), width=0, height=0, size=(x=0, y=0), x=1, y=0)
+
+ // new Rectangle(1, 2)
+(top=2, right=1, bottom=2, left=1, topLeft=(x=1, y=2), bottomRight=(x=1, y=2), width=0, height=0, size=(x=0, y=0), x=1, y=2)
+
+ // new Rectangle(1, 2, 3)
+(top=2, right=4, bottom=2, left=1, topLeft=(x=1, y=2), bottomRight=(x=4, y=2), width=3, height=0, size=(x=3, y=0), x=1, y=2)
+
+ // new Rectangle(1, 2, 3, 4)
+(top=2, right=4, bottom=6, left=1, topLeft=(x=1, y=2), bottomRight=(x=4, y=6), width=3, height=4, size=(x=3, y=4), x=1, y=2)
+
+
+/// top
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.top = 0
+(top=0, right=6, bottom=10, left=1, topLeft=(x=1, y=0), bottomRight=(x=6, y=10), width=5, height=10, size=(x=5, y=10), x=1, y=0)
+
+ // rect.top = 100
+(top=100, right=6, bottom=10, left=1, topLeft=(x=1, y=100), bottomRight=(x=6, y=10), width=5, height=-90, size=(x=5, y=-90), x=1, y=100)
+
+ // rect.top = -200
+(top=-200, right=6, bottom=10, left=1, topLeft=(x=1, y=-200), bottomRight=(x=6, y=10), width=5, height=210, size=(x=5, y=210), x=1, y=-200)
+
+ // rect.top = NaN
+(top=NaN, right=6, bottom=NaN, left=1, topLeft=(x=1, y=NaN), bottomRight=(x=6, y=NaN), width=5, height=NaN, size=(x=5, y=NaN), x=1, y=NaN)
+
+ // rect.top = Infinity
+(top=Infinity, right=6, bottom=NaN, left=1, topLeft=(x=1, y=Infinity), bottomRight=(x=6, y=NaN), width=5, height=-Infinity, size=(x=5, y=-Infinity), x=1, y=Infinity)
+
+
+/// right
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.right = 0
+(top=3, right=0, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=0, y=10), width=-1, height=7, size=(x=-1, y=7), x=1, y=3)
+
+ // rect.right = 100
+(top=3, right=100, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=100, y=10), width=99, height=7, size=(x=99, y=7), x=1, y=3)
+
+ // rect.right = -200
+(top=3, right=-200, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=-200, y=10), width=-201, height=7, size=(x=-201, y=7), x=1, y=3)
+
+ // rect.right = NaN
+(top=3, right=NaN, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=NaN, y=10), width=NaN, height=7, size=(x=NaN, y=7), x=1, y=3)
+
+ // rect.right = Infinity
+(top=3, right=Infinity, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=Infinity, y=10), width=Infinity, height=7, size=(x=Infinity, y=7), x=1, y=3)
+
+
+/// left
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.left = 0
+(top=3, right=6, bottom=10, left=0, topLeft=(x=0, y=3), bottomRight=(x=6, y=10), width=6, height=7, size=(x=6, y=7), x=0, y=3)
+
+ // rect.left = 100
+(top=3, right=6, bottom=10, left=100, topLeft=(x=100, y=3), bottomRight=(x=6, y=10), width=-94, height=7, size=(x=-94, y=7), x=100, y=3)
+
+ // rect.left = -200
+(top=3, right=6, bottom=10, left=-200, topLeft=(x=-200, y=3), bottomRight=(x=6, y=10), width=206, height=7, size=(x=206, y=7), x=-200, y=3)
+
+ // rect.left = NaN
+(top=3, right=NaN, bottom=10, left=NaN, topLeft=(x=NaN, y=3), bottomRight=(x=NaN, y=10), width=NaN, height=7, size=(x=NaN, y=7), x=NaN, y=3)
+
+ // rect.left = Infinity
+(top=3, right=NaN, bottom=10, left=Infinity, topLeft=(x=Infinity, y=3), bottomRight=(x=NaN, y=10), width=-Infinity, height=7, size=(x=-Infinity, y=7), x=Infinity, y=3)
+
+
+/// bottom
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.bottom = 0
+(top=3, right=6, bottom=0, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=0), width=5, height=-3, size=(x=5, y=-3), x=1, y=3)
+
+ // rect.bottom = 100
+(top=3, right=6, bottom=100, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=100), width=5, height=97, size=(x=5, y=97), x=1, y=3)
+
+ // rect.bottom = -200
+(top=3, right=6, bottom=-200, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=-200), width=5, height=-203, size=(x=5, y=-203), x=1, y=3)
+
+ // rect.bottom = NaN
+(top=3, right=6, bottom=NaN, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=NaN), width=5, height=NaN, size=(x=5, y=NaN), x=1, y=3)
+
+ // rect.bottom = Infinity
+(top=3, right=6, bottom=Infinity, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=Infinity), width=5, height=Infinity, size=(x=5, y=Infinity), x=1, y=3)
+
+
+/// width
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.width = 0
+(top=3, right=1, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=1, y=10), width=0, height=7, size=(x=0, y=7), x=1, y=3)
+
+ // rect.width = 100
+(top=3, right=101, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=101, y=10), width=100, height=7, size=(x=100, y=7), x=1, y=3)
+
+ // rect.width = -200
+(top=3, right=-199, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=-199, y=10), width=-200, height=7, size=(x=-200, y=7), x=1, y=3)
+
+ // rect.width = NaN
+(top=3, right=NaN, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=NaN, y=10), width=NaN, height=7, size=(x=NaN, y=7), x=1, y=3)
+
+ // rect.width = Infinity
+(top=3, right=Infinity, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=Infinity, y=10), width=Infinity, height=7, size=(x=Infinity, y=7), x=1, y=3)
+
+
+/// height
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.height = 0
+(top=3, right=6, bottom=3, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=3), width=5, height=0, size=(x=5, y=0), x=1, y=3)
+
+ // rect.height = 100
+(top=3, right=6, bottom=103, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=103), width=5, height=100, size=(x=5, y=100), x=1, y=3)
+
+ // rect.height = -200
+(top=3, right=6, bottom=-197, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=-197), width=5, height=-200, size=(x=5, y=-200), x=1, y=3)
+
+ // rect.height = NaN
+(top=3, right=6, bottom=NaN, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=NaN), width=5, height=NaN, size=(x=5, y=NaN), x=1, y=3)
+
+ // rect.height = Infinity
+(top=3, right=6, bottom=Infinity, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=Infinity), width=5, height=Infinity, size=(x=5, y=Infinity), x=1, y=3)
+
+
+/// x
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.x = 0
+(top=3, right=5, bottom=10, left=0, topLeft=(x=0, y=3), bottomRight=(x=5, y=10), width=5, height=7, size=(x=5, y=7), x=0, y=3)
+
+ // rect.x = 100
+(top=3, right=105, bottom=10, left=100, topLeft=(x=100, y=3), bottomRight=(x=105, y=10), width=5, height=7, size=(x=5, y=7), x=100, y=3)
+
+ // rect.x = -200
+(top=3, right=-195, bottom=10, left=-200, topLeft=(x=-200, y=3), bottomRight=(x=-195, y=10), width=5, height=7, size=(x=5, y=7), x=-200, y=3)
+
+ // rect.x = NaN
+(top=3, right=NaN, bottom=10, left=NaN, topLeft=(x=NaN, y=3), bottomRight=(x=NaN, y=10), width=5, height=7, size=(x=5, y=7), x=NaN, y=3)
+
+ // rect.x = Infinity
+(top=3, right=Infinity, bottom=10, left=Infinity, topLeft=(x=Infinity, y=3), bottomRight=(x=Infinity, y=10), width=5, height=7, size=(x=5, y=7), x=Infinity, y=3)
+
+
+/// y
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.y = 0
+(top=0, right=6, bottom=7, left=1, topLeft=(x=1, y=0), bottomRight=(x=6, y=7), width=5, height=7, size=(x=5, y=7), x=1, y=0)
+
+ // rect.y = 100
+(top=100, right=6, bottom=107, left=1, topLeft=(x=1, y=100), bottomRight=(x=6, y=107), width=5, height=7, size=(x=5, y=7), x=1, y=100)
+
+ // rect.y = -200
+(top=-200, right=6, bottom=-193, left=1, topLeft=(x=1, y=-200), bottomRight=(x=6, y=-193), width=5, height=7, size=(x=5, y=7), x=1, y=-200)
+
+ // rect.y = NaN
+(top=NaN, right=6, bottom=NaN, left=1, topLeft=(x=1, y=NaN), bottomRight=(x=6, y=NaN), width=5, height=7, size=(x=5, y=7), x=1, y=NaN)
+
+ // rect.y = Infinity
+(top=Infinity, right=6, bottom=Infinity, left=1, topLeft=(x=1, y=Infinity), bottomRight=(x=6, y=Infinity), width=5, height=7, size=(x=5, y=7), x=1, y=Infinity)
+
+
+/// topLeft
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.topLeft = (x=0, y=0)
+(top=0, right=6, bottom=10, left=0, topLeft=(x=0, y=0), bottomRight=(x=6, y=10), width=6, height=10, size=(x=6, y=10), x=0, y=0)
+
+ // rect.topLeft = (x=-100, y=-200)
+(top=-200, right=6, bottom=10, left=-100, topLeft=(x=-100, y=-200), bottomRight=(x=6, y=10), width=106, height=210, size=(x=106, y=210), x=-100, y=-200)
+
+ // rect.topLeft = (x=100, y=200)
+(top=200, right=6, bottom=10, left=100, topLeft=(x=100, y=200), bottomRight=(x=6, y=10), width=-94, height=-190, size=(x=-94, y=-190), x=100, y=200)
+
+ // rect.topLeft = (x=Infinity, y=Infinity)
+(top=Infinity, right=NaN, bottom=NaN, left=Infinity, topLeft=(x=Infinity, y=Infinity), bottomRight=(x=NaN, y=NaN), width=-Infinity, height=-Infinity, size=(x=-Infinity, y=-Infinity), x=Infinity, y=Infinity)
+
+ // rect.topLeft = (x=NaN, y=NaN)
+(top=NaN, right=NaN, bottom=NaN, left=NaN, topLeft=(x=NaN, y=NaN), bottomRight=(x=NaN, y=NaN), width=NaN, height=NaN, size=(x=NaN, y=NaN), x=NaN, y=NaN)
+
+
+/// bottomRight
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.bottomRight = (x=0, y=0)
+(top=3, right=0, bottom=0, left=1, topLeft=(x=1, y=3), bottomRight=(x=0, y=0), width=-1, height=-3, size=(x=-1, y=-3), x=1, y=3)
+
+ // rect.bottomRight = (x=-100, y=-200)
+(top=3, right=-100, bottom=-200, left=1, topLeft=(x=1, y=3), bottomRight=(x=-100, y=-200), width=-101, height=-203, size=(x=-101, y=-203), x=1, y=3)
+
+ // rect.bottomRight = (x=100, y=200)
+(top=3, right=100, bottom=200, left=1, topLeft=(x=1, y=3), bottomRight=(x=100, y=200), width=99, height=197, size=(x=99, y=197), x=1, y=3)
+
+ // rect.bottomRight = (x=Infinity, y=Infinity)
+(top=3, right=Infinity, bottom=Infinity, left=1, topLeft=(x=1, y=3), bottomRight=(x=Infinity, y=Infinity), width=Infinity, height=Infinity, size=(x=Infinity, y=Infinity), x=1, y=3)
+
+ // rect.bottomRight = (x=NaN, y=NaN)
+(top=3, right=NaN, bottom=NaN, left=1, topLeft=(x=1, y=3), bottomRight=(x=NaN, y=NaN), width=NaN, height=NaN, size=(x=NaN, y=NaN), x=1, y=3)
+
+
+/// size
+
+ // before modifications
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // rect.size = (x=0, y=0)
+(top=3, right=1, bottom=3, left=1, topLeft=(x=1, y=3), bottomRight=(x=1, y=3), width=0, height=0, size=(x=0, y=0), x=1, y=3)
+
+ // rect.size = (x=-100, y=-200)
+(top=3, right=-99, bottom=-197, left=1, topLeft=(x=1, y=3), bottomRight=(x=-99, y=-197), width=-100, height=-200, size=(x=-100, y=-200), x=1, y=3)
+
+ // rect.size = (x=100, y=200)
+(top=3, right=101, bottom=203, left=1, topLeft=(x=1, y=3), bottomRight=(x=101, y=203), width=100, height=200, size=(x=100, y=200), x=1, y=3)
+
+ // rect.size = (x=Infinity, y=Infinity)
+(top=3, right=Infinity, bottom=Infinity, left=1, topLeft=(x=1, y=3), bottomRight=(x=Infinity, y=Infinity), width=Infinity, height=Infinity, size=(x=Infinity, y=Infinity), x=1, y=3)
+
+ // rect.size = (x=NaN, y=NaN)
+(top=3, right=NaN, bottom=NaN, left=1, topLeft=(x=1, y=3), bottomRight=(x=NaN, y=NaN), width=NaN, height=NaN, size=(x=NaN, y=NaN), x=1, y=3)
+
+
+/// clone
+
+ // orig
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+ // cloned
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+// orig == cloned
+false
+
+// orig.equals(cloned)
+true
+
+
+/// equals
+
+ // orig
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+// orig.equals(new Rectangle(1, 3, 5, 7))
+true
+
+
+/// setTo
+
+ // rect
+(top=3, right=6, bottom=10, left=1, topLeft=(x=1, y=3), bottomRight=(x=6, y=10), width=5, height=7, size=(x=5, y=7), x=1, y=3)
+
+// rect.setTo(3, 5, 7, 9)
+undefined
+
+ // rect
+(top=5, right=10, bottom=14, left=3, topLeft=(x=3, y=5), bottomRight=(x=10, y=14), width=7, height=9, size=(x=7, y=9), x=3, y=5)
+
+// rect.setTo(-1, -3, 5, 7)
+undefined
+
+ // rect
+(top=-3, right=4, bottom=4, left=-1, topLeft=(x=-1, y=-3), bottomRight=(x=4, y=4), width=5, height=7, size=(x=5, y=7), x=-1, y=-3)
