@@ -551,15 +551,15 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     let mut decoder = png::Decoder::new(data);
     // EXPAND expands palettized types to RGB.
     decoder.set_transformations(Transformations::EXPAND);
-    let (info, mut reader) = decoder.read_info()?;
+    let mut reader = decoder.read_info()?;
 
-    let mut data = vec![0; info.buffer_size()];
-    reader.next_frame(&mut data)?;
+    let mut data = vec![0; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut data)?;
 
     Ok(Bitmap {
         width: info.width,
         height: info.height,
-        data: if info.color_type == ColorType::RGBA {
+        data: if info.color_type == ColorType::Rgba {
             BitmapFormat::Rgba(data)
         } else {
             // EXPAND expands other types to RGB.
