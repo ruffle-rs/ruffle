@@ -1,6 +1,4 @@
-use clap::Clap;
-
-#[derive(Copy, Clone, Clap, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, clap::ArgEnum)]
 pub enum GraphicsBackend {
     Default,
     Vulkan,
@@ -21,7 +19,7 @@ impl From<GraphicsBackend> for wgpu::BackendBit {
     }
 }
 
-#[derive(Copy, Clone, Clap, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, clap::ArgEnum)]
 pub enum PowerPreference {
     Low = 1,
     High = 2,
