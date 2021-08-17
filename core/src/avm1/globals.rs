@@ -30,6 +30,7 @@ pub(crate) mod display_object;
 pub mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
+mod file_reference;
 mod function;
 mod glow_filter;
 pub mod gradient_bevel_filter;
@@ -541,6 +542,8 @@ pub struct SystemPrototypes<'gc> {
     pub bitmap_data_constructor: Object<'gc>,
     pub video: Object<'gc>,
     pub video_constructor: Object<'gc>,
+    pub file_reference: Object<'gc>,
+    pub file_reference_constructor: Object<'gc>,
 }
 
 /// Initialize default global scope and builtins for an AVM1 instance.
@@ -706,6 +709,7 @@ pub fn create_globals<'gc>(
     let geom = ScriptObject::object(gc_context, Some(object_proto));
     let filters = ScriptObject::object(gc_context, Some(object_proto));
     let display = ScriptObject::object(gc_context, Some(object_proto));
+    let net = ScriptObject::object(gc_context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
     let point = point::create_point_object(gc_context, point_proto, function_proto);
@@ -944,6 +948,31 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
+    flash.define_value(gc_context, "net", net.into(), Attribute::DONT_ENUM);
+
+    let file_reference_proto = file_reference::create_proto(
+        gc_context,
+        object_proto,
+        function_proto,
+        array_proto,
+        broadcaster_functions,
+    );
+
+    let file_reference_obj = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(file_reference::constructor),
+        constructor_to_fn!(file_reference::constructor),
+        Some(function_proto),
+        file_reference_proto,
+    );
+
+    net.define_value(
+        gc_context,
+        "FileReference",
+        file_reference_obj.into(),
+        Attribute::DONT_ENUM,
+    );
+
     let globals = ScriptObject::bare_object(gc_context);
     globals.define_value(
         gc_context,
@@ -1179,6 +1208,8 @@ pub fn create_globals<'gc>(
             bitmap_data_constructor: bitmap_data,
             video: video_proto,
             video_constructor: video,
+            file_reference: file_reference_proto,
+            file_reference_constructor: file_reference_obj,
         },
         globals.into(),
         broadcaster_functions,

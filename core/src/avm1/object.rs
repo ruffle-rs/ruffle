@@ -18,6 +18,7 @@ use crate::avm1::object::convolution_filter::ConvolutionFilterObject;
 use crate::avm1::object::date_object::DateObject;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
+use crate::avm1::object::file_reference::FileReferenceObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
@@ -45,6 +46,7 @@ mod custom_object;
 pub mod date_object;
 pub mod displacement_map_filter;
 pub mod drop_shadow_filter;
+pub mod file_reference;
 pub mod glow_filter;
 pub mod gradient_bevel_filter;
 pub mod gradient_glow_filter;
@@ -90,6 +92,7 @@ pub mod xml_object;
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
+        FileReference(FileReferenceObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -563,6 +566,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BitmapDataObject`, if it exists
     fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `FileReferenceObject`, if it exists
+    fn as_file_reference_object(&self) -> Option<FileReferenceObject<'gc>> {
         None
     }
 

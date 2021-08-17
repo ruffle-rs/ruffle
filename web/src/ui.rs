@@ -1,9 +1,98 @@
 use super::JavascriptPlayer;
-use ruffle_core::backend::ui::{MouseCursor, UiBackend};
+use rfd::{AsyncFileDialog, FileHandle};
+use ruffle_core::backend::ui::{
+    DialogResultFuture, Error, FileDialogResult, FileFilter, MouseCursor, UiBackend,
+};
 use ruffle_core::events::KeyCode;
 use ruffle_web_common::JsResult;
 use std::collections::HashSet;
+use std::path::Path;
 use web_sys::{HtmlCanvasElement, KeyboardEvent};
+
+use chrono::{DateTime, Utc};
+
+#[cfg(target_arch = "wasm32")]
+use chrono::NaiveDateTime;
+
+pub struct WebFileDialogResult {
+    handle: Option<FileHandle>,
+}
+
+impl WebFileDialogResult {
+    pub fn new(handle: Option<FileHandle>) -> Self {
+        Self { handle }
+    }
+}
+
+fn get_extension_from_filename(filename: &str) -> Option<String> {
+    Path::new(filename)
+        .extension()
+        .and_then(|x| x.to_str())
+        .map(|x| ".".to_owned() + x)
+}
+
+impl FileDialogResult for WebFileDialogResult {
+    fn is_cancelled(&self) -> bool {
+        self.handle.is_none()
+    }
+
+    // For some reason the test suite compiles this code.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn creation_time(&self) -> Option<DateTime<Utc>> {
+        unreachable!();
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn creation_time(&self) -> Option<DateTime<Utc>> {
+        // Creation time is not available in JS
+        None
+    }
+
+    // For some reason the test suite compiles this code.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn modification_time(&self) -> Option<DateTime<Utc>> {
+        unreachable!();
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn modification_time(&self) -> Option<DateTime<Utc>> {
+        if let Some(handle) = &self.handle {
+            Some(DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp(handle.inner().last_modified() as i64, 0),
+                Utc,
+            ))
+        } else {
+            None
+        }
+    }
+
+    fn file_name(&self) -> Option<String> {
+        self.handle.as_ref().map(|handle| handle.file_name())
+    }
+
+    // For some reason the test suite compiles this code.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn size(&self) -> Option<u64> {
+        unreachable!();
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn size(&self) -> Option<u64> {
+        self.handle.as_ref().map(|x| x.inner().size() as u64)
+    }
+
+    fn file_type(&self) -> Option<String> {
+        if let Some(handle) = &self.handle {
+            get_extension_from_filename(&handle.file_name())
+        } else {
+            None
+        }
+    }
+
+    fn creator(&self) -> Option<String> {
+        None
+    }
+}
 
 /// An implementation of `UiBackend` utilizing `web_sys` bindings to input
 /// APIs.
@@ -212,6 +301,31 @@ impl UiBackend for WebUiBackend {
 
     fn message(&self, message: &str) {
         self.js_player.display_message(message);
+    }
+
+    fn display_file_dialog(&self, filters: Vec<FileFilter>) -> DialogResultFuture {
+        Box::pin(async move {
+            let mut dialog = AsyncFileDialog::new();
+
+            for filter in filters {
+                if std::env::consts::OS == "macos" && filter.mac_type.is_some() {
+                    let mac_type = filter.mac_type.unwrap();
+                    let extensions: Vec<&str> = mac_type.split(';').collect();
+                    dialog = dialog.add_filter(&filter.description, &extensions);
+                } else {
+                    let extensions: Vec<&str> = filter
+                        .extensions
+                        .split(';')
+                        .map(|x| x.trim_start_matches("*."))
+                        .collect();
+                    dialog = dialog.add_filter(&filter.description, &extensions);
+                }
+            }
+
+            let result: Result<Box<dyn FileDialogResult>, Error> =
+                Ok(Box::new(WebFileDialogResult::new(dialog.pick_file().await)));
+            result
+        })
     }
 }
 

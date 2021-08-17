@@ -360,6 +360,7 @@ swf_tests! {
     (date_set_year, "avm1/date/setYear", 1),
     (this_scoping, "avm1/this_scoping", 1),
     (bevel_filter, "avm1/bevel_filter", 1),
+    (file_reference_browse_cancel, "avm1/file_reference_browse_cancel", 1),
     (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (color_matrix_filter, "avm1/color_matrix_filter", 1),
     (displacement_map_filter, "avm1/displacement_map_filter", 1),
