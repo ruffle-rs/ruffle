@@ -94,6 +94,9 @@ pub trait AudioBackend: Downcast {
     /// This is specifically measured in compressed bytes.
     fn get_sound_size(&self, sound: SoundHandle) -> Option<u32>;
 
+    /// Get the sound format that a given sound was added with.
+    fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat>;
+
     /// Set the volume transform for a sound instance.
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
 
@@ -120,6 +123,9 @@ struct NullSound {
 
     /// The compressed size of the sound data, excluding MP3 latency seek data.
     size: u32,
+
+    /// The stated format of the sound data.
+    format: swf::SoundFormat,
 }
 
 /// Audio backend that ignores all audio.
@@ -154,6 +160,7 @@ impl AudioBackend for NullAudioBackend {
         Ok(self.sounds.insert(NullSound {
             duration,
             size: data.len() as u32,
+            format: sound.format.clone(),
         }))
     }
 
@@ -194,6 +201,10 @@ impl AudioBackend for NullAudioBackend {
         } else {
             None
         }
+    }
+
+    fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat> {
+        self.sounds.get(sound).map(|s| &s.format)
     }
 
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}

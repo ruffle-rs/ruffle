@@ -1,0 +1,19 @@
+///var silence = new Silence();
+///var silence_channel = silence.play();
+[object SoundChannel]
+///var noise = new Noise();
+///var noise_channel = noise.play(2000);
+null
+///noise_channel = noise.play(1800);
+null
+///noise_channel = noise.play(1600);
+null
+///noise_channel = noise.play(1400);
+null
+///noise_channel = noise.play(1200);
+null
+///noise_channel = noise.play(1000);
+[object SoundChannel]
+///var lofi_silence = new LofiSilence();
+///var lofi_silence_channel = lofi_silence.play(700);
+[object SoundChannel]

@@ -47,15 +47,11 @@ pub struct SoundChannelObjectData<'gc> {
 
 impl<'gc> SoundChannelObject<'gc> {
     /// Convert a bare sound instance into it's object representation.
-    ///
-    /// In AS3, playing sounds are accessed through subclasses of `Sound`. As a
-    /// result, this needs to take the subclass so that the returned object is
-    /// an instance of the correct class.
     pub fn from_sound_instance(
         activation: &mut Activation<'_, 'gc, '_>,
-        class: Object<'gc>,
         sound: SoundInstanceHandle,
     ) -> Result<Object<'gc>, Error> {
+        let class = activation.avm2().classes().soundchannel;
         let proto = class
             .get_property(
                 class,

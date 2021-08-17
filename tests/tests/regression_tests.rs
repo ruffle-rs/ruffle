@@ -658,6 +658,7 @@ swf_tests! {
     (as3_movieclip_soundtransform, "avm2/movieclip_soundtransform", 49),
     (as3_simplebutton_soundtransform, "avm2/simplebutton_soundtransform", 49),
     (as3_soundmixer_soundtransform, "avm2/soundmixer_soundtransform", 49),
+    (as3_sound_play, "avm2/sound_play", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
