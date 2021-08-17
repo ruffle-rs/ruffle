@@ -4,11 +4,12 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{sound_allocator, Object, TObject};
+use crate::avm2::object::{sound_allocator, Object, SoundChannelObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
 use gc_arena::{GcCell, MutationContext};
+use swf::{SoundEvent, SoundInfo};
 
 /// Implements `flash.media.Sound`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -106,6 +107,67 @@ pub fn length<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Sound.play`
+pub fn play<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(sound) = this.and_then(|this| this.as_sound()) {
+        let position = args
+            .get(0)
+            .cloned()
+            .unwrap_or_else(|| 0.0.into())
+            .coerce_to_number(activation)?;
+        let num_loops = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| 0.into())
+            .coerce_to_i32(activation)? as u16;
+        let sound_transform = args
+            .get(2)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok();
+
+        if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
+            if position > duration {
+                return Ok(Value::Null);
+            }
+        }
+
+        let sample_rate = if let Some(format) = activation.context.audio.get_sound_format(sound) {
+            format.sample_rate
+        } else {
+            return Ok(Value::Null);
+        };
+
+        let in_sample = if position > 0.0 {
+            Some((position / 1000.0 * sample_rate as f64) as u32)
+        } else {
+            None
+        };
+
+        let sound_info = SoundInfo {
+            event: SoundEvent::Start,
+            in_sample,
+            out_sample: None,
+            num_loops,
+            envelope: None,
+        };
+
+        if let Some(instance) = activation
+            .context
+            .start_sound(sound, &sound_info, None, None)
+        {
+            return Ok(SoundChannelObject::from_sound_instance(activation, instance)?.into());
+        }
+    }
+
+    Ok(Value::Null)
+}
+
 /// Construct `Sound`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -134,6 +196,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("length", Some(length), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("play", play)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

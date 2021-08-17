@@ -417,6 +417,10 @@ impl AudioBackend for CpalAudioBackend {
         self.sounds.get(sound).map(|s| s.data.len() as u32)
     }
 
+    fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat> {
+        self.sounds.get(sound).map(|s| &s.format)
+    }
+
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {
         let mut sound_instances = self.sound_instances.lock().unwrap();
         if let Some(instance) = sound_instances.get_mut(instance) {

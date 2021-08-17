@@ -1043,6 +1043,10 @@ impl AudioBackend for WebAudioBackend {
         self.sounds.get(sound).map(|s| s.size)
     }
 
+    fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat> {
+        self.sounds.get(sound).map(|s| &s.format)
+    }
+
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform) {
         SOUND_INSTANCES.with(|instances| {
             let mut instances = instances.borrow_mut();
