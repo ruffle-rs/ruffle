@@ -182,6 +182,21 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             .set_global_sound_transform(sound_transform);
     }
 
+    /// Get the local sound transform of a single sound instance.
+    pub fn local_sound_transform(&self, instance: SoundInstanceHandle) -> Option<&SoundTransform> {
+        self.audio_manager.local_sound_transform(instance)
+    }
+
+    /// Set the local sound transform of a single sound instance.
+    pub fn set_local_sound_transform(
+        &mut self,
+        instance: SoundInstanceHandle,
+        sound_transform: SoundTransform,
+    ) {
+        self.audio_manager
+            .set_local_sound_transform(instance, sound_transform);
+    }
+
     pub fn start_sound(
         &mut self,
         sound: SoundHandle,

@@ -303,6 +303,7 @@ impl<'gc> AudioManager<'gc> {
                 sound: Some(sound),
                 instance: handle,
                 display_object,
+                transform: DisplayObjectSoundTransform::default(),
                 avm1_object,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
@@ -378,6 +379,7 @@ impl<'gc> AudioManager<'gc> {
                 sound: None,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
+                transform: DisplayObjectSoundTransform::default(),
                 avm1_object: None,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
@@ -395,6 +397,41 @@ impl<'gc> AudioManager<'gc> {
     pub fn set_global_sound_transform(&mut self, sound_transform: DisplayObjectSoundTransform) {
         self.global_sound_transform = sound_transform;
         self.transforms_dirty = true;
+    }
+
+    /// Get the local sound transform of a single sound instance.
+    pub fn local_sound_transform(
+        &self,
+        instance: SoundInstanceHandle,
+    ) -> Option<&DisplayObjectSoundTransform> {
+        if let Some(i) = self
+            .sounds
+            .iter()
+            .position(|other| other.instance == instance)
+        {
+            let instance = &self.sounds[i];
+            Some(&instance.transform)
+        } else {
+            None
+        }
+    }
+
+    /// Set the local sound transform of a single sound instance.
+    pub fn set_local_sound_transform(
+        &mut self,
+        instance: SoundInstanceHandle,
+        sound_transform: DisplayObjectSoundTransform,
+    ) {
+        if let Some(i) = self
+            .sounds
+            .iter()
+            .position(|other| other.instance == instance)
+        {
+            let instance = &mut self.sounds[i];
+
+            instance.transform = sound_transform;
+            self.transforms_dirty = true;
+        }
     }
 
     /// Returns the number of seconds that a timeline audio stream should buffer before playing.
@@ -416,7 +453,7 @@ impl<'gc> AudioManager<'gc> {
     }
 
     fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
-        let mut transform = DisplayObjectSoundTransform::default();
+        let mut transform = sound.transform.clone();
         let mut parent = sound.display_object;
         while let Some(display_object) = parent {
             transform.concat(&display_object.sound_transform());
@@ -464,6 +501,13 @@ pub struct SoundInstance<'gc> {
     /// Used for volume mixing and `Sound.stop()`.
     display_object: Option<DisplayObject<'gc>>,
 
+    /// The local sound transform of this sound.
+    ///
+    /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
+    /// instead get the sound transform of the display object they're
+    /// associated with.
+    transform: DisplayObjectSoundTransform,
+
     /// The AVM1 `Sound` object associated with this sound, if any.
     pub avm1_object: Option<SoundObject<'gc>>,
 }
@@ -471,7 +515,8 @@ pub struct SoundInstance<'gc> {
 /// A sound transform for a playing sound, for use by audio backends.
 /// This differs from `display_object::SoundTranform` by being
 /// already converted to `f32` and having `volume` baked in.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Collect)]
+#[collect(require_static)]
 pub struct SoundTransform {
     pub left_to_left: f32,
     pub left_to_right: f32,
