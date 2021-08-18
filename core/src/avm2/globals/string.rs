@@ -11,6 +11,7 @@ use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use crate::string_utils;
 use gc_arena::{GcCell, MutationContext};
+use std::iter;
 
 /// Implements `String`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -126,12 +127,16 @@ fn split<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        if matches!(args.get(0).unwrap_or(&Value::Undefined), Value::Undefined) {
-            log::warn!("string.split(undefined) - not implemented");
+        let delimiter = args.get(0).unwrap_or(&Value::Undefined);
+        if matches!(delimiter, Value::Undefined) {
+            let this = Value::from(this);
+            return Ok(
+                ArrayObject::from_storage(activation, iter::once(this).collect())
+                    .unwrap()
+                    .into(),
+            );
         }
-        if args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
+        if delimiter
             .coerce_to_object(activation)?
             .as_regexp()
             .is_some()
@@ -139,10 +144,7 @@ fn split<'gc>(
             log::warn!("string.split(regex) - not implemented");
         }
         let this = Value::from(this).coerce_to_string(activation)?;
-        let delimiter = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
+        let delimiter = delimiter.coerce_to_string(activation)?;
         let limit = match args.get(1).unwrap_or(&Value::Undefined) {
             Value::Undefined => usize::MAX,
             limit => limit.coerce_to_i32(activation)?.max(0) as usize,

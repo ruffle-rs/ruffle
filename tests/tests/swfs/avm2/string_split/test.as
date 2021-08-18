@@ -16,7 +16,8 @@ trace(text.split("."));
 trace('// text.split("")');
 trace(text.split(""));
 
-trace('// text.split() - unimplemented');
+trace('// text.split()');
+trace(text.split());
 trace('// text.split(regex) - unimplemented');
 
 
