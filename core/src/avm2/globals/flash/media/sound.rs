@@ -8,6 +8,7 @@ use crate::avm2::object::{sound_allocator, Object, SoundChannelObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
+use crate::display_object::SoundTransform;
 use gc_arena::{GcCell, MutationContext};
 use swf::{SoundEvent, SoundInfo};
 
@@ -161,6 +162,11 @@ pub fn play<'gc>(
             .context
             .start_sound(sound, &sound_info, None, None)
         {
+            if let Some(sound_transform) = sound_transform {
+                let st = SoundTransform::from_avm2_object(activation, sound_transform)?;
+                activation.context.set_local_sound_transform(instance, st);
+            }
+
             return Ok(SoundChannelObject::from_sound_instance(activation, instance)?.into());
         }
     }
