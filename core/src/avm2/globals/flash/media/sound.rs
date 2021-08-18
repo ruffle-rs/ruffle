@@ -174,6 +174,51 @@ pub fn play<'gc>(
     Ok(Value::Null)
 }
 
+/// Stubs `Sound.extract`
+pub fn extract<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.extract is a stub.".into())
+}
+
+/// Stubs `Sound.close`
+pub fn close<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.close is a stub.".into())
+}
+
+/// Stubs `Sound.load`
+pub fn load<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.load is a stub.".into())
+}
+
+/// Stubs `Sound.loadCompressedDataFromByteArray`
+pub fn load_compressed_data_from_byte_array<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.loadCompressedDataFromByteArray is a stub.".into())
+}
+
+/// Stubs `Sound.loadPCMFromByteArray`
+pub fn load_pcm_from_byte_array<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.loadPCMFromByteArray is a stub.".into())
+}
+
 /// Construct `Sound`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -203,7 +248,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("play", play)];
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("play", play),
+        ("extract", extract),
+        ("load", load),
+        ("close", close),
+        (
+            "loadCompressedDataFromByteArray",
+            load_compressed_data_from_byte_array,
+        ),
+        ("loadPCMFromByteArray", load_pcm_from_byte_array),
+    ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
