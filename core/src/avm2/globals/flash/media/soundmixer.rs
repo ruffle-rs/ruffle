@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::SoundTransform;
@@ -42,44 +42,8 @@ pub fn sound_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let dobj_st = activation.context.global_sound_transform().clone();
-    let mut as3_st = activation
-        .avm2()
-        .classes()
-        .soundtransform
-        .construct(activation, &[])?;
 
-    as3_st.set_property(
-        as3_st,
-        &QName::new(Namespace::public(), "leftToLeft"),
-        (dobj_st.left_to_left as f64 / 100.0).into(),
-        activation,
-    )?;
-    as3_st.set_property(
-        as3_st,
-        &QName::new(Namespace::public(), "leftToRight"),
-        (dobj_st.left_to_right as f64 / 100.0).into(),
-        activation,
-    )?;
-    as3_st.set_property(
-        as3_st,
-        &QName::new(Namespace::public(), "rightToLeft"),
-        (dobj_st.right_to_left as f64 / 100.0).into(),
-        activation,
-    )?;
-    as3_st.set_property(
-        as3_st,
-        &QName::new(Namespace::public(), "rightToRight"),
-        (dobj_st.right_to_right as f64 / 100.0).into(),
-        activation,
-    )?;
-    as3_st.set_property(
-        as3_st,
-        &QName::new(Namespace::public(), "volume"),
-        (dobj_st.volume as f64 / 100.0).into(),
-        activation,
-    )?;
-
-    Ok(as3_st.into())
+    Ok(dobj_st.into_avm2_object(activation)?.into())
 }
 
 /// Implements `soundTransform`'s setter
@@ -96,48 +60,7 @@ pub fn set_sound_transform<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .coerce_to_object(activation)?;
-    let dobj_st = SoundTransform {
-        left_to_left: (as3_st
-            .get_property(
-                as3_st,
-                &QName::new(Namespace::public(), "leftToLeft"),
-                activation,
-            )?
-            .coerce_to_number(activation)?
-            * 100.0) as i32,
-        left_to_right: (as3_st
-            .get_property(
-                as3_st,
-                &QName::new(Namespace::public(), "leftToRight"),
-                activation,
-            )?
-            .coerce_to_number(activation)?
-            * 100.0) as i32,
-        right_to_left: (as3_st
-            .get_property(
-                as3_st,
-                &QName::new(Namespace::public(), "rightToLeft"),
-                activation,
-            )?
-            .coerce_to_number(activation)?
-            * 100.0) as i32,
-        right_to_right: (as3_st
-            .get_property(
-                as3_st,
-                &QName::new(Namespace::public(), "rightToRight"),
-                activation,
-            )?
-            .coerce_to_number(activation)?
-            * 100.0) as i32,
-        volume: (as3_st
-            .get_property(
-                as3_st,
-                &QName::new(Namespace::public(), "volume"),
-                activation,
-            )?
-            .coerce_to_number(activation)?
-            * 100.0) as i32,
-    };
+    let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
     activation.context.set_global_sound_transform(dobj_st);
 
