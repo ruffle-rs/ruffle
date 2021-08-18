@@ -2,7 +2,9 @@ use crate::avm1::{
     Error as Avm1Error, Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::{
-    Avm2, Event as Avm2Event, Object as Avm2Object, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, Event as Avm2Event,
+    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -1765,6 +1767,98 @@ impl SoundTransform {
         }
         self.left_to_right = 0;
         self.right_to_left = 0;
+    }
+
+    pub fn from_avm2_object<'gc>(
+        activation: &mut Avm2Activation<'_, 'gc, '_>,
+        as3_st: Avm2Object<'gc>,
+    ) -> Result<Self, Avm2Error> {
+        Ok(SoundTransform {
+            left_to_left: (as3_st
+                .get_property(
+                    as3_st,
+                    &Avm2QName::new(Avm2Namespace::public(), "leftToLeft"),
+                    activation,
+                )?
+                .coerce_to_number(activation)?
+                * 100.0) as i32,
+            left_to_right: (as3_st
+                .get_property(
+                    as3_st,
+                    &Avm2QName::new(Avm2Namespace::public(), "leftToRight"),
+                    activation,
+                )?
+                .coerce_to_number(activation)?
+                * 100.0) as i32,
+            right_to_left: (as3_st
+                .get_property(
+                    as3_st,
+                    &Avm2QName::new(Avm2Namespace::public(), "rightToLeft"),
+                    activation,
+                )?
+                .coerce_to_number(activation)?
+                * 100.0) as i32,
+            right_to_right: (as3_st
+                .get_property(
+                    as3_st,
+                    &Avm2QName::new(Avm2Namespace::public(), "rightToRight"),
+                    activation,
+                )?
+                .coerce_to_number(activation)?
+                * 100.0) as i32,
+            volume: (as3_st
+                .get_property(
+                    as3_st,
+                    &Avm2QName::new(Avm2Namespace::public(), "volume"),
+                    activation,
+                )?
+                .coerce_to_number(activation)?
+                * 100.0) as i32,
+        })
+    }
+
+    pub fn into_avm2_object<'gc>(
+        self,
+        activation: &mut Avm2Activation<'_, 'gc, '_>,
+    ) -> Result<Avm2Object<'gc>, Avm2Error> {
+        let mut as3_st = activation
+            .avm2()
+            .classes()
+            .soundtransform
+            .construct(activation, &[])?;
+
+        as3_st.set_property(
+            as3_st,
+            &Avm2QName::new(Avm2Namespace::public(), "leftToLeft"),
+            (self.left_to_left as f64 / 100.0).into(),
+            activation,
+        )?;
+        as3_st.set_property(
+            as3_st,
+            &Avm2QName::new(Avm2Namespace::public(), "leftToRight"),
+            (self.left_to_right as f64 / 100.0).into(),
+            activation,
+        )?;
+        as3_st.set_property(
+            as3_st,
+            &Avm2QName::new(Avm2Namespace::public(), "rightToLeft"),
+            (self.right_to_left as f64 / 100.0).into(),
+            activation,
+        )?;
+        as3_st.set_property(
+            as3_st,
+            &Avm2QName::new(Avm2Namespace::public(), "rightToRight"),
+            (self.right_to_right as f64 / 100.0).into(),
+            activation,
+        )?;
+        as3_st.set_property(
+            as3_st,
+            &Avm2QName::new(Avm2Namespace::public(), "volume"),
+            (self.volume as f64 / 100.0).into(),
+            activation,
+        )?;
+
+        Ok(as3_st)
     }
 }
 

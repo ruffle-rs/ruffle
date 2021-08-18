@@ -74,45 +74,9 @@ pub fn sound_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
-        let dobj_st = dobj.sound_transform();
-        let mut as3_st = activation
-            .avm2()
-            .classes()
-            .soundtransform
-            .construct(activation, &[])?;
+        let dobj_st = dobj.sound_transform().clone();
 
-        as3_st.set_property(
-            as3_st,
-            &QName::new(Namespace::public(), "leftToLeft"),
-            (dobj_st.left_to_left as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_property(
-            as3_st,
-            &QName::new(Namespace::public(), "leftToRight"),
-            (dobj_st.left_to_right as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_property(
-            as3_st,
-            &QName::new(Namespace::public(), "rightToLeft"),
-            (dobj_st.right_to_left as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_property(
-            as3_st,
-            &QName::new(Namespace::public(), "rightToRight"),
-            (dobj_st.right_to_right as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_property(
-            as3_st,
-            &QName::new(Namespace::public(), "volume"),
-            (dobj_st.volume as f64 / 100.0).into(),
-            activation,
-        )?;
-
-        return Ok(as3_st.into());
+        return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
 
     Ok(Value::Undefined)
@@ -130,48 +94,7 @@ pub fn set_sound_transform<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_object(activation)?;
-        let dobj_st = SoundTransform {
-            left_to_left: (as3_st
-                .get_property(
-                    as3_st,
-                    &QName::new(Namespace::public(), "leftToLeft"),
-                    activation,
-                )?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            left_to_right: (as3_st
-                .get_property(
-                    as3_st,
-                    &QName::new(Namespace::public(), "leftToRight"),
-                    activation,
-                )?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            right_to_left: (as3_st
-                .get_property(
-                    as3_st,
-                    &QName::new(Namespace::public(), "rightToLeft"),
-                    activation,
-                )?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            right_to_right: (as3_st
-                .get_property(
-                    as3_st,
-                    &QName::new(Namespace::public(), "rightToRight"),
-                    activation,
-                )?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            volume: (as3_st
-                .get_property(
-                    as3_st,
-                    &QName::new(Namespace::public(), "volume"),
-                    activation,
-                )?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-        };
+        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
         dobj.set_sound_transform(&mut activation.context, dobj_st);
     }
