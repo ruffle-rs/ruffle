@@ -49,6 +49,15 @@ pub fn right_peak<'gc>(
     Err("Sound.rightPeak is a stub.".into())
 }
 
+/// Impl `SoundChannel.position`
+pub fn position<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Sound.position is a stub.".into())
+}
+
 /// Construct `SoundChannel`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -71,6 +80,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[
         ("leftPeak", Some(left_peak), None),
         ("rightPeak", Some(right_peak), None),
+        ("position", Some(position), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
