@@ -1,0 +1,8 @@
+///var silence = new Silence();
+///var silence_channel = silence.play();
+///silence_channel.stop()
+undefined
+///var noise = new Noise();
+///var noise_channel = noise.play(0, 1);
+///noise_channel.stop();
+undefined

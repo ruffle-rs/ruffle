@@ -661,6 +661,7 @@ swf_tests! {
     (as3_sound_play, "avm2/sound_play", 1),
     #[ignore] (as3_soundchannel_position, "avm2/soundchannel_position", 75),
     (as3_soundchannel_soundtransform, "avm2/soundchannel_soundtransform", 49),
+    (as3_soundchannel_stop, "avm2/soundchannel_stop", 4),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
