@@ -186,7 +186,7 @@ impl AudioBackend for NullAudioBackend {
 
     fn stop_all_sounds(&mut self) {}
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
-        None
+        Some(0)
     }
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
         if let Some(sound) = self.sounds.get(sound) {
