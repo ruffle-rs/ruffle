@@ -98,6 +98,19 @@ pub fn set_sound_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Impl `SoundChannel.stop`
+pub fn stop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+        activation.context.stop_sound(instance);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SoundChannel`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -128,6 +141,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("stop", stop)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }
