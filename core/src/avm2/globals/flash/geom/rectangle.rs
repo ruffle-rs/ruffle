@@ -371,6 +371,100 @@ pub fn clone<'gc>(
     Ok(Value::Undefined)
 }
 
+fn contains_tuple<'gc>(
+    this: &Object<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    coords: (f64, f64),
+) -> Result<bool, Error> {
+    let (x, y) = coords;
+    let left = get_prop!(*this, activation, "x")?;
+    let right = get_prop!(*this, activation, "width")? + left;
+
+    let top = get_prop!(*this, activation, "y")?;
+    let bottom = get_prop!(*this, activation, "height")? + top;
+
+    return Ok(left <= x && x < right && top <= y && y < bottom);
+}
+
+/// Implement `contains`
+pub fn contains<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let x = args.get(0).unwrap().coerce_to_number(activation)?;
+        let y = args.get(1).unwrap().coerce_to_number(activation)?;
+
+        return Ok(contains_tuple(&this, activation, (x, y))?.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `containsPoint`
+pub fn contains_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(point) = args.get(0) {
+            let point = point.coerce_to_object(activation)?;
+            let x = get_prop!(point, activation, "x")?;
+            let y = get_prop!(point, activation, "y")?;
+
+            return Ok(contains_tuple(&this, activation, (x, y))?.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `containsRect`
+pub fn contains_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(rect) = args.get(0) {
+            let rect = rect.coerce_to_object(activation)?;
+            let x = get_prop!(rect, activation, "x")?;
+            let y = get_prop!(rect, activation, "y")?;
+            let right = get_prop!(rect, activation, "width")? + x;
+            let bottom = get_prop!(rect, activation, "height")? + y;
+
+            return Ok((contains_tuple(&this, activation, (x, y))?
+                && contains_tuple(&this, activation, (right, bottom))?)
+            .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `copyFrom`
+pub fn copy_from<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(rect) = args.get(0) {
+        let rect = rect.coerce_to_object(activation)?;
+        let x = rect.get_property(rect, &QName::new(Namespace::public(), "x"), activation)?;
+        let y = rect.get_property(rect, &QName::new(Namespace::public(), "y"), activation)?;
+        let width =
+            rect.get_property(rect, &QName::new(Namespace::public(), "width"), activation)?;
+        let height =
+            rect.get_property(rect, &QName::new(Namespace::public(), "height"), activation)?;
+
+        set_to(activation, this, &[x, y, width, height])?;
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implement `equals`
 #[allow(clippy::float_cmp)]
 pub fn equals<'gc>(
@@ -489,6 +583,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("contains", contains),
+        ("containsPoint", contains_point),
+        ("containsRect", contains_rect),
+        ("copyFrom", copy_from),
         ("equals", equals),
         ("clone", clone),
         ("setTo", set_to),
