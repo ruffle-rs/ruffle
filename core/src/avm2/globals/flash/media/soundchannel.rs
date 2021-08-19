@@ -4,9 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{soundchannel_allocator, Object};
+use crate::avm2::object::{soundchannel_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::SoundTransform;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.media.SoundChannel`'s instance constructor.
@@ -58,6 +59,45 @@ pub fn position<'gc>(
     Err("Sound.position is a stub.".into())
 }
 
+/// Implements `soundTransform`'s getter
+pub fn sound_transform<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+        let dobj_st = activation.context.local_sound_transform(instance).cloned();
+
+        if let Some(dobj_st) = dobj_st {
+            return Ok(dobj_st.into_avm2_object(activation)?.into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `soundTransform`'s setter
+pub fn set_sound_transform<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+        let as3_st = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_object(activation)?;
+        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+
+        activation
+            .context
+            .set_local_sound_transform(instance, dobj_st);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SoundChannel`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -81,6 +121,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("leftPeak", Some(left_peak), None),
         ("rightPeak", Some(right_peak), None),
         ("position", Some(position), None),
+        (
+            "soundTransform",
+            Some(sound_transform),
+            Some(set_sound_transform),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
