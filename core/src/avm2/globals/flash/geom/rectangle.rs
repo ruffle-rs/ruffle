@@ -490,6 +490,59 @@ pub fn equals<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `inflate`
+pub fn inflate<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        let dx = args.get(0).unwrap().coerce_to_number(activation)?;
+        let dy = args.get(1).unwrap().coerce_to_number(activation)?;
+
+        let x = get_prop!(this, activation, "x")?;
+        let y = get_prop!(this, activation, "y")?;
+
+        let width = get_prop!(this, activation, "width")?;
+        let height = get_prop!(this, activation, "height")?;
+
+        set_prop!(this, activation, "x", x - dx)?;
+        set_prop!(this, activation, "y", y - dy)?;
+        set_prop!(this, activation, "width", width + 2. * dx)?;
+        set_prop!(this, activation, "height", height + 2. * dy)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `inflatePoint`
+pub fn inflate_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        if let Some(point) = args.get(0) {
+            let point = point.coerce_to_object(activation)?;
+            let dx = get_prop!(point, activation, "x")?;
+            let dy = get_prop!(point, activation, "y")?;
+
+            let x = get_prop!(this, activation, "x")?;
+            let y = get_prop!(this, activation, "y")?;
+
+            let width = get_prop!(this, activation, "width")?;
+            let height = get_prop!(this, activation, "height")?;
+
+            set_prop!(this, activation, "x", x - dx)?;
+            set_prop!(this, activation, "y", y - dy)?;
+            set_prop!(this, activation, "width", width + 2. * dx)?;
+            set_prop!(this, activation, "height", height + 2. * dy)?;
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `setTo`
 pub fn set_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -588,6 +641,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("containsRect", contains_rect),
         ("copyFrom", copy_from),
         ("equals", equals),
+        ("inflate", inflate),
+        ("inflatePoint", inflate_point),
         ("clone", clone),
         ("setTo", set_to),
         ("toString", to_string),
