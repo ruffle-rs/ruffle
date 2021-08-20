@@ -1,5 +1,7 @@
 use crate::{
     avm1::SoundObject,
+    avm2::Event as Avm2Event,
+    avm2::Object as Avm2Object,
     display_object::{
         self, DisplayObject, MovieClip, SoundTransform as DisplayObjectSoundTransform,
         TDisplayObject,
@@ -281,6 +283,20 @@ impl<'gc> AudioManager<'gc> {
                         false,
                     );
                 }
+
+                if let Some(object) = sound.avm2_object {
+                    //TODO: AVM2 events are usually not queued, but we can't
+                    //hold the update context in the audio manager yet.
+                    action_queue.queue_actions(
+                        root,
+                        crate::context::ActionType::Event2 {
+                            event: Avm2Event::new("soundComplete"),
+                            target: object,
+                        },
+                        false,
+                    )
+                }
+
                 false
             }
         });
@@ -305,12 +321,28 @@ impl<'gc> AudioManager<'gc> {
                 display_object,
                 transform: DisplayObjectSoundTransform::default(),
                 avm1_object,
+                avm2_object: None,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
             Some(handle)
         } else {
             None
+        }
+    }
+
+    pub fn attach_avm2_sound_channel(
+        &mut self,
+        instance: SoundInstanceHandle,
+        avm2_object: Avm2Object<'gc>,
+    ) {
+        if let Some(i) = self
+            .sounds
+            .iter()
+            .position(|other| other.instance == instance)
+        {
+            let instance = &mut self.sounds[i];
+            instance.avm2_object = Some(avm2_object);
         }
     }
 
@@ -381,6 +413,7 @@ impl<'gc> AudioManager<'gc> {
                 display_object: Some(movie_clip.into()),
                 transform: DisplayObjectSoundTransform::default(),
                 avm1_object: None,
+                avm2_object: None,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
@@ -510,6 +543,9 @@ pub struct SoundInstance<'gc> {
 
     /// The AVM1 `Sound` object associated with this sound, if any.
     pub avm1_object: Option<SoundObject<'gc>>,
+
+    /// The AVM2 `Sound` object associated with this sound, if any.
+    pub avm2_object: Option<Avm2Object<'gc>>,
 }
 
 /// A sound transform for a playing sound, for use by audio backends.
