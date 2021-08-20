@@ -133,7 +133,7 @@ impl ByteArrayStorage {
             self.set_length(new_len);
         }
         // SAFETY:
-        // The storage is garunteed to be at least the size of new_len because we just resized it.
+        // The amount of bytes from the start of the underyling buffer + offset is garunteed to be able to fit the buffer we are writing because we just resized it.
         unsafe {
             self.bytes
                 .as_mut_ptr()
@@ -169,7 +169,7 @@ impl ByteArrayStorage {
         // First verify that reading from `start` to `amnt` is valid
         start
             .checked_add(amnt)
-            .and_then(|result| (result <= self.len()).then(|| ()))
+            .filter(|result| *result <= self.len())
             .ok_or("RangeError: Reached EOF")?;
 
         // Second we resize our underlying buffer to ensure that writing `amnt` from `offset` is valid.
