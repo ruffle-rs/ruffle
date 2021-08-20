@@ -42,9 +42,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&str, &str)] = &[
-        ("CLICK", "click"),
-    ];
+    const CONSTANTS: &[(&str, &str)] = &[("CLICK", "click")];
     write.define_public_constant_string_class_traits(CONSTANTS);
 
     class
