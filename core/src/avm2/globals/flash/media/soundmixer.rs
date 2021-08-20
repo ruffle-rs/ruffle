@@ -67,6 +67,17 @@ pub fn set_sound_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `SoundMixer.stopAll`
+pub fn stop_all<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    activation.context.stop_all_sounds();
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SoundMixer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -88,6 +99,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(set_sound_transform),
         )];
     write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
+
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("stopAll", stop_all)];
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
