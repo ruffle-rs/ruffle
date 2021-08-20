@@ -167,7 +167,13 @@ pub fn play<'gc>(
                 activation.context.set_local_sound_transform(instance, st);
             }
 
-            return Ok(SoundChannelObject::from_sound_instance(activation, instance)?.into());
+            let sound_channel = SoundChannelObject::from_sound_instance(activation, instance)?;
+
+            activation
+                .context
+                .attach_avm2_sound_channel(instance, sound_channel);
+
+            return Ok(sound_channel.into());
         }
     }
 

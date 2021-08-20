@@ -2,7 +2,7 @@
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
-use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::{Avm2, Event as Avm2Event, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     locale::LocaleBackend,
@@ -206,6 +206,15 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
             .start_sound(self.audio, sound, settings, owner, avm1_object)
+    }
+
+    pub fn attach_avm2_sound_channel(
+        &mut self,
+        instance: SoundInstanceHandle,
+        avm2_object: Avm2Object<'gc>,
+    ) {
+        self.audio_manager
+            .attach_avm2_sound_channel(instance, avm2_object);
     }
 
     pub fn stop_sound(&mut self, instance: SoundInstanceHandle) {
@@ -444,6 +453,12 @@ pub enum ActionType<'gc> {
         reciever: Option<Avm2Object<'gc>>,
         args: Vec<Avm2Value<'gc>>,
     },
+
+    /// An AVM2 event to be dispatched.
+    Event2 {
+        event: Avm2Event<'gc>,
+        target: Avm2Object<'gc>,
+    },
 }
 
 impl ActionType<'_> {
@@ -500,6 +515,11 @@ impl fmt::Debug for ActionType<'_> {
                 .field("callable", callable)
                 .field("reciever", reciever)
                 .field("args", args)
+                .finish(),
+            ActionType::Event2 { event, target } => f
+                .debug_struct("ActionType::Event2")
+                .field("event", event)
+                .field("target", target)
                 .finish(),
         }
     }

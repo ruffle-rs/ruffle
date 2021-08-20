@@ -1392,6 +1392,12 @@ impl Player {
                         log::error!("Unhandled AVM2 exception in event handler: {}", e);
                     }
                 }
+
+                ActionType::Event2 { event, target } => {
+                    if let Err(e) = Avm2::dispatch_event(context, event, target) {
+                        log::error!("Unhandled AVM2 exception in event handler: {}", e);
+                    }
+                }
             }
         }
     }

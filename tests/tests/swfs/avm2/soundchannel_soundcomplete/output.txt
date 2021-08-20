@@ -1,0 +1,16 @@
+///var silence = new Silence();
+///var silence_channel = silence.play();
+///var ew = new EventWatcher("silence_channel", silence_channel);
+///var noise = new Noise();
+///var noise_channel = noise.play(1000);
+///var ew2 = new EventWatcher("noise_channel", noise_channel);
+noise_channel:[Event type="soundComplete" bubbles=false cancelable=false eventPhase=2]
+///event.currentTarget
+[object SoundChannel]
+///event.target
+[object SoundChannel]
+silence_channel:[Event type="soundComplete" bubbles=false cancelable=false eventPhase=2]
+///event.currentTarget
+[object SoundChannel]
+///event.target
+[object SoundChannel]
