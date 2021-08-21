@@ -107,6 +107,24 @@ pub fn set_buffer_time<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub `SoundMixer.areSoundsInaccessible`
+pub fn are_sounds_inaccessible<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("SoundMixer.areSoundsInaccessible is a stub".into())
+}
+
+/// Stub `SoundMixer.computeSpectrum`
+pub fn compute_spectrum<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("SoundMixer.computeSpectrum is a stub".into())
+}
+
 /// Construct `SoundMixer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -132,7 +150,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ];
     write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("stopAll", stop_all)];
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("stopAll", stop_all),
+        ("areSoundsInaccessible", are_sounds_inaccessible),
+        ("computeSpectrum", compute_spectrum),
+    ];
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
