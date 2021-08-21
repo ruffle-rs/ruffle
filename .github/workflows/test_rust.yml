@@ -10,7 +10,7 @@ jobs:
   build:
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.name }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' }}
+    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
     strategy:
       fail-fast: false
       matrix:
