@@ -3,8 +3,20 @@ name: Test Web
 on:
   push:
     branches: [ master ]
+    paths:
+      - '.github/workflows/test_web.yml'
+      - '**.rs'
+      - '**/?Cargo.toml'
+      - 'web/**'
+      - '!**.md'
   pull_request:
     branches: [ master ]
+    paths:
+      - '.github/workflows/test_web.yml'
+      - '**.rs'
+      - '**/?Cargo.toml'
+      - 'web/**'
+      - '!**.md'
 
 jobs:
   build:

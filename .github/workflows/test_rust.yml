@@ -3,8 +3,16 @@ name: Test Rust
 on:
   push:
     branches: [master]
+    paths:
+      - '.github/workflows/test_rust.yml'
+      - '**.rs'
+      - '**/?Cargo.toml'
   pull_request:
     branches: [master]
+    paths:
+      - '.github/workflows/test_rust.yml'
+      - '**.rs'
+      - '**/?Cargo.toml'
 
 jobs:
   build:
