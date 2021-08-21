@@ -40,6 +40,18 @@ jobs:
           sudo apt-get dist-upgrade
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev mesa-vulkan-drivers
 
+      - name: Check formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      - name: Check clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all --tests -- -D warnings
+
       - name: Run tests with image tests
         if: ${{ matrix.os.img_tests }}
         uses: actions-rs/cargo@v1
@@ -53,23 +65,9 @@ jobs:
         with:
           command: test
 
-
       - name: Upload images
         if: ${{ failure() }}
         uses: actions/upload-artifact@v2
         with:
           name: swf_images
           path: tests/**/*.png.updated
-
-      - name: Check clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all --tests -- -D warnings
-
-      - name: Check formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
