@@ -6,13 +6,15 @@ on:
     paths:
       - '.github/workflows/test_rust.yml'
       - '**.rs'
-      - '**/?Cargo.toml'
+      - 'Cargo.toml'
+      - '**/Cargo.toml'
   pull_request:
     branches: [master]
     paths:
       - '.github/workflows/test_rust.yml'
       - '**.rs'
-      - '**/?Cargo.toml'
+      - 'Cargo.toml'
+      - '**/Cargo.toml'
 
 jobs:
   build:

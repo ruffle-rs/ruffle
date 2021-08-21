@@ -6,7 +6,8 @@ on:
     paths:
       - '.github/workflows/test_web.yml'
       - '**.rs'
-      - '**/?Cargo.toml'
+      - 'Cargo.toml'
+      - '**/Cargo.toml'
       - 'web/**'
       - '!**.md'
   pull_request:
@@ -14,7 +15,8 @@ on:
     paths:
       - '.github/workflows/test_web.yml'
       - '**.rs'
-      - '**/?Cargo.toml'
+      - 'Cargo.toml'
+      - '**/Cargo.toml'
       - 'web/**'
       - '!**.md'
 
