@@ -147,21 +147,24 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
                     // some properties, e.g. TextField.text, should call an associated watcher
-                    let value = self.get_watcher(activation, name).map(|watcher| {
-                        // for all text_field callbacks this is undefined. Some, like button.enabled, pass the
-                        // real value, but I haven't seen any examples of that being used in the wild.
-                        return match watcher.call(
-                            activation,
-                            name,
-                            Value::Undefined,
-                            value,
-                            this,
-                            Some(this),
-                        ) {
-                            Ok(v) => v,
-                            Err(_) => Value::Undefined,
-                        };
-                    }).unwrap_or(value);
+                    let value = self
+                        .get_watcher(activation, name)
+                        .map(|watcher| {
+                            // for all text_field callbacks this is undefined. Some, like button.enabled, pass the
+                            // real value, but I haven't seen any examples of that being used in the wild.
+                            return match watcher.call(
+                                activation,
+                                name,
+                                Value::Undefined,
+                                value,
+                                this,
+                                Some(this),
+                            ) {
+                                Ok(v) => v,
+                                Err(_) => Value::Undefined,
+                            };
+                        })
+                        .unwrap_or(value);
                     if let Some(setter) = this_proto.setter(name, activation) {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
