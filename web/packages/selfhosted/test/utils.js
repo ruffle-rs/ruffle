@@ -56,8 +56,8 @@ async function play_and_monitor(browser, player, expected_output) {
     // TODO: better way to test for this in the API
     await browser.waitUntil(
         async () =>
-            await has_error(browser) ||
-            await browser.execute((player) => player.instance, player),
+            (await has_error(browser)) ||
+            (await browser.execute((player) => player.instance, player)),
         {
             timeoutMsg: "Expected player to have initialized",
         }
@@ -77,8 +77,10 @@ async function play_and_monitor(browser, player, expected_output) {
 
     await browser.waitUntil(
         async () =>
-            await browser.execute((player) => player.__ruffle_log__, player) ===
-            expected_output,
+            (await browser.execute(
+                (player) => player.__ruffle_log__,
+                player
+            )) === expected_output,
         {
             timeoutMsg: "Expected Ruffle to trace a message",
         }
@@ -95,7 +97,9 @@ async function open_test(browser, absolute_dir, file_name) {
     if (file_name === undefined) {
         file_name = "index.html";
     }
-    await browser.url(`http://localhost:4567/test/polyfill/${dir_name}/${file_name}`);
+    await browser.url(
+        `http://localhost:4567/test/polyfill/${dir_name}/${file_name}`
+    );
 }
 
 /** Test set-up for JS API testing. */
