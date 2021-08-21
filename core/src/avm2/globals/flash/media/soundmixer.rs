@@ -78,6 +78,35 @@ pub fn stop_all<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `bufferTime`'s getter
+pub fn buffer_time<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(activation.context.audio_manager.stream_buffer_time().into())
+}
+
+/// Implements `bufferTime`'s setter
+pub fn set_buffer_time<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let buffer_time = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_i32(activation)?;
+
+    activation
+        .context
+        .audio_manager
+        .set_stream_buffer_time(buffer_time);
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `SoundMixer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -93,11 +122,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
     const PUBLIC_CLASS_PROPERTIES: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] =
-        &[(
-            "soundTransform",
-            Some(sound_transform),
-            Some(set_sound_transform),
-        )];
+        &[
+            (
+                "soundTransform",
+                Some(sound_transform),
+                Some(set_sound_transform),
+            ),
+            ("bufferTime", Some(buffer_time), Some(set_buffer_time)),
+        ];
     write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("stopAll", stop_all)];
