@@ -6,15 +6,15 @@ const fs = require("fs");
 use(chaiHtml);
 
 describe("iframe onload", () => {
-    it("loads the test", () => {
-        open_test(browser, __dirname);
+    it("loads the test", async () => {
+        await open_test(browser, __dirname);
     });
 
-    it("runs the iframe onload event", () => {
-        inject_ruffle_and_wait(browser);
-        browser.$("<div />").waitForExist();
+    it("runs the iframe onload event", async () => {
+        await inject_ruffle_and_wait(browser);
+        await browser.$("<div />").waitForExist();
 
-        const actual = browser.$("#container").getHTML(false);
+        const actual = await browser.$("#container").getHTML(false);
         const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
         expect(actual).html.to.equal(expected);
     });
