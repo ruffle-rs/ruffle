@@ -619,6 +619,85 @@ pub fn intersects<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `isEmpty`
+pub fn is_empty<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let width = get_prop!(this, activation, "width")?;
+        let height = get_prop!(this, activation, "height")?;
+
+        return Ok((width <= 0. || height <= 0.).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `offset`
+pub fn offset<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        let dx = args.get(0).unwrap().coerce_to_number(activation)?;
+        let dy = args.get(1).unwrap().coerce_to_number(activation)?;
+
+        let x = get_prop!(this, activation, "x")?;
+        let y = get_prop!(this, activation, "y")?;
+
+        set_prop!(this, activation, "x", x + dx)?;
+        set_prop!(this, activation, "y", y + dy)?;
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `offsetPoint`
+pub fn offset_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut this) = this {
+        if let Some(point) = args.get(0) {
+            let point = point.coerce_to_object(activation)?;
+            let dx = get_prop!(point, activation, "x")?;
+            let dy = get_prop!(point, activation, "y")?;
+
+            let x = get_prop!(this, activation, "x")?;
+            let y = get_prop!(this, activation, "y")?;
+
+            set_prop!(this, activation, "x", x + dx)?;
+            set_prop!(this, activation, "y", y + dy)?;
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `setEmpty`
+pub fn set_empty<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let _ = set_to(
+        activation,
+        this,
+        &[
+            Value::Number(0.),
+            Value::Number(0.),
+            Value::Number(0.),
+            Value::Number(0.),
+        ],
+    );
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `setTo`
 pub fn set_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -683,6 +762,79 @@ pub fn to_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `union`
+pub fn union<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(other) = args.get(0) {
+            let other = other.coerce_to_object(activation)?;
+            let other_left = get_prop!(other, activation, "x")?;
+            let other_width = get_prop!(other, activation, "width")?;
+            let other_top = get_prop!(other, activation, "y")?;
+            let other_height = get_prop!(other, activation, "height")?;
+            let other_right = other_left + other_width;
+            let other_bottom = other_top + other_height;
+
+            let this_left = get_prop!(this, activation, "x")?;
+            let this_width = get_prop!(this, activation, "width")?;
+            let this_top = get_prop!(this, activation, "y")?;
+            let this_height = get_prop!(this, activation, "height")?;
+            let this_right = this_left + this_width;
+            let this_bottom = this_top + this_height;
+
+            if this_height <= 0. || this_width <= 0. {
+                return create_rectangle(
+                    activation,
+                    (other_left, other_top, other_width, other_height),
+                );
+            }
+
+            if other_height <= 0. || other_width <= 0. {
+                return create_rectangle(
+                    activation,
+                    (this_left, this_top, this_width, this_height),
+                );
+            }
+
+            let left = if this_left.is_nan() {
+                this_left
+            } else if other_left.is_nan() {
+                other_left
+            } else {
+                this_left.min(other_left)
+            };
+            let top = if this_top.is_nan() {
+                this_top
+            } else if other_top.is_nan() {
+                other_top
+            } else {
+                this_top.min(other_top)
+            };
+            let width = if this_right.is_nan() {
+                this_right
+            } else if other_right.is_nan() {
+                other_right
+            } else {
+                this_right.max(other_right)
+            } - left;
+            let height = if this_bottom.is_nan() {
+                this_bottom
+            } else if other_bottom.is_nan() {
+                other_bottom
+            } else {
+                this_bottom.max(other_bottom)
+            } - top;
+
+            return create_rectangle(activation, (left, top, width, height));
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Rectangle`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -721,9 +873,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("inflatePoint", inflate_point),
         ("intersection", intersection),
         ("intersects", intersects),
+        ("isEmpty", is_empty),
+        ("offset", offset),
+        ("offsetPoint", offset_point),
+        ("setEmpty", set_empty),
         ("clone", clone),
         ("setTo", set_to),
         ("toString", to_string),
+        ("union", union),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
     class
