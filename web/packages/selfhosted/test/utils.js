@@ -1,7 +1,7 @@
 const path = require("path");
 
-function is_ruffle_loaded(browser) {
-    return browser.execute(
+async function is_ruffle_loaded(browser) {
+    return await browser.execute(
         () =>
             window !== undefined &&
             window.RufflePlayer !== undefined &&
@@ -9,15 +9,15 @@ function is_ruffle_loaded(browser) {
     );
 }
 
-function wait_for_ruffle(browser) {
-    browser.waitUntil(() => is_ruffle_loaded(browser), {
+async function wait_for_ruffle(browser) {
+    await browser.waitUntil(async () => await is_ruffle_loaded(browser), {
         timeoutMsg: "Expected Ruffle to load",
     });
-    throw_if_error(browser);
+    await throw_if_error(browser);
 }
 
-function setup_error_handler(browser) {
-    browser.execute(() => {
+async function setup_error_handler(browser) {
+    await browser.execute(() => {
         window.ruffleErrors = [];
         window.addEventListener("error", (error) => {
             window.ruffleErrors.push(error);
@@ -25,45 +25,45 @@ function setup_error_handler(browser) {
     });
 }
 
-function has_error(browser) {
-    return browser.execute(
+async function has_error(browser) {
+    return await browser.execute(
         () => window.ruffleErrors && window.ruffleErrors.length > 0
     );
 }
 
-function throw_if_error(browser) {
-    return browser.execute(() => {
+async function throw_if_error(browser) {
+    return await browser.execute(() => {
         if (window.ruffleErrors && window.ruffleErrors.length > 0) {
             throw window.ruffleErrors[0];
         }
     });
 }
 
-function inject_ruffle(browser) {
-    setup_error_handler(browser);
-    browser.execute(() => {
+async function inject_ruffle(browser) {
+    await setup_error_handler(browser);
+    await browser.execute(() => {
         const script = document.createElement("script");
         script.type = "text/javascript";
         script.src = "/dist/ruffle.js";
         document.head.appendChild(script);
     });
-    throw_if_error(browser);
+    await throw_if_error(browser);
 }
 
-function play_and_monitor(browser, player, expected_output) {
-    throw_if_error(browser);
+async function play_and_monitor(browser, player, expected_output) {
+    await throw_if_error(browser);
 
     // TODO: better way to test for this in the API
-    browser.waitUntil(
-        () =>
-            has_error(browser) ||
-            browser.execute((player) => player.instance, player),
+    await browser.waitUntil(
+        async () =>
+            (await has_error(browser)) ||
+            (await browser.execute((player) => player.instance, player)),
         {
             timeoutMsg: "Expected player to have initialized",
         }
     );
 
-    browser.execute((player) => {
+    await browser.execute((player) => {
         player.__ruffle_log__ = "";
         player.traceObserver = (msg) => {
             player.__ruffle_log__ += msg + "\n";
@@ -75,39 +75,43 @@ function play_and_monitor(browser, player, expected_output) {
         expected_output = "Hello from Flash!\n";
     }
 
-    browser.waitUntil(
-        () =>
-            browser.execute((player) => player.__ruffle_log__, player) ===
-            expected_output,
+    await browser.waitUntil(
+        async () =>
+            (await browser.execute(
+                (player) => player.__ruffle_log__,
+                player
+            )) === expected_output,
         {
             timeoutMsg: "Expected Ruffle to trace a message",
         }
     );
 }
 
-function inject_ruffle_and_wait(browser) {
-    inject_ruffle(browser);
-    wait_for_ruffle(browser);
+async function inject_ruffle_and_wait(browser) {
+    await inject_ruffle(browser);
+    await wait_for_ruffle(browser);
 }
 
-function open_test(browser, absolute_dir, file_name) {
+async function open_test(browser, absolute_dir, file_name) {
     const dir_name = path.basename(absolute_dir);
     if (file_name === undefined) {
         file_name = "index.html";
     }
-    browser.url(`http://localhost:4567/test/polyfill/${dir_name}/${file_name}`);
+    await browser.url(
+        `http://localhost:4567/test/polyfill/${dir_name}/${file_name}`
+    );
 }
 
 /** Test set-up for JS API testing. */
 function js_api_before(swf) {
     let player = null;
 
-    before("Loads the test", () => {
-        browser.url("http://localhost:4567/test_assets/js_api.html");
+    before("Loads the test", async () => {
+        await browser.url("http://localhost:4567/test_assets/js_api.html");
 
-        inject_ruffle_and_wait(browser);
+        await inject_ruffle_and_wait(browser);
 
-        player = browser.execute(() => {
+        player = await browser.execute(() => {
             const ruffle = window.RufflePlayer.newest();
             const player = ruffle.createPlayer();
             const container = document.getElementById("test-container");
@@ -116,10 +120,10 @@ function js_api_before(swf) {
         });
 
         if (swf) {
-            browser.execute((player) => {
+            await browser.execute((player) => {
                 player.load("/test_assets/example.swf");
             }, player);
-            play_and_monitor(browser, player);
+            await play_and_monitor(browser, player);
         }
     });
 }

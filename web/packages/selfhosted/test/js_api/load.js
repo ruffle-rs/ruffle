@@ -7,11 +7,11 @@ use(chaiHtml);
 describe("RufflePlayer.load", () => {
     js_api_before();
 
-    it("loads and plays a URL", () => {
-        const player = browser.$("<ruffle-player>");
-        browser.execute((player) => {
+    it("loads and plays a URL", async () => {
+        const player = await browser.$("<ruffle-player>");
+        await browser.execute((player) => {
             player.load("/test_assets/example.swf");
         }, player);
-        play_and_monitor(browser, player);
+        await play_and_monitor(browser, player);
     });
 });

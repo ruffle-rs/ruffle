@@ -10,23 +10,23 @@ const fs = require("fs");
 use(chaiHtml);
 
 describe("Embed with case-insensitive MIME type", () => {
-    it("loads the test", () => {
-        open_test(browser, __dirname);
+    it("loads the test", async () => {
+        await open_test(browser, __dirname);
     });
 
-    it("Polyfills", () => {
-        inject_ruffle_and_wait(browser);
-        browser.$("<ruffle-embed />").waitForExist();
+    it("Polyfills", async () => {
+        await inject_ruffle_and_wait(browser);
+        await browser.$("<ruffle-embed />").waitForExist();
 
-        const actual = browser.$("#test-container").getHTML(false);
+        const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
         expect(actual).html.to.equal(expected);
     });
 
-    it("Plays a movie", () => {
-        play_and_monitor(
+    it("Plays a movie", async () => {
+        await play_and_monitor(
             browser,
-            browser.$("#test-container").$("<ruffle-embed />")
+            await browser.$("#test-container").$("<ruffle-embed />")
         );
     });
 });
