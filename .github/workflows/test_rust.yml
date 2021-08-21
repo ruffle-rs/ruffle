@@ -3,18 +3,13 @@ name: Test Rust
 on:
   push:
     branches: [master]
-    paths:
-      - '.github/workflows/test_rust.yml'
-      - '**.rs'
-      - 'Cargo.toml'
-      - '**/Cargo.toml'
   pull_request:
     branches: [master]
-    paths:
-      - '.github/workflows/test_rust.yml'
-      - '**.rs'
-      - 'Cargo.toml'
-      - '**/Cargo.toml'
+    paths-ignore:
+      - 'web/package.json'
+      - 'web/package-lock.json'
+      - 'web/packages/**'
+      - '**.md'
 
 jobs:
   build:
