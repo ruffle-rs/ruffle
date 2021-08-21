@@ -1572,7 +1572,7 @@ impl<'gc> MovieClip<'gc> {
             let result: Result<(), Avm2Error> = constr_thing();
 
             if let Err(e) = result {
-                log::error!("Got {} when constructing AVM2 side of display object", e);
+                log::error!("Got {} when constructing AVM2 side of movie clip", e);
             }
         }
     }
