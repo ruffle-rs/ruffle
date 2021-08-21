@@ -14,12 +14,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust_version: ["stable", "beta", "nightly"]
+        rust_version: ["stable", "beta"]
         os: [
-          {name: ubuntu-latest, img_tests: true },
-          {name: windows-latest, img_tests: true },
-          {name: macOS-latest, img_tests: false }
+          { name: ubuntu-latest, img_tests: true },
+          { name: windows-latest, img_tests: true },
+          { name: macOS-latest, img_tests: false }
         ]
+        include:
+          - rust_version: "nightly"
+            os: { name: ubuntu-latest, img_tests: true }
 
     steps:
       - uses: actions/checkout@v2
