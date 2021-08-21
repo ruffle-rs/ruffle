@@ -58,10 +58,10 @@ jobs:
         npm run bootstrap
         npm run build
 
-    - name: Run tests
-      working-directory: web
-      run: npm test
-
     - name: Check formatting
       working-directory: web
       run: npm run lint
+
+    - name: Run tests
+      working-directory: web
+      run: npm test
