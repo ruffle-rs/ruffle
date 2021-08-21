@@ -44,8 +44,18 @@ pub struct Avm2ButtonData<'gc> {
     /// The current tracking mode of this button.
     tracking: ButtonTracking,
 
+    /// The class of this button.
+    ///
+    /// If not specified in `SymbolClass`, this will be
+    /// `flash.display.SimpleButton`.
+    class: Avm2Object<'gc>,
+
     /// The AVM2 representation of this button.
     object: Option<Avm2Object<'gc>>,
+
+    /// If this button needs to have it's child states constructed, or not.
+    needs_construction: bool,
+
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
@@ -104,7 +114,9 @@ impl<'gc> Avm2Button<'gc> {
                 up_state: None,
                 over_state: None,
                 down_state: None,
+                class: context.avm2.classes().simplebutton,
                 object: None,
+                needs_construction: false,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
                 } else {
@@ -377,6 +389,10 @@ impl<'gc> Avm2Button<'gc> {
     ) {
         self.0.write(context.gc_context).tracking = tracking;
     }
+
+    pub fn set_avm2_class(self, mc: MutationContext<'gc, '_>, class: Avm2Object<'gc>) {
+        self.0.write(mc).class = class;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
@@ -398,6 +414,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
+        self.0.write(context.gc_context).needs_construction = true;
+
         self.set_default_instance_name(context);
 
         if run_frame {
@@ -428,18 +446,18 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             over_state.construct_frame(context);
         }
 
-        if self.0.read().object.is_none() {
-            let simplebutton_constr = context.avm2.classes().simplebutton;
+        let needs_avm2_construction = self.0.read().object.is_none();
+        let class = self.0.read().class;
+        if needs_avm2_construction {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            match Avm2StageObject::for_display_object(
-                &mut activation,
-                (*self).into(),
-                simplebutton_constr,
-            ) {
+            match Avm2StageObject::for_display_object(&mut activation, (*self).into(), class) {
                 Ok(object) => self.0.write(context.gc_context).object = Some(object.into()),
                 Err(e) => log::error!("Got {} when constructing AVM2 side of button", e),
             };
+        }
 
+        let needs_frame_construction = self.0.read().needs_construction;
+        if needs_frame_construction {
             let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
             let (over_state, over_should_fire) = self.create_state(context, swf::ButtonState::OVER);
             let (down_state, down_should_fire) = self.create_state(context, swf::ButtonState::DOWN);
@@ -452,6 +470,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             write.down_state = Some(down_state);
             write.hit_area = Some(hit_area);
             write.skip_current_frame = true;
+            write.needs_construction = false;
 
             drop(write);
 
@@ -507,23 +526,25 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 }
             }
 
-            let avm2_object = self.0.read().object;
-            if let Some(avm2_object) = avm2_object {
-                let mut constr_thing = || {
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    simplebutton_constr.call_native_init(
-                        Some(avm2_object),
-                        &[],
-                        &mut activation,
-                        Some(simplebutton_constr),
-                    )?;
+            if needs_avm2_construction {
+                let avm2_object = self.0.read().object;
+                if let Some(avm2_object) = avm2_object {
+                    let mut constr_thing = || {
+                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        class.call_native_init(
+                            Some(avm2_object),
+                            &[],
+                            &mut activation,
+                            Some(class),
+                        )?;
 
-                    Ok(())
-                };
-                let result: Result<(), Avm2Error> = constr_thing();
+                        Ok(())
+                    };
+                    let result: Result<(), Avm2Error> = constr_thing();
 
-                if let Err(e) = result {
-                    log::error!("Got {} when constructing AVM2 side of button", e);
+                    if let Err(e) = result {
+                        log::error!("Got {} when constructing AVM2 side of button", e);
+                    }
                 }
             }
 

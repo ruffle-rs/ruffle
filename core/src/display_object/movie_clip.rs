@@ -610,6 +610,9 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::MovieClip(mc)) => {
                                 mc.set_avm2_class(activation.context.gc_context, Some(class_object))
                             }
+                            Some(Character::Avm2Button(btn)) => {
+                                btn.set_avm2_class(activation.context.gc_context, class_object)
+                            }
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
                             _ => {
