@@ -98,13 +98,13 @@ struct Opt {
     proxy: Option<Url>,
 
     /// (Optional) Replace all embedded http URLs with https
-    #[clap(long, case_insensitive = true, takes_value = false)]
+    #[clap(long, takes_value = false)]
     upgrade_to_https: bool,
 
-    #[clap(long, case_insensitive = true, takes_value = false)]
+    #[clap(long, takes_value = false)]
     timedemo: bool,
 
-    #[clap(long, case_insensitive = true, takes_value = false)]
+    #[clap(long, takes_value = false)]
     dont_warn_on_unsupported_content: bool,
 }
 
