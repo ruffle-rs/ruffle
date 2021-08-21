@@ -543,6 +543,82 @@ pub fn inflate_point<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `intersection`
+pub fn intersection<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(other) = args.get(0) {
+            let other = other.coerce_to_object(activation)?;
+            let other_left = get_prop!(other, activation, "x")?;
+            let other_right = other_left + get_prop!(other, activation, "width")?;
+            let other_top = get_prop!(other, activation, "y")?;
+            let other_bottom = other_top + get_prop!(other, activation, "height")?;
+
+            let this_left = get_prop!(this, activation, "x")?;
+            let this_right = this_left + get_prop!(this, activation, "width")?;
+            let this_top = get_prop!(this, activation, "y")?;
+            let this_bottom = this_top + get_prop!(this, activation, "height")?;
+
+            let mut left = other_left.max(this_left);
+            let mut right = other_right.min(this_right);
+            let mut top = other_top.max(this_top);
+            let mut bottom = other_bottom.min(this_bottom);
+
+            if right <= left || bottom <= top {
+                right = 0.0;
+                left = 0.0;
+                bottom = 0.0;
+                top = 0.0;
+            }
+            return create_rectangle(activation, (left, top, right - left, bottom - top));
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `intersects`
+pub fn intersects<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(other) = args.get(0) {
+            let other = other.coerce_to_object(activation)?;
+            let other_left = get_prop!(other, activation, "x")?;
+            let other_right = other_left + get_prop!(other, activation, "width")?;
+            let other_top = get_prop!(other, activation, "y")?;
+            let other_bottom = other_top + get_prop!(other, activation, "height")?;
+
+            let this_left = get_prop!(this, activation, "x")?;
+            let this_right = this_left + get_prop!(this, activation, "width")?;
+            let this_top = get_prop!(this, activation, "y")?;
+            let this_bottom = this_top + get_prop!(this, activation, "height")?;
+
+            if (this_left, this_right, this_bottom, this_top) == (0., 0., 0., 0.) {
+                return Ok(false.into());
+            }
+
+            if (other_left, other_right, other_bottom, other_top) == (0., 0., 0., 0.) {
+                return Ok(false.into());
+            }
+
+            return Ok((this_left < other_right
+                && this_right > other_left
+                && this_top < other_bottom
+                && this_bottom > other_top)
+                .into());
+        }
+        return Ok(false.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `setTo`
 pub fn set_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -643,6 +719,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("equals", equals),
         ("inflate", inflate),
         ("inflatePoint", inflate_point),
+        ("intersection", intersection),
+        ("intersects", intersects),
         ("clone", clone),
         ("setTo", set_to),
         ("toString", to_string),
