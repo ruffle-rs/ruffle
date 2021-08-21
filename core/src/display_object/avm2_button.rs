@@ -116,7 +116,7 @@ impl<'gc> Avm2Button<'gc> {
                 down_state: None,
                 class: context.avm2.classes().simplebutton,
                 object: None,
-                needs_construction: false,
+                needs_construction: true,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
                 } else {
@@ -414,8 +414,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        self.0.write(context.gc_context).needs_construction = true;
-
         self.set_default_instance_name(context);
 
         if run_frame {
@@ -546,25 +544,25 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                         log::error!("Got {} when constructing AVM2 side of button", e);
                     }
                 }
+
+                self.frame_constructed(context);
+
+                self.set_state(context, ButtonState::Over);
+
+                //NOTE: Yes, we do have to run these in a different order from the
+                //regular run_frame method.
+                up_state.run_frame_avm2(context);
+                over_state.run_frame_avm2(context);
+                down_state.run_frame_avm2(context);
+                hit_area.run_frame_avm2(context);
+
+                up_state.run_frame_scripts(context);
+                over_state.run_frame_scripts(context);
+                down_state.run_frame_scripts(context);
+                hit_area.run_frame_scripts(context);
+
+                self.exit_frame(context);
             }
-
-            self.frame_constructed(context);
-
-            self.set_state(context, ButtonState::Over);
-
-            //NOTE: Yes, we do have to run these in a different order from the
-            //regular run_frame method.
-            up_state.run_frame_avm2(context);
-            over_state.run_frame_avm2(context);
-            down_state.run_frame_avm2(context);
-            hit_area.run_frame_avm2(context);
-
-            up_state.run_frame_scripts(context);
-            over_state.run_frame_scripts(context);
-            down_state.run_frame_scripts(context);
-            hit_area.run_frame_scripts(context);
-
-            self.exit_frame(context);
         }
     }
 
