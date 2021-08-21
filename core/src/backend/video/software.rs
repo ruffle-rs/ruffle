@@ -135,7 +135,7 @@ trait VideoDecoder {
 mod h263 {
     use crate::backend::video::software::VideoDecoder;
     use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
-    use h263_rs::parser::{decode_picture, H263Reader};
+    use h263_rs::parser::H263Reader;
     use h263_rs::{DecoderOption, H263State, PictureTypeCode};
     use h263_rs_yuv::bt601::yuv420_to_rgba;
 
@@ -154,9 +154,10 @@ mod h263 {
             encoded_frame: EncodedFrame<'_>,
         ) -> Result<FrameDependency, Error> {
             let mut reader = H263Reader::from_source(encoded_frame.data());
-            let picture =
-                decode_picture(&mut reader, DecoderOption::SORENSON_SPARK_BITSTREAM, None)?
-                    .ok_or("Picture in video stream is not a picture")?;
+            let picture = self
+                .0
+                .parse_picture(&mut reader, None)?
+                .ok_or("Picture in video stream is not a picture")?;
 
             match picture.picture_type {
                 PictureTypeCode::IFrame => Ok(FrameDependency::None),
