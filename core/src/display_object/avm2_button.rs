@@ -54,7 +54,15 @@ pub struct Avm2ButtonData<'gc> {
     object: Option<Avm2Object<'gc>>,
 
     /// If this button needs to have it's child states constructed, or not.
-    needs_construction: bool,
+    ///
+    /// All buttons start out unconstructed and have this flag set `true`.
+    /// This flag is consumed during frame construction.
+    needs_frame_construction: bool,
+
+    /// If this button needs to have it's AVM2 side initialized, or not.
+    ///
+    /// All buttons start out not needing AVM2 initialization.
+    needs_avm2_initialization: bool,
 
     has_focus: bool,
     enabled: bool,
@@ -116,7 +124,8 @@ impl<'gc> Avm2Button<'gc> {
                 down_state: None,
                 class: context.avm2.classes().simplebutton,
                 object: None,
-                needs_construction: true,
+                needs_frame_construction: true,
+                needs_avm2_initialization: false,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
                 } else {
@@ -454,7 +463,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             };
         }
 
-        let needs_frame_construction = self.0.read().needs_construction;
+        let needs_frame_construction = self.0.read().needs_frame_construction;
         if needs_frame_construction {
             let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
             let (over_state, over_should_fire) = self.create_state(context, swf::ButtonState::OVER);
@@ -468,7 +477,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             write.down_state = Some(down_state);
             write.hit_area = Some(hit_area);
             write.skip_current_frame = true;
-            write.needs_construction = false;
+            write.needs_frame_construction = false;
 
             drop(write);
 
@@ -525,25 +534,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if needs_avm2_construction {
-                let avm2_object = self.0.read().object;
-                if let Some(avm2_object) = avm2_object {
-                    let mut constr_thing = || {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        class.call_native_init(
-                            Some(avm2_object),
-                            &[],
-                            &mut activation,
-                            Some(class),
-                        )?;
-
-                        Ok(())
-                    };
-                    let result: Result<(), Avm2Error> = constr_thing();
-
-                    if let Err(e) = result {
-                        log::error!("Got {} when constructing AVM2 side of button", e);
-                    }
-                }
+                self.0.write(context.gc_context).needs_avm2_initialization = true;
 
                 self.frame_constructed(context);
 
@@ -562,6 +553,22 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 hit_area.run_frame_scripts(context);
 
                 self.exit_frame(context);
+            }
+        } else if self.0.read().needs_avm2_initialization {
+            self.0.write(context.gc_context).needs_avm2_initialization = false;
+            let avm2_object = self.0.read().object;
+            if let Some(avm2_object) = avm2_object {
+                let mut constr_thing = || {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    class.call_native_init(Some(avm2_object), &[], &mut activation, Some(class))?;
+
+                    Ok(())
+                };
+                let result: Result<(), Avm2Error> = constr_thing();
+
+                if let Err(e) = result {
+                    log::error!("Got {} when constructing AVM2 side of button", e);
+                }
             }
         }
     }
