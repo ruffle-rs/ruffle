@@ -1697,7 +1697,7 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=837f075d280680abc8dd3fc3d47656d5a770c48e#837f075d280680abc8dd3fc3d47656d5a770c48e"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=ce3d3c798190be1c78c47099e76d095756a195ac#ce3d3c798190be1c78c47099e76d095756a195ac"
 dependencies = [
  "bitflags",
  "lazy_static",
@@ -1708,7 +1708,7 @@ dependencies = [
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=837f075d280680abc8dd3fc3d47656d5a770c48e#837f075d280680abc8dd3fc3d47656d5a770c48e"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=ce3d3c798190be1c78c47099e76d095756a195ac#ce3d3c798190be1c78c47099e76d095756a195ac"
 
 [[package]]
 name = "hashbrown"
