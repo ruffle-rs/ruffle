@@ -1,7 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Error as Avm2Error, Object as Avm2Object,
+    StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -504,6 +504,26 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                     for (_depth, child) in hit_container.iter_depth_list() {
                         dispatch_added_event((*self).into(), child, false, context);
                     }
+                }
+            }
+
+            let avm2_object = self.0.read().object;
+            if let Some(avm2_object) = avm2_object {
+                let mut constr_thing = || {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    simplebutton_constr.call_native_init(
+                        Some(avm2_object),
+                        &[],
+                        &mut activation,
+                        Some(simplebutton_constr),
+                    )?;
+
+                    Ok(())
+                };
+                let result: Result<(), Avm2Error> = constr_thing();
+
+                if let Err(e) = result {
+                    log::error!("Got {} when constructing AVM2 side of button", e);
                 }
             }
 
