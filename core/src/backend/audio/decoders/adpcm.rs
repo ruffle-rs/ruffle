@@ -1,6 +1,5 @@
 use super::{Decoder, SeekableDecoder};
 use bitstream_io::{BigEndian, BitRead, BitReader};
-use std::cmp::{max, min};
 use std::io::{Cursor, Read};
 
 pub struct AdpcmDecoder<R: Read> {
@@ -137,11 +136,11 @@ impl<R: Read> AdpcmDecoder<R> {
         let magnitude = data & !sign_mask;
         let delta = (self.decoder)(self.left_step, magnitude);
 
-        if (data & sign_mask) != 0 {
-            self.left_sample = max(self.left_sample as i32 - delta as i32, i16::MIN as i32) as i16;
+        self.left_sample = if (data & sign_mask) != 0 {
+            (self.left_sample as i32 - delta as i32).max(i16::MIN.into())
         } else {
-            self.left_sample = min(self.left_sample as i32 + delta as i32, i16::MAX as i32) as i16;
-        }
+            (self.left_sample as i32 + delta as i32).min(i16::MAX.into())
+        } as i16;
 
         self.left_step_index += Self::INDEX_TABLE[self.bits_per_sample - 2][magnitude as usize];
         if self.left_step_index < 0 {
@@ -158,13 +157,11 @@ impl<R: Read> AdpcmDecoder<R> {
             let magnitude = data & !sign_mask;
             let delta = (self.decoder)(self.right_step, magnitude);
 
-            if (data & sign_mask) != 0 {
-                self.right_sample =
-                    max(self.right_sample as i32 - delta as i32, i16::MIN as i32) as i16;
+            self.right_sample = if (data & sign_mask) != 0 {
+                (self.right_sample as i32 - delta as i32).max(i16::MIN.into())
             } else {
-                self.right_sample =
-                    min(self.right_sample as i32 + delta as i32, i16::MAX as i32) as i16;
-            }
+                (self.right_sample as i32 + delta as i32).min(i16::MAX.into())
+            } as i16;
 
             self.right_step_index +=
                 Self::INDEX_TABLE[self.bits_per_sample - 2][magnitude as usize];
