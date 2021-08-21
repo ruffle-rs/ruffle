@@ -1,0 +1,66 @@
+//var my_button = new MyButton();
+//Constructed UpButtonShape ( instance3 )!
+//Constructed OverButtonShape ( instance5 )!
+//Constructed DownButtonShape ( instance7 )!
+///MyButton constructor!
+//this.addChild(my_button);
+//my_button
+[object MyButton]
+//my_button.upState
+[object Sprite]
+// numChildren:  2
+[object Shape]
+[object UpButtonShape]
+//my_button.overState
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.downState
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.hitTestState
+[object Shape]
+//my_button.upState = new UpButtonShape();
+//Constructed UpButtonShape ( instance11 )!
+//my_button.overState = new OverButtonShape();
+//Constructed OverButtonShape ( instance13 )!
+//my_button.downState = new DownButtonShape();
+//Constructed DownButtonShape ( instance15 )!
+//my_button.hitTestState = new HitButtonShape();
+//Constructed HitButtonShape ( instance17 )!
+//my_button.upState
+[object UpButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.overState
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.downState
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//my_button.hitTestState
+[object HitButtonShape]
+// numChildren:  1
+[object Shape]
+//Constructed UpButtonShape ( instance20 )!
+//Constructed OverButtonShape ( instance22 )!
+//Constructed DownButtonShape ( instance24 )!
+//this.timeline_symbol.upState
+[object Sprite]
+// numChildren:  2
+[object Shape]
+[object UpButtonShape]
+//this.timeline_symbol.overState
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//this.timeline_symbol.downState
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//this.timeline_symbol.hitTestState
+[object Shape]
+///MyButton constructor!
