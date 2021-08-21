@@ -281,7 +281,7 @@ macro_rules! add_field_accessors {
 
 
     // This intermediate stage is here because I couldn't figure out how to make the nested
-    // repetitions of $var and the optional $set_ident and $get_ident all exand correctly.
+    // repetitions of $var and the optional $set_ident and $get_ident all expand correctly.
     ([single $($var: ident).+, $type_: ty, set => $set_ident: ident]) => {
         add_field_accessors!([setter_only $set_ident, $($var).+, $type_],);
     };
