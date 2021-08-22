@@ -58,6 +58,8 @@ jobs:
       - name: Run tests with image tests
         if: ${{ matrix.os.img_tests }}
         uses: actions-rs/cargo@v1
+        env:
+          XDG_RUNTIME_DIR: "" # dummy value, just to silence warnings about it missing
         with:
           command: test
           args: --features imgtests
