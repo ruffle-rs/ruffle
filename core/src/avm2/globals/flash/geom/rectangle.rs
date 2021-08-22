@@ -383,7 +383,7 @@ fn contains_tuple<'gc>(
     let top = get_prop!(*this, activation, "y")?;
     let bottom = get_prop!(*this, activation, "height")? + top;
 
-    return Ok(left <= x && x < right && top <= y && y < bottom);
+    Ok(left <= x && x < right && top <= y && y < bottom)
 }
 
 /// Implement `contains`
