@@ -3084,6 +3084,7 @@ dependencies = [
  "symphonia",
  "thiserror",
  "url",
+ "vp6-dec-rs",
  "weak-table",
 ]
 
@@ -3850,6 +3851,15 @@ name = "version_check"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"
+
+[[package]]
+name = "vp6-dec-rs"
+version = "0.1.0"
+source = "git+https://github.com/torokati44/vp6-dec-rs?branch=main#b6c1a6101c8ec0d27c00ec29aba0a757f8ea87e0"
+dependencies = [
+ "cc",
+ "pkg-config",
+]
 
 [[package]]
 name = "vswhom"
