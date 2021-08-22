@@ -61,6 +61,15 @@ jobs:
           sudo apt-get dist-upgrade
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev mesa-vulkan-drivers
 
+      - name: Add msys to PATH for clang
+        if: matrix.os == 'windows-latest'
+        shell: bash -l {0}
+        run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+
+      - name: Setup Developer Command Prompt
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Check formatting
         uses: actions-rs/cargo@v1
         with:

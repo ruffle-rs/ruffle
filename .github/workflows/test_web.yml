@@ -68,6 +68,11 @@ jobs:
         shell: bash -l {0}
         run: conda install -c conda-forge binaryen
 
+      - name: Add msys to PATH for clang
+        if: matrix.os == 'windows-latest'
+        shell: bash -l {0}
+        run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+
       - name: Build
         working-directory: web
         shell: bash -l {0}
