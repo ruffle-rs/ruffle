@@ -32,3 +32,12 @@ opt-level = 3
 
 [profile.dev.package.h263-rs-yuv]
 opt-level = 3
+
+[profile.dev.package.nihav_core]
+opt-level = 3
+
+[profile.dev.package.nihav_codec_support]
+opt-level = 3
+
+[profile.dev.package.nihav_duck]
+opt-level = 3

@@ -438,6 +438,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [ndk-sys](https://github.com/rust-windowing/android-ndk-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) The Rust Windowing contributors | 
 | nellymoser-rs | [MIT](#MIT) | Copyright (c) 2021 relrelb Copyright (c) 2007 a840bda5870ba11f19698ff6eb9581dfb0f95fa5, 539459aeb7d425140b62a3ec7dbf6dc8e408a306, and 520e17cd55896441042b14df2566a6eb610ed444 Copyright (c) 2007 Loic Minier, Benjamin Larsson. Derived from MIT licensed source in the nelly2pcm and FFmpeg projects. | 
 | [net2](https://github.com/deprecrated/net2-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 The Rust Project Developers  | 
+| [nihav-vp6](https://github.com/ruffle-rs/nihav-vp6) | [MIT](#MIT) | Copyright (c) 2021 Kostya Shishkov  | 
 | [nix](https://github.com/nix-rust/nix) | [MIT](#MIT) | Copyright (c) 2015 Carl Lerche + nix-rust Authors  | 
 | [nom](https://github.com/Geal/nom) | [MIT](#MIT) | Copyright (c) 2014-2019 Geoffroy Couprie  | 
 | [num-complex](https://github.com/rust-num/num-complex) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 The Rust Project Developers  | 
