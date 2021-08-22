@@ -2364,6 +2364,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "nihav_codec_support"
+version = "0.1.0"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+dependencies = [
+ "nihav_core",
+]
+
+[[package]]
+name = "nihav_core"
+version = "0.1.0"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+
+[[package]]
+name = "nihav_duck"
+version = "0.1.0"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=9416fcc9fc8aab8f4681aa9093b42922214abbd3#9416fcc9fc8aab8f4681aa9093b42922214abbd3"
+dependencies = [
+ "nihav_codec_support",
+ "nihav_core",
+]
+
+[[package]]
 name = "nix"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3070,6 +3092,9 @@ dependencies = [
  "lzma-rs",
  "minimp3",
  "nellymoser-rs",
+ "nihav_codec_support",
+ "nihav_core",
+ "nihav_duck",
  "num-derive",
  "num-traits",
  "percent-encoding",

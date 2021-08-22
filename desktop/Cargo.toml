@@ -29,12 +29,13 @@ winapi = "0.3.9"
 embed-resource = "1"
 
 [features]
-default = ["h263"]
+default = ["h263", "vp6"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
 h263 = ["ruffle_core/h263"]
 lzma = ["ruffle_core/lzma"]
+vp6 = ["ruffle_core/vp6"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
