@@ -1171,7 +1171,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
-                    property.get(self, clip)?
+                    property.get(self, clip)
                 } else {
                     avm_warn!(self, "GetProperty: Invalid property index {}", prop_index);
                     Value::Undefined
