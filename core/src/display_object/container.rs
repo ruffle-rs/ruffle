@@ -6,7 +6,7 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
-use crate::string_utils::swf_string_eq_ignore_case;
+use crate::string::utils::swf_string_eq_ignore_case;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;

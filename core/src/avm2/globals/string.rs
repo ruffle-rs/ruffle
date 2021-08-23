@@ -9,7 +9,7 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::ArrayObject;
 use crate::avm2::Error;
-use crate::string_utils;
+use crate::string::utils as string_utils;
 use gc_arena::{GcCell, MutationContext};
 use std::iter;
 

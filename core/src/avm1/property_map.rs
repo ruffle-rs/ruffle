@@ -4,7 +4,7 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string_utils;
+use crate::string::utils as string_utils;
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};

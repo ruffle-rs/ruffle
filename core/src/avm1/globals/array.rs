@@ -628,7 +628,7 @@ fn sort_compare_string_ignore_case<'gc>(
     let b_str = b.coerce_to_string(activation);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
-        crate::string_utils::swf_string_cmp_ignore_case(&a_str, &b_str)
+        crate::string::utils::swf_string_cmp_ignore_case(&a_str, &b_str)
     } else {
         DEFAULT_ORDERING
     }
