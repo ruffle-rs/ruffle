@@ -1,6 +1,7 @@
 use clap::Clap;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
+use rayon::prelude::*;
 use ruffle_core::swf::{decompress_swf, parse_swf};
 use swf::{FileAttributes, Tag};
 
@@ -130,7 +131,7 @@ fn main() -> Result<(), std::io::Error> {
     let mut good = 0;
     let mut bad = 0;
     let progress = ProgressBar::new(total);
-    let mut writer = csv::Writer::from_path(opt.output_path)?;
+    let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
 
     progress.set_style(
         ProgressStyle::default_bar()
@@ -142,16 +143,25 @@ fn main() -> Result<(), std::io::Error> {
 
     writer.write_record(&["Filename", "Error", "AVM Version"])?;
 
-    for file in to_scan {
-        let name = file
-            .path()
-            .strip_prefix(&opt.input_path)
-            .unwrap_or_else(|_| file.path())
-            .to_slash_lossy();
-        progress.inc(1);
-        progress.set_message(name.clone());
-        let result = scan_file(file, name);
+    let mut results = Vec::new();
+    to_scan
+        .into_par_iter()
+        .map(|file| {
+            let name = file
+                .path()
+                .strip_prefix(&opt.input_path)
+                .unwrap_or_else(|_| file.path())
+                .to_slash_lossy();
+            let result = scan_file(file, name.clone());
 
+            progress.inc(1);
+            progress.set_message(name);
+
+            result
+        })
+        .collect_into_vec(&mut results);
+
+    for result in results {
         if result.error.is_none() {
             good += 1;
         } else {

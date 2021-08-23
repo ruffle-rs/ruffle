@@ -16,3 +16,4 @@ csv = "1.1"
 indicatif = "0.16"
 path-slash = "0.1.4"
 swf = { path = "../swf" }
+rayon = "1.5.1"
