@@ -3181,6 +3181,7 @@ dependencies = [
  "path-slash",
  "ruffle_core",
  "serde",
+ "swf",
  "walkdir",
 ]
 
