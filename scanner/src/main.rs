@@ -2,6 +2,7 @@ use clap::Clap;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
 use ruffle_core::swf::{decompress_swf, parse_swf};
+use swf::{FileAttributes, Tag};
 
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -10,9 +11,16 @@ use std::panic::catch_unwind;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Serialize, Debug)]
+enum AvmType {
+    Avm1,
+    Avm2,
+}
+
+#[derive(Serialize, Debug)]
 struct FileResults {
     name: String,
     error: Option<String>,
+    vm_type: Option<AvmType>,
 }
 
 #[derive(Clap, Debug)]
@@ -60,6 +68,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
                 FileResults {
                     name,
                     error: Some(format!("File error: {}", e.to_string())),
+                    vm_type: None,
                 }
             }
         }
@@ -68,20 +77,36 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
     let swf_buf = decompress_swf(&data[..]).unwrap();
     match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
-            Ok(_swf) => FileResults { name, error: None },
+            Ok(swf) => {
+                let mut vm_type = Some(AvmType::Avm1);
+                if let Some(Tag::FileAttributes(fa)) = swf.tags.first() {
+                    if fa.contains(FileAttributes::IS_ACTION_SCRIPT_3) {
+                        vm_type = Some(AvmType::Avm2);
+                    }
+                }
+
+                FileResults {
+                    name,
+                    error: None,
+                    vm_type,
+                }
+            }
             Err(e) => FileResults {
                 name,
                 error: Some(format!("Parse error: {}", e.to_string())),
+                vm_type: None,
             },
         },
         Err(e) => match e.downcast::<String>() {
             Ok(e) => FileResults {
                 name,
                 error: Some(format!("PANIC: {}", e.to_string())),
+                vm_type: None,
             },
             Err(_) => FileResults {
                 name,
                 error: Some("PANIC".to_string()),
+                vm_type: None,
             },
         },
     }
@@ -106,7 +131,7 @@ fn main() -> Result<(), std::io::Error> {
             .progress_chars("##-"),
     );
 
-    writer.write_record(&["Filename", "Error"])?;
+    writer.write_record(&["Filename", "Error", "AVM Version"])?;
 
     for file in to_scan {
         let name = file
