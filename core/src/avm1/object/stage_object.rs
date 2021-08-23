@@ -8,7 +8,7 @@ use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TDisplayObject, TO
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string_utils::swf_string_eq;
+use crate::string::utils::swf_string_eq;
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;

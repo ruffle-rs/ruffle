@@ -6,7 +6,7 @@ use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::shape_utils::DrawCommand;
-use crate::string_utils;
+use crate::string::utils as string_utils;
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cmp::{max, min};

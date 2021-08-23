@@ -682,7 +682,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let char_code = s.encode_utf16().next().unwrap_or(0);
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
-        let c = crate::string_utils::utf16_code_unit_to_char(char_code);
+        let c = crate::string::utils::utf16_code_unit_to_char(char_code);
         self.context.avm1.push(u32::from(c));
         Ok(FrameControl::Continue)
     }
@@ -1619,7 +1619,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let char_code = s.encode_utf16().next().unwrap_or(0);
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
-        let c = crate::string_utils::utf16_code_unit_to_char(char_code);
+        let c = crate::string::utils::utf16_code_unit_to_char(char_code);
         self.context.avm1.push(u32::from(c));
         Ok(FrameControl::Continue)
     }
@@ -1638,7 +1638,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
 
-        let result = crate::string_utils::utf16_iter_to_string(
+        let result = crate::string::utils::utf16_iter_to_string(
             s.encode_utf16()
                 .skip(start) // - 1 safe because max(1) above
                 .take(len),
@@ -2102,7 +2102,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
 
-        let result = crate::string_utils::utf16_iter_to_string(
+        let result = crate::string::utils::utf16_iter_to_string(
             s.encode_utf16()
                 .skip(start) // - 1 safe because max(1) above
                 .take(len),
