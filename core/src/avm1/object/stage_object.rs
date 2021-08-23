@@ -187,7 +187,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             Some(Ok(child.object()))
         } else if let Some(property) = props.read().get_by_name(name) {
             // 4) Display object properties such as _x, _y
-            Some(property.get(activation, obj.display_object))
+            Some(Ok(property.get(activation, obj.display_object)))
         } else {
             None
         }
@@ -482,8 +482,7 @@ pub struct DisplayProperty<'gc> {
     set: Option<DisplaySetter<'gc>>,
 }
 
-pub type DisplayGetter<'gc> =
-    fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>) -> Result<Value<'gc>, Error<'gc>>;
+pub type DisplayGetter<'gc> = fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>) -> Value<'gc>;
 
 pub type DisplaySetter<'gc> =
     fn(&mut Activation<'_, 'gc, '_>, DisplayObject<'gc>, Value<'gc>) -> Result<(), Error<'gc>>;
@@ -493,7 +492,7 @@ impl<'gc> DisplayProperty<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         this: DisplayObject<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Value<'gc> {
         (self.get)(activation, this)
     }
 
@@ -580,11 +579,8 @@ impl<'gc> DisplayPropertyMap<'gc> {
     }
 }
 
-fn x<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.x().into())
+fn x<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.x().into()
 }
 
 fn set_x<'gc>(
@@ -598,11 +594,8 @@ fn set_x<'gc>(
     Ok(())
 }
 
-fn y<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.y().into())
+fn y<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.y().into()
 }
 
 fn set_y<'gc>(
@@ -616,12 +609,10 @@ fn set_y<'gc>(
     Ok(())
 }
 
-fn x_scale<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let val: f64 = this.scale_x(activation.context.gc_context).into_fraction();
-    Ok(val.into())
+fn x_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.scale_x(activation.context.gc_context)
+        .into_fraction()
+        .into()
 }
 
 fn set_x_scale<'gc>(
@@ -635,12 +626,10 @@ fn set_x_scale<'gc>(
     Ok(())
 }
 
-fn y_scale<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let scale_y: f64 = this.scale_y(activation.context.gc_context).into_fraction();
-    Ok(scale_y.into())
+fn y_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.scale_y(activation.context.gc_context)
+        .into_fraction()
+        .into()
 }
 
 fn set_y_scale<'gc>(
@@ -657,31 +646,23 @@ fn set_y_scale<'gc>(
 fn current_frame<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_movie_clip()
+) -> Value<'gc> {
+    this.as_movie_clip()
         .map(MovieClip::current_frame)
-        .map(Value::from)
-        .unwrap_or(Value::Undefined))
+        .map_or(Value::Undefined, Value::from)
 }
 
 fn total_frames<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_movie_clip()
+) -> Value<'gc> {
+    this.as_movie_clip()
         .map(MovieClip::total_frames)
-        .map(Value::from)
-        .unwrap_or(Value::Undefined))
+        .map_or(Value::Undefined, Value::from)
 }
 
-fn alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let val = this.alpha() * 100.0;
-    Ok(val.into())
+fn alpha<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    (this.alpha() * 100.0).into()
 }
 
 fn set_alpha<'gc>(
@@ -695,12 +676,8 @@ fn set_alpha<'gc>(
     Ok(())
 }
 
-fn visible<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let val = this.visible();
-    Ok(val.into())
+fn visible<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.visible().into()
 }
 
 fn set_visible<'gc>(
@@ -716,11 +693,8 @@ fn set_visible<'gc>(
     Ok(())
 }
 
-fn width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.width().into())
+fn width<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.width().into()
 }
 
 fn set_width<'gc>(
@@ -734,11 +708,8 @@ fn set_width<'gc>(
     Ok(())
 }
 
-fn height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.height().into())
+fn height<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.height().into()
 }
 
 fn set_height<'gc>(
@@ -752,12 +723,9 @@ fn set_height<'gc>(
     Ok(())
 }
 
-fn rotation<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
+fn rotation<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
     let degrees: f64 = this.rotation(activation.context.gc_context).into();
-    Ok(degrees.into())
+    degrees.into()
 }
 
 fn set_rotation<'gc>(
@@ -778,29 +746,21 @@ fn set_rotation<'gc>(
     Ok(())
 }
 
-fn target<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, this.slash_path()).into())
+fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    AvmString::new(activation.context.gc_context, this.slash_path()).into()
 }
 
 fn frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_movie_clip()
+) -> Value<'gc> {
+    this.as_movie_clip()
         .map(MovieClip::frames_loaded)
-        .map(Value::from)
-        .unwrap_or(Value::Undefined))
+        .map_or(Value::Undefined, Value::from)
 }
 
-fn name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, this.name().to_string()).into())
+fn name<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    AvmString::new(activation.context.gc_context, this.name().to_string()).into()
 }
 
 fn set_name<'gc>(
@@ -816,39 +776,38 @@ fn set_name<'gc>(
 fn drop_target<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_movie_clip()
+) -> Value<'gc> {
+    this.as_movie_clip()
         .and_then(|mc| mc.drop_target())
-        .map(|drop_target| {
-            AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
-        })
-        .unwrap_or_else(|| "".into()))
+        .map_or_else(
+            || "".into(),
+            |drop_target| {
+                AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
+            },
+        )
 }
 
-fn url<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_movie_clip()
+fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.as_movie_clip()
         .and_then(|mc| mc.movie())
-        .and_then(|mov| mov.url().map(|s| s.to_string()))
-        .map(|s| AvmString::new(activation.context.gc_context, s).into())
-        .unwrap_or_else(|| "".into()))
+        .and_then(|mov| mov.url().map(|url| url.to_string()))
+        .map_or_else(
+            || "".into(),
+            |s| AvmString::new(activation.context.gc_context, s).into(),
+        )
 }
 
 fn high_quality<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> Value<'gc> {
     use crate::display_object::StageQuality;
     let quality = match activation.context.stage.quality() {
         StageQuality::Best => 2,
         StageQuality::High => 1,
         _ => 0,
     };
-    Ok(quality.into())
+    quality.into()
 }
 
 fn set_high_quality<'gc>(
@@ -878,9 +837,9 @@ fn set_high_quality<'gc>(
 fn focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> Value<'gc> {
     avm_warn!(activation, "Unimplemented property _focusrect");
-    Ok(Value::Null)
+    Value::Null
 }
 
 fn set_focus_rect<'gc>(
@@ -895,8 +854,8 @@ fn set_focus_rect<'gc>(
 fn sound_buf_time<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.audio_manager.stream_buffer_time().into())
+) -> Value<'gc> {
+    activation.context.audio_manager.stream_buffer_time().into()
 }
 
 fn set_sound_buf_time<'gc>(
@@ -914,12 +873,9 @@ fn set_sound_buf_time<'gc>(
     Ok(())
 }
 
-fn quality<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
+fn quality<'gc>(activation: &mut Activation<'_, 'gc, '_>, _this: DisplayObject<'gc>) -> Value<'gc> {
     let quality = activation.context.stage.quality().into_avm_str();
-    Ok(AvmString::new(activation.context.gc_context, quality).into())
+    AvmString::new(activation.context.gc_context, quality).into()
 }
 
 fn set_quality<'gc>(
@@ -936,20 +892,14 @@ fn set_quality<'gc>(
     Ok(())
 }
 
-fn x_mouse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let local = this.global_to_local(*activation.context.mouse_position);
-    Ok(local.0.to_pixels().into())
+fn x_mouse<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    let (local_x, _) = this.global_to_local(*activation.context.mouse_position);
+    local_x.to_pixels().into()
 }
 
-fn y_mouse<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: DisplayObject<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let local = this.global_to_local(*activation.context.mouse_position);
-    Ok(local.1.to_pixels().into())
+fn y_mouse<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    let (_, local_y) = this.global_to_local(*activation.context.mouse_position);
+    local_y.to_pixels().into()
 }
 
 fn property_coerce_to_number<'gc>(
