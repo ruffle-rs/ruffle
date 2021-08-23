@@ -74,7 +74,16 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
         }
     };
 
-    let swf_buf = decompress_swf(&data[..]).unwrap();
+    let swf_buf = match decompress_swf(&data[..]) {
+        Ok(swf_buf) => swf_buf,
+        Err(e) => {
+            return FileResults {
+                name,
+                error: Some(e.to_string()),
+                vm_type: None,
+            }
+        }
+    };
     match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
