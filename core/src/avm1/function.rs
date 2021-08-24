@@ -268,14 +268,7 @@ impl<'gc> Executable<'gc> {
                 let argcell = arguments.into();
                 let super_object: Option<Object<'gc>> =
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
-                        Some(
-                            SuperObject::from_this_and_base_proto(
-                                this,
-                                base_proto.unwrap_or(this),
-                                activation,
-                            )?
-                            .into(),
-                        )
+                        Some(SuperObject::new(activation, this, base_proto.unwrap_or(this)).into())
                     } else {
                         None
                     };

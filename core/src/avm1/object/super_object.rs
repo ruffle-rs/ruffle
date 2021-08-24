@@ -35,18 +35,18 @@ impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
     ///
     /// `this` and `base_proto` must be the values provided to `Executable::exec`.
-    pub fn from_this_and_base_proto(
+    pub fn new(
+        activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Object<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Self, Error<'gc>> {
-        Ok(Self(GcCell::allocate(
+    ) -> Self {
+        Self(GcCell::allocate(
             activation.context.gc_context,
             SuperObjectData {
                 child: this,
                 base_proto,
             },
-        )))
+        ))
     }
 
     /// Retrieve the constructor associated with the super proto.
