@@ -66,7 +66,7 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ScriptObjectData<'gc> {
-    values: PropertyMap<Property<'gc>>,
+    properties: PropertyMap<Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
     type_of: &'static str,
     watchers: PropertyMap<Watcher<'gc>>,
@@ -75,7 +75,7 @@ pub struct ScriptObjectData<'gc> {
 impl fmt::Debug for ScriptObjectData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Object")
-            .field("values", &self.values)
+            .field("properties", &self.properties)
             .field("watchers", &self.watchers)
             .finish()
     }
@@ -87,7 +87,7 @@ impl<'gc> ScriptObject<'gc> {
             gc_context,
             ScriptObjectData {
                 type_of: TYPE_OF_OBJECT,
-                values: PropertyMap::new(),
+                properties: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
             },
@@ -111,10 +111,10 @@ impl<'gc> ScriptObject<'gc> {
         Self::object(gc_context, proto).into()
     }
 
-    /// Constructs an object with no values, not even builtins.
+    /// Constructs an object with no properties, not even builtins.
     ///
     /// Intended for constructing scope chains, since they exclusively use the
-    /// object values, but can't just have a hashmap because of `with` and
+    /// object properties, but can't just have a hashmap because of `with` and
     /// friends.
     pub fn bare_object(gc_context: MutationContext<'gc, '_>) -> Self {
         Self::object(gc_context, None)
@@ -131,7 +131,7 @@ impl<'gc> ScriptObject<'gc> {
     pub fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
         self.0
             .read()
-            .values
+            .properties
             .get(name, activation.is_case_sensitive())
             .map_or(Value::Undefined, |property| property.data())
     }
@@ -150,7 +150,7 @@ impl<'gc> ScriptObject<'gc> {
         match self
             .0
             .write(activation.context.gc_context)
-            .values
+            .properties
             .entry(name, activation.is_case_sensitive())
         {
             Entry::Occupied(mut entry) => entry.get_mut().set_data(value),
@@ -171,7 +171,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         let getter = match self
             .0
             .read()
-            .values
+            .properties
             .get(name, activation.is_case_sensitive())
         {
             Some(property) => {
@@ -239,7 +239,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         let setter = match self
             .0
             .write(activation.context.gc_context)
-            .values
+            .properties
             .entry(name, activation.is_case_sensitive())
         {
             Entry::Occupied(mut entry) => {
@@ -291,7 +291,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
         self.0
             .read()
-            .values
+            .properties
             .get(name, activation.is_case_sensitive())
             .and_then(|property| property.setter())
     }
@@ -311,7 +311,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         if let Entry::Occupied(mut entry) = self
             .0
             .write(activation.context.gc_context)
-            .values
+            .properties
             .entry(name, activation.is_case_sensitive())
         {
             if entry.get().can_delete() {
@@ -330,7 +330,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         setter: Option<Object<'gc>>,
         attributes: Attribute,
     ) {
-        match self.0.write(gc_context).values.entry(name, false) {
+        match self.0.write(gc_context).properties.entry(name, false) {
             Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
             Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
         }
@@ -347,7 +347,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         match self
             .0
             .write(activation.context.gc_context)
-            .values
+            .properties
             .entry(name, activation.is_case_sensitive())
         {
             Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
@@ -384,10 +384,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         value: Value<'gc>,
         attributes: Attribute,
     ) {
-        self.0
-            .write(gc_context)
-            .values
-            .insert(name, Property::new_stored(value, attributes), true);
+        self.0.write(gc_context).properties.insert(
+            name,
+            Property::new_stored(value, attributes),
+            true,
+        );
     }
 
     fn set_attributes(
@@ -400,13 +401,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         match name {
             None => {
                 // Change *all* attributes.
-                for (_name, prop) in self.0.write(gc_context).values.iter_mut() {
+                for (_name, prop) in self.0.write(gc_context).properties.iter_mut() {
                     let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
                     prop.set_attributes(new_atts);
                 }
             }
             Some(name) => {
-                if let Some(prop) = self.0.write(gc_context).values.get_mut(name, false) {
+                if let Some(prop) = self.0.write(gc_context).properties.get_mut(name, false) {
                     let new_atts = (prop.attributes() - clear_attributes) | set_attributes;
                     prop.set_attributes(new_atts);
                 }
@@ -433,14 +434,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn has_own_property(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0
             .read()
-            .values
+            .properties
             .contains_key(name, activation.is_case_sensitive())
     }
 
     fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0
             .read()
-            .values
+            .properties
             .get(name, activation.is_case_sensitive())
             .map_or(false, |property| property.is_virtual())
     }
@@ -449,7 +450,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn is_property_enumerable(&self, activation: &mut Activation<'_, 'gc, '_>, name: &str) -> bool {
         self.0
             .read()
-            .values
+            .properties
             .get(name, activation.is_case_sensitive())
             .map_or(false, |property| property.is_enumerable())
     }
@@ -471,7 +472,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         );
 
         // Then our own keys.
-        out_keys.extend(self.0.read().values.iter().filter_map(move |(k, p)| {
+        out_keys.extend(self.0.read().properties.iter().filter_map(move |(k, p)| {
             if p.is_enumerable() {
                 Some(k.to_string())
             } else {
@@ -808,7 +809,7 @@ mod tests {
     }
 
     #[test]
-    fn test_iter_values() {
+    fn test_get_keys() {
         with_object(0, |activation, object| {
             let getter = FunctionObject::function(
                 activation.context.gc_context,
