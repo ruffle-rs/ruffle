@@ -242,12 +242,13 @@ macro_rules! impl_custom_object {
             self.0.read().$field.delete_element(activation, index)
         }
 
-        fn get_watcher(
+        fn call_watcher(
             &self,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             name: &str,
-        ) -> Option<crate::avm1::object::script_object::Watcher<'gc>> {
-            self.0.read().$field.get_watcher(activation, name)
+            value: &mut crate::avm1::Value<'gc>,
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.call_watcher(activation, name, value)
         }
 
         fn watch(

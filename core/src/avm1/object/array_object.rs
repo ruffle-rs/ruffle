@@ -1,4 +1,3 @@
-use crate::avm1::object::Watcher;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -179,12 +178,13 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn get_watcher(
+    fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
-    ) -> Option<Watcher<'gc>> {
-        self.0.read().get_watcher(activation, name)
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.0.read().call_watcher(activation, name, value)
     }
 
     fn watch(

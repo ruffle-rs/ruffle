@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::{ObjectPtr, TObject, Watcher};
+use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ScriptObject, Value};
 use crate::xml::{XmlName, XmlNode};
@@ -137,12 +137,13 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn get_watcher(
+    fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
-    ) -> Option<Watcher<'gc>> {
-        self.base().get_watcher(activation, name)
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base().call_watcher(activation, name, value)
     }
 
     fn watch(

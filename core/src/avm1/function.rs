@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::script_object::Watcher;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
@@ -717,12 +716,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             .add_property_with_case(activation, name, get, set, attributes)
     }
 
-    fn get_watcher(
+    fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
-    ) -> Option<Watcher<'gc>> {
-        self.base.get_watcher(activation, name)
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base.call_watcher(activation, name, value)
     }
 
     fn watch(

@@ -2,7 +2,6 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
-use crate::avm1::object::script_object::Watcher;
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -129,15 +128,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error<'gc>>;
 
     /// Set a named property on this object, or its prototype.
+    #[allow(unused_mut)] //it's not unused
     fn set(
         &self,
         name: &str,
-        value: Value<'gc>,
+        mut value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         if name.is_empty() {
             return Ok(());
         }
+
+        let watcher_result = self.call_watcher(activation, name, &mut value);
 
         let this = (*self).into();
         if !self.has_own_property(activation, name) {
@@ -146,25 +148,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    // some properties, e.g. TextField.text, should call an associated watcher
-                    let value = self
-                        .get_watcher(activation, name)
-                        .map(|watcher| {
-                            // for all text_field callbacks this is undefined. Some, like button.enabled, pass the
-                            // real value, but I haven't seen any examples of that being used in the wild.
-                            return match watcher.call(
-                                activation,
-                                name,
-                                Value::Undefined,
-                                value,
-                                this,
-                                Some(this),
-                            ) {
-                                Ok(v) => v,
-                                Err(_) => Value::Undefined,
-                            };
-                        })
-                        .unwrap_or(value);
                     if let Some(setter) = this_proto.setter(name, activation) {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
@@ -185,7 +168,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        self.set_local(name, value, activation, this, Some(this))
+        let result = self.set_local(name, value, activation, this, Some(this));
+        if watcher_result.is_err() {
+            watcher_result
+        } else {
+            result
+        }
     }
 
     /// Call the underlying object.
@@ -345,12 +333,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         attributes: Attribute,
     );
 
-    /// Get the 'watcher' of a given property, if it exists.
-    fn get_watcher(
+    /// Calls the 'watcher' of a given property, if it exists.
+    fn call_watcher(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
-    ) -> Option<Watcher<'gc>>;
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>>;
 
     /// Set the 'watcher' of a given property.
     ///
