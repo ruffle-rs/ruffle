@@ -18,8 +18,17 @@ enum AvmType {
 }
 
 #[derive(Serialize, Debug)]
+enum Progress {
+    Nothing,
+    Read,
+    Decompressed,
+    Parsed,
+}
+
+#[derive(Serialize, Debug)]
 struct FileResults {
     name: String,
+    progress: Progress,
     error: Option<String>,
     vm_type: Option<AvmType>,
 }
@@ -62,11 +71,14 @@ fn find_files(root: &Path, ignore: &[String]) -> Vec<DirEntry> {
 }
 
 fn scan_file(file: DirEntry, name: String) -> FileResults {
+    let mut progress = Progress::Nothing;
+
     let data = match std::fs::read(file.path()) {
         Ok(data) => data,
         Err(e) => {
             return {
                 FileResults {
+                    progress,
                     name,
                     error: Some(format!("File error: {}", e.to_string())),
                     vm_type: None,
@@ -75,17 +87,23 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
         }
     };
 
+    progress = Progress::Read;
+
     let swf_buf = match decompress_swf(&data[..]) {
         Ok(swf_buf) => swf_buf,
         Err(e) => {
             return FileResults {
+                progress,
                 name,
                 error: Some(e.to_string()),
                 vm_type: None,
             }
         }
     };
-    match catch_unwind(|| parse_swf(&swf_buf)) {
+
+    progress = Progress::Decompressed;
+
+    let vm_type = match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
                 let mut vm_type = Some(AvmType::Avm1);
@@ -95,30 +113,44 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
                     }
                 }
 
-                FileResults {
+                vm_type
+            }
+            Err(e) => {
+                return FileResults {
+                    progress,
                     name,
-                    error: None,
-                    vm_type,
+                    error: Some(format!("Parse error: {}", e.to_string())),
+                    vm_type: None,
                 }
             }
-            Err(e) => FileResults {
-                name,
-                error: Some(format!("Parse error: {}", e.to_string())),
-                vm_type: None,
-            },
         },
         Err(e) => match e.downcast::<String>() {
-            Ok(e) => FileResults {
-                name,
-                error: Some(format!("PANIC: {}", e.to_string())),
-                vm_type: None,
-            },
-            Err(_) => FileResults {
-                name,
-                error: Some("PANIC".to_string()),
-                vm_type: None,
-            },
+            Ok(e) => {
+                return FileResults {
+                    progress,
+                    name,
+                    error: Some(format!("PANIC: {}", e.to_string())),
+                    vm_type: None,
+                }
+            }
+            Err(_) => {
+                return FileResults {
+                    progress,
+                    name,
+                    error: Some("PANIC".to_string()),
+                    vm_type: None,
+                }
+            }
         },
+    };
+
+    progress = Progress::Parsed;
+
+    FileResults {
+        progress,
+        name,
+        error: None,
+        vm_type,
     }
 }
 
@@ -141,7 +173,7 @@ fn main() -> Result<(), std::io::Error> {
             .progress_chars("##-"),
     );
 
-    writer.write_record(&["Filename", "Error", "AVM Version"])?;
+    writer.write_record(&["Filename", "Progress", "Error", "AVM Version"])?;
 
     let mut results = Vec::new();
     to_scan
