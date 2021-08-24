@@ -3,6 +3,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use path_slash::PathExt;
 use rayon::prelude::*;
+use rayon::ThreadPoolBuilder;
 use ruffle_core::backend::audio::NullAudioBackend;
 use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::log::LogBackend;
@@ -290,56 +291,62 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
 fn main() -> Result<(), std::io::Error> {
     ThreadLocalScanLogger::init();
 
-    let opt = Opt::parse();
-    let to_scan = find_files(&opt.input_path, &opt.ignore);
-    let total = to_scan.len() as u64;
-    let mut good = 0;
-    let mut bad = 0;
-    let progress = ProgressBar::new(total);
-    let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
+    ThreadPoolBuilder::new()
+        .stack_size(16 * 1024 * 1024)
+        .build()
+        .unwrap()
+        .install(|| {
+            let opt = Opt::parse();
+            let to_scan = find_files(&opt.input_path, &opt.ignore);
+            let total = to_scan.len() as u64;
+            let mut good = 0;
+            let mut bad = 0;
+            let progress = ProgressBar::new(total);
+            let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
 
-    progress.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-            )
-            .progress_chars("##-"),
-    );
+            progress.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
+                )
+                .progress_chars("##-"),
+        );
 
-    writer.write_record(&["Filename", "Progress", "Error", "AVM Version"])?;
+            writer.write_record(&["Filename", "Progress", "Error", "AVM Version"])?;
 
-    let mut results = Vec::new();
-    to_scan
-        .into_par_iter()
-        .map(|file| {
-            let name = file
-                .path()
-                .strip_prefix(&opt.input_path)
-                .unwrap_or_else(|_| file.path())
-                .to_slash_lossy();
-            let result = scan_file(file, name.clone());
+            let mut results = Vec::new();
+            to_scan
+                .into_par_iter()
+                .map(|file| {
+                    let name = file
+                        .path()
+                        .strip_prefix(&opt.input_path)
+                        .unwrap_or_else(|_| file.path())
+                        .to_slash_lossy();
+                    let result = scan_file(file, name.clone());
 
-            progress.inc(1);
-            progress.set_message(name);
+                    progress.inc(1);
+                    progress.set_message(name);
 
-            result
+                    result
+                })
+                .collect_into_vec(&mut results);
+
+            for result in results {
+                if result.error.is_none() {
+                    good += 1;
+                } else {
+                    bad += 1;
+                }
+
+                writer.serialize(result)?;
+            }
+
+            progress.finish_with_message(format!(
+                "Scanned {} swf files. {} successfully parsed, {} encountered errors",
+                total, good, bad
+            ));
+
+            Ok(())
         })
-        .collect_into_vec(&mut results);
-
-    for result in results {
-        if result.error.is_none() {
-            good += 1;
-        } else {
-            bad += 1;
-        }
-
-        writer.serialize(result)?;
-    }
-
-    progress.finish_with_message(format!(
-        "Scanned {} swf files. {} successfully parsed, {} encountered errors",
-        total, good, bad
-    ));
-
-    Ok(())
 }
