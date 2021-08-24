@@ -3174,6 +3174,7 @@ name = "ruffle_scanner"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "crossbeam-channel",
  "csv",
  "env_logger",
  "indicatif",
