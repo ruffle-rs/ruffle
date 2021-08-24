@@ -186,6 +186,15 @@ export interface BaseLoadOptions {
      * @default null
      */
     base?: string | null;
+
+    /**
+     * If set to true, the built-in context menu items are visible
+     *
+     * This is equivalent to Stage.showMenu.
+     *
+     * @default true
+     */
+    menu?: boolean;
 }
 
 /**

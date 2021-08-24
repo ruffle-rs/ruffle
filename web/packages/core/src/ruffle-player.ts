@@ -1304,6 +1304,19 @@ export function isScriptAccessAllowed(
 }
 
 /**
+ * Returns whether a SWF file should show the built-in context menu items.
+ *
+ * @param menu The value of the `menu` attribute.
+ * @returns True if the built-in context items should be shown.
+ */
+export function isBuiltInContextMenuVisible(menu: string | null): boolean {
+    if (menu === "true" || menu === null) {
+        return true;
+    }
+    return false;
+}
+
+/**
  * Returns whether the given filename ends in a known flash extension.
  *
  * @param filename The filename to test.

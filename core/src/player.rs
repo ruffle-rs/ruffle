@@ -765,6 +765,13 @@ impl Player {
         })
     }
 
+    pub fn set_show_menu(&mut self, show_menu: bool) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            stage.set_show_menu(context, show_menu);
+        })
+    }
+
     pub fn handle_event(&mut self, event: PlayerEvent) {
         if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
