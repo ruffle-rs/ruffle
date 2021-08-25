@@ -278,7 +278,11 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
 
     progress = Progress::Executed;
 
-    let errors = LOCAL_LOGGER.with(|log_buffer| log_buffer.borrow_mut().join("\n"));
+    let errors = LOCAL_LOGGER.with(|log_buffer| {
+        log_buffer.borrow_mut().dedup();
+
+        log_buffer.borrow_mut().join("\n")
+    });
     if !errors.is_empty() {
         return FileResults {
             progress,
