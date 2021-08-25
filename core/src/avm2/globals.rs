@@ -523,6 +523,12 @@ pub fn load_player_globals<'gc>(
     )?;
     class(
         activation,
+        flash::system::security::create_class(mc),
+        domain,
+        script,
+    )?;
+    class(
+        activation,
         flash::system::system::create_class(mc),
         domain,
         script,
