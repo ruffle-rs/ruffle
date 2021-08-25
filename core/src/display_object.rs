@@ -49,7 +49,7 @@ pub use graphic::Graphic;
 pub use interactive::{InteractiveObject, TInteractiveObject};
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
-pub use stage::{Stage, StageAlign, StageQuality, StageScaleMode};
+pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMode};
 pub use text::Text;
 pub use video::Video;
 

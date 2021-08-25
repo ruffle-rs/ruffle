@@ -19,8 +19,8 @@ use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
-    EditText, MorphShape, MovieClip, Stage, StageAlign, StageQuality, StageScaleMode,
-    TInteractiveObject,
+    EditText, MorphShape, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
+    StageScaleMode, TInteractiveObject,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -679,6 +679,17 @@ impl Player {
             undefined,
             &params,
         );
+    }
+
+    pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
+        self.mutate_with_update_context(|context| {
+            let display_state = if is_fullscreen {
+                StageDisplayState::FullScreen
+            } else {
+                StageDisplayState::Normal
+            };
+            context.stage.set_display_state(context, display_state);
+        });
     }
 
     fn toggle_play_root_movie<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {

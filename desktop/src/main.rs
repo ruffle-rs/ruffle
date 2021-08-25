@@ -28,7 +28,7 @@ use ruffle_core::{
         video,
     },
     config::Letterbox,
-    Player,
+    Player, StageDisplayState,
 };
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::path::{Path, PathBuf};
@@ -46,7 +46,7 @@ use winit::event::{
     ElementState, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent,
 };
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use winit::window::{Icon, Window, WindowBuilder};
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -348,9 +348,8 @@ impl App {
                                 ..
                             } if modifiers.alt() => {
                                 if !fullscreen_down {
-                                    window.set_fullscreen(match window.fullscreen() {
-                                        None => Some(Fullscreen::Borderless(None)),
-                                        Some(_) => None,
+                                    player.lock().unwrap().update(|uc| {
+                                        uc.stage.toggle_display_state(uc);
                                     });
                                 }
                                 fullscreen_down = true;
@@ -376,7 +375,9 @@ impl App {
                                     },
                                 ..
                             } => {
-                                window.set_fullscreen(None);
+                                player.lock().unwrap().update(|uc| {
+                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                                });
                                 return;
                             }
                             _ => (),

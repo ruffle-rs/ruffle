@@ -8,7 +8,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 use swf::Color;
@@ -388,11 +388,41 @@ pub fn display_state<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if activation.context.ui.is_fullscreen() {
-        Ok("fullScreenInteractive".into())
+    let display_state = AvmString::new(
+        activation.context.gc_context,
+        activation.context.stage.display_state().to_string(),
+    );
+    Ok(display_state.into())
+}
+
+/// Implement `displayState`'s setter
+pub fn set_display_state<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Ok(mut display_state) = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?
+        .parse()
+    {
+        // It's not entirely clear why when setting to FullScreen, desktop flash player at least will
+        // set its value to FullScreenInteractive. Overriding until flash logic is clearer.
+        if display_state == StageDisplayState::FullScreen {
+            display_state = StageDisplayState::FullScreenInteractive;
+        }
+        activation
+            .context
+            .stage
+            .set_display_state(&mut activation.context, display_state);
     } else {
-        Ok("normal".into())
+        return Err(
+            "ArgumentError: Error #2008: Parameter displayState must be one of the accepted values."
+                .into(),
+        );
     }
+    Ok(Value::Undefined)
 }
 
 /// Implement `focus`'s getter
@@ -708,7 +738,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("browserZoomFactor", Some(browser_zoom_factor), None),
         ("color", Some(color), Some(set_color)),
         ("contentsScaleFactor", Some(contents_scale_factor), None),
-        ("displayState", Some(display_state), None),
+        ("displayState", Some(display_state), Some(set_display_state)),
         ("focus", Some(focus), Some(set_focus)),
         ("frameRate", Some(frame_rate), Some(set_frame_rate)),
         ("scaleMode", Some(scale_mode), Some(set_scale_mode)),

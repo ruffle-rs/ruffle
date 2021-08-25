@@ -161,12 +161,24 @@ impl<'gc> Avm2<'gc> {
         event: Event<'gc>,
         target: Object<'gc>,
     ) -> Result<bool, Error> {
+        let event_constr = context.avm2.classes().event;
+        Self::dispatch_event_with_class(context, event, event_constr, target)
+    }
+
+    /// Dispatch an event on an object with a specific Event type.
+    ///
+    /// The `bool` parameter reads true if the event was cancelled.
+    pub fn dispatch_event_with_class(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: Event<'gc>,
+        event_class: ClassObject<'gc>,
+        target: Object<'gc>,
+    ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
 
-        let event_constr = context.avm2.classes().event;
         let mut activation = Activation::from_nothing(context.reborrow());
 
-        let event_object = EventObject::from_event(&mut activation, event_constr, event)?;
+        let event_object = EventObject::from_event(&mut activation, event_class, event)?;
 
         dispatch_event(&mut activation, target, event_object)
     }

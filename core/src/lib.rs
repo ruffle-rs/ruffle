@@ -11,6 +11,7 @@
 
 #[macro_use]
 mod display_object;
+pub use display_object::StageDisplayState;
 
 #[macro_use]
 extern crate smallvec;

@@ -1,0 +1,6 @@
+FullScreenEvent.fullScreen - unimplemented
+FullScreenEvent.interactive - unimplemented
+OnFullScreen displayState = fullScreenInteractive
+FullScreenEvent.fullScreen - unimplemented
+FullScreenEvent.interactive - unimplemented
+OnFullScreen displayState = normal

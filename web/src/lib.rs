@@ -116,6 +116,9 @@ extern "C" {
     #[wasm_bindgen(method, getter, js_name = "isFullscreen")]
     fn is_fullscreen(this: &JavascriptPlayer) -> bool;
 
+    #[wasm_bindgen(catch, method, js_name = "setFullscreen")]
+    fn set_fullscreen(this: &JavascriptPlayer, is_full: bool) -> Result<(), JsValue>;
+
     #[wasm_bindgen(method, js_name = "setMetadata")]
     fn set_metadata(this: &JavascriptPlayer, metadata: JsValue);
 }
@@ -290,6 +293,10 @@ impl Ruffle {
 
     pub fn run_context_menu_callback(&mut self, index: usize) {
         let _ = self.with_core_mut(|core| core.run_context_menu_callback(index));
+    }
+
+    pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
+        let _ = self.with_core_mut(|core| core.set_fullscreen(is_fullscreen));
     }
 
     pub fn clear_custom_menu_items(&mut self) {
