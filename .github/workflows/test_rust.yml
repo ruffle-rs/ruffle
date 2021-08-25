@@ -7,7 +7,25 @@ on:
     branches: [master]
 
 jobs:
+  changes:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - '!web/package.json'
+              - '!web/package-lock.json'
+              - '!web/packages/**'
+              - '!**.md'
+
   build:
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' }}
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.name }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
