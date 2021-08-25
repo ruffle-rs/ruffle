@@ -56,6 +56,14 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         Some(Ok(Value::Undefined))
     }
 
+    fn get_local_stored(
+        &self,
+        _name: &str,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        Some(Value::Undefined)
+    }
+
     fn set_local(
         &self,
         _name: &str,

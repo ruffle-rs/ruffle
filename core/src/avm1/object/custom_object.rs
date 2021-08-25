@@ -62,6 +62,14 @@ macro_rules! impl_custom_object {
             self.0.read().$field.get_local(name, activation, this)
         }
 
+        fn get_local_stored(
+            &self,
+            name: &str,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+        ) -> Option<crate::avm1::Value<'gc>> {
+            self.0.read().$field.get_local_stored(name, activation)
+        }
+
         fn call(
             &self,
             name: &str,

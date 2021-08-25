@@ -102,6 +102,14 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().get_local(name, activation, this)
     }
 
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.0.read().get_local_stored(name, activation)
+    }
+
     fn set_local(
         &self,
         name: &str,

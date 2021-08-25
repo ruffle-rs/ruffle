@@ -204,6 +204,23 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
+    /// Get the value of a particular non-virtual property on this object.
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        match self
+            .0
+            .read()
+            .properties
+            .get(name, activation.is_case_sensitive())
+        {
+            Some(property) => return Some(property.data()),
+            None => return None,
+        };
+    }
+
     /// Set a named property on the object.
     ///
     /// This function takes a redundant `this` parameter which should be
@@ -350,7 +367,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .get(name, activation.is_case_sensitive())
             .cloned();
         if let Some(watcher) = watcher {
-            let old_value = self.get(name, activation)?;
+            let old_value = self.get_stored(name, activation)?;
             let this = (*self).into();
             match watcher.call(activation, name, old_value, *value, this, Some(this)) {
                 Ok(v) => *value = v,

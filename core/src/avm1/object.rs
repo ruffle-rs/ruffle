@@ -108,6 +108,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>>;
 
+    /// Retrieve a named, non-virtual property from this object exclusively.
+    ///
+    /// This function should not inspect prototype chains. Instead, use
+    /// `get_stored` to do ordinary property look-up and resolution.
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>>;
+
     /// Retrieve a named property from the object, or its prototype.
     fn get(
         &self,
@@ -116,6 +126,33 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
         Ok(search_prototype(Value::Object(this), name, activation, this)?.0)
+    }
+
+    /// Retrieve a non-virtual property from the object, or its prototype.
+    fn get_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let this = (*self).into();
+
+        let mut depth = 0;
+        let mut proto = Value::Object(this);
+
+        while let Value::Object(p) = proto {
+            if depth == 255 {
+                return Err(Error::PrototypeRecursionLimit);
+            }
+
+            if let Some(value) = p.get_local_stored(name, activation) {
+                return Ok(value);
+            }
+
+            proto = p.proto(activation);
+            depth += 1;
+        }
+
+        Ok(Value::Undefined)
     }
 
     fn set_local(

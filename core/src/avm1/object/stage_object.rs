@@ -193,6 +193,38 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         }
     }
 
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        let obj = self.0.read();
+        let props = activation.context.avm1.display_properties;
+        let case_sensitive = activation.is_case_sensitive();
+        // Property search order for DisplayObjects:
+        if self.has_own_property(activation, name) {
+            // 1) Actual properties on the underlying object
+            self.0.read().base.get_local_stored(name, activation)
+        } else if let Some(level) =
+            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
+        {
+            // 2) _levelN
+            Some(level)
+        } else if let Some(child) = obj
+            .display_object
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
+        {
+            // 3) Child display objects with the given instance name
+            Some(child.object())
+        } else if let Some(property) = props.read().get_by_name(name) {
+            // 4) Display object properties such as _x, _y
+            Some(property.get(activation, obj.display_object))
+        } else {
+            None
+        }
+    }
+
     fn set_local(
         &self,
         name: &str,

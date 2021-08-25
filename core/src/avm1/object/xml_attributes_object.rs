@@ -67,6 +67,16 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
             .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
     }
 
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.node()
+            .attribute_value(&XmlName::from_str(name))
+            .map(|s| AvmString::new(activation.context.gc_context, s).into())
+    }
+
     fn set_local(
         &self,
         name: &str,
