@@ -31,7 +31,7 @@ jobs:
       matrix:
         node_version: ['12', '14']
         # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        rust_version: ['stable']
+        rust_version: [stable]
         # MIKE: Turning off macOS-latest for now (flaky tests on CI).
         os: [ubuntu-latest, windows-latest]
 
