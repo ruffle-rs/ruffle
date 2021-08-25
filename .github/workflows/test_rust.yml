@@ -25,22 +25,18 @@ jobs:
 
   build:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' }}
-    name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os.name }}
-    runs-on: ${{ matrix.os.name }}
+    if: needs.changes.outputs.src == 'true'
+    name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
     strategy:
       fail-fast: false
       matrix:
         rust_version: ["stable", "beta"]
-        os: [
-          { name: ubuntu-latest, img_tests: true },
-          { name: windows-latest, img_tests: true },
-          { name: macOS-latest, img_tests: false }
-        ]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
         include:
           - rust_version: "nightly"
-            os: { name: ubuntu-latest, img_tests: true }
+            os: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
@@ -54,7 +50,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
-        if: matrix.os.name == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo add-apt-repository ppa:kisak/kisak-mesa -y
           sudo apt-get update
@@ -74,7 +70,7 @@ jobs:
           args: --all --tests -- -D warnings
 
       - name: Run tests with image tests
-        if: matrix.os.img_tests
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         uses: actions-rs/cargo@v1
         env:
           XDG_RUNTIME_DIR: "" # dummy value, just to silence warnings about it missing
@@ -83,7 +79,7 @@ jobs:
           args: --features imgtests
 
       - name: Run tests without image tests
-        if: ${{ !matrix.os.img_tests }}
+        if: ${{ !(matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest') }}
         uses: actions-rs/cargo@v1
         with:
           command: test
