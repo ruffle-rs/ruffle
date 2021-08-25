@@ -210,15 +210,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        match self
-            .0
+        self.0
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-        {
-            Some(property) => return Some(property.data()),
-            None => return None,
-        };
+            .map(|property| property.data())
     }
 
     /// Set a named property on the object.
