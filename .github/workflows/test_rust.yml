@@ -32,10 +32,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust_version: ["stable", "beta"]
+        rust_version: [stable, beta]
         os: [ubuntu-latest, windows-latest, macOS-latest]
         include:
-          - rust_version: "nightly"
+          - rust_version: nightly
             os: ubuntu-latest
 
     steps:
@@ -73,7 +73,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
         uses: actions-rs/cargo@v1
         env:
-          XDG_RUNTIME_DIR: "" # dummy value, just to silence warnings about it missing
+          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
         with:
           command: test
           args: --features imgtests
