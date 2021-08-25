@@ -226,9 +226,12 @@ impl NavigatorBackend for WebNavigatorBackend {
 
             let data: ArrayBuffer = JsFuture::from(resp.array_buffer().unwrap())
                 .await
-                .unwrap()
+                .map_err(|_| {
+                    Error::FetchError("Could not allocate array buffer for response".to_string())
+                })?
                 .dyn_into()
                 .unwrap();
+
             let jsarray = Uint8Array::new(&data);
             let mut rust_array = vec![0; jsarray.length() as usize];
             jsarray.copy_to(&mut rust_array);
