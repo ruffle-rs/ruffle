@@ -26,7 +26,7 @@ use walkdir::{DirEntry, WalkDir};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Serialize, Debug)]
 enum AvmType {
@@ -48,6 +48,7 @@ enum Progress {
 struct FileResults {
     name: String,
     progress: Progress,
+    testing_time: u128,
     error: Option<String>,
     vm_type: Option<AvmType>,
 }
@@ -165,6 +166,8 @@ fn execute_swf(file: DirEntry) {
 }
 
 fn scan_file(file: DirEntry, name: String) -> FileResults {
+    let start = Instant::now();
+
     LOCAL_LOGGER.with(|log_buffer| {
         log_buffer.borrow_mut().truncate(0);
     });
@@ -177,6 +180,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             return {
                 FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some(format!("File error: {}", e.to_string())),
                     vm_type: None,
@@ -192,6 +196,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
         Err(e) => {
             return FileResults {
                 progress,
+                testing_time: start.elapsed().as_millis(),
                 name,
                 error: Some(e.to_string()),
                 vm_type: None,
@@ -216,6 +221,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             Err(e) => {
                 return FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some(format!("Parse error: {}", e.to_string())),
                     vm_type: None,
@@ -226,6 +232,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             Ok(e) => {
                 return FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some(format!("PANIC: {}", e.to_string())),
                     vm_type: None,
@@ -234,6 +241,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             Err(_) => {
                 return FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some("PANIC".to_string()),
                     vm_type: None,
@@ -250,6 +258,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             Ok(e) => {
                 return FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some(format!("PANIC: {}", e.to_string())),
                     vm_type: None,
@@ -258,6 +267,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
             Err(_) => {
                 return FileResults {
                     progress,
+                    testing_time: start.elapsed().as_millis(),
                     name,
                     error: Some("PANIC".to_string()),
                     vm_type: None,
@@ -272,6 +282,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
     if !errors.is_empty() {
         return FileResults {
             progress,
+            testing_time: start.elapsed().as_millis(),
             name,
             error: Some(errors),
             vm_type,
@@ -282,6 +293,7 @@ fn scan_file(file: DirEntry, name: String) -> FileResults {
 
     FileResults {
         progress,
+        testing_time: start.elapsed().as_millis(),
         name,
         error: None,
         vm_type,
@@ -361,7 +373,13 @@ fn main() -> Result<(), std::io::Error> {
                 .progress_chars("##-"),
         );
 
-            writer.write_record(&["Filename", "Progress", "Error", "AVM Version"])?;
+            writer.write_record(&[
+                "Filename",
+                "Progress",
+                "Test Duration",
+                "Error",
+                "AVM Version",
+            ])?;
 
             let input_path = opt.input_path;
             let closure_progress = progress.clone();
