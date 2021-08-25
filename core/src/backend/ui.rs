@@ -1,6 +1,8 @@
 use crate::events::KeyCode;
 use downcast_rs::Downcast;
 
+pub type Error = Box<dyn std::error::Error>;
+
 pub trait UiBackend: Downcast {
     fn is_key_down(&self, key: KeyCode) -> bool;
 
@@ -18,7 +20,7 @@ pub trait UiBackend: Downcast {
     /// Set the clipboard to the given content
     fn set_clipboard_content(&mut self, content: String);
 
-    fn is_fullscreen(&self) -> bool;
+    fn set_fullscreen(&mut self, is_full: bool) -> Result<(), Error>;
 
     /// Displays a warning about unsupported content in Ruffle.
     /// The user can still click an "OK" or "run anyway" message to dismiss the warning.
@@ -87,8 +89,8 @@ impl UiBackend for NullUiBackend {
 
     fn set_clipboard_content(&mut self, _content: String) {}
 
-    fn is_fullscreen(&self) -> bool {
-        false
+    fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), Error> {
+        Ok(())
     }
 
     fn display_unsupported_message(&self) {}

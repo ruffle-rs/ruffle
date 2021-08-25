@@ -5,7 +5,6 @@ use crate::avm2::{
     Activation as Avm2Activation, Event as Avm2Event, Object as Avm2Object,
     ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::backend::ui::UiBackend;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -70,6 +69,9 @@ pub struct StageData<'gc> {
     /// The scale mode of the stage.
     scale_mode: StageScaleMode,
 
+    /// The display state of the stage.
+    display_state: StageDisplayState,
+
     /// The alignment of the stage.
     align: StageAlign,
 
@@ -111,6 +113,7 @@ impl<'gc> Stage<'gc> {
                 quality: Default::default(),
                 stage_size: (width, height),
                 scale_mode: Default::default(),
+                display_state: Default::default(),
                 align: Default::default(),
                 use_bitmap_downsampling: false,
                 viewport_size: (width, height),
@@ -208,6 +211,58 @@ impl<'gc> Stage<'gc> {
         self.build_matrices(context);
     }
 
+    fn is_fullscreen_state(display_state: StageDisplayState) -> bool {
+        display_state == StageDisplayState::FullScreen
+            || display_state == StageDisplayState::FullScreenInteractive
+    }
+
+    /// Gets whether the stage is in fullscreen
+    pub fn is_fullscreen(self) -> bool {
+        let display_state = self.display_state();
+        Self::is_fullscreen_state(display_state)
+    }
+
+    /// Get the stage display state.
+    /// This controls the fullscreen state.
+    pub fn display_state(self) -> StageDisplayState {
+        self.0.read().display_state
+    }
+
+    /// Toggles display state between fullscreen and normal
+    pub fn toggle_display_state(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if self.is_fullscreen() {
+            self.set_display_state(context, StageDisplayState::Normal);
+        } else {
+            self.set_display_state(context, StageDisplayState::FullScreen);
+        }
+    }
+
+    /// Set the stage display state.
+    pub fn set_display_state(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        display_state: StageDisplayState,
+    ) {
+        if display_state == self.display_state()
+            || (Self::is_fullscreen_state(display_state) && self.is_fullscreen())
+        {
+            return;
+        }
+
+        let result = if display_state == StageDisplayState::FullScreen
+            || display_state == StageDisplayState::FullScreenInteractive
+        {
+            context.ui.set_fullscreen(true)
+        } else {
+            context.ui.set_fullscreen(false)
+        };
+
+        if result.is_ok() {
+            self.0.write(context.gc_context).display_state = display_state;
+            self.fire_fullscreen_event(context);
+        }
+    }
+
     /// Get the stage alignment.
     pub fn align(self) -> StageAlign {
         self.0.read().align
@@ -276,7 +331,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Determine if we should letterbox the stage content.
-    fn should_letterbox(self, ui: &mut dyn UiBackend) -> bool {
+    fn should_letterbox(self) -> bool {
         // Only enable letterbox is the default `ShowAll` scale mode.
         // If content changes the scale mode or alignment, it signals that it is size-aware.
         // For example, `NoScale` is used to make responsive layouts; don't letterbox over it.
@@ -284,7 +339,7 @@ impl<'gc> Stage<'gc> {
         stage.scale_mode == StageScaleMode::ShowAll
             && stage.align.is_empty()
             && (stage.letterbox == Letterbox::On
-                || (stage.letterbox == Letterbox::Fullscreen && ui.is_fullscreen()))
+                || (stage.letterbox == Letterbox::Fullscreen && self.is_fullscreen()))
     }
 
     /// Update the stage's transform matrix in response to a root movie change.
@@ -375,7 +430,7 @@ impl<'gc> Stage<'gc> {
             ty: Twips::from_pixels(ty),
         };
 
-        self.0.write(context.gc_context).view_bounds = if self.should_letterbox(context.ui) {
+        self.0.write(context.gc_context).view_bounds = if self.should_letterbox() {
             // Letterbox: movie area
             BoundingBox {
                 x_min: Twips::ZERO,
@@ -511,6 +566,34 @@ impl<'gc> Stage<'gc> {
             }
         }
     }
+
+    /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
+    pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let library = context.library.library_for_movie_mut(context.swf.clone());
+        if library.avm_type() == AvmType::Avm1 {
+            crate::avm1::Avm1::notify_system_listeners(
+                self.root_clip(),
+                context.swf.version(),
+                context,
+                "Stage".into(),
+                "onFullScreen".into(),
+                &[self.is_fullscreen().into()],
+            );
+        } else if let Avm2Value::Object(stage) = self.object2() {
+            let mut full_screen_event = Avm2Event::new("fullScreen");
+            full_screen_event.set_bubbles(false);
+            full_screen_event.set_cancelable(false);
+
+            if let Err(e) = crate::avm2::Avm2::dispatch_event_with_class(
+                context,
+                full_screen_event,
+                context.avm2.classes().fullscreenevent,
+                stage,
+            ) {
+                log::error!("Encountered AVM2 error when dispatching event: {}", e);
+            }
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
@@ -591,7 +674,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
         render_base((*self).into(), context);
 
-        if self.should_letterbox(context.ui) {
+        if self.should_letterbox() {
             self.draw_letterbox(context);
         }
 
@@ -693,6 +776,55 @@ impl FromStr for StageScaleMode {
             _ => return Err(ParseEnumError),
         };
         Ok(scale_mode)
+    }
+}
+
+/// The scale mode of a stage.
+/// This controls the behavior when the player viewport size differs from the SWF size.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
+#[collect(require_static)]
+pub enum StageDisplayState {
+    /// Sets AIR application or content in Flash Player to expand the stage over the user's entire screen.
+    /// Keyboard input is disabled, with the exception of a limited set of non-printing keys.
+    FullScreen,
+
+    /// Sets the application to expand the stage over the user's entire screen, with keyboard input allowed.
+    /// (Available in AIR and Flash Player, beginning with Flash Player 11.3.)
+    FullScreenInteractive,
+
+    /// Sets the stage back to the standard stage display mode.
+    Normal,
+}
+
+impl Default for StageDisplayState {
+    fn default() -> StageDisplayState {
+        StageDisplayState::Normal
+    }
+}
+
+impl Display for StageDisplayState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        // Match string values returned by AS.
+        let s = match *self {
+            StageDisplayState::FullScreen => "fullScreen",
+            StageDisplayState::FullScreenInteractive => "fullScreenInteractive",
+            StageDisplayState::Normal => "normal",
+        };
+        f.write_str(s)
+    }
+}
+
+impl FromStr for StageDisplayState {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let display_state = match s.to_ascii_lowercase().as_str() {
+            "fullscreen" => StageDisplayState::FullScreen,
+            "fullscreeninteractive" => StageDisplayState::FullScreenInteractive,
+            "normal" => StageDisplayState::Normal,
+            _ => return Err(ParseEnumError),
+        };
+        Ok(display_state)
     }
 }
 

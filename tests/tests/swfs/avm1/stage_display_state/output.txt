@@ -1,0 +1,16 @@
+// Stage.displayState
+normal
+// Stage.displayState = A
+normal
+onFullScreen called with bFull = true
+// Stage.displayState = fullScreen
+fullScreen
+onFullScreen called with bFull = false
+// Stage.displayState = NORMAL
+normal
+onFullScreen called with bFull = true
+// Stage.displayState = FULLSCREEN
+fullScreen
+onFullScreen called with bFull = false
+// Stage.displayState = normal
+normal

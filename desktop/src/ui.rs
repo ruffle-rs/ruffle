@@ -1,11 +1,11 @@
 use clipboard::{ClipboardContext, ClipboardProvider};
-use ruffle_core::backend::ui::{MouseCursor, UiBackend};
+use ruffle_core::backend::ui::{Error, MouseCursor, UiBackend};
 use ruffle_core::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
 use std::rc::Rc;
 use tinyfiledialogs::{message_box_ok, MessageBoxIcon};
 use winit::event::{ElementState, ModifiersState, VirtualKeyCode, WindowEvent};
-use winit::window::Window;
+use winit::window::{Fullscreen, Window};
 
 pub struct DesktopUiBackend {
     window: Rc<Window>,
@@ -222,8 +222,13 @@ impl UiBackend for DesktopUiBackend {
         self.clipboard.set_contents(content).unwrap();
     }
 
-    fn is_fullscreen(&self) -> bool {
-        self.window.fullscreen().is_some()
+    fn set_fullscreen(&mut self, is_full: bool) -> Result<(), Error> {
+        self.window.set_fullscreen(if is_full {
+            Some(Fullscreen::Borderless(None))
+        } else {
+            None
+        });
+        Ok(())
     }
 
     fn display_unsupported_message(&self) {

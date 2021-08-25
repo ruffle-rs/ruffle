@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
+use crate::display_object::StageDisplayState;
 use crate::string::AvmString;
 use gc_arena::MutationContext;
 
@@ -13,6 +14,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align; DONT_ENUM | DONT_DELETE);
     "height" => property(height; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "scaleMode" => property(scale_mode, set_scale_mode; DONT_ENUM | DONT_DELETE);
+    "displayState" => property(display_state, set_display_state; DONT_ENUM | DONT_DELETE);
     "showMenu" => property(show_menu, set_show_menu; DONT_ENUM | DONT_DELETE);
     "width" => property(width; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
@@ -111,6 +113,43 @@ fn set_scale_mode<'gc>(
         .context
         .stage
         .set_scale_mode(&mut activation.context, scale_mode);
+    Ok(Value::Undefined)
+}
+
+fn display_state<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if activation.context.stage.is_fullscreen() {
+        Ok("fullScreen".into())
+    } else {
+        Ok("normal".into())
+    }
+}
+
+fn set_display_state<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let display_state = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+
+    if display_state.to_lowercase() == "fullscreen" {
+        activation
+            .context
+            .stage
+            .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
+    } else if display_state.to_lowercase() == "normal" {
+        activation
+            .context
+            .stage
+            .set_display_state(&mut activation.context, StageDisplayState::Normal);
+    }
+
     Ok(Value::Undefined)
 }
 

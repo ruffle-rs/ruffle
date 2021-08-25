@@ -103,6 +103,7 @@ pub struct SystemPrototypes<'gc> {
     pub scene: Object<'gc>,
     pub application_domain: Object<'gc>,
     pub event: Object<'gc>,
+    pub fullscreenevent: Object<'gc>,
     pub video: Object<'gc>,
     pub xml: Object<'gc>,
     pub xml_list: Object<'gc>,
@@ -160,6 +161,7 @@ impl<'gc> SystemPrototypes<'gc> {
             scene: empty,
             application_domain: empty,
             event: empty,
+            fullscreenevent: empty,
             video: empty,
             xml: empty,
             xml_list: empty,
@@ -208,6 +210,7 @@ pub struct SystemClasses<'gc> {
     pub scene: ClassObject<'gc>,
     pub application_domain: ClassObject<'gc>,
     pub event: ClassObject<'gc>,
+    pub fullscreenevent: ClassObject<'gc>,
     pub video: ClassObject<'gc>,
     pub xml: ClassObject<'gc>,
     pub xml_list: ClassObject<'gc>,
@@ -261,6 +264,7 @@ impl<'gc> SystemClasses<'gc> {
             scene: object,
             application_domain: object,
             event: object,
+            fullscreenevent: object,
             video: object,
             xml: object,
             xml_list: object,
@@ -598,6 +602,17 @@ pub fn load_player_globals<'gc>(
         flash::events::progressevent::create_class(mc),
         script,
     )?;
+    class(
+        activation,
+        flash::events::activityevent::create_class(mc),
+        script,
+    )?;
+    avm2_system_class!(
+        fullscreenevent,
+        activation,
+        flash::events::fullscreenevent::create_class(mc),
+        script
+    );
     // package `flash.utils`
     avm2_system_class!(
         bytearray,
