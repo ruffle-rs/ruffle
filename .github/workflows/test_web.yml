@@ -7,7 +7,22 @@ on:
     branches: [ master ]
 
 jobs:
+  changes:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            src:
+              - '!**.md'
+
   build:
+    needs: changes
+    if: ${{ needs.changes.outputs.src == 'true' }}
     name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
