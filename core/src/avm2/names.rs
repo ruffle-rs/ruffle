@@ -5,6 +5,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
+use std::fmt;
 use swf::avm2::types::{
     Index, Multiname as AbcMultiname, Namespace as AbcNamespace, NamespaceSet as AbcNamespaceSet,
 };
@@ -196,6 +197,16 @@ impl<'gc> QName<'gc> {
 
     pub fn namespace(&self) -> &Namespace<'gc> {
         &self.ns
+    }
+}
+
+impl<'gc> fmt::Display for QName<'gc> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let uri = self.namespace().as_uri();
+        if !uri.is_empty() {
+            write!(f, "{}::", uri)?;
+        }
+        f.write_str(&self.local_name())
     }
 }
 
