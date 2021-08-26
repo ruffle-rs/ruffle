@@ -598,6 +598,36 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    function(
+        mc,
+        "flash.utils",
+        "getQualifiedClassName",
+        flash::utils::get_qualified_class_name,
+        fn_proto,
+        domain,
+        script,
+    )?;
+
+    function(
+        mc,
+        "flash.utils",
+        "getQualifiedSuperclassName",
+        flash::utils::get_qualified_super_class_name,
+        fn_proto,
+        domain,
+        script,
+    )?;
+
+    function(
+        mc,
+        "flash.utils",
+        "getDefinitionByName",
+        flash::utils::get_definition_by_name,
+        fn_proto,
+        domain,
+        script,
+    )?;
+
     // package `flash.display`
     avm2_system_class!(
         display_object,
