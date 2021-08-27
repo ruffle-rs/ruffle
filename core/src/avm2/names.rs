@@ -5,7 +5,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
-use std::fmt::Write;
 use swf::avm2::types::{
     Index, Multiname as AbcMultiname, Namespace as AbcNamespace, NamespaceSet as AbcNamespaceSet,
 };
@@ -200,13 +199,11 @@ impl<'gc> QName<'gc> {
 
     /// Converts this `QName` to a fully qualified name.
     pub fn to_qualified_name(&self) -> String {
-        let mut result = String::new();
         let uri = self.namespace().as_uri();
-        if !uri.is_empty() {
-            write!(result, "{}::", uri).expect("Write failed");
-        }
-        result.push_str(&self.local_name());
-        result
+        let name = self.local_name();
+        uri.is_empty()
+            .then(|| name.to_string())
+            .unwrap_or_else(|| format!("{}::{}", uri, name))
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
