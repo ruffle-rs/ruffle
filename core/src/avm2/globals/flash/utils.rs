@@ -28,9 +28,10 @@ pub fn get_qualified_class_name<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
+
     Ok(AvmString::new(
         activation.context.gc_context,
-        format!("{}", obj.as_class().unwrap().read().name()),
+        obj.as_class().unwrap().read().name().to_qualified_name(),
     )
     .into())
 }
@@ -45,10 +46,16 @@ pub fn get_qualified_super_class_name<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
+
     if let Some(super_class) = obj.superclass_object() {
         Ok(AvmString::new(
             activation.context.gc_context,
-            format!("{}", super_class.as_class().unwrap().read().name()),
+            super_class
+                .as_class()
+                .unwrap()
+                .read()
+                .name()
+                .to_qualified_name(),
         )
         .into())
     } else {
@@ -68,9 +75,8 @@ pub fn get_definition_by_name<'gc>(
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
-        if let Some(qname) = QName::from_symbol_class(&name, activation.context.gc_context) {
-            return appdomain.get_defined_value(activation, qname);
-        }
+        let qname = QName::from_qualified_name(&name, activation.context.gc_context);
+        return appdomain.get_defined_value(activation, qname);
     }
     Ok(Value::Undefined)
 }
