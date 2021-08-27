@@ -2027,7 +2027,7 @@ impl<'a> Reader<'a> {
 
     fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
         self.read_u16()?; // Must be 0
-        self.read_clip_event_flags()?; // All event flags
+        self.read_clip_event_flags(); // All event flags
         let mut clip_actions = vec![];
         while let Some(clip_action) = self.read_clip_action()? {
             clip_actions.push(clip_action);
@@ -2036,7 +2036,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {
-        let events = self.read_clip_event_flags()?;
+        let events = self.read_clip_event_flags();
         if events.is_empty() {
             Ok(None)
         } else {
@@ -2058,51 +2058,21 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn read_clip_event_flags(&mut self) -> Result<ClipEventFlag> {
-        // TODO: Switch to a bitset.
-        let mut event_list = ClipEventFlag::empty();
-
-        let flags = self.read_u8()?;
-        event_list.set(ClipEventFlag::KEY_UP, flags & 0b1000_0000 != 0);
-        event_list.set(ClipEventFlag::KEY_DOWN, flags & 0b0100_0000 != 0);
-        event_list.set(ClipEventFlag::MOUSE_UP, flags & 0b0010_0000 != 0);
-        event_list.set(ClipEventFlag::MOUSE_DOWN, flags & 0b0001_0000 != 0);
-        event_list.set(ClipEventFlag::MOUSE_MOVE, flags & 0b0000_1000 != 0);
-        event_list.set(ClipEventFlag::UNLOAD, flags & 0b0000_0100 != 0);
-        event_list.set(ClipEventFlag::ENTER_FRAME, flags & 0b0000_0010 != 0);
-        event_list.set(ClipEventFlag::LOAD, flags & 0b0000_0001 != 0);
-
-        if self.version > 5 {
-            // There are SWFs in the wild with malformed final ClipActions that is only two bytes
-            // instead of four bytes (see #2899). Handle this gracefully to allow the tag to run.
-            // TODO: We may need a more general way to handle truncated tags, since this has
-            // occurred in a few different places.
-            // Allow for only two bytes in the clip action tag.
-            let flags = self.read_u8().unwrap_or_default();
-            let flags2 = self.read_u8().unwrap_or_default();
-            let _ = self.read_u8();
-            event_list.set(ClipEventFlag::DRAG_OVER, flags & 0b1000_0000 != 0);
-            event_list.set(ClipEventFlag::ROLL_OUT, flags & 0b0100_0000 != 0);
-            event_list.set(ClipEventFlag::ROLL_OVER, flags & 0b0010_0000 != 0);
-            event_list.set(ClipEventFlag::RELEASE_OUTSIDE, flags & 0b0001_0000 != 0);
-            event_list.set(ClipEventFlag::RELEASE, flags & 0b0000_1000 != 0);
-            event_list.set(ClipEventFlag::PRESS, flags & 0b0000_0100 != 0);
-            event_list.set(ClipEventFlag::INITIALIZE, flags & 0b0000_0010 != 0);
-            event_list.set(ClipEventFlag::DATA, flags & 0b0000_0001 != 0);
-
-            // Construct was only added in SWF7, but it's not version-gated;
-            // Construct events will still fire in SWF6 in a v7+ player. (#1424)
-            event_list.set(ClipEventFlag::CONSTRUCT, flags2 & 0b0000_0100 != 0);
-            event_list.set(ClipEventFlag::KEY_PRESS, flags2 & 0b0000_0010 != 0);
-            event_list.set(ClipEventFlag::DRAG_OUT, flags2 & 0b0000_0001 != 0);
+    fn read_clip_event_flags(&mut self) -> ClipEventFlag {
+        // There are SWFs in the wild with malformed final ClipActions that is only 2 bytes
+        // instead of 4 bytes (#2899). Handle this gracefully to allow the tag to run.
+        // TODO: We may need a more general way to handle truncated tags, since this has
+        // occurred in a few different places.
+        let bits = if self.version >= 6 {
+            self.read_u32().unwrap_or_default()
         } else {
             // SWF19 pp. 48-50: For SWFv5, the ClipEventFlags only had 2 bytes of flags,
             // with the 2nd byte reserved (all 0).
             // This was expanded to 4 bytes in SWFv6.
-            self.read_u8()?;
-        }
+            (self.read_u16().unwrap_or_default() as u8).into()
+        };
 
-        Ok(event_list)
+        ClipEventFlag::from_bits_truncate(bits)
     }
 
     pub fn read_filter(&mut self) -> Result<Filter> {

@@ -2009,30 +2009,11 @@ impl<W: Write> Writer<W> {
 
     fn write_clip_event_flags(&mut self, clip_events: ClipEventFlag) -> Result<()> {
         // TODO: Assert proper version.
-        let version = self.version;
-        let mut bits = self.bits();
-        bits.write_bit(clip_events.contains(ClipEventFlag::KEY_UP))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::KEY_DOWN))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::MOUSE_UP))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::MOUSE_DOWN))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::MOUSE_MOVE))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::UNLOAD))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::ENTER_FRAME))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::LOAD))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::DRAG_OVER))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::ROLL_OUT))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::ROLL_OVER))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::RELEASE_OUTSIDE))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::RELEASE))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::PRESS))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::INITIALIZE))?;
-        bits.write_bit(clip_events.contains(ClipEventFlag::DATA))?;
-        if version >= 6 {
-            bits.write_ubits(5, 0)?;
-            bits.write_bit(clip_events.contains(ClipEventFlag::CONSTRUCT))?;
-            bits.write_bit(clip_events.contains(ClipEventFlag::KEY_PRESS))?;
-            bits.write_bit(clip_events.contains(ClipEventFlag::DRAG_OUT))?;
-            bits.write_ubits(8, 0)?;
+        let bits = clip_events.bits();
+        if self.version >= 6 {
+            self.write_u32(bits)?;
+        } else {
+            self.write_u16((bits as u8).into())?;
         }
         Ok(())
     }
