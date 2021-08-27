@@ -742,25 +742,30 @@ bitflags! {
     ///
     /// [SWF19 pp.48-50 ClipEvent](https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf#page=50)
     pub struct ClipEventFlag: u32 {
-        const CONSTRUCT       = 1 << 0;
-        const DATA            = 1 << 1;
-        const DRAG_OUT        = 1 << 2;
-        const DRAG_OVER       = 1 << 3;
-        const ENTER_FRAME     = 1 << 4;
-        const INITIALIZE      = 1 << 5;
-        const KEY_UP          = 1 << 6;
-        const KEY_DOWN        = 1 << 7;
-        const KEY_PRESS       = 1 << 8;
-        const LOAD            = 1 << 9;
-        const MOUSE_UP        = 1 << 10;
-        const MOUSE_DOWN      = 1 << 11;
-        const MOUSE_MOVE      = 1 << 12;
-        const PRESS           = 1 << 13;
+        const LOAD            = 1 << 0;
+        const ENTER_FRAME     = 1 << 1;
+        const UNLOAD          = 1 << 2;
+        const MOUSE_MOVE      = 1 << 3;
+        const MOUSE_DOWN      = 1 << 4;
+        const MOUSE_UP        = 1 << 5;
+        const KEY_DOWN        = 1 << 6;
+        const KEY_UP          = 1 << 7;
+
+        // Added in SWF6.
+        const DATA            = 1 << 8;
+        const INITIALIZE      = 1 << 9;
+        const PRESS           = 1 << 10;
+        const RELEASE         = 1 << 11;
+        const RELEASE_OUTSIDE = 1 << 12;
+        const ROLL_OVER       = 1 << 13;
         const ROLL_OUT        = 1 << 14;
-        const ROLL_OVER       = 1 << 15;
-        const RELEASE         = 1 << 16;
-        const RELEASE_OUTSIDE = 1 << 17;
-        const UNLOAD          = 1 << 18;
+        const DRAG_OVER       = 1 << 15;
+        const DRAG_OUT        = 1 << 16;
+        const KEY_PRESS       = 1 << 17;
+
+        // Construct was only added in SWF7, but it's not version-gated;
+        // Construct events will still fire in SWF6 in a v7+ player (#1424).
+        const CONSTRUCT       = 1 << 18;
     }
 }
 
