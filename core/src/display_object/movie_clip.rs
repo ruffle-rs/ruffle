@@ -579,57 +579,53 @@ impl<'gc> MovieClip<'gc> {
             let id = reader.read_u16()?;
             let class_name = reader.read_str()?.to_string_lossy(reader.encoding());
 
-            if let Some(name) =
-                Avm2QName::from_symbol_class(&class_name, activation.context.gc_context)
-            {
-                let library = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone());
-                let domain = library.avm2_domain();
-                let class_object = domain
-                    .get_defined_value(&mut activation, name.clone())
-                    .and_then(|v| v.coerce_to_object(&mut activation));
+            let name = Avm2QName::from_qualified_name(&class_name, activation.context.gc_context);
+            let library = activation
+                .context
+                .library
+                .library_for_movie_mut(movie.clone());
+            let domain = library.avm2_domain();
+            let class_object = domain
+                .get_defined_value(&mut activation, name.clone())
+                .and_then(|v| v.coerce_to_object(&mut activation));
 
-                match class_object {
-                    Ok(class_object) => {
-                        activation
-                            .context
-                            .library
-                            .avm2_class_registry_mut()
-                            .set_class_symbol(class_object, movie.clone(), id);
+            match class_object {
+                Ok(class_object) => {
+                    activation
+                        .context
+                        .library
+                        .avm2_class_registry_mut()
+                        .set_class_symbol(class_object, movie.clone(), id);
 
-                        let library = activation
-                            .context
-                            .library
-                            .library_for_movie_mut(movie.clone());
+                    let library = activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie.clone());
 
-                        if id == 0 {
-                            //TODO: This assumes only the root movie has `SymbolClass` tags.
-                            self.set_avm2_class(activation.context.gc_context, Some(class_object));
-                        } else {
-                            match library.character_by_id(id) {
-                                Some(Character::MovieClip(mc)) => mc.set_avm2_class(
-                                    activation.context.gc_context,
-                                    Some(class_object),
-                                ),
-                                Some(Character::BinaryData(_)) => {}
-                                _ => {
-                                    log::warn!(
-                                        "Symbol class {} cannot be assigned to invalid character id {}",
-                                        class_name,
-                                        id
-                                    );
-                                }
+                    if id == 0 {
+                        //TODO: This assumes only the root movie has `SymbolClass` tags.
+                        self.set_avm2_class(activation.context.gc_context, Some(class_object));
+                    } else {
+                        match library.character_by_id(id) {
+                            Some(Character::MovieClip(mc)) => {
+                                mc.set_avm2_class(activation.context.gc_context, Some(class_object))
+                            }
+                            Some(Character::BinaryData(_)) => {}
+                            _ => {
+                                log::warn!(
+                                    "Symbol class {} cannot be assigned to invalid character id {}",
+                                    class_name,
+                                    id
+                                );
                             }
                         }
                     }
-                    Err(e) => log::warn!(
-                        "Got AVM2 error {} when attempting to assign symbol class {}",
-                        e,
-                        class_name
-                    ),
                 }
+                Err(e) => log::warn!(
+                    "Got AVM2 error {} when attempting to assign symbol class {}",
+                    e,
+                    class_name
+                ),
             }
         }
 

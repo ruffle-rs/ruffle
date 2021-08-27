@@ -5,7 +5,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::string::AvmString;
 use crate::avm2::Error;
 use gc_arena::{Collect, MutationContext};
-use std::fmt;
+use std::fmt::Write;
 use swf::avm2::types::{
     Index, Multiname as AbcMultiname, Namespace as AbcNamespace, NamespaceSet as AbcNamespaceSet,
 };
@@ -173,22 +173,40 @@ impl<'gc> QName<'gc> {
         })
     }
 
-    /// Given a symbol class name, parse it as a `QName`.
+    /// Constructs a `QName` from a fully qualified name.
     ///
-    /// Symbol class names consist of one or more package strings, followed by
-    /// the local name of the class, all separated by dots.
-    pub fn from_symbol_class(class_name: &str, mc: MutationContext<'gc, '_>) -> Option<Self> {
-        match &class_name.rsplitn(2, '.').collect::<Vec<&str>>()[..] {
-            [local_name, package_name] => Some(Self {
+    /// A fully qualified name can be any of the following formats:
+    /// NAMESPACE::LOCAL_NAME
+    /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
+    /// LOCAL_NAME (Use the public namespace)
+    pub fn from_qualified_name(name: &str, mc: MutationContext<'gc, '_>) -> Self {
+        if let Some((package_name, local_name)) = name.split_once("::") {
+            Self {
                 ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
                 name: AvmString::new(mc, local_name.to_string()),
-            }),
-            [local_name] => Some(Self {
-                ns: Namespace::public(),
+            }
+        } else if let Some((package_name, local_name)) = name.rsplit_once('.') {
+            Self {
+                ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
                 name: AvmString::new(mc, local_name.to_string()),
-            }),
-            _ => None,
+            }
+        } else {
+            Self {
+                ns: Namespace::public(),
+                name: AvmString::new(mc, name.to_string()),
+            }
         }
+    }
+
+    /// Converts this `QName` to a fully qualified name.
+    pub fn to_qualified_name(&self) -> String {
+        let mut result = String::new();
+        let uri = self.namespace().as_uri();
+        if !uri.is_empty() {
+            write!(result, "{}::", uri).expect("Write failed");
+        }
+        result.push_str(&self.local_name());
+        result
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
@@ -197,16 +215,6 @@ impl<'gc> QName<'gc> {
 
     pub fn namespace(&self) -> &Namespace<'gc> {
         &self.ns
-    }
-}
-
-impl<'gc> fmt::Display for QName<'gc> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let uri = self.namespace().as_uri();
-        if !uri.is_empty() {
-            write!(f, "{}::", uri)?;
-        }
-        f.write_str(&self.local_name())
     }
 }
 
