@@ -25,6 +25,7 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::object::xml_socket::XmlSocket;
 use crate::avm1::{ScriptObject, SoundObject, StageObject, Value};
 use crate::avm_warn;
 use crate::display_object::DisplayObject;
@@ -33,6 +34,8 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::borrow::Cow;
 use std::fmt::Debug;
+
+use self::xml_socket::XmlSocketData;
 
 pub mod array_object;
 pub mod bevel_filter;
@@ -58,6 +61,7 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_object;
+pub mod xml_socket;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -90,6 +94,7 @@ pub mod xml_object;
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
+        XmlSocket(XmlSocket<'gc>)
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -473,6 +478,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `SharedObject`, if it exists
     fn as_shared_object(&self) -> Option<SharedObject<'gc>> {
+        None
+    }
+
+    fn as_xml_socket(&self) -> Option<XmlSocketData<'gc>> {
         None
     }
 

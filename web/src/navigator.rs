@@ -1,7 +1,8 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    url_from_relative_url, ConnectOptions, ConnectionEvent, NavigationMethod, NavigatorBackend,
+    OwnedFuture, RequestOptions,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -223,5 +224,17 @@ impl NavigatorBackend for WebNavigatorBackend {
             log::error!("Url::set_scheme failed on: {}", url);
         }
         url
+    }
+
+    fn xmlsocket_connect(&mut self, _: u64, _: ConnectOptions) {
+        unimplemented!()
+    }
+
+    fn xmlsocket_send(&mut self, _: &u64, _: Vec<u8>) {
+        unimplemented!()
+    }
+
+    fn xmlsocket_update(&mut self, _: &u64, _: &mut [u8; 1024]) -> Vec<ConnectionEvent> {
+        unimplemented!()
     }
 }

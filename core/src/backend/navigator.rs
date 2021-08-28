@@ -97,6 +97,20 @@ impl NavigationMethod {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ConnectOptions {
+    pub host: String,
+    pub port: u16,
+}
+
+/// TODO: onXML??
+#[derive(Debug, Clone)]
+pub enum ConnectionEvent {
+    ConnectionResult(bool),
+    Data(Vec<u8>),
+    Closed,
+}
+
 /// Represents request options to be sent as part of a fetch.
 pub struct RequestOptions {
     /// The HTTP method to be used to make the request.
@@ -174,6 +188,22 @@ pub trait NavigatorBackend {
 
     /// Fetch data at a given URL and return it some time in the future.
     fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
+
+    /// XMLSocket::connect
+    fn xmlsocket_connect(&mut self, socket_id: u64, connection_options: ConnectOptions);
+
+    /// XMLSocket::send
+    /// Note: this function should not be blocking.
+    fn xmlsocket_send(&mut self, socket_id: &u64, data: Vec<u8>);
+
+    /// Update the list of sockets, prossibly generating new socket events.
+    /// Note: this function MUST not be blocking.
+    /// Note: the buffer is not guaranteed to be zero filled.
+    fn xmlsocket_update(
+        &mut self,
+        socket_id: &u64,
+        buffer: &mut [u8; 1024],
+    ) -> Vec<ConnectionEvent>;
 
     /// Get the amount of time since the SWF was launched.
     /// Used by the `getTimer` ActionScript call.
@@ -387,5 +417,17 @@ impl NavigatorBackend for NullNavigatorBackend {
 
     fn pre_process_url(&self, url: Url) -> Url {
         url
+    }
+
+    fn xmlsocket_connect(&mut self, _: u64, _: ConnectOptions) {
+        unimplemented!()
+    }
+
+    fn xmlsocket_send(&mut self, _: &u64, _: Vec<u8>) {
+        unimplemented!()
+    }
+
+    fn xmlsocket_update(&mut self, _: &u64, _: &mut [u8; 1024]) -> Vec<ConnectionEvent> {
+        unimplemented!()
     }
 }

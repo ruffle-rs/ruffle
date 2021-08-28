@@ -3,17 +3,29 @@
 use crate::custom_event::RuffleEvent;
 use isahc::{config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    ConnectOptions, ConnectionEvent, NavigationMethod, NavigatorBackend, OwnedFuture,
+    RequestOptions,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
-use std::fs;
+use std::collections::{HashMap, VecDeque};
+use std::io::{Read, Write};
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
+use std::{fs, io};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
+
+enum SocketState {
+    TryConnect(ConnectOptions),
+    Connected {
+        stream: std::net::TcpStream,
+        outgoing: VecDeque<Vec<u8>>,
+        queue: VecDeque<u8>,
+    },
+}
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
@@ -32,6 +44,8 @@ pub struct ExternalNavigatorBackend {
 
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
+
+    sockets: HashMap<u64, SocketState>,
 
     upgrade_to_https: bool,
 }
@@ -57,6 +71,7 @@ impl ExternalNavigatorBackend {
             channel,
             event_loop,
             client,
+            sockets: HashMap::new(),
             movie_url,
             start_time: Instant::now(),
             upgrade_to_https,
@@ -177,6 +192,91 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
         }
+    }
+
+    fn xmlsocket_connect(&mut self, socket_id: u64, c: ConnectOptions) {
+        self.sockets.insert(socket_id, SocketState::TryConnect(c));
+    }
+
+    fn xmlsocket_send(&mut self, socket_id: &u64, data: Vec<u8>) {
+        if let Some(SocketState::Connected { outgoing, .. }) = self.sockets.get_mut(socket_id) {
+            outgoing.push_back(data);
+        }
+    }
+
+    fn xmlsocket_update(
+        &mut self,
+        socket_id: &u64,
+        buffer: &mut [u8; 1024],
+    ) -> Vec<ConnectionEvent> {
+        let mut events = Vec::<ConnectionEvent>::new();
+        if let Some(st) = self.sockets.get_mut(socket_id) {
+            match st {
+                SocketState::TryConnect(c) => {
+                    let r = std::net::TcpStream::connect(format!("{}:{}", c.host, c.port))
+                        .and_then(|s| {
+                            s.set_nonblocking(true)?;
+                            Ok(s)
+                        })
+                        .and_then(|s| {
+                            s.set_nodelay(true)?;
+                            Ok(s)
+                        });
+                    match r {
+                        Ok(stream) => {
+                            *st = SocketState::Connected {
+                                stream,
+                                queue: VecDeque::new(),
+                                outgoing: VecDeque::new(),
+                            };
+                            events.push(ConnectionEvent::ConnectionResult(true));
+                        }
+                        Err(_) => {
+                            events.push(ConnectionEvent::ConnectionResult(false));
+                            self.sockets.remove(socket_id);
+                        }
+                    }
+                }
+                SocketState::Connected {
+                    stream,
+                    queue,
+                    outgoing,
+                } => {
+                    let _ = stream.write_all(
+                        &outgoing.iter().fold(Vec::<u8>::new(), |mut s, o| {
+                            s.extend(o);
+                            // every message sent to the server is terminated by a null byte
+                            s.push(0);
+                            s
+                        })[..],
+                    );
+                    outgoing.clear();
+                    match stream.read(buffer) {
+                        Ok(l) if l > 0 => {
+                            queue.extend(&buffer[0..l]);
+                            let mut i = 0;
+                            while i < queue.len() {
+                                if i > 0 && queue[i] == 0x00 {
+                                    let message = queue.drain(0..i).collect();
+                                    // remove the null byte
+                                    queue.pop_front();
+                                    events.push(ConnectionEvent::Data(message));
+                                    // restart to the start
+                                    i = 0;
+                                }
+                                i += 1;
+                            }
+                        }
+                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+                        Err(_) | Ok(_) => {
+                            self.sockets.remove(socket_id);
+                            events.push(ConnectionEvent::Closed);
+                        }
+                    }
+                }
+            }
+        }
+        events
     }
 
     fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {

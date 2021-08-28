@@ -58,6 +58,7 @@ mod text_format;
 mod transform;
 mod video;
 mod xml;
+pub(crate) mod xml_socket;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "isFinite" => method(is_finite; DONT_ENUM);
@@ -508,6 +509,8 @@ pub struct SystemPrototypes<'gc> {
     pub transform_constructor: Object<'gc>,
     pub shared_object: Object<'gc>,
     pub shared_object_constructor: Object<'gc>,
+    pub xml_socket: Object<'gc>,
+    pub xml_socket_constructor: Object<'gc>,
     pub color_transform: Object<'gc>,
     pub color_transform_constructor: Object<'gc>,
     pub context_menu: Object<'gc>,
@@ -1000,6 +1003,16 @@ pub fn create_globals<'gc>(
     globals.define_value(gc_context, "Boolean", boolean.into(), Attribute::DONT_ENUM);
     globals.define_value(gc_context, "Date", date.into(), Attribute::DONT_ENUM);
 
+    let xml_socket_proto = xml_socket::create_proto(gc_context, object_proto, function_proto);
+    let xml_socket_obj =
+        xml_socket::create_xml_socket_object(gc_context, xml_socket_proto, function_proto);
+    globals.define_value(
+        gc_context,
+        "XMLSocket",
+        xml_socket_obj.into(),
+        Attribute::DONT_ENUM,
+    );
+
     let shared_object_proto = shared_object::create_proto(gc_context, object_proto, function_proto);
 
     let shared_obj =
@@ -1146,6 +1159,8 @@ pub fn create_globals<'gc>(
             transform_constructor: transform,
             shared_object: shared_object_proto,
             shared_object_constructor: shared_obj,
+            xml_socket: xml_socket_proto,
+            xml_socket_constructor: xml_socket_obj,
             color_transform: color_transform_proto,
             color_transform_constructor: color_transform,
             context_menu: context_menu_proto,

@@ -575,6 +575,7 @@ mod tests {
 
     use crate::avm1::function::Executable;
     use crate::avm1::globals::system::SystemProperties;
+    use crate::avm1::globals::xml_socket::XmlSocketProperties;
     use crate::avm1::property::Attribute;
     use crate::avm1::{activation::ActivationIdentifier, function::FunctionObject};
     use crate::avm1::{Avm1, Timers};
@@ -643,6 +644,7 @@ mod tests {
                 player: None,
                 load_manager: &mut LoadManager::new(),
                 system: &mut SystemProperties::default(),
+                xml_socket: &mut XmlSocketProperties::default(),
                 instance_counter: &mut 0,
                 storage: &mut MemoryStorageBackend::default(),
                 shared_objects: &mut HashMap::new(),

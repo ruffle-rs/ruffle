@@ -1,6 +1,7 @@
 //! Contexts and helper types passed between functions.
 
 use crate::avm1::globals::system::SystemProperties;
+use crate::avm1::globals::xml_socket::XmlSocketProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, Value as Avm2Value};
 use crate::backend::{
@@ -118,6 +119,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The system properties
     pub system: &'a mut SystemProperties,
+
+    // The XMLSocket properties
+    pub xml_socket: &'a mut XmlSocketProperties<'gc>,
 
     /// The current instance ID. Used to generate default `instanceN` names.
     pub instance_counter: &'a mut i32,
@@ -275,6 +279,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             player: self.player.clone(),
             load_manager: self.load_manager,
             system: self.system,
+            xml_socket: self.xml_socket,
             instance_counter: self.instance_counter,
             shared_objects: self.shared_objects,
             unbound_text_fields: self.unbound_text_fields,

@@ -1,6 +1,7 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::error::Error;
 use crate::avm1::globals::system::SystemProperties;
+use crate::avm1::globals::xml_socket::XmlSocketProperties;
 use crate::avm1::{Avm1, Object, Timers, UpdateContext};
 use crate::avm2::Avm2;
 use crate::backend::audio::{AudioManager, NullAudioBackend};
@@ -66,6 +67,7 @@ where
             player: None,
             load_manager: &mut LoadManager::new(),
             system: &mut SystemProperties::default(),
+            xml_socket: &mut XmlSocketProperties::default(),
             instance_counter: &mut 0,
             storage: &mut MemoryStorageBackend::default(),
             shared_objects: &mut HashMap::new(),

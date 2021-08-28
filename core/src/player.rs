@@ -1,10 +1,12 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
+use crate::avm1::globals::xml_socket::XmlSocketProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
+use crate::backend::navigator::ConnectionEvent;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     locale::LocaleBackend,
@@ -82,6 +84,8 @@ struct GcRootData<'gc> {
 
     shared_objects: HashMap<String, Object<'gc>>,
 
+    xml_socket: XmlSocketProperties<'gc>,
+
     /// Text fields with unbound variable bindings.
     unbound_text_fields: Vec<EditText<'gc>>,
 
@@ -108,6 +112,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
+        &mut XmlSocketProperties<'gc>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut Avm1<'gc>,
@@ -123,6 +128,7 @@ impl<'gc> GcRootData<'gc> {
     ) {
         (
             self.stage,
+            &mut self.xml_socket,
             &mut self.library,
             &mut self.action_queue,
             &mut self.avm1,
@@ -275,6 +281,7 @@ impl Player {
                         avm2: Avm2::new(gc_context),
                         action_queue: ActionQueue::new(),
                         load_manager: LoadManager::new(),
+                        xml_socket: XmlSocketProperties::default(),
                         shared_objects: HashMap::new(),
                         unbound_text_fields: Vec::new(),
                         timers: Timers::new(),
@@ -542,6 +549,7 @@ impl Player {
                 self.frame_accumulator = 0.0;
             }
 
+            self.xmlsocket_update();
             self.update_timers(dt);
             self.audio.tick();
         }
@@ -1448,6 +1456,7 @@ impl Player {
             let focus_tracker = root_data.focus_tracker;
             let (
                 stage,
+                xml_socket_properties,
                 library,
                 action_queue,
                 avm1,
@@ -1481,6 +1490,7 @@ impl Player {
                 player,
                 load_manager,
                 system: system_properties,
+                xml_socket: xml_socket_properties,
                 instance_counter,
                 storage,
                 locale,
@@ -1596,6 +1606,74 @@ impl Player {
     pub fn update_timers(&mut self, dt: f64) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
+    }
+
+    /// Poll alive XMLSockets and run the according callbacks.
+    pub fn xmlsocket_update(&mut self) {
+        self.mutate_with_update_context(|uc| {
+            let mut buffer = [0u8; 1024];
+            uc.xml_socket
+                .sockets
+                .clone()
+                .iter()
+                .for_each(|(socket_id, object)| {
+                    uc.navigator
+                        .xmlsocket_update(socket_id, &mut buffer)
+                        .into_iter()
+                        .for_each(|event| {
+                            match event {
+                                ConnectionEvent::ConnectionResult(r) => {
+                                    // NOTE: can the root_clip evolve between events?
+                                    // if not, perhaps factor it out of the loop?
+                                    let root_clip = uc.stage.root_clip();
+                                    Avm1::run_stack_frame_for_method(
+                                        root_clip,
+                                        *object,
+                                        NEWEST_PLAYER_VERSION,
+                                        uc,
+                                        // TODO: perhaps not hardcoded?
+                                        "_onConnect",
+                                        &[r.into()],
+                                    );
+                                    if !r {
+                                        uc.xml_socket.sockets.remove(socket_id);
+                                    }
+                                }
+                                ConnectionEvent::Data(d) => {
+                                    // NOTE: unclear to me whether we avoid running the callback or not
+                                    let string = String::from_utf8(d).expect("qed;");
+                                    // NOTE: can the root_clip evolve between events?
+                                    // if not, perhaps factor it out of the loop?
+                                    let root_clip = uc.stage.into();
+                                    Avm1::run_stack_frame_for_method(
+                                        root_clip,
+                                        *object,
+                                        NEWEST_PLAYER_VERSION,
+                                        uc,
+                                        // TODO: perhaps not hardcoded?
+                                        "_onData",
+                                        &[AvmString::new(uc.gc_context, string).into()],
+                                    );
+                                }
+                                ConnectionEvent::Closed => {
+                                    // NOTE: can the root_clip evolve between events?
+                                    // if not, perhaps factor it out of the loop?
+                                    let root_clip = uc.stage.root_clip();
+                                    Avm1::run_stack_frame_for_method(
+                                        root_clip,
+                                        *object,
+                                        NEWEST_PLAYER_VERSION,
+                                        uc,
+                                        // TODO: perhaps not hardcoded?
+                                        "_onClosed",
+                                        &[],
+                                    );
+                                    uc.xml_socket.sockets.remove(socket_id);
+                                }
+                            }
+                        });
+                });
+        });
     }
 
     /// Returns whether this player consumes mouse wheel events.
