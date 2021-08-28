@@ -31,7 +31,11 @@ pub fn get_qualified_class_name<'gc>(
 
     Ok(AvmString::new(
         activation.context.gc_context,
-        obj.as_class().unwrap().read().name().to_qualified_name(),
+        obj.as_class()
+            .ok_or("This object does not have a class")?
+            .read()
+            .name()
+            .to_qualified_name(),
     )
     .into())
 }
@@ -52,7 +56,7 @@ pub fn get_qualified_super_class_name<'gc>(
             activation.context.gc_context,
             super_class
                 .as_class()
-                .unwrap()
+                .ok_or("This object does not have a class")?
                 .read()
                 .name()
                 .to_qualified_name(),
