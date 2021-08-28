@@ -41,6 +41,27 @@ impl<'gc> XmlIdMapObject<'gc> {
             XmlIdMapObject(_, document) => *document,
         }
     }
+
+    fn get_local_sub(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+        this: Option<Object<'gc>>,
+        include_virtual: bool,
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        if let Some(mut node) = self.document().get_node_by_id(name) {
+            Some(Ok(node
+                .script_object(
+                    activation.context.gc_context,
+                    Some(activation.context.avm1.prototypes().xml_node),
+                )
+                .into()))
+        } else if include_virtual {
+            self.base().get_local(name, activation, this.unwrap())
+        } else {
+            self.base().get_local_stored(name, activation).map(Ok)
+        }
+    }
 }
 
 impl fmt::Debug for XmlIdMapObject<'_> {
@@ -62,16 +83,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        if let Some(mut node) = self.document().get_node_by_id(name) {
-            Some(Ok(node
-                .script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().xml_node),
-                )
-                .into()))
-        } else {
-            self.base().get_local(name, activation, this)
-        }
+        self.get_local_sub(name, activation, Some(this), true)
     }
 
     fn get_local_stored(
@@ -79,17 +91,8 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        if let Some(mut node) = self.document().get_node_by_id(name) {
-            Some(
-                node.script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().xml_node),
-                )
-                .into(),
-            )
-        } else {
-            self.base().get_local_stored(name, activation)
-        }
+        self.get_local_sub(name, activation, None, false)
+            .map(|res| res.unwrap())
     }
 
     fn set_local(
