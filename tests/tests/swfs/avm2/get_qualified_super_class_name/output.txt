@@ -1,0 +1,6 @@
+flash.display::MovieClip
+Object
+flash.display::Sprite
+Object
+Object
+flash.display::DisplayObjectContainer

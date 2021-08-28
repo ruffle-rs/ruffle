@@ -467,6 +467,7 @@ swf_tests! {
     (as3_generate_random_bytes, "avm2/generate_random_bytes", 1),
     (as3_get_definition_by_name, "avm2/get_definition_by_name", 1),
     (as3_get_qualified_class_name, "avm2/get_qualified_class_name", 1),
+    (as3_get_qualified_super_class_name, "avm2/get_qualified_super_class_name", 1),
     (as3_array_constr, "avm2/array_constr", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_storage, "avm2/array_storage", 1),
