@@ -133,7 +133,8 @@ impl ByteArrayStorage {
             self.set_length(new_len);
         }
         // SAFETY:
-        // The amount of bytes from the start of the underyling buffer + offset is garunteed to be able to fit the buffer we are writing because we just resized it.
+        // 1. The amount of bytes from the start of the underyling buffer + offset is guarunteed to be able to fit the buffer we are writing because we just resized it.
+        // 2. The borrow checker will guaruntee that `buf` is not a slice of `self.bytes`, because we have mutable (exclusive) access to `self`.
         unsafe {
             self.bytes
                 .as_mut_ptr()
@@ -152,7 +153,9 @@ impl ByteArrayStorage {
                 .and_then(|bytes| bytes.get_mut(..buf.len()))
                 .ok_or("RangeError: The specified range is invalid")?
                 .as_mut_ptr()
-                // SAFETY: `buf` is garunteed to be the same length as the slice we are writing to.
+                // SAFETY:
+                // 1. `buf` is garunteed to be the same length as the slice we are writing to.
+                // 2. The borrow checker will guaruntee that `buf` is not a slice of `self.bytes`, because we have mutable (exclusive) access to `self`.
                 .copy_from_nonoverlapping(buf.as_ptr(), buf.len());
         }
         Ok(())
