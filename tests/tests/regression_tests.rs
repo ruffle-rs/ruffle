@@ -479,6 +479,7 @@ swf_tests! {
     (as3_get_qualified_class_name, "avm2/get_qualified_class_name", 1),
     (as3_get_qualified_super_class_name, "avm2/get_qualified_super_class_name", 1),
     (as3_bytearray_readobject_amf3, "avm2/bytearray_readobject_amf3", 1),
+    (as3_bytearray_readobject_amf0, "avm2/bytearray_readobject_amf0", 1),
     (as3_array_constr, "avm2/array_constr", 1),
     (as3_array_access, "avm2/array_access", 1),
     (as3_array_storage, "avm2/array_storage", 1),
