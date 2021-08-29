@@ -46,6 +46,7 @@
 						if (! (prop is int))
 						{
 							trace(prop);
+							trace(obj[prop]);
 						}
 					}
 					trace("done showing props");
