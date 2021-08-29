@@ -33,16 +33,19 @@ done showing props
 1,2,3
 showing props:
 hello
+5
 done showing props
 1,2,3,,,,,,,,,,,,,,,,,,4
 showing props:
 hello
+5
 done showing props
 5,3,7,2,7,8,2
 showing props:
 done showing props
 [object Object]
 showing props:
+test
 test
 done showing props
 Test bytes
