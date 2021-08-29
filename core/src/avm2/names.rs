@@ -179,7 +179,7 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
     pub fn from_qualified_name(name: &str, mc: MutationContext<'gc, '_>) -> Self {
-        if let Some((package_name, local_name)) = name.split_once("::") {
+        if let Some((package_name, local_name)) = name.rsplit_once("::") {
             Self {
                 ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
                 name: AvmString::new(mc, local_name.to_string()),
