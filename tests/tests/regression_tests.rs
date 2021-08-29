@@ -237,6 +237,7 @@ swf_tests! {
     (xml_ignore_comments, "avm1/xml_ignore_comments", 1),
     (xml_ignore_white, "avm1/xml_ignore_white", 1),
     (xml_inspect_doctype, "avm1/xml_inspect_doctype", 1),
+    (xml_unescaping, "avm1/xml_unescaping", 1),
     #[ignore] (xml_inspect_xmldecl, "avm1/xml_inspect_xmldecl", 1),
     (xml_inspect_createmethods, "avm1/xml_inspect_createmethods", 1),
     (xml_inspect_parsexml, "avm1/xml_inspect_parsexml", 1),
