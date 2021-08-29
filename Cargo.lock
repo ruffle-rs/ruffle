@@ -1310,7 +1310,7 @@ dependencies = [
 [[package]]
 name = "flash-lso"
 version = "0.5.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso#19fecd07b9888c4bdaa66771c468095783b52bed"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=19fecd07b9888c4bdaa66771c468095783b52bed#19fecd07b9888c4bdaa66771c468095783b52bed"
 dependencies = [
  "cookie-factory",
  "derive-try-from-primitive",
