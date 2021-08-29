@@ -2850,8 +2850,7 @@ checksum = "87dfd5592a8eed7e74f56ad7b125f8234763b805c30f0c7c95c486920026a6ec"
 [[package]]
 name = "quick-xml"
 version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8533f14c8382aaad0d592c812ac3b826162128b65662331e1127b45c3d18536b"
+source = "git+https://github.com/ruffle-rs/quick-xml?rev=8496365ec1412eb5ba5de350937b6bce352fa0ba#8496365ec1412eb5ba5de350937b6bce352fa0ba"
 dependencies = [
  "memchr",
 ]

@@ -1,0 +1,7 @@
+A & ' B
+
+A & ' B
+
+A & &thing; B
+
+A & &thing; B
