@@ -1,0 +1,50 @@
+undefined
+null
+false
+showing props:
+done showing props
+true
+showing props:
+done showing props
+1
+showing props:
+done showing props
+1.1
+showing props:
+done showing props
+Infinity
+showing props:
+done showing props
+-Infinity
+showing props:
+done showing props
+NaN
+showing props:
+done showing props
+Test string
+showing props:
+done showing props
+1,2,3
+showing props:
+done showing props
+1,2,3,,,,,,,,,,,,,,,,,,2
+showing props:
+done showing props
+1,2,3
+showing props:
+hello
+done showing props
+1,2,3,,,,,,,,,,,,,,,,,,4
+showing props:
+hello
+done showing props
+5,3,7,2,7,8,2
+showing props:
+done showing props
+[object Object]
+showing props:
+test
+done showing props
+Test bytes
+showing props:
+done showing props
