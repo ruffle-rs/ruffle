@@ -3,7 +3,8 @@
 	}
 }
 
-trace("///new NotoSansRegular().hasGlyphs(\"abc\")");trace(new NotoSansRegular().hasGlyphs("abc"));
+trace("///new NotoSansRegular().hasGlyphs(\"abc\")");
+trace(new NotoSansRegular().hasGlyphs("abc"));
 
 trace("///new NotoSansRegular().hasGlyphs(\"Abc\")");
 trace(new NotoSansRegular().hasGlyphs("Abc"));
