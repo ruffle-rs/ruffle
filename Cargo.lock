@@ -2715,9 +2715,9 @@ dependencies = [
 
 [[package]]
 name = "png"
-version = "0.17.0"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c2ea6221e9aa7dccc581e610d92af4621d3589f7faa36ffd420bc52904e4aa9"
+checksum = "641fb192b191c2cb8f35985f47eb1e78cf1d464542f9fe5d1dbc5ee8f989288d"
 dependencies = [
  "bitflags",
  "crc32fast",
@@ -3055,7 +3055,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "percent-encoding",
- "png 0.17.0",
+ "png 0.17.1",
  "pretty_assertions 0.7.2",
  "quick-xml",
  "rand",
@@ -3110,7 +3110,7 @@ dependencies = [
  "js-sys",
  "log",
  "percent-encoding",
- "png 0.17.0",
+ "png 0.17.1",
  "ruffle_core",
  "ruffle_web_common",
  "svg",
@@ -3137,7 +3137,7 @@ dependencies = [
  "js-sys",
  "log",
  "percent-encoding",
- "png 0.17.0",
+ "png 0.17.1",
  "ruffle_core",
  "ruffle_render_common_tess",
  "ruffle_web_common",
