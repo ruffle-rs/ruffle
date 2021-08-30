@@ -627,6 +627,7 @@ swf_tests! {
     (as3_class_supercalls_mismatched, "avm2/class_supercalls_mismatched", 1),
     (as3_symbol_class_binary_data, "avm2/symbol_class_binary_data", 1),
     (as3_rectangle, "avm2/rectangle", 1),
+    (as3_font_embedded, "avm2/font_embedded", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
