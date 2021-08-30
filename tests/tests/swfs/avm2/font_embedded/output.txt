@@ -1,0 +1,24 @@
+///new NotoSansRegular().fontName
+Noto Sans
+///new NotoSansRegular().fontStyle
+regular
+///new NotoSansRegular().fontType
+embedded
+///new NotoSansRegularItalic().fontName
+Noto Sans Italic
+///new NotoSansRegularItalic().fontStyle
+italic
+///new NotoSansRegularItalic().fontType
+embedded
+///new NotoSansBold().fontName
+Noto Sans Bold
+///new NotoSansBold().fontStyle
+bold
+///new NotoSansBold().fontType
+embedded
+///new NotoSansBoldItalic().fontName
+Noto Sans Bold Italic
+///new NotoSansBoldItalic().fontStyle
+boldItalic
+///new NotoSansBoldItalic().fontType
+embedded

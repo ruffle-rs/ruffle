@@ -824,6 +824,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        flash::text::font::create_class(mc),
+        domain,
+        script,
+    )?;
 
     // package `flash.crypto`
     function(

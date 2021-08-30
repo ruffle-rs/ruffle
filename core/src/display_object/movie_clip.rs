@@ -611,6 +611,7 @@ impl<'gc> MovieClip<'gc> {
                                 mc.set_avm2_class(activation.context.gc_context, Some(class_object))
                             }
                             Some(Character::BinaryData(_)) => {}
+                            Some(Character::Font(_)) => {}
                             _ => {
                                 log::warn!(
                                     "Symbol class {} cannot be assigned to invalid character id {}",
