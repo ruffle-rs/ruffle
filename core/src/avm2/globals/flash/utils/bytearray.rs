@@ -963,6 +963,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
+    // TODO: This property should have a setter
     const CONSTANTS: &[(&str, u32)] = &[("defaultObjectEncoding", 3)];
 
     write.define_public_constant_uint_class_traits(CONSTANTS);
