@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
+use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
@@ -11,7 +12,8 @@ use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
-use json::{parse as parse_json, JsonValue};
+use json::{object::Object as JsonObject, parse as parse_json, JsonValue};
+use std::ops::Deref;
 
 fn deserialize_json_inner<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -82,6 +84,85 @@ fn deserialize_json<'gc>(
     })
 }
 
+struct AvmSerializer<'gc> {
+    /// This object stack will be used to detect circular references and return an error instead of a panic.
+    obj_stack: Vec<Object<'gc>>,
+}
+
+impl<'gc> AvmSerializer<'gc> {
+    fn new() -> Self {
+        Self {
+            obj_stack: Vec::new(),
+        }
+    }
+
+    fn serialize_json(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        value: Value<'gc>,
+        replacer: Option<Object<'gc>>,
+    ) -> Result<JsonValue, Error> {
+        Ok(match value {
+            Value::Null => JsonValue::Null,
+            Value::Undefined => JsonValue::Null,
+            Value::Integer(i) => JsonValue::from(i),
+            Value::Unsigned(u) => JsonValue::from(u),
+            Value::Number(n) => JsonValue::from(n),
+            Value::Bool(b) => JsonValue::from(b),
+            Value::String(s) => JsonValue::from(s.deref()),
+            Value::Object(obj) => {
+                if self.obj_stack.contains(&obj) {
+                    return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
+                }
+                self.obj_stack.push(obj);
+                let value = if obj.is_of_type(activation.avm2().classes().array, activation)? {
+                    let mut arr = Vec::new();
+                    let mut iter = ArrayIter::new(activation, obj)?;
+                    while let Some(r) = iter.next(activation) {
+                        let item = r?.1;
+                        arr.push(self.serialize_json(activation, item, replacer)?);
+                    }
+                    JsonValue::Array(arr)
+                } else {
+                    let prop = obj.get_property(
+                        obj,
+                        &QName::new(Namespace::public(), "toJSON"),
+                        activation,
+                    )?;
+                    match prop {
+                        Value::Object(to_json)
+                            if obj
+                                .is_of_type(activation.avm2().classes().function, activation)? =>
+                        {
+                            let val = to_json.call(None, &[], activation, None)?;
+                            JsonValue::from(val.coerce_to_string(activation)?.deref())
+                        }
+                        _ => {
+                            let mut js_obj = JsonObject::new();
+                            for i in 1.. {
+                                if let Some(name) = obj.get_enumerant_name(i) {
+                                    let val = obj.get_property(obj, &name, activation)?;
+                                    let js_val = self.serialize_json(activation, val, replacer)?;
+                                    js_obj.insert(&name.local_name(), js_val);
+                                } else {
+                                    break;
+                                }
+                            }
+                            JsonValue::Object(js_obj)
+                        }
+                    }
+                };
+                let popped = self
+                    .obj_stack
+                    .pop()
+                    .expect("Stack underflow during JSON serialization");
+                debug_assert_eq!(obj, popped);
+                value
+            }
+        })
+    }
+}
+
 /// Implements `JSON`'s instance initializer.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -122,11 +203,19 @@ pub fn parse<'gc>(
 
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok(Value::Undefined)
+    let val = args.get(0).unwrap_or(&Value::Undefined);
+    let replacer = args
+        .get(1)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation)
+        .ok();
+    let mut serializer = AvmSerializer::new();
+    let result = serializer.serialize_json(activation, val.clone(), replacer)?;
+    Ok(AvmString::new(activation.context.gc_context, result.dump()).into())
 }
 
 /// Construct `JSON`'s class.
