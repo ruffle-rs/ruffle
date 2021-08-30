@@ -12,7 +12,7 @@ jpeg-decoder = "0.1.22"
 log = "0.4"
 ruffle_core = { path = "../../core" }
 ruffle_render_common_tess = { path = "../common_tess" }
-futures = "0.3.15"
+futures = "0.3.17"
 bytemuck = { version = "1.7.0", features = ["derive"] }
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.4", optional = true }
