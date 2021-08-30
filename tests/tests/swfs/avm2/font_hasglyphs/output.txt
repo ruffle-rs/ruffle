@@ -1,0 +1,40 @@
+///new NotoSansRegular().hasGlyphs("abc")
+false
+///new NotoSansRegular().hasGlyphs("Abc")
+false
+///new NotoSansRegular().hasGlyphs("ABC")
+true
+///new NotoSansRegular().hasGlyphs("")
+true
+///new NotoSansRegularItalic().hasGlyphs("abc")
+false
+///new NotoSansRegularItalic().hasGlyphs("Abc")
+false
+///new NotoSansRegularItalic().hasGlyphs("ABC")
+true
+///new NotoSansRegularItalic().hasGlyphs("")
+true
+///new NotoSansBold().hasGlyphs("abc")
+false
+///new NotoSansBold().hasGlyphs("Abc")
+false
+///new NotoSansBold().hasGlyphs("ABC")
+true
+///new NotoSansBold().hasGlyphs("")
+true
+///new NotoSansBoldItalic().hasGlyphs("abc")
+false
+///new NotoSansBoldItalic().hasGlyphs("Abc")
+false
+///new NotoSansBoldItalic().hasGlyphs("ABC")
+true
+///new NotoSansBoldItalic().hasGlyphs("")
+true
+///new NotoSerifRegular().hasGlyphs("abc")
+true
+///new NotoSerifRegular().hasGlyphs("Abc")
+false
+///new NotoSerifRegular().hasGlyphs("ABC")
+false
+///new NotoSerifRegular().hasGlyphs("")
+true
