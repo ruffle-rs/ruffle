@@ -3,7 +3,8 @@
 	}
 }
 
-trace("///new NotoSansRegular().fontName");trace(new NotoSansRegular().fontName);
+trace("///new NotoSansRegular().fontName");
+trace(new NotoSansRegular().fontName);
 
 trace("///new NotoSansRegular().fontStyle");
 trace(new NotoSansRegular().fontStyle);
