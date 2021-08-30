@@ -127,6 +127,41 @@ pub fn font_type<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Font.hasGlyphs`
+pub fn has_glyphs<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some((movie, character_id)) =
+        this.and_then(|this| this.as_class_object())
+            .and_then(|this| {
+                activation
+                    .context
+                    .library
+                    .avm2_class_registry()
+                    .class_symbol(this)
+            })
+    {
+        let my_str = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if let Some(Character::Font(font)) = activation
+            .context
+            .library
+            .library_for_movie_mut(movie)
+            .character_by_id(character_id)
+        {
+            return Ok(font.has_glyphs_for_str(&my_str).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Font`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -151,6 +186,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("fontType", Some(font_type), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("hasGlyphs", has_glyphs)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

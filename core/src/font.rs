@@ -176,6 +176,17 @@ impl<'gc> Font<'gc> {
         }
     }
 
+    /// Determine if this font contains all the glyphs within a given string.
+    pub fn has_glyphs_for_str(&self, target_str: &str) -> bool {
+        for character in target_str.chars() {
+            if self.get_glyph_for_char(character).is_none() {
+                return false;
+            }
+        }
+
+        true
+    }
+
     /// Given a pair of characters, applies the offset that should be applied
     /// to the advance value between these two characters.
     /// Returns 0 twips if no kerning offset exists between these two characters.
