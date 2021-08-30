@@ -162,6 +162,24 @@ pub fn has_glyphs<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub `Font.enumerateFonts`
+pub fn enumerate_fonts<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Font.enumerateFonts is a stub".into())
+}
+
+/// Stub `Font.registerFont`
+pub fn register_font<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Font.registerFont is a stub".into())
+}
+
 /// Construct `Font`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -189,6 +207,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("hasGlyphs", has_glyphs)];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("enumerateFonts", enumerate_fonts),
+        ("registerFont", register_font),
+    ];
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
