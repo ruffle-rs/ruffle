@@ -215,7 +215,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Any child already at the desired position will move back to the new
     /// child's former position. The render list positions of each child will
     /// also be swapped. If no child has been displaced by the swap operation,
-    // then the render list position of the child will be determined in the same
+    /// then the render list position of the child will be determined in the same
     /// way as `replace_at_depth`.
     fn swap_at_depth(
         &mut self,
