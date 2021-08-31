@@ -233,6 +233,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
+    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
+        Some(*self)
+    }
+
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
         Some(Ref::map(self.0.read(), |aod| &aod.array))
     }
