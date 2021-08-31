@@ -12,7 +12,11 @@ use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
-use json::{object::Object as JsonObject, parse as parse_json, JsonValue};
+use json::{
+    codegen::Generator as JsonGenerator, object::Object as JsonObject, parse as parse_json,
+    JsonValue,
+};
+use std::cmp;
 use std::ops::Deref;
 
 fn deserialize_json_inner<'gc>(
@@ -82,6 +86,72 @@ fn deserialize_json<'gc>(
     reviver.map_or(Ok(val.clone()), |reviver| {
         reviver.call(None, &["".into(), val], activation)
     })
+}
+
+/// This is a custom generator backend for the json crate that allows modifying the indentation character.
+/// This generator is used in `JSON.stringify` when a string is passed to the `space` parameter.
+struct FlashStrGenerator<'a> {
+    code: Vec<u8>,
+    indent_str: &'a str,
+    indent_size: u16,
+}
+
+impl<'a> FlashStrGenerator<'a> {
+    fn new(indent_str: &'a str) -> Self {
+        Self {
+            code: Vec::with_capacity(1024),
+            indent_str,
+            indent_size: 0,
+        }
+    }
+
+    pub fn consume(self) -> String {
+        // SAFETY: JSON crate should never generate invalid UTF-8
+        unsafe { String::from_utf8_unchecked(self.code) }
+    }
+}
+
+impl<'a> JsonGenerator for FlashStrGenerator<'a> {
+    type T = Vec<u8>;
+
+    #[inline(always)]
+    fn write(&mut self, slice: &[u8]) -> std::io::Result<()> {
+        self.code.extend_from_slice(slice);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn write_char(&mut self, ch: u8) -> std::io::Result<()> {
+        self.code.push(ch);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn get_writer(&mut self) -> &mut Vec<u8> {
+        &mut self.code
+    }
+
+    #[inline(always)]
+    fn write_min(&mut self, slice: &[u8], _: u8) -> std::io::Result<()> {
+        self.code.extend_from_slice(slice);
+        Ok(())
+    }
+
+    fn new_line(&mut self) -> std::io::Result<()> {
+        self.code.push(b'\n');
+        for _ in 0..self.indent_size {
+            self.code.extend_from_slice(self.indent_str.as_bytes());
+        }
+        Ok(())
+    }
+
+    fn indent(&mut self) {
+        self.indent_size += 1;
+    }
+
+    fn dedent(&mut self) {
+        self.indent_size -= 1;
+    }
 }
 
 struct AvmSerializer {
@@ -300,9 +370,37 @@ pub fn stringify<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)
         .ok();
+    let spaces = args.get(2).unwrap_or(&Value::Undefined);
     let mut serializer = AvmSerializer::new();
     let result = serializer.serialize_json(activation, val.clone(), replacer)?;
-    Ok(AvmString::new(activation.context.gc_context, result.dump()).into())
+    // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
+    let output = if let Value::String(s) = spaces {
+        // If the string is empty, just use the normal dump generator.
+        if s.is_empty() {
+            result.dump()
+        } else {
+            // we can only use the first 10 characters
+            let indent = s.get(..cmp::min(s.len(), 10)).unwrap();
+            let mut gen = FlashStrGenerator::new(indent);
+            gen.write_json(&result).expect("Can't fail");
+            gen.consume()
+        }
+    } else {
+        let indent_size = spaces
+            .as_number(activation.context.gc_context)
+            .unwrap_or(0.0);
+        let indent_size = if indent_size.is_sign_negative() {
+            0.0
+        } else {
+            indent_size
+        } as u16;
+        if indent_size == 0 {
+            result.dump()
+        } else {
+            result.pretty(indent_size)
+        }
+    };
+    Ok(AvmString::new(activation.context.gc_context, output).into())
 }
 
 /// Construct `JSON`'s class.
