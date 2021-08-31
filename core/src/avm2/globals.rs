@@ -119,6 +119,7 @@ pub struct SystemPrototypes<'gc> {
     pub soundtransform: Object<'gc>,
     pub soundchannel: Object<'gc>,
     pub bitmap: Object<'gc>,
+    pub bitmapdata: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -172,6 +173,7 @@ impl<'gc> SystemPrototypes<'gc> {
             soundtransform: empty,
             soundchannel: empty,
             bitmap: empty,
+            bitmapdata: empty,
         }
     }
 }
@@ -216,6 +218,7 @@ pub struct SystemClasses<'gc> {
     pub soundtransform: Object<'gc>,
     pub soundchannel: Object<'gc>,
     pub bitmap: Object<'gc>,
+    pub bitmapdata: Object<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -269,6 +272,7 @@ impl<'gc> SystemClasses<'gc> {
             soundtransform: empty,
             soundchannel: empty,
             bitmap: empty,
+            bitmapdata: empty,
         }
     }
 }
@@ -799,6 +803,13 @@ pub fn load_player_globals<'gc>(
         bitmap,
         activation,
         flash::display::bitmap::create_class(mc),
+        domain,
+        script
+    );
+    avm2_system_class!(
+        bitmapdata,
+        activation,
+        flash::display::bitmapdata::create_class(mc),
         domain,
         script
     );
