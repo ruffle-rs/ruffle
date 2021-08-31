@@ -669,6 +669,7 @@ swf_tests! {
     (as3_soundmixer_stopall, "avm2/soundmixer_stopall", 4),
     #[ignore] (as3_soundchannel_soundcomplete, "avm2/soundchannel_soundcomplete", 25),
     (as3_soundmixer_buffertime, "avm2/soundmixer_buffertime", 1),
+    (as3_bitmap_timeline, "avm2/bitmap_timeline", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
