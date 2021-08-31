@@ -1,6 +1,7 @@
 //! `flash.display` namespace
 
 pub mod actionscriptversion;
+pub mod bitmap;
 pub mod capsstyle;
 pub mod displayobject;
 pub mod displayobjectcontainer;

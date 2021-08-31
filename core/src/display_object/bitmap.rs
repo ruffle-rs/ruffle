@@ -1,6 +1,10 @@
 //! Bitmap display object
 
 use crate::avm1;
+use crate::avm2::{
+    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Value as Avm2Value,
+};
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
@@ -27,6 +31,7 @@ pub struct BitmapData<'gc> {
     static_data: Gc<'gc, BitmapStatic>,
     bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
     smoothing: bool,
+    avm2_object: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -54,6 +59,7 @@ impl<'gc> Bitmap<'gc> {
                 ),
                 bitmap_data,
                 smoothing,
+                avm2_object: None,
             },
         ))
     }
@@ -111,6 +117,19 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
+        } else if self.avm_type() == AvmType::Avm2 {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let bitmap = activation.avm2().classes().bitmap;
+            match Avm2StageObject::for_display_object_childless(
+                &mut activation,
+                (*self).into(),
+                bitmap,
+            ) {
+                Ok(object) => {
+                    self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
+                }
+                Err(e) => log::error!("Got error when creating AVM2 side of bitmap: {}", e),
+            }
         }
 
         if run_frame {
@@ -146,6 +165,14 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             context.transform_stack.transform(),
             bitmap_data.smoothing,
         );
+    }
+
+    fn object2(&self) -> Avm2Value<'gc> {
+        self.0
+            .read()
+            .avm2_object
+            .map(|o| o.into())
+            .unwrap_or(Avm2Value::Undefined)
     }
 }
 
