@@ -1,0 +1,9 @@
+///var this_bitmap = this.getChildAt(0);
+/// this_bitmap
+[object Bitmap]
+/// this_bitmap.bitmapData
+[object TestBitmapData]
+/// this_bitmap.pixelSnapping
+auto
+/// this_bitmap.smoothing
+false
