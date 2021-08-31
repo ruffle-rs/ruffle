@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::globals::array::ArrayIter;
+use crate::avm2::globals::array::{resolve_array_hole, ArrayIter};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ArrayObject, Object, TObject};
@@ -96,7 +96,51 @@ impl<'gc> AvmSerializer<'gc> {
         }
     }
 
-    fn serialize_json(
+    /// Maps a value using a replacer object. A replacer object can be either an Array or a Function.
+    ///
+    /// If the replacer object is an Array, we return `value` if `name` appears in the array, otherwise we return None.
+    /// The value in the array must be either a string or a number (including int, uint, etc). All other types will be skipped.
+    /// If the replacer object is an Array and `allow_array` is false, the replacer object is ignored and `value` is immediately returned.
+    ///
+    /// If the replacer object is a Function, we pass the `name` and `value` parameters to the function, and
+    /// the returned value will be used instead of the original value.
+    ///
+    /// If the replacer object is neither a Function or Array, an error is returned.
+    fn map_value(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: AvmString<'gc>,
+        value: Value<'gc>,
+        replacer: Object<'gc>,
+        allow_array: bool,
+    ) -> Result<Option<Value<'gc>>, Error> {
+        if let Some(arr) = replacer.as_array_storage() {
+            if allow_array {
+                for (i, item) in arr.iter().enumerate() {
+                    let item = resolve_array_hole(activation, replacer, i, item)?;
+                    let val = match item {
+                        Value::String(s) => s,
+                        // NOTE: coerce_to_string cannot execute user code because item is a number
+                        _ if item.is_number() => item.coerce_to_string(activation)?,
+                        _ => continue,
+                    };
+                    if val == name {
+                        return Ok(Some(value));
+                    }
+                }
+            } else {
+                return Ok(Some(value));
+            }
+            Ok(None)
+        } else if let Some(func) = replacer.as_executable() {
+            let mapped = func.exec(None, &[name.into(), value], activation, None, replacer)?;
+            Ok(Some(mapped))
+        } else {
+            Err("TypeError: Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.".into())
+        }
+    }
+
+    fn serialize_json_inner(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
@@ -111,6 +155,10 @@ impl<'gc> AvmSerializer<'gc> {
             Value::Bool(b) => JsonValue::from(b),
             Value::String(s) => JsonValue::from(s.deref()),
             Value::Object(obj) => {
+                // special case for boxed primitives
+                if let Some(prim) = obj.as_primitive() {
+                    return self.serialize_json_inner(activation, prim.deref().clone(), replacer);
+                }
                 if self.obj_stack.contains(&obj) {
                     return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
                 }
@@ -119,37 +167,60 @@ impl<'gc> AvmSerializer<'gc> {
                     let mut arr = Vec::new();
                     let mut iter = ArrayIter::new(activation, obj)?;
                     while let Some(r) = iter.next(activation) {
-                        let item = r?.1;
-                        arr.push(self.serialize_json(activation, item, replacer)?);
+                        let (i, item) = r?;
+                        if let Some(mapped) =
+                            replacer.map_or(Ok(Some(item.clone())), |replacer| {
+                                self.map_value(
+                                    activation,
+                                    AvmString::new(activation.context.gc_context, i.to_string()),
+                                    item,
+                                    replacer,
+                                    false,
+                                )
+                            })?
+                        {
+                            arr.push(self.serialize_json_inner(activation, mapped, replacer)?);
+                        }
                     }
                     JsonValue::Array(arr)
                 } else {
-                    let prop = obj.get_property(
-                        obj,
-                        &QName::new(Namespace::public(), "toJSON"),
-                        activation,
-                    )?;
-                    match prop {
-                        Value::Object(to_json)
-                            if obj
-                                .is_of_type(activation.avm2().classes().function, activation)? =>
-                        {
-                            let val = to_json.call(None, &[], activation, None)?;
-                            JsonValue::from(val.coerce_to_string(activation)?.deref())
-                        }
-                        _ => {
-                            let mut js_obj = JsonObject::new();
-                            for i in 1.. {
-                                if let Some(name) = obj.get_enumerant_name(i) {
-                                    let val = obj.get_property(obj, &name, activation)?;
-                                    let js_val = self.serialize_json(activation, val, replacer)?;
+                    let prop = obj
+                        .get_property(obj, &QName::new(Namespace::public(), "toJSON"), activation)?
+                        .coerce_to_object(activation)
+                        .ok();
+                    if let Some(to_json) = prop.and_then(|obj| obj.as_executable()) {
+                        // If the object contains a `toJSON` property, and it is executable,
+                        // we execute that and serialize the returned value.
+                        let val = to_json.exec(None, &[], activation, None, prop.unwrap())?;
+                        self.serialize_json_inner(activation, val, replacer)?
+                    } else {
+                        // If this object does not have a `toJSON` property, or `toJSON` isn't executable, we iterate
+                        // the enumerable properties of the object and collect the output into a JsonObject.
+                        let mut js_obj = JsonObject::new();
+                        for i in 1.. {
+                            if let Some(name) = obj.get_enumerant_name(i) {
+                                let value = obj.get_property(obj, &name, activation)?;
+                                // NOTE: This is the only area where `allow_array` is enabled in `self.map_value`.
+                                if let Some(mapped) =
+                                    replacer.map_or(Ok(Some(value.clone())), |replacer| {
+                                        self.map_value(
+                                            activation,
+                                            name.local_name(),
+                                            value,
+                                            replacer,
+                                            true,
+                                        )
+                                    })?
+                                {
+                                    let js_val =
+                                        self.serialize_json_inner(activation, mapped, replacer)?;
                                     js_obj.insert(&name.local_name(), js_val);
-                                } else {
-                                    break;
-                                }
+                                };
+                            } else {
+                                break;
                             }
-                            JsonValue::Object(js_obj)
                         }
+                        JsonValue::Object(js_obj)
                     }
                 };
                 let popped = self
@@ -160,6 +231,24 @@ impl<'gc> AvmSerializer<'gc> {
                 value
             }
         })
+    }
+
+    /// Serializes an AVM value to a JsonValue. The replacer object will be used for
+    /// customizing the output (see map_value doc comments for more details).
+    /// Data structures that use circular references will be detected and an error will be returned.
+    fn serialize_json(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        value: Value<'gc>,
+        replacer: Option<Object<'gc>>,
+    ) -> Result<JsonValue, Error> {
+        if let Some(mapped) = replacer.map_or(Ok(Some(value.clone())), |replacer| {
+            self.map_value(activation, "".into(), value, replacer, false)
+        })? {
+            self.serialize_json_inner(activation, mapped, replacer)
+        } else {
+            Ok(JsonValue::Null)
+        }
     }
 }
 
