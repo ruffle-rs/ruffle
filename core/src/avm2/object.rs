@@ -16,6 +16,7 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -24,6 +25,7 @@ use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 mod array_object;
+mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
 mod custom_object;
@@ -43,6 +45,7 @@ mod vector_object;
 mod xml_object;
 
 pub use crate::avm2::object::array_object::{array_allocator, ArrayObject};
+pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDataObject};
 pub use crate::avm2::object::bytearray_object::{bytearray_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::dispatch_object::DispatchObject;
@@ -86,6 +89,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         VectorObject(VectorObject<'gc>),
         SoundObject(SoundObject<'gc>),
         SoundChannelObject(SoundChannelObject<'gc>),
+        BitmapDataObject(BitmapDataObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1237,6 +1241,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This does nothing if the object is not a sound channel.
     fn set_sound_instance(self, _mc: MutationContext<'gc, '_>, _sound: SoundInstanceHandle) {}
+
+    /// Unwrap this object's bitmap data
+    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData>> {
+        None
+    }
+
+    /// Initialize the bitmap data in this object, if it's capable of
+    /// supporting said data
+    fn init_bitmap_data(
+        &self,
+        _mc: MutationContext<'gc, '_>,
+        _new_bitmap: GcCell<'gc, BitmapData>,
+    ) {
+    }
 }
 
 pub enum ObjectPtr {}

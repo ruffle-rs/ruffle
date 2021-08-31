@@ -2,6 +2,7 @@
 
 pub mod actionscriptversion;
 pub mod bitmap;
+pub mod bitmapdata;
 pub mod capsstyle;
 pub mod displayobject;
 pub mod displayobjectcontainer;
