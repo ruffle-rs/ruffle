@@ -417,12 +417,8 @@ pub fn stringify<'gc>(
     } else {
         let indent_size = spaces
             .as_number(activation.context.gc_context)
-            .unwrap_or(0.0);
-        let indent_size = if indent_size.is_sign_negative() {
-            0.0
-        } else {
-            indent_size
-        } as u16;
+            .unwrap_or(0.0)
+            .clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
             result.dump()
         } else {
