@@ -6,7 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::globals::array::{resolve_array_hole, ArrayIter};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -84,12 +84,12 @@ fn deserialize_json<'gc>(
     })
 }
 
-struct AvmSerializer<'gc> {
+struct AvmSerializer {
     /// This object stack will be used to detect circular references and return an error instead of a panic.
-    obj_stack: Vec<Object<'gc>>,
+    obj_stack: Vec<*const ObjectPtr>,
 }
 
-impl<'gc> AvmSerializer<'gc> {
+impl AvmSerializer {
     fn new() -> Self {
         Self {
             obj_stack: Vec::new(),
@@ -106,7 +106,7 @@ impl<'gc> AvmSerializer<'gc> {
     /// the returned value will be used instead of the original value.
     ///
     /// If the replacer object is neither a Function or Array, an error is returned.
-    fn map_value(
+    fn map_value<'gc>(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: AvmString<'gc>,
@@ -140,7 +140,7 @@ impl<'gc> AvmSerializer<'gc> {
         }
     }
 
-    fn serialize_json_inner(
+    fn serialize_json_inner<'gc>(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
@@ -159,10 +159,10 @@ impl<'gc> AvmSerializer<'gc> {
                 if let Some(prim) = obj.as_primitive() {
                     return self.serialize_json_inner(activation, prim.deref().clone(), replacer);
                 }
-                if self.obj_stack.contains(&obj) {
+                if self.obj_stack.contains(&obj.as_ptr()) {
                     return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
                 }
-                self.obj_stack.push(obj);
+                self.obj_stack.push(obj.as_ptr());
                 let value = if obj.is_of_type(activation.avm2().classes().array, activation)? {
                     let mut arr = Vec::new();
                     let mut iter = ArrayIter::new(activation, obj)?;
@@ -223,11 +223,9 @@ impl<'gc> AvmSerializer<'gc> {
                         JsonValue::Object(js_obj)
                     }
                 };
-                let popped = self
-                    .obj_stack
+                self.obj_stack
                     .pop()
                     .expect("Stack underflow during JSON serialization");
-                debug_assert_eq!(obj, popped);
                 value
             }
         })
@@ -236,7 +234,7 @@ impl<'gc> AvmSerializer<'gc> {
     /// Serializes an AVM value to a JsonValue. The replacer object will be used for
     /// customizing the output (see map_value doc comments for more details).
     /// Data structures that use circular references will be detected and an error will be returned.
-    fn serialize_json(
+    fn serialize_json<'gc>(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
