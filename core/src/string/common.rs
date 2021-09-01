@@ -1,4 +1,4 @@
-use super::{ops, WStr, WStrMut};
+use super::{ops, WStr, WStrMut, WString};
 use std::cmp;
 use std::fmt;
 use std::hash;
@@ -16,6 +16,16 @@ pub enum Units<T, U> {
     /// A buffer containing `u16` code units, interpreted as UTF-16
     /// but allowing unpaired surrogates.
     Wide(U),
+}
+
+impl<T: AsRef<[u8]>, U: AsRef<[u16]>> Units<T, U> {
+    #[inline]
+    pub(super) fn len(&self) -> usize {
+        match self {
+            Units::Bytes(buf) => buf.as_ref().len(),
+            Units::Wide(buf) => buf.as_ref().len(),
+        }
+    }
 }
 
 /// Generate `From` implementations for `Units` type.
@@ -63,6 +73,8 @@ units_from! {
     impl['a, const N: usize] Units<&'a mut [u8], &'a mut [u16]> {
         units: Units<&'a mut [u8; N], &'a mut [u16; N]> => &mut units[..]
     }
+
+    impl[] Units<Vec<u8>, Vec<u16>>;
 }
 
 // TODO: Once GATs are here, this should become an actual trait.
@@ -261,4 +273,5 @@ macro_rules! impl_str_traits {
 impl_str_traits! {
     impl['a,] for WStr<'a>;
     impl['a,] for WStrMut<'a>;
+    impl[] for WString;
 }

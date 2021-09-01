@@ -27,6 +27,7 @@ unsafe impl Sync for WStrPtr {}
 
 impl WStrPtr {
     /// # Safety
+    ///
     /// - `data` must point to a valid allocated region (possibly uninitialized):
     ///   - for [`Units::Bytes`], the allocation must be valid for a `[u8; len]`;
     ///   - for [`Units::Wide`], the allocation must be valid for a `[u16; len]`;
@@ -45,6 +46,7 @@ impl WStrPtr {
     }
 
     /// # Safety
+    ///
     /// See `Self::new`.
     unsafe fn from_parts(data: NonNull<()>, len: u32, is_wide: bool) -> Self {
         #[cfg(target_pointer_width = "32")]
@@ -55,6 +57,15 @@ impl WStrPtr {
 
         #[cfg(target_pointer_width = "64")]
         return Self { data, len, is_wide };
+    }
+
+    #[inline]
+    pub fn data(self) -> Units<NonNull<u8>, NonNull<u16>> {
+        if self.is_wide() {
+            Units::Wide(self.data.cast())
+        } else {
+            Units::Bytes(self.data.cast())
+        }
     }
 
     #[inline]
