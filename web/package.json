@@ -15,7 +15,7 @@
         "chai": "^4.3.4",
         "chai-html": "^2.0.1",
         "chromedriver": "^92.0.2",
-        "copy-webpack-plugin": "^9.0.0",
+        "copy-webpack-plugin": "^9.0.1",
         "cross-env": "^7.0.3",
         "eslint": "^7.29.0",
         "eslint-config-prettier": "^8.3.0",
