@@ -173,29 +173,25 @@ impl<'gc> AvmSerializer<'gc> {
         }
     }
 
-    /// Calls the replacer function if the user supplied one, and returns the result. If the user did not supply one,
-    /// the `value` parameter is returned instead.
-    fn replace_value(
+    /// Map a value using a toJSON implementation, and then a replacer function.
+    ///
+    /// First the toJSON method will be called on the value, and the `key` parameter will be passed to it.
+    /// If toJSON does not exist, or toJSON is not a function, this step will be skipped.
+    ///
+    /// The returned value from toJSON (or the original value if that step was skipped) will be passed
+    /// to the replacer function with the key in a (key, value) pair, and the value is mapped to the return value
+    /// of the replacer function. If the user did not supply a replacer function, this step is skipped.
+    ///
+    /// The `key` is lazily evaluated because it may be expensive in some areas to generate the key, but the key is
+    /// only used if either the `toJSON` step or replacer function step happens, so we only need to evaluate the key there.
+    fn map_value(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        key: AvmString<'gc>,
+        key: impl Fn() -> AvmString<'gc>,
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        if let Some(Replacer::Function(replacer)) = self.replacer {
-            replacer.call(None, &[key.into(), value], activation)
-        } else {
-            Ok(value)
-        }
-    }
-
-    fn to_json(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        key: AvmString<'gc>,
-        value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
-        if value.is_primitive() {
-            Ok(value)
+        let (eval_key, value) = if value.is_primitive() {
+            (None, value)
         } else {
             let obj = value.coerce_to_object(activation)?;
             let to_json = obj
@@ -208,21 +204,21 @@ impl<'gc> AvmSerializer<'gc> {
                 .ok()
                 .and_then(|obj| obj.as_function_object());
             if let Some(to_json) = to_json {
-                to_json.call(None, &[key.into()], activation)
+                let key = key();
+                (Some(key), to_json.call(None, &[key.into()], activation)?)
             } else {
-                Ok(value)
+                (None, value)
             }
+        };
+        if let Some(Replacer::Function(replacer)) = self.replacer {
+            replacer.call(
+                None,
+                &[eval_key.unwrap_or_else(|| key()).into(), value],
+                activation,
+            )
+        } else {
+            Ok(value)
         }
-    }
-
-    fn map_value(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        key: AvmString<'gc>,
-        value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
-        let converted = self.to_json(activation, key, value)?;
-        self.replace_value(activation, key, converted)
     }
 
     fn serialize_object(
@@ -242,7 +238,7 @@ impl<'gc> AvmSerializer<'gc> {
                     &QName::new(Namespace::public(), key).into(),
                     activation,
                 )?;
-                let mapped = self.map_value(activation, key, value)?;
+                let mapped = self.map_value(activation, || key, value)?;
                 if !matches!(mapped, Value::Undefined) {
                     js_obj.insert(
                         &key.to_utf8_lossy(),
@@ -262,7 +258,7 @@ impl<'gc> AvmSerializer<'gc> {
                             &QName::dynamic_name(name).into(),
                             activation,
                         )?;
-                        let mapped = self.map_value(activation, name, value)?;
+                        let mapped = self.map_value(activation, || name, value)?;
                         js_obj.insert(
                             &name.to_utf8_lossy(),
                             self.serialize_value(activation, mapped)?,
@@ -285,8 +281,9 @@ impl<'gc> AvmSerializer<'gc> {
         let mut iter = ArrayIter::new(activation, iterable)?;
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
-            let key = AvmString::new_utf8(activation.context.gc_context, i.to_string());
-            let mapped = self.map_value(activation, key, item)?;
+            let mc = activation.context.gc_context;
+            let mapped =
+                self.map_value(activation, || AvmString::new_utf8(mc, i.to_string()), item)?;
             js_arr.push(self.serialize_value(activation, mapped)?);
         }
         Ok(JsonValue::Array(js_arr))
@@ -334,7 +331,7 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error> {
-        let mapped = self.map_value(activation, "".into(), value)?;
+        let mapped = self.map_value(activation, || "".into(), value)?;
         self.serialize_value(activation, mapped)
     }
 }
