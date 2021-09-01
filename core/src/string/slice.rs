@@ -20,7 +20,7 @@ impl<'a> WStr<'a> {
     ///
     /// `ptr` must point to a string with the correct lifetime.
     #[inline]
-    unsafe fn from_ptr(ptr: WStrPtr) -> Self {
+    pub(super) unsafe fn from_ptr(ptr: WStrPtr) -> Self {
         Self {
             ptr,
             _marker: PhantomData,
@@ -77,7 +77,7 @@ impl<'a> WStrMut<'a> {
     ///
     /// `ptr` must point to a string with the correct lifetime.
     #[inline]
-    unsafe fn from_ptr(ptr: WStrPtr) -> Self {
+    pub(super) unsafe fn from_ptr(ptr: WStrPtr) -> Self {
         Self {
             ptr,
             _marker: PhantomData,
