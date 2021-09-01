@@ -120,6 +120,138 @@ fn char_code_at<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.concat`
+fn concat<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let mut ret = Value::from(this).coerce_to_string(activation)?.to_string();
+        for arg in args {
+            let s = arg.coerce_to_string(activation)?;
+            ret.push_str(&s)
+        }
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `String.fromCharCode`
+fn from_char_code<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let mut out = String::with_capacity(args.len());
+    for arg in args {
+        let i = arg.coerce_to_u32(activation)? as u16;
+        if i == 0 {
+            // Stop at a null-terminator.
+            break;
+        }
+        out.push(string_utils::utf16_code_unit_to_char(i));
+    }
+    Ok(AvmString::new(activation.context.gc_context, out).into())
+}
+
+/// Implements `String.indexOf`
+fn index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this = Value::from(this)
+            .coerce_to_string(activation)?
+            .encode_utf16()
+            .collect::<Vec<u16>>();
+        let pattern = match args.get(0) {
+            None => return Ok(Value::Undefined),
+            Some(s) => s
+                .clone()
+                .coerce_to_string(activation)?
+                .encode_utf16()
+                .collect::<Vec<_>>(),
+        };
+        let start_index = {
+            let n = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)?;
+            if n >= 0 {
+                n as usize
+            } else {
+                0
+            }
+        };
+
+        if start_index >= this.len() {
+            // Out of range
+            return Ok((-1).into());
+        } else if pattern.is_empty() {
+            // Empty pattern is found immediately.
+            return Ok((start_index as f64).into());
+        } else if let Some(mut pos) = this[start_index..]
+            .windows(pattern.len())
+            .position(|w| w == &pattern[..])
+        {
+            pos += start_index;
+            return Ok((pos as f64).into());
+        } else {
+            // Not found
+            return Ok((-1).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `String.lastIndexOf`
+fn last_index_of<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this = Value::from(this)
+            .coerce_to_string(activation)?
+            .encode_utf16()
+            .collect::<Vec<u16>>();
+        let pattern = match args.get(0) {
+            None => return Ok(Value::Undefined),
+            Some(s) => s
+                .clone()
+                .coerce_to_string(activation)?
+                .encode_utf16()
+                .collect::<Vec<_>>(),
+        };
+        let start_index = match args.get(1) {
+            None | Some(Value::Undefined) => this.len(),
+            Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
+        };
+
+        return if pattern.is_empty() {
+            // Empty pattern is found immediately.
+            Ok(start_index.into())
+        } else if let Some((i, _)) = this[..]
+            .windows(pattern.len())
+            .enumerate()
+            .take(start_index + 1)
+            .rev()
+            .find(|(_, w)| *w == &pattern[..])
+        {
+            Ok(i.into())
+        } else {
+            // Not found
+            Ok((-1).into())
+        };
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.split`
 fn split<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -201,9 +333,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("charAt", char_at),
         ("charCodeAt", char_code_at),
+        ("concat", concat),
+        ("indexOf", index_of),
+        ("lastIndexOf", last_index_of),
         ("split", split),
     ];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
+
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
+    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
