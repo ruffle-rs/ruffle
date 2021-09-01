@@ -85,7 +85,8 @@ function checkPageOptout(): boolean {
             return true;
         }
     } catch (e) {
-        console.warn(`Unable to check top-level optout: ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn(`Unable to check top-level optout: ${message}`);
     }
     return false;
 }
