@@ -14,7 +14,7 @@
         "@wdio/static-server-service": "^7.7.3",
         "chai": "^4.3.4",
         "chai-html": "^2.0.1",
-        "chromedriver": "^91.0.1",
+        "chromedriver": "^92.0.2",
         "copy-webpack-plugin": "^9.0.0",
         "cross-env": "^7.0.3",
         "eslint": "^7.29.0",
