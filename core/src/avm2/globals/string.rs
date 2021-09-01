@@ -341,7 +341,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_as3_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
