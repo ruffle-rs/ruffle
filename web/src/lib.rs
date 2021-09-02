@@ -144,6 +144,12 @@ pub struct Config {
     #[serde(rename = "menu")]
     show_menu: bool,
 
+    salign: Option<String>,
+
+    quality: Option<String>,
+
+    scale: Option<String>,
+
     #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
@@ -159,6 +165,9 @@ impl Default for Config {
         Self {
             allow_script_access: false,
             show_menu: true,
+            salign: Some("".to_owned()),
+            quality: Some("high".to_owned()),
+            scale: Some("showAll".to_owned()),
             background_color: Default::default(),
             letterbox: Default::default(),
             upgrade_to_https: true,
@@ -493,6 +502,9 @@ impl Ruffle {
             core.set_warn_on_unsupported_content(config.warn_on_unsupported_content);
             core.set_max_execution_duration(config.max_execution_duration);
             core.set_show_menu(config.show_menu);
+            core.set_stage_align(config.salign.as_deref().unwrap_or(""));
+            core.set_quality(config.quality.as_deref().unwrap_or("high"));
+            core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
 
             // Create the external interface.
             if allow_script_access {

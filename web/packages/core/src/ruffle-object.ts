@@ -120,6 +120,9 @@ export class RuffleObject extends RufflePlayer {
         );
 
         const menu = findCaseInsensitive(this.params, "menu", null);
+        const salign = findCaseInsensitive(this.params, "salign", "");
+        const quality = findCaseInsensitive(this.params, "quality", "high");
+        const scale = findCaseInsensitive(this.params, "scale", "showAll");
 
         if (url) {
             const options: URLLoadOptions = { url };
@@ -137,6 +140,15 @@ export class RuffleObject extends RufflePlayer {
                 options.base = base;
             }
             options.menu = isBuiltInContextMenuVisible(menu);
+            if (salign) {
+                options.salign = salign;
+            }
+            if (quality) {
+                options.quality = quality;
+            }
+            if (scale) {
+                options.scale = scale;
+            }
 
             // Kick off the SWF download.
             this.load(options);

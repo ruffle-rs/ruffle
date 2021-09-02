@@ -195,6 +195,30 @@ export interface BaseLoadOptions {
      * @default true
      */
     menu?: boolean;
+
+    /**
+     *
+     * This is equivalent to Stage.align.
+     *
+     * @default ""
+     */
+    salign?: string;
+
+    /**
+     *
+     * This is equivalent to Stage.quality.
+     *
+     * @default "high"
+     */
+    quality?: string;
+
+    /**
+     *
+     * This is equivalent to Stage.scaleMode.
+     *
+     * @default "showAll"
+     */
+    scale?: string;
 }
 
 /**
