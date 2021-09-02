@@ -18,7 +18,9 @@ use crate::backend::{
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
-use crate::display_object::{EditText, MorphShape, MovieClip, Stage};
+use crate::display_object::{
+    EditText, MorphShape, MovieClip, Stage, StageAlign, StageQuality, StageScaleMode,
+};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
@@ -35,6 +37,7 @@ use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
@@ -769,6 +772,33 @@ impl Player {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
             stage.set_show_menu(context, show_menu);
+        })
+    }
+
+    pub fn set_stage_align(&mut self, stage_align: &str) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            if let Ok(stage_align) = StageAlign::from_str(stage_align) {
+                stage.set_align(context, stage_align);
+            }
+        })
+    }
+
+    pub fn set_quality(&mut self, quality: &str) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            if let Ok(quality) = StageQuality::from_str(quality) {
+                stage.set_quality(context.gc_context, quality);
+            }
+        })
+    }
+
+    pub fn set_scale_mode(&mut self, scale_mode: &str) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            if let Ok(scale_mode) = StageScaleMode::from_str(scale_mode) {
+                stage.set_scale_mode(context, scale_mode);
+            }
         })
     }
 

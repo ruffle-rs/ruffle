@@ -53,6 +53,11 @@ export class RuffleEmbed extends RufflePlayer {
                 backgroundColor: this.attributes.getNamedItem("bgcolor")?.value,
                 base: this.attributes.getNamedItem("base")?.value,
                 menu: isBuiltInContextMenuVisible(menu),
+                salign: this.attributes.getNamedItem("salign")?.value ?? "",
+                quality:
+                    this.attributes.getNamedItem("quality")?.value ?? "high",
+                scale:
+                    this.attributes.getNamedItem("scale")?.value ?? "showAll",
             });
         }
     }
