@@ -26,7 +26,7 @@
         "stylelint": "^13.13.1",
         "stylelint-config-standard": "^22.0.0",
         "ts-loader": "^9.2.4",
-        "typescript": "^4.3.4",
+        "typescript": "^4.4.2",
         "wdio-chromedriver-service": "^7.2.0",
         "webpack": "^5.41.1",
         "webpack-cli": "^4.7.2"
