@@ -1073,6 +1073,9 @@ pub trait TDisplayObject<'gc>:
     fn as_drawing(&self, _gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
         None
     }
+    fn as_bitmap(self) -> Option<Bitmap<'gc>> {
+        None
+    }
 
     fn apply_place_object(
         &self,

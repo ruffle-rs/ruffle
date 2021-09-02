@@ -29,12 +29,30 @@ pub struct Bitmap<'gc>(GcCell<'gc, BitmapData<'gc>>);
 pub struct BitmapData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: Gc<'gc, BitmapStatic>,
+
+    /// The current bitmap data object.
     bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
+
+    /// The current bitmap handle.
+    ///
+    /// This needs to be cached separately from the associated bitmap data so
+    /// that it can be accessed without a mutation context.
+    ///
+    /// If this is `None`, then the bitmap does not render anything.
+    bitmap_handle: BitmapHandle,
+
+    /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
+
+    /// The AVM2 side of this object.
+    ///
+    /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
+    /// storing an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
+    /// Create a `Bitmap` with dynamic bitmap data.
     pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
@@ -44,26 +62,24 @@ impl<'gc> Bitmap<'gc> {
         bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
         smoothing: bool,
     ) -> Self {
+        let bitmap_handle = bitmap_data
+            .and_then(|bd| bd.write(context.gc_context).bitmap_handle(context.renderer))
+            .unwrap_or(bitmap_handle);
+
         Bitmap(GcCell::allocate(
             context.gc_context,
             BitmapData {
                 base: Default::default(),
-                static_data: Gc::allocate(
-                    context.gc_context,
-                    BitmapStatic {
-                        id,
-                        bitmap_handle,
-                        width,
-                        height,
-                    },
-                ),
+                static_data: Gc::allocate(context.gc_context, BitmapStatic { id, width, height }),
                 bitmap_data,
+                bitmap_handle,
                 smoothing,
                 avm2_object: None,
             },
         ))
     }
 
+    /// Create a `Bitmap` with static bitmap data only.
     pub fn new(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
@@ -76,15 +92,53 @@ impl<'gc> Bitmap<'gc> {
 
     #[allow(dead_code)]
     pub fn bitmap_handle(self) -> BitmapHandle {
-        self.0.read().static_data.bitmap_handle
+        self.0.read().bitmap_handle
     }
 
     pub fn width(self) -> u16 {
-        self.0.read().static_data.width
+        let read = self.0.read();
+
+        read.bitmap_data
+            .map(|bd| bd.read().width() as u16)
+            .unwrap_or_else(|| read.static_data.width)
     }
 
     pub fn height(self) -> u16 {
-        self.0.read().static_data.height
+        let read = self.0.read();
+
+        read.bitmap_data
+            .map(|bd| bd.read().height() as u16)
+            .unwrap_or_else(|| read.static_data.height)
+    }
+
+    /// Retrieve the bitmap data associated with this `Bitmap`.
+    pub fn bitmap_data(self) -> Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>> {
+        self.0.read().bitmap_data
+    }
+
+    /// Associate this `Bitmap` with new `BitmapData`.
+    ///
+    /// Once associated with the new data, the reported width, height, and
+    /// bitmap handle of this display object will change to match the given
+    /// bitmap data.
+    ///
+    /// This also forces the `BitmapData` to be sent to the rendering backend,
+    /// if that has not already been done.
+    pub fn set_bitmap_data(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>,
+    ) {
+        let bitmap_handle = bitmap_data
+            .write(context.gc_context)
+            .bitmap_handle(context.renderer);
+
+        let mut write = self.0.write(context.gc_context);
+
+        write.bitmap_data = Some(bitmap_data);
+        if let Some(bitmap_handle) = bitmap_handle {
+            write.bitmap_handle = bitmap_handle;
+        }
     }
 }
 
@@ -142,7 +196,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             let bd = bitmap_data.read();
             if bd.dirty() {
                 let _ = context.renderer.update_texture(
-                    self.0.read().static_data.bitmap_handle,
+                    self.0.read().bitmap_handle,
                     bd.width(),
                     bd.height(),
                     bd.pixels_rgba(),
@@ -161,7 +215,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
         let bitmap_data = self.0.read();
         context.renderer.render_bitmap(
-            bitmap_data.static_data.bitmap_handle,
+            bitmap_data.bitmap_handle,
             context.transform_stack.transform(),
             bitmap_data.smoothing,
         );
@@ -174,6 +228,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .map(|o| o.into())
             .unwrap_or(Avm2Value::Undefined)
     }
+
+    fn as_bitmap(self) -> Option<Bitmap<'gc>> {
+        Some(self)
+    }
 }
 
 /// Static data shared between all instances of a bitmap.
@@ -181,7 +239,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 #[collect(no_drop)]
 struct BitmapStatic {
     id: CharacterId,
-    bitmap_handle: BitmapHandle,
     width: u16,
     height: u16,
 }
