@@ -1243,16 +1243,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_sound_instance(self, _mc: MutationContext<'gc, '_>, _sound: SoundInstanceHandle) {}
 
     /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData>> {
+    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
         None
     }
 
     /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data
+    /// supporting said data.
+    ///
+    /// This should only be called to initialize the association between an AVM
+    /// object and it's associated bitmap data. This association should not be
+    /// reinitialized later.
     fn init_bitmap_data(
         &self,
         _mc: MutationContext<'gc, '_>,
-        _new_bitmap: GcCell<'gc, BitmapData>,
+        _new_bitmap: GcCell<'gc, BitmapData<'gc>>,
     ) {
     }
 }
