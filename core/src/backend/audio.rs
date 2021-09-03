@@ -500,7 +500,7 @@ impl<'gc> AudioManager<'gc> {
             parent = display_object.parent();
         }
         transform.concat(&self.global_sound_transform);
-        SoundTransform::from_display_object_transform(&transform)
+        transform.into()
     }
 
     /// Update the sound transforms for all sounds.
@@ -567,16 +567,26 @@ pub struct SoundTransform {
     pub right_to_right: f32,
 }
 
-impl SoundTransform {
+impl From<DisplayObjectSoundTransform> for SoundTransform {
     /// Converts from a `display_object::SoundTransform` to a `backend::audio::SoundTransform`.
-    fn from_display_object_transform(other: &DisplayObjectSoundTransform) -> Self {
-        const SCALE: f32 = (display_object::SoundTransform::MAX_VOLUME
-            * display_object::SoundTransform::MAX_VOLUME) as f32;
+    fn from(other: DisplayObjectSoundTransform) -> Self {
+        const SCALE: f32 = display_object::SoundTransform::MAX_VOLUME.pow(2) as f32;
+
+        // It seems like Flash stores sound transform values in 30-bit unsigned integers:
+        // * Negative values are equivalent to their absolute value.
+        // * Specifically, 0x40000000, -0x40000000 and -0x80000000 are equivalent to zero.
+        // * The volume multiplication wraps around at `u32::MAX`.
+        let left_to_left = (other.left_to_left << 2) >> 2;
+        let left_to_right = (other.left_to_right << 2) >> 2;
+        let right_to_left = (other.right_to_left << 2) >> 2;
+        let right_to_right = (other.right_to_right << 2) >> 2;
+        let volume = (other.volume << 2) >> 2;
+
         Self {
-            left_to_left: other.left_to_left as f32 * other.volume as f32 / SCALE,
-            left_to_right: other.left_to_right as f32 * other.volume as f32 / SCALE,
-            right_to_left: other.right_to_left as f32 * other.volume as f32 / SCALE,
-            right_to_right: other.right_to_right as f32 * other.volume as f32 / SCALE,
+            left_to_left: left_to_left.wrapping_mul(volume) as f32 / SCALE,
+            left_to_right: left_to_right.wrapping_mul(volume) as f32 / SCALE,
+            right_to_left: right_to_left.wrapping_mul(volume) as f32 / SCALE,
+            right_to_right: right_to_right.wrapping_mul(volume) as f32 / SCALE,
         }
     }
 }
