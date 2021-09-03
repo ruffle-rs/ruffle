@@ -11,10 +11,10 @@ use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 use swf::AudioCompression;
 
-#[allow(dead_code)]
 pub struct CpalAudioBackend {
+    #[allow(dead_code)]
     device: cpal::Device,
-    output_config: cpal::StreamConfig,
+    config: cpal::StreamConfig,
     stream: cpal::Stream,
     sounds: Arena<Sound>,
     sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
@@ -28,7 +28,9 @@ type Error = Box<dyn std::error::Error>;
 /// A `Sound` is defined by the `DefineSound` SWF tags.
 struct Sound {
     format: swf::SoundFormat,
+
     data: Arc<[u8]>,
+
     /// Number of samples in this audio.
     /// This does not include the skip_sample_frames.
     num_sample_frames: u32,
@@ -42,10 +44,10 @@ struct Sound {
 /// a stream sound (`SoundStreamBlock`).
 /// The audio thread will iterate through all `SoundInstance`s
 /// to fill the audio buffer.
-#[allow(dead_code)]
 struct SoundInstance {
     /// The handle the sound definition inside `sounds`.
     /// `None` if this is a stream sound.
+    #[allow(dead_code)]
     handle: Option<SoundHandle>,
 
     /// The audio stream. Call `next()` to yield sample frames.
@@ -56,9 +58,8 @@ struct SoundInstance {
     /// next loop of the sound thread.
     active: bool,
 
-    /// The volume transform for this sound instance.
+    /// The transform for this sound instance.
     left_transform: [f32; 2],
-
     right_transform: [f32; 2],
 }
 
@@ -83,9 +84,8 @@ impl CpalAudioBackend {
             let error_handler = move |err| log::error!("Audio stream error: {}", err);
             let output_config = config.clone();
 
-            use cpal::SampleFormat;
             match sample_format {
-                SampleFormat::F32 => device.build_output_stream(
+                cpal::SampleFormat::F32 => device.build_output_stream(
                     &config,
                     move |buffer, _| {
                         let mut sound_instances = sound_instances.lock().unwrap();
@@ -93,7 +93,7 @@ impl CpalAudioBackend {
                     },
                     error_handler,
                 ),
-                SampleFormat::I16 => device.build_output_stream(
+                cpal::SampleFormat::I16 => device.build_output_stream(
                     &config,
                     move |buffer, _| {
                         let mut sound_instances = sound_instances.lock().unwrap();
@@ -101,7 +101,7 @@ impl CpalAudioBackend {
                     },
                     error_handler,
                 ),
-                SampleFormat::U16 => device.build_output_stream(
+                cpal::SampleFormat::U16 => device.build_output_stream(
                     &config,
                     move |buffer, _| {
                         let mut sound_instances = sound_instances.lock().unwrap();
@@ -116,7 +116,7 @@ impl CpalAudioBackend {
 
         Ok(Self {
             device,
-            output_config: config,
+            config,
             stream,
             sounds: Arena::new(),
             sound_instances,
@@ -177,7 +177,7 @@ impl CpalAudioBackend {
             signal,
             interpolator,
             format.sample_rate.into(),
-            self.output_config.sample_rate.0.into(),
+            self.config.sample_rate.0.into(),
         )
     }
 
@@ -204,8 +204,7 @@ impl CpalAudioBackend {
         let signal = self.make_resampler(&sound.format, signal);
         if let Some(envelope) = &settings.envelope {
             use dasp::Signal;
-            let envelope_signal =
-                EnvelopeSignal::new(&envelope[..], self.output_config.sample_rate.0);
+            let envelope_signal = EnvelopeSignal::new(&envelope[..], self.config.sample_rate.0);
             Ok(Box::new(signal.mul_amp(envelope_signal)))
         } else {
             Ok(Box::new(signal))
@@ -480,9 +479,7 @@ impl EventSoundSignal {
         signal.next_loop();
         signal
     }
-}
 
-impl EventSoundSignal {
     /// Resets the decoder to the start point of the loop.
     fn next_loop(&mut self) {
         if self.num_loops > 0 {
