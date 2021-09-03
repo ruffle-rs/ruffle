@@ -16,7 +16,7 @@ pub struct BitmapDataObject<'gc>(GcCell<'gc, BitmapDataData<'gc>>);
 pub struct BitmapDataData<'gc> {
     /// The underlying script object.
     base: ScriptObject<'gc>,
-    data: GcCell<'gc, BitmapData>,
+    data: GcCell<'gc, BitmapData<'gc>>,
     disposed: bool,
 }
 
@@ -32,7 +32,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 impl<'gc> BitmapDataObject<'gc> {
     add_field_accessors!(
         [disposed, bool, get => disposed],
-        [data, GcCell<'gc, BitmapData>, set => set_bitmap_data, get => bitmap_data],
+        [data, GcCell<'gc, BitmapData<'gc>>, set => set_bitmap_data, get => bitmap_data],
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {

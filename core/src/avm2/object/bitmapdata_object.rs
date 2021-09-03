@@ -43,13 +43,13 @@ pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    bitmap_data: Option<GcCell<'gc, BitmapData>>,
+    bitmap_data: Option<GcCell<'gc, BitmapData<'gc>>>,
 }
 
 impl<'gc> BitmapDataObject<'gc> {
     pub fn from_bitmap_data(
         activation: &mut Activation<'_, 'gc, '_>,
-        bitmap_data: GcCell<'gc, BitmapData>,
+        bitmap_data: GcCell<'gc, BitmapData<'gc>>,
         class: Object<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let proto = class
@@ -67,6 +67,10 @@ impl<'gc> BitmapDataObject<'gc> {
                 bitmap_data: Some(bitmap_data),
             },
         ));
+
+        bitmap_data
+            .write(activation.context.gc_context)
+            .init_object2(instance.into());
         instance.install_instance_traits(activation, class)?;
         class.call_native_init(Some(instance.into()), &[], activation, Some(class))?;
 
@@ -101,13 +105,17 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     }
 
     /// Unwrap this object's bitmap data
-    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData>> {
+    fn as_bitmap_data(&self) -> Option<GcCell<'gc, BitmapData<'gc>>> {
         self.0.read().bitmap_data
     }
 
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
-    fn init_bitmap_data(&self, mc: MutationContext<'gc, '_>, new_bitmap: GcCell<'gc, BitmapData>) {
+    fn init_bitmap_data(
+        &self,
+        mc: MutationContext<'gc, '_>,
+        new_bitmap: GcCell<'gc, BitmapData<'gc>>,
+    ) {
         self.0.write(mc).bitmap_data = Some(new_bitmap)
     }
 }

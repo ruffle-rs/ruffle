@@ -1,5 +1,6 @@
 use gc_arena::Collect;
 
+use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
 use crate::backend::render::{BitmapHandle, RenderBackend};
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
@@ -130,7 +131,7 @@ bitflags! {
 
 #[derive(Clone, Collect, Default, Debug)]
 #[collect(no_drop)]
-pub struct BitmapData {
+pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
     pub pixels: Vec<Color>,
     dirty: bool,
@@ -138,10 +139,20 @@ pub struct BitmapData {
     height: u32,
     transparency: bool,
 
+    /// The bitmap handle for this data.
+    ///
+    /// This is lazily initialized; a value of `None` indicates that
+    /// initialization has not yet happened.
     bitmap_handle: Option<BitmapHandle>,
+
+    /// The AVM2 side of this `BitmapData`.
+    ///
+    /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
+    /// this does not need to hold an AVM1 object.
+    avm2_object: Option<Avm2Object<'gc>>,
 }
 
-impl BitmapData {
+impl<'gc> BitmapData<'gc> {
     pub fn init_pixels(&mut self, width: u32, height: u32, transparency: bool, fill_color: i32) {
         self.width = width;
         self.height = height;
@@ -841,5 +852,15 @@ impl BitmapData {
             }
             src_y += dy;
         }
+    }
+
+    pub fn object2(&self) -> Avm2Value<'gc> {
+        self.avm2_object
+            .map(|o| o.into())
+            .unwrap_or(Avm2Value::Undefined)
+    }
+
+    pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
+        self.avm2_object = Some(object)
     }
 }

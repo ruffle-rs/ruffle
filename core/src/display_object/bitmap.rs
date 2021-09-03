@@ -31,7 +31,7 @@ pub struct BitmapData<'gc> {
     static_data: Gc<'gc, BitmapStatic>,
 
     /// The current bitmap data object.
-    bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
+    bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
 
     /// The current bitmap handle.
     ///
@@ -59,7 +59,7 @@ impl<'gc> Bitmap<'gc> {
         bitmap_handle: BitmapHandle,
         width: u16,
         height: u16,
-        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>>,
+        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
         smoothing: bool,
     ) -> Self {
         let bitmap_handle = bitmap_data
@@ -112,7 +112,7 @@ impl<'gc> Bitmap<'gc> {
     }
 
     /// Retrieve the bitmap data associated with this `Bitmap`.
-    pub fn bitmap_data(self) -> Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>> {
+    pub fn bitmap_data(self) -> Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>> {
         self.0.read().bitmap_data
     }
 
@@ -127,7 +127,7 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_bitmap_data(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData>,
+        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
     ) {
         let bitmap_handle = bitmap_data
             .write(context.gc_context)
