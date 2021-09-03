@@ -20,7 +20,7 @@ jobs:
         with:
           filters: |
             src:
-              - '!**.md'
+              - '!(**.md)'
 
   build:
     needs: changes

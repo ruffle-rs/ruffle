@@ -20,10 +20,7 @@ jobs:
         with:
           filters: |
             src:
-              - '!web/package.json'
-              - '!web/package-lock.json'
-              - '!web/packages/**'
-              - '!**.md'
+              - '!(web/package.json|web/package-lock.json|web/packages/**|**.md)'
 
   build:
     needs: changes
