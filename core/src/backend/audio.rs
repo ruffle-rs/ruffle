@@ -2,10 +2,7 @@ use crate::{
     avm1::SoundObject,
     avm2::Event as Avm2Event,
     avm2::Object as Avm2Object,
-    display_object::{
-        self, DisplayObject, MovieClip, SoundTransform as DisplayObjectSoundTransform,
-        TDisplayObject,
-    },
+    display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
 use downcast_rs::Downcast;
 use gc_arena::Collect;
@@ -232,7 +229,7 @@ pub struct AudioManager<'gc> {
     sounds: Vec<SoundInstance<'gc>>,
 
     /// The global sound transform applied to all sounds.
-    global_sound_transform: DisplayObjectSoundTransform,
+    global_sound_transform: display_object::SoundTransform,
 
     /// The number of seconds that a timeline audio stream should buffer before playing.
     ///
@@ -326,7 +323,7 @@ impl<'gc> AudioManager<'gc> {
                 sound: Some(sound),
                 instance: handle,
                 display_object,
-                transform: DisplayObjectSoundTransform::default(),
+                transform: display_object::SoundTransform::default(),
                 avm1_object,
                 avm2_object: None,
             };
@@ -418,7 +415,7 @@ impl<'gc> AudioManager<'gc> {
                 sound: None,
                 instance: handle,
                 display_object: Some(movie_clip.into()),
-                transform: DisplayObjectSoundTransform::default(),
+                transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
             };
@@ -430,11 +427,11 @@ impl<'gc> AudioManager<'gc> {
         }
     }
 
-    pub fn global_sound_transform(&self) -> &DisplayObjectSoundTransform {
+    pub fn global_sound_transform(&self) -> &display_object::SoundTransform {
         &self.global_sound_transform
     }
 
-    pub fn set_global_sound_transform(&mut self, sound_transform: DisplayObjectSoundTransform) {
+    pub fn set_global_sound_transform(&mut self, sound_transform: display_object::SoundTransform) {
         self.global_sound_transform = sound_transform;
         self.transforms_dirty = true;
     }
@@ -443,7 +440,7 @@ impl<'gc> AudioManager<'gc> {
     pub fn local_sound_transform(
         &self,
         instance: SoundInstanceHandle,
-    ) -> Option<&DisplayObjectSoundTransform> {
+    ) -> Option<&display_object::SoundTransform> {
         if let Some(i) = self
             .sounds
             .iter()
@@ -460,7 +457,7 @@ impl<'gc> AudioManager<'gc> {
     pub fn set_local_sound_transform(
         &mut self,
         instance: SoundInstanceHandle,
-        sound_transform: DisplayObjectSoundTransform,
+        sound_transform: display_object::SoundTransform,
     ) {
         if let Some(i) = self
             .sounds
@@ -546,17 +543,17 @@ pub struct SoundInstance<'gc> {
     /// Only AVM2 sounds have a local sound transform. In AVM1, sound instances
     /// instead get the sound transform of the display object they're
     /// associated with.
-    transform: DisplayObjectSoundTransform,
+    transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
-    pub avm1_object: Option<SoundObject<'gc>>,
+    avm1_object: Option<SoundObject<'gc>>,
 
     /// The AVM2 `Sound` object associated with this sound, if any.
-    pub avm2_object: Option<Avm2Object<'gc>>,
+    avm2_object: Option<Avm2Object<'gc>>,
 }
 
 /// A sound transform for a playing sound, for use by audio backends.
-/// This differs from `display_object::SoundTranform` by being
+/// This differs from `display_object::SoundTransform` by being
 /// already converted to `f32` and having `volume` baked in.
 #[derive(Debug, PartialEq, Clone, Collect)]
 #[collect(require_static)]
@@ -567,9 +564,9 @@ pub struct SoundTransform {
     pub right_to_right: f32,
 }
 
-impl From<DisplayObjectSoundTransform> for SoundTransform {
+impl From<display_object::SoundTransform> for SoundTransform {
     /// Converts from a `display_object::SoundTransform` to a `backend::audio::SoundTransform`.
-    fn from(other: DisplayObjectSoundTransform) -> Self {
+    fn from(other: display_object::SoundTransform) -> Self {
         const SCALE: f32 = display_object::SoundTransform::MAX_VOLUME.pow(2) as f32;
 
         // It seems like Flash stores sound transform values in 30-bit unsigned integers:
