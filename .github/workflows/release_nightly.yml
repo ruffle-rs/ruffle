@@ -91,12 +91,10 @@ jobs:
           - build_name: windows-x86_32
             os: windows-latest
             target: i686-pc-windows-msvc
-            RUSTFLAGS: -Ctarget-feature=+crt-static
 
           - build_name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            RUSTFLAGS: -Ctarget-feature=+crt-static
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
@@ -137,8 +135,6 @@ jobs:
         with:
           command: build
           args: --package ruffle_desktop --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
-        env:
-          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
 
       - name: Package common
         run: |

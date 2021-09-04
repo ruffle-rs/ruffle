@@ -1,2 +1,6 @@
 [target.wasm32-unknown-unknown]
-rustflags=["--cfg=web_sys_unstable_apis"]
+rustflags=["--cfg=web_sys_unstable_apis", "-C", "target-feature=+bulk-memory"]
+
+# on Windows, in release builds, link to CRT statically
+[target.'cfg(all(windows, not(debug_assertions)))']
+rustflags = ["-C", "target-feature=+crt-static"]
