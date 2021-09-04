@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
-/// Implements `flash.events.MouseEvent`'s instance constructor.
+/// Implements `flash.events.KeyboardEvent`'s instance constructor.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -19,7 +19,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.events.MouseEvent`'s class constructor.
+/// Implements `flash.events.KeyboardEvent`'s class constructor.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -28,13 +28,13 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Construct `MouseEvent`'s class.
+/// Construct `KeyboardEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::package("flash.events"), "MouseEvent"),
+        QName::new(Namespace::package("flash.events"), "KeyboardEvent"),
         Some(QName::new(Namespace::package("flash.events"), "Event").into()),
-        Method::from_builtin(instance_init, "<MouseEvent instance initializer>", mc),
-        Method::from_builtin(class_init, "<MouseEvent class initializer>", mc),
+        Method::from_builtin(instance_init, "<KeyboardEvent instance initializer>", mc),
+        Method::from_builtin(class_init, "<KeyboardEvent class initializer>", mc),
         mc,
     );
 
@@ -42,26 +42,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&str, &str)] = &[
-        ("CLICK", "click"),
-        ("CONTEXT_MENU", "contextMenu"),
-        ("DOUBLE_CLICK", "doubleClick"),
-        ("MIDDLE_CLICK", "middleClick"),
-        ("MIDDLE_MOUSE_DOWN", "middleMouseDown"),
-        ("MIDDLE_MOUSE_UP", "middleMouseUp"),
-        ("MOUSE_DOWN", "mouseDown"),
-        ("MOUSE_MOVE", "mouseMove"),
-        ("MOUSE_OUT", "mouseOut"),
-        ("MOUSE_OVER", "mouseOver"),
-        ("MOUSE_UP", "mouseUp"),
-        ("MOUSE_WHEEL", "mouseWheel"),
-        ("RELEASE_OUTSIDE", "releaseOutside"),
-        ("RIGHT_CLICK", "rightClick"),
-        ("RIGHT_MOUSE_DOWN", "rightMouseDown"),
-        ("RIGHT_MOUSE_UP", "rightMouseUp"),
-        ("ROLL_OUT", "rollOut"),
-        ("ROLL_OVER", "rollOver"),
-    ];
+    const CONSTANTS: &[(&str, &str)] = &[("KEY_DOWN", "keyDown"), ("KEY_UP", "keyUp")];
 
     write.define_public_constant_string_class_traits(CONSTANTS);
 
