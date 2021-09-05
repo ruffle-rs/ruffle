@@ -1,0 +1,18 @@
+///var bd = new BitmapData(128, 128, true, 0xCAFEBABE);
+///bd.width;
+128
+///bd.height;
+128
+///bd.transparent;
+true
+///bd.getPixel(0,0);
+16693695
+///bd = new BitmapData(128, 128, false, 0xCAFEBABE);
+///bd.width;
+128
+///bd.height;
+128
+///bd.transparent;
+false
+///bd.getPixel(0,0);
+16693950
