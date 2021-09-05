@@ -1,12 +1,12 @@
-﻿package {
+package {
 	public class Test {
 	}
 }
 
 import flash.display.BitmapData;
 
-trace("///var bd = new BitmapData(128, 128, true, 0xCAFEBABE);");
-var bd = new BitmapData(128, 128, true, 0xCAFEBABE);
+trace("///var bd = new BitmapData(128, 128, true, 0x88FEBABE);");
+var bd = new BitmapData(128, 128, true, 0x88FEBABE);
 
 trace("///bd.width;");
 trace(bd.width);
