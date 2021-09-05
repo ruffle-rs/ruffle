@@ -147,6 +147,19 @@ pub fn height<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements BitmapData.transparent`'s getter.
+pub fn transparent<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        return Ok(bitmap_data.read().transparency().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -166,7 +179,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("width", Some(width), None), ("height", Some(height), None)];
+    )] = &[
+        ("width", Some(width), None),
+        ("height", Some(height), None),
+        ("transparent", Some(transparent), None),
+    ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
