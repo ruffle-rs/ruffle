@@ -121,7 +121,7 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements BitmapData.width`'s getter.
+/// Implements `BitmapData.width`'s getter.
 pub fn width<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -134,7 +134,7 @@ pub fn width<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements BitmapData.height`'s getter.
+/// Implements `BitmapData.height`'s getter.
 pub fn height<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -147,7 +147,7 @@ pub fn height<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements BitmapData.transparent`'s getter.
+/// Implements `BitmapData.transparent`'s getter.
 pub fn transparent<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -155,6 +155,27 @@ pub fn transparent<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
         return Ok(bitmap_data.read().transparency().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.getPixel`.
+pub fn get_pixel<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        let x = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        let y = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_i32(activation)?;
+        return Ok((bitmap_data.read().get_pixel(x, y) as u32).into());
     }
 
     Ok(Value::Undefined)
@@ -185,6 +206,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("transparent", Some(transparent), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("getPixel", get_pixel)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }
