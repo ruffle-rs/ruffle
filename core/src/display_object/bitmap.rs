@@ -53,6 +53,12 @@ pub struct BitmapData<'gc> {
 
 impl<'gc> Bitmap<'gc> {
     /// Create a `Bitmap` with dynamic bitmap data.
+    ///
+    /// If `bitmap_data` is provided, the associated `bitmap_handle` must match
+    /// the same handle that the data has provided. If it does not match, then
+    /// this `Bitmap` will render the wrong data when added to the display
+    /// list. If no data is provided then you are free to add whatever handle
+    /// you like.
     pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
@@ -62,9 +68,8 @@ impl<'gc> Bitmap<'gc> {
         bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
         smoothing: bool,
     ) -> Self {
-        let bitmap_handle = bitmap_data
-            .and_then(|bd| bd.write(context.gc_context).bitmap_handle(context.renderer))
-            .unwrap_or(bitmap_handle);
+        //NOTE: We do *not* solicit a handle from the `bitmap_data` at this
+        //time due to mutable borrowing issues.
 
         Bitmap(GcCell::allocate(
             context.gc_context,
