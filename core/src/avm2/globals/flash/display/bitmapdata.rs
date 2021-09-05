@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{bitmapdata_allocator, Object, TObject};
 use crate::avm2::value::Value;
@@ -121,6 +121,32 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements BitmapData.width`'s getter.
+pub fn width<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        return Ok((bitmap_data.read().width() as i32).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements BitmapData.height`'s getter.
+pub fn height<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|t| t.as_bitmap_data()) {
+        return Ok((bitmap_data.read().height() as i32).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -135,6 +161,13 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_allocator(bitmapdata_allocator);
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[("width", Some(width), None), ("height", Some(height), None)];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }
