@@ -616,7 +616,12 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::BinaryData(_)) => {}
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap(_)) => {}
+                            Some(Character::Bitmap(bitmap)) => {
+                                bitmap.set_avm2_bitmapdata_class(
+                                    activation.context.gc_context,
+                                    class_object,
+                                );
+                            }
                             _ => {
                                 log::warn!(
                                     "Symbol class {} cannot be assigned to invalid character id {}",

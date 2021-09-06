@@ -11,7 +11,7 @@ use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
-use gc_arena::{Collect, Gc, GcCell};
+use gc_arena::{Collect, Gc, GcCell, MutationContext};
 
 /// A Bitmap display object is a raw bitamp on the stage.
 /// This can only be instanitated on the display list in SWFv9 AVM2 files.
@@ -49,6 +49,16 @@ pub struct BitmapData<'gc> {
     /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
     /// storing an AVM1 object.
     avm2_object: Option<Avm2Object<'gc>>,
+
+    /// The AVM2 class for the BitmapData associated with this object.
+    ///
+    /// When bitmaps are instantiated by the timeline, they are constructed as
+    /// AVM2's `Bitmap` class, and then they are associated with `BitmapData`
+    /// that is constructed from the given symbol class.
+    ///
+    /// This association is unusual relative to other things that use AS3
+    /// linkage, where the symbol class usually directly represents the symbol.
+    avm2_bitmapdata_class: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -80,6 +90,7 @@ impl<'gc> Bitmap<'gc> {
                 bitmap_handle,
                 smoothing,
                 avm2_object: None,
+                avm2_bitmapdata_class: None,
             },
         ))
     }
@@ -144,6 +155,14 @@ impl<'gc> Bitmap<'gc> {
         if let Some(bitmap_handle) = bitmap_handle {
             write.bitmap_handle = bitmap_handle;
         }
+    }
+
+    pub fn avm2_bitmapdata_class(self) -> Option<Avm2Object<'gc>> {
+        self.0.read().avm2_bitmapdata_class
+    }
+
+    pub fn set_avm2_bitmapdata_class(self, mc: MutationContext<'gc, '_>, class: Avm2Object<'gc>) {
+        self.0.write(mc).avm2_bitmapdata_class = Some(class);
     }
 }
 
