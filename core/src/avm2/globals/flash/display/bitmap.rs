@@ -143,6 +143,24 @@ pub fn set_bitmap_data<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stub `Bitmap.pixelSnapping`'s getter
+pub fn pixel_snapping<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok("auto".into())
+}
+
+/// Stub `Bitmap.pixelSnapping`'s getter
+pub fn set_pixel_snapping<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Err("Bitmap.pixelSnapping is a stub".into())
+}
+
 /// Construct `Bitmap`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -161,7 +179,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("bitmapData", Some(bitmap_data), Some(set_bitmap_data))];
+    )] = &[
+        ("bitmapData", Some(bitmap_data), Some(set_bitmap_data)),
+        (
+            "pixelSnapping",
+            Some(pixel_snapping),
+            Some(set_pixel_snapping),
+        ),
+    ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
