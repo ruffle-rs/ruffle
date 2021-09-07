@@ -26,7 +26,7 @@ impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
         upgrade_to_https: bool,
-        base_url: Option<String>,
+        mut base_url: Option<String>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
         let performance = window.performance().expect("window.performance()");
@@ -34,6 +34,26 @@ impl WebNavigatorBackend {
         // Upgarde to HTTPS takes effect if the current page is hosted on HTTPS.
         let upgrade_to_https =
             upgrade_to_https && window.location().protocol().unwrap_or_default() == "https:";
+
+        if let Some(ref base) = base_url {
+            if Url::parse(base).is_err() {
+                let document = window.document().expect("Could not get document");
+                if let Ok(Some(doc_base_uri)) = document.base_uri() {
+                    let doc_url =
+                        Url::parse(&doc_base_uri).expect("Could not parse document base uri");
+
+                    if let Ok(joined_url) = doc_url.join(base) {
+                        base_url = Some(joined_url.into());
+                    } else {
+                        log::error!("Bad base directory {}", base);
+                        base_url = None;
+                    }
+                } else {
+                    log::error!("Could not get document base_uri for base directory inference");
+                    base_url = None;
+                }
+            }
+        }
 
         WebNavigatorBackend {
             start_time: performance.now(),
@@ -149,7 +169,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let url = if let Ok(parsed_url) = Url::parse(url) {
             self.pre_process_url(parsed_url).to_string()
         } else {
-            url.to_string()
+            self.resolve_relative_url(url).to_string()
         };
 
         Box::pin(async move {
@@ -225,7 +245,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         })
     }
 
-    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
         let window = web_sys::window().expect("window()");
         let document = window.document().expect("document()");
 

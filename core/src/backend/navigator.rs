@@ -197,7 +197,7 @@ pub trait NavigatorBackend {
     /// defined base. For a web browser, the most obvious base would be the
     /// current document's base URL, while the most obvious base for a desktop
     /// client would be the file-URL form of the current path.
-    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str>;
+    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str>;
 
     /// Handle any context specific pre-processing
     ///
@@ -376,7 +376,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         }
     }
 
-    fn resolve_relative_url<'a>(&mut self, url: &'a str) -> Cow<'a, str> {
+    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
         let relative = url_from_relative_path(&self.relative_base_path, url);
         if let Ok(relative) = relative {
             String::from(relative).into()
