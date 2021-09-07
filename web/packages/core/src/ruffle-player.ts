@@ -577,7 +577,7 @@ export class RufflePlayer extends HTMLElement {
                     ...sanitizeParameters(options.parameters),
                 };
 
-                this.instance!.stream_from(options.url, parameters);
+                this.instance!.stream_from(this.swfUrl, parameters);
             } else if ("data" in options) {
                 console.log("Loading SWF data");
                 this.instance!.load_data(
