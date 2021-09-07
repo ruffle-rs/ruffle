@@ -6,7 +6,7 @@ use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::scope::Scope;
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -35,7 +35,7 @@ impl<'gc> FunctionObject<'gc> {
     pub fn from_function(
         activation: &mut Activation<'_, 'gc, '_>,
         method: Method<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        scope: ScopeChain<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let mut this = Self::from_method(activation, method, scope, None);
         let es3_proto = ScriptObject::object(
@@ -61,7 +61,7 @@ impl<'gc> FunctionObject<'gc> {
     pub fn from_method(
         activation: &mut Activation<'_, 'gc, '_>,
         method: Method<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
     ) -> Object<'gc> {
         let fn_proto = activation.avm2().prototypes().function;

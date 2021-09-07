@@ -29,6 +29,7 @@ pub fn class_init<'gc>(
         let mut object_proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
+        let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
 
         object_proto.install_dynamic_property(
@@ -37,7 +38,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -48,7 +49,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -63,7 +64,7 @@ pub fn class_init<'gc>(
                     "setPropertyIsEnumerable",
                     gc_context,
                 ),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -74,7 +75,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -85,7 +86,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -96,7 +97,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -107,7 +108,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),

@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::object::{DomainObject, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
@@ -145,28 +145,22 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(*scripts);
         }
 
-        let mut domain = read.domain;
+        let domain = read.domain;
 
         drop(read);
 
         let mut activation = Activation::from_nothing(uc.reborrow());
-        let global = DomainObject::script_global(&mut activation, domain)?;
+        let global_class = activation.avm2().classes().global;
+        let global_obj = global_class.construct(&mut activation, &[])?;
 
-        let mut script = Script::from_abc_index(self, script_index, global, &mut activation)?;
+        let mut script =
+            Script::from_abc_index(self, script_index, global_obj, domain, &mut activation)?;
         self.0
             .write(activation.context.gc_context)
             .scripts
             .insert(script_index, script);
 
         script.load_traits(self, script_index, &mut activation)?;
-
-        for traitdef in script.traits()?.iter() {
-            domain.export_definition(
-                traitdef.name().clone(),
-                script,
-                activation.context.gc_context,
-            )?;
-        }
 
         Ok(script)
     }
@@ -230,8 +224,11 @@ pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 struct ScriptData<'gc> {
-    /// The global scope for the script.
+    /// The global object for the script.
     globals: Object<'gc>,
+
+    /// The domain associated with this script.
+    domain: Domain<'gc>,
 
     /// The initializer method to run for the script.
     init: Method<'gc>,
@@ -257,11 +254,16 @@ impl<'gc> Script<'gc> {
     ///
     /// The `globals` object should be constructed using the `global`
     /// prototype.
-    pub fn empty_script(mc: MutationContext<'gc, '_>, globals: Object<'gc>) -> Self {
+    pub fn empty_script(
+        mc: MutationContext<'gc, '_>,
+        globals: Object<'gc>,
+        domain: Domain<'gc>,
+    ) -> Self {
         Self(GcCell::allocate(
             mc,
             ScriptData {
                 globals,
+                domain,
                 init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Built-in script initializer>",
@@ -287,6 +289,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script_index: u32,
         globals: Object<'gc>,
+        domain: Domain<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
         let abc = unit.abc();
@@ -302,6 +305,7 @@ impl<'gc> Script<'gc> {
             activation.context.gc_context,
             ScriptData {
                 globals,
+                domain,
                 init,
                 traits: Vec::new(),
                 traits_loaded: false,
@@ -343,6 +347,11 @@ impl<'gc> Script<'gc> {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
 
             write = self.0.write(activation.context.gc_context);
+            write.domain.export_definition(
+                newtrait.name().clone(),
+                *self,
+                activation.context.gc_context,
+            )?;
             write.traits.push(newtrait);
         }
 
@@ -350,9 +359,9 @@ impl<'gc> Script<'gc> {
     }
 
     /// Return the entrypoint for the script and the scope it should run in.
-    pub fn init(self) -> (Method<'gc>, Object<'gc>) {
+    pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
-        (read.init.clone(), read.globals)
+        (read.init.clone(), read.globals, read.domain)
     }
 
     /// Return the global scope for the script.

@@ -33,14 +33,14 @@ pub fn class_init<'gc>(
         let mut function_proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
-
+        let scope = activation.create_scopechain();
         function_proto.install_dynamic_property(
             activation.context.gc_context,
             QName::new(Namespace::public(), "call"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(call, "call", activation.context.gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -51,7 +51,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(apply, "apply", activation.context.gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -63,7 +63,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(call, "call", activation.context.gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),
@@ -74,7 +74,7 @@ pub fn class_init<'gc>(
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(apply, "apply", activation.context.gc_context),
-                None,
+                scope,
                 None,
             )
             .into(),

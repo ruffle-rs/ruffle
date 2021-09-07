@@ -9,7 +9,6 @@ use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::regexp::RegExp;
-use crate::avm2::scope::Scope;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
@@ -367,18 +366,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.get_method(id)
     }
 
-    /// Retrieves the scope chain of the object at time of its creation.
-    ///
-    /// The scope chain is used to determine the starting scope stack when an
-    /// object is called, as well as any class methods on the object.
-    /// Non-method functions and prototype functions (ES3 methods) do not use
-    /// this scope chain.
-    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        let base = self.base();
-
-        base.get_scope()
-    }
-
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
     fn resolve_multiname(self, multiname: &Multiname<'gc>) -> Result<Option<QName<'gc>>, Error> {
@@ -709,7 +696,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         trait_entry: &Trait<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let receiver = (*self).into();
-        let scope = self.get_scope();
+        let scope = activation.create_scopechain();
         let trait_name = trait_entry.name().clone();
 
         if trait_entry.is_override() && !self.has_own_property(&trait_name)? {
@@ -1060,6 +1047,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's class's `Class`, if it has one.
     fn instance_of_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         self.instance_of().map(|cls| cls.inner_class_definition())
+    }
+
+    fn set_instance_of(&self, mc: MutationContext<'gc, '_>, instance_of: ClassObject<'gc>) {
+        let mut base = self.base_mut(mc);
+
+        base.set_instance_of(instance_of);
     }
 
     /// Try to corece this object into a `ClassObject`.

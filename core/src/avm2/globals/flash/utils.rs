@@ -89,14 +89,11 @@ pub fn get_definition_by_name<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let globals = activation.scope().map(|s| s.read().globals());
-    if let Some(appdomain) = globals.and_then(|g| g.as_application_domain()) {
-        let name = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?;
-        let qname = QName::from_qualified_name(&name, activation.context.gc_context);
-        return appdomain.get_defined_value(activation, qname);
-    }
-    Ok(Value::Undefined)
+    let appdomain = activation.code_context().unwrap();
+    let name = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    let qname = QName::from_qualified_name(&name, activation.context.gc_context);
+    appdomain.get_defined_value(activation, qname)
 }

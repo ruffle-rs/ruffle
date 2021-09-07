@@ -7,7 +7,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
-use crate::avm2::scope::Scope;
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -31,8 +31,7 @@ pub struct ClassObjectData<'gc> {
     /// The class associated with this class object.
     class: GcCell<'gc, Class<'gc>>,
 
-    /// The scope this class was defined in.
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
+    scope: ScopeChain<'gc>,
 
     /// The base class of this one.
     ///
@@ -85,7 +84,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        scope: ScopeChain<'gc>,
     ) -> Result<ClassObject<'gc>, Error> {
         let class_object = Self::from_class_partial(activation, class, superclass_object, scope)?;
 
@@ -130,7 +129,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        scope: ScopeChain<'gc>,
     ) -> Result<Self, Error> {
         if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.read().is_final() {
@@ -245,18 +244,12 @@ impl<'gc> ClassObject<'gc> {
     /// Link this class to it's interfaces.
     pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
         let class = self.0.read().class;
-        let scope = self.get_scope();
+        let scope = self.0.read().scope;
 
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
         for interface_name in interface_names {
-            let interface = if let Some(scope) = scope {
-                scope
-                    .write(activation.context.gc_context)
-                    .resolve(&interface_name, activation)?
-            } else {
-                None
-            };
+            let interface = scope.resolve(&interface_name, activation)?;
 
             if interface.is_none() {
                 return Err(format!("Could not resolve interface {:?}", interface_name).into());
@@ -308,16 +301,13 @@ impl<'gc> ClassObject<'gc> {
         let object: Object<'gc> = self.into();
 
         let class = self.0.read().class;
+        let scope = self.0.read().scope;
         let class_read = class.read();
 
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();
-            let class_init_fn = FunctionObject::from_method(
-                activation,
-                class_initializer,
-                self.get_scope(),
-                Some(object),
-            );
+            let class_init_fn =
+                FunctionObject::from_method(activation, class_initializer, scope, Some(object));
 
             drop(class_read);
             class
@@ -500,7 +490,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
-        let scope = superclass_object.get_scope();
+        let scope = superclass_object.scope();
 
         if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -572,7 +562,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
-        let scope = superclass_object.get_scope();
+        let scope = superclass_object.scope();
 
         if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -641,7 +631,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
-        let scope = superclass_object.get_scope();
+        let scope = superclass_object.scope();
 
         if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -666,6 +656,10 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn interfaces(self) -> Vec<ClassObject<'gc>> {
         self.0.read().interfaces.clone()
+    }
+
+    pub fn scope(self) -> ScopeChain<'gc> {
+        self.0.read().scope
     }
 
     pub fn superclass_object(self) -> Option<ClassObject<'gc>> {
@@ -753,10 +747,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             self.0.read().clone(),
         ))
         .into())
-    }
-
-    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        self.0.read().scope
     }
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
@@ -859,7 +849,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .read()
             .with_type_params(&[class_param], activation.context.gc_context);
 
-        let scope = self.get_scope();
+        let scope = self.0.read().scope;
         let instance_allocator = self.0.read().instance_allocator.clone();
         let superclass_object = self.0.read().superclass_object;
 

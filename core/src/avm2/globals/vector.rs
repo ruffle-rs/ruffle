@@ -53,8 +53,8 @@ pub fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut globals = this.get_scope().map(|s| s.read().globals()).unwrap();
-        let mut domain = globals.as_application_domain().unwrap();
+        let mut globals = activation.global_scope().unwrap();
+        let mut domain = activation.domain();
 
         //We have to grab Object's defining script instead of our own, because
         //at this point Vector hasn't actually been defined yet. It doesn't
@@ -144,7 +144,7 @@ pub fn specialized_class_init<'gc>(
         let mut proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
-        let scope = this.get_scope();
+        let scope = activation.create_scopechain();
 
         const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
             ("concat", concat),

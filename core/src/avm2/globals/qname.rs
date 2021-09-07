@@ -70,6 +70,7 @@ pub fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let this = this.unwrap();
+    let scope = activation.create_scopechain();
     let mut qname_proto = this
         .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
         .coerce_to_object(activation)?;
@@ -80,7 +81,7 @@ pub fn class_init<'gc>(
         FunctionObject::from_method(
             activation,
             Method::from_builtin(to_string, "toString", activation.context.gc_context),
-            qname_proto.get_scope(),
+            scope,
             None,
         )
         .into(),
@@ -93,7 +94,7 @@ pub fn class_init<'gc>(
         FunctionObject::from_method(
             activation,
             Method::from_builtin(value_of, "valueOf", activation.context.gc_context),
-            qname_proto.get_scope(),
+            scope,
             None,
         )
         .into(),
