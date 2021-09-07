@@ -136,7 +136,7 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let mut init_activation = Activation::from_script(context.reborrow(), script)?;
 
-        let (method, scope) = script.init();
+        let (method, scope, _domain) = script.init();
         match method {
             Method::Native(method) => {
                 //This exists purely to check if the builtin is OK with being called with

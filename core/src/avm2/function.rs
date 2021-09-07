@@ -3,10 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
 use crate::avm2::object::{ClassObject, Object};
-use crate::avm2::scope::Scope;
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
@@ -17,8 +17,8 @@ pub struct BytecodeExecutable<'gc> {
     /// The method code to execute from a given ABC file.
     method: Gc<'gc, BytecodeMethod<'gc>>,
 
-    /// The scope stack to pull variables from.
-    scope: Option<GcCell<'gc, Scope<'gc>>>,
+    /// The scope chain
+    scope: ScopeChain<'gc>,
 
     /// The receiver that this function is always called with.
     ///
@@ -31,6 +31,9 @@ pub struct BytecodeExecutable<'gc> {
 pub struct NativeExecutable<'gc> {
     /// The method associated with the executable.
     method: Gc<'gc, NativeMethod<'gc>>,
+
+    /// The scope chain
+    scope: ScopeChain<'gc>,
 
     /// The bound reciever for this method.
     bound_receiver: Option<Object<'gc>>,
@@ -58,7 +61,7 @@ impl<'gc> Executable<'gc> {
     /// Convert a method into an executable.
     pub fn from_method(
         method: Method<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
+        scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
@@ -67,6 +70,7 @@ impl<'gc> Executable<'gc> {
                 mc,
                 NativeExecutable {
                     method,
+                    scope,
                     bound_receiver: receiver,
                 },
             )),
@@ -104,12 +108,15 @@ impl<'gc> Executable<'gc> {
             Executable::Native(bm) => {
                 let method = bm.method.method;
                 let receiver = bm.bound_receiver.or(unbound_receiver);
-                let scope = activation.scope();
+                let context = activation
+                    .code_context()
+                    .unwrap_or_else(|| activation.domain());
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
-                    scope,
                     receiver,
                     subclass_object,
+                    bm.scope,
+                    context,
                 )?;
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {

@@ -6,7 +6,6 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::return_value::ReturnValue;
-use crate::avm2::scope::Scope;
 use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -308,12 +307,6 @@ impl<'gc> ScriptObjectData<'gc> {
             // Bare objects, ES3 objects, and prototypes do not have traits.
             None => Ok(false),
         }
-    }
-
-    pub fn get_scope(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        self.instance_of
-            .as_ref()
-            .and_then(|class| class.get_scope())
     }
 
     pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {

@@ -37,14 +37,9 @@ pub fn current_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let globals = activation.scope().map(|s| s.read().globals());
-    let appdomain = globals.and_then(|g| g.as_application_domain());
+    let appdomain = activation.code_context().unwrap();
 
-    if let Some(appdomain) = appdomain {
-        return Ok(DomainObject::from_domain(activation, appdomain)?.into());
-    }
-
-    Ok(Value::Undefined)
+    Ok(DomainObject::from_domain(activation, appdomain)?.into())
 }
 
 /// `parentDomain` property
