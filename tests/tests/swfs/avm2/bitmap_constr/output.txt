@@ -1,0 +1,17 @@
+///var b1 = new Bitmap();
+///b1.bitmapData;
+null
+///b1.pixelSnapping;
+auto
+///b1.smoothing;
+false
+///var tbd = new TestBitmapData();
+///var b2 = new Bitmap(tbd);
+///b2.bitmapData;
+[object TestBitmapData]
+///b2.pixelSnapping;
+auto
+///b2.smoothing;
+false
+///b2.bitmapData === tbd;
+true

@@ -1,0 +1,23 @@
+///var b1 = new Bitmap();
+///b1.width;
+0
+///b1.height;
+0
+///var tbd = new TestBitmapData();
+///var b2 = new Bitmap(tbd);
+///b2.width;
+32
+///b2.height;
+24
+///b2.bitmapData = null;
+null
+///b2.width;
+0
+///b2.height;
+0
+///b2.bitmapData = tbd;
+[object TestBitmapData]
+///b2.width;
+32
+///b2.height;
+24

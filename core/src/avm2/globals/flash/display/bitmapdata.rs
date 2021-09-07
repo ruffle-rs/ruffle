@@ -49,23 +49,25 @@ pub fn instance_init<'gc>(
         if let Some(Character::Bitmap(bd)) = character {
             let bitmap_handle = bd.bitmap_handle();
 
-            if let Some(bitmap_pixels) =
-                activation.context.renderer.get_bitmap_pixels(bitmap_handle)
-            {
-                let bitmap_pixels: Vec<i32> = bitmap_pixels.data.into();
-                new_bitmap_data
-                    .write(activation.context.gc_context)
-                    .set_pixels(
-                        bd.width().into(),
-                        bd.height().into(),
-                        true,
-                        bitmap_pixels.into_iter().map(|p| p.into()).collect(),
+            if let Some(bitmap_handle) = bitmap_handle {
+                if let Some(bitmap_pixels) =
+                    activation.context.renderer.get_bitmap_pixels(bitmap_handle)
+                {
+                    let bitmap_pixels: Vec<i32> = bitmap_pixels.data.into();
+                    new_bitmap_data
+                        .write(activation.context.gc_context)
+                        .set_pixels(
+                            bd.width().into(),
+                            bd.height().into(),
+                            true,
+                            bitmap_pixels.into_iter().map(|p| p.into()).collect(),
+                        );
+                } else {
+                    log::warn!(
+                        "Could not read bitmap data associated with class {:?}",
+                        name
                     );
-            } else {
-                log::warn!(
-                    "Could not read bitmap data associated with class {:?}",
-                    name
-                );
+                }
             }
         } else {
             if character.is_some() {
