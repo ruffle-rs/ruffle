@@ -6,10 +6,10 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use crate::string::utils as string_utils;
 use crate::string::AvmString;
+use crate::avm2::{ArrayObject, ArrayStorage};
 use gc_arena::{GcCell, MutationContext};
 use std::iter;
 
@@ -252,6 +252,67 @@ fn last_index_of<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.match`
+fn match_s<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let (Some(this), pattern) = (this, args.get(0).unwrap_or(&Value::Undefined)) {
+        let this = Value::from(this).coerce_to_string(activation)?;
+
+        let regexp_class = activation.avm2().classes().regexp;
+        let pattern = if !pattern.is_of_type(activation, regexp_class)? {
+            let string = pattern.coerce_to_string(activation)?;
+            regexp_class.construct(activation, &[Value::String(string)])?
+        } else {
+            pattern.coerce_to_object(activation)?
+        };
+
+        if let Some(regexp) = pattern.as_regexp() {
+            let mut regexp: crate::avm2::regexp::RegExp = regexp.clone();
+
+            let mut storage = ArrayStorage::new(0);
+            if regexp.global() {
+                while let Some(result) = regexp.exec(&this) {
+                    storage.push(
+                        AvmString::new(
+                            activation.context.gc_context,
+                            this[result.range()].to_string(),
+                        )
+                        .into(),
+                    );
+                    if regexp.last_index() >= this.len() {
+                        break;
+                    }
+                }
+                return Ok(ArrayObject::from_storage(activation, storage)
+                    .unwrap()
+                    .into());
+            } else {
+                if let Some(result) = regexp.exec(&this) {
+                    storage.push(
+                        AvmString::new(
+                            activation.context.gc_context,
+                            this[result.range()].to_string(),
+                        )
+                        .into(),
+                    );
+                    return Ok(ArrayObject::from_storage(activation, storage)
+                        .unwrap()
+                        .into());
+                } else {
+                    // If the pattern parameter is a String or a non-global regular expression
+                    // and no match is found, the method returns null
+                    return Ok(Value::Null);
+                }
+            };
+        };
+    }
+
+    Ok(Value::Null)
+}
+
 /// Implements `String.split`
 fn split<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -336,6 +397,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("concat", concat),
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
+        ("match", match_s),
         ("split", split),
     ];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);

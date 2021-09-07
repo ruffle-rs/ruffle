@@ -196,7 +196,7 @@ pub fn exec<'gc>(
                 Some(matched) => {
                     let substrings = matched
                         .groups()
-                        .map(|range| text[range.unwrap()].to_string());
+                        .map(|range| text[range.unwrap_or(0..0)].to_string());
 
                     let mut storage = ArrayStorage::new(0);
                     for substring in substrings {
