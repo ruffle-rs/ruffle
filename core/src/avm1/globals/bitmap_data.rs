@@ -1095,26 +1095,28 @@ pub fn load_bitmap<'gc>(
         .and_then(|l| l.character_by_export_name(name.as_str()));
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
-        if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_object.bitmap_handle()) {
-            let new_bitmap_data = BitmapDataObject::empty_object(
-                activation.context.gc_context,
-                Some(activation.context.avm1.prototypes.bitmap_data),
-            );
-
-            let pixels: Vec<i32> = bitmap.data.into();
-            new_bitmap_data
-                .as_bitmap_data_object()
-                .unwrap()
-                .bitmap_data()
-                .write(activation.context.gc_context)
-                .set_pixels(
-                    bitmap.width,
-                    bitmap.height,
-                    true,
-                    pixels.into_iter().map(|p| p.into()).collect(),
+        if let Some(bitmap_handle) = bitmap_object.bitmap_handle() {
+            if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_handle) {
+                let new_bitmap_data = BitmapDataObject::empty_object(
+                    activation.context.gc_context,
+                    Some(activation.context.avm1.prototypes.bitmap_data),
                 );
 
-            return Ok(new_bitmap_data.into());
+                let pixels: Vec<i32> = bitmap.data.into();
+                new_bitmap_data
+                    .as_bitmap_data_object()
+                    .unwrap()
+                    .bitmap_data()
+                    .write(activation.context.gc_context)
+                    .set_pixels(
+                        bitmap.width,
+                        bitmap.height,
+                        true,
+                        pixels.into_iter().map(|p| p.into()).collect(),
+                    );
+
+                return Ok(new_bitmap_data.into());
+            }
         }
     }
 

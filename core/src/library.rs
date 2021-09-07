@@ -380,10 +380,12 @@ impl<'gc> MovieLibrary<'gc> {
 
 impl<'gc> render::BitmapSource for MovieLibrary<'gc> {
     fn bitmap(&self, id: u16) -> Option<render::BitmapInfo> {
-        self.get_bitmap(id).map(|bitmap| render::BitmapInfo {
-            handle: bitmap.bitmap_handle(),
-            width: bitmap.width(),
-            height: bitmap.height(),
+        self.get_bitmap(id).and_then(|bitmap| {
+            Some(render::BitmapInfo {
+                handle: bitmap.bitmap_handle()?,
+                width: bitmap.width(),
+                height: bitmap.height(),
+            })
         })
     }
 }

@@ -210,7 +210,7 @@ fn attach_bitmap<'gc>(
                     let display_object = Bitmap::new_with_bitmap_data(
                         &mut activation.context,
                         0,
-                        bitmap_handle,
+                        Some(bitmap_handle),
                         bitmap_data.read().width() as u16,
                         bitmap_data.read().height() as u16,
                         Some(bitmap_data),

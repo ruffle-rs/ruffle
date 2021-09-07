@@ -39,7 +39,7 @@ pub struct BitmapData<'gc> {
     /// that it can be accessed without a mutation context.
     ///
     /// If this is `None`, then the bitmap does not render anything.
-    bitmap_handle: BitmapHandle,
+    bitmap_handle: Option<BitmapHandle>,
 
     /// Whether or not bitmap smoothing is enabled.
     smoothing: bool,
@@ -72,7 +72,7 @@ impl<'gc> Bitmap<'gc> {
     pub fn new_with_bitmap_data(
         context: &mut UpdateContext<'_, 'gc, '_>,
         id: CharacterId,
-        bitmap_handle: BitmapHandle,
+        bitmap_handle: Option<BitmapHandle>,
         width: u16,
         height: u16,
         bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
@@ -103,11 +103,11 @@ impl<'gc> Bitmap<'gc> {
         width: u16,
         height: u16,
     ) -> Self {
-        Self::new_with_bitmap_data(context, id, bitmap_handle, width, height, None, true)
+        Self::new_with_bitmap_data(context, id, Some(bitmap_handle), width, height, None, true)
     }
 
     #[allow(dead_code)]
-    pub fn bitmap_handle(self) -> BitmapHandle {
+    pub fn bitmap_handle(self) -> Option<BitmapHandle> {
         self.0.read().bitmap_handle
     }
 
@@ -143,17 +143,24 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_bitmap_data(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        bitmap_data: GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>,
+        bitmap_data: Option<GcCell<'gc, crate::bitmap::bitmap_data::BitmapData<'gc>>>,
     ) {
-        let bitmap_handle = bitmap_data
-            .write(context.gc_context)
-            .bitmap_handle(context.renderer);
+        if let Some(bitmap_data) = bitmap_data {
+            let bitmap_handle = bitmap_data
+                .write(context.gc_context)
+                .bitmap_handle(context.renderer);
 
-        let mut write = self.0.write(context.gc_context);
+            let mut write = self.0.write(context.gc_context);
 
-        write.bitmap_data = Some(bitmap_data);
-        if let Some(bitmap_handle) = bitmap_handle {
-            write.bitmap_handle = bitmap_handle;
+            write.bitmap_data = Some(bitmap_data);
+            if let Some(bitmap_handle) = bitmap_handle {
+                write.bitmap_handle = Some(bitmap_handle);
+            }
+        } else {
+            let mut write = self.0.write(context.gc_context);
+
+            write.bitmap_data = None;
+            write.bitmap_handle = None;
         }
     }
 
@@ -224,11 +231,13 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if let Some(bitmap_data) = &self.0.read().bitmap_data {
+        if let (Some(bitmap_data), Some(bitmap_handle)) =
+            (&self.0.read().bitmap_data, self.0.read().bitmap_handle)
+        {
             let bd = bitmap_data.read();
             if bd.dirty() {
                 let _ = context.renderer.update_texture(
-                    self.0.read().bitmap_handle,
+                    bitmap_handle,
                     bd.width(),
                     bd.height(),
                     bd.pixels_rgba(),
@@ -246,11 +255,13 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         }
 
         let bitmap_data = self.0.read();
-        context.renderer.render_bitmap(
-            bitmap_data.bitmap_handle,
-            context.transform_stack.transform(),
-            bitmap_data.smoothing,
-        );
+        if let Some(bitmap_handle) = bitmap_data.bitmap_handle {
+            context.renderer.render_bitmap(
+                bitmap_handle,
+                context.transform_stack.transform(),
+                bitmap_data.smoothing,
+            );
+        }
     }
 
     fn object2(&self) -> Avm2Value<'gc> {

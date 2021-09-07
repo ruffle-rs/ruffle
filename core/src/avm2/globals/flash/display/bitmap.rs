@@ -67,10 +67,8 @@ pub fn instance_init<'gc>(
             let bitmap_handle = if let Some(bd) = bitmap_data {
                 bd.write(activation.context.gc_context)
                     .bitmap_handle(activation.context.renderer)
-                    .ok_or("Bitmap data missing it's handle!")?
             } else {
-                //TODO: Should Bitmap's BitmapHandle be nullable?
-                return Err("Null bitmap data not yet implemented".into());
+                None
             };
 
             let width = bitmap_data.map(|bd| bd.read().width()).unwrap_or(0) as u16;
@@ -115,7 +113,7 @@ pub fn bitmap_data<'gc>(
         return Ok(bitmap
             .bitmap_data()
             .map(|bd| bd.read().object2())
-            .unwrap_or(Value::Undefined));
+            .unwrap_or(Value::Null));
     }
 
     Ok(Value::Undefined)
@@ -131,15 +129,15 @@ pub fn set_bitmap_data<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|dobj| dobj.as_bitmap())
     {
-        let bitmap_data_object = args
+        let bitmap_data = args
             .get(0)
             .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(Value::Null)
             .coerce_to_object(activation)
-            .map_err(|_| "Attempted to set Bitmap.bitmapData with a non-BitmapData object")?;
-        if let Some(bitmap_data) = bitmap_data_object.as_bitmap_data() {
-            bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
-        }
+            .ok()
+            .and_then(|bd| bd.as_bitmap_data());
+
+        bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
     }
 
     Ok(Value::Undefined)
