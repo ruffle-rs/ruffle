@@ -30,6 +30,7 @@ impl Pipelines {
         msaa_sample_count: u32,
         sampler_layout: &wgpu::BindGroupLayout,
         globals_layout: &wgpu::BindGroupLayout,
+        dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     ) -> Result<Self, Error> {
         // TODO: Naga validation errors when encountering push constants currently.
         // Disable validation for now. Remove this when Naga can swallow it.
@@ -68,6 +69,7 @@ impl Pipelines {
             msaa_sample_count,
             &vertex_buffers_description,
             globals_layout,
+            dynamic_uniforms_layout,
         );
 
         let bitmap_bind_layout_label = create_debug_label!("Bitmap shape bind group layout");
@@ -106,6 +108,7 @@ impl Pipelines {
             &vertex_buffers_description,
             sampler_layout,
             globals_layout,
+            dynamic_uniforms_layout,
             &bitmap_bind_layout,
         );
 
@@ -144,6 +147,7 @@ impl Pipelines {
             msaa_sample_count,
             &vertex_buffers_description,
             globals_layout,
+            dynamic_uniforms_layout,
             &gradient_bind_layout,
         );
 
@@ -206,24 +210,13 @@ fn create_color_pipelines(
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferLayout<'_>],
     globals_layout: &wgpu::BindGroupLayout,
+    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
-    let transforms_size = std::mem::size_of::<crate::Transforms>() as u32;
-    let colors_size = std::mem::size_of::<crate::ColorAdjustments>() as u32;
-
     let pipeline_layout_label = create_debug_label!("Color shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout],
-        push_constant_ranges: &[
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..transforms_size,
-            },
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::FRAGMENT,
-                range: transforms_size..transforms_size + colors_size,
-            },
-        ],
+        bind_group_layouts: &[globals_layout, dynamic_uniforms_layout],
+        push_constant_ranges: &[],
     });
 
     let mask_pipelines = enum_map! {
@@ -381,22 +374,19 @@ fn create_bitmap_pipeline(
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     sampler_layout: &wgpu::BindGroupLayout,
     globals_layout: &wgpu::BindGroupLayout,
+    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     bitmap_bind_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, bitmap_bind_layout, sampler_layout],
-        push_constant_ranges: &[
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..64,
-            },
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::FRAGMENT,
-                range: 64..96,
-            },
+        bind_group_layouts: &[
+            globals_layout,
+            dynamic_uniforms_layout,
+            bitmap_bind_layout,
+            sampler_layout,
         ],
+        push_constant_ranges: &[],
     });
 
     let mask_pipelines = enum_map! {
@@ -552,22 +542,18 @@ fn create_gradient_pipeline(
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     globals_layout: &wgpu::BindGroupLayout,
+    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     gradient_bind_layout: &wgpu::BindGroupLayout,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("Gradient shape pipeline layout");
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, gradient_bind_layout],
-        push_constant_ranges: &[
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::VERTEX,
-                range: 0..64,
-            },
-            wgpu::PushConstantRange {
-                stages: wgpu::ShaderStages::FRAGMENT,
-                range: 64..96,
-            },
+        bind_group_layouts: &[
+            globals_layout,
+            dynamic_uniforms_layout,
+            gradient_bind_layout,
         ],
+        push_constant_ranges: &[],
     });
 
     let mask_pipelines = enum_map! {

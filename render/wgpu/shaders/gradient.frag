@@ -1,13 +1,14 @@
 #version 450
 
 // Push constants: matrix + color
-layout(push_constant) uniform FragmentPushConstants {
-    layout(offset = 64) vec4 mult_color;
+layout(set = 1, binding = 0) uniform Transforms {
+    mat4 world_matrix;
+    vec4 mult_color;
     vec4 add_color;
 };
 
 // Set 1: gradient
-layout(std430, set = 1, binding = 1) readonly buffer Gradient {
+layout(std430, set = 2, binding = 1) readonly buffer Gradient {
     vec4 u_colors[16];
     float u_ratios[16];
     int u_gradient_type;

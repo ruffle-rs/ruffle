@@ -30,12 +30,14 @@ mod bitmaps;
 mod globals;
 mod pipelines;
 pub mod target;
+mod uniform_buffer;
 
 #[cfg(feature = "clap")]
 pub mod clap;
 
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
+use crate::uniform_buffer::UniformBuffer;
 use std::collections::HashMap;
 use std::path::Path;
 pub use wgpu;
@@ -43,8 +45,10 @@ pub use wgpu;
 pub struct Descriptors {
     pub device: wgpu::Device,
     pub info: wgpu::AdapterInfo,
+    pub limits: wgpu::Limits,
     queue: wgpu::Queue,
     globals: Globals,
+    uniform_buffers: UniformBuffer<Transforms>,
     pipelines: Pipelines,
     bitmap_samplers: BitmapSamplers,
     msaa_sample_count: u32,
@@ -56,23 +60,45 @@ impl Descriptors {
         queue: wgpu::Queue,
         info: wgpu::AdapterInfo,
     ) -> Result<Self, Error> {
+        let limits = device.limits();
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
-
         let bitmap_samplers = BitmapSamplers::new(&device);
         let globals = Globals::new(&device);
+        let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
+        let uniform_buffer_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: uniform_buffer_layout_label.as_deref(),
+            });
+        let uniform_buffers = UniformBuffer::new(
+            uniform_buffer_layout,
+            limits.min_uniform_buffer_offset_alignment,
+        );
         let pipelines = Pipelines::new(
             &device,
             msaa_sample_count,
             bitmap_samplers.layout(),
             globals.layout(),
+            uniform_buffers.layout(),
         )?;
 
         Ok(Self {
             device,
             info,
+            limits,
             queue,
             globals,
+            uniform_buffers,
             pipelines,
             bitmap_samplers,
             msaa_sample_count,
@@ -99,7 +125,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
 
 #[allow(dead_code)]
 struct Frame<'a, T: RenderTarget> {
-    frame_data: Box<(wgpu::CommandEncoder, T::Frame)>,
+    frame_data: Box<(wgpu::CommandEncoder, T::Frame, wgpu::CommandEncoder)>,
 
     // TODO: This is a self-reference to the above, so we
     // use some unsafe to cast the lifetime away. We know this
@@ -129,6 +155,7 @@ pub enum MaskState {
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct Transforms {
     world_matrix: [[f32; 4]; 4],
+    color_adjustments: ColorAdjustments,
 }
 
 #[repr(C)]
@@ -376,13 +403,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let (device, queue) = block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::PUSH_CONSTANTS,
-                limits: wgpu::Limits {
-                    max_push_constant_size: (std::mem::size_of::<Transforms>()
-                        + std::mem::size_of::<ColorAdjustments>())
-                        as u32,
-                    ..Default::default()
-                },
+                features: wgpu::Features::empty(),
+                ..Default::default()
             },
             trace_path,
         ))?;
@@ -808,6 +830,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn begin_frame(&mut self, clear: Color) {
         self.mask_state = MaskState::NoMask;
         self.num_masks = 0;
+        self.descriptors.uniform_buffers.reset();
 
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
@@ -830,7 +853,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: label.as_deref(),
                 });
-        let mut frame_data = Box::new((draw_encoder, frame_output));
+        let uniform_encoder_label = create_debug_label!("Uniform upload command encoder");
+        let uniform_encoder =
+            self.descriptors
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: uniform_encoder_label.as_deref(),
+                });
+        let mut frame_data = Box::new((draw_encoder, frame_output, uniform_encoder));
 
         self.descriptors
             .globals
@@ -917,24 +947,26 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .bitmap_pipelines
                     .pipeline_for(self.mask_state),
             );
-            frame.render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX,
-                0,
-                bytemuck::cast_slice(&[Transforms { world_matrix }]),
-            );
-            frame.render_pass.set_push_constants(
-                wgpu::ShaderStages::FRAGMENT,
-                std::mem::size_of::<Transforms>() as u32,
-                bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
-            );
             frame
                 .render_pass
                 .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+
+            self.descriptors.uniform_buffers.write_uniforms(
+                &self.descriptors.device,
+                &mut frame.frame_data.2,
+                &mut frame.render_pass,
+                1,
+                &Transforms {
+                    world_matrix,
+                    color_adjustments: ColorAdjustments::from(transform.color_transform),
+                },
+            );
+
             frame
                 .render_pass
-                .set_bind_group(1, &texture.bind_group, &[]);
+                .set_bind_group(2, &texture.bind_group, &[]);
             frame.render_pass.set_bind_group(
-                2,
+                3,
                 self.descriptors
                     .bitmap_samplers
                     .get_bind_group(false, smoothing),
@@ -988,6 +1020,17 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .render_pass
             .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
 
+        self.descriptors.uniform_buffers.write_uniforms(
+            &self.descriptors.device,
+            &mut frame.frame_data.2,
+            &mut frame.render_pass,
+            1,
+            &Transforms {
+                world_matrix,
+                color_adjustments: ColorAdjustments::from(transform.color_transform),
+            },
+        );
+
         for draw in &mesh.draws {
             match &draw.draw_type {
                 DrawType::Color => {
@@ -1005,7 +1048,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .gradient_pipelines
                             .pipeline_for(self.mask_state),
                     );
-                    frame.render_pass.set_bind_group(1, bind_group, &[]);
+                    frame.render_pass.set_bind_group(2, bind_group, &[]);
                 }
                 DrawType::Bitmap {
                     is_repeating,
@@ -1019,9 +1062,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                             .bitmap_pipelines
                             .pipeline_for(self.mask_state),
                     );
-                    frame.render_pass.set_bind_group(1, bind_group, &[]);
+                    frame.render_pass.set_bind_group(2, bind_group, &[]);
                     frame.render_pass.set_bind_group(
-                        2,
+                        3,
                         self.descriptors
                             .bitmap_samplers
                             .get_bind_group(*is_repeating, *is_smoothed),
@@ -1030,16 +1073,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
             }
 
-            frame.render_pass.set_push_constants(
-                wgpu::ShaderStages::VERTEX,
-                0,
-                bytemuck::cast_slice(&[Transforms { world_matrix }]),
-            );
-            frame.render_pass.set_push_constants(
-                wgpu::ShaderStages::FRAGMENT,
-                std::mem::size_of::<Transforms>() as u32,
-                bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
-            );
             frame
                 .render_pass
                 .set_vertex_buffer(0, draw.vertex_buffer.slice(..));
@@ -1097,23 +1130,24 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .pipeline_for(self.mask_state),
         );
 
-        frame.render_pass.set_push_constants(
-            wgpu::ShaderStages::VERTEX,
-            0,
-            bytemuck::cast_slice(&[Transforms { world_matrix }]),
-        );
-        frame.render_pass.set_push_constants(
-            wgpu::ShaderStages::FRAGMENT,
-            std::mem::size_of::<Transforms>() as u32,
-            bytemuck::cast_slice(&[ColorAdjustments {
-                mult_color,
-                add_color,
-            }]),
-        );
-
         frame
             .render_pass
             .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+
+        self.descriptors.uniform_buffers.write_uniforms(
+            &self.descriptors.device,
+            &mut frame.frame_data.2,
+            &mut frame.render_pass,
+            1,
+            &Transforms {
+                world_matrix,
+                color_adjustments: ColorAdjustments {
+                    mult_color,
+                    add_color,
+                },
+            },
+        );
+
         frame
             .render_pass
             .set_vertex_buffer(0, self.quad_vbo.slice(..));
@@ -1140,12 +1174,13 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         if let Some(frame) = self.current_frame.take() {
             // Finalize render pass.
             drop(frame.render_pass);
-
+            self.descriptors.uniform_buffers.finish();
             let draw_encoder = frame.frame_data.0;
+            let uniform_encoder = frame.frame_data.2;
             self.target.submit(
                 &self.descriptors.device,
                 &self.descriptors.queue,
-                vec![draw_encoder.finish()],
+                vec![uniform_encoder.finish(), draw_encoder.finish()],
                 frame.frame_data.1,
             );
         }
