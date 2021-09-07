@@ -6,7 +6,7 @@ use crate::avm2::domain::Domain;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
-use crate::avm2::scope::ScopeChain;
+use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -421,7 +421,7 @@ pub fn load_player_globals<'gc>(
     let mc = activation.context.gc_context;
 
     let globals = ScriptObject::bare_object(activation.context.gc_context);
-    let gs = ScopeChain::new(domain).chain(mc, &[globals]);
+    let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
     let script = Script::empty_script(mc, globals, domain);
 
     // public / root package

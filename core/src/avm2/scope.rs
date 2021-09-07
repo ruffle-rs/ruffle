@@ -9,18 +9,41 @@ use crate::avm2::Error;
 use gc_arena::{Collect, Gc, MutationContext};
 use std::ops::Deref;
 
-/// Finds a scope containing a definition
-fn find_scopes<'gc>(
-    scopes: &[Object<'gc>],
-    name: &Multiname<'gc>,
-) -> Result<Option<Object<'gc>>, Error> {
-    for scope in scopes.iter().rev() {
-        if let Some(_) = scope.resolve_multiname(name)? {
-            return Ok(Some(*scope));
+/// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
+#[derive(Debug, Collect, Clone, Copy)]
+#[collect(no_drop)]
+pub struct Scope<'gc> {
+    /// The underlying object of this Scope
+    values: Object<'gc>,
+
+    /// Indicates whether or not this is a `with` scope.
+    ///
+    /// A `with` scope allows searching the dynamic properties of
+    /// this scope.
+    with: bool,
+}
+
+impl<'gc> Scope<'gc> {
+    /// Creates a new regular Scope
+    pub fn new(values: Object<'gc>) -> Self {
+        Self {
+            values,
+            with: false,
         }
     }
 
-    Ok(None)
+    /// Creates a new `with` Scope
+    pub fn new_with(values: Object<'gc>) -> Self {
+        Self { values, with: true }
+    }
+
+    pub fn with(&self) -> bool {
+        self.with
+    }
+
+    pub fn values(&self) -> Object<'gc> {
+        self.values
+    }
 }
 
 /// A ScopeChain "chains" scopes together.
@@ -39,7 +62,7 @@ fn find_scopes<'gc>(
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ScopeChain<'gc> {
-    scopes: Option<Gc<'gc, Vec<Object<'gc>>>>,
+    scopes: Option<Gc<'gc, Vec<Scope<'gc>>>>,
     domain: Domain<'gc>,
 }
 
@@ -53,7 +76,7 @@ impl<'gc> ScopeChain<'gc> {
     }
 
     /// Creates a new ScopeChain by chaining new scopes on top of this ScopeChain
-    pub fn chain(&self, mc: MutationContext<'gc, '_>, new_scopes: &[Object<'gc>]) -> Self {
+    pub fn chain(&self, mc: MutationContext<'gc, '_>, new_scopes: &[Scope<'gc>]) -> Self {
         if new_scopes.is_empty() {
             // If we are not actually adding any new scopes, we don't need to do anything.
             return *self;
@@ -81,9 +104,13 @@ impl<'gc> ScopeChain<'gc> {
         }
     }
 
-    pub fn get(&self, index: usize) -> Option<Object<'gc>> {
+    pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
         self.scopes
             .and_then(|scopes| scopes.deref().get(index).cloned())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.scopes.map(|scopes| scopes.is_empty()).unwrap_or(true)
     }
 
     /// Returns the domain associated with this ScopeChain.
@@ -98,8 +125,19 @@ impl<'gc> ScopeChain<'gc> {
     ) -> Result<Option<Object<'gc>>, Error> {
         // First search our scopes
         if let Some(scopes) = self.scopes {
-            if let Some(scope) = find_scopes(scopes.deref(), name)? {
-                return Ok(Some(scope));
+            for (depth, scope) in scopes.iter().enumerate().rev() {
+                let values = scope.values();
+                if let Some(qname) = values.resolve_multiname(name)? {
+                    // We search the dynamic properties if either conditions are met:
+                    // 1. Scope is a `with` scope
+                    // 2. We are at depth 0 (global scope)
+                    // But no matter what, we always search traits first.
+                    if values.has_trait(&qname)?
+                        || ((scope.with() || depth == 0) && values.has_property(&qname)?)
+                    {
+                        return Ok(Some(values));
+                    }
+                }
             }
         }
         // That didn't work... let's try searching the domain now.
@@ -114,22 +152,8 @@ impl<'gc> ScopeChain<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Value<'gc>>, Error> {
-        // First search our scopes
-        if let Some(scopes) = self.scopes {
-            if let Some(scope) = find_scopes(scopes.deref(), name)? {
-                return Ok(Some(scope.get_property(scope, &name, activation)?));
-            }
-        }
-
-        // That didn't work... let's try searching the domain now.
-        if let Some((qname, mut script)) = self.domain.get_defining_script(name)? {
-            let script_scope = script.globals(&mut activation.context)?;
-
-            Ok(Some(script_scope.get_property(
-                script_scope,
-                &qname.into(),
-                activation,
-            )?))
+        if let Some(object) = self.find(name, activation)? {
+            Ok(Some(object.get_property(object, name, activation)?))
         } else {
             Ok(None)
         }
@@ -142,7 +166,7 @@ impl<'gc> ScopeChain<'gc> {
 #[derive(Debug, Collect, Clone)]
 #[collect(no_drop)]
 pub struct ScopeStack<'gc> {
-    scopes: Vec<Object<'gc>>,
+    scopes: Vec<Scope<'gc>>,
 }
 
 impl<'gc> ScopeStack<'gc> {
@@ -150,23 +174,41 @@ impl<'gc> ScopeStack<'gc> {
         Self { scopes: Vec::new() }
     }
 
-    pub fn push(&mut self, scope: Object<'gc>) {
+    pub fn push(&mut self, scope: Scope<'gc>) {
         self.scopes.push(scope);
     }
 
-    pub fn pop(&mut self) -> Option<Object<'gc>> {
+    pub fn pop(&mut self) -> Option<Scope<'gc>> {
         self.scopes.pop()
     }
 
-    pub fn get(&self, index: usize) -> Option<Object<'gc>> {
+    pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
         self.scopes.get(index).cloned()
     }
 
-    pub fn scopes(&self) -> &[Object<'gc>] {
+    pub fn scopes(&self) -> &[Scope<'gc>] {
         &self.scopes
     }
 
-    pub fn find(&self, name: &Multiname<'gc>) -> Result<Option<Object<'gc>>, Error> {
-        find_scopes(&self.scopes, name)
+    /// Searches for a scope in this ScopeStack by a multiname.
+    ///
+    /// The `global` parameter indicates whether we are on global$init (script initializer).
+    /// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
+    /// searched for dynamic properties.
+    pub fn find(&self, name: &Multiname<'gc>, global: bool) -> Result<Option<Object<'gc>>, Error> {
+        for (depth, scope) in self.scopes.iter().enumerate().rev() {
+            let values = scope.values();
+            if let Some(qname) = values.resolve_multiname(name)? {
+                // We search the dynamic properties if these conditions are met:
+                // 1. Scope is a `with` scope
+                // 2. We are at depth 0 AND we are at global$init (script initializer).
+                if values.has_trait(&qname)?
+                    || ((scope.with() || (global && depth == 0)) && values.has_property(&qname)?)
+                {
+                    return Ok(Some(values));
+                }
+            }
+        }
+        Ok(None)
     }
 }

@@ -9,7 +9,7 @@ use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
 };
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::scope::{ScopeChain, ScopeStack};
+use crate::avm2::scope::{Scope, ScopeChain, ScopeStack};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
@@ -206,11 +206,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         })
     }
 
-    /// Finds an object on either the current or outer scope that contains a property.
+    /// Finds an object on either the current or outer scope of this activation by definition.
     pub fn find_definition(&mut self, name: &Multiname<'gc>) -> Result<Option<Object<'gc>>, Error> {
         let outer_scope = self.outer;
 
-        if let Some(obj) = self.scope_stack.find(name)? {
+        if let Some(obj) = self.scope_stack.find(name, outer_scope.is_empty())? {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
@@ -219,17 +219,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
-    /// Resolves a property using either the current or outer scope.
+    /// Resolves a definition using either the current or outer scope of this activation.
     pub fn resolve_definition(
         &mut self,
         name: &Multiname<'gc>,
     ) -> Result<Option<Value<'gc>>, Error> {
         let outer_scope = self.outer;
 
-        if let Some(obj) = self.scope_stack.find(name)? {
-            Ok(Some(obj.get_property(obj, &name, self)?))
-        } else if let Some(obj) = outer_scope.resolve(name, self)? {
-            Ok(Some(obj))
+        if let Some(obj) = self.scope_stack.find(name, outer_scope.is_empty())? {
+            Ok(Some(obj.get_property(obj, name, self)?))
+        } else if let Some(result) = outer_scope.resolve(name, self)? {
+            Ok(Some(result))
         } else {
             Ok(None)
         }
@@ -586,7 +586,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     pub fn global_scope(&self) -> Option<Object<'gc>> {
         let outer_scope = self.outer;
-        outer_scope.get(0).or_else(|| self.scope_stack.get(0))
+        outer_scope
+            .get(0)
+            .or_else(|| self.scope_stack.get(0))
+            .map(|scope| scope.values())
     }
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
@@ -1463,14 +1466,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_push_scope(&mut self) -> Result<FrameControl<'gc>, Error> {
         let object = self.context.avm2.pop().coerce_to_object(self)?;
-        self.scope_stack.push(object);
+        self.scope_stack.push(Scope::new(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_push_with(&mut self) -> Result<FrameControl<'gc>, Error> {
         let object = self.context.avm2.pop().coerce_to_object(self)?;
-        self.scope_stack.push(object); // TEMP
+        self.scope_stack.push(Scope::new_with(object));
 
         Ok(FrameControl::Continue)
     }
@@ -1485,7 +1488,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = self.outer.get(index as usize);
 
         if let Some(scope) = scope {
-            self.context.avm2.push(scope);
+            self.context.avm2.push(scope.values());
         } else {
             self.context.avm2.push(Value::Undefined);
         };
@@ -1497,7 +1500,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let scope = self.scope_stack.get(index as usize);
 
         if let Some(scope) = scope {
-            self.context.avm2.push(scope);
+            self.context.avm2.push(scope.values());
         } else {
             self.context.avm2.push(Value::Undefined);
         };
