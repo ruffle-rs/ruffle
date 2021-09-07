@@ -3,8 +3,9 @@
 layout(location=0) in vec4 frag_color;
 
 // Push constants: matrix + color
-layout(push_constant) uniform FragmentPushConstants {
-    layout(offset = 64) vec4 mult_color;
+layout(set = 1, binding = 0) uniform Transforms {
+    mat4 world_matrix;
+    vec4 mult_color;
     vec4 add_color;
 };
 

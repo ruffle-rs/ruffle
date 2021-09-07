@@ -1,17 +1,19 @@
 #version 450
 
 // Set 0: globals
-layout(set = 0, binding = 0) uniform Globals {
+layout(set = 0, binding = 0) uniform Transforms {
     mat4 view_matrix;
 };
 
 // Push constants: matrix + color
-layout(push_constant) uniform VertexPushConstants {
+layout(set = 1, binding = 0) uniform DynamicUniforms {
     mat4 world_matrix;
+    vec4 mult_color;
+    vec4 add_color;
 };
 
 // Set 1: bitmap or gradient
-layout(set = 1, binding = 0) uniform Texture {
+layout(set = 2, binding = 0) uniform Texture {
     mat4 u_matrix;
 };
 

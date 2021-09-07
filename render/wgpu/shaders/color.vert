@@ -6,8 +6,10 @@ layout(set = 0, binding = 0) uniform Globals {
 };
 
 // Push constants: matrix + color
-layout(push_constant) uniform VertexPushConstants {
+layout(set = 1, binding = 0) uniform Transforms {
     mat4 world_matrix;
+    vec4 mult_color;
+    vec4 add_color;
 };
 
 layout(location = 0) in vec2 position;
