@@ -164,6 +164,14 @@ impl<'gc> Bitmap<'gc> {
     pub fn set_avm2_bitmapdata_class(self, mc: MutationContext<'gc, '_>, class: Avm2Object<'gc>) {
         self.0.write(mc).avm2_bitmapdata_class = Some(class);
     }
+
+    pub fn smoothing(self) -> bool {
+        self.0.read().smoothing
+    }
+
+    pub fn set_smoothing(self, mc: MutationContext<'gc, '_>, smoothing: bool) {
+        self.0.write(mc).smoothing = smoothing;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {

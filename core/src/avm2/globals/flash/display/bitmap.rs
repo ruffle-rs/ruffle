@@ -19,6 +19,25 @@ pub fn instance_init<'gc>(
     if let Some(mut this) = this {
         activation.super_init(this, &[])?;
 
+        let bitmap_data = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Null)
+            .coerce_to_object(activation)
+            .ok()
+            .and_then(|bd| bd.as_bitmap_data());
+        //TODO: Pixel snapping is not supported
+        let _pixel_snapping = args
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| "auto".into())
+            .coerce_to_string(activation)?;
+        let smoothing = args
+            .get(2)
+            .cloned()
+            .unwrap_or_else(|| false.into())
+            .coerce_to_boolean();
+
         if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
             if bitmap.bitmap_data().is_none() {
                 //We are being initialized by the movie. This means that we
@@ -41,27 +60,10 @@ pub fn instance_init<'gc>(
                     );
                 }
             }
+
+            bitmap.set_smoothing(activation.context.gc_context, smoothing);
         } else {
             //We are being initialized by AVM2.
-            let bitmap_data = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
-                .and_then(|bd| bd.as_bitmap_data());
-            //TODO: Pixel snapping is not supported
-            let _pixel_snapping = args
-                .get(0)
-                .cloned()
-                .unwrap_or_else(|| "auto".into())
-                .coerce_to_string(activation)?;
-            let smoothing = args
-                .get(0)
-                .cloned()
-                .unwrap_or_else(|| false.into())
-                .coerce_to_boolean();
-
             let bitmap_handle = if let Some(bd) = bitmap_data {
                 bd.write(activation.context.gc_context)
                     .bitmap_handle(activation.context.renderer)
@@ -152,13 +154,46 @@ pub fn pixel_snapping<'gc>(
     Ok("auto".into())
 }
 
-/// Stub `Bitmap.pixelSnapping`'s getter
+/// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     Err("Bitmap.pixelSnapping is a stub".into())
+}
+
+/// Implement `Bitmap.smoothing`'s getter
+pub fn smoothing<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|dobj| dobj.as_bitmap())
+    {
+        return Ok(bitmap.smoothing().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `Bitmap.smoothing`'s setter
+pub fn set_smoothing<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|dobj| dobj.as_bitmap())
+    {
+        let smoothing = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        bitmap.set_smoothing(activation.context.gc_context, smoothing);
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Construct `Bitmap`'s class.
@@ -186,6 +221,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(pixel_snapping),
             Some(set_pixel_snapping),
         ),
+        ("smoothing", Some(smoothing), Some(set_smoothing)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
