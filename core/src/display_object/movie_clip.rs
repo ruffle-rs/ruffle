@@ -1923,17 +1923,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
-            if self.world_bounds().contains(point) {
-                // This MovieClip operates in "button mode" if it has a mouse handler,
-                // either via on(..) or via property mc.onRelease, etc.
-                let is_button_mode = self.is_button_mode(context);
+            // This MovieClip operates in "button mode" if it has a mouse handler,
+            // either via on(..) or via property mc.onRelease, etc.
+            let is_button_mode = self.is_button_mode(context);
 
-                if is_button_mode {
-                    let mut options = HitTestOptions::SKIP_INVISIBLE;
-                    options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-                    if self.hit_test_shape(context, point, options) {
-                        return Some(this);
-                    }
+            if self.world_bounds().contains(point) && is_button_mode {
+                let mut options = HitTestOptions::SKIP_INVISIBLE;
+                options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+                if self.hit_test_shape(context, point, options) {
+                    return Some(this);
                 }
             }
 
@@ -1944,17 +1942,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             for child in self.iter_render_list().rev() {
                 if child.clip_depth() > 0 {
-                    if result.is_some() && child.clip_depth() >= hit_depth {
-                        if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                            return result;
-                        } else {
-                            result = None;
-                        }
+                    if let Some(o) = child.mouse_pick(context, point, require_button_mode) {
+                        result = Some(o);
+                        hit_depth = 0;
+                    } else if is_button_mode && child.clip_depth() >= hit_depth {
+                        result = None;
                     }
                 } else if result.is_none() {
-                    result = child.mouse_pick(context, point, require_button_mode);
-
-                    if result.is_some() {
+                    if let Some(o) = child.mouse_pick(context, point, require_button_mode) {
+                        result = Some(o);
                         hit_depth = child.depth();
                     }
                 }
