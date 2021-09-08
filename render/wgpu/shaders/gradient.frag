@@ -1,4 +1,5 @@
 #version 450
+#include "common.glsl"
 
 // Push constants: matrix + color
 layout(set = 1, binding = 0) uniform Transforms {
@@ -21,14 +22,6 @@ layout(std430, set = 2, binding = 1) readonly buffer Gradient {
 layout(location=0) in vec2 frag_uv;
 
 layout(location=0) out vec4 out_color;
-
-vec3 linear_to_srgb(vec3 linear)
-{
-    vec3 a = 12.92 * linear;
-    vec3 b = 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055;
-    vec3 c = step(vec3(0.0031308), linear);
-    return mix(a, b, c);
-}
 
 void main() {
     vec4 color;
@@ -84,7 +77,10 @@ void main() {
     float a = (t - u_ratios[i].x) / (u_ratios[j].x - u_ratios[i].x);
     color = mix(u_colors[i], u_colors[j], a);
     if( u_interpolation != 0 ) {
-        color = vec4(linear_to_srgb(vec3(color)), color.a);
+        color = linear_to_srgb(color);
     }
     out_color = mult_color * color + add_color;
+#ifdef SRGB_RENDER_TARGET
+    out_color = srgb_to_linear(out_color);
+#endif
 }
