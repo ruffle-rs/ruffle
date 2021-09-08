@@ -411,7 +411,11 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
 
-        this.instance = new ruffleConstructor(this.container, this, config);
+        this.instance = await new ruffleConstructor(
+            this.container,
+            this,
+            config
+        );
         console.log("New Ruffle instance created.");
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
@@ -1226,9 +1230,8 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        return `Allows script access: ${
-            this.options?.allowScriptAccess ?? false
-        }\n`;
+        return `Allows script access: ${this.options?.allowScriptAccess ?? false
+            }\n`;
     }
 
     private setMetadata(metadata: MovieMetadata) {

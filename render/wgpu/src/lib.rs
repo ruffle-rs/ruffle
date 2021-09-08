@@ -291,13 +291,13 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(backend);
         let surface = unsafe { instance.create_surface(window) };
-        let descriptors = Self::build_descriptors(
+        let descriptors = block_on(Self::build_descriptors(
             backend,
             instance,
             Some(&surface),
             power_preference,
             trace_path,
-        )?;
+        ))?;
         let target = SwapChainTarget::new(
             surface,
             descriptors.surface_format,
@@ -322,8 +322,13 @@ impl WgpuRenderBackend<TextureTarget> {
             );
         }
         let instance = wgpu::Instance::new(backend);
-        let descriptors =
-            Self::build_descriptors(backend, instance, None, power_preference, trace_path)?;
+        let descriptors = block_on(Self::build_descriptors(
+            backend,
+            instance,
+            None,
+            power_preference,
+            trace_path,
+        ))?;
         let target = TextureTarget::new(&descriptors.device, size);
         Self::new(descriptors, target)
     }
@@ -388,18 +393,18 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         })
     }
 
-    pub fn build_descriptors(
+    pub async fn build_descriptors(
         backend: wgpu::Backends,
         instance: wgpu::Instance,
         surface: Option<&wgpu::Surface>,
         power_preference: wgpu::PowerPreference,
         trace_path: Option<&Path>,
     ) -> Result<Descriptors, Error> {
-        let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference,
             compatible_surface: surface,
             force_fallback_adapter: false,
-        }))
+        }).await
         .ok_or_else(|| {
             let names = get_backend_names(backend);
             if names.is_empty() {
@@ -409,14 +414,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             }
         })?;
 
-        let (device, queue) = block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                ..Default::default()
-            },
-            trace_path,
-        ))?;
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    features: wgpu::Features::empty(),
+                    ..Default::default()
+                },
+                trace_path,
+            )
+            .await?;
         let info = adapter.get_info();
         // Prefer a linear surface format, when available.
         let surface_format = if info.backend == wgpu::Backend::Gl {
