@@ -6,7 +6,6 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = "0.9.0"
 image = "0.23.14"
 log = "0.4"
 ruffle_core = { path = "../../core" }
@@ -16,6 +15,16 @@ bytemuck = { version = "1.7.0", features = ["derive"] }
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.5", optional = true }
 enum-map = "1.1.1"
+
+# wgpu desktop
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.wgpu]
+version = "0.11"
+features = ["spirv"]
+
+# wgpu wasm
+[target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
+version = "0.11"
+features = ["spirv-web"]
 
 [features]
 render_debug_labels = []

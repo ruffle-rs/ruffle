@@ -1022,7 +1022,7 @@ fn run_swf(
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
     let mut platform_id = None;
-    let backend_bit = wgpu::BackendBit::PRIMARY;
+    let backend_bit = wgpu::Backends::PRIMARY;
 
     let (render_backend, video_backend): (Box<dyn RenderBackend>, Box<dyn VideoBackend>) =
         if check_img {

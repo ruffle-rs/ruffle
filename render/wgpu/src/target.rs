@@ -19,46 +19,48 @@ pub trait RenderTarget: Debug + 'static {
 
     fn height(&self) -> u32;
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError>;
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError>;
 
     fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
         &self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         command_buffers: I,
+        frame: Self::Frame,
     );
 }
 
 #[derive(Debug)]
 pub struct SwapChainTarget {
     window_surface: wgpu::Surface,
-    swap_chain_desc: wgpu::SwapChainDescriptor,
-    swap_chain: wgpu::SwapChain,
+    surface_config: wgpu::SurfaceConfiguration,
 }
 
 #[derive(Debug)]
-pub struct SwapChainTargetFrame(wgpu::SwapChainFrame);
+pub struct SwapChainTargetFrame {
+    texture: wgpu::SurfaceTexture,
+    view: wgpu::TextureView,
+}
 
 impl RenderTargetFrame for SwapChainTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
-        &self.0.output.view
+        &self.view
     }
 }
 
 impl SwapChainTarget {
     pub fn new(surface: wgpu::Surface, size: (u32, u32), device: &wgpu::Device) -> Self {
-        let swap_chain_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8Unorm,
             width: size.0,
             height: size.1,
             present_mode: wgpu::PresentMode::Mailbox,
         };
-        let swap_chain = device.create_swap_chain(&surface, &swap_chain_desc);
+        surface.configure(device, &surface_config);
         Self {
+            surface_config,
             window_surface: surface,
-            swap_chain_desc,
-            swap_chain,
         }
     }
 }
@@ -67,27 +69,27 @@ impl RenderTarget for SwapChainTarget {
     type Frame = SwapChainTargetFrame;
 
     fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-        self.swap_chain_desc.width = width;
-        self.swap_chain_desc.height = height;
-        self.swap_chain = device.create_swap_chain(&self.window_surface, &self.swap_chain_desc);
+        self.surface_config.width = width;
+        self.surface_config.height = height;
+        self.window_surface.configure(device, &self.surface_config);
     }
 
     fn format(&self) -> wgpu::TextureFormat {
-        self.swap_chain_desc.format
+        self.surface_config.format
     }
 
     fn width(&self) -> u32 {
-        self.swap_chain_desc.width
+        self.surface_config.width
     }
 
     fn height(&self) -> u32 {
-        self.swap_chain_desc.height
+        self.surface_config.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError> {
-        self.swap_chain
-            .get_current_frame()
-            .map(SwapChainTargetFrame)
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
+        let texture = self.window_surface.get_current_texture()?;
+        let view = texture.texture.create_view(&Default::default());
+        Ok(SwapChainTargetFrame { texture, view })
     }
 
     fn submit<I: IntoIterator<Item = wgpu::CommandBuffer>>(
@@ -95,8 +97,10 @@ impl RenderTarget for SwapChainTarget {
         _device: &wgpu::Device,
         queue: &wgpu::Queue,
         command_buffers: I,
+        frame: Self::Frame,
     ) {
         queue.submit(command_buffers);
+        frame.texture.present();
     }
 }
 
@@ -137,14 +141,14 @@ impl TextureTarget {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         });
         let buffer_label = create_debug_label!("Render target buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
             size: (buffer_dimensions.padded_bytes_per_row.get() as u64
                 * buffer_dimensions.height as u64),
-            usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
         Self {
@@ -201,14 +205,14 @@ impl RenderTarget for TextureTarget {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: self.format,
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         });
 
         let buffer_label = create_debug_label!("Render target buffer");
         self.buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
             size: width as u64 * height as u64 * 4,
-            usage: wgpu::BufferUsage::COPY_DST | wgpu::BufferUsage::MAP_READ,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
     }
@@ -225,7 +229,7 @@ impl RenderTarget for TextureTarget {
         self.size.height
     }
 
-    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SwapChainError> {
+    fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
         Ok(TextureTargetFrame(
             self.texture.create_view(&Default::default()),
         ))
@@ -236,6 +240,7 @@ impl RenderTarget for TextureTarget {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         command_buffers: I,
+        _frame: Self::Frame,
     ) {
         let label = create_debug_label!("Render target transfer encoder");
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -246,6 +251,7 @@ impl RenderTarget for TextureTarget {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
             },
             wgpu::ImageCopyBuffer {
                 buffer: &self.buffer,
