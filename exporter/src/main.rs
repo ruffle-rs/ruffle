@@ -384,13 +384,14 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
-    let descriptors = WgpuRenderBackend::<TextureTarget>::build_descriptors(
-        opt.graphics.into(),
-        instance,
-        None,
-        opt.power.into(),
-        trace_path(&opt),
-    )?;
+    let descriptors =
+        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
+            opt.graphics.into(),
+            instance,
+            None,
+            opt.power.into(),
+            trace_path(&opt),
+        ))?;
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

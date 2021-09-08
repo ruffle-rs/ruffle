@@ -3538,6 +3538,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "env_logger",
+ "futures",
  "image",
  "pretty_assertions",
  "ruffle_core",

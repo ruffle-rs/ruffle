@@ -1028,12 +1028,14 @@ fn run_swf(
         if check_img {
             let instance = wgpu::Instance::new(backend_bit);
 
-            let descriptors = WgpuRenderBackend::<TextureTarget>::build_descriptors(
-                backend_bit,
-                instance,
-                None,
-                Default::default(),
-                None,
+            let descriptors = futures::executor::block_on(
+                WgpuRenderBackend::<TextureTarget>::build_descriptors(
+                    backend_bit,
+                    instance,
+                    None,
+                    Default::default(),
+                    None,
+                ),
             )?;
 
             platform_id = Some(get_img_platform_suffix(&descriptors.info));
