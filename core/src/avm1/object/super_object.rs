@@ -47,15 +47,6 @@ impl<'gc> SuperObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SuperObject<'gc> {
-    fn get_local(
-        &self,
-        _name: &str,
-        _activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        Some(Ok(Value::Undefined))
-    }
-
     fn get_local_stored(
         &self,
         _name: &str,
@@ -110,6 +101,10 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
 
         method.call(name, activation, this, base_proto, args)
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.0.read().this.getter(name, activation)
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {

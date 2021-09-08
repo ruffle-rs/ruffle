@@ -41,27 +41,6 @@ impl<'gc> XmlIdMapObject<'gc> {
             XmlIdMapObject(_, document) => *document,
         }
     }
-
-    fn get_local_sub(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Option<Object<'gc>>,
-        include_virtual: bool,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        if let Some(mut node) = self.document().get_node_by_id(name) {
-            Some(Ok(node
-                .script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().xml_node),
-                )
-                .into()))
-        } else if include_virtual {
-            self.base().get_local(name, activation, this.unwrap())
-        } else {
-            self.base().get_local_stored(name, activation).map(Ok)
-        }
-    }
 }
 
 impl fmt::Debug for XmlIdMapObject<'_> {
@@ -77,22 +56,22 @@ impl fmt::Debug for XmlIdMapObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.get_local_sub(name, activation, Some(this), true)
-    }
-
     fn get_local_stored(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        self.get_local_sub(name, activation, None, false)
-            .map(|res| res.unwrap())
+        if let Some(mut node) = self.document().get_node_by_id(name) {
+            Some(
+                node.script_object(
+                    activation.context.gc_context,
+                    Some(activation.context.avm1.prototypes().xml_node),
+                )
+                .into(),
+            )
+        } else {
+            self.base().get_local_stored(name, activation)
+        }
     }
 
     fn set_local(
@@ -106,6 +85,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         self.base()
             .set_local(name, value, activation, this, base_proto)
     }
+
     fn call(
         &self,
         name: &str,
@@ -115,6 +95,10 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(name, activation, this, base_proto, args)
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.base().getter(name, activation)
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {

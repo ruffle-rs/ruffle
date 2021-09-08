@@ -53,15 +53,6 @@ macro_rules! impl_custom_object {
             crate::impl_custom_object!(@extra $field $extra_name($($extra)*));
         )*
 
-        fn get_local(
-            &self,
-            name: &str,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
-        ) -> Option<Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>>> {
-            self.0.read().$field.get_local(name, activation, this)
-        }
-
         fn get_local_stored(
             &self,
             name: &str,
@@ -82,6 +73,14 @@ macro_rules! impl_custom_object {
                 .read()
                 .$field
                 .call(name, activation, this, base_proto, args)
+        }
+
+        fn getter(
+            &self,
+            name: &str,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+        ) -> Option<crate::avm1::object::Object<'gc>> {
+            self.0.read().$field.getter(name, activation)
         }
 
         fn setter(

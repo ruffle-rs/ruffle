@@ -515,15 +515,6 @@ impl<'gc> FunctionObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.base.get_local(name, activation, this)
-    }
-
     fn get_local_stored(
         &self,
         name: &str,
@@ -644,6 +635,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             let _ = self.call("[ctor]", activation, this, None, args)?;
             Ok(this.into())
         }
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.base.getter(name, activation)
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {

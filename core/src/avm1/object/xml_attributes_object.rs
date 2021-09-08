@@ -41,16 +41,6 @@ impl<'gc> XmlAttributesObject<'gc> {
             XmlAttributesObject(_, node) => *node,
         }
     }
-
-    fn get_local_sub(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.node()
-            .attribute_value(&XmlName::from_str(name))
-            .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
-    }
 }
 
 impl fmt::Debug for XmlAttributesObject<'_> {
@@ -66,21 +56,14 @@ impl fmt::Debug for XmlAttributesObject<'_> {
 }
 
 impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.get_local_sub(name, activation)
-    }
-
     fn get_local_stored(
         &self,
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        self.get_local_sub(name, activation).map(|res| res.unwrap())
+        self.node()
+            .attribute_value(&XmlName::from_str(name))
+            .map(|s| AvmString::new(activation.context.gc_context, s).into())
     }
 
     fn set_local(
@@ -98,6 +81,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         );
         Ok(())
     }
+
     fn call(
         &self,
         name: &str,
@@ -107,6 +91,10 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(name, activation, this, base_proto, args)
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.base().getter(name, activation)
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {

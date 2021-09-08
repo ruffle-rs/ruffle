@@ -109,39 +109,35 @@ pub fn object_to_matrix_or_default<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
-    // This works with raw properties (`get_local`).
-    // TODO: This should ignore virtual properties.
-    let a = if let Some(val) = object.get_local("a", activation, object) {
-        val?.coerce_to_f64(activation)? as f32
-    } else {
-        return Ok(Default::default());
-    };
-    let b = if let Some(val) = object.get_local("b", activation, object) {
-        val?.coerce_to_f64(activation)? as f32
-    } else {
-        return Ok(Default::default());
-    };
-    let c = if let Some(val) = object.get_local("c", activation, object) {
-        val?.coerce_to_f64(activation)? as f32
-    } else {
-        return Ok(Default::default());
-    };
-    let d = if let Some(val) = object.get_local("d", activation, object) {
-        val?.coerce_to_f64(activation)? as f32
-    } else {
-        return Ok(Default::default());
-    };
-    let tx = if let Some(val) = object.get_local("tx", activation, object) {
-        Twips::from_pixels(val?.coerce_to_f64(activation)?)
-    } else {
-        return Ok(Default::default());
-    };
-    let ty = if let Some(val) = object.get_local("ty", activation, object) {
-        Twips::from_pixels(val?.coerce_to_f64(activation)?)
-    } else {
-        return Ok(Default::default());
-    };
-
+    // These lookups do not search the prototype chain and ignore virtual properties.
+    let a = object
+        .get_local_stored("a", activation)
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(activation)? as f32;
+    let b = object
+        .get_local_stored("b", activation)
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(activation)? as f32;
+    let c = object
+        .get_local_stored("c", activation)
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(activation)? as f32;
+    let d = object
+        .get_local_stored("d", activation)
+        .unwrap_or(Value::Undefined)
+        .coerce_to_f64(activation)? as f32;
+    let tx = Twips::from_pixels(
+        object
+            .get_local_stored("tx", activation)
+            .unwrap_or(Value::Undefined)
+            .coerce_to_f64(activation)?,
+    );
+    let ty = Twips::from_pixels(
+        object
+            .get_local_stored("ty", activation)
+            .unwrap_or(Value::Undefined)
+            .coerce_to_f64(activation)?,
+    );
     Ok(Matrix { a, b, c, d, tx, ty })
 }
 
