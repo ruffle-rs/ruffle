@@ -313,6 +313,51 @@ fn match_s<'gc>(
     Ok(Value::Null)
 }
 
+/// Implements `String.slice`
+fn slice<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this = Value::from(this).coerce_to_string(activation)?;
+        let this_len = this.encode_utf16().count();
+        let start_index = match args.get(0) {
+            None => 0,
+            Some(n) => {
+                let n = n.coerce_to_number(activation)?;
+                if n.is_infinite() {
+                    this_len
+                } else {
+                    string_wrapping_index(n, this_len)
+                }
+            }
+        };
+        let end_index = match args.get(1) {
+            None => this_len,
+            Some(n) => {
+                let n = n.coerce_to_number(activation)?;
+                if n.is_infinite() {
+                    this_len
+                } else {
+                    string_wrapping_index(n, this_len)
+                }
+            }
+        };
+        if start_index < end_index {
+            let ret = string_utils::utf16_iter_to_string(
+                this.encode_utf16()
+                    .skip(start_index)
+                    .take(end_index - start_index),
+            );
+            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        } else {
+            return Ok("".into());
+        };
+    }
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.split`
 fn split<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -370,6 +415,93 @@ fn split<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `String.substr`
+fn substr<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this_val = Value::from(this);
+        let this = this_val.coerce_to_string(activation)?;
+
+        if args.is_empty() {
+            return Ok(Value::from(this));
+        }
+
+        let this_len = this.encode_utf16().count();
+
+        let start_index = string_wrapping_index(
+            args.get(0)
+                .unwrap_or(&Value::Number(0.))
+                .coerce_to_number(activation)?,
+            this_len,
+        );
+
+        let len = args
+            .get(1)
+            .unwrap_or(&Value::Number(0x7fffffff as f64))
+            .coerce_to_number(activation)?;
+
+        let len = if len == f64::INFINITY {
+            this_len
+        } else {
+            len as usize
+        };
+
+        let ret =
+            string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `String.substring`
+fn substring<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this_val = Value::from(this);
+        let this = this_val.coerce_to_string(activation)?;
+
+        if args.is_empty() {
+            return Ok(Value::from(this));
+        }
+
+        let this_len = this.encode_utf16().count();
+
+        let mut start_index = string_index(
+            args.get(0)
+                .unwrap_or(&Value::Number(0.))
+                .coerce_to_number(activation)?,
+            this_len,
+        );
+
+        let mut end_index = string_index(
+            args.get(1)
+                .unwrap_or(&Value::Number(0x7fffffff as f64))
+                .coerce_to_number(activation)?,
+            this_len,
+        );
+
+        if end_index < start_index {
+            std::mem::swap(&mut end_index, &mut start_index);
+        }
+
+        let ret = string_utils::utf16_iter_to_string(
+            this.encode_utf16()
+                .skip(start_index)
+                .take(end_index - start_index),
+        );
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `String`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -398,7 +530,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
         ("match", match_s),
+        ("slice", slice),
         ("split", split),
+        ("substr", substr),
+        ("substring", substring),
     ];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
@@ -406,4 +541,31 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_as3_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
+}
+
+/// Normalizes an  index parameter used in `String` functions such as `substring`.
+/// The returned index will be within the range of `[0, len]`.
+fn string_index(i: f64, len: usize) -> usize {
+    if i == f64::INFINITY {
+        len
+    } else if i < 0. {
+        0
+    } else {
+        (i as usize).min(len)
+    }
+}
+
+/// Normalizes an wrapping index parameter used in `String` functions such as `slice`.
+/// Negative values will count backwards from `len`.
+/// The returned index will be within the range of `[0, len]`.
+fn string_wrapping_index(i: f64, len: usize) -> usize {
+    if i < 0. {
+        if i.is_infinite() {
+            return 0;
+        }
+        let offset = i as isize;
+        len.saturating_sub((-offset) as usize)
+    } else {
+        (i as usize).min(len)
+    }
 }
