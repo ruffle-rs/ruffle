@@ -1,4 +1,5 @@
 #version 450
+#include "common.glsl"
 
 // Push constants: matrix + color
 layout(set = 1, binding = 0) uniform Transforms {
@@ -18,8 +19,8 @@ layout(location=0) in vec2 frag_uv;
 layout(location=0) out vec4 out_color;
 
 void main() {
-
     vec4 color = texture(sampler2D(t_color, s_color), frag_uv);
+
     // Unmultiply alpha before apply color transform.
     if( color.a > 0 ) {
         color.rgb /= color.a;
@@ -28,4 +29,7 @@ void main() {
     }
 
     out_color = color;
+#ifdef SRGB_RENDER_TARGET
+    out_color = srgb_to_linear(out_color);
+#endif
 }

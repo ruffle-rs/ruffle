@@ -27,6 +27,7 @@ impl ShapePipeline {
 impl Pipelines {
     pub fn new(
         device: &wgpu::Device,
+        surface_format: wgpu::TextureFormat,
         msaa_sample_count: u32,
         sampler_layout: &wgpu::BindGroupLayout,
         globals_layout: &wgpu::BindGroupLayout,
@@ -46,12 +47,24 @@ impl Pipelines {
         }
 
         let color_vs = device.create_shader_module(&include_spirv!("../shaders/color.vert.spv"));
-        let color_fs = device.create_shader_module(&include_spirv!("../shaders/color.frag.spv"));
         let texture_vs =
             device.create_shader_module(&include_spirv!("../shaders/texture.vert.spv"));
-        let gradient_fs =
-            device.create_shader_module(&include_spirv!("../shaders/gradient.frag.spv"));
-        let bitmap_fs = device.create_shader_module(&include_spirv!("../shaders/bitmap.frag.spv"));
+        let color_fs;
+        let gradient_fs;
+        let bitmap_fs;
+        if surface_format.describe().srgb {
+            color_fs =
+                device.create_shader_module(&include_spirv!("../shaders/color_srgb.frag.spv"));
+            gradient_fs =
+                device.create_shader_module(&include_spirv!("../shaders/gradient_srgb.frag.spv"));
+            bitmap_fs =
+                device.create_shader_module(&include_spirv!("../shaders/bitmap_srgb.frag.spv"));
+        } else {
+            color_fs = device.create_shader_module(&include_spirv!("../shaders/color.frag.spv"));
+            gradient_fs =
+                device.create_shader_module(&include_spirv!("../shaders/gradient.frag.spv"));
+            bitmap_fs = device.create_shader_module(&include_spirv!("../shaders/bitmap.frag.spv"));
+        }
 
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
@@ -64,6 +77,7 @@ impl Pipelines {
 
         let color_pipelines = create_color_pipelines(
             device,
+            surface_format,
             &color_vs,
             &color_fs,
             msaa_sample_count,
@@ -102,6 +116,7 @@ impl Pipelines {
 
         let bitmap_pipelines = create_bitmap_pipeline(
             device,
+            surface_format,
             &texture_vs,
             &bitmap_fs,
             msaa_sample_count,
@@ -142,6 +157,7 @@ impl Pipelines {
 
         let gradient_pipelines = create_gradient_pipeline(
             device,
+            surface_format,
             &texture_vs,
             &gradient_fs,
             msaa_sample_count,
@@ -203,8 +219,10 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn create_color_pipelines(
     device: &wgpu::Device,
+    format: wgpu::TextureFormat,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
@@ -235,7 +253,7 @@ fn create_color_pipelines(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -271,7 +289,7 @@ fn create_color_pipelines(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -306,7 +324,7 @@ fn create_color_pipelines(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -341,7 +359,7 @@ fn create_color_pipelines(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -368,6 +386,7 @@ fn create_color_pipelines(
 #[allow(clippy::too_many_arguments)]
 fn create_bitmap_pipeline(
     device: &wgpu::Device,
+    format: wgpu::TextureFormat,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
@@ -405,7 +424,7 @@ fn create_bitmap_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::One,
@@ -440,7 +459,7 @@ fn create_bitmap_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -475,7 +494,7 @@ fn create_bitmap_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::One,
@@ -510,7 +529,7 @@ fn create_bitmap_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -537,6 +556,7 @@ fn create_bitmap_pipeline(
 #[allow(clippy::too_many_arguments)]
 fn create_gradient_pipeline(
     device: &wgpu::Device,
+    format: wgpu::TextureFormat,
     vertex_shader: &wgpu::ShaderModule,
     fragment_shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
@@ -572,7 +592,7 @@ fn create_gradient_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -607,7 +627,7 @@ fn create_gradient_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -643,7 +663,7 @@ fn create_gradient_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
@@ -678,7 +698,7 @@ fn create_gradient_pipeline(
                     bias: Default::default(),
                 }),
                 &[wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    format,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,

@@ -46,6 +46,7 @@ pub struct Descriptors {
     pub device: wgpu::Device,
     pub info: wgpu::AdapterInfo,
     pub limits: wgpu::Limits,
+    pub surface_format: wgpu::TextureFormat,
     queue: wgpu::Queue,
     globals: Globals,
     uniform_buffers: UniformBuffer<Transforms>,
@@ -59,6 +60,7 @@ impl Descriptors {
         device: wgpu::Device,
         queue: wgpu::Queue,
         info: wgpu::AdapterInfo,
+        surface_format: wgpu::TextureFormat,
     ) -> Result<Self, Error> {
         let limits = device.limits();
         // TODO: Allow this to be set from command line/settings file.
@@ -86,6 +88,7 @@ impl Descriptors {
         );
         let pipelines = Pipelines::new(
             &device,
+            surface_format,
             msaa_sample_count,
             bitmap_samplers.layout(),
             globals.layout(),
@@ -96,6 +99,7 @@ impl Descriptors {
             device,
             info,
             limits,
+            surface_format,
             queue,
             globals,
             uniform_buffers,
@@ -294,7 +298,12 @@ impl WgpuRenderBackend<SwapChainTarget> {
             power_preference,
             trace_path,
         )?;
-        let target = SwapChainTarget::new(surface, size, &descriptors.device);
+        let target = SwapChainTarget::new(
+            surface,
+            descriptors.surface_format,
+            size,
+            &descriptors.device,
+        );
         Self::new(descriptors, target)
     }
 }
@@ -408,7 +417,18 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             },
             trace_path,
         ))?;
-        Descriptors::new(device, queue, adapter.get_info())
+        let info = adapter.get_info();
+        // Prefer a linear surface format, when available.
+        let surface_format = if info.backend == wgpu::Backend::Gl {
+            // GL often only supports sRGB, so use the adapter's preferred format.
+            surface
+                .and_then(|surface| surface.get_preferred_format(&adapter))
+                .unwrap_or(wgpu::TextureFormat::Bgra8Unorm)
+        } else {
+            wgpu::TextureFormat::Bgra8Unorm
+        };
+
+        Descriptors::new(device, queue, info, surface_format)
     }
 
     pub fn descriptors(self) -> Descriptors {

@@ -49,10 +49,15 @@ impl RenderTargetFrame for SwapChainTargetFrame {
 }
 
 impl SwapChainTarget {
-    pub fn new(surface: wgpu::Surface, size: (u32, u32), device: &wgpu::Device) -> Self {
+    pub fn new(
+        surface: wgpu::Surface,
+        format: wgpu::TextureFormat,
+        size: (u32, u32),
+        device: &wgpu::Device,
+    ) -> Self {
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format,
             width: size.0,
             height: size.1,
             present_mode: wgpu::PresentMode::Mailbox,
