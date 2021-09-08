@@ -965,11 +965,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The given object should be the class object for the given type we are
     /// checking against this object. Its prototype will be extracted and
     /// searched in the prototype chain of this object.
-    #[allow(unused_mut)] //it's not unused
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        mut class: Object<'gc>,
+        class: Object<'gc>,
     ) -> Result<bool, Error> {
         let type_proto = class
             .get_property(class, &QName::dynamic_name("prototype"), activation)?
@@ -1005,13 +1004,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The given object should be the class object for the given type we are
     /// checking against this object.
-    #[allow(unused_mut)] //it's not unused
     fn is_of_type(
         &self,
-        mut test_class: Object<'gc>,
+        test_class: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<bool, Error> {
-        let mut my_class = self.as_class_object();
+        let my_class = self.as_class_object();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
