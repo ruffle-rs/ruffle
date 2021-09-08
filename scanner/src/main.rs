@@ -56,6 +56,17 @@ struct FileResults {
 #[derive(Clap, Debug)]
 #[clap(version, about, author)]
 struct Opt {
+    #[clap(subcommand)]
+    mode: Mode,
+}
+
+#[derive(Clap, Debug)]
+enum Mode {
+    Scan(ScanOpt),
+}
+
+#[derive(Clap, Debug)]
+struct ScanOpt {
     /// The directory (containing SWF files) to scan
     #[clap(name = "directory", parse(from_os_str))]
     input_path: PathBuf,
@@ -353,7 +364,7 @@ impl<T> Iterator for SerBridgeImpl<T> {
     }
 }
 
-fn main() -> Result<(), std::io::Error> {
+fn scan_main(opt: &ScanOpt) -> Result<(), std::io::Error> {
     ThreadLocalScanLogger::init();
 
     ThreadPoolBuilder::new()
@@ -361,7 +372,6 @@ fn main() -> Result<(), std::io::Error> {
         .build()
         .unwrap()
         .install(|| {
-            let opt = Opt::parse();
             let to_scan = find_files(&opt.input_path, &opt.ignore);
             let total = to_scan.len() as u64;
             let mut good = 0;
@@ -385,7 +395,7 @@ fn main() -> Result<(), std::io::Error> {
                 "AVM Version",
             ])?;
 
-            let input_path = opt.input_path;
+            let input_path = opt.input_path.clone();
             let closure_progress = progress.clone();
 
             let result_iter = to_scan
@@ -422,4 +432,12 @@ fn main() -> Result<(), std::io::Error> {
 
             Ok(())
         })
+}
+
+fn main() -> Result<(), std::io::Error> {
+    let opt = Opt::parse();
+
+    match opt.mode {
+        Mode::Scan(scan_opt) => scan_main(&scan_opt),
+    }
 }
