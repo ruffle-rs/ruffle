@@ -248,11 +248,11 @@ impl WgpuRenderBackend<SwapChainTarget> {
     pub fn for_window<W: HasRawWindowHandle>(
         window: &W,
         size: (u32, u32),
-        backend: wgpu::BackendBit,
+        backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
         trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
-        if wgpu::BackendBit::SECONDARY.contains(backend) {
+        if wgpu::Backends::SECONDARY.contains(backend) {
             log::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
@@ -275,11 +275,11 @@ impl WgpuRenderBackend<SwapChainTarget> {
 impl WgpuRenderBackend<TextureTarget> {
     pub fn for_offscreen(
         size: (u32, u32),
-        backend: wgpu::BackendBit,
+        backend: wgpu::Backends,
         power_preference: wgpu::PowerPreference,
         trace_path: Option<&Path>,
     ) -> Result<Self, Error> {
-        if wgpu::BackendBit::SECONDARY.contains(backend) {
+        if wgpu::Backends::SECONDARY.contains(backend) {
             log::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
@@ -309,7 +309,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: target.format(),
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         });
         let frame_buffer_view = frame_buffer.create_view(&Default::default());
 
@@ -321,7 +321,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth24PlusStencil8,
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         });
 
         let depth_texture_view = depth_texture.create_view(&Default::default());
@@ -353,7 +353,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 
     pub fn build_descriptors(
-        backend: wgpu::BackendBit,
+        backend: wgpu::Backends,
         instance: wgpu::Instance,
         surface: Option<&wgpu::Surface>,
         power_preference: wgpu::PowerPreference,
@@ -362,6 +362,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let adapter = block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference,
             compatible_surface: surface,
+            force_fallback_adapter: false,
         }))
         .ok_or_else(|| {
             let names = get_backend_names(backend);
@@ -408,14 +409,14 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             let vertex_buffer = create_buffer_with_data(
                 &self.descriptors.device,
                 bytemuck::cast_slice(&vertices),
-                wgpu::BufferUsage::VERTEX,
+                wgpu::BufferUsages::VERTEX,
                 create_debug_label!("Shape {} ({}) vbo", shape_id, draw.draw_type.name()),
             );
 
             let index_buffer = create_buffer_with_data(
                 &self.descriptors.device,
                 bytemuck::cast_slice(&draw.indices),
-                wgpu::BufferUsage::INDEX,
+                wgpu::BufferUsages::INDEX,
                 create_debug_label!("Shape {} ({}) ibo", shape_id, draw.draw_type.name()),
             );
 
@@ -439,7 +440,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     let tex_transforms_ubo = create_buffer_with_data(
                         &self.descriptors.device,
                         bytemuck::cast_slice(&[texture_transform]),
-                        wgpu::BufferUsage::UNIFORM,
+                        wgpu::BufferUsages::UNIFORM,
                         create_debug_label!(
                             "Shape {} draw {} textransforms ubo transfer buffer",
                             shape_id,
@@ -450,7 +451,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     let gradient_ubo = create_buffer_with_data(
                         &self.descriptors.device,
                         bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-                        wgpu::BufferUsage::STORAGE,
+                        wgpu::BufferUsages::STORAGE,
                         create_debug_label!(
                             "Shape {} draw {} gradient ubo transfer buffer",
                             shape_id,
@@ -525,7 +526,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     let tex_transforms_ubo = create_buffer_with_data(
                         &self.descriptors.device,
                         bytemuck::cast_slice(&[texture_transform]),
-                        wgpu::BufferUsage::UNIFORM,
+                        wgpu::BufferUsages::UNIFORM,
                         create_debug_label!(
                             "Shape {} draw {} textransforms ubo transfer buffer",
                             shape_id,
@@ -619,7 +620,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             });
 
         self.descriptors.queue.write_texture(
@@ -627,6 +628,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 texture: &texture,
                 mip_level: 0,
                 origin: Default::default(),
+                aspect: wgpu::TextureAspect::All,
             },
             &data,
             wgpu::ImageDataLayout {
@@ -714,7 +716,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: self.target.format(),
-                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.frame_buffer_view = frame_buffer.create_view(&Default::default());
 
@@ -733,7 +735,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth24PlusStencil8,
-                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
         self.descriptors.globals.set_resolution(width, height);
@@ -916,12 +918,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     .pipeline_for(self.mask_state),
             );
             frame.render_pass.set_push_constants(
-                wgpu::ShaderStage::VERTEX,
+                wgpu::ShaderStages::VERTEX,
                 0,
                 bytemuck::cast_slice(&[Transforms { world_matrix }]),
             );
             frame.render_pass.set_push_constants(
-                wgpu::ShaderStage::FRAGMENT,
+                wgpu::ShaderStages::FRAGMENT,
                 std::mem::size_of::<Transforms>() as u32,
                 bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
             );
@@ -1029,12 +1031,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             }
 
             frame.render_pass.set_push_constants(
-                wgpu::ShaderStage::VERTEX,
+                wgpu::ShaderStages::VERTEX,
                 0,
                 bytemuck::cast_slice(&[Transforms { world_matrix }]),
             );
             frame.render_pass.set_push_constants(
-                wgpu::ShaderStage::FRAGMENT,
+                wgpu::ShaderStages::FRAGMENT,
                 std::mem::size_of::<Transforms>() as u32,
                 bytemuck::cast_slice(&[ColorAdjustments::from(transform.color_transform)]),
             );
@@ -1096,12 +1098,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         frame.render_pass.set_push_constants(
-            wgpu::ShaderStage::VERTEX,
+            wgpu::ShaderStages::VERTEX,
             0,
             bytemuck::cast_slice(&[Transforms { world_matrix }]),
         );
         frame.render_pass.set_push_constants(
-            wgpu::ShaderStage::FRAGMENT,
+            wgpu::ShaderStages::FRAGMENT,
             std::mem::size_of::<Transforms>() as u32,
             bytemuck::cast_slice(&[ColorAdjustments {
                 mult_color,
@@ -1144,6 +1146,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 &self.descriptors.device,
                 &self.descriptors.queue,
                 vec![draw_encoder.finish()],
+                frame.frame_data.1,
             );
         }
     }
@@ -1222,6 +1225,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 texture,
                 mip_level: 0,
                 origin: Default::default(),
+                aspect: wgpu::TextureAspect::All,
             },
             &rgba,
             wgpu::ImageDataLayout {
@@ -1260,14 +1264,14 @@ fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wg
     let vbo = create_buffer_with_data(
         device,
         bytemuck::cast_slice(&vertices),
-        wgpu::BufferUsage::VERTEX,
+        wgpu::BufferUsages::VERTEX,
         create_debug_label!("Quad vbo"),
     );
 
     let ibo = create_buffer_with_data(
         device,
         bytemuck::cast_slice(&indices),
-        wgpu::BufferUsage::INDEX,
+        wgpu::BufferUsages::INDEX,
         create_debug_label!("Quad ibo"),
     );
 
@@ -1281,7 +1285,7 @@ fn create_quad_buffers(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, wg
                 [0.0, 0.0, 0.0, 1.0],
             ],
         }]),
-        wgpu::BufferUsage::UNIFORM,
+        wgpu::BufferUsages::UNIFORM,
         create_debug_label!("Quad tex transforms"),
     );
 

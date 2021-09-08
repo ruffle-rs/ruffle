@@ -39,7 +39,6 @@ impl Pipelines {
                     wgpu::ShaderModuleDescriptor {
                         label: Some($($token)*),
                         source: wgpu::util::make_spirv(include_bytes!($($token)*)),
-                        flags: wgpu::ShaderFlags::empty(),
                     }
                 }
             };
@@ -55,7 +54,7 @@ impl Pipelines {
 
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
-            step_mode: wgpu::InputStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &vertex_attr_array![
                 0 => Float32x2,
                 1 => Float32x4,
@@ -77,7 +76,7 @@ impl Pipelines {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStage::VERTEX,
+                        visibility: wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
@@ -87,7 +86,7 @@ impl Pipelines {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
@@ -116,7 +115,7 @@ impl Pipelines {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStage::VERTEX,
+                        visibility: wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
@@ -126,7 +125,7 @@ impl Pipelines {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: true },
                             has_dynamic_offset: false,
@@ -217,11 +216,11 @@ fn create_color_pipelines(
         bind_group_layouts: &[globals_layout],
         push_constant_ranges: &[
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::VERTEX,
+                stages: wgpu::ShaderStages::VERTEX,
                 range: 0..transforms_size,
             },
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::FRAGMENT,
+                stages: wgpu::ShaderStages::FRAGMENT,
                 range: transforms_size..transforms_size + colors_size,
             },
         ],
@@ -390,11 +389,11 @@ fn create_bitmap_pipeline(
         bind_group_layouts: &[globals_layout, bitmap_bind_layout, sampler_layout],
         push_constant_ranges: &[
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::VERTEX,
+                stages: wgpu::ShaderStages::VERTEX,
                 range: 0..64,
             },
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::FRAGMENT,
+                stages: wgpu::ShaderStages::FRAGMENT,
                 range: 64..96,
             },
         ],
@@ -561,11 +560,11 @@ fn create_gradient_pipeline(
         bind_group_layouts: &[globals_layout, gradient_bind_layout],
         push_constant_ranges: &[
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::VERTEX,
+                stages: wgpu::ShaderStages::VERTEX,
                 range: 0..64,
             },
             wgpu::PushConstantRange {
-                stages: wgpu::ShaderStage::FRAGMENT,
+                stages: wgpu::ShaderStages::FRAGMENT,
                 range: 64..96,
             },
         ],
@@ -717,7 +716,7 @@ fn create_gradient_pipeline(
     ShapePipeline { mask_pipelines }
 }
 
-fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrite) {
+fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrites) {
     let (stencil_state, color_write) = match state {
         MaskState::NoMask => (
             wgpu::StencilFaceState {
@@ -726,7 +725,7 @@ fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrite)
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::Keep,
             },
-            wgpu::ColorWrite::ALL,
+            wgpu::ColorWrites::ALL,
         ),
         MaskState::DrawMaskStencil => (
             wgpu::StencilFaceState {
@@ -735,7 +734,7 @@ fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrite)
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::IncrementClamp,
             },
-            wgpu::ColorWrite::empty(),
+            wgpu::ColorWrites::empty(),
         ),
         MaskState::DrawMaskedContent => (
             wgpu::StencilFaceState {
@@ -744,7 +743,7 @@ fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrite)
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::Keep,
             },
-            wgpu::ColorWrite::ALL,
+            wgpu::ColorWrites::ALL,
         ),
         MaskState::ClearMaskStencil => (
             wgpu::StencilFaceState {
@@ -753,7 +752,7 @@ fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrite)
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::DecrementClamp,
             },
-            wgpu::ColorWrite::empty(),
+            wgpu::ColorWrites::empty(),
         ),
     };
 
