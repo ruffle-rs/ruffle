@@ -93,15 +93,6 @@ impl<'gc> ArrayObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.0.read().get_local(name, activation, this)
-    }
-
     fn get_local_stored(
         &self,
         name: &str,
@@ -142,6 +133,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.0.read().call(name, activation, this, base_proto, args)
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.0.read().getter(name, activation)
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {

@@ -1160,14 +1160,14 @@ fn local_to_global<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
         // localToGlobal does no coercion; it fails if the properties are not numbers.
-        // It does not search the prototype chain.
+        // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local("x", activation, *point)
-                .unwrap_or(Ok(Value::Undefined))?,
+                .get_local_stored("x", activation)
+                .unwrap_or(Value::Undefined),
             point
-                .get_local("y", activation, *point)
-                .unwrap_or(Ok(Value::Undefined))?,
+                .get_local_stored("y", activation)
+                .unwrap_or(Value::Undefined),
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);
@@ -1295,14 +1295,14 @@ fn global_to_local<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(point) = args.get(0).unwrap_or(&Value::Undefined) {
         // globalToLocal does no coercion; it fails if the properties are not numbers.
-        // It does not search the prototype chain.
+        // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local("x", activation, *point)
-                .unwrap_or(Ok(Value::Undefined))?,
+                .get_local_stored("x", activation)
+                .unwrap_or(Value::Undefined),
             point
-                .get_local("y", activation, *point)
-                .unwrap_or(Ok(Value::Undefined))?,
+                .get_local_stored("y", activation)
+                .unwrap_or(Value::Undefined),
         ) {
             let x = Twips::from_pixels(x);
             let y = Twips::from_pixels(y);

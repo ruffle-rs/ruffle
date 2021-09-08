@@ -93,21 +93,6 @@ pub mod xml_object;
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
-    /// Retrieve a named property from this object exclusively.
-    ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
-    ///
-    /// This function should not inspect prototype chains. Instead, use `get`
-    /// to do ordinary property look-up and resolution.
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>>;
-
     /// Retrieve a named, non-virtual property from this object exclusively.
     ///
     /// This function should not inspect prototype chains. Instead, use
@@ -265,6 +250,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         method.call(name, activation, this, base_proto, args)
     }
+
+    /// Retrive a getter defined on this object.
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>>;
 
     /// Retrive a setter defined on this object.
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>>;
@@ -655,8 +643,28 @@ pub fn search_prototype<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(value) = p.get_local(name, activation, this) {
-            return Ok((value?, Some(p)));
+        if let Some(getter) = p.getter(name, activation) {
+            if let Some(exec) = getter.as_executable() {
+                let result = exec.exec(
+                    "[Getter]",
+                    activation,
+                    this,
+                    Some(p),
+                    &[],
+                    ExecutionReason::Special,
+                    getter,
+                );
+                let value = match result {
+                    Ok(v) => v,
+                    Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
+                    Err(_) => Value::Undefined,
+                };
+                return Ok((value, Some(p)));
+            }
+        }
+
+        if let Some(value) = p.get_local_stored(name, activation) {
+            return Ok((value, Some(p)));
         }
 
         proto = p.proto(activation);

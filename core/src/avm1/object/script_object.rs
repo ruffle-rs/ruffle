@@ -161,49 +161,6 @@ impl<'gc> ScriptObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
-    /// Get the value of a particular property on this object.
-    fn get_local(
-        &self,
-        name: &str,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        let getter = match self
-            .0
-            .read()
-            .properties
-            .get(name, activation.is_case_sensitive())
-        {
-            Some(property) => {
-                if let Some(getter) = property.getter() {
-                    getter
-                } else {
-                    return Some(Ok(property.data()));
-                }
-            }
-            None => return None,
-        };
-
-        if let Some(exec) = getter.as_executable() {
-            let result = exec.exec(
-                "[Getter]",
-                activation,
-                this,
-                Some((*self).into()),
-                &[],
-                ExecutionReason::Special,
-                getter,
-            );
-            Some(match result {
-                Ok(v) => Ok(v),
-                Err(Error::ThrownValue(e)) => Err(Error::ThrownValue(e)),
-                Err(_) => Ok(Value::Undefined),
-            })
-        } else {
-            None
-        }
-    }
-
     /// Get the value of a particular non-virtual property on this object.
     fn get_local_stored(
         &self,
@@ -280,6 +237,14 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
+    }
+
+    fn getter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
+        self.0
+            .read()
+            .properties
+            .get(name, activation.is_case_sensitive())
+            .and_then(|property| property.getter())
     }
 
     fn setter(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Option<Object<'gc>> {
