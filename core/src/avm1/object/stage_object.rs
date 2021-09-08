@@ -139,6 +139,51 @@ impl<'gc> StageObject<'gc> {
 
         None
     }
+
+    fn get_local_sub(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+        this: Option<Object<'gc>>,
+        include_virtual: bool,
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        let obj = self.0.read();
+        let props = activation.context.avm1.display_properties;
+        let case_sensitive = activation.is_case_sensitive();
+        // Property search order for DisplayObjects:
+        if self.has_own_property(activation, name) {
+            // 1) Actual properties on the underlying object
+            if include_virtual {
+                self.0
+                    .read()
+                    .base
+                    .get_local(name, activation, this.unwrap())
+            } else {
+                self.0
+                    .read()
+                    .base
+                    .get_local_stored(name, activation)
+                    .map(Ok)
+            }
+        } else if let Some(level) =
+            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
+        {
+            // 2) _levelN
+            Some(Ok(level))
+        } else if let Some(child) = obj
+            .display_object
+            .as_container()
+            .and_then(|o| o.child_by_name(name, case_sensitive))
+        {
+            // 3) Child display objects with the given instance name
+            Some(Ok(child.object()))
+        } else if let Some(property) = props.read().get_by_name(name) {
+            // 4) Display object properties such as _x, _y
+            Some(Ok(property.get(activation, obj.display_object)))
+        } else {
+            None
+        }
+    }
 }
 
 /// A binding from a property of this StageObject to an EditText text field.
@@ -166,31 +211,16 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        let obj = self.0.read();
-        let props = activation.context.avm1.display_properties;
-        let case_sensitive = activation.is_case_sensitive();
-        // Property search order for DisplayObjects:
-        if self.has_own_property(activation, name) {
-            // 1) Actual properties on the underlying object
-            self.0.read().base.get_local(name, activation, this)
-        } else if let Some(level) =
-            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
-        {
-            // 2) _levelN
-            Some(Ok(level))
-        } else if let Some(child) = obj
-            .display_object
-            .as_container()
-            .and_then(|o| o.child_by_name(name, case_sensitive))
-        {
-            // 3) Child display objects with the given instance name
-            Some(Ok(child.object()))
-        } else if let Some(property) = props.read().get_by_name(name) {
-            // 4) Display object properties such as _x, _y
-            Some(Ok(property.get(activation, obj.display_object)))
-        } else {
-            None
-        }
+        self.get_local_sub(name, activation, Some(this), true)
+    }
+
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.get_local_sub(name, activation, None, false)
+            .map(|res| res.unwrap())
     }
 
     fn set_local(
@@ -322,6 +352,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .read()
             .base
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn call_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.0.read().base.call_watcher(activation, name, value)
     }
 
     fn watch(

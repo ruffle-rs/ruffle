@@ -524,6 +524,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.get_local(name, activation, this)
     }
 
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.base.get_local_stored(name, activation)
+    }
+
     fn set_local(
         &self,
         name: &str,
@@ -714,6 +722,15 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) {
         self.base
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn call_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base.call_watcher(activation, name, value)
     }
 
     fn watch(

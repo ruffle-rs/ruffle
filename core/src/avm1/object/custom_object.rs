@@ -62,6 +62,14 @@ macro_rules! impl_custom_object {
             self.0.read().$field.get_local(name, activation, this)
         }
 
+        fn get_local_stored(
+            &self,
+            name: &str,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+        ) -> Option<crate::avm1::Value<'gc>> {
+            self.0.read().$field.get_local_stored(name, activation)
+        }
+
         fn call(
             &self,
             name: &str,
@@ -240,6 +248,15 @@ macro_rules! impl_custom_object {
 
         fn delete_element(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>, index: i32) -> bool {
             self.0.read().$field.delete_element(activation, index)
+        }
+
+        fn call_watcher(
+            &self,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+            name: &str,
+            value: &mut crate::avm1::Value<'gc>,
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.call_watcher(activation, name, value)
         }
 
         fn watch(

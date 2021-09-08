@@ -41,6 +41,16 @@ impl<'gc> XmlAttributesObject<'gc> {
             XmlAttributesObject(_, node) => *node,
         }
     }
+
+    fn get_local_sub(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Result<Value<'gc>, Error<'gc>>> {
+        self.node()
+            .attribute_value(&XmlName::from_str(name))
+            .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
+    }
 }
 
 impl fmt::Debug for XmlAttributesObject<'_> {
@@ -62,9 +72,15 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
     ) -> Option<Result<Value<'gc>, Error<'gc>>> {
-        self.node()
-            .attribute_value(&XmlName::from_str(name))
-            .map(|s| Ok(AvmString::new(activation.context.gc_context, s).into()))
+        self.get_local_sub(name, activation)
+    }
+
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.get_local_sub(name, activation).map(|res| res.unwrap())
     }
 
     fn set_local(
@@ -135,6 +151,15 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     ) {
         self.base()
             .add_property_with_case(activation, name, get, set, attributes)
+    }
+
+    fn call_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        self.base().call_watcher(activation, name, value)
     }
 
     fn watch(

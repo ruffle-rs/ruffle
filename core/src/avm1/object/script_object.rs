@@ -204,6 +204,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }
     }
 
+    /// Get the value of a particular non-virtual property on this object.
+    fn get_local_stored(
+        &self,
+        name: &str,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<Value<'gc>> {
+        self.0
+            .read()
+            .properties
+            .get(name, activation.is_case_sensitive())
+            .map(|property| property.data())
+    }
+
     /// Set a named property on the object.
     ///
     /// This function takes a redundant `this` parameter which should be
@@ -212,30 +225,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn set_local(
         &self,
         name: &str,
-        mut value: Value<'gc>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        let watcher = self
-            .0
-            .read()
-            .watchers
-            .get(name, activation.is_case_sensitive())
-            .cloned();
-        let mut result = Ok(());
-        if let Some(watcher) = watcher {
-            let old_value = self.get(name, activation)?;
-            match watcher.call(activation, name, old_value, value, this, base_proto) {
-                Ok(v) => value = v,
-                Err(Error::ThrownValue(e)) => {
-                    value = Value::Undefined;
-                    result = Err(Error::ThrownValue(e));
-                }
-                Err(_) => value = Value::Undefined,
-            };
-        }
-
         let setter = match self
             .0
             .write(activation.context.gc_context)
@@ -269,7 +263,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             }
         }
 
-        result
+        Ok(())
     }
 
     /// Call the underlying object.
@@ -353,6 +347,35 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             Entry::Occupied(mut entry) => entry.get_mut().set_virtual(getter, setter),
             Entry::Vacant(entry) => entry.insert(Property::new_virtual(getter, setter, attributes)),
         }
+    }
+
+    fn call_watcher(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &str,
+        value: &mut Value<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let mut result = Ok(());
+        let watcher = self
+            .0
+            .read()
+            .watchers
+            .get(name, activation.is_case_sensitive())
+            .cloned();
+        if let Some(watcher) = watcher {
+            let old_value = self.get_stored(name, activation)?;
+            let this = (*self).into();
+            match watcher.call(activation, name, old_value, *value, this, Some(this)) {
+                Ok(v) => *value = v,
+                Err(Error::ThrownValue(e)) => {
+                    *value = Value::Undefined;
+                    result = Err(Error::ThrownValue(e));
+                }
+                Err(_) => *value = Value::Undefined,
+            };
+        }
+
+        result
     }
 
     fn watch(
