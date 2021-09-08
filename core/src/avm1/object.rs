@@ -165,17 +165,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error<'gc>>;
 
     /// Set a named property on this object, or its prototype.
-    #[allow(unused_mut)] //it's not unused
     fn set(
         &self,
         name: &str,
-        mut value: Value<'gc>,
+        value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
         if name.is_empty() {
             return Ok(());
         }
 
+        let mut value = value;
         let watcher_result = self.call_watcher(activation, name, &mut value);
 
         let this = (*self).into();
@@ -206,11 +206,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let result = self.set_local(name, value, activation, this, Some(this));
-        if watcher_result.is_err() {
-            watcher_result
-        } else {
-            result
-        }
+        watcher_result.and(result)
     }
 
     /// Call the underlying object.
