@@ -147,9 +147,8 @@ fn from_char_code<'gc>(
     let mut out = String::with_capacity(args.len());
     for arg in args {
         let i = arg.coerce_to_u32(activation)? as u16;
-        if i == 0 {
-            // Stop at a null-terminator.
-            break;
+        if i == 0  {
+            continue;
         }
         out.push(string_utils::utf16_code_unit_to_char(i));
     }
@@ -269,12 +268,15 @@ fn match_s<'gc>(
             pattern.coerce_to_object(activation)?
         };
 
-        if let Some(regexp) = pattern.as_regexp() {
-            let mut regexp: crate::avm2::regexp::RegExp = regexp.clone();
-
+        if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
             let mut storage = ArrayStorage::new(0);
             if regexp.global() {
+                let mut last = regexp.last_index();
+                regexp.set_last_index(0);
                 while let Some(result) = regexp.exec(&this) {
+                    if regexp.last_index() == last {
+                        break;
+                    }
                     storage.push(
                         AvmString::new(
                             activation.context.gc_context,
@@ -282,26 +284,31 @@ fn match_s<'gc>(
                         )
                         .into(),
                     );
-                    if regexp.last_index() >= this.len() {
-                        break;
-                    }
+                    last = regexp.last_index();
                 }
+                regexp.set_last_index(0);
                 return Ok(ArrayObject::from_storage(activation, storage)
                     .unwrap()
                     .into());
             } else {
+                let old = regexp.last_index();
+                regexp.set_last_index(0);
                 if let Some(result) = regexp.exec(&this) {
-                    storage.push(
-                        AvmString::new(
-                            activation.context.gc_context,
-                            this[result.range()].to_string(),
-                        )
-                        .into(),
-                    );
+                    let substrings = result
+                        .groups()
+                        .map(|range| this[range.unwrap_or(0..0)].to_string());
+
+                    let mut storage = ArrayStorage::new(0);
+                    for substring in substrings {
+                        storage
+                            .push(AvmString::new(activation.context.gc_context, substring).into());
+                    }
+                    regexp.set_last_index(old);
                     return Ok(ArrayObject::from_storage(activation, storage)
                         .unwrap()
                         .into());
                 } else {
+                    regexp.set_last_index(old);
                     // If the pattern parameter is a String or a non-global regular expression
                     // and no match is found, the method returns null
                     return Ok(Value::Null);
@@ -326,22 +333,14 @@ fn slice<'gc>(
             None => 0,
             Some(n) => {
                 let n = n.coerce_to_number(activation)?;
-                if n.is_infinite() {
-                    this_len
-                } else {
-                    string_wrapping_index(n, this_len)
-                }
+                string_wrapping_index(n, this_len)
             }
         };
         let end_index = match args.get(1) {
             None => this_len,
             Some(n) => {
                 let n = n.coerce_to_number(activation)?;
-                if n.is_infinite() {
-                    this_len
-                } else {
-                    string_wrapping_index(n, this_len)
-                }
+                string_wrapping_index(n, this_len)
             }
         };
         if start_index < end_index {
@@ -566,6 +565,9 @@ fn string_wrapping_index(i: f64, len: usize) -> usize {
         let offset = i as isize;
         len.saturating_sub((-offset) as usize)
     } else {
+        if i.is_infinite() {
+            return len;
+        }
         (i as usize).min(len)
     }
 }
