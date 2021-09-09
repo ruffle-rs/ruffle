@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ['12', '14']
+        node_version: ["12", "14"]
         # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         rust_version: [stable]
         # MIKE: Turning off macOS-latest for now (flaky tests on CI).
@@ -55,7 +55,7 @@ jobs:
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in release_nightly.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.76
+        run: cargo install wasm-bindgen-cli --version 0.2.77
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2

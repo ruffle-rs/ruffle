@@ -3,7 +3,7 @@ name: Release Nightly
 on:
   # Run nightly
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
 
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
@@ -235,7 +235,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: '14'
+          node-version: "14"
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
@@ -243,7 +243,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: install
-          args: wasm-bindgen-cli --version 0.2.76
+          args: wasm-bindgen-cli --version 0.2.77
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2
