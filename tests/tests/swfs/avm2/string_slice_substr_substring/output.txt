@@ -1,0 +1,169 @@
+/// slice
+// trace("123456789".slice(0, 9));
+123456789
+// trace("123456789".slice(0, 0));
+
+// trace("123456789".slice(9, 0));
+
+// trace("123456789".slice(0, -1));
+12345678
+// trace("123456789".slice(-6, -1));
+45678
+// var s = new String("");
+// trace( typeof s.slice(), s.slice());
+string 
+// trace( s.slice(false, true));
+
+// trace( s.slice(25, 29));
+
+// var s = new String("123456789");
+// trace( 1, typeof s.slice(), s.slice());
+1 string 123456789
+// trace( 2, s.slice(false, true));
+2 1
+// trace( 3, s.slice(4, -3));
+3 56
+// trace( 4, s.slice(25, 29));
+4 
+// trace( 5, s.slice(-5, 9));
+5 56789
+// trace( 6, s.slice(2, NaN));
+6 
+// trace( 7, s.slice(NaN, 2));
+7 12
+// trace( 8, s.slice(2, undefined));
+8 
+// trace( 9, s.slice(undefined, 2));
+9 12
+// trace( 10, s.slice(-0.01,0));
+10 
+// trace( 11, s.slice(s.length, s.length));
+11 
+// trace( 12, s.slice(s.length+1, 0));
+12 
+// trace( 13, s.slice(Infinity, 5));
+13 
+// trace( 14, s.slice(5, Infinity));
+14 6789
+// trace( 15, s.slice(Infinity, Infinity));
+15 
+// trace( 16, s.slice(-Infinity, -Infinity));
+16 
+// trace( 17, s.slice(-Infinity, Infinity));
+17 123456789
+// trace( 18, s.slice(Infinity, -Infinity));
+18 
+// trace( 19, s.slice(NaN, Infinity));
+19 123456789
+// trace( 20, s.slice(Infinity, NaN));
+20 
+// trace( 21, s.slice(NaN, -Infinity));
+21 
+// trace( 22, s.slice(-Infinity, NaN));
+22 
+/// substr tests
+// var s = new String("");
+// trace( typeof s.substr(), s.substr());
+string 
+// trace( s.substr(false, true));
+
+// trace( s.substr(25, 29));
+
+// var s = new String("123456789");
+// trace( 1, typeof s.substr(), s.substr());
+1 string 123456789
+// trace( 2, s.substr(false, true));
+2 1
+// trace( 3, s.substr(4, -3));
+3 
+// trace( 4, s.substr(25, 29));
+4 
+// trace( 5, s.substr(-5, 9));
+5 56789
+// trace( 6, s.substr(2, NaN));
+6 
+// trace( 7, s.substr(NaN, 2));
+7 12
+// trace( 8, s.substr(2, undefined));
+8 
+// trace( 9, s.substr(undefined, 2));
+9 12
+// trace( 10, s.substr(-0.01,0));
+10 
+// trace( 11, s.substr(s.length, s.length));
+11 
+// trace( 12, s.substr(s.length+1, 0));
+12 
+// trace( 13, s.substr(Infinity, 5));
+13 
+// trace( 14, s.substr(5, Infinity));
+14 6789
+// trace( 15, s.substr(Infinity, Infinity));
+15 
+// trace( 16, s.substr(-Infinity, -Infinity));
+16 
+// trace( 17, s.substr(-Infinity, Infinity));
+17 123456789
+// trace( 18, s.substr(Infinity, -Infinity));
+18 
+// trace( 19, s.substr(NaN, Infinity));
+19 123456789
+// trace( 20, s.substr(Infinity, NaN));
+20 
+// trace( 21, s.substr(NaN, -Infinity));
+21 
+// trace( 22, s.substr(-Infinity, NaN));
+22 
+/// substring tests
+// var s = new String("");
+// trace( typeof s.substring(), s.substring());
+string 
+// trace( s.substring(false, true));
+
+// trace( s.substring(25, 29));
+
+// var s = new String("123456789");
+// trace( 1, typeof s.substring(), s.substring());
+1 string 123456789
+// trace( 2, s.substring(false, true));
+2 1
+// trace( 3, s.substring(4, -3));
+3 1234
+// trace( 4, s.substring(25, 29));
+4 
+// trace( 5, s.substring(-5, 9));
+5 123456789
+// trace( 6, s.substring(2, NaN));
+6 12
+// trace( 7, s.substring(NaN, 2));
+7 12
+// trace( 8, s.substring(2, undefined));
+8 12
+// trace( 9, s.substring(undefined, 2));
+9 12
+// trace( 10, s.substring(-0.01,0));
+10 
+// trace( 11, s.substring(s.length, s.length));
+11 
+// trace( 12, s.substring(s.length+1, 0));
+12 123456789
+// trace( 13, s.substring(Infinity, 5));
+13 6789
+// trace( 14, s.substring(5, Infinity));
+14 6789
+// trace( 15, s.substring(Infinity, Infinity));
+15 
+// trace( 16, s.substring(-Infinity, -Infinity));
+16 
+// trace( 17, s.substring(-Infinity, Infinity));
+17 123456789
+// trace( 18, s.substring(Infinity, -Infinity));
+18 123456789
+// trace( 19, s.substring(NaN, Infinity));
+19 123456789
+// trace( 20, s.substring(Infinity, NaN));
+20 123456789
+// trace( 21, s.substring(NaN, -Infinity));
+21 
+// trace( 22, s.substring(-Infinity, NaN));
+22 

@@ -147,7 +147,7 @@ fn from_char_code<'gc>(
     let mut out = String::with_capacity(args.len());
     for arg in args {
         let i = arg.coerce_to_u32(activation)? as u16;
-        if i == 0  {
+        if i == 0 {
             continue;
         }
         out.push(string_utils::utf16_code_unit_to_char(i));
