@@ -675,6 +675,10 @@ swf_tests! {
     (as3_bitmapdata_constr, "avm2/bitmapdata_constr", 1),
     (as3_bitmap_constr, "avm2/bitmap_constr", 1),
     #[ignore] (as3_bitmap_properties, "avm2/bitmap_properties", 1),
+    (as3_string_concat_fromcharcode, "avm2/string_concat_fromcharcode", 1),
+    (as3_string_indexof_lastindexof, "avm2/string_indexof_lastindexof", 1),
+    (as3_string_match, "avm2/string_match", 1),
+    (as3_string_slice_substr_substring, "avm2/string_slice_substr_substring", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

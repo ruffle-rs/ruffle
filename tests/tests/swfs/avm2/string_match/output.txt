@@ -1,0 +1,41 @@
+// var str:String = new String("matchablematmatmat");
+// var ret:Array = str.match("mat");
+// trace(ret);
+mat
+// var re = new RegExp("MA*T|a[a-z]*e","i");
+// re.lastIndex = 3;
+// trace(str.match(re), re.lastIndex);
+mat 3
+// trace(str.match(re), re.lastIndex);
+mat 3
+// trace(str.match(re), re.lastIndex);
+mat 3
+// trace(str.match(new RegExp("MA*T|a[a-z]*e","i")));
+mat
+// trace(str.match(new RegExp("ma*t|a[a-z]*e","")));
+mat
+// trace(str.match(new RegExp("ma*t|a[a-z]*e","g")));
+mat,able,mat,mat,mat
+// trace(str.match(new RegExp("notmatch", "g")));
+
+// var subject:String = "AAA";
+// trace(subject.match(/(((((((((((((((((((a*)(abc|b))))))))))))))))))*.)*(...)*/g));
+AAA
+// trace(subject.match(/((((((((((((((((((d|.*)))))))))))))))))*.)*(...)*/g));
+AAA
+// trace(subject.match(/((((((((((((((((((a+)*))))))))))))))))*.)*(...)*/g));
+AAA
+// trace(subject.match("((((((((((((((((((a+)*))))))))))))))))*.)*(...)*"));
+AAA,A,,,,,,,,,,,,,,,,,,
+// trace(subject.match("((((((((((((((((((a+)*))))))))))))))))*.)*(...)*"));
+AAA,A,,,,,,,,,,,,,,,,,,
+// trace(subject.match("(A)(A)"));
+AA,A,A
+// trace(subject.match("AAA"));
+AAA
+// trace(subject.match("AA"));
+AA
+// trace(subject.match("A"));
+A
+// trace(str.match(ruffle_object));
+null

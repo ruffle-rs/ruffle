@@ -1,0 +1,36 @@
+// var s = new String("5");
+// trace(s.concat());
+5
+// trace(s.concat(1));
+51
+// trace(s.concat(s));
+55
+// trace(s.concat(s, 1));
+551
+// trace(s.concat("asdf"));
+5asdf
+// trace(s.concat(null, s, undefined, 0, {}, ruffle_object, true));
+5null5undefined0[object Object]Ruffle Test Objecttrue
+/// fromCharCode
+// trace(String.fromCharCode);
+function Function() {}
+// trace(String.fromCharCode(80));
+P
+// trace(String.fromCharCode(12345));
+〹
+// trace(String.fromCharCode(65616));
+P
+// trace(String.fromCharCode(-65456));
+P
+// trace(String.fromCharCode(0xd801));
+�
+// trace(String.fromCharCode("BAD"));
+
+// String.fromCharCode(NaN)
+
+// String.fromCharCode()
+
+// String.fromCharCode(80, 81, 82)
+PQR
+// String.fromCharCode(80, 0, 82)
+PR
