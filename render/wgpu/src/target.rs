@@ -1,7 +1,7 @@
+#[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
-use futures::executor::block_on;
-use image::buffer::ConvertBuffer;
-use image::{Bgra, ImageBuffer, RgbaImage};
+#[cfg(not(target_family = "wasm"))]
+use image::{buffer::ConvertBuffer, Bgra, ImageBuffer, RgbaImage};
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
@@ -109,6 +109,7 @@ impl RenderTarget for SwapChainTarget {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTarget {
     size: wgpu::Extent3d,
@@ -118,17 +119,21 @@ pub struct TextureTarget {
     buffer_dimensions: BufferDimensions,
 }
 
+#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTargetFrame(wgpu::TextureView);
 
+#[cfg(not(target_family = "wasm"))]
 type BgraImage = ImageBuffer<Bgra<u8>, Vec<u8>>;
 
+#[cfg(not(target_family = "wasm"))]
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl TextureTarget {
     pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Self {
         let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize);
@@ -168,7 +173,7 @@ impl TextureTarget {
     pub fn capture(&self, device: &wgpu::Device) -> Option<RgbaImage> {
         let buffer_future = self.buffer.slice(..).map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
-        match block_on(buffer_future) {
+        match futures::executor::block_on(buffer_future) {
             Ok(()) => {
                 let map = self.buffer.slice(..).get_mapped_range();
                 let mut buffer = Vec::with_capacity(
@@ -195,6 +200,7 @@ impl TextureTarget {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
 impl RenderTarget for TextureTarget {
     type Frame = TextureTargetFrame;
 

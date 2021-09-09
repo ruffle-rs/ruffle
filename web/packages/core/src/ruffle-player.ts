@@ -1230,8 +1230,9 @@ export class RufflePlayer extends HTMLElement {
     }
 
     protected debugPlayerInfo(): string {
-        return `Allows script access: ${this.options?.allowScriptAccess ?? false
-            }\n`;
+        return `Allows script access: ${
+            this.options?.allowScriptAccess ?? false
+        }\n`;
     }
 
     private setMetadata(metadata: MovieMetadata) {

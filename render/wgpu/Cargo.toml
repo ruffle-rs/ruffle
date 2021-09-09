@@ -6,22 +6,34 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-image = { version = "0.23.14", default-features = false }
 log = "0.4"
-ruffle_core = { path = "../../core" }
+ruffle_core = { path = "../../core", default-features = false }
 ruffle_render_common_tess = { path = "../common_tess" }
-futures = "0.3.17"
 bytemuck = { version = "1.7.0", features = ["derive"] }
 raw-window-handle = "0.3.3"
 clap = { version = "3.0.0-beta.5", optional = true }
 enum-map = "1.1.1"
 
-# wgpu desktop
+# desktop
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures]
+version = "0.3.17"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.image]
+version = "0.23.14"
+default-features = false
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.wgpu]
 version = "0.11"
 features = ["spirv"]
 
-# wgpu wasm
+# wasm
+[target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen-futures]
+version = "0.4"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+version = "0.3"
+features = ["HtmlCanvasElement"]
+
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
 version = "0.11"
 features = ["spirv-web"]

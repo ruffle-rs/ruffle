@@ -5,11 +5,8 @@ use ruffle_core::backend::render::{
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
 use std::{borrow::Cow, num::NonZeroU32};
-use target::TextureTarget;
 
 use bytemuck::{Pod, Zeroable};
-use futures::executor::block_on;
-use raw_window_handle::HasRawWindowHandle;
 
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
@@ -276,7 +273,29 @@ enum DrawType {
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
-    pub fn for_window<W: HasRawWindowHandle>(
+    #[cfg(target_family = "wasm")]
+    pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
+        let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU);
+        let surface = unsafe { instance.create_surface_from_canvas(canvas) };
+        let descriptors = Self::build_descriptors(
+            wgpu::Backends::BROWSER_WEBGPU,
+            instance,
+            Some(&surface),
+            wgpu::PowerPreference::HighPerformance,
+            None,
+        )
+        .await?;
+        let target = SwapChainTarget::new(
+            surface,
+            descriptors.surface_format,
+            (1, 1),
+            &descriptors.device,
+        );
+        Self::new(descriptors, target)
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub fn for_window<W: raw_window_handle::HasRawWindowHandle>(
         window: &W,
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -291,7 +310,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(backend);
         let surface = unsafe { instance.create_surface(window) };
-        let descriptors = block_on(Self::build_descriptors(
+        let descriptors = futures::executor::block_on(Self::build_descriptors(
             backend,
             instance,
             Some(&surface),
@@ -308,7 +327,8 @@ impl WgpuRenderBackend<SwapChainTarget> {
     }
 }
 
-impl WgpuRenderBackend<TextureTarget> {
+#[cfg(not(target_family = "wasm"))]
+impl WgpuRenderBackend<target::TextureTarget> {
     pub fn for_offscreen(
         size: (u32, u32),
         backend: wgpu::Backends,
@@ -322,14 +342,14 @@ impl WgpuRenderBackend<TextureTarget> {
             );
         }
         let instance = wgpu::Instance::new(backend);
-        let descriptors = block_on(Self::build_descriptors(
+        let descriptors = futures::executor::block_on(Self::build_descriptors(
             backend,
             instance,
             None,
             power_preference,
             trace_path,
         ))?;
-        let target = TextureTarget::new(&descriptors.device, size);
+        let target = target::TextureTarget::new(&descriptors.device, size);
         Self::new(descriptors, target)
     }
 }
