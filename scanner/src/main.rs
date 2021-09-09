@@ -17,24 +17,28 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use swf::{FileAttributes, Tag};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 use std::panic::catch_unwind;
 use walkdir::{DirEntry, WalkDir};
 
 use std::cell::RefCell;
+use std::env;
+use std::ffi::OsStr;
+use std::io::{stdout, Write};
+use std::process::Command;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum AvmType {
     Avm1,
     Avm2,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum Progress {
     Nothing,
     Read,
@@ -44,7 +48,7 @@ enum Progress {
     Completed,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct FileResults {
     name: String,
     progress: Progress,
@@ -62,7 +66,11 @@ struct Opt {
 
 #[derive(Clap, Debug)]
 enum Mode {
+    /// Scan an entire directory for SWF files
     Scan(ScanOpt),
+
+    /// Execute a single SWF file and generate a machine-readable report
+    ExecuteReport(ExecuteReportOpt),
 }
 
 #[derive(Clap, Debug)]
@@ -78,6 +86,13 @@ struct ScanOpt {
     /// Filenames to ignore
     #[clap(short = 'i', long = "ignore")]
     ignore: Vec<String>,
+}
+
+#[derive(Clap, Debug)]
+struct ExecuteReportOpt {
+    /// The single SWF file to parse and run
+    #[clap(name = "file", parse(from_os_str))]
+    input_path: PathBuf,
 }
 
 fn find_files(root: &Path, ignore: &[String]) -> Vec<DirEntry> {
@@ -149,10 +164,10 @@ impl Log for ThreadLocalScanLogger {
     fn flush(&self) {}
 }
 
-fn execute_swf(file: DirEntry) {
-    let base_path = Path::new(file.path()).parent().unwrap();
+fn execute_swf(file: &Path) {
+    let base_path = file.parent().unwrap();
     let (mut executor, channel) = NullExecutor::new();
-    let movie = SwfMovie::from_path(file.path(), None).unwrap();
+    let movie = SwfMovie::from_path(file, None).unwrap();
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let player = Player::new(
         Box::new(NullRenderer::new()),
@@ -176,143 +191,54 @@ fn execute_swf(file: DirEntry) {
     //executor.poll_all().unwrap();
 }
 
-fn scan_file(file: DirEntry, name: String) -> FileResults {
+fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) -> FileResults {
     let start = Instant::now();
-
-    LOCAL_LOGGER.with(|log_buffer| {
-        log_buffer.borrow_mut().truncate(0);
-    });
-
-    let mut progress = Progress::Nothing;
-
-    let data = match std::fs::read(file.path()) {
-        Ok(data) => data,
-        Err(e) => {
-            return {
-                FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some(format!("File error: {}", e.to_string())),
-                    vm_type: None,
-                }
-            }
-        }
+    let mut file_results = FileResults {
+        name,
+        progress: Progress::Nothing,
+        testing_time: start.elapsed().as_millis(),
+        error: None,
+        vm_type: None,
     };
 
-    progress = Progress::Read;
-
-    let swf_buf = match decompress_swf(&data[..]) {
-        Ok(swf_buf) => swf_buf,
-        Err(e) => {
-            return FileResults {
-                progress,
-                testing_time: start.elapsed().as_millis(),
-                name,
-                error: Some(e.to_string()),
-                vm_type: None,
-            }
-        }
-    };
-
-    progress = Progress::Decompressed;
-
-    let vm_type = match catch_unwind(|| parse_swf(&swf_buf)) {
-        Ok(swf) => match swf {
-            Ok(swf) => {
-                let mut vm_type = Some(AvmType::Avm1);
-                if let Some(Tag::FileAttributes(fa)) = swf.tags.first() {
-                    if fa.contains(FileAttributes::IS_ACTION_SCRIPT_3) {
-                        vm_type = Some(AvmType::Avm2);
+    let subproc = Command::new(exec_path)
+        .args(&[
+            "execute-report",
+            &file.path().to_string_lossy().into_owned(),
+        ])
+        .output();
+    match subproc {
+        Ok(output) => {
+            let mut reader = csv::Reader::from_reader(&output.stdout[..]);
+            for row in reader.deserialize::<FileResults>() {
+                match row {
+                    Ok(child_results) => {
+                        file_results.progress = child_results.progress;
+                        file_results.error = child_results.error;
+                        file_results.vm_type = child_results.vm_type;
+                    }
+                    Err(e) => {
+                        file_results.error = Some(e.to_string());
                     }
                 }
+            }
 
-                vm_type
-            }
-            Err(e) => {
-                return FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some(format!("Parse error: {}", e.to_string())),
-                    vm_type: None,
-                }
-            }
-        },
-        Err(e) => match e.downcast::<String>() {
-            Ok(e) => {
-                return FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some(format!("PANIC: {}", e.to_string())),
-                    vm_type: None,
-                }
-            }
-            Err(_) => {
-                return FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some("PANIC".to_string()),
-                    vm_type: None,
-                }
-            }
-        },
-    };
-
-    progress = Progress::Parsed;
-
-    //Run one frame of the movie in Ruffle.
-    if let Err(e) = catch_unwind(|| execute_swf(file)) {
-        match e.downcast::<String>() {
-            Ok(e) => {
-                return FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some(format!("PANIC: {}", e.to_string())),
-                    vm_type: None,
-                }
-            }
-            Err(_) => {
-                return FileResults {
-                    progress,
-                    testing_time: start.elapsed().as_millis(),
-                    name,
-                    error: Some("PANIC".to_string()),
-                    vm_type: None,
-                }
+            if !output.stderr.is_empty() {
+                let panic_error = String::from_utf8_lossy(&output.stderr).into_owned();
+                file_results.error = Some(
+                    file_results
+                        .error
+                        .map(|e| format!("{}\n{}", e, panic_error))
+                        .unwrap_or(panic_error),
+                );
             }
         }
+        Err(e) => file_results.error = Some(e.to_string()),
     }
 
-    progress = Progress::Executed;
+    file_results.testing_time = start.elapsed().as_millis();
 
-    let errors = LOCAL_LOGGER.with(|log_buffer| {
-        log_buffer.borrow_mut().dedup();
-
-        log_buffer.borrow_mut().join("\n")
-    });
-    if !errors.is_empty() {
-        return FileResults {
-            progress,
-            testing_time: start.elapsed().as_millis(),
-            name,
-            error: Some(errors),
-            vm_type,
-        };
-    }
-
-    progress = Progress::Completed;
-
-    FileResults {
-        progress,
-        testing_time: start.elapsed().as_millis(),
-        name,
-        error: None,
-        vm_type,
-    }
+    file_results
 }
 
 /// Parallel-to-serial iterator bridge trait
@@ -364,14 +290,13 @@ impl<T> Iterator for SerBridgeImpl<T> {
     }
 }
 
-fn scan_main(opt: &ScanOpt) -> Result<(), std::io::Error> {
-    ThreadLocalScanLogger::init();
-
+fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
     ThreadPoolBuilder::new()
         .stack_size(16 * 1024 * 1024)
         .build()
         .unwrap()
         .install(|| {
+            let binary_path = env::current_exe()?;
             let to_scan = find_files(&opt.input_path, &opt.ignore);
             let total = to_scan.len() as u64;
             let mut good = 0;
@@ -406,7 +331,7 @@ fn scan_main(opt: &ScanOpt) -> Result<(), std::io::Error> {
                         .strip_prefix(&input_path)
                         .unwrap_or_else(|_| file.path())
                         .to_slash_lossy();
-                    let result = scan_file(file, name.clone());
+                    let result = scan_file(&binary_path, file, name.clone());
 
                     closure_progress.inc(1);
                     closure_progress.set_message(name);
@@ -434,10 +359,162 @@ fn scan_main(opt: &ScanOpt) -> Result<(), std::io::Error> {
         })
 }
 
+fn checkpoint<W: Write>(
+    file_result: &mut FileResults,
+    start: &Instant,
+    writer: &mut csv::Writer<W>,
+) -> Result<(), std::io::Error> {
+    let has_error = file_result.error.is_some();
+
+    file_result.testing_time = start.elapsed().as_millis();
+    writer.serialize(file_result).unwrap();
+
+    if has_error {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Error encountered, test terminated",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), std::io::Error> {
+    ThreadLocalScanLogger::init();
+
+    let start = Instant::now();
+    let file_path = execute_report_opt.input_path;
+    let name = file_path
+        .file_name()
+        .expect("Valid file name in input path")
+        .to_string_lossy()
+        .into_owned();
+
+    LOCAL_LOGGER.with(|log_buffer| {
+        log_buffer.borrow_mut().truncate(0);
+    });
+
+    let mut file_result = FileResults {
+        progress: Progress::Nothing,
+        testing_time: start.elapsed().as_millis(),
+        name,
+        error: None,
+        vm_type: None,
+    };
+    let stdout = stdout();
+    let mut writer = csv::Writer::from_writer(stdout.lock());
+    checkpoint(&mut file_result, &start, &mut writer)?;
+
+    let data = match std::fs::read(&file_path) {
+        Ok(data) => data,
+        Err(e) => {
+            file_result.error = Some(format!("File error: {}", e.to_string()));
+            checkpoint(&mut file_result, &start, &mut writer)?;
+
+            return Ok(());
+        }
+    };
+
+    file_result.progress = Progress::Read;
+    checkpoint(&mut file_result, &start, &mut writer)?;
+
+    let swf_buf = match decompress_swf(&data[..]) {
+        Ok(swf_buf) => swf_buf,
+        Err(e) => {
+            file_result.error = Some(e.to_string());
+            checkpoint(&mut file_result, &start, &mut writer)?;
+
+            return Ok(());
+        }
+    };
+
+    file_result.progress = Progress::Decompressed;
+    checkpoint(&mut file_result, &start, &mut writer)?;
+
+    let vm_type = match catch_unwind(|| parse_swf(&swf_buf)) {
+        Ok(swf) => match swf {
+            Ok(swf) => {
+                let mut vm_type = Some(AvmType::Avm1);
+                if let Some(Tag::FileAttributes(fa)) = swf.tags.first() {
+                    if fa.contains(FileAttributes::IS_ACTION_SCRIPT_3) {
+                        vm_type = Some(AvmType::Avm2);
+                    }
+                }
+
+                vm_type
+            }
+            Err(e) => {
+                file_result.error = Some(format!("Parse error: {}", e.to_string()));
+                checkpoint(&mut file_result, &start, &mut writer)?;
+
+                return Ok(());
+            }
+        },
+        Err(e) => match e.downcast::<String>() {
+            Ok(e) => {
+                file_result.error = Some(format!("PANIC: {}", e.to_string()));
+                checkpoint(&mut file_result, &start, &mut writer)?;
+
+                return Ok(());
+            }
+            Err(_) => {
+                file_result.error = Some("PANIC".to_string());
+                checkpoint(&mut file_result, &start, &mut writer)?;
+
+                return Ok(());
+            }
+        },
+    };
+
+    file_result.vm_type = vm_type;
+    file_result.progress = Progress::Parsed;
+    checkpoint(&mut file_result, &start, &mut writer)?;
+
+    //Run one frame of the movie in Ruffle.
+    if let Err(e) = catch_unwind(|| execute_swf(&file_path)) {
+        match e.downcast::<String>() {
+            Ok(e) => {
+                file_result.error = Some(format!("PANIC: {}", e.to_string()));
+                checkpoint(&mut file_result, &start, &mut writer)?;
+            }
+            Err(_) => {
+                file_result.error = Some("PANIC".to_string());
+                checkpoint(&mut file_result, &start, &mut writer)?;
+            }
+        }
+    }
+
+    file_result.progress = Progress::Executed;
+
+    let errors = LOCAL_LOGGER.with(|log_buffer| {
+        log_buffer.borrow_mut().dedup();
+
+        log_buffer.borrow_mut().join("\n")
+    });
+    if !errors.is_empty() {
+        file_result.error = Some(errors);
+        checkpoint(&mut file_result, &start, &mut writer)?;
+    }
+
+    file_result.progress = Progress::Completed;
+    checkpoint(&mut file_result, &start, &mut writer)?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), std::io::Error> {
     let opt = Opt::parse();
 
     match opt.mode {
-        Mode::Scan(scan_opt) => scan_main(&scan_opt),
+        Mode::Scan(scan_opt) => scan_main(scan_opt),
+        Mode::ExecuteReport(exeute_report_opt) => {
+            if execute_report_main(exeute_report_opt).is_err() {
+                // Do nothing.
+            }
+
+            // Do NOT report errors in this function so it doesn't pollute the
+            // CSV output.
+            Ok(())
+        }
     }
 }
