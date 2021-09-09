@@ -1525,7 +1525,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
-        let result = self.find_definition(&multiname)?;
+        let result = self
+            .find_definition(&multiname)?
+            .or_else(|| self.global_scope());
 
         self.context
             .avm2
