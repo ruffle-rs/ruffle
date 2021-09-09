@@ -37,7 +37,7 @@ ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 url = "2.2.2"
-wasm-bindgen = { version = "=0.2.76", features = ["serde-serialize"] }
+wasm-bindgen = { version = "=0.2.77", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.26"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
