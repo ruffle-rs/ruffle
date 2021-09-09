@@ -75,6 +75,7 @@ pub struct BufferDimensions {
 }
 
 impl BufferDimensions {
+    #[allow(dead_code)]
     pub fn new(width: usize, height: usize) -> Self {
         let bytes_per_pixel = size_of::<u32>();
         let unpadded_bytes_per_row = width * bytes_per_pixel;

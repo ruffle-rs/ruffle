@@ -6,7 +6,7 @@
     "private": true,
     "scripts": {
         "build": "webpack",
-        "serve": "webpack serve"
+        "serve": "webpack serve --port 8081"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"

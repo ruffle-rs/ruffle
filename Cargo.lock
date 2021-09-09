@@ -3102,6 +3102,8 @@ dependencies = [
  "raw-window-handle",
  "ruffle_core",
  "ruffle_render_common_tess",
+ "wasm-bindgen-futures",
+ "web-sys",
  "wgpu",
 ]
 
@@ -3140,6 +3142,7 @@ dependencies = [
  "ruffle_core",
  "ruffle_render_canvas",
  "ruffle_render_webgl",
+ "ruffle_render_wgpu",
  "ruffle_web_common",
  "serde",
  "thiserror",

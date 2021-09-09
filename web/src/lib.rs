@@ -13,7 +13,7 @@ mod storage;
 mod ui;
 
 use generational_arena::{Arena, Index};
-use js_sys::{Array, Function, Object, Uint8Array};
+use js_sys::{Array, Function, Object, Promise, Uint8Array};
 use ruffle_core::backend::{
     audio::{AudioBackend, NullAudioBackend},
     render::RenderBackend,
@@ -205,22 +205,23 @@ pub struct Ruffle(Index);
 
 #[wasm_bindgen]
 impl Ruffle {
+    #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        parent: HtmlElement,
-        js_player: JavascriptPlayer,
-        config: &JsValue,
-    ) -> Result<Ruffle, JsValue> {
-        if RUFFLE_GLOBAL_PANIC.is_completed() {
-            // If an actual panic happened, then we can't trust the state it left us in.
-            // Prevent future players from loading so that they can inform the user about the error.
-            return Err("Ruffle is panicking!".into());
-        }
-        set_panic_handler();
-
+    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: &JsValue) -> Promise {
         let config: Config = config.into_serde().unwrap_or_default();
+        wasm_bindgen_futures::future_to_promise(async move {
+            if RUFFLE_GLOBAL_PANIC.is_completed() {
+                // If an actual panic happened, then we can't trust the state it left us in.
+                // Prevent future players from loading so that they can inform the user about the error.
+                return Err("Ruffle is panicking!".into());
+            }
+            set_panic_handler();
 
-        Ruffle::new_internal(parent, js_player, config).map_err(|_| "Error creating player".into())
+            let ruffle = Ruffle::new_internal(parent, js_player, config)
+                .await
+                .map_err(|_| JsValue::from("Error creating player"))?;
+            Ok(JsValue::from(ruffle))
+        })
     }
 
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -450,7 +451,7 @@ impl Ruffle {
 }
 
 impl Ruffle {
-    fn new_internal(
+    async fn new_internal(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
         config: Config,
@@ -461,7 +462,7 @@ impl Ruffle {
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
-        let (canvas, renderer) = create_renderer(&document)?;
+        let (canvas, renderer) = create_renderer(&document).await?;
         parent
             .append_child(&canvas.clone().into())
             .into_js_result()?;
@@ -1216,11 +1217,36 @@ fn external_to_js_value(external: ExternalValue) -> JsValue {
     }
 }
 
-fn create_renderer(
+async fn create_renderer(
     document: &web_sys::Document,
 ) -> Result<(HtmlCanvasElement, Box<dyn RenderBackend>), Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
+
+    // Try to create a backend, falling through to the next backend on failure.
+    // We must recreate the canvas each attempt, as only a single context may be created per canvas
+    // with `getContext`.
+    #[cfg(feature = "wgpu")]
+    {
+        // Check that we have access to WebGPU (navigator.gpu should exist).
+        if web_sys::window()
+            .ok_or(JsValue::FALSE)
+            .and_then(|window| js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu")))
+            .unwrap_or_default()
+        {
+            log::info!("Creating wgpu renderer...");
+            let canvas: HtmlCanvasElement = document
+                .create_element("canvas")
+                .into_js_result()?
+                .dyn_into()
+                .map_err(|_| "Expected HtmlCanvasElement")?;
+
+            match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
+                Ok(renderer) => return Ok((canvas, Box::new(renderer))),
+                Err(error) => log::error!("Error creating wgpu renderer: {}", error),
+            }
+        }
+    }
 
     // Try to create a backend, falling through to the next backend on failure.
     // We must recreate the canvas each attempt, as only a single context may be created per canvas

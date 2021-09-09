@@ -24,6 +24,7 @@ lzma = ["ruffle_core/lzma"]
 # web features
 canvas = ["ruffle_render_canvas"]
 webgl = ["ruffle_render_webgl"]
+wgpu = ["ruffle_render_wgpu"]
 
 [dependencies]
 byteorder = "1.4"
@@ -36,6 +37,7 @@ log = { version = "0.4", features = ["serde"] }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
+ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 url = "2.2.2"
 wasm-bindgen = { version = "=0.2.78", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.28"
@@ -55,7 +57,7 @@ version = "0.3.50"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode",
     "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
-    "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
+    "Element", "Event", "EventTarget", "GainNode", "Gpu", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
     "Navigator", "Node", "Performance", "PointerEvent", "ScriptProcessorNode", "UiEvent", "Window", "Location", "HtmlFormElement",
     "KeyboardEvent", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement", "Response", "Request", "RequestInit",
     "Blob", "BlobPropertyBag", "Storage", "WheelEvent", "ImageData"]
