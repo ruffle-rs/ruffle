@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-image = "0.23.14"
+image = { version = "0.23.14", default-features = false }
 log = "0.4"
 ruffle_core = { path = "../../core" }
 ruffle_render_common_tess = { path = "../common_tess" }
