@@ -108,15 +108,13 @@ impl<'gc> Executable<'gc> {
             Executable::Native(bm) => {
                 let method = bm.method.method;
                 let receiver = bm.bound_receiver.or(unbound_receiver);
-                let context = activation
-                    .code_context()
-                    .unwrap_or_else(|| activation.domain());
+                let caller_domain = activation.caller_domain();
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     receiver,
                     subclass_object,
                     bm.scope,
-                    context,
+                    caller_domain,
                 )?;
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {

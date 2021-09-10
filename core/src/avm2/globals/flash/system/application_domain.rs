@@ -37,7 +37,7 @@ pub fn current_domain<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let appdomain = activation.code_context().unwrap();
+    let appdomain = activation.caller_domain();
 
     Ok(DomainObject::from_domain(activation, appdomain)?.into())
 }

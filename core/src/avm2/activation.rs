@@ -102,15 +102,19 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     scope_stack: ScopeStack<'gc>,
 
     /// This represents the outer scope of the method that is executing.
+    ///
     /// The outer scope gives an activation access to the "outer world", including
     /// the current Domain.
     outer: ScopeChain<'gc>,
 
-    /// The context of the method that is executing.
-    /// This is used exclusively by builtin methods to gain access to the Domain of the caller.
+    /// The domain of the original AS3 caller.
     ///
-    /// This will always be available to builtin methods, so it is safe to unwrap.
-    code_context: Option<Domain<'gc>>,
+    /// This is intended exclusively for builtin methods to access the domain of the
+    /// bytecode method that called it.
+    ///
+    /// If this activation was not made for a builtin method, this will be the
+    /// current domain instead.
+    caller_domain: Domain<'gc>,
 
     /// The class that yielded the currently executing method.
     ///
@@ -158,7 +162,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             scope_stack: ScopeStack::new(),
             outer: ScopeChain::new(context.avm2.globals),
-            code_context: None,
+            caller_domain: context.avm2.globals,
             subclass_object: None,
             activation_class: None,
             context,
@@ -199,7 +203,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             scope_stack: ScopeStack::new(),
             outer: ScopeChain::new(domain),
-            code_context: None,
+            caller_domain: domain,
             subclass_object: None,
             activation_class: None,
             context,
@@ -419,7 +423,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             scope_stack: ScopeStack::new(),
             outer,
-            code_context: None,
+            caller_domain: outer.domain(),
             subclass_object,
             activation_class,
             context,
@@ -483,7 +487,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         this: Option<Object<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
-        code_context: Domain<'gc>,
+        caller_domain: Domain<'gc>,
     ) -> Result<Self, Error> {
         let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
@@ -496,7 +500,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return_value: None,
             scope_stack: ScopeStack::new(),
             outer,
-            code_context: Some(code_context),
+            caller_domain,
             subclass_object,
             activation_class: None,
             context,
@@ -575,15 +579,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
+    /// Creates a new ScopeChain by chaining the current state of this
+    /// activation's scope stack with the outer scope.
     pub fn create_scopechain(&self) -> ScopeChain<'gc> {
         self.outer
             .chain(self.context.gc_context, self.scope_stack.scopes())
     }
 
-    pub fn code_context(&self) -> Option<Domain<'gc>> {
-        self.code_context
+    /// Returns the domain of the original AS3 caller.
+    pub fn caller_domain(&self) -> Domain<'gc> {
+        self.caller_domain
     }
 
+    /// Returns the global scope of this activation.
+    ///
+    /// The global scope refers to scope at the bottom of the
+    /// outer scope. If the outer scope is empty, we use the bottom
+    /// of the current scope stack instead.
+    ///
+    /// A return value of `None` implies that both the outer scope, and
+    /// the current scope stack were both empty.
     pub fn global_scope(&self) -> Option<Object<'gc>> {
         let outer_scope = self.outer;
         outer_scope
