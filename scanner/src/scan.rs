@@ -6,7 +6,6 @@ use crate::ser_bridge::SerBridge;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
 use rayon::prelude::*;
-use rayon::ThreadPoolBuilder;
 
 use std::path::Path;
 
@@ -92,70 +91,64 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) ->
 ///
 /// Should be called with parsed options corresponding to the `scan` command.
 pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
-    ThreadPoolBuilder::new()
-        .stack_size(16 * 1024 * 1024)
-        .build()
-        .unwrap()
-        .install(|| {
-            let binary_path = env::current_exe()?;
-            let to_scan = find_files(&opt.input_path, &opt.ignore);
-            let total = to_scan.len() as u64;
-            let mut good = 0;
-            let mut bad = 0;
-            let progress = ProgressBar::new(total);
-            let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
+    let binary_path = env::current_exe()?;
+    let to_scan = find_files(&opt.input_path, &opt.ignore);
+    let total = to_scan.len() as u64;
+    let mut good = 0;
+    let mut bad = 0;
+    let progress = ProgressBar::new(total);
+    let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
 
-            progress.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-                )
-                .progress_chars("##-"),
-        );
+    progress.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
+            )
+            .progress_chars("##-"),
+    );
 
-            writer.write_record(&[
-                "Filename",
-                "Progress",
-                "Test Duration",
-                "Error",
-                "AVM Version",
-            ])?;
+    writer.write_record(&[
+        "Filename",
+        "Progress",
+        "Test Duration",
+        "Error",
+        "AVM Version",
+    ])?;
 
-            let input_path = opt.input_path.clone();
-            let closure_progress = progress.clone();
+    let input_path = opt.input_path;
+    let closure_progress = progress.clone();
 
-            let result_iter = to_scan
-                .into_par_iter()
-                .map(move |file| {
-                    let name = file
-                        .path()
-                        .strip_prefix(&input_path)
-                        .unwrap_or_else(|_| file.path())
-                        .to_slash_lossy();
-                    let result = scan_file(&binary_path, file, name.clone());
+    let result_iter = to_scan
+        .into_par_iter()
+        .map(move |file| {
+            let name = file
+                .path()
+                .strip_prefix(&input_path)
+                .unwrap_or_else(|_| file.path())
+                .to_slash_lossy();
+            let result = scan_file(&binary_path, file, name.clone());
 
-                    closure_progress.inc(1);
-                    closure_progress.set_message(name);
+            closure_progress.inc(1);
+            closure_progress.set_message(name);
 
-                    result
-                })
-                .ser_bridge();
-
-            for result in result_iter {
-                if result.error.is_none() {
-                    good += 1;
-                } else {
-                    bad += 1;
-                }
-
-                writer.serialize(result)?;
-            }
-
-            progress.finish_with_message(format!(
-                "Scanned {} swf files. {} successfully parsed, {} encountered errors",
-                total, good, bad
-            ));
-
-            Ok(())
+            result
         })
+        .ser_bridge();
+
+    for result in result_iter {
+        if result.error.is_none() {
+            good += 1;
+        } else {
+            bad += 1;
+        }
+
+        writer.serialize(result)?;
+    }
+
+    progress.finish_with_message(format!(
+        "Scanned {} swf files. {} successfully parsed, {} encountered errors",
+        total, good, bad
+    ));
+
+    Ok(())
 }
