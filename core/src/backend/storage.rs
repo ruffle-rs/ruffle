@@ -14,16 +14,9 @@ pub trait StorageBackend: Downcast {
 }
 impl_downcast!(StorageBackend);
 
+#[derive(Default)]
 pub struct MemoryStorageBackend {
     map: HashMap<String, Vec<u8>>,
-}
-
-impl Default for MemoryStorageBackend {
-    fn default() -> Self {
-        MemoryStorageBackend {
-            map: HashMap::new(),
-        }
-    }
 }
 
 impl StorageBackend for MemoryStorageBackend {
