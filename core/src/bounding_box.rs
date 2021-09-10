@@ -2,7 +2,7 @@ use crate::matrix::Matrix;
 use gc_arena::Collect;
 use swf::Twips;
 
-#[derive(Clone, Debug, PartialEq, Collect)]
+#[derive(Clone, Debug, PartialEq, Collect, Default)]
 #[collect(require_static)]
 pub struct BoundingBox {
     pub x_min: Twips,
@@ -154,18 +154,6 @@ impl BoundingBox {
         self.y_max = self.y_min + height;
 
         self.valid = self.x_max >= self.x_min && self.y_max >= self.y_min;
-    }
-}
-
-impl Default for BoundingBox {
-    fn default() -> Self {
-        Self {
-            x_min: Default::default(),
-            y_min: Default::default(),
-            x_max: Default::default(),
-            y_max: Default::default(),
-            valid: false,
-        }
     }
 }
 
