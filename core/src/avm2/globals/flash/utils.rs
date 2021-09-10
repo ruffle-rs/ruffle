@@ -89,7 +89,7 @@ pub fn get_definition_by_name<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let appdomain = activation.code_context().unwrap();
+    let appdomain = activation.caller_domain();
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
