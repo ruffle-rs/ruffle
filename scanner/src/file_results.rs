@@ -60,52 +60,71 @@ pub enum Step {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileResults {
     /// The file name scanned (including path).
+    #[serde(rename = "Filename")]
     pub name: String,
 
     /// The SHA256 hash of the SWF file.
-    #[serde(serialize_with = "into_hex", deserialize_with = "from_hex")]
+    #[serde(
+        rename = "SHA256 Hash",
+        serialize_with = "into_hex",
+        deserialize_with = "from_hex"
+    )]
     pub hash: Vec<u8>,
 
     /// How far we were able to process this particular SWF
+    #[serde(rename = "Progress")]
     pub progress: Step,
 
     /// How long testing took to complete
+    #[serde(rename = "Test Duration")]
     pub testing_time: u128,
 
     /// The compressed length of the SWF file.
+    #[serde(rename = "Compressed Length")]
     pub compressed_len: Option<usize>,
 
     /// The uncompressed length of the SWF file.
+    #[serde(rename = "Uncompressed Length")]
     pub uncompressed_len: Option<u32>,
 
     /// Any errors encountered while testing.
+    #[serde(rename = "Error")]
     pub error: Option<String>,
 
     /// The compression type this SWF uses.
+    #[serde(rename = "Compression")]
     pub compression: Option<Compression>,
 
     /// The file format version of this SWF.
+    #[serde(rename = "SWF Version")]
     pub version: Option<u8>,
 
     /// The stage size of this SWF.
+    #[serde(rename = "Stage Size")]
     pub stage_size: Option<String>,
 
     /// The frame rate of this SWF.
+    #[serde(rename = "Frame Rate")]
     pub frame_rate: Option<f32>,
 
     /// The number of frames this SWF claims to contain.
+    #[serde(rename = "Number of Frames")]
     pub num_frames: Option<u16>,
 
     /// Whether or not the SWF requests hardware-accelerated presentation.
+    #[serde(rename = "Direct Blit")]
     pub use_direct_blit: Option<bool>,
 
     /// Whether or not the SWF requests hardware-accelerated compositing.
+    #[serde(rename = "GPU")]
     pub use_gpu: Option<bool>,
 
     /// Whether or not the SWF requests network access when ran locally.
+    #[serde(rename = "Network Sandbox")]
     pub use_network_sandbox: Option<bool>,
 
     /// The AVM type of the movie.
+    #[serde(rename = "AVM Version")]
     pub vm_type: Option<AvmType>,
 }
 

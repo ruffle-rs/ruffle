@@ -131,25 +131,6 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
             .progress_chars("##-"),
     );
 
-    writer.write_record(&[
-        "Filename",
-        "SHA256 Hash",
-        "Progress",
-        "Test Duration",
-        "Compressed Length",
-        "Uncompressed Length",
-        "Error",
-        "Compression",
-        "SWF Version",
-        "Stage Size",
-        "Frame Rate",
-        "Number of Frames",
-        "Direct Blit",
-        "GPU",
-        "Network Sandbox",
-        "AVM Version",
-    ])?;
-
     let input_path = opt.input_path;
     let closure_progress = progress.clone();
 
