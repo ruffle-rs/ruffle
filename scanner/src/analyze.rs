@@ -78,6 +78,7 @@ pub fn analyze(results: impl Iterator<Item = FileResults>) {
         complete,
         digits = digits
     );
+    println!();
 }
 
 pub fn analyze_main(opt: AnalyzeOpt) -> Result<(), std::io::Error> {
