@@ -72,6 +72,12 @@ pub struct FileResults {
     /// How long testing took to complete
     pub testing_time: u128,
 
+    /// The compressed length of the SWF file.
+    pub compressed_len: Option<usize>,
+
+    /// The uncompressed length of the SWF file.
+    pub uncompressed_len: Option<u32>,
+
     /// Any errors encountered while testing.
     pub error: Option<String>,
 
@@ -116,6 +122,8 @@ impl FileResults {
             hash: vec![],
             progress: Step::Start,
             testing_time: 0,
+            compressed_len: None,
+            uncompressed_len: None,
             error: None,
             compression: None,
             version: None,

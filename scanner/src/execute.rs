@@ -103,6 +103,8 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         }
     };
 
+    file_result.compressed_len = Some(data.len());
+
     let mut hash = Sha256::new();
     hash.update(&data[..]);
 
@@ -131,6 +133,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
                 let stage_width = (stage_size.x_max - stage_size.x_min).to_pixels();
                 let stage_height = (stage_size.y_max - stage_size.y_min).to_pixels();
 
+                file_result.uncompressed_len = Some(swf.header.uncompressed_len());
                 file_result.compression = Some(swf.header.compression().into());
                 file_result.version = Some(swf.header.version());
                 file_result.stage_size = Some(format!("{}x{}", stage_width, stage_height));
