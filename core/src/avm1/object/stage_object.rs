@@ -335,7 +335,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         value: &mut Value<'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().base.call_watcher(activation, name, value, this)
+        self.0
+            .read()
+            .base
+            .call_watcher(activation, name, value, this)
     }
 
     fn watch(
