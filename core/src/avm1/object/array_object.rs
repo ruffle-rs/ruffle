@@ -186,8 +186,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().call_watcher(activation, name, value)
+        self.0.read().call_watcher(activation, name, value, this)
     }
 
     fn watch(

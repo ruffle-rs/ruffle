@@ -181,8 +181,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().this.call_watcher(activation, name, value)
+        self.0
+            .read()
+            .this
+            .call_watcher(activation, name, value, this)
     }
 
     fn watch(

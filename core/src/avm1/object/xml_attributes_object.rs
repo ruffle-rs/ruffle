@@ -146,8 +146,9 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.base().call_watcher(activation, name, value)
+        self.base().call_watcher(activation, name, value, this)
     }
 
     fn watch(

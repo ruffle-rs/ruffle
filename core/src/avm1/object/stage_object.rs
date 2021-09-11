@@ -333,8 +333,12 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        self.0.read().base.call_watcher(activation, name, value)
+        self.0
+            .read()
+            .base
+            .call_watcher(activation, name, value, this)
     }
 
     fn watch(
