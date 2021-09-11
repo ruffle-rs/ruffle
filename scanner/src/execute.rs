@@ -1,7 +1,7 @@
 //! Child/executor process impls
 
 use crate::cli_options::ExecuteReportOpt;
-use crate::file_results::{AvmType, FileResults, Progress};
+use crate::file_results::{AvmType, FileResults, Step};
 use crate::logging::{ScanLogBackend, ThreadLocalScanLogger, LOCAL_LOGGER};
 use ruffle_core::backend::audio::NullAudioBackend;
 use ruffle_core::backend::locale::NullLocaleBackend;
@@ -86,17 +86,13 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         log_buffer.borrow_mut().truncate(0);
     });
 
-    let mut file_result = FileResults {
-        progress: Progress::Nothing,
-        hash: vec![],
-        testing_time: start.elapsed().as_millis(),
-        name,
-        error: None,
-        vm_type: None,
-    };
+    let mut file_result = FileResults::new(&name);
+
     let stdout = stdout();
     let mut writer = csv::Writer::from_writer(stdout.lock());
     checkpoint(&mut file_result, &start, &mut writer)?;
+
+    file_result.progress = Step::Read;
 
     let data = match std::fs::read(&file_path) {
         Ok(data) => data,
@@ -112,8 +108,9 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     hash.update(&data[..]);
 
     file_result.hash = hash.finalize().to_vec();
-    file_result.progress = Progress::Read;
     checkpoint(&mut file_result, &start, &mut writer)?;
+
+    file_result.progress = Step::Decompress;
 
     let swf_buf = match decompress_swf(&data[..]) {
         Ok(swf_buf) => swf_buf,
@@ -125,10 +122,10 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         }
     };
 
-    file_result.progress = Progress::Decompressed;
     checkpoint(&mut file_result, &start, &mut writer)?;
+    file_result.progress = Step::Parse;
 
-    let vm_type = match catch_unwind(|| parse_swf(&swf_buf)) {
+    match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
                 let mut vm_type = Some(AvmType::Avm1);
@@ -138,34 +135,27 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
                     }
                 }
 
-                vm_type
+                file_result.vm_type = vm_type;
             }
             Err(e) => {
                 file_result.error = Some(format!("Parse error: {}", e.to_string()));
                 checkpoint(&mut file_result, &start, &mut writer)?;
-
-                return Ok(());
             }
         },
         Err(e) => match e.downcast::<String>() {
             Ok(e) => {
                 file_result.error = Some(format!("PANIC: {}", e.to_string()));
                 checkpoint(&mut file_result, &start, &mut writer)?;
-
-                return Ok(());
             }
             Err(_) => {
                 file_result.error = Some("PANIC".to_string());
                 checkpoint(&mut file_result, &start, &mut writer)?;
-
-                return Ok(());
             }
         },
     };
 
-    file_result.vm_type = vm_type;
-    file_result.progress = Progress::Parsed;
     checkpoint(&mut file_result, &start, &mut writer)?;
+    file_result.progress = Step::Execute;
 
     //Run one frame of the movie in Ruffle.
     if let Err(e) = catch_unwind(|| execute_swf(&file_path)) {
@@ -181,8 +171,6 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         }
     }
 
-    file_result.progress = Progress::Executed;
-
     let errors = LOCAL_LOGGER.with(|log_buffer| {
         log_buffer.borrow_mut().dedup();
 
@@ -190,10 +178,10 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     });
     if !errors.is_empty() {
         file_result.error = Some(errors);
-        checkpoint(&mut file_result, &start, &mut writer)?;
+    } else {
+        file_result.progress = Step::Complete;
     }
 
-    file_result.progress = Progress::Completed;
     checkpoint(&mut file_result, &start, &mut writer)?;
 
     Ok(())
