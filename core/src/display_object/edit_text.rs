@@ -1645,12 +1645,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn width(&self) -> f64 {
-        let edit_text = self.0.read();
-        edit_text
-            .bounds
-            .transform(&edit_text.base.transform.matrix)
-            .width()
-            .to_pixels()
+        self.0.read().bounds.width().to_pixels()
     }
 
     fn set_width(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
@@ -1664,12 +1659,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn height(&self) -> f64 {
-        let edit_text = self.0.read();
-        edit_text
-            .bounds
-            .transform(&edit_text.base.transform.matrix)
-            .height()
-            .to_pixels()
+        self.0.read().bounds.height().to_pixels()
     }
 
     fn set_height(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
