@@ -681,9 +681,7 @@ impl WebAudioBackend {
                 num_sample_frames,
                 f32::from(sample_rate),
             )
-            .map_err(|e| {
-                format!("Failed to create AudioBuffer: {:?}", e)
-            })?;
+            .map_err(|e| format!("Failed to create AudioBuffer: {:?}", e))?;
 
         copy_to_audio_buffer(
             &audio_buffer,
