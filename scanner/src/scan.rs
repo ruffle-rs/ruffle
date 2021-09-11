@@ -41,6 +41,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) ->
     let start = Instant::now();
     let mut file_results = FileResults {
         name,
+        hash: vec![],
         progress: Progress::Nothing,
         testing_time: start.elapsed().as_millis(),
         error: None,
@@ -109,6 +110,7 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
 
     writer.write_record(&[
         "Filename",
+        "SHA256 Hash",
         "Progress",
         "Test Duration",
         "Error",
