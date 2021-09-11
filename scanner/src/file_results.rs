@@ -8,13 +8,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Write;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AvmType {
     Avm1,
     Avm2,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Compression {
     None,
     Zlib,
@@ -32,7 +32,7 @@ impl From<swf::Compression> for Compression {
 }
 
 /// A particular step in the scanner process.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Step {
     /// Nothing has been done yet.
     ///
@@ -57,7 +57,7 @@ pub enum Step {
 }
 
 /// The result of a single scan.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileResults {
     /// The file name scanned (including path).
     pub name: String,

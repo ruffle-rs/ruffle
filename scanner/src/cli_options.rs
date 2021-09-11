@@ -15,6 +15,9 @@ pub enum Mode {
     /// Scan an entire directory for SWF files
     Scan(ScanOpt),
 
+    /// Analyze a previously executed scan and compile statistics on it
+    Analyze(AnalyzeOpt),
+
     /// Execute a single SWF file and generate a machine-readable report
     ExecuteReport(ExecuteReportOpt),
 }
@@ -32,6 +35,13 @@ pub struct ScanOpt {
     /// Filenames to ignore
     #[clap(short = 'i', long = "ignore")]
     pub ignore: Vec<String>,
+}
+
+#[derive(Clap, Debug)]
+pub struct AnalyzeOpt {
+    /// The CSV file to reanalyze
+    #[clap(name = "input", parse(from_os_str))]
+    pub input_path: PathBuf,
 }
 
 #[derive(Clap, Debug)]
