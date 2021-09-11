@@ -53,9 +53,40 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) ->
             for row in reader.deserialize::<FileResults>() {
                 match row {
                     Ok(child_results) => {
-                        file_results.progress = child_results.progress;
-                        file_results.error = child_results.error;
-                        file_results.vm_type = child_results.vm_type;
+                        let FileResults {
+                            name: _name,
+                            hash,
+                            progress,
+                            testing_time,
+                            compressed_len,
+                            uncompressed_len,
+                            error,
+                            compression,
+                            version,
+                            stage_size,
+                            frame_rate,
+                            num_frames,
+                            use_direct_blit,
+                            use_gpu,
+                            use_network_sandbox,
+                            vm_type,
+                        } = child_results;
+
+                        file_results.hash = hash;
+                        file_results.progress = progress;
+                        file_results.testing_time = testing_time;
+                        file_results.compressed_len = compressed_len;
+                        file_results.uncompressed_len = uncompressed_len;
+                        file_results.error = error;
+                        file_results.compression = compression;
+                        file_results.version = version;
+                        file_results.stage_size = stage_size;
+                        file_results.frame_rate = frame_rate;
+                        file_results.num_frames = num_frames;
+                        file_results.use_direct_blit = use_direct_blit;
+                        file_results.use_gpu = use_gpu;
+                        file_results.use_network_sandbox = use_network_sandbox;
+                        file_results.vm_type = vm_type;
                     }
                     Err(e) => {
                         file_results.error = Some(e.to_string());
