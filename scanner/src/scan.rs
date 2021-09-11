@@ -1,5 +1,6 @@
 //! Main/scanner process impls
 
+use crate::analyze::analyze;
 use crate::cli_options::ScanOpt;
 use crate::file_results::FileResults;
 use crate::ser_bridge::SerBridge;
@@ -119,8 +120,6 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
     let binary_path = env::current_exe()?;
     let to_scan = find_files(&opt.input_path, &opt.ignore);
     let total = to_scan.len() as u64;
-    let mut good = 0;
-    let mut bad = 0;
     let progress = ProgressBar::new(total);
     let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
 
@@ -169,22 +168,18 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
 
             result
         })
-        .ser_bridge();
+        .ser_bridge()
+        .map(|result| {
+            if let Err(e) = writer.serialize(result.clone()) {
+                eprintln!("{}", e);
+            };
 
-    for result in result_iter {
-        if result.error.is_none() {
-            good += 1;
-        } else {
-            bad += 1;
-        }
+            result
+        });
 
-        writer.serialize(result)?;
-    }
+    progress.finish();
 
-    progress.finish_with_message(format!(
-        "Scanned {} swf files. {} successfully parsed, {} encountered errors",
-        total, good, bad
-    ));
+    analyze(result_iter);
 
     Ok(())
 }
