@@ -14,31 +14,71 @@ pub enum AvmType {
     Avm2,
 }
 
-/// How far we got through the scan before getting an error.
+/// A particular step in the scanner process.
 #[derive(Serialize, Deserialize, Debug)]
-pub enum Progress {
-    /// Nothing was able to be completed.
+pub enum Step {
+    /// Nothing has been done yet.
     ///
-    /// Usually this indicates a significant problem
-    Nothing,
+    /// Usually this indicates a significant problem unrelated to Ruffle, or a
+    /// scanner child process panic.
+    Start,
+
+    /// Reading of the file into memory and computing it's SHA256 hash.
     Read,
-    Decompressed,
-    Parsed,
-    Executed,
-    Completed,
+
+    /// Decompression of the file data into a SWF bytestream.
+    Decompress,
+
+    /// Parsing of the decompressed SWF.
+    Parse,
+
+    /// Execution of the SWF in Ruffle.
+    Execute,
+
+    /// Completion of all prior steps without error.
+    Complete,
 }
 
 /// The result of a single scan.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileResults {
+    /// The file name scanned (including path).
     pub name: String,
 
+    /// The SHA256 hash of the SWF file.
     #[serde(serialize_with = "into_hex", deserialize_with = "from_hex")]
     pub hash: Vec<u8>,
-    pub progress: Progress,
+
+    /// How far we were able to process this particular SWF
+    pub progress: Step,
+
+    /// How long testing took to complete
     pub testing_time: u128,
+
+    /// Any errors encountered while testing.
     pub error: Option<String>,
+
+    /// The AVM type of the movie.
     pub vm_type: Option<AvmType>,
+}
+
+impl Default for FileResults {
+    fn default() -> Self {
+        FileResults::new("")
+    }
+}
+
+impl FileResults {
+    pub fn new(name: &str) -> Self {
+        FileResults {
+            name: name.to_string(),
+            hash: vec![],
+            progress: Step::Start,
+            testing_time: 0,
+            error: None,
+            vm_type: None,
+        }
+    }
 }
 
 /// Formats data as capital hex

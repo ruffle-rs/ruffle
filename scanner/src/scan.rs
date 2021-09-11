@@ -1,7 +1,7 @@
 //! Main/scanner process impls
 
 use crate::cli_options::ScanOpt;
-use crate::file_results::{FileResults, Progress};
+use crate::file_results::FileResults;
 use crate::ser_bridge::SerBridge;
 use indicatif::{ProgressBar, ProgressStyle};
 use path_slash::PathExt;
@@ -39,14 +39,7 @@ pub fn find_files(root: &Path, ignore: &[String]) -> Vec<DirEntry> {
 
 pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) -> FileResults {
     let start = Instant::now();
-    let mut file_results = FileResults {
-        name,
-        hash: vec![],
-        progress: Progress::Nothing,
-        testing_time: start.elapsed().as_millis(),
-        error: None,
-        vm_type: None,
-    };
+    let mut file_results = FileResults::new(&name);
 
     let subproc = Command::new(exec_path)
         .args(&[
