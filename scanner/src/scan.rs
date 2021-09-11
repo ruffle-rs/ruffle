@@ -107,6 +107,14 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
         "Progress",
         "Test Duration",
         "Error",
+        "Compression",
+        "SWF Version",
+        "Stage Size",
+        "Frame Rate",
+        "Number of Frames",
+        "Direct Blit",
+        "GPU",
+        "Network Sandbox",
         "AVM Version",
     ])?;
 

@@ -14,6 +14,23 @@ pub enum AvmType {
     Avm2,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum Compression {
+    None,
+    Zlib,
+    Lzma,
+}
+
+impl From<swf::Compression> for Compression {
+    fn from(sc: swf::Compression) -> Self {
+        match sc {
+            swf::Compression::None => Compression::None,
+            swf::Compression::Zlib => Compression::Zlib,
+            swf::Compression::Lzma => Compression::Lzma,
+        }
+    }
+}
+
 /// A particular step in the scanner process.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Step {
@@ -58,6 +75,30 @@ pub struct FileResults {
     /// Any errors encountered while testing.
     pub error: Option<String>,
 
+    /// The compression type this SWF uses.
+    pub compression: Option<Compression>,
+
+    /// The file format version of this SWF.
+    pub version: Option<u8>,
+
+    /// The stage size of this SWF.
+    pub stage_size: Option<String>,
+
+    /// The frame rate of this SWF.
+    pub frame_rate: Option<f32>,
+
+    /// The number of frames this SWF claims to contain.
+    pub num_frames: Option<u16>,
+
+    /// Whether or not the SWF requests hardware-accelerated presentation.
+    pub use_direct_blit: Option<bool>,
+
+    /// Whether or not the SWF requests hardware-accelerated compositing.
+    pub use_gpu: Option<bool>,
+
+    /// Whether or not the SWF requests network access when ran locally.
+    pub use_network_sandbox: Option<bool>,
+
     /// The AVM type of the movie.
     pub vm_type: Option<AvmType>,
 }
@@ -76,6 +117,14 @@ impl FileResults {
             progress: Step::Start,
             testing_time: 0,
             error: None,
+            compression: None,
+            version: None,
+            stage_size: None,
+            frame_rate: None,
+            num_frames: None,
+            use_direct_blit: None,
+            use_gpu: None,
+            use_network_sandbox: None,
             vm_type: None,
         }
     }
