@@ -14,7 +14,6 @@ use ruffle_core::swf::{decompress_swf, parse_swf};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use sha2::{Digest, Sha256};
-use swf::{FileAttributes, Tag};
 
 use std::path::Path;
 
@@ -128,14 +127,22 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     match catch_unwind(|| parse_swf(&swf_buf)) {
         Ok(swf) => match swf {
             Ok(swf) => {
-                let mut vm_type = Some(AvmType::Avm1);
-                if let Some(Tag::FileAttributes(fa)) = swf.tags.first() {
-                    if fa.contains(FileAttributes::IS_ACTION_SCRIPT_3) {
-                        vm_type = Some(AvmType::Avm2);
-                    }
-                }
+                let stage_size = swf.header.stage_size();
+                let stage_width = (stage_size.x_max - stage_size.x_min).to_pixels();
+                let stage_height = (stage_size.y_max - stage_size.y_min).to_pixels();
 
-                file_result.vm_type = vm_type;
+                file_result.compression = Some(swf.header.compression().into());
+                file_result.version = Some(swf.header.version());
+                file_result.stage_size = Some(format!("{}x{}", stage_width, stage_height));
+                file_result.frame_rate = Some(swf.header.frame_rate().into());
+                file_result.num_frames = Some(swf.header.num_frames());
+                file_result.use_direct_blit = Some(swf.header.use_direct_blit());
+                file_result.use_gpu = Some(swf.header.use_gpu());
+                file_result.use_network_sandbox = Some(swf.header.use_network_sandbox());
+                file_result.vm_type = Some(match swf.header.is_action_script_3() {
+                    true => AvmType::Avm2,
+                    false => AvmType::Avm1,
+                });
             }
             Err(e) => {
                 file_result.error = Some(format!("Parse error: {}", e.to_string()));
