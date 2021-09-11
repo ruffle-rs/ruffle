@@ -254,8 +254,9 @@ macro_rules! impl_custom_object {
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
             name: &str,
             value: &mut crate::avm1::Value<'gc>,
+            this: crate::avm1::object::Object<'gc>,
         ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.call_watcher(activation, name, value)
+            self.0.read().$field.call_watcher(activation, name, value, this)
         }
 
         fn watch(

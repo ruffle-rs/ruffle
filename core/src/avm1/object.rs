@@ -161,9 +161,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let mut value = value;
-        let watcher_result = self.call_watcher(activation, name, &mut value);
-
         let this = (*self).into();
+        let watcher_result = self.call_watcher(activation, name, &mut value, this);
+
         if !self.has_own_property(activation, name) {
             // Before actually inserting a new property, we need to crawl the
             // prototype chain for virtual setters.
@@ -360,6 +360,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>>;
 
     /// Set the 'watcher' of a given property.

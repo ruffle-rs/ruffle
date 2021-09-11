@@ -319,6 +319,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: &str,
         value: &mut Value<'gc>,
+        this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut result = Ok(());
         let watcher = self
@@ -329,7 +330,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .cloned();
         if let Some(watcher) = watcher {
             let old_value = self.get_stored(name, activation)?;
-            let this = (*self).into();
             match watcher.call(activation, name, old_value, *value, this, Some(this)) {
                 Ok(v) => *value = v,
                 Err(Error::ThrownValue(e)) => {
