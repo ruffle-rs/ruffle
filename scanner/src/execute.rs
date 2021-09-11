@@ -13,6 +13,7 @@ use ruffle_core::backend::video::NullVideoBackend;
 use ruffle_core::swf::{decompress_swf, parse_swf};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
+use sha2::{Digest, Sha256};
 use swf::{FileAttributes, Tag};
 
 use std::path::Path;
@@ -87,6 +88,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
 
     let mut file_result = FileResults {
         progress: Progress::Nothing,
+        hash: vec![],
         testing_time: start.elapsed().as_millis(),
         name,
         error: None,
@@ -106,6 +108,10 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
         }
     };
 
+    let mut hash = Sha256::new();
+    hash.update(&data[..]);
+
+    file_result.hash = hash.finalize().to_vec();
     file_result.progress = Progress::Read;
     checkpoint(&mut file_result, &start, &mut writer)?;
 
