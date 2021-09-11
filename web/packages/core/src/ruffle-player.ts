@@ -1307,7 +1307,7 @@ export function isScriptAccessAllowed(
  * @returns True if the built-in context items should be shown.
  */
 export function isBuiltInContextMenuVisible(menu: string | null): boolean {
-    if (menu === "true" || menu === null) {
+    if (menu === null || menu.toLowerCase() === "true") {
         return true;
     }
     return false;
