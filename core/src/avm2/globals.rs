@@ -813,6 +813,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script
     );
+    class(
+        activation,
+        flash::display::ibitmapdrawable::create_interface(mc),
+        domain,
+        script,
+    )?;
 
     // package `flash.geom`
     avm2_system_class!(
