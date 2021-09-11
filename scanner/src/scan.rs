@@ -132,7 +132,7 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
     );
 
     let input_path = opt.input_path;
-    let closure_progress = progress.clone();
+    let closure_progress = progress;
 
     let result_iter = to_scan
         .into_par_iter()
@@ -157,8 +157,6 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
 
             result
         });
-
-    progress.finish();
 
     analyze(result_iter);
 
