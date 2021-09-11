@@ -198,6 +198,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
     write.set_instance_allocator(bitmapdata_allocator);
 
+    write.implements(QName::new(Namespace::package("flash.display"), "IBitmapDrawable").into());
+
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
