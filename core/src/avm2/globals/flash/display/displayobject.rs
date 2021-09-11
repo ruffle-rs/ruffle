@@ -604,6 +604,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     ));
 
+    write.implements(QName::new(Namespace::package("flash.display"), "IBitmapDrawable").into());
+
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
