@@ -2,7 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 fn map_defined_to_string<'gc>(

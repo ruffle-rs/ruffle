@@ -5,7 +5,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::bevel_filter::BevelFilterType;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, AvmString, Object, TObject, Value};
+use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

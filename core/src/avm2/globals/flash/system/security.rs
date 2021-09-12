@@ -6,8 +6,8 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
-use crate::avm2::AvmString;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 fn instance_init<'gc>(

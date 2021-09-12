@@ -5,9 +5,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 
@@ -66,7 +67,7 @@ fn decode<'gc>(
         for (k, v) in url::form_urlencoded::parse(data.as_bytes()) {
             this.set(
                 &k,
-                crate::avm1::AvmString::new(activation.context.gc_context, v.into_owned()).into(),
+                crate::string::AvmString::new(activation.context.gc_context, v.into_owned()).into(),
                 activation,
             )?;
         }
@@ -239,7 +240,7 @@ fn to_string<'gc>(
         .extend_pairs(form_values.iter())
         .finish();
 
-    Ok(crate::avm1::AvmString::new(activation.context.gc_context, query_string).into())
+    Ok(crate::string::AvmString::new(activation.context.gc_context, query_string).into())
 }
 
 fn spawn_load_var_fetch<'gc>(

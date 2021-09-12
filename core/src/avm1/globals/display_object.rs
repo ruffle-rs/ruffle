@@ -4,8 +4,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 /// Depths used/returned by ActionScript are offset by this amount from depths used inside the SWF/by the VM.

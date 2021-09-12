@@ -1,12 +1,13 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::{Avm1, AvmString, Object, TObject, Value};
+use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::OwnedFuture;
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::xml::XmlNode;

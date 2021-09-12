@@ -5,13 +5,13 @@ use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, ArrayObject, AvmString, ScriptObject,
-    Value,
+    fscommand, globals, scope, skip_actions, start_drag, ArrayObject, ScriptObject, Value,
 };
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
+use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};

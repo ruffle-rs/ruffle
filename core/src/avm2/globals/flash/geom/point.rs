@@ -1,9 +1,9 @@
 //! `flash.geom.Point` builtin/prototype
 
-use crate::avm1::AvmString;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 pub fn create_point<'gc>(

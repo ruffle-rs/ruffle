@@ -4,10 +4,11 @@ use crate::avm1::activation::{
 use crate::avm1::object::TObject;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{
-    ArrayObject as Avm1ArrayObject, AvmString as Avm1String, Error as Avm1Error,
-    Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    ArrayObject as Avm1ArrayObject, Error as Avm1Error, Object as Avm1Object,
+    ScriptObject as Avm1ScriptObject,
 };
 use crate::context::UpdateContext;
+use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
 
@@ -24,8 +25,8 @@ pub enum Value {
     List(Vec<Value>),
 }
 
-impl From<Avm1String<'_>> for Value {
-    fn from(string: Avm1String<'_>) -> Self {
+impl From<AvmString<'_>> for Value {
+    fn from(string: AvmString<'_>) -> Self {
         Value::String(string.to_string())
     }
 }
@@ -153,7 +154,7 @@ impl Value {
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
-                Avm1Value::String(Avm1String::new(activation.context.gc_context, value))
+                Avm1Value::String(AvmString::new(activation.context.gc_context, value))
             }
             Value::Object(values) => {
                 let object = Avm1ScriptObject::object(

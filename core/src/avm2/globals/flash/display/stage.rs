@@ -5,11 +5,11 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 use swf::Color;
 

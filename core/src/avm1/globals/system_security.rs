@@ -2,8 +2,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, ScriptObject, Value};
+use crate::avm1::{ScriptObject, Value};
 use crate::avm_warn;
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 use std::convert::Into;
 

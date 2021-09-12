@@ -5,7 +5,8 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

@@ -1,6 +1,5 @@
 //! Array-structured objects
 
-use crate::avm1::AvmString;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
@@ -10,6 +9,7 @@ use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use crate::{impl_avm2_custom_object, impl_avm2_custom_object_instance};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};

@@ -10,10 +10,10 @@ use crate::avm2::object::{
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
+use crate::string::AvmString;
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;

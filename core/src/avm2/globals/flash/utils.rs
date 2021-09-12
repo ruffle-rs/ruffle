@@ -1,9 +1,9 @@
 //! `flash.utils` namespace
 
 use crate::avm2::object::TObject;
-use crate::avm2::string::AvmString;
 use crate::avm2::QName;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::string::AvmString;
 
 pub mod bytearray;
 pub mod compression_algorithm;

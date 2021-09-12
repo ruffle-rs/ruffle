@@ -2,8 +2,9 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{AvmString, Object};
+use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

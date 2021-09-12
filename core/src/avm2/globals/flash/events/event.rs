@@ -5,9 +5,9 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{event_allocator, EventObject, Object, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.Event`'s instance constructor.

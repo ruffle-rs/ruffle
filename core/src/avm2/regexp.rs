@@ -1,6 +1,6 @@
 //! RegExp Structure
 
-use crate::avm2::string::AvmString;
+use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::Collect;
 use regress::Regex;

@@ -10,10 +10,10 @@ use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::{max, min, Ordering};
 
