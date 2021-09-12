@@ -23,6 +23,7 @@ mod function;
 mod global_scope;
 mod int;
 mod math;
+mod mx;
 mod namespace;
 mod number;
 mod object;
@@ -918,6 +919,14 @@ pub fn load_player_globals<'gc>(
         "generateRandomBytes",
         flash::crypto::generate_random_bytes,
         fn_proto,
+        domain,
+        script,
+    )?;
+
+    // package `mx.core`
+    class(
+        activation,
+        mx::core::iflexasset::create_interface(mc),
         domain,
         script,
     )?;
