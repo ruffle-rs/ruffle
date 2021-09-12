@@ -6,10 +6,10 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundHandle;
+use crate::string::AvmString;
 use crate::{
     impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
 };

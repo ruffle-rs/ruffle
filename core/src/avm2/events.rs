@@ -3,10 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
+use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{BTreeMap, HashMap};
 use std::hash::{Hash, Hasher};

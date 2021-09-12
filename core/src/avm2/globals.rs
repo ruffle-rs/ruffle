@@ -10,9 +10,9 @@ use crate::avm2::object::{
 };
 use crate::avm2::scope::Scope;
 use crate::avm2::script::Script;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 mod array;

@@ -6,8 +6,8 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, AvmString, Object, TObject, Value};
-use crate::string::utils as string_utils;
+use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::string::{utils as string_utils, AvmString};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

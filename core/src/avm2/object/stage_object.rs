@@ -7,10 +7,10 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// A class instance allocator that allocates Stage objects.

@@ -1,5 +1,4 @@
 ///! Utilities for operating on strings in SWF files.
-
 use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 
 /// Gets the position of the previous char

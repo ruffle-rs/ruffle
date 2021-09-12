@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, AvmString, ScriptObject, TObject, Timers, Value};
+use crate::avm1::{Avm1, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -28,6 +28,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::transform::TransformStack;
 use crate::vminterface::{AvmType, Instantiator};

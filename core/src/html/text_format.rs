@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation as Avm1Activation;
 use crate::avm1::{
-    ArrayObject as Avm1ArrayObject, AvmString, Object as Avm1Object,
-    ScriptObject as Avm1ScriptObject, TObject as Avm1TObject, Value as Avm1Value,
+    ArrayObject as Avm1ArrayObject, Object as Avm1Object, ScriptObject as Avm1ScriptObject,
+    TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::{
     Activation as Avm2Activation, ArrayObject as Avm2ArrayObject, Error as Avm2Error,
@@ -12,6 +12,7 @@ use crate::avm2::{
 };
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{Step, XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};

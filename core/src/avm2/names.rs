@@ -2,8 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::string::AvmString;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,

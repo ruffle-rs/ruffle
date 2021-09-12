@@ -4,10 +4,10 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{regexp_allocator, ArrayObject, Object, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
+use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `RegExp`'s instance initializer.
