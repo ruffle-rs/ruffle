@@ -930,6 +930,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script,
     )?;
+    class(
+        activation,
+        mx::core::bytearrayasset::create_class(mc),
+        domain,
+        script,
+    )?;
 
     Ok(())
 }
