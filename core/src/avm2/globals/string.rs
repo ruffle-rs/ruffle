@@ -186,22 +186,22 @@ fn index_of<'gc>(
             }
         };
 
-        if start_index >= this.len() {
+        return if start_index >= this.len() {
             // Out of range
-            return Ok((-1).into());
+            Ok((-1).into())
         } else if pattern.is_empty() {
             // Empty pattern is found immediately.
-            return Ok((start_index as f64).into());
+            Ok((start_index as f64).into())
         } else if let Some(mut pos) = this[start_index..]
             .windows(pattern.len())
             .position(|w| w == &pattern[..])
         {
             pos += start_index;
-            return Ok((pos as f64).into());
+            Ok((pos as f64).into())
         } else {
             // Not found
-            return Ok((-1).into());
-        }
+            Ok((-1).into())
+        };
     }
 
     Ok(Value::Undefined)
@@ -343,15 +343,15 @@ fn slice<'gc>(
                 string_wrapping_index(n, this_len)
             }
         };
-        if start_index < end_index {
+        return if start_index < end_index {
             let ret = string_utils::utf16_iter_to_string(
                 this.encode_utf16()
                     .skip(start_index)
                     .take(end_index - start_index),
             );
-            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+            Ok(AvmString::new(activation.context.gc_context, ret).into())
         } else {
-            return Ok("".into());
+            Ok("".into())
         };
     }
     Ok(Value::Undefined)
