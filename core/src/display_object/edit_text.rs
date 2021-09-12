@@ -1885,6 +1885,8 @@ struct EditTextStatic {
     swf: Arc<SwfMovie>,
     text: EditTextStaticData,
 }
+
+#[allow(dead_code)]
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct EditTextStaticData {
