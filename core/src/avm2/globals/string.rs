@@ -272,6 +272,7 @@ fn match_s<'gc>(
             let mut storage = ArrayStorage::new(0);
             if regexp.global() {
                 let mut last = regexp.last_index();
+                let old_last_index = regexp.last_index();
                 regexp.set_last_index(0);
                 while let Some(result) = regexp.exec(&this) {
                     if regexp.last_index() == last {
@@ -287,6 +288,9 @@ fn match_s<'gc>(
                     last = regexp.last_index();
                 }
                 regexp.set_last_index(0);
+                if old_last_index == regexp.last_index() {
+                    regexp.set_last_index(1);
+                }
                 return Ok(ArrayObject::from_storage(activation, storage)
                     .unwrap()
                     .into());
