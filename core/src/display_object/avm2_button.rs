@@ -5,16 +5,16 @@ use crate::avm2::{
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
 use crate::display_object::{DisplayObjectBase, MovieClip, TDisplayObject};
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::sync::Arc;
-use swf::ButtonActionCondition;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -82,30 +82,10 @@ impl<'gc> Avm2Button<'gc> {
         source_movie: &SwfSlice,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Self {
-        let mut actions = vec![];
-        for action in &button.actions {
-            let action_data = source_movie
-                .to_unbounded_subslice(action.action_data)
-                .unwrap();
-            let bits = action.conditions.bits();
-            let mut bit = 1u16;
-            while bits & !(bit - 1) != 0 {
-                if bits & bit != 0 {
-                    actions.push(ButtonAction {
-                        action_data: action_data.clone(),
-                        condition: ButtonActionCondition::from_bits_truncate(bit),
-                        key_code: action.key_code.and_then(ButtonKeyCode::from_u8),
-                    });
-                }
-                bit <<= 1;
-            }
-        }
-
         let static_data = ButtonStatic {
             swf: source_movie.movie.clone(),
             id: button.id,
             records: button.records.clone(),
-            actions,
             up_to_over_sound: None,
             over_to_down_sound: None,
             down_to_over_sound: None,
@@ -754,42 +734,14 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         // Translate the clip event to a button event, based on how the button state changes.
         let static_data = write.static_data;
         let static_data = static_data.read();
-        let (new_state, _condition, sound) = match event {
-            ClipEvent::DragOut => (
-                ButtonState::Over,
-                ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN,
-                None,
-            ),
-            ClipEvent::DragOver => (
-                ButtonState::Down,
-                ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN,
-                None,
-            ),
-            ClipEvent::Press => (
-                ButtonState::Down,
-                ButtonActionCondition::OVER_UP_TO_OVER_DOWN,
-                static_data.over_to_down_sound.as_ref(),
-            ),
-            ClipEvent::Release => (
-                ButtonState::Over,
-                ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
-                static_data.down_to_over_sound.as_ref(),
-            ),
-            ClipEvent::ReleaseOutside => (
-                ButtonState::Up,
-                ButtonActionCondition::OUT_DOWN_TO_IDLE,
-                static_data.over_to_up_sound.as_ref(),
-            ),
-            ClipEvent::RollOut => (
-                ButtonState::Up,
-                ButtonActionCondition::OVER_UP_TO_IDLE,
-                static_data.over_to_up_sound.as_ref(),
-            ),
-            ClipEvent::RollOver => (
-                ButtonState::Over,
-                ButtonActionCondition::IDLE_TO_OVER_UP,
-                static_data.up_to_over_sound.as_ref(),
-            ),
+        let (new_state, sound) = match event {
+            ClipEvent::DragOut => (ButtonState::Over, None),
+            ClipEvent::DragOver => (ButtonState::Down, None),
+            ClipEvent::Press => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
+            ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
+            ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
+            ClipEvent::RollOut => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
+            ClipEvent::RollOver => (ButtonState::Over, static_data.up_to_over_sound.as_ref()),
             _ => return ClipEventResult::NotHandled,
         };
 
@@ -848,39 +800,6 @@ impl<'gc> Avm2ButtonData<'gc> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-#[allow(dead_code)]
-pub enum ButtonState {
-    Up,
-    Over,
-    Down,
-}
-
-impl From<ButtonState> for swf::ButtonState {
-    fn from(bs: ButtonState) -> Self {
-        match bs {
-            ButtonState::Up => Self::UP,
-            ButtonState::Over => Self::OVER,
-            ButtonState::Down => Self::DOWN,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-struct ButtonAction {
-    action_data: crate::tag_utils::SwfSlice,
-    condition: swf::ButtonActionCondition,
-    key_code: Option<ButtonKeyCode>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
-#[collect(require_static)]
-pub enum ButtonTracking {
-    Push,
-    Menu,
-}
-
 /// Static data shared between all instances of a button.
 #[allow(dead_code)]
 #[derive(Clone, Debug, Collect)]
@@ -889,7 +808,6 @@ struct ButtonStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
     records: Vec<swf::ButtonRecord>,
-    actions: Vec<ButtonAction>,
 
     /// The sounds to play on state changes for this button.
     up_to_over_sound: Option<swf::ButtonSound>,
