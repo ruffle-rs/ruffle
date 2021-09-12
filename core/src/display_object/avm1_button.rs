@@ -136,11 +136,6 @@ impl<'gc> Avm1Button<'gc> {
         let movie = self.movie().unwrap();
         let mut write = self.0.write(context.gc_context);
         write.state = state;
-        let swf_state = match state {
-            ButtonState::Up => swf::ButtonState::UP,
-            ButtonState::Over => swf::ButtonState::OVER,
-            ButtonState::Down => swf::ButtonState::DOWN,
-        };
 
         // Create any new children that exist in this state, and remove children
         // that only exist in the previous state.
@@ -149,7 +144,7 @@ impl<'gc> Avm1Button<'gc> {
         let mut children = Vec::new();
 
         for record in &write.static_data.read().records {
-            if record.states.contains(swf_state) {
+            if record.states.contains(state.into()) {
                 // State contains this depth, so we don't have to remove it.
                 removed_depths.remove(&record.depth.into());
 
@@ -581,10 +576,20 @@ impl<'gc> Avm1ButtonData<'gc> {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 #[allow(dead_code)]
-enum ButtonState {
+pub enum ButtonState {
     Up,
     Over,
     Down,
+}
+
+impl From<ButtonState> for swf::ButtonState {
+    fn from(bs: ButtonState) -> Self {
+        match bs {
+            ButtonState::Up => Self::UP,
+            ButtonState::Over => Self::OVER,
+            ButtonState::Down => Self::DOWN,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -596,7 +601,7 @@ struct ButtonAction {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Collect)]
 #[collect(require_static)]
-enum ButtonTracking {
+pub enum ButtonTracking {
     Push,
     Menu,
 }
