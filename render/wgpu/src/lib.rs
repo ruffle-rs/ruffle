@@ -226,6 +226,7 @@ struct Draw {
     index_count: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum DrawType {
     Color,

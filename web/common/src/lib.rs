@@ -8,7 +8,7 @@ pub struct JsError {
 
 impl std::fmt::Display for JsError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "JS exception: {:?}", self)
+        write!(f, "JS exception: {:?}", self.value)
     }
 }
 

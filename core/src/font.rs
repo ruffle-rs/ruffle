@@ -88,6 +88,7 @@ struct FontData {
 
     /// The distance from the baseline of the font to the bottom of each glyph,
     /// in EM-square coordinates.
+    #[allow(dead_code)]
     descent: u16,
 
     /// The distance between the bottom of any one glyph and the top of
