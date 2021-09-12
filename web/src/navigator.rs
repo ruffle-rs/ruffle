@@ -31,11 +31,16 @@ impl WebNavigatorBackend {
         let window = web_sys::window().expect("window()");
         let performance = window.performance().expect("window.performance()");
 
-        // Upgarde to HTTPS takes effect if the current page is hosted on HTTPS.
+        // Upgrade to HTTPS takes effect if the current page is hosted on HTTPS.
         let upgrade_to_https =
             upgrade_to_https && window.location().protocol().unwrap_or_default() == "https:";
 
-        if let Some(ref base) = base_url {
+        if let Some(base) = &mut base_url {
+            // Adding trailing slash so url::parse will not drop last part
+            if !base.ends_with('/') {
+                base.push('/');
+            }
+
             if Url::parse(base).is_err() {
                 let document = window.document().expect("Could not get document");
                 if let Ok(Some(doc_base_uri)) = document.base_uri() {
