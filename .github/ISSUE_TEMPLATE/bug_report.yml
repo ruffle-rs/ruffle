@@ -1,0 +1,67 @@
+name: "\U0001F41E Bug report"
+description: File a bug report.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - If you have a question about Ruffle, you can ask for help on our [Discord chat][chat].
+        - Also consult the [Frequently Asked Questions][faq] for common issues and questions.
+        - Please do your best to search for duplicate issues before filing a new issue so we can keep our issue board clean.
+        - Also make sure that you are using the [latest available version of Ruffle][version].
+        - Otherwise, fill out the information below to the best of your ability. Thank you!
+
+        [chat]: https://discord.gg/ruffle
+        [faq]: https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users
+        [version]: https://github.com/ruffle-rs/ruffle/tags
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: |
+        Provide a clear and concise description of what the bug is.
+        - If there are steps to reproduce, list them here.
+        - If this is an issue with a specific SWF file, please provide a link to the SWF file, or you can attach the SWF by zipping it and dragging it onto the issue box.
+        - If this is a visual issue, please attach a screenshot of the problem.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Affected platform
+      description: Is the problem with the Ruffle desktop app, online demo, browser's extension, or self-hosted version?
+      options:
+        - Desktop app
+        - Online demo
+        - Browser's extension
+        - Self-hosted version
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        # Device information
+  - type: input
+    attributes:
+      label: Operating system
+      description: Please list the OS you are using.
+      placeholder: Windows 10, macOS Catalina, Android 11, iOS 14, etc.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Browser
+      description: If you are using the web version, please list the browser and its actual version number.
+      placeholder: Mozilla Firefox 92, Google Chrome 93, etc.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: If you have any additional information for us, such as device logs or crash information, use the field below.
+    validations:
+      required: false
