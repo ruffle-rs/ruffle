@@ -1,4 +1,4 @@
-use super::{ops, WStr, WStrMut, WString};
+use super::{ops, AvmString, WStr, WStrMut, WString};
 use std::cmp;
 use std::fmt;
 use std::hash;
@@ -274,4 +274,5 @@ impl_str_traits! {
     impl['a,] for WStr<'a>;
     impl['a,] for WStrMut<'a>;
     impl[] for WString;
+    impl['gc,] for AvmString<'gc>;
 }

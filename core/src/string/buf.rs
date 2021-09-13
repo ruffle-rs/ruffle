@@ -24,6 +24,19 @@ impl WString {
         Self::from_buf(Units::Bytes(Vec::new()))
     }
 
+    /// Creates a new empty `WString` with the given capacity and wideness.
+    #[inline]
+    pub fn with_capacity(capacity: usize, wide: bool) -> Self {
+        // SAFETY: the buffer is created empty.
+        unsafe {
+            Self::from_buf_unchecked(if wide {
+                Units::Wide(Vec::with_capacity(capacity))
+            } else {
+                Units::Bytes(Vec::with_capacity(capacity))
+            })
+        }
+    }
+
     /// Creates a `WString` from an owned buffer containing 1 or 2-bytes code units,
     /// without checking the length.
     ///
@@ -83,6 +96,14 @@ impl WString {
     pub fn from_utf8(s: &str) -> Self {
         let mut buf = Self::new();
         buf.push_utf8(s);
+        buf
+    }
+
+    /// Creates a `WString` from a single UCS2 code unit.
+    #[inline]
+    pub fn from_unit(c: u16) -> Self {
+        let mut buf = Self::new();
+        buf.push(c);
         buf
     }
 
@@ -317,6 +338,25 @@ impl BorrowWStrMut for WString {
     fn borrow_mut(&mut self) -> WStrMut<'_> {
         // SAFETY: `self` is immutably borrowed.
         unsafe { WStrMut::from_ptr(self.slice) }
+    }
+}
+
+impl<'a> From<WStr<'a>> for WString {
+    #[inline]
+    fn from(s: WStr<'a>) -> Self {
+        let mut buf = Self::new();
+        buf.push_str(s.borrow());
+        buf
+    }
+}
+
+impl std::iter::FromIterator<u16> for WString {
+    fn from_iter<T: IntoIterator<Item = u16>>(iter: T) -> Self {
+        let iter = iter.into_iter();
+        let (min_size, _) = iter.size_hint();
+        let mut buf = Self::with_capacity(min_size, false);
+        iter.for_each(|c| buf.push(c));
+        buf
     }
 }
 
