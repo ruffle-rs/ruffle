@@ -1192,7 +1192,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let method = self.table_method(method, index, false)?;
-        let function = FunctionObject::from_method(self, method.into(), self.outer, None);
+        // TODO: What scope should the function be executed with?
+        let scope = self.create_scopechain();
+        let function = FunctionObject::from_method(self, method.into(), scope, None);
         let value = function.call(Some(receiver), &args, self, receiver.instance_of())?;
 
         self.context.avm2.push(value);
