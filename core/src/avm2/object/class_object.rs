@@ -31,6 +31,7 @@ pub struct ClassObjectData<'gc> {
     /// The class associated with this class object.
     class: GcCell<'gc, Class<'gc>>,
 
+    /// The scope this class was defined in.
     scope: ScopeChain<'gc>,
 
     /// The base class of this one.

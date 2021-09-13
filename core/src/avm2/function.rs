@@ -17,7 +17,7 @@ pub struct BytecodeExecutable<'gc> {
     /// The method code to execute from a given ABC file.
     method: Gc<'gc, BytecodeMethod<'gc>>,
 
-    /// The scope chain
+    /// The scope this method was defined in.
     scope: ScopeChain<'gc>,
 
     /// The receiver that this function is always called with.
@@ -32,7 +32,7 @@ pub struct NativeExecutable<'gc> {
     /// The method associated with the executable.
     method: Gc<'gc, NativeMethod<'gc>>,
 
-    /// The scope chain
+    /// The scope this method was defined in.
     scope: ScopeChain<'gc>,
 
     /// The bound reciever for this method.
