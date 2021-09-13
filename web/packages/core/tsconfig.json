@@ -1,9 +1,9 @@
 {
     "extends": "@tsconfig/recommended/tsconfig.json",
     "compilerOptions": {
-        "module": "esnext",
+    	"target": "es2017",
+        "module": "es2015",
         "moduleResolution": "node",
-        "target": "es6",
         "strict": true,
         "outDir": "pkg",
     },
