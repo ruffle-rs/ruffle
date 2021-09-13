@@ -131,6 +131,7 @@ impl<'gc> ScopeChain<'gc> {
                     // We search the dynamic properties if either conditions are met:
                     // 1. Scope is a `with` scope
                     // 2. We are at depth 0 (global scope)
+                    //
                     // But no matter what, we always search traits first.
                     if values.has_trait(&qname)?
                         || ((scope.with() || depth == 0) && values.has_property(&qname)?)
@@ -199,7 +200,7 @@ impl<'gc> ScopeStack<'gc> {
         for (depth, scope) in self.scopes.iter().enumerate().rev() {
             let values = scope.values();
             if let Some(qname) = values.resolve_multiname(name)? {
-                // We search the dynamic properties if these conditions are met:
+                // We search the dynamic properties if either conditions are met:
                 // 1. Scope is a `with` scope
                 // 2. We are at depth 0 AND we are at global$init (script initializer).
                 if values.has_trait(&qname)?
