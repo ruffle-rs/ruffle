@@ -1,26 +1,20 @@
 use gc_arena::{Collect, Gc, MutationContext};
-use std::cmp::{Eq, Ord, Ordering, PartialOrd};
-use std::fmt;
-use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+
+use super::{BorrowWStr, WStr, WString};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    Owned(Gc<'gc, String>),
+    // Store the string both in UTF8 and UCS2, to be able to have
+    // both `impl Deref<&str>` and O(1) UCS2 char access.
+    // TODO(moulins): remove the extra `String`
+    Owned(Gc<'gc, (String, WString)>),
+    // Should be an ASCII string, for zero-copy conversion into `Str<'_>`.
     Static(&'static str),
 }
 
-impl fmt::Debug for Source<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Source::Owned(str) => f.debug_tuple("Owned").field(str.deref()).finish(),
-            Source::Static(str) => f.debug_tuple("Static").field(str).finish(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct AvmString<'gc> {
     source: Source<'gc>,
@@ -28,13 +22,31 @@ pub struct AvmString<'gc> {
 
 impl<'gc> AvmString<'gc> {
     pub fn new<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+        let utf8 = string.into();
+        let buf = WString::from_utf8(&utf8);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, string.into())),
+            source: Source::Owned(Gc::allocate(gc_context, (utf8, buf))),
+        }
+    }
+
+    pub fn new_ucs2(gc_context: MutationContext<'gc, '_>, string: WString) -> Self {
+        // TODO(moulins): this loose unpaired surrogates
+        let utf8 = string.to_string();
+        Self {
+            source: Source::Owned(Gc::allocate(gc_context, (utf8, string))),
         }
     }
 
     pub fn as_str(&self) -> &str {
         self
+    }
+
+    pub fn as_ucs2(&self) -> WStr<'_> {
+        match &self.source {
+            Source::Owned(str) => str.1.borrow(),
+            // `str` is valid ASCII, per invariant.
+            Source::Static(str) => WStr::from_units(str.as_bytes()),
+        }
     }
 }
 
@@ -48,15 +60,10 @@ impl Default for AvmString<'_> {
 
 impl<'gc> From<&'static str> for AvmString<'gc> {
     fn from(str: &'static str) -> Self {
+        // TODO(moulins): actually check that `str` is valid ASCII.
         Self {
             source: Source::Static(str),
         }
-    }
-}
-
-impl fmt::Display for AvmString<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self)
     }
 }
 
@@ -66,7 +73,7 @@ impl Deref for AvmString<'_> {
     #[inline]
     fn deref(&self) -> &str {
         match &self.source {
-            Source::Owned(str) => str.deref(),
+            Source::Owned(str) => str.0.deref(),
             Source::Static(str) => str,
         }
     }
@@ -76,39 +83,16 @@ impl AsRef<str> for AvmString<'_> {
     #[inline]
     fn as_ref(&self) -> &str {
         match &self.source {
-            Source::Owned(str) => str,
+            Source::Owned(str) => &str.0,
             Source::Static(str) => str,
         }
     }
 }
 
-impl<'gc> PartialEq<AvmString<'gc>> for AvmString<'gc> {
+impl<'gc> BorrowWStr for AvmString<'gc> {
     #[inline]
-    fn eq(&self, other: &AvmString<'gc>) -> bool {
-        PartialEq::eq(self.as_str(), other.as_str())
-    }
-}
-
-impl<'gc> Eq for AvmString<'gc> {}
-
-impl<'gc> PartialOrd<AvmString<'gc>> for AvmString<'gc> {
-    fn partial_cmp(&self, other: &AvmString<'gc>) -> Option<Ordering> {
-        self.as_ref().partial_cmp(other.as_ref())
-    }
-}
-
-impl<'gc> Ord for AvmString<'gc> {
-    fn cmp(&self, other: &AvmString<'gc>) -> Ordering {
-        self.as_ref().cmp(other.as_ref())
-    }
-}
-
-impl<'gc> Hash for AvmString<'gc> {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: Hasher,
-    {
-        self.as_ref().hash(state)
+    fn borrow(&self) -> WStr<'_> {
+        self.as_ucs2()
     }
 }
 
