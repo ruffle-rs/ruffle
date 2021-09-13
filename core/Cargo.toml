@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 byteorder = "1.4"
 bitstream-io = "1.2.0"
-flate2 = "1.0.21"
+flate2 = "1.0.22"
 fnv = "1.0.7"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 gc-arena-derive = { git = "https://github.com/ruffle-rs/gc-arena" }
