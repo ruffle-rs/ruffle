@@ -1,7 +1,7 @@
 {
     "extends": "@tsconfig/recommended/tsconfig.json",
     "compilerOptions": {
-    	"target": "es2017",
+        "target": "es2017",
         "module": "es2015",
         "moduleResolution": "node",
         "strict": true,
