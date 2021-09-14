@@ -613,9 +613,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        self.context
-            .avm1
-            .push(b.into_number_v1() + a.into_number_v1());
+        let result = b.into_number_v1() + a.into_number_v1();
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -623,24 +622,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // ECMA-262 s. 11.6.1
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-
-        // TODO(Herschel):
-        if let Value::String(a) = a {
+        let result = if let Value::String(a) = a {
             let mut s = b.coerce_to_string(self)?.to_string();
             s.push_str(&a);
-            self.context
-                .avm1
-                .push(AvmString::new(self.context.gc_context, s));
+            AvmString::new(self.context.gc_context, s).into()
         } else if let Value::String(b) = b {
             let mut b = b.to_string();
             b.push_str(&a.coerce_to_string(self)?);
-            self.context
-                .avm1
-                .push(AvmString::new(self.context.gc_context, b));
+            AvmString::new(self.context.gc_context, b).into()
         } else {
-            let result = b.coerce_to_f64(self)? + a.coerce_to_f64(self)?;
-            self.context.avm1.push(result);
-        }
+            (b.coerce_to_f64(self)? + a.coerce_to_f64(self)?).into()
+        };
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -669,7 +662,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result));
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -683,7 +676,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
         let c = crate::string::utils::utf16_code_unit_to_char(char_code);
-        self.context.avm1.push(u32::from(c));
+        self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
 
@@ -712,7 +705,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a & b;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -720,7 +713,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b << a;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -728,7 +721,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = a | b;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -736,7 +729,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b >> a;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -744,7 +737,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_u32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = b >> a;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -752,7 +745,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_i32(self)?;
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b ^ a;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -821,7 +814,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             None,
             &args,
         )?;
-
         self.context.avm1.push(result);
 
         // After any function call, execution of this frame stops if the base clip doesn't exist.
@@ -862,7 +854,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Call `this[method_name]`.
             object.call_method(method_name.as_str(), &args, self)?
         };
-
         self.context.avm1.push(result);
 
         self.continue_if_base_clip_exists()
@@ -879,8 +870,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             false
         };
 
-        let ret = if is_instance_of { obj } else { Value::Null };
-        self.context.avm1.push(ret);
+        let result = if is_instance_of { obj } else { Value::Null };
+        self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
     }
@@ -906,7 +897,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_decrement(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(a - 1.0);
+        let result = a - 1.0;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -942,7 +934,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             prototype,
         );
         if name.is_empty() {
-            self.context.avm1.push(func_obj);
+            self.context.avm1.push(func_obj.into());
         } else {
             self.define_local(name, func_obj.into())?;
         }
@@ -981,7 +973,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             prototype,
         );
         if action_func.name.is_empty() {
-            self.context.avm1.push(func_obj);
+            self.context.avm1.push(func_obj.into());
         } else {
             self.define_local(
                 &action_func.name.to_str_lossy(self.encoding()),
@@ -1019,13 +1011,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name = name_val.coerce_to_string(self)?;
         let object = self.context.avm1.pop();
 
-        if let Value::Object(object) = object {
-            let success = object.delete(self, &name);
-            self.context.avm1.push(success);
+        let success = if let Value::Object(object) = object {
+            object.delete(self, &name)
         } else {
             avm_warn!(self, "Cannot delete property {} from {:?}", name, object);
-            self.context.avm1.push(false);
-        }
+            false
+        };
+        self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
     }
@@ -1034,10 +1026,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
-        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
-        //a boolean based on if the delete actually deleted something.
+        // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
+        // a boolean based on if the delete actually deleted something.
         let success = self.scope_cell().read().delete(self, &name);
-        self.context.avm1.push(success);
+        self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
     }
@@ -1050,8 +1042,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
         // In SWF 4, the result is the string #ERROR#.""
         // Seems to be untrue for SWF v4, I get 1.#INF.
+        let result = b / a;
 
-        self.context.avm1.push(b / a);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1071,7 +1064,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 for k in ob.get_keys(self).into_iter().rev() {
                     self.context
                         .avm1
-                        .push(AvmString::new(self.context.gc_context, k));
+                        .push(AvmString::new(self.context.gc_context, k).into());
                 }
             }
             _ => avm_error!(self, "Cannot enumerate properties of {}", name),
@@ -1089,7 +1082,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             for k in object.get_keys(self).into_iter().rev() {
                 self.context
                     .avm1
-                    .push(AvmString::new(self.context.gc_context, k));
+                    .push(AvmString::new(self.context.gc_context, k).into());
             }
         } else {
             avm_warn!(self, "Cannot enumerate {:?}", value);
@@ -1115,7 +1108,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.abstract_eq(a, self, false)?;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1168,7 +1161,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_get_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let prop_index = self.context.avm1.pop().into_number_v1() as usize;
         let path = self.context.avm1.pop();
-        let ret = if let Some(target) = self.target_clip() {
+        let result = if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
@@ -1186,7 +1179,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             avm_warn!(self, "GetProperty: Invalid base clip");
             Value::Undefined
         };
-        self.context.avm1.push(ret);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -1198,9 +1191,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         let time = self.context.navigator.time_since_launch().as_millis() as u32;
-        self.context
-            .avm1
-            .push(time.wrapping_add(*self.context.time_offset));
+        let result = time.wrapping_add(*self.context.time_offset);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1208,8 +1200,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let var_path = self.context.avm1.pop();
         let path = var_path.coerce_to_string(self)?;
 
-        let value: Value<'gc> = self.get_variable(&path)?.into();
-        self.context.avm1.push(value);
+        let result: Value<'gc> = self.get_variable(&path)?.into();
+        self.context.avm1.push(result);
 
         Ok(FrameControl::Continue)
     }
@@ -1460,7 +1452,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_increment(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(a + 1.0);
+        let result = a + 1.0;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1537,14 +1530,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let constr = self.context.avm1.pop().coerce_to_object(self);
         let obj = self.context.avm1.pop();
 
-        let is_instance_of = if let Value::Object(obj) = obj {
+        let result = if let Value::Object(obj) = obj {
             let prototype = constr.get("prototype", self)?.coerce_to_object(self);
             obj.is_instance_of(self, constr, prototype)?
         } else {
             false
         };
 
-        self.context.avm1.push(is_instance_of);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1605,7 +1598,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result));
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1619,7 +1612,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
         let c = crate::string::utils::utf16_code_unit_to_char(char_code);
-        self.context.avm1.push(u32::from(c));
+        self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1644,7 +1637,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         );
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result));
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1652,15 +1645,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the number of characters using the locale encoding.
         let val = self.context.avm1.pop();
-        let len = val.coerce_to_string(self)?.encode_utf16().count();
-        self.context.avm1.push(len as f64);
+        let result = val.coerce_to_string(self)?.encode_utf16().count();
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_multiply(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(a * b);
+        let result = b * a;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1668,15 +1662,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // TODO: Wrong operands?
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(b % a);
+        let result = b % a;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_not(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = !self.context.avm1.pop().as_bool(self.swf_version());
+        let a = self.context.avm1.pop();
+        let result = !a.as_bool(self.swf_version());
         self.context
             .avm1
-            .push(Value::from_bool(val, self.swf_version()));
+            .push(Value::from_bool(result, self.swf_version()));
         Ok(FrameControl::Continue)
     }
 
@@ -1752,8 +1748,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name_value: Value<'gc> = self.resolve(&fn_name)?.into();
         let constructor = name_value.coerce_to_object(self);
-        let this = constructor.construct(self, &args)?;
-        self.context.avm1.push(this);
+        let result = constructor.construct(self, &args)?;
+        self.context.avm1.push(result);
 
         self.continue_if_base_clip_exists()
     }
@@ -1848,12 +1844,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // A max value < 0 will always return 0,
         // and the max value gets converted into an i32, so any number > 2^31 - 1 will return 0.
         let max = self.context.avm1.pop().into_number_v1() as i32;
-        let val = if max > 0 {
+        let result = if max > 0 {
             self.context.rng.gen_range(0..max)
         } else {
             0
         };
-        self.context.avm1.push(val);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -1922,7 +1918,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = a == b;
-        self.context.avm1.push(result);
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2070,7 +2066,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         b.push_str(&a.coerce_to_string(self)?);
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, b));
+            .push(AvmString::new(self.context.gc_context, b).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2108,7 +2104,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         );
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result));
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2132,8 +2128,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
         let val = self.context.avm1.pop();
-        let len = val.coerce_to_string(self)?.encode_utf16().count();
-        self.context.avm1.push(len);
+        let result = val.coerce_to_string(self)?.encode_utf16().count();
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2155,7 +2151,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_subtract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(b - a);
+        let result = b - a;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2163,13 +2160,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Prints out the dot-path for the parameter.
         // Parameter must be a display object (not a string path).
         let param = self.context.avm1.pop().coerce_to_object(self);
-        let ret: Value<'gc> = if let Some(display_object) = param.as_display_object() {
+        let result = if let Some(display_object) = param.as_display_object() {
             let path = display_object.path();
             AvmString::new(self.context.gc_context, path).into()
         } else {
             Value::Undefined
         };
-        self.context.avm1.push(ret);
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
@@ -2194,14 +2191,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_to_integer(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.context.avm1.pop().coerce_to_i32(self)?;
-        self.context.avm1.push(val);
+        let val = self.context.avm1.pop();
+        let result = val.coerce_to_i32(self)?;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
     fn action_to_number(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let val = self.context.avm1.pop().coerce_to_f64(self)?;
-        self.context.avm1.push(val);
+        let val = self.context.avm1.pop();
+        let result = val.coerce_to_f64(self)?;
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2210,7 +2209,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let string = val.coerce_to_string(self)?;
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, string.to_string()));
+            .push(AvmString::new(self.context.gc_context, string.to_string()).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2231,7 +2230,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let type_of = self.context.avm1.pop().type_of();
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, type_of.to_string()));
+            .push(AvmString::new(self.context.gc_context, type_of.to_string()).into());
         Ok(FrameControl::Continue)
     }
 
