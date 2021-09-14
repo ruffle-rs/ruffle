@@ -402,10 +402,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
+            dummy_activation.set_outer(outer);
             let activation_class =
                 Class::for_activation(&mut dummy_activation, translation_unit, abc_method, body)?;
             let activation_class_object =
-                ClassObject::from_class(&mut dummy_activation, activation_class, None, outer)?;
+                ClassObject::from_class(&mut dummy_activation, activation_class, None)?;
 
             drop(dummy_activation);
 
@@ -577,6 +578,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             Err(format!("Out of bounds register write: {}", id).into())
         }
+    }
+
+    /// Sets the outer scope of this activation
+    pub fn set_outer(&mut self, new_outer: ScopeChain<'gc>) {
+        self.outer = new_outer;
     }
 
     /// Creates a new ScopeChain by chaining the current state of this
@@ -1726,9 +1732,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         let class_entry = self.table_class(method, index)?;
-        let scope = self.create_scopechain();
 
-        let new_class = ClassObject::from_class(self, class_entry, base_class, scope)?;
+        let new_class = ClassObject::from_class(self, class_entry, base_class)?;
 
         self.context.avm2.push(new_class);
 

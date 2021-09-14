@@ -85,9 +85,8 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-        scope: ScopeChain<'gc>,
-    ) -> Result<ClassObject<'gc>, Error> {
-        let class_object = Self::from_class_partial(activation, class, superclass_object, scope)?;
+    ) -> Result<Self, Error> {
+        let class_object = Self::from_class_partial(activation, class, superclass_object)?;
 
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by the class allocator, but instead should be
@@ -130,8 +129,8 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
         superclass_object: Option<ClassObject<'gc>>,
-        scope: ScopeChain<'gc>,
     ) -> Result<Self, Error> {
+        let scope = activation.create_scopechain();
         if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.read().is_final() {
                 return Err(format!(
@@ -174,7 +173,7 @@ impl<'gc> ClassObject<'gc> {
             ClassObjectData {
                 base: ScriptObjectData::base_new(None, None),
                 class,
-                scope,
+                scope: scope,
                 superclass_object,
                 instance_allocator: Allocator(instance_allocator),
                 constructor,
@@ -204,7 +203,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn into_finished_class(
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<ClassObject<'gc>, Error> {
+    ) -> Result<Self, Error> {
         let class = self.inner_class_definition();
         let class_class = self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
@@ -301,8 +300,8 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<(), Error> {
         let object: Object<'gc> = self.into();
 
-        let class = self.0.read().class;
         let scope = self.0.read().scope;
+        let class = self.0.read().class;
         let class_read = class.read();
 
         if !class_read.is_class_initialized() {
