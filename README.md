@@ -1,5 +1,5 @@
 <p align="center">
- <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.png" alt="Ruffle"></a>
+ <a href="https://ruffle.rs"><img src="https://ruffle.rs/assets/logo.svg" alt="Ruffle"></a>
 </p>
 <p align="center">
  <a href="https://github.com/ruffle-rs/ruffle/actions">
