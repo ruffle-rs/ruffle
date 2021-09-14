@@ -616,6 +616,11 @@ impl<W: Write> Writer<W> {
             Op::BitNot => self.write_opcode(OpCode::BitNot)?,
             Op::BitOr => self.write_opcode(OpCode::BitOr)?,
             Op::BitXor => self.write_opcode(OpCode::BitXor)?,
+            Op::Bkpt => self.write_opcode(OpCode::Bkpt)?,
+            Op::BkptLine { line_num } => {
+                self.write_opcode(OpCode::BkptLine)?;
+                self.write_u30(line_num)?;
+            }
             Op::Call { num_args } => {
                 self.write_opcode(OpCode::Call)?;
                 self.write_u30(num_args)?;
@@ -682,7 +687,12 @@ impl<W: Write> Writer<W> {
                 self.write_index(index)?;
             }
             Op::CoerceA => self.write_opcode(OpCode::CoerceA)?,
+            Op::CoerceB => self.write_opcode(OpCode::CoerceB)?,
+            Op::CoerceD => self.write_opcode(OpCode::CoerceD)?,
+            Op::CoerceI => self.write_opcode(OpCode::CoerceI)?,
+            Op::CoerceO => self.write_opcode(OpCode::CoerceO)?,
             Op::CoerceS => self.write_opcode(OpCode::CoerceS)?,
+            Op::CoerceU => self.write_opcode(OpCode::CoerceU)?,
             Op::Construct { num_args } => {
                 self.write_opcode(OpCode::Construct)?;
                 self.write_u30(num_args)?;
@@ -748,6 +758,10 @@ impl<W: Write> Writer<W> {
             Op::Equals => self.write_opcode(OpCode::Equals)?,
             Op::EscXAttr => self.write_opcode(OpCode::EscXAttr)?,
             Op::EscXElem => self.write_opcode(OpCode::EscXElem)?,
+            Op::FindDef { ref index } => {
+                self.write_opcode(OpCode::FindDef)?;
+                self.write_index(index)?;
+            }
             Op::FindProperty { ref index } => {
                 self.write_opcode(OpCode::FindProperty)?;
                 self.write_index(index)?;
@@ -779,6 +793,10 @@ impl<W: Write> Writer<W> {
                     self.write_u30(index)?;
                 }
             },
+            Op::GetOuterScope { index } => {
+                self.write_opcode(OpCode::GetOuterScope)?;
+                self.write_u30(index)?;
+            }
             Op::GetProperty { ref index } => {
                 self.write_opcode(OpCode::GetProperty)?;
                 self.write_index(index)?;
@@ -947,6 +965,10 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::PushByte)?;
                 self.write_u8(value)?;
             }
+            Op::PushConstant { value } => {
+                self.write_opcode(OpCode::PushConstant)?;
+                self.write_u30(value)?;
+            }
             Op::PushDouble { ref value } => {
                 self.write_opcode(OpCode::PushDouble)?;
                 self.write_index(value)?;
@@ -1020,6 +1042,7 @@ impl<W: Write> Writer<W> {
             Op::Sxi16 => self.write_opcode(OpCode::Sxi16)?,
             Op::Sxi8 => self.write_opcode(OpCode::Sxi8)?,
             Op::Throw => self.write_opcode(OpCode::Throw)?,
+            Op::Timestamp => self.write_opcode(OpCode::Timestamp)?,
             Op::TypeOf => self.write_opcode(OpCode::TypeOf)?,
             Op::URShift => self.write_opcode(OpCode::URShift)?,
         };

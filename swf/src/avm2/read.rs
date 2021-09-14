@@ -530,6 +530,10 @@ impl<'a> Reader<'a> {
             OpCode::BitNot => Op::BitNot,
             OpCode::BitOr => Op::BitOr,
             OpCode::BitXor => Op::BitXor,
+            OpCode::Bkpt => Op::Bkpt,
+            OpCode::BkptLine => Op::BkptLine {
+                line_num: self.read_u30()?,
+            },
             OpCode::Call => Op::Call {
                 num_args: self.read_u30()?,
             },
@@ -566,7 +570,12 @@ impl<'a> Reader<'a> {
                 index: self.read_index()?,
             },
             OpCode::CoerceA => Op::CoerceA,
+            OpCode::CoerceB => Op::CoerceB,
+            OpCode::CoerceD => Op::CoerceD,
+            OpCode::CoerceI => Op::CoerceI,
+            OpCode::CoerceO => Op::CoerceO,
             OpCode::CoerceS => Op::CoerceS,
+            OpCode::CoerceU => Op::CoerceU,
             OpCode::Construct => Op::Construct {
                 num_args: self.read_u30()?,
             },
@@ -618,6 +627,9 @@ impl<'a> Reader<'a> {
             OpCode::Equals => Op::Equals,
             OpCode::EscXAttr => Op::EscXAttr,
             OpCode::EscXElem => Op::EscXElem,
+            OpCode::FindDef => Op::FindDef {
+                index: self.read_index()?,
+            },
             OpCode::FindProperty => Op::FindProperty {
                 index: self.read_index()?,
             },
@@ -641,6 +653,9 @@ impl<'a> Reader<'a> {
             OpCode::GetLocal1 => Op::GetLocal { index: 1 },
             OpCode::GetLocal2 => Op::GetLocal { index: 2 },
             OpCode::GetLocal3 => Op::GetLocal { index: 3 },
+            OpCode::GetOuterScope => Op::GetOuterScope {
+                index: self.read_u30()?,
+            },
             OpCode::GetProperty => Op::GetProperty {
                 index: self.read_index()?,
             },
@@ -775,6 +790,9 @@ impl<'a> Reader<'a> {
             OpCode::PushByte => Op::PushByte {
                 value: self.read_u8()?,
             },
+            OpCode::PushConstant => Op::PushConstant {
+                value: self.read_u30()?,
+            },
             OpCode::PushDouble => Op::PushDouble {
                 value: self.read_index()?,
             },
@@ -834,6 +852,7 @@ impl<'a> Reader<'a> {
             OpCode::Sxi1 => Op::Sxi1,
             OpCode::Sxi16 => Op::Sxi16,
             OpCode::Sxi8 => Op::Sxi8,
+            OpCode::Timestamp => Op::Timestamp,
             OpCode::Throw => Op::Throw,
             OpCode::TypeOf => Op::TypeOf,
             OpCode::URShift => Op::URShift,
