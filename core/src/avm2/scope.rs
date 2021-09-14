@@ -111,7 +111,9 @@ impl<'gc> ScopeChain<'gc> {
     /// WARNING: This can cause bizarre bugs, because it can change the saved ScopeChain
     /// of functions/classes that are using it.
     pub fn add(&self, mc: MutationContext<'gc, '_>, scope: Scope<'gc>) {
-        self.scopes.map(|scopes| scopes.write(mc).push(scope));
+        if let Some(scopes) = self.scopes {
+            scopes.write(mc).push(scope)
+        }
     }
 
     pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
