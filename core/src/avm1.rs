@@ -384,8 +384,7 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
-    fn push(&mut self, value: impl Into<Value<'gc>>) {
-        let value = value.into();
+    fn push(&mut self, value: Value<'gc>) {
         avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
         self.stack.push(value);
     }
