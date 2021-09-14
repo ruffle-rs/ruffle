@@ -108,6 +108,7 @@ main.addEventListener("drop", (event) => {
     event.stopPropagation();
     event.preventDefault();
     overlay.classList.remove("drag");
+    localFileInput.files = event.dataTransfer.files;
     loadFile(event.dataTransfer.files[0]);
 });
 
