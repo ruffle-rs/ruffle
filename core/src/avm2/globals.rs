@@ -288,10 +288,10 @@ fn function<'gc>(
     name: &'static str,
     nf: NativeMethodImpl,
     script: Script<'gc>,
-    scope: ScopeChain<'gc>,
 ) -> Result<(), Error> {
     let (_, _, mut domain) = script.init();
     let mc = activation.context.gc_context;
+    let scope = activation.create_scopechain();
     let qname = QName::new(Namespace::package(package), name);
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None).into();
@@ -330,7 +330,6 @@ fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,
     script: Script<'gc>,
-    scope: ScopeChain<'gc>,
 ) -> Result<(ClassObject<'gc>, Object<'gc>), Error> {
     let (_, mut global, mut domain) = script.init();
 
@@ -359,7 +358,7 @@ fn class<'gc>(
     let class_name = class_read.name().clone();
     drop(class_read);
 
-    let class_object = ClassObject::from_class(activation, class_def, super_class, scope)?;
+    let class_object = ClassObject::from_class(activation, class_def, super_class)?;
     global.install_const(
         activation.context.gc_context,
         class_name.clone(),
@@ -397,8 +396,8 @@ fn constant<'gc>(
 }
 
 macro_rules! avm2_system_class {
-    ($field:ident, $activation:ident, $class:expr, $script:expr, $scope:expr) => {
-        let (class_object, proto) = class($activation, $class, $script, $scope)?;
+    ($field:ident, $activation:ident, $class:expr, $script:expr) => {
+        let (class_object, proto) = class($activation, $class, $script)?;
 
         let sc = $activation.avm2().system_classes.as_mut().unwrap();
         sc.$field = class_object;
@@ -424,6 +423,9 @@ pub fn load_player_globals<'gc>(
     let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
     let script = Script::empty_script(mc, globals, domain);
 
+    // Set the outer scope of this activation to the global scope.
+    activation.set_outer(gs);
+
     // public / root package
     //
     // This part of global initialization is very complicated, because
@@ -439,17 +441,17 @@ pub fn load_player_globals<'gc>(
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.
     let object_classdef = object::create_class(mc);
-    let object_class = ClassObject::from_class_partial(activation, object_classdef, None, gs)?;
+    let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
     let object_proto = ScriptObject::bare_object(mc);
 
     let fn_classdef = function::create_class(mc);
     let fn_class =
-        ClassObject::from_class_partial(activation, fn_classdef, Some(object_class.into()), gs)?;
+        ClassObject::from_class_partial(activation, fn_classdef, Some(object_class.into()))?;
     let fn_proto = ScriptObject::object(mc, object_proto);
 
     let class_classdef = class::create_class(mc);
     let class_class =
-        ClassObject::from_class_partial(activation, class_classdef, Some(object_class.into()), gs)?;
+        ClassObject::from_class_partial(activation, class_classdef, Some(object_class.into()))?;
     let class_proto = ScriptObject::object(mc, object_proto);
 
     // Now to weave the Gordian knot...
@@ -489,14 +491,7 @@ pub fn load_player_globals<'gc>(
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
-
-    avm2_system_class!(
-        global,
-        activation,
-        global_scope::create_class(mc),
-        script,
-        gs
-    );
+    avm2_system_class!(global, activation, global_scope::create_class(mc), script);
 
     // Oh, one more small hitch: the domain everything gets put into was
     // actually made *before* the core class weave, so let's fix that up now
@@ -504,132 +499,104 @@ pub fn load_player_globals<'gc>(
     globals.set_proto(mc, activation.avm2().prototypes().global);
     globals.set_instance_of(mc, activation.avm2().classes().global);
 
-    avm2_system_class!(string, activation, string::create_class(mc), script, gs);
-    avm2_system_class!(boolean, activation, boolean::create_class(mc), script, gs);
-    avm2_system_class!(number, activation, number::create_class(mc), script, gs);
-    avm2_system_class!(int, activation, int::create_class(mc), script, gs);
-    avm2_system_class!(uint, activation, uint::create_class(mc), script, gs);
-    avm2_system_class!(
-        namespace,
-        activation,
-        namespace::create_class(mc),
-        script,
-        gs
-    );
-    avm2_system_class!(qname, activation, qname::create_class(mc), script, gs);
-    avm2_system_class!(array, activation, array::create_class(mc), script, gs);
+    avm2_system_class!(string, activation, string::create_class(mc), script);
+    avm2_system_class!(boolean, activation, boolean::create_class(mc), script);
+    avm2_system_class!(number, activation, number::create_class(mc), script);
+    avm2_system_class!(int, activation, int::create_class(mc), script);
+    avm2_system_class!(uint, activation, uint::create_class(mc), script);
+    avm2_system_class!(namespace, activation, namespace::create_class(mc), script);
+    avm2_system_class!(qname, activation, qname::create_class(mc), script);
+    avm2_system_class!(array, activation, array::create_class(mc), script);
 
-    function(activation, "", "trace", trace, script, gs)?;
-    function(activation, "", "isFinite", is_finite, script, gs)?;
-    function(activation, "", "isNaN", is_nan, script, gs)?;
+    function(activation, "", "trace", trace, script)?;
+    function(activation, "", "isFinite", is_finite, script)?;
+    function(activation, "", "isNaN", is_nan, script)?;
     constant(mc, "", "undefined", Value::Undefined, script)?;
     constant(mc, "", "null", Value::Null, script)?;
     constant(mc, "", "NaN", f64::NAN.into(), script)?;
     constant(mc, "", "Infinity", f64::INFINITY.into(), script)?;
 
-    class(activation, math::create_class(mc), script, gs)?;
-    avm2_system_class!(regexp, activation, regexp::create_class(mc), script, gs);
-    avm2_system_class!(vector, activation, vector::create_class(mc), script, gs);
-    avm2_system_class!(xml, activation, xml::create_class(mc), script, gs);
-    avm2_system_class!(xml_list, activation, xml_list::create_class(mc), script, gs);
+    class(activation, math::create_class(mc), script)?;
+    avm2_system_class!(regexp, activation, regexp::create_class(mc), script);
+    avm2_system_class!(vector, activation, vector::create_class(mc), script);
+    avm2_system_class!(xml, activation, xml::create_class(mc), script);
+    avm2_system_class!(xml_list, activation, xml_list::create_class(mc), script);
 
-    avm2_system_class!(date, activation, date::create_class(mc), script, gs);
+    avm2_system_class!(date, activation, date::create_class(mc), script);
 
     // package `flash.system`
     avm2_system_class!(
         application_domain,
         activation,
         flash::system::application_domain::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::system::capabilities::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::system::security::create_class(mc),
         script,
-        gs,
     )?;
-    class(
-        activation,
-        flash::system::system::create_class(mc),
-        script,
-        gs,
-    )?;
+    class(activation, flash::system::system::create_class(mc), script)?;
 
     // package `flash.events`
     avm2_system_class!(
         event,
         activation,
         flash::events::event::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::events::ieventdispatcher::create_interface(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::events::eventdispatcher::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::events::mouseevent::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::events::keyboardevent::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::events::progressevent::create_class(mc),
         script,
-        gs,
     )?;
     // package `flash.utils`
     avm2_system_class!(
         bytearray,
         activation,
         flash::utils::bytearray::create_class(mc),
-        script,
-        gs
+        script
     );
 
     domain.init_default_domain_memory(activation)?;
 
-    class(
-        activation,
-        flash::utils::endian::create_class(mc),
-        script,
-        gs,
-    )?;
+    class(activation, flash::utils::endian::create_class(mc), script)?;
 
     class(
         activation,
         flash::utils::compression_algorithm::create_class(mc),
         script,
-        gs,
     )?;
 
     class(
         activation,
         flash::utils::dictionary::create_class(mc),
         script,
-        gs,
     )?;
 
     function(
@@ -638,7 +605,6 @@ pub fn load_player_globals<'gc>(
         "getTimer",
         flash::utils::get_timer,
         script,
-        gs,
     )?;
 
     function(
@@ -647,7 +613,6 @@ pub fn load_player_globals<'gc>(
         "getQualifiedClassName",
         flash::utils::get_qualified_class_name,
         script,
-        gs,
     )?;
 
     function(
@@ -656,7 +621,6 @@ pub fn load_player_globals<'gc>(
         "getQualifiedSuperclassName",
         flash::utils::get_qualified_super_class_name,
         script,
-        gs,
     )?;
 
     function(
@@ -665,7 +629,6 @@ pub fn load_player_globals<'gc>(
         "getDefinitionByName",
         flash::utils::get_definition_by_name,
         script,
-        gs,
     )?;
 
     // package `flash.display`
@@ -673,157 +636,133 @@ pub fn load_player_globals<'gc>(
         activation,
         flash::display::ibitmapdrawable::create_interface(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         display_object,
         activation,
         flash::display::displayobject::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         shape,
         activation,
         flash::display::shape::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::display::interactiveobject::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         simplebutton,
         activation,
         flash::display::simplebutton::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::display::displayobjectcontainer::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         sprite,
         activation,
         flash::display::sprite::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         movieclip,
         activation,
         flash::display::movieclip::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         framelabel,
         activation,
         flash::display::framelabel::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         scene,
         activation,
         flash::display::scene::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         graphics,
         activation,
         flash::display::graphics::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::display::jointstyle::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::linescalemode::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::capsstyle::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         loaderinfo,
         activation,
         flash::display::loaderinfo::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::display::actionscriptversion::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::swfversion::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         stage,
         activation,
         flash::display::stage::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::display::stagescalemode::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::stagealign::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::stagedisplaystate::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::display::stagequality::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         bitmap,
         activation,
         flash::display::bitmap::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         bitmapdata,
         activation,
         flash::display::bitmapdata::create_class(mc),
-        script,
-        gs
+        script
     );
 
     // package `flash.geom`
@@ -831,15 +770,13 @@ pub fn load_player_globals<'gc>(
         point,
         activation,
         flash::geom::point::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         rectangle,
         activation,
         flash::geom::rectangle::create_class(mc),
-        script,
-        gs
+        script
     );
 
     // package `flash.media`
@@ -847,34 +784,25 @@ pub fn load_player_globals<'gc>(
         video,
         activation,
         flash::media::video::create_class(mc),
-        script,
-        gs
+        script
     );
-    class(
-        activation,
-        flash::media::sound::create_class(mc),
-        script,
-        gs,
-    )?;
+    class(activation, flash::media::sound::create_class(mc), script)?;
     avm2_system_class!(
         soundtransform,
         activation,
         flash::media::soundtransform::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::media::soundmixer::create_class(mc),
         script,
-        gs,
     )?;
     avm2_system_class!(
         soundchannel,
         activation,
         flash::media::soundchannel::create_class(mc),
-        script,
-        gs
+        script
     );
 
     // package `flash.text`
@@ -882,35 +810,30 @@ pub fn load_player_globals<'gc>(
         textfield,
         activation,
         flash::text::textfield::create_class(mc),
-        script,
-        gs
+        script
     );
     avm2_system_class!(
         textformat,
         activation,
         flash::text::textformat::create_class(mc),
-        script,
-        gs
+        script
     );
     class(
         activation,
         flash::text::textfieldautosize::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::text::textformatalign::create_class(mc),
         script,
-        gs,
     )?;
     class(
         activation,
         flash::text::textfieldtype::create_class(mc),
         script,
-        gs,
     )?;
-    class(activation, flash::text::font::create_class(mc), script, gs)?;
+    class(activation, flash::text::font::create_class(mc), script)?;
 
     // package `flash.crypto`
     function(
@@ -919,7 +842,6 @@ pub fn load_player_globals<'gc>(
         "generateRandomBytes",
         flash::crypto::generate_random_bytes,
         script,
-        gs,
     )?;
 
     Ok(())

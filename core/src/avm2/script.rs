@@ -342,11 +342,7 @@ impl<'gc> Script<'gc> {
         let script = script?;
 
         for abc_trait in script.traits.iter() {
-            drop(write);
-
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-
-            write = self.0.write(activation.context.gc_context);
             write.domain.export_definition(
                 newtrait.name().clone(),
                 *self,
