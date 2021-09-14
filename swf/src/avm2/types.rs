@@ -384,6 +384,9 @@ pub enum Op {
     IfLt {
         offset: i32,
     },
+    IfNe {
+        offset: i32,
+    },
     IfNge {
         offset: i32,
     },
@@ -394,9 +397,6 @@ pub enum Op {
         offset: i32,
     },
     IfNlt {
-        offset: i32,
-    },
-    IfNe {
         offset: i32,
     },
     IfStrictEq {
@@ -502,10 +502,10 @@ pub enum Op {
     ReturnValue,
     ReturnVoid,
     RShift,
-    SetLocal {
+    SetGlobalSlot {
         index: u32,
     },
-    SetGlobalSlot {
+    SetLocal {
         index: u32,
     },
     SetProperty {
