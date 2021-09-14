@@ -244,6 +244,10 @@ pub enum Op {
     BitNot,
     BitOr,
     BitXor,
+    Bkpt,
+    BkptLine {
+        line_num: u32,
+    },
     Call {
         num_args: u32,
     },
@@ -280,7 +284,12 @@ pub enum Op {
         index: Index<Multiname>,
     },
     CoerceA,
+    CoerceB,
+    CoerceD,
+    CoerceI,
+    CoerceO,
     CoerceS,
+    CoerceU,
     Construct {
         num_args: u32,
     },
@@ -328,6 +337,9 @@ pub enum Op {
     Equals,
     EscXAttr,
     EscXElem,
+    FindDef {
+        index: Index<Multiname>,
+    },
     FindProperty {
         index: Index<Multiname>,
     },
@@ -345,6 +357,9 @@ pub enum Op {
         index: Index<Multiname>,
     },
     GetLocal {
+        index: u32,
+    },
+    GetOuterScope {
         index: u32,
     },
     GetProperty {
@@ -474,6 +489,9 @@ pub enum Op {
     PushByte {
         value: u8,
     },
+    PushConstant {
+        value: u32,
+    },
     PushDouble {
         value: Index<f64>,
     },
@@ -531,5 +549,6 @@ pub enum Op {
     Sxi8,
     Throw,
     TypeOf,
+    Timestamp,
     URShift,
 }
