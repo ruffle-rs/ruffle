@@ -441,6 +441,7 @@ swf_tests! {
     (as3_greaterthan, "avm2/greaterthan", 1),
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),
+    (as3_issue_5292, "avm2/issue_5292", 1),
     (nested_textfields_in_buttons, "avm1/nested_textfields_in_buttons", 1),
     (conflicting_instance_names, "avm1/conflicting_instance_names", 6),
     (button_children, "avm1/button_children", 1),
