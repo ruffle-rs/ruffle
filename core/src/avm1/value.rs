@@ -266,42 +266,43 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
-    #[allow(clippy::unnested_or_patterns)]
     pub fn abstract_eq(
         &self,
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         coerced: bool,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Result<bool, Error<'gc>> {
         match (self, &other) {
-            (Value::Undefined, Value::Undefined) => Ok(true.into()),
-            (Value::Null, Value::Null) => Ok(true.into()),
+            (Value::Undefined, Value::Undefined) => Ok(true),
+            (Value::Null, Value::Null) => Ok(true),
             (Value::Number(a), Value::Number(b)) => {
                 if !coerced && a.is_nan() && b.is_nan() {
-                    return Ok(true.into());
+                    return Ok(true);
                 }
 
                 if a == b {
-                    return Ok(true.into());
+                    return Ok(true);
                 }
 
                 if *a == 0.0 && *b == -0.0 || *a == -0.0 && *b == 0.0 {
-                    return Ok(true.into());
+                    return Ok(true);
                 }
 
-                Ok(false.into())
+                Ok(false)
             }
-            (Value::String(a), Value::String(b)) => Ok((**a == **b).into()),
-            (Value::Bool(a), Value::Bool(b)) => Ok((a == b).into()),
-            (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b).into()),
-            (Value::Object(a), Value::Undefined | Value::Null) => {
-                Ok(Object::ptr_eq(*a, activation.context.avm1.global_object_cell()).into())
-            }
-            (Value::Undefined | Value::Null, Value::Object(b)) => {
-                Ok(Object::ptr_eq(*b, activation.context.avm1.global_object_cell()).into())
-            }
-            (Value::Undefined, Value::Null) => Ok(true.into()),
-            (Value::Null, Value::Undefined) => Ok(true.into()),
+            (Value::String(a), Value::String(b)) => Ok(**a == **b),
+            (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
+            (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
+            (Value::Object(a), Value::Undefined | Value::Null) => Ok(Object::ptr_eq(
+                *a,
+                activation.context.avm1.global_object_cell(),
+            )),
+            (Value::Undefined | Value::Null, Value::Object(b)) => Ok(Object::ptr_eq(
+                *b,
+                activation.context.avm1.global_object_cell(),
+            )),
+            (Value::Undefined, Value::Null) => Ok(true),
+            (Value::Null, Value::Undefined) => Ok(true),
             (Value::Number(_), Value::String(_)) => Ok(self.abstract_eq(
                 Value::Number(other.coerce_to_f64(activation)?),
                 activation,
@@ -321,7 +322,7 @@ impl<'gc> Value<'gc> {
             (Value::String(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(activation)?;
                 if !non_obj_other.is_primitive() {
-                    return Ok(false.into());
+                    return Ok(false);
                 }
 
                 Ok(self.abstract_eq(non_obj_other, activation, true)?)
@@ -329,7 +330,7 @@ impl<'gc> Value<'gc> {
             (Value::Number(_), Value::Object(_)) => {
                 let non_obj_other = other.to_primitive_num(activation)?;
                 if !non_obj_other.is_primitive() {
-                    return Ok(false.into());
+                    return Ok(false);
                 }
 
                 Ok(self.abstract_eq(non_obj_other, activation, true)?)
@@ -337,7 +338,7 @@ impl<'gc> Value<'gc> {
             (Value::Object(_), Value::String(_)) => {
                 let non_obj_self = self.to_primitive_num(activation)?;
                 if !non_obj_self.is_primitive() {
-                    return Ok(false.into());
+                    return Ok(false);
                 }
 
                 Ok(non_obj_self.abstract_eq(other, activation, true)?)
@@ -345,12 +346,12 @@ impl<'gc> Value<'gc> {
             (Value::Object(_), Value::Number(_)) => {
                 let non_obj_self = self.to_primitive_num(activation)?;
                 if !non_obj_self.is_primitive() {
-                    return Ok(false.into());
+                    return Ok(false);
                 }
 
                 Ok(non_obj_self.abstract_eq(other, activation, true)?)
             }
-            _ => Ok(false.into()),
+            _ => Ok(false),
         }
     }
 
