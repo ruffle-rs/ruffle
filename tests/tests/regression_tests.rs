@@ -126,6 +126,7 @@ swf_tests! {
     (export_assets, "avm1/export_assets", 1),
     (single_frame, "avm1/single_frame", 2),
     (looping, "avm1/looping", 6),
+    (math_min_max, "avm1/math_min_max", 1),
     (matrix, "avm1/matrix", 1),
     (point, "avm1/point", 1),
     (rectangle, "avm1/rectangle", 1),

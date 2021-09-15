@@ -1,0 +1,102 @@
+// Math.min(1, 2)
+1
+
+// Math.min(2, 1)
+1
+
+// Math.min(1)
+NaN
+
+// Math.min()
+Infinity
+
+// Math.min(a, b)
+a.valueOf
+b.valueOf
+1
+
+// Math.min(a)
+a.valueOf
+NaN
+
+// Math.min("10", "2")
+2
+
+// Math.min("2", "10")
+2
+
+// Math.min("1", "a")
+NaN
+
+// Math.min("a", "1")
+NaN
+
+// Math.min(1, "a")
+NaN
+
+// Math.min("a", 1)
+NaN
+
+// Math.min(1, "2")
+1
+
+// Math.min("1", 2)
+1
+
+// Math.min(NaN, 1)
+NaN
+
+// Math.min(1, NaN)
+NaN
+
+// Math.max(1, 2)
+2
+
+// Math.max(2, 1)
+2
+
+// Math.max(1)
+NaN
+
+// Math.max()
+-Infinity
+
+// Math.max(a, b)
+a.valueOf
+b.valueOf
+2
+
+// Math.max(a)
+a.valueOf
+NaN
+
+// Math.max("10", "2")
+10
+
+// Math.max("2", "10")
+10
+
+// Math.max("1", "a")
+NaN
+
+// Math.max("a", "1")
+NaN
+
+// Math.max(1, "a")
+NaN
+
+// Math.max("a", 1)
+NaN
+
+// Math.max(1, "2")
+2
+
+// Math.max("1", 2)
+2
+
+// Math.max(NaN, 1)
+NaN
+
+// Math.max(1, NaN)
+NaN
+
