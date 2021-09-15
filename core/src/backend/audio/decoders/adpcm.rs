@@ -17,9 +17,9 @@ const STEP_TABLE: [u16; 89] = [
     10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
 ];
 
-const SAMPLE_DELTA_CALCULATOR: [fn(u16, i32) -> u16; 4] = [
+const SAMPLE_DELTA_CALCULATOR: [fn(u16, u32) -> u16; 4] = [
     // 2 bits
-    |step: u16, magnitude: i32| {
+    |step: u16, magnitude: u32| {
         let mut delta = step >> 1;
         if magnitude & 1 != 0 {
             delta += step;
@@ -27,7 +27,7 @@ const SAMPLE_DELTA_CALCULATOR: [fn(u16, i32) -> u16; 4] = [
         delta
     },
     // 3 bits
-    |step: u16, magnitude: i32| {
+    |step: u16, magnitude: u32| {
         let mut delta = step >> 2;
         if magnitude & 1 != 0 {
             delta += step >> 1;
@@ -38,7 +38,7 @@ const SAMPLE_DELTA_CALCULATOR: [fn(u16, i32) -> u16; 4] = [
         delta
     },
     // 4 bits
-    |step: u16, magnitude: i32| {
+    |step: u16, magnitude: u32| {
         let mut delta = step >> 3;
         if magnitude & 1 != 0 {
             delta += step >> 2;
@@ -52,7 +52,7 @@ const SAMPLE_DELTA_CALCULATOR: [fn(u16, i32) -> u16; 4] = [
         delta
     },
     // 5 bits
-    |step: u16, magnitude: i32| {
+    |step: u16, magnitude: u32| {
         let mut delta = step >> 4;
         if magnitude & 1 != 0 {
             delta += step >> 3;
@@ -82,7 +82,7 @@ pub struct AdpcmDecoder<R: Read> {
     bits_per_sample: usize,
     sample_num: u16,
     channels: Vec<Channel>,
-    decoder: fn(u16, i32) -> u16,
+    decoder: fn(u16, u32) -> u16,
 }
 
 impl<R: Read> AdpcmDecoder<R> {
@@ -122,14 +122,14 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
         self.sample_num = (self.sample_num + 1) % 4095;
 
         for channel in &mut self.channels {
-            let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()? as i32;
             let step = STEP_TABLE[channel.step_index as usize];
 
-            // (data + 0.5) * step / 2^(bits_per_sample - 2)
             // `data` is sign-magnitude, NOT two's complement.
-            // TODO(Herschel): Other implementations use some bit-tricks for this.
+            let data = self.inner.read::<u32>(self.bits_per_sample as u32).ok()?;
             let sign_mask = 1 << (self.bits_per_sample - 1);
             let magnitude = data & !sign_mask;
+
+            // (data + 0.5) * step / 2^(bits_per_sample - 2)
             let delta = (self.decoder)(step, magnitude);
 
             channel.sample = if (data & sign_mask) != 0 {
