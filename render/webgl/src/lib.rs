@@ -181,17 +181,16 @@ impl WebGlRenderBackend {
             }
         };
 
-        // Get WebGL driver info.
-        let driver_info = if gl.get_extension("WEBGL_debug_renderer_info").is_ok() {
-            gl.get_parameter(WebglDebugRendererInfo::UNMASKED_RENDERER_WEBGL)
+        if log::log_enabled!(log::Level::Info) {
+            // Get WebGL driver info.
+            let driver_info = gl
+                .get_extension("WEBGL_debug_renderer_info")
+                .and_then(|_| gl.get_parameter(WebglDebugRendererInfo::UNMASKED_RENDERER_WEBGL))
                 .ok()
                 .and_then(|val| val.as_string())
-                .unwrap_or_else(|| "<unknown>".to_string())
-        } else {
-            "<unknown>".to_string()
-        };
-
-        log::info!("WebGL graphics driver: {}", driver_info);
+                .unwrap_or_else(|| "<unknown>".to_string());
+            log::info!("WebGL graphics driver: {}", driver_info);
+        }
 
         let color_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, COLOR_VERTEX_GLSL)?;
         let texture_vertex = Self::compile_shader(&gl, Gl::VERTEX_SHADER, TEXTURE_VERTEX_GLSL)?;
@@ -349,9 +348,11 @@ impl WebGlRenderBackend {
             .ok_or("Unable to create shader")?;
         gl.shader_source(&shader, glsl_src);
         gl.compile_shader(&shader);
-        let log = gl.get_shader_info_log(&shader).unwrap_or_default();
-        if !log.is_empty() {
-            log::error!("{}", log);
+        if log::log_enabled!(log::Level::Error) {
+            let log = gl.get_shader_info_log(&shader).unwrap_or_default();
+            if !log.is_empty() {
+                log::error!("{}", log);
+            }
         }
         Ok(shader)
     }
