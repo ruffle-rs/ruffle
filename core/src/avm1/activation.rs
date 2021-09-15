@@ -1110,7 +1110,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(clippy::float_cmp)]
     fn action_equals_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Version >=5 equality
         let a = self.context.avm1.pop();
