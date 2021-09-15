@@ -8,8 +8,7 @@ use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::string::utils as string_utils;
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
 use std::iter;
 
@@ -53,7 +52,7 @@ fn length<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Value::String(s) = this.value_of(activation.context.gc_context)? {
-            return Ok(s.encode_utf16().count().into());
+            return Ok(s.len().into());
         }
     }
 
@@ -79,11 +78,11 @@ fn char_at<'gc>(
 
             let index = if !n.is_nan() { n as usize } else { 0 };
             let ret = s
-                .encode_utf16()
-                .nth(index)
-                .map(|c| string_utils::utf16_code_unit_to_char(c).to_string())
+                .try_get(index)
+                .map(WString::from_unit)
+                .map(|s| AvmString::new_ucs2(activation.context.gc_context, s))
                 .unwrap_or_default();
-            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+            return Ok(ret.into());
         }
     }
 
@@ -108,11 +107,7 @@ fn char_code_at<'gc>(
             }
 
             let index = if !n.is_nan() { n as usize } else { 0 };
-            let ret = s
-                .encode_utf16()
-                .nth(index)
-                .map(f64::from)
-                .unwrap_or(f64::NAN);
+            let ret = s.try_get(index).map(f64::from).unwrap_or(f64::NAN);
             return Ok(ret.into());
         }
     }
@@ -144,15 +139,16 @@ fn from_char_code<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut out = String::with_capacity(args.len());
+    let mut out = WString::with_capacity(args.len(), false);
     for arg in args {
         let i = arg.coerce_to_u32(activation)? as u16;
         if i == 0 {
+            // Ignore nulls.
             continue;
         }
-        out.push(string_utils::utf16_code_unit_to_char(i));
+        out.push(i);
     }
-    Ok(AvmString::new(activation.context.gc_context, out).into())
+    Ok(AvmString::new_ucs2(activation.context.gc_context, out).into())
 }
 
 /// Implements `String.indexOf`
@@ -162,46 +158,22 @@ fn index_of<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let this = Value::from(this)
-            .coerce_to_string(activation)?
-            .encode_utf16()
-            .collect::<Vec<u16>>();
+        let this = Value::from(this).coerce_to_string(activation)?;
         let pattern = match args.get(0) {
             None => return Ok(Value::Undefined),
-            Some(s) => s
-                .clone()
-                .coerce_to_string(activation)?
-                .encode_utf16()
-                .collect::<Vec<_>>(),
-        };
-        let start_index = {
-            let n = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)?;
-            if n >= 0 {
-                n as usize
-            } else {
-                0
-            }
+            Some(s) => s.clone().coerce_to_string(activation)?,
         };
 
-        return if start_index >= this.len() {
-            // Out of range
-            Ok((-1).into())
-        } else if pattern.is_empty() {
-            // Empty pattern is found immediately.
-            Ok((start_index as f64).into())
-        } else if let Some(mut pos) = this[start_index..]
-            .windows(pattern.len())
-            .position(|w| w == &pattern[..])
-        {
-            pos += start_index;
-            Ok((pos as f64).into())
-        } else {
-            // Not found
-            Ok((-1).into())
+        let start_index = match args.get(1) {
+            None | Some(Value::Undefined) => 0,
+            Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
         };
+
+        return this
+            .try_slice(start_index..)
+            .and_then(|s| s.find(pattern.as_ucs2()))
+            .map(|i| Ok((i + start_index).into()))
+            .unwrap_or_else(|| Ok((-1).into())); // Out of range or not found
     }
 
     Ok(Value::Undefined)
@@ -214,38 +186,26 @@ fn last_index_of<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let this = Value::from(this)
-            .coerce_to_string(activation)?
-            .encode_utf16()
-            .collect::<Vec<u16>>();
+        let this = Value::from(this).coerce_to_string(activation)?;
         let pattern = match args.get(0) {
             None => return Ok(Value::Undefined),
-            Some(s) => s
-                .clone()
-                .coerce_to_string(activation)?
-                .encode_utf16()
-                .collect::<Vec<_>>(),
-        };
-        let start_index = match args.get(1) {
-            None | Some(Value::Undefined) => this.len(),
-            Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
+            Some(s) => s.clone().coerce_to_string(activation)?,
         };
 
-        return if pattern.is_empty() {
-            // Empty pattern is found immediately.
-            Ok(start_index.into())
-        } else if let Some((i, _)) = this[..]
-            .windows(pattern.len())
-            .enumerate()
-            .take(start_index + 1)
-            .rev()
-            .find(|(_, w)| *w == &pattern[..])
-        {
-            Ok(i.into())
-        } else {
-            // Not found
-            Ok((-1).into())
+        let start_index = match args.get(1) {
+            None | Some(Value::Undefined) => this.len(),
+            Some(n) => match usize::try_from(n.coerce_to_i32(activation)?) {
+                Ok(n) => n + pattern.len(),
+                Err(_) => return Ok((-1).into()), // Bail out on negative indices.
+            },
         };
+
+        return this
+            .try_slice(..start_index)
+            .unwrap_or_else(|| this.as_ucs2())
+            .rfind(pattern.as_ucs2())
+            .map(|i| Ok(i.into()))
+            .unwrap_or_else(|| Ok((-1).into())); // Not found
     }
 
     Ok(Value::Undefined)
@@ -274,14 +234,14 @@ fn match_s<'gc>(
                 let mut last = regexp.last_index();
                 let old_last_index = regexp.last_index();
                 regexp.set_last_index(0);
-                while let Some(result) = regexp.exec(&this) {
+                while let Some(result) = regexp.exec(this.as_str()) {
                     if regexp.last_index() == last {
                         break;
                     }
                     storage.push(
                         AvmString::new(
                             activation.context.gc_context,
-                            this[result.range()].to_string(),
+                            this.as_str()[result.range()].to_string(),
                         )
                         .into(),
                     );
@@ -297,10 +257,10 @@ fn match_s<'gc>(
             } else {
                 let old = regexp.last_index();
                 regexp.set_last_index(0);
-                if let Some(result) = regexp.exec(&this) {
+                if let Some(result) = regexp.exec(this.as_str()) {
                     let substrings = result
                         .groups()
-                        .map(|range| this[range.unwrap_or(0..0)].to_string());
+                        .map(|range| this.as_str()[range.unwrap_or(0..0)].to_string());
 
                     let mut storage = ArrayStorage::new(0);
                     for substring in substrings {
@@ -332,28 +292,23 @@ fn slice<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let this = Value::from(this).coerce_to_string(activation)?;
-        let this_len = this.encode_utf16().count();
         let start_index = match args.get(0) {
             None => 0,
             Some(n) => {
                 let n = n.coerce_to_number(activation)?;
-                string_wrapping_index(n, this_len)
+                string_wrapping_index(n, this.len())
             }
         };
         let end_index = match args.get(1) {
-            None => this_len,
+            None => this.len(),
             Some(n) => {
                 let n = n.coerce_to_number(activation)?;
-                string_wrapping_index(n, this_len)
+                string_wrapping_index(n, this.len())
             }
         };
         return if start_index < end_index {
-            let ret = string_utils::utf16_iter_to_string(
-                this.encode_utf16()
-                    .skip(start_index)
-                    .take(end_index - start_index),
-            );
-            Ok(AvmString::new(activation.context.gc_context, ret).into())
+            let ret = WString::from(this.slice(start_index..end_index));
+            Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
         } else {
             Ok("".into())
         };
@@ -390,30 +345,30 @@ fn split<'gc>(
             Value::Undefined => usize::MAX,
             limit => limit.coerce_to_i32(activation)?.max(0) as usize,
         };
-        if delimiter.is_empty() {
-            // When using an empty delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
+
+        let storage = if delimiter.is_empty() {
+            // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
             // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
             // Special case this to match Flash's behavior.
-            return Ok(ArrayObject::from_storage(
-                activation,
-                this.chars()
-                    .take(limit)
-                    .map(|c| AvmString::new(activation.context.gc_context, c.to_string()))
-                    .collect(),
-            )
-            .unwrap()
-            .into());
+            this.iter()
+                .take(limit)
+                .map(|c| {
+                    Value::from(AvmString::new_ucs2(
+                        activation.context.gc_context,
+                        WString::from_unit(c),
+                    ))
+                })
+                .collect()
         } else {
-            return Ok(ArrayObject::from_storage(
-                activation,
-                this.split(delimiter.as_ref())
-                    .take(limit)
-                    .map(|c| AvmString::new(activation.context.gc_context, c.to_string()))
-                    .collect(),
-            )
+            this.split(delimiter.as_ucs2())
+                .take(limit)
+                .map(|c| Value::from(AvmString::new_ucs2(activation.context.gc_context, c.into())))
+                .collect()
+        };
+
+        return Ok(ArrayObject::from_storage(activation, storage)
             .unwrap()
             .into());
-        }
     }
     Ok(Value::Undefined)
 }
@@ -432,13 +387,11 @@ fn substr<'gc>(
             return Ok(Value::from(this));
         }
 
-        let this_len = this.encode_utf16().count();
-
         let start_index = string_wrapping_index(
             args.get(0)
                 .unwrap_or(&Value::Number(0.))
                 .coerce_to_number(activation)?,
-            this_len,
+            this.len(),
         );
 
         let len = args
@@ -446,15 +399,14 @@ fn substr<'gc>(
             .unwrap_or(&Value::Number(0x7fffffff as f64))
             .coerce_to_number(activation)?;
 
-        let len = if len == f64::INFINITY {
-            this_len
+        let end_index = if len == f64::INFINITY {
+            this.len()
         } else {
-            len as usize
+            this.len().min(start_index + len as usize)
         };
 
-        let ret =
-            string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
-        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        let ret = WString::from(this.slice(start_index..end_index));
+        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)
@@ -474,32 +426,26 @@ fn substring<'gc>(
             return Ok(Value::from(this));
         }
 
-        let this_len = this.encode_utf16().count();
-
         let mut start_index = string_index(
             args.get(0)
                 .unwrap_or(&Value::Number(0.))
                 .coerce_to_number(activation)?,
-            this_len,
+            this.len(),
         );
 
         let mut end_index = string_index(
             args.get(1)
                 .unwrap_or(&Value::Number(0x7fffffff as f64))
                 .coerce_to_number(activation)?,
-            this_len,
+            this.len(),
         );
 
         if end_index < start_index {
             std::mem::swap(&mut end_index, &mut start_index);
         }
 
-        let ret = string_utils::utf16_iter_to_string(
-            this.encode_utf16()
-                .skip(start_index)
-                .take(end_index - start_index),
-        );
-        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        let ret = WString::from(this.slice(start_index..end_index));
+        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)

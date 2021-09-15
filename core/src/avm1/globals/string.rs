@@ -1,5 +1,4 @@
 //! `String` class impl
-
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
@@ -7,7 +6,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::string::{utils as string_utils, AvmString};
+use crate::string::{utils as string_utils, AvmString, WString};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -43,7 +42,7 @@ pub fn string<'gc>(
     };
 
     if let Some(mut vbox) = this.as_value_object() {
-        let len = value.encode_utf16().count();
+        let len = value.len();
         vbox.define_value(
             activation.context.gc_context,
             "length",
@@ -105,24 +104,21 @@ fn char_at<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Will return REPLACEMENT_CHAR if this indexes a character outside the BMP, losing info about the surrogate.
-    // When we improve our string representation, the unpaired surrogate should be returned.
     let this_val = Value::from(this);
     let string = this_val.coerce_to_string(activation)?;
     let i = args
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
-    let ret = if i >= 0 {
-        string
-            .encode_utf16()
-            .nth(i as usize)
-            .map(|c| string_utils::utf16_code_unit_to_char(c).to_string())
-            .unwrap_or_default()
-    } else {
-        "".into()
-    };
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+
+    let ret = usize::try_from(i)
+        .ok()
+        .and_then(|i| string.try_get(i))
+        .map(WString::from_unit)
+        .map(|ret| AvmString::new_ucs2(activation.context.gc_context, ret))
+        .unwrap_or_else(|| "".into());
+
+    Ok(ret.into())
 }
 
 fn char_code_at<'gc>(
@@ -137,10 +133,7 @@ fn char_code_at<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
     let ret = if i >= 0 {
-        this.encode_utf16()
-            .nth(i as usize)
-            .map(f64::from)
-            .unwrap_or(f64::NAN)
+        this.try_get(i as usize).map(f64::from).unwrap_or(f64::NAN)
     } else {
         f64::NAN
     };
@@ -152,12 +145,15 @@ fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut ret = Value::from(this).coerce_to_string(activation)?.to_string();
+    let mut ret: WString = Value::from(this)
+        .coerce_to_string(activation)?
+        .as_ucs2()
+        .into();
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret.push_str(&s)
+        ret.push_str(s.as_ucs2())
     }
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
 }
 
 fn from_char_code<'gc>(
@@ -165,17 +161,16 @@ fn from_char_code<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Unpaired surrogates will be replace with Unicode replacement char.
-    let mut out = String::with_capacity(args.len());
+    let mut out = WString::with_capacity(args.len(), false);
     for arg in args {
         let i = arg.coerce_to_u16(activation)?;
         if i == 0 {
             // Stop at a null-terminator.
             break;
         }
-        out.push(string_utils::utf16_code_unit_to_char(i));
+        out.push(i);
     }
-    Ok(AvmString::new(activation.context.gc_context, out).into())
+    Ok(AvmString::new_ucs2(activation.context.gc_context, out).into())
 }
 
 fn index_of<'gc>(
@@ -183,46 +178,21 @@ fn index_of<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = Value::from(this)
-        .coerce_to_string(activation)?
-        .encode_utf16()
-        .collect::<Vec<u16>>();
+    let this = Value::from(this).coerce_to_string(activation)?;
     let pattern = match args.get(0) {
         None => return Ok(Value::Undefined),
-        Some(s) => s
-            .clone()
-            .coerce_to_string(activation)?
-            .encode_utf16()
-            .collect::<Vec<_>>(),
-    };
-    let start_index = {
-        let n = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?;
-        if n >= 0 {
-            n as usize
-        } else {
-            0
-        }
+        Some(s) => s.clone().coerce_to_string(activation)?,
     };
 
-    if start_index >= this.len() {
-        // Out of range
-        Ok((-1).into())
-    } else if pattern.is_empty() {
-        // Empty pattern is found immediately.
-        Ok((start_index as f64).into())
-    } else if let Some(mut pos) = this[start_index..]
-        .windows(pattern.len())
-        .position(|w| w == &pattern[..])
-    {
-        pos += start_index;
-        Ok((pos as f64).into())
-    } else {
-        // Not found
-        Ok((-1).into())
-    }
+    let start_index = match args.get(1) {
+        None | Some(Value::Undefined) => 0,
+        Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
+    };
+
+    this.try_slice(start_index..)
+        .and_then(|s| s.find(pattern.as_ucs2()))
+        .map(|i| Ok((i + start_index).into()))
+        .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
 
 fn last_index_of<'gc>(
@@ -230,38 +200,25 @@ fn last_index_of<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = Value::from(this)
-        .coerce_to_string(activation)?
-        .encode_utf16()
-        .collect::<Vec<u16>>();
+    let this = Value::from(this).coerce_to_string(activation)?;
     let pattern = match args.get(0) {
         None => return Ok(Value::Undefined),
-        Some(s) => s
-            .clone()
-            .coerce_to_string(activation)?
-            .encode_utf16()
-            .collect::<Vec<_>>(),
-    };
-    let start_index = match args.get(1) {
-        None | Some(Value::Undefined) => this.len(),
-        Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
+        Some(s) => s.clone().coerce_to_string(activation)?,
     };
 
-    if pattern.is_empty() {
-        // Empty pattern is found immediately.
-        Ok(start_index.into())
-    } else if let Some((i, _)) = this[..]
-        .windows(pattern.len())
-        .enumerate()
-        .take(start_index + 1)
-        .rev()
-        .find(|(_, w)| *w == &pattern[..])
-    {
-        Ok(i.into())
-    } else {
-        // Not found
-        Ok((-1).into())
-    }
+    let start_index = match args.get(1) {
+        None | Some(Value::Undefined) => this.len(),
+        Some(n) => match usize::try_from(n.coerce_to_i32(activation)?) {
+            Ok(n) => n + pattern.len(),
+            Err(_) => return Ok((-1).into()), // Bail out on negative indices.
+        },
+    };
+
+    this.try_slice(..start_index)
+        .unwrap_or_else(|| this.as_ucs2())
+        .rfind(pattern.as_ucs2())
+        .map(|i| Ok(i.into()))
+        .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
 
 fn slice<'gc>(
@@ -276,24 +233,19 @@ fn slice<'gc>(
 
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)?,
-        this_len,
+        this.len(),
     );
     let end_index = match args.get(1) {
-        None | Some(Value::Undefined) => this_len,
-        Some(n) => string_wrapping_index(n.coerce_to_i32(activation)?, this_len),
+        None | Some(Value::Undefined) => this.len(),
+        Some(n) => string_wrapping_index(n.coerce_to_i32(activation)?, this.len()),
     };
     if start_index < end_index {
-        let ret = string_utils::utf16_iter_to_string(
-            this.encode_utf16()
-                .skip(start_index)
-                .take(end_index - start_index),
-        );
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        let ret = WString::from(this.slice(start_index..end_index));
+        Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
     }
@@ -314,22 +266,22 @@ fn split<'gc>(
         limit => limit.coerce_to_i32(activation)?.max(0) as usize,
     };
     if delimiter.is_empty() {
-        // When using an empty delimiter, Rust's str::split adds an extra beginning and trailing item, but Flash does not.
+        // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            this.chars()
-                .take(limit)
-                .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
+            this.iter().take(limit).map(|c| {
+                AvmString::new_ucs2(activation.context.gc_context, WString::from_unit(c)).into()
+            }),
         )
         .into())
     } else {
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            this.split(delimiter.as_ref())
+            this.split(delimiter.as_ucs2())
                 .take(limit)
                 .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
         )
@@ -348,23 +300,25 @@ fn substr<'gc>(
 
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    let this_len = this.encode_utf16().count();
     let start_index = string_wrapping_index(
         args.get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)?,
-        this_len,
+        this.len(),
     );
 
     let len = match args.get(1) {
-        None | Some(Value::Undefined) => this_len as i32,
+        None | Some(Value::Undefined) => this.len() as i32,
         Some(n) => n.coerce_to_i32(activation)?,
     };
-    let end_index = string_wrapping_index((start_index as i32) + len, this_len);
-    let len = end_index.saturating_sub(start_index);
+    let end_index = string_wrapping_index((start_index as i32) + len, this.len());
 
-    let ret = string_utils::utf16_iter_to_string(this.encode_utf16().skip(start_index).take(len));
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    if start_index < end_index {
+        let ret = WString::from(this.slice(start_index..end_index));
+        Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+    } else {
+        Ok("".into())
+    }
 }
 
 fn substring<'gc>(
@@ -378,24 +332,19 @@ fn substring<'gc>(
 
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    let this_len = this.encode_utf16().count();
-    let mut start_index = string_index(args.get(0).unwrap().coerce_to_i32(activation)?, this_len);
+    let mut start_index = string_index(args.get(0).unwrap().coerce_to_i32(activation)?, this.len());
 
     let mut end_index = match args.get(1) {
-        None | Some(Value::Undefined) => this_len,
-        Some(n) => string_index(n.coerce_to_i32(activation)?, this_len),
+        None | Some(Value::Undefined) => this.len(),
+        Some(n) => string_index(n.coerce_to_i32(activation)?, this.len()),
     };
 
     // substring automatically swaps the start/end if they are flipped.
     if end_index < start_index {
         std::mem::swap(&mut end_index, &mut start_index);
     }
-    let ret = string_utils::utf16_iter_to_string(
-        this.encode_utf16()
-            .skip(start_index)
-            .take(end_index - start_index),
-    );
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    let ret = WString::from(this.slice(start_index..end_index));
+    Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
 }
 
 fn to_lower_case<'gc>(
@@ -405,11 +354,11 @@ fn to_lower_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    Ok(AvmString::new(
+    Ok(AvmString::new_ucs2(
         activation.context.gc_context,
-        this.chars()
-            .map(string_utils::swf_char_to_lowercase)
-            .collect::<String>(),
+        this.iter()
+            .map(string_utils::swf_to_lowercase)
+            .collect::<WString>(),
     )
     .into())
 }
@@ -439,11 +388,11 @@ fn to_upper_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    Ok(AvmString::new(
+    Ok(AvmString::new_ucs2(
         activation.context.gc_context,
-        this.chars()
-            .map(string_utils::swf_char_to_uppercase)
-            .collect::<String>(),
+        this.iter()
+            .map(string_utils::swf_to_uppercase)
+            .collect::<WString>(),
     )
     .into())
 }
