@@ -10,7 +10,7 @@ enum Source<'gc> {
     // both `impl Deref<&str>` and O(1) UCS2 char access.
     // TODO(moulins): remove the extra `String`
     Owned(Gc<'gc, (String, WString)>),
-    // Should be an ASCII string, for zero-copy conversion into `Str<'_>`.
+    // Should be an ASCII string, for zero-copy conversion into `WStr<'_>`.
     Static(&'static str),
 }
 
@@ -37,6 +37,7 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    #[inline]
     pub fn as_str(&self) -> &str {
         self
     }
@@ -47,6 +48,12 @@ impl<'gc> AvmString<'gc> {
             // `str` is valid ASCII, per invariant.
             Source::Static(str) => WStr::from_units(str.as_bytes()),
         }
+    }
+
+    impl_str_methods! {
+        lifetime: '_;
+        self: &Self;
+        deref: self.as_ucs2();
     }
 }
 

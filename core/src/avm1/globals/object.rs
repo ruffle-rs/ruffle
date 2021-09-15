@@ -295,7 +295,7 @@ pub fn as_set_prop_flags<'gc>(
         Some(v) => {
             let props = v.coerce_to_string(activation)?;
             if props.contains(',') {
-                for prop_name in props.split(',') {
+                for prop_name in props.as_str().split(',') {
                     object.set_attributes(
                         activation.context.gc_context,
                         Some(AvmString::new(activation.context.gc_context, prop_name)),

@@ -42,6 +42,19 @@ pub fn utf16_code_unit_to_char(c: u16) -> char {
         .unwrap_or(char::REPLACEMENT_CHARACTER)
 }
 
+/// Maps a UCS2 code unit to its lowercase variant according to the Flash Player.
+/// Note that this mapping is different that Rust's `to_lowercase`.
+pub fn swf_to_lowercase(c: u16) -> u16 {
+    if c < 0x80 {
+        return (c as u8).to_ascii_lowercase().into();
+    }
+
+    match LOWERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&c)) {
+        Ok(i) => LOWERCASE_TABLE[i].1,
+        Err(_) => c,
+    }
+}
+
 /// Maps a char to its lowercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_lowercase`.
 pub fn swf_char_to_lowercase(c: char) -> char {
@@ -60,12 +73,26 @@ pub fn swf_char_to_lowercase(c: char) -> char {
     }
 }
 
+/// Maps a UCS2 code unit to its uppercase variant according to the Flash Player.
+/// Note that this mapping is different that Rust's `to_uppercase`.
+pub fn swf_to_uppercase(c: u16) -> u16 {
+    if c < 0x80 {
+        return (c as u8).to_ascii_uppercase().into();
+    }
+
+    match UPPERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&c)) {
+        Ok(i) => UPPERCASE_TABLE[i].1,
+        Err(_) => c,
+    }
+}
+
 /// Maps a char to its uppercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_uppercase`.
 pub fn swf_char_to_uppercase(c: char) -> char {
     if c.is_ascii() {
         return c.to_ascii_uppercase();
     }
+
     let code_pt: u32 = c.into();
     if code_pt <= u16::MAX.into() {
         let code_pt = code_pt as u16;

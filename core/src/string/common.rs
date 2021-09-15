@@ -137,6 +137,27 @@ macro_rules! impl_str_methods {
         pub fn iter($self: $receiver) -> crate::string::ops::Iter<$lt> {
             crate::string::ops::str_iter($deref)
         }
+
+        /// Analogue of [`str::find`].
+        // TODO: add our own Pattern trait to support several kinds of needles?
+        #[inline]
+        pub fn find($self: $receiver, needle: WStr<'_>) -> Option<usize> {
+            crate::string::ops::str_find($deref, needle)
+        }
+
+        /// Analogue of [`str::rfind`].
+        // TODO: add our own Pattern trait to support several kinds of needles?
+        #[inline]
+        pub fn rfind($self: $receiver, needle: WStr<'_>) -> Option<usize> {
+            crate::string::ops::str_rfind($deref, needle)
+        }
+
+        /// Analogue of [`str::split`].
+        // TODO: add our own Pattern trait to support several kinds of needles?
+        #[inline]
+        pub fn split<'s>($self: $receiver, separator: WStr<'s>) -> crate::string::ops::Split<$lt, 's> {
+            crate::string::ops::str_split($deref, separator)
+        }
     }
 }
 

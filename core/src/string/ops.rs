@@ -90,3 +90,55 @@ pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {
         Units::Wide(us) => us.iter().for_each(|u| state.write_u16(*u)),
     }
 }
+
+pub fn str_find(haystack: WStr<'_>, needle: WStr<'_>) -> Option<usize> {
+    let max = haystack.len().checked_sub(needle.len())?;
+
+    (0..=max).find(|i| haystack.slice(*i..*i + needle.len()) == needle)
+}
+
+pub fn str_rfind(haystack: WStr<'_>, needle: WStr<'_>) -> Option<usize> {
+    let max = haystack.len().checked_sub(needle.len())?;
+
+    (0..=max)
+        .rev()
+        .find(|i| haystack.slice(*i..*i + needle.len()) == needle)
+}
+
+#[inline]
+pub fn str_split<'a, 'b>(string: WStr<'a>, separator: WStr<'b>) -> Split<'a, 'b> {
+    Split {
+        string,
+        separator,
+        done: false,
+    }
+}
+
+pub struct Split<'a, 'b> {
+    string: WStr<'a>,
+    separator: WStr<'b>,
+    done: bool,
+}
+
+impl<'a, 'b> Iterator for Split<'a, 'b> {
+    type Item = WStr<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        match self.string.find(self.separator) {
+            Some(i) => {
+                let prefix = self.string.slice(..i);
+                let suffix = self.string.slice((i + self.separator.len())..);
+                self.string = suffix;
+                Some(prefix)
+            }
+            None => {
+                self.done = true;
+                Some(self.string)
+            }
+        }
+    }
+}
