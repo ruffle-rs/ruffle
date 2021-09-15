@@ -103,23 +103,24 @@ fn max<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(a) = args.get(0) {
-        return if let Some(b) = args.get(1) {
-            match a.abstract_lt(b.to_owned(), activation)? {
-                Value::Bool(value) => {
-                    if value {
-                        Ok(b.coerce_to_f64(activation)?.into())
-                    } else {
-                        Ok(a.coerce_to_f64(activation)?.into())
-                    }
-                }
-                _ => Ok(f64::NAN.into()),
+    let result = if let Some(a) = args.get(0) {
+        let a = a.coerce_to_f64(activation)?;
+        if let Some(b) = args.get(1) {
+            let b = b.coerce_to_f64(activation)?;
+            use std::cmp::Ordering;
+            match a.partial_cmp(&b) {
+                Some(Ordering::Less) => b,
+                Some(Ordering::Equal) => a,
+                Some(Ordering::Greater) => a,
+                None => f64::NAN,
             }
         } else {
-            Ok(f64::NAN.into())
-        };
-    }
-    Ok(f64::NEG_INFINITY.into())
+            f64::NAN
+        }
+    } else {
+        f64::NEG_INFINITY
+    };
+    Ok(result.into())
 }
 
 fn min<'gc>(
@@ -127,23 +128,24 @@ fn min<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(a) = args.get(0) {
-        return if let Some(b) = args.get(1) {
-            match a.abstract_lt(b.to_owned(), activation)? {
-                Value::Bool(value) => {
-                    if value {
-                        Ok(a.coerce_to_f64(activation)?.into())
-                    } else {
-                        Ok(b.coerce_to_f64(activation)?.into())
-                    }
-                }
-                _ => Ok(f64::NAN.into()),
+    let result = if let Some(a) = args.get(0) {
+        let a = a.coerce_to_f64(activation)?;
+        if let Some(b) = args.get(1) {
+            let b = b.coerce_to_f64(activation)?;
+            use std::cmp::Ordering;
+            match a.partial_cmp(&b) {
+                Some(Ordering::Less) => a,
+                Some(Ordering::Equal) => a,
+                Some(Ordering::Greater) => b,
+                None => f64::NAN,
             }
         } else {
-            Ok(f64::NAN.into())
-        };
-    }
-    Ok(f64::INFINITY.into())
+            f64::NAN
+        }
+    } else {
+        f64::INFINITY
+    };
+    Ok(result.into())
 }
 
 pub fn random<'gc>(
