@@ -245,12 +245,11 @@ impl<'gc> Value<'gc> {
     }
 
     /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
-    #[allow(clippy::float_cmp)]
     pub fn abstract_lt(
         &self,
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+    ) -> Result<Option<bool>, Error<'gc>> {
         let prim_self = self.to_primitive_num(activation)?;
         let prim_other = other.to_primitive_num(activation)?;
 
@@ -261,26 +260,9 @@ impl<'gc> Value<'gc> {
         let num_self = prim_self.primitive_as_number(activation);
         let num_other = prim_other.primitive_as_number(activation);
 
-        if num_self.is_nan() || num_other.is_nan() {
-            return Ok(Value::Undefined);
-        }
-
-        if num_self == num_other
-            || num_self == 0.0 && num_other == -0.0
-            || num_self == -0.0 && num_other == 0.0
-            || num_self.is_infinite() && num_self.is_sign_positive()
-            || num_other.is_infinite() && num_other.is_sign_negative()
-        {
-            return Ok(false.into());
-        }
-
-        if num_self.is_infinite() && num_self.is_sign_negative()
-            || num_other.is_infinite() && num_other.is_sign_positive()
-        {
-            return Ok(true.into());
-        }
-
-        Ok((num_self < num_other).into())
+        Ok(num_self
+            .partial_cmp(&num_other)
+            .map(|o| o == std::cmp::Ordering::Less))
     }
 
     /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
@@ -623,19 +605,19 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), true.into());
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
 
             let nan = Value::Number(f64::NAN);
-            assert_eq!(a.abstract_lt(nan, activation).unwrap(), Value::Undefined);
+            assert_eq!(a.abstract_lt(nan, activation).unwrap(), None);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(a.abstract_lt(inf, activation).unwrap(), true.into());
+            assert_eq!(a.abstract_lt(inf, activation).unwrap(), Some(true));
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(a.abstract_lt(neg_inf, activation).unwrap(), false.into());
+            assert_eq!(a.abstract_lt(neg_inf, activation).unwrap(), Some(false));
 
             let zero = Value::Number(0.0);
-            assert_eq!(a.abstract_lt(zero, activation).unwrap(), false.into());
+            assert_eq!(a.abstract_lt(zero, activation).unwrap(), Some(false));
 
             Ok(())
         });
@@ -647,19 +629,19 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), false.into());
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
 
             let nan = Value::Number(f64::NAN);
-            assert_eq!(nan.abstract_lt(a, activation).unwrap(), Value::Undefined);
+            assert_eq!(nan.abstract_lt(a, activation).unwrap(), None);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(inf.abstract_lt(a, activation).unwrap(), false.into());
+            assert_eq!(inf.abstract_lt(a, activation).unwrap(), Some(false));
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(neg_inf.abstract_lt(a, activation).unwrap(), true.into());
+            assert_eq!(neg_inf.abstract_lt(a, activation).unwrap(), Some(true));
 
             let zero = Value::Number(0.0);
-            assert_eq!(zero.abstract_lt(a, activation).unwrap(), true.into());
+            assert_eq!(zero.abstract_lt(a, activation).unwrap(), Some(true));
 
             Ok(())
         });
@@ -677,7 +659,7 @@ mod test {
                 "b".to_owned(),
             ));
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), true.into());
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
 
             Ok(())
         })
@@ -695,7 +677,7 @@ mod test {
                 "b".to_owned(),
             ));
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), false.into());
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
 
             Ok(())
         })
