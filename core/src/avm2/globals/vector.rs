@@ -402,13 +402,11 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
-            let ls = o.get_property(
-                o,
+            o.call_property(
                 &QName::new(Namespace::public(), "toLocaleString").into(),
+                &[],
                 act,
-            )?;
-
-            ls.coerce_to_object(act)?.call(Some(o), &[], act, None)
+            )
         } else {
             Ok(v)
         }

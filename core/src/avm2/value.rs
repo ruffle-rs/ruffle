@@ -302,20 +302,28 @@ impl<'gc> Value<'gc> {
                 let mut prim = self.clone();
                 let object = *o;
 
-                if let Value::Object(f) =
+                if let Value::Object(_) =
                     object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, None)?;
+                    prim = object.call_property(
+                        &QName::dynamic_name("toString").into(),
+                        &[],
+                        activation,
+                    )?;
                 }
 
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(f) =
+                if let Value::Object(_) =
                     object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, None)?;
+                    prim = object.call_property(
+                        &QName::dynamic_name("valueOf").into(),
+                        &[],
+                        activation,
+                    )?;
                 }
 
                 if prim.is_primitive() {
@@ -328,20 +336,28 @@ impl<'gc> Value<'gc> {
                 let mut prim = self.clone();
                 let object = *o;
 
-                if let Value::Object(f) =
+                if let Value::Object(_) =
                     object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, None)?;
+                    prim = object.call_property(
+                        &QName::dynamic_name("valueOf").into(),
+                        &[],
+                        activation,
+                    )?;
                 }
 
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(f) =
+                if let Value::Object(_) =
                     object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
-                    prim = f.call(Some(*o), &[], activation, None)?;
+                    prim = object.call_property(
+                        &QName::dynamic_name("toString").into(),
+                        &[],
+                        activation,
+                    )?;
                 }
 
                 if prim.is_primitive() {
