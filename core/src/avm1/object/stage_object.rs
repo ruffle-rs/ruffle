@@ -8,8 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Valu
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string::utils::swf_string_eq;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -115,11 +114,12 @@ impl<'gc> StageObject<'gc> {
     /// or `Some(Value::Undefined)` if the level is not occupied.
     /// Returns `None` if `name` is not a valid level path.
     fn get_level_by_path(
-        name: &str,
+        name: AvmString<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
     ) -> Option<Value<'gc>> {
-        if let Some(slice) = name.get(0..name.len().min(6)) {
+        let name = name.as_str();
+        if let Some(slice) = name.get(0..6) {
             let is_level = if case_sensitive {
                 slice == "_level"
             } else {
@@ -174,14 +174,14 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 1) Actual properties on the underlying object
             obj.base.get_local_stored(name, activation)
         } else if let Some(level) =
-            Self::get_level_by_path(&name, &mut activation.context, case_sensitive)
+            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
             // 2) _levelN
             Some(level)
         } else if let Some(child) = obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(&name, case_sensitive))
+            .and_then(|o| o.child_by_name(name.borrow(), case_sensitive))
         {
             // 3) Child display objects with the given instance name
             Some(child.object())
@@ -205,11 +205,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
-        for binding in obj
-            .text_field_bindings
-            .iter()
-            .filter(|binding| swf_string_eq(&binding.variable_name, &name, case_sensitive))
-        {
+        for binding in obj.text_field_bindings.iter().filter(|binding| {
+            if case_sensitive {
+                binding.variable_name == name
+            } else {
+                binding.variable_name.eq_ignore_case(name.borrow())
+            }
+        }) {
             let _ = binding.text_field.set_html_text(
                 &value.coerce_to_string(activation)?,
                 &mut activation.context,
@@ -383,13 +385,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(&name, case_sensitive))
+            .and_then(|o| o.child_by_name(name.borrow(), case_sensitive))
             .is_some()
         {
             return true;
         }
 
-        if Self::get_level_by_path(&name, &mut activation.context, case_sensitive).is_some() {
+        if Self::get_level_by_path(name, &mut activation.context, case_sensitive).is_some() {
             return true;
         }
 

@@ -6,7 +6,7 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
-use crate::string::utils::swf_string_eq_ignore_case;
+use crate::string::WStr;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -175,7 +175,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
-    fn child_by_name(self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
+    fn child_by_name(self, name: WStr<'_>, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
 
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
@@ -358,7 +358,11 @@ macro_rules! impl_display_object_container {
             self.0.read().$field.get_depth(depth)
         }
 
-        fn child_by_name(self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+        fn child_by_name(
+            self,
+            name: crate::string::WStr<'_>,
+            case_sensitive: bool,
+        ) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.get_name(name, case_sensitive)
         }
 
@@ -727,19 +731,19 @@ impl<'gc> ChildContainer<'gc> {
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
-    pub fn get_name(&self, name: &str, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+    pub fn get_name(&self, name: WStr<'_>, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
         // But need to handle conflicting names (lowest in depth order takes priority).
         if case_sensitive {
             self.depth_list
                 .values()
                 .copied()
-                .find(|child| &*child.name() == name)
+                .find(|child| child.name() == name)
         } else {
             self.depth_list
                 .values()
                 .copied()
-                .find(|child| swf_string_eq_ignore_case(&*child.name(), name))
+                .find(|child| child.name().eq_ignore_case(name))
         }
     }
 
