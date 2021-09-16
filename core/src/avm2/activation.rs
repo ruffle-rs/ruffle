@@ -805,7 +805,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::ApplyType { num_types } => self.op_apply_type(num_types),
                 Op::NewArray { num_args } => self.op_new_array(num_args),
                 Op::CoerceA => self.op_coerce_a(),
+                Op::CoerceB => self.op_coerce_b(),
+                Op::CoerceD => self.op_coerce_d(),
+                Op::CoerceI => self.op_coerce_i(),
+                Op::CoerceO => self.op_coerce_o(),
                 Op::CoerceS => self.op_coerce_s(),
+                Op::CoerceU => self.op_coerce_u(),
                 Op::ConvertB => self.op_convert_b(),
                 Op::ConvertI => self.op_convert_i(),
                 Op::ConvertD => self.op_convert_d(),
@@ -1729,6 +1734,43 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_coerce_b(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_boolean();
+
+        self.context.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_d(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_number(self)?;
+
+        self.context.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_i(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_i32(self)?;
+
+        self.context.avm2.push(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_o(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop();
+        
+        let coerced = match value {
+            Value::Undefined | Value::Null => Value::Null,
+            _ => value.coerce_to_object(self)?.into(),
+        };
+
+        self.context.avm2.push(coerced);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_coerce_s(&mut self) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
 
@@ -1738,6 +1780,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         self.context.avm2.push(coerced);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_u(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let value = self.context.avm2.pop().coerce_to_u32(self)?;
+
+        self.context.avm2.push(value);
 
         Ok(FrameControl::Continue)
     }
