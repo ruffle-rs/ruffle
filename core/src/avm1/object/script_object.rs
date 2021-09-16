@@ -124,7 +124,11 @@ impl<'gc> ScriptObject<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
-    pub fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn get_data(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Value<'gc> {
         self.0
             .read()
             .properties
@@ -402,7 +406,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        self.get_data("__proto__", activation)
+        self.get_data("__proto__".into(), activation)
     }
 
     /// Checks if the object has a given named property.
@@ -502,7 +506,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
-        self.get_data("length", activation)
+        self.get_data("length".into(), activation)
             .coerce_to_i32(activation)
     }
 
@@ -520,7 +524,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        self.get_data(&index.to_string(), activation)
+        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        self.get_data(index_str, activation)
     }
 
     fn set_element(

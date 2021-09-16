@@ -80,7 +80,7 @@ fn attach_sound<'gc>(
                 .context
                 .library
                 .library_for_movie_mut(movie)
-                .character_by_export_name(&name)
+                .character_by_export_name(name)
             {
                 sound_object.set_sound(activation.context.gc_context, Some(*sound));
                 sound_object.set_duration(
@@ -416,7 +416,7 @@ fn stop<'gc>(
                     .context
                     .library
                     .library_for_movie_mut(movie)
-                    .character_by_export_name(&name)
+                    .character_by_export_name(name)
                 {
                     // Stop all sounds with the given name.
                     let sound = *sound;

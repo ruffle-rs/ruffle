@@ -373,7 +373,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .avm1
             .display_properties
             .read()
-            .get_by_name(&name)
+            .get_by_name(name)
             .is_some()
         {
             return true;
@@ -587,10 +587,10 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: impl AsRef<str>) -> Option<&DisplayProperty<'gc>> {
+    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.0.get(name.as_ref(), false)
+        self.0.get(name, false)
     }
 
     /// Gets a property slot by SWF4 index.

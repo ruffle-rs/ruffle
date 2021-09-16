@@ -32,7 +32,7 @@ impl<'gc> Avm1ConstructorRegistry<'gc> {
         }
     }
 
-    pub fn get(&self, symbol: &str) -> Option<FunctionObject<'gc>> {
+    pub fn get(&self, symbol: AvmString<'gc>) -> Option<FunctionObject<'gc>> {
         self.symbol_map
             .read()
             .get(symbol, self.is_case_sensitive)
@@ -202,7 +202,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.get(&id)
     }
 
-    pub fn character_by_export_name(&self, name: &str) -> Option<&Character<'gc>> {
+    pub fn character_by_export_name(&self, name: AvmString<'gc>) -> Option<&Character<'gc>> {
         self.export_characters.get(name, false)
     }
 
@@ -229,7 +229,7 @@ impl<'gc> MovieLibrary<'gc> {
     /// The object must then be post-instantiated before being used.
     pub fn instantiate_by_export_name(
         &self,
-        export_name: &str,
+        export_name: AvmString<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Box<dyn std::error::Error>> {
         if let Some(character) = self.export_characters.get(export_name, false) {

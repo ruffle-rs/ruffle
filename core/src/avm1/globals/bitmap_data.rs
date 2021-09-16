@@ -1155,7 +1155,7 @@ pub fn load_bitmap<'gc>(
 
     let character = movie
         .and_then(|m| library.library_for_movie(m))
-        .and_then(|l| l.character_by_export_name(name.as_str()));
+        .and_then(|l| l.character_by_export_name(name));
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
         if let Some(bitmap_handle) = bitmap_object.bitmap_handle() {

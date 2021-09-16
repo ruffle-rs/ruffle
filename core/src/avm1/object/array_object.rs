@@ -302,7 +302,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        if let Value::Number(old_length) = self.0.read().get_data("length", activation) {
+        if let Value::Number(old_length) = self.0.read().get_data("length".into(), activation) {
             for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                 self.delete_element(activation, i);
             }

@@ -2,7 +2,7 @@ use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
-use super::{Units, WStr};
+use super::{utils, Units, WStr};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -64,6 +64,12 @@ pub fn str_eq(left: WStr<'_>, right: WStr<'_>) -> bool {
         // SAFETY: Both slices have the same length.
         unsafe { *bytes.get_unchecked(i) as u16 == *wide.get_unchecked(i) }
     })
+}
+
+pub fn str_eq_ignore_case(left: WStr<'_>, right: WStr<'_>) -> bool {
+    let left = left.iter().map(utils::swf_to_lowercase);
+    let right = right.iter().map(utils::swf_to_lowercase);
+    left.eq(right)
 }
 
 pub fn str_cmp(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
