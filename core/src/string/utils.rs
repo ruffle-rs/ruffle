@@ -55,24 +55,6 @@ pub fn swf_to_lowercase(c: u16) -> u16 {
     }
 }
 
-/// Maps a char to its lowercase variant according to the Flash Player.
-/// Note that this mapping is different that Rust's `to_lowercase`.
-pub fn swf_char_to_lowercase(c: char) -> char {
-    if c.is_ascii() {
-        return c.to_ascii_lowercase();
-    }
-    let code_pt: u32 = c.into();
-    if code_pt <= u16::MAX.into() {
-        let code_pt = code_pt as u16;
-        match LOWERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&code_pt)) {
-            Ok(i) => unsafe { char::from_u32_unchecked(LOWERCASE_TABLE[i].1.into()) },
-            Err(_) => c,
-        }
-    } else {
-        c
-    }
-}
-
 /// Maps a UCS2 code unit to its uppercase variant according to the Flash Player.
 /// Note that this mapping is different that Rust's `to_uppercase`.
 pub fn swf_to_uppercase(c: u16) -> u16 {
@@ -84,47 +66,4 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
         Ok(i) => UPPERCASE_TABLE[i].1,
         Err(_) => c,
     }
-}
-
-/// Maps a char to its uppercase variant according to the Flash Player.
-/// Note that this mapping is different that Rust's `to_uppercase`.
-pub fn swf_char_to_uppercase(c: char) -> char {
-    if c.is_ascii() {
-        return c.to_ascii_uppercase();
-    }
-
-    let code_pt: u32 = c.into();
-    if code_pt <= u16::MAX.into() {
-        let code_pt = code_pt as u16;
-        match UPPERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&code_pt)) {
-            Ok(i) => unsafe { char::from_u32_unchecked(UPPERCASE_TABLE[i].1.into()) },
-            Err(_) => c,
-        }
-    } else {
-        c
-    }
-}
-
-pub fn swf_string_eq(a: &str, b: &str, case_sensitive: bool) -> bool {
-    if case_sensitive {
-        a == b
-    } else {
-        swf_string_eq_ignore_case(a, b)
-    }
-}
-
-/// Compares two strings for equality, ignoring case as done by the Flash Player.
-/// Note that the case mapping is different than Rust's case mapping.
-pub fn swf_string_eq_ignore_case(a: &str, b: &str) -> bool {
-    a.chars()
-        .map(swf_char_to_lowercase)
-        .eq(b.chars().map(swf_char_to_lowercase))
-}
-
-/// Compares two strings, ignoring case as done by the Flash Player.
-/// Note that the case mapping is different than Rust's case mapping.
-pub fn swf_string_cmp_ignore_case(a: &str, b: &str) -> std::cmp::Ordering {
-    a.chars()
-        .map(swf_char_to_lowercase)
-        .cmp(b.chars().map(swf_char_to_lowercase))
 }

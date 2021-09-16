@@ -139,10 +139,17 @@ macro_rules! impl_str_methods {
         }
 
         #[inline]
-        /// Compares two strings for equality, ignoring case as done by the Flash Player.
+        /// Tests if two strings are equal, ignoring case as done by the Flash Player.
         /// Note that the case mapping is different than Rust's case mapping.
         pub fn eq_ignore_case($self: $receiver, other: WStr<'_>) -> bool {
             crate::string::ops::str_eq_ignore_case($deref, other)
+        }
+
+        #[inline]
+        /// Compares two strings, ignoring case as done by the Flash Player.
+        /// Note that the case mapping is different than Rust's case mapping.
+        pub fn cmp_ignore_case($self: $receiver, other: WStr<'_>) -> std::cmp::Ordering {
+            crate::string::ops::str_cmp_ignore_case($deref, other)
         }
 
         /// Analogue of [`str::find`].

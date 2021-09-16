@@ -20,6 +20,16 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
+impl<'a> DoubleEndedIterator for Iter<'a> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match &mut self.inner {
+            Units::Bytes(it) => it.next_back().map(|c| *c as u16),
+            Units::Wide(it) => it.next_back().copied(),
+        }
+    }
+}
+
 #[inline]
 pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
     let inner = match s.units() {
@@ -88,6 +98,12 @@ pub fn str_cmp(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
     } else {
         cmp
     }
+}
+
+pub fn str_cmp_ignore_case(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
+    let left = left.iter().map(utils::swf_to_lowercase);
+    let right = right.iter().map(utils::swf_to_lowercase);
+    left.cmp(right)
 }
 
 pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {

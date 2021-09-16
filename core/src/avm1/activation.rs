@@ -11,7 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -2532,6 +2532,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         root: DisplayObject<'gc>,
         start: Object<'gc>,
+        // TODO(moulins): replace by Str<'_> once the API is good enough.
         path: &str,
         mut first_element: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
@@ -2611,7 +2612,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     if let Some(child) = object
                         .as_display_object()
                         .and_then(|o| o.as_container())
-                        .and_then(|o| o.child_by_name(name, case_sensitive))
+                        .and_then(|o| {
+                            o.child_by_name(WString::from_utf8(name).borrow(), case_sensitive)
+                        })
                     {
                         child.object()
                     } else {
@@ -2642,6 +2645,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn resolve_variable_path<'s>(
         &mut self,
         start: DisplayObject<'gc>,
+        // TODO(moulins): replace by Str<'_> once the API is good enough.
         path: &'s str,
     ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
         // Find the right-most : or . in the path.
