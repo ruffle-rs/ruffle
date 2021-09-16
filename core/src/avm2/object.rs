@@ -96,8 +96,11 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
-    /// Retrieve a property by its QName, without taking prototype lookups
-    /// into account.
+    /// Retrieve a property by QName, after multiname resolution, prototype
+    /// lookups, and all other considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
     fn get_property_local(
         self,
         receiver: Object<'gc>,
@@ -105,21 +108,45 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error>;
 
-    /// Retrieve a property by its QName.
+    /// Retrieve a property by Multiname lookup.
+    ///
+    /// This corresponds directly to the AVM2 operation `getproperty`.
     fn get_property(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let has_no_getter = self.has_own_virtual_setter(name) && !self.has_own_virtual_getter(name);
+        let name = self.resolve_multiname(multiname)?;
 
-        if self.has_own_property(name)? && !has_no_getter {
-            return self.get_property_local(receiver, name, activation);
+        // Special case: Unresolvable properties on dynamic classes are treated
+        // as dynamic properties that have not yet been set, and yield
+        // `undefined`
+        if name.is_none() {
+            if !self
+                .instance_of_class_definition()
+                .map(|c| c.read().is_sealed())
+                .unwrap_or(false)
+            {
+                return Ok(Value::Undefined);
+            }
+
+            return Err(
+                format!("Cannot get undefined property {:?}", multiname.local_name()).into(),
+            );
+        }
+
+        // At this point, the name must be a valid QName.
+        let name = name.unwrap();
+        let has_no_getter =
+            self.has_own_virtual_setter(&name) && !self.has_own_virtual_getter(&name);
+
+        if self.has_own_property(&name)? && !has_no_getter {
+            return self.get_property_local(receiver, &name, activation);
         }
 
         if let Some(proto) = self.proto() {
-            return proto.get_property(receiver, name, activation);
+            return proto.get_property(receiver, multiname, activation);
         }
 
         Ok(Value::Undefined)
@@ -151,7 +178,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(None)
     }
 
-    /// Set a property on this specific object.
+    /// Set a property by QName, after multiname resolution and all other
+    /// considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
     fn set_property_local(
         self,
         receiver: Object<'gc>,
@@ -160,18 +191,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Set a property by its QName.
+    /// Set a property by Multiname lookup.
+    ///
+    /// This corresponds directly with the AVM2 operation `setproperty`.
     fn set_property(
         &mut self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        self.set_property_local(receiver, name, value, activation)
+        let name = self.resolve_multiname(multiname)?;
+
+        // Special case: Unresolvable properties on dynamic classes are treated
+        // as initializing a new dynamic property on namespace Public("").
+        if name.is_none() {
+            if !self
+                .instance_of_class_definition()
+                .map(|c| c.read().is_sealed())
+                .unwrap_or(false)
+            {
+                let local_name: Result<AvmString<'gc>, Error> = multiname
+                    .local_name()
+                    .ok_or_else(|| "Cannot set undefined property using any name".into());
+                let name = QName::dynamic_name(local_name?);
+                return self.set_property_local(receiver, &name, value, activation);
+            }
+
+            return Err(
+                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
+            );
+        }
+
+        self.set_property_local(receiver, &name.unwrap(), value, activation)
     }
 
-    /// Init a property on this specific object.
+    /// Initialize a property by QName, after multiname resolution and all
+    /// other considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
     fn init_property_local(
         self,
         receiver: Object<'gc>,
@@ -180,31 +239,80 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error>;
 
-    /// Init a property by its QName.
+    /// Initialize a property by Multiname lookup.
+    ///
+    /// This corresponds directly with the AVM2 operation `initproperty`.
     fn init_property(
         &mut self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if self.has_own_virtual_setter(name) {
-            return self.init_property_local(receiver, name, value, activation);
-        }
+        let name = self.resolve_multiname(multiname)?;
 
-        let mut proto = self.proto();
-        while let Some(mut my_proto) = proto {
-            //NOTE: This only works because we validate ahead-of-time that
-            //we're calling a virtual setter. If you call `set_property` on
-            //a non-virtual you will actually alter the prototype.
-            if my_proto.has_own_virtual_setter(name) {
-                return my_proto.init_property(receiver, name, value, activation);
+        // Special case: Unresolvable properties on dynamic classes are treated
+        // as initializing a new dynamic property on namespace Public("").
+        if name.is_none() {
+            if !self
+                .instance_of_class_definition()
+                .map(|c| c.read().is_sealed())
+                .unwrap_or(false)
+            {
+                let local_name: Result<AvmString<'gc>, Error> = multiname
+                    .local_name()
+                    .ok_or_else(|| "Cannot set undefined property using any name".into());
+                let name = QName::dynamic_name(local_name?);
+                return self.init_property_local(receiver, &name, value, activation);
             }
 
-            proto = my_proto.proto();
+            return Err(
+                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
+            );
         }
 
-        receiver.init_property_local(receiver, name, value, activation)
+        self.init_property_local(receiver, &name.unwrap(), value, activation)
+    }
+
+    /// Call a named property on the object.
+    ///
+    /// This corresponds directly to the `callproperty` operation in AVM2.
+    fn call_property(
+        self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let name = self.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to call undefined property {:?}",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+        let superclass_object = if let Some(c) = self.instance_of() {
+            c.find_class_for_trait(&name)?
+        } else {
+            None
+        };
+
+        let function = self
+            .get_property(self.into(), multiname, activation)?
+            .coerce_to_object(activation);
+        if function.is_err() {
+            return Err(format!(
+                "Attempted to call undefined property {:?}",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        function
+            .unwrap()
+            .call(Some(self.into()), arguments, activation, superclass_object)
     }
 
     /// Retrieve a slot by its index.
@@ -689,14 +797,28 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the method being called will also be provided to
     /// the `Activation` that the method runs on so that further supercalls
     /// will work as expected.
-    fn supercall_method(
+    ///
+    /// This method corresponds directly to the AVM2 operation `callsuper`,
+    /// with the caveat listed above about what object to call it on.
+    fn call_super(
         self,
-        name: &QName<'gc>,
-        reciever: Option<Object<'gc>>,
+        multiname: &Multiname<'gc>,
+        reciever: Object<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall method {:?}, which does not exist",
                 name
@@ -707,24 +829,28 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .as_class_definition()
             .unwrap()
             .read()
-            .lookup_instance_traits(name, &mut class_traits)?;
+            .lookup_instance_traits(&name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
         let scope = superclass_object.get_scope();
 
         if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
 
-            callee.call(reciever, arguments, activation, Some(superclass_object))
+            callee.call(
+                Some(reciever),
+                arguments,
+                activation,
+                Some(superclass_object),
+            )
         } else {
-            if let Some(reciever) = reciever {
-                if let Ok(callee) = reciever
-                    .get_property(reciever, name, activation)
-                    .and_then(|v| v.coerce_to_object(activation))
-                {
-                    return callee.call(Some(reciever), arguments, activation, None);
-                }
+            if let Ok(callee) = reciever
+                .get_property(reciever, multiname, activation)
+                .and_then(|v| v.coerce_to_object(activation))
+            {
+                return callee.call(Some(reciever), arguments, activation, None);
             }
 
             Err(format!(
@@ -756,13 +882,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the getter being called will also be provided to
     /// the `Activation` that the getter runs on so that further supercalls
     /// will work as expected.
-    fn supercall_getter(
+    ///
+    /// This method corresponds directly to the AVM2 operation `getsuper`,
+    /// with the caveat listed above about what object to call it on.
+    fn get_super(
         self,
-        name: &QName<'gc>,
-        reciever: Option<Object<'gc>>,
+        multiname: &Multiname<'gc>,
+        reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall getter {:?}, which does not exist",
                 name
@@ -773,24 +913,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .as_class_definition()
             .unwrap()
             .read()
-            .lookup_instance_traits(name, &mut class_traits)?;
+            .lookup_instance_traits(&name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
         let scope = superclass_object.get_scope();
 
         if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
 
-            callee.call(reciever, &[], activation, Some(superclass_object))
-        } else if let Some(reciever) = reciever {
-            reciever.get_property(reciever, name, activation)
+            callee.call(Some(reciever), &[], activation, Some(superclass_object))
         } else {
-            Err(format!(
-                "Attempted to supercall getter {:?}, which does not exist",
-                name
-            )
-            .into())
+            reciever.get_property(reciever, multiname, activation)
         }
     }
 
@@ -815,14 +950,29 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The class that defined the setter being called will also be provided to
     /// the `Activation` that the setter runs on so that further supercalls
     /// will work as expected.
-    fn supercall_setter(
+    ///
+    /// This method corresponds directly to the AVM2 operation `setsuper`,
+    /// with the caveat listed above about what object to call it on.
+    #[allow(unused_mut)]
+    fn set_super(
         self,
-        name: &QName<'gc>,
+        multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        reciever: Option<Object<'gc>>,
+        mut reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let superclass_object = self.find_class_for_trait(name)?.ok_or_else(|| {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
             format!(
                 "Attempted to supercall setter {:?}, which does not exist",
                 name
@@ -833,26 +983,26 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .as_class_definition()
             .unwrap()
             .read()
-            .lookup_instance_traits(name, &mut class_traits)?;
+            .lookup_instance_traits(&name, &mut class_traits)?;
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
         let scope = superclass_object.get_scope();
 
         if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee = FunctionObject::from_method(activation, method.clone(), scope, reciever);
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
 
-            callee.call(reciever, &[value], activation, Some(superclass_object))?;
+            callee.call(
+                Some(reciever),
+                &[value],
+                activation,
+                Some(superclass_object),
+            )?;
 
             Ok(())
-        } else if let Some(mut reciever) = reciever {
-            reciever.set_property(reciever, name, value, activation)
         } else {
-            Err(format!(
-                "Attempted to supercall setter {:?}, which does not exist",
-                name
-            )
-            .into())
+            reciever.set_property(reciever, multiname, value, activation)
         }
     }
 
@@ -975,7 +1125,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: Object<'gc>,
     ) -> Result<bool, Error> {
         let type_proto = class
-            .get_property(class, &QName::dynamic_name("prototype"), activation)?
+            .get_property(class, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
 
         self.has_prototype_in_chain(type_proto)

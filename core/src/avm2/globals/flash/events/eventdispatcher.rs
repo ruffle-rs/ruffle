@@ -28,13 +28,13 @@ pub fn instance_init<'gc>(
 
         this.init_property(
             this,
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
             target,
             activation,
         )?;
         this.init_property(
             this,
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
             dispatch_list.into(),
             activation,
         )?;
@@ -53,7 +53,7 @@ pub fn add_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -100,7 +100,7 @@ pub fn remove_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -139,7 +139,7 @@ pub fn has_event_listener<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -169,7 +169,7 @@ pub fn will_trigger<'gc>(
         let dispatch_list = this
             .get_property(
                 this,
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -190,7 +190,7 @@ pub fn will_trigger<'gc>(
         let target = this
             .get_property(
                 this,
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
                 activation,
             )?
             .coerce_to_object(activation)

@@ -31,7 +31,7 @@ pub fn class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let mut function_proto = this
-            .get_property(this, &QName::dynamic_name("prototype"), activation)?
+            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
 
         function_proto.install_dynamic_property(

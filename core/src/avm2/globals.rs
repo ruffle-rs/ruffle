@@ -342,19 +342,13 @@ fn class<'gc>(
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
-        let super_name = global
-            .resolve_multiname(sc_name)?
-            .unwrap_or_else(|| QName::dynamic_name("Object"));
-
         let super_class: Result<Object<'gc>, Error> = global
-            .get_property(global, &super_name, activation)?
+            .get_property(global, sc_name, activation)?
             .coerce_to_object(activation)
             .map_err(|_e| {
                 format!(
                     "Could not resolve superclass {:?} when defining global class {:?}",
-                    sc_name
-                        .local_name(activation)
-                        .unwrap_or_else(|_| Some("<uncoercible name>".into())),
+                    sc_name.local_name(),
                     class_read.name().local_name()
                 )
                 .into()
@@ -382,7 +376,7 @@ fn class<'gc>(
     let proto = class_object
         .get_property(
             class_object,
-            &QName::new(Namespace::public(), "prototype"),
+            &QName::new(Namespace::public(), "prototype").into(),
             activation,
         )?
         .coerce_to_object(activation)?;

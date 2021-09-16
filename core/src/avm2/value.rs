@@ -303,7 +303,7 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("toString"), activation)?
+                    object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
                     prim = f.call(Some(*o), &[], activation, None)?;
                 }
@@ -313,7 +313,7 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?
+                    object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
                     prim = f.call(Some(*o), &[], activation, None)?;
                 }
@@ -329,7 +329,7 @@ impl<'gc> Value<'gc> {
                 let object = *o;
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("valueOf"), activation)?
+                    object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
                     prim = f.call(Some(*o), &[], activation, None)?;
                 }
@@ -339,7 +339,7 @@ impl<'gc> Value<'gc> {
                 }
 
                 if let Value::Object(f) =
-                    object.get_property(*o, &QName::dynamic_name("toString"), activation)?
+                    object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
                     prim = f.call(Some(*o), &[], activation, None)?;
                 }

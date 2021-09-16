@@ -58,14 +58,14 @@ pub fn graphics<'gc>(
             // Lazily initialize the `Graphics` object in a hidden property.
             let graphics = match this.get_property(
                 this,
-                &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
                 activation,
             )? {
                 Value::Undefined | Value::Null => {
                     let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                     this.set_property(
                         this,
-                        &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics"),
+                        &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
                         graphics.clone(),
                         activation,
                     )?;

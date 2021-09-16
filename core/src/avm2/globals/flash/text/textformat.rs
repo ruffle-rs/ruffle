@@ -21,79 +21,79 @@ pub fn instance_init<'gc>(
 
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "font"),
+            &QName::new(Namespace::public(), "font").into(),
             args.get(0).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "size"),
+            &QName::new(Namespace::public(), "size").into(),
             args.get(1).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "color"),
+            &QName::new(Namespace::public(), "color").into(),
             args.get(2).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "bold"),
+            &QName::new(Namespace::public(), "bold").into(),
             args.get(3).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "italic"),
+            &QName::new(Namespace::public(), "italic").into(),
             args.get(4).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "underline"),
+            &QName::new(Namespace::public(), "underline").into(),
             args.get(5).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "url"),
+            &QName::new(Namespace::public(), "url").into(),
             args.get(6).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "target"),
+            &QName::new(Namespace::public(), "target").into(),
             args.get(7).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "align"),
+            &QName::new(Namespace::public(), "align").into(),
             args.get(8).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "leftMargin"),
+            &QName::new(Namespace::public(), "leftMargin").into(),
             args.get(9).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "rightMargin"),
+            &QName::new(Namespace::public(), "rightMargin").into(),
             args.get(10).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "indent"),
+            &QName::new(Namespace::public(), "indent").into(),
             args.get(11).cloned().unwrap_or(Value::Null),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "leading"),
+            &QName::new(Namespace::public(), "leading").into(),
             args.get(12).cloned().unwrap_or(Value::Null),
             activation,
         )?;

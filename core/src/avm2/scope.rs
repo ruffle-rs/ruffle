@@ -146,7 +146,7 @@ impl<'gc> Scope<'gc> {
             if self.locals().has_property(&qname)? {
                 return Ok(Some(self.values.get_property(
                     self.values,
-                    &qname,
+                    &qname.into(),
                     activation,
                 )?));
             }
@@ -164,7 +164,7 @@ impl<'gc> Scope<'gc> {
 
                 return Ok(Some(script_scope.get_property(
                     script_scope,
-                    &qname,
+                    &qname.into(),
                     activation,
                 )?));
             }

@@ -171,7 +171,8 @@ pub fn format_to_string<'gc>(
                 let param_name = QName::dynamic_name(match param_name {
                     Value::Undefined | Value::Null => "null".into(),
                     _ => param_name.coerce_to_string(activation)?,
-                });
+                })
+                .into();
 
                 let param_value = this
                     .get_property(this, &param_name, activation)?
@@ -179,7 +180,7 @@ pub fn format_to_string<'gc>(
                 write!(
                     stringified_params,
                     " {}={}",
-                    param_name.local_name(),
+                    param_name.local_name().unwrap(),
                     param_value
                 )
                 .unwrap();
