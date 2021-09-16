@@ -36,7 +36,7 @@ use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
@@ -70,7 +70,7 @@ pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
-    static_data: Gc<'gc, MovieClipStatic>,
+    static_data: Gc<'gc, MovieClipStatic<'gc>>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
     #[collect(require_static)]
@@ -100,7 +100,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -134,7 +134,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -170,7 +170,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf, num_frames),
+                    MovieClipStatic::with_data(id, swf, num_frames, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -204,7 +204,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(0, movie.into(), num_frames),
+                    MovieClipStatic::with_data(0, movie.into(), num_frames, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -2220,7 +2220,7 @@ impl<'gc> MovieClipData<'gc> {
         self.base.base.reset_for_movie_load();
         self.static_data = Gc::allocate(
             gc_context,
-            MovieClipStatic::with_data(0, movie.into(), total_frames),
+            MovieClipStatic::with_data(0, movie.into(), total_frames, gc_context),
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::PLAYING;
@@ -2367,11 +2367,11 @@ impl<'gc> MovieClipData<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Avm1Object<'gc>> {
-        let symbol_name = self.static_data.exported_name.borrow();
+        let symbol_name = self.static_data.exported_name.read();
         let symbol_name = symbol_name.as_ref()?;
         let library = context.library.library_for_movie_mut(self.movie());
         let registry = library.avm1_constructor_registry()?;
-        let ctor = registry.get(symbol_name)?;
+        let ctor = registry.get(*symbol_name)?;
         Some(Avm1Object::FunctionObject(ctor))
     }
 
@@ -3084,8 +3084,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(Character::MovieClip(movie_clip)) = character {
-                *movie_clip.0.read().static_data.exported_name.borrow_mut() =
-                    Some(name.to_string());
+                *movie_clip
+                    .0
+                    .read()
+                    .static_data
+                    .exported_name
+                    .write(context.gc_context) = Some(name);
             }
         }
         Ok(())
@@ -3380,26 +3384,34 @@ impl Default for Scene {
 /// Static data shared between all instances of a movie clip.
 #[allow(dead_code)]
 #[derive(Clone, Collect)]
-#[collect(require_static)]
-struct MovieClipStatic {
+#[collect(no_drop)]
+struct MovieClipStatic<'gc> {
     id: CharacterId,
     swf: SwfSlice,
     frame_labels: HashMap<String, FrameNumber>,
+    #[collect(require_static)]
     scene_labels: HashMap<String, Scene>,
+    #[collect(require_static)]
     audio_stream_info: Option<swf::SoundStreamHead>,
+    #[collect(require_static)]
     audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
-    exported_name: RefCell<Option<String>>,
+    exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
 }
 
-impl MovieClipStatic {
-    fn empty(movie: Arc<SwfMovie>) -> Self {
-        Self::with_data(0, SwfSlice::empty(movie), 1)
+impl<'gc> MovieClipStatic<'gc> {
+    fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+        Self::with_data(0, SwfSlice::empty(movie), 1, gc_context)
     }
 
-    fn with_data(id: CharacterId, swf: SwfSlice, total_frames: FrameNumber) -> Self {
+    fn with_data(
+        id: CharacterId,
+        swf: SwfSlice,
+        total_frames: FrameNumber,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> Self {
         Self {
             id,
             swf,
@@ -3408,7 +3420,7 @@ impl MovieClipStatic {
             scene_labels: HashMap::new(),
             audio_stream_info: None,
             audio_stream_handle: None,
-            exported_name: RefCell::new(None),
+            exported_name: GcCell::allocate(gc_context, None),
         }
     }
 }

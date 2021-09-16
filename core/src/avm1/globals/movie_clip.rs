@@ -641,7 +641,7 @@ fn attach_movie<'gc>(
         .library
         .library_for_movie(movie_clip.movie().unwrap())
         .ok_or_else(|| "Movie is missing!".into())
-        .and_then(|l| l.instantiate_by_export_name(&export_name, activation.context.gc_context))
+        .and_then(|l| l.instantiate_by_export_name(export_name, activation.context.gc_context))
     {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, new_instance_name);

@@ -138,6 +138,13 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_iter($deref)
         }
 
+        #[inline]
+        /// Compares two strings for equality, ignoring case as done by the Flash Player.
+        /// Note that the case mapping is different than Rust's case mapping.
+        pub fn eq_ignore_case($self: $receiver, other: WStr<'_>) -> bool {
+            crate::string::ops::str_eq_ignore_case($deref, other)
+        }
+
         /// Analogue of [`str::find`].
         // TODO: add our own Pattern trait to support several kinds of needles?
         #[inline]
