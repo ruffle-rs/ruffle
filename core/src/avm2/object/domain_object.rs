@@ -133,7 +133,7 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
         let constr = this
             .get_property(
                 this,
-                &QName::new(Namespace::public(), "constructor"),
+                &QName::new(Namespace::public(), "constructor").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;

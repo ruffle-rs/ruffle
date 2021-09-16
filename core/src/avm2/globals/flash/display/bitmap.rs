@@ -49,7 +49,7 @@ pub fn instance_init<'gc>(
 
                     this.set_property(
                         this,
-                        &QName::new(Namespace::public(), "bitmapData"),
+                        &QName::new(Namespace::public(), "bitmapData").into(),
                         bd_object.into(),
                         activation,
                     )?;

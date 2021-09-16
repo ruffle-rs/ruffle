@@ -54,7 +54,7 @@ impl<'gc> BitmapDataObject<'gc> {
         let proto = class
             .get_property(
                 class,
-                &QName::new(Namespace::public(), "prototype"),
+                &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;

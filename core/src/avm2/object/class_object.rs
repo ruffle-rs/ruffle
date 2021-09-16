@@ -96,7 +96,7 @@ impl<'gc> ClassObject<'gc> {
             let base_proto = superclass_object
                 .get_property(
                     superclass_object,
-                    &QName::new(Namespace::public(), "prototype"),
+                    &QName::new(Namespace::public(), "prototype").into(),
                     activation,
                 )?
                 .coerce_to_object(activation)?;
@@ -437,7 +437,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let prototype = self
             .get_property(
                 class_object,
-                &QName::new(Namespace::public(), "prototype"),
+                &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -585,7 +585,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             let base_proto = superclass_object
                 .get_property(
                     superclass_object,
-                    &QName::new(Namespace::public(), "prototype"),
+                    &QName::new(Namespace::public(), "prototype").into(),
                     activation,
                 )?
                 .coerce_to_object(activation)?;

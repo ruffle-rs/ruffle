@@ -69,7 +69,7 @@ impl<'gc> VectorObject<'gc> {
         let applied_proto = applied_class
             .get_property(
                 applied_class,
-                &QName::new(Namespace::public(), "prototype"),
+                &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;

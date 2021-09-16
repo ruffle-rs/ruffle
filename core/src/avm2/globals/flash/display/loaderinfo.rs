@@ -388,7 +388,7 @@ pub fn parameters<'gc>(
                         let avm_v = AvmString::new(activation.context.gc_context, v);
                         params_obj.set_property(
                             params_obj,
-                            &QName::new(Namespace::public(), avm_k),
+                            &QName::new(Namespace::public(), avm_k).into(),
                             avm_v.into(),
                             activation,
                         )?;

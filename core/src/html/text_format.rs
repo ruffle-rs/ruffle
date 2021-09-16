@@ -198,7 +198,7 @@ fn getstr_from_avm2_object<'gc>(
     Ok(
         match object.get_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), pubname),
+            &Avm2QName::new(Avm2Namespace::public(), pubname).into(),
             activation,
         )? {
             Avm2Value::Undefined => None,
@@ -216,7 +216,7 @@ fn getfloat_from_avm2_object<'gc>(
     Ok(
         match object.get_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), pubname),
+            &Avm2QName::new(Avm2Namespace::public(), pubname).into(),
             activation,
         )? {
             Avm2Value::Undefined => None,
@@ -234,7 +234,7 @@ fn getbool_from_avm2_object<'gc>(
     Ok(
         match object.get_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), pubname),
+            &Avm2QName::new(Avm2Namespace::public(), pubname).into(),
             activation,
         )? {
             Avm2Value::Undefined => None,
@@ -252,7 +252,7 @@ fn getfloatarray_from_avm2_object<'gc>(
     Ok(
         match object.get_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), pubname),
+            &Avm2QName::new(Avm2Namespace::public(), pubname).into(),
             activation,
         )? {
             Avm2Value::Undefined => None,
@@ -271,7 +271,8 @@ fn getfloatarray_from_avm2_object<'gc>(
                                 &Avm2QName::new(
                                     Avm2Namespace::public(),
                                     AvmString::new(activation.context.gc_context, format!("{}", i)),
-                                ),
+                                )
+                                .into(),
                                 activation,
                             )?
                             .coerce_to_number(activation)?,
@@ -704,7 +705,7 @@ impl TextFormat {
 
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "font"),
+            &Avm2QName::new(Avm2Namespace::public(), "font").into(),
             self.font
                 .clone()
                 .map(|v| AvmString::new(activation.context.gc_context, v).into())
@@ -713,13 +714,13 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "size"),
+            &Avm2QName::new(Avm2Namespace::public(), "size").into(),
             self.size.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "color"),
+            &Avm2QName::new(Avm2Namespace::public(), "color").into(),
             self.color
                 .clone()
                 .map(|v| v.to_rgb().into())
@@ -728,7 +729,7 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "align"),
+            &Avm2QName::new(Avm2Namespace::public(), "align").into(),
             self.align
                 .map(|v| {
                     AvmString::new(
@@ -748,25 +749,25 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "bold"),
+            &Avm2QName::new(Avm2Namespace::public(), "bold").into(),
             self.bold.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "italic"),
+            &Avm2QName::new(Avm2Namespace::public(), "italic").into(),
             self.italic.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "underline"),
+            &Avm2QName::new(Avm2Namespace::public(), "underline").into(),
             self.underline.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "leftMargin"),
+            &Avm2QName::new(Avm2Namespace::public(), "leftMargin").into(),
             self.left_margin
                 .map(|v| v.into())
                 .unwrap_or(Avm2Value::Null),
@@ -774,7 +775,7 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "rightMargin"),
+            &Avm2QName::new(Avm2Namespace::public(), "rightMargin").into(),
             self.right_margin
                 .map(|v| v.into())
                 .unwrap_or(Avm2Value::Null),
@@ -782,13 +783,13 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "indent"),
+            &Avm2QName::new(Avm2Namespace::public(), "indent").into(),
             self.indent.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "blockIndent"),
+            &Avm2QName::new(Avm2Namespace::public(), "blockIndent").into(),
             self.block_indent
                 .map(|v| v.into())
                 .unwrap_or(Avm2Value::Null),
@@ -796,19 +797,19 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "kerning"),
+            &Avm2QName::new(Avm2Namespace::public(), "kerning").into(),
             self.kerning.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "leading"),
+            &Avm2QName::new(Avm2Namespace::public(), "leading").into(),
             self.leading.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "letterSpacing"),
+            &Avm2QName::new(Avm2Namespace::public(), "letterSpacing").into(),
             self.letter_spacing
                 .map(|v| v.into())
                 .unwrap_or(Avm2Value::Null),
@@ -816,13 +817,13 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "bullet"),
+            &Avm2QName::new(Avm2Namespace::public(), "bullet").into(),
             self.bullet.map(|v| v.into()).unwrap_or(Avm2Value::Null),
             activation,
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "url"),
+            &Avm2QName::new(Avm2Namespace::public(), "url").into(),
             self.url
                 .clone()
                 .map(|v| AvmString::new(activation.context.gc_context, v).into())
@@ -831,7 +832,7 @@ impl TextFormat {
         )?;
         object.set_property(
             object,
-            &Avm2QName::new(Avm2Namespace::public(), "target"),
+            &Avm2QName::new(Avm2Namespace::public(), "target").into(),
             self.target
                 .clone()
                 .map(|v| AvmString::new(activation.context.gc_context, v).into())
@@ -846,14 +847,14 @@ impl TextFormat {
 
             object.set_property(
                 object,
-                &Avm2QName::new(Avm2Namespace::public(), "tabStops"),
+                &Avm2QName::new(Avm2Namespace::public(), "tabStops").into(),
                 tab_stops.into(),
                 activation,
             )?;
         } else {
             object.set_property(
                 object,
-                &Avm2QName::new(Avm2Namespace::public(), "tabStops"),
+                &Avm2QName::new(Avm2Namespace::public(), "tabStops").into(),
                 Avm2Value::Null,
                 activation,
             )?;

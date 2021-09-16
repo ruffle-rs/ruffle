@@ -1780,7 +1780,7 @@ impl SoundTransform {
             left_to_left: (as3_st
                 .get_property(
                     as3_st,
-                    &Avm2QName::new(Avm2Namespace::public(), "leftToLeft"),
+                    &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
                     activation,
                 )?
                 .coerce_to_number(activation)?
@@ -1788,7 +1788,7 @@ impl SoundTransform {
             left_to_right: (as3_st
                 .get_property(
                     as3_st,
-                    &Avm2QName::new(Avm2Namespace::public(), "leftToRight"),
+                    &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
                     activation,
                 )?
                 .coerce_to_number(activation)?
@@ -1796,7 +1796,7 @@ impl SoundTransform {
             right_to_left: (as3_st
                 .get_property(
                     as3_st,
-                    &Avm2QName::new(Avm2Namespace::public(), "rightToLeft"),
+                    &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
                     activation,
                 )?
                 .coerce_to_number(activation)?
@@ -1804,7 +1804,7 @@ impl SoundTransform {
             right_to_right: (as3_st
                 .get_property(
                     as3_st,
-                    &Avm2QName::new(Avm2Namespace::public(), "rightToRight"),
+                    &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
                     activation,
                 )?
                 .coerce_to_number(activation)?
@@ -1812,7 +1812,7 @@ impl SoundTransform {
             volume: (as3_st
                 .get_property(
                     as3_st,
-                    &Avm2QName::new(Avm2Namespace::public(), "volume"),
+                    &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
                     activation,
                 )?
                 .coerce_to_number(activation)?
@@ -1832,31 +1832,31 @@ impl SoundTransform {
 
         as3_st.set_property(
             as3_st,
-            &Avm2QName::new(Avm2Namespace::public(), "leftToLeft"),
+            &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
             (self.left_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
             as3_st,
-            &Avm2QName::new(Avm2Namespace::public(), "leftToRight"),
+            &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
             (self.left_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
             as3_st,
-            &Avm2QName::new(Avm2Namespace::public(), "rightToLeft"),
+            &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
             (self.right_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
             as3_st,
-            &Avm2QName::new(Avm2Namespace::public(), "rightToRight"),
+            &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
             (self.right_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
             as3_st,
-            &Avm2QName::new(Avm2Namespace::public(), "volume"),
+            &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
             (self.volume as f64 / 100.0).into(),
             activation,
         )?;

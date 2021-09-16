@@ -420,7 +420,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             if method.method().needs_arguments_object {
                 args_object.set_property(
                     args_object,
-                    &QName::new(Namespace::public(), "callee"),
+                    &QName::new(Namespace::public(), "callee").into(),
                     callee.into(),
                     &mut activation,
                 )?;
@@ -1103,19 +1103,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-        let superclass_object = if let Some(c) = receiver.instance_of() {
-            c.find_class_for_trait(&name)?
-        } else {
-            None
-        };
-        let function = receiver
-            .get_property(receiver, &name, self)?
-            .coerce_to_object(self)?;
-        let value = function.call(Some(receiver), &args, self, superclass_object)?;
+
+        let value = receiver.call_property(&multiname, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1131,11 +1120,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let function = receiver
-            .get_property(receiver, &name?, self)?
+            .get_property(receiver, &multiname, self)?
             .coerce_to_object(self)?;
         let value = function.call(None, &args, self, None)?;
 
@@ -1153,20 +1139,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-        let superclass_object = if let Some(c) = receiver.instance_of() {
-            c.find_class_for_trait(&name)?
-        } else {
-            None
-        };
-        let function = receiver
-            .get_property(receiver, &name, self)?
-            .coerce_to_object(self)?;
 
-        function.call(Some(receiver), &args, self, superclass_object)?;
+        receiver.call_property(&multiname, &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1199,11 +1173,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-
         let superclass_object: Result<Object<'gc>, Error> = self
             .subclass_object()
             .and_then(|c| c.as_class_object())
@@ -1215,7 +1184,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        let value = superclass_object.supercall_method(&name, Some(receiver), &args, self)?;
+        let value = superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1232,11 +1201,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name: Result<QName, Error> = receiver
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-
         let superclass_object: Result<Object<'gc>, Error> = self
             .subclass_object()
             .and_then(|c| c.as_class_object())
@@ -1248,7 +1212,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.supercall_method(&name, Some(receiver), &args, self)?;
+        superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1271,23 +1235,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name: Result<QName, Error> = object.resolve_multiname(&multiname)?.ok_or_else(|| {
-            format!("Could not resolve property {:?}", multiname.local_name()).into()
-        });
-
-        // Special case for dynamic properties as scripts may attempt to get
-        // dynamic properties not yet set
-        if name.is_err()
-            && !object
-                .instance_of_class_definition()
-                .map(|c| c.read().is_sealed())
-                .unwrap_or(false)
-        {
-            self.context.avm2.push(Value::Undefined);
-            return Ok(FrameControl::Continue);
-        }
-
-        let value = object.get_property(object, &name?, self)?;
+        let value = object.get_property(object, &multiname, self)?;
         self.context.avm2.push(value);
 
         Ok(FrameControl::Continue)
@@ -1302,17 +1250,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let mut object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        if let Some(name) = object.resolve_multiname(&multiname)? {
-            object.set_property(object, &name, value, self)?;
-        } else {
-            //TODO: Non-dynamic objects should fail
-            //TODO: This should only work if the public namespace is present
-            let local_name: Result<AvmString<'gc>, Error> = multiname
-                .local_name()
-                .ok_or_else(|| "Cannot set property using any name".into());
-            let name = QName::dynamic_name(local_name?);
-            object.set_property(object, &name, value, self)?;
-        }
+        object.set_property(object, &multiname, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1326,17 +1264,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let mut object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        if let Some(name) = object.resolve_multiname(&multiname)? {
-            object.init_property(object, &name, value, self)?;
-        } else {
-            //TODO: Non-dynamic objects should fail
-            //TODO: This should only work if the public namespace is present
-            let local_name: Result<AvmString<'gc>, Error> = multiname
-                .local_name()
-                .ok_or_else(|| "Cannot set property using any name".into());
-            let name = QName::dynamic_name(local_name?);
-            object.init_property(object, &name, value, self)?;
-        }
+        object.init_property(object, &multiname, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1374,11 +1302,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name: Result<QName, Error> = object
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-
         let superclass_object: Result<Object<'gc>, Error> = self
             .subclass_object()
             .and_then(|c| c.as_class_object())
@@ -1390,7 +1313,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        let value = superclass_object.supercall_getter(&name, Some(object), self)?;
+        let value = superclass_object.get_super(&multiname, object, self)?;
 
         self.context.avm2.push(value);
 
@@ -1406,11 +1329,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name: Result<QName, Error> = object
-            .resolve_multiname(&multiname)?
-            .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
-        let name = name?;
-
         let superclass_object: Result<Object<'gc>, Error> = self
             .subclass_object()
             .and_then(|c| c.as_class_object())
@@ -1422,7 +1340,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.supercall_setter(&name, value, Some(object), self)?;
+        superclass_object.set_super(&multiname, value, object, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1613,13 +1531,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let source = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let ctor_name: Result<QName, Error> =
-            source.resolve_multiname(&multiname)?.ok_or_else(|| {
-                format!("Could not resolve property {:?}", multiname.local_name()).into()
-            });
-        let ctor_name = ctor_name?;
         let ctor = source
-            .get_property(source, &ctor_name, self)?
+            .get_property(source, &multiname, self)?
             .coerce_to_object(self)?;
 
         let object = ctor.construct(self, &args)?;
@@ -1659,7 +1572,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             object.set_property(
                 object,
-                &QName::new(Namespace::public(), name.coerce_to_string(self)?),
+                &QName::dynamic_name(name.coerce_to_string(self)?).into(),
                 value,
                 self,
             )?;
@@ -2488,7 +2401,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name = object.get_enumerant_name(cur_index as u32);
         let value = if let Some(name) = name {
-            object.get_property(object, &name, self)?
+            object.get_property(object, &name.into(), self)?
         } else {
             Value::Undefined
         };

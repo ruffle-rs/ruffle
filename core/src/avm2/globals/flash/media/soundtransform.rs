@@ -31,13 +31,13 @@ pub fn instance_init<'gc>(
 
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "volume"),
+            &QName::new(Namespace::public(), "volume").into(),
             volume.into(),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "pan"),
+            &QName::new(Namespace::public(), "pan").into(),
             pan.into(),
             activation,
         )?;
@@ -65,14 +65,14 @@ pub fn pan<'gc>(
         let left_to_right = this
             .get_property(
                 this,
-                &QName::new(Namespace::public(), "leftToRight"),
+                &QName::new(Namespace::public(), "leftToRight").into(),
                 activation,
             )?
             .coerce_to_number(activation)?;
         let right_to_left = this
             .get_property(
                 this,
-                &QName::new(Namespace::public(), "rightToLeft"),
+                &QName::new(Namespace::public(), "rightToLeft").into(),
                 activation,
             )?
             .coerce_to_number(activation)?;
@@ -84,7 +84,7 @@ pub fn pan<'gc>(
         let left_to_left = this
             .get_property(
                 this,
-                &QName::new(Namespace::public(), "leftToLeft"),
+                &QName::new(Namespace::public(), "leftToLeft").into(),
                 activation,
             )?
             .coerce_to_number(activation)?;
@@ -110,25 +110,25 @@ pub fn set_pan<'gc>(
 
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "leftToLeft"),
+            &QName::new(Namespace::public(), "leftToLeft").into(),
             (1.0 - pan).sqrt().into(),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "rightToRight"),
+            &QName::new(Namespace::public(), "rightToRight").into(),
             (1.0 + pan).sqrt().into(),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "leftToRight"),
+            &QName::new(Namespace::public(), "leftToRight").into(),
             (0.0).into(),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::public(), "rightToLeft"),
+            &QName::new(Namespace::public(), "rightToLeft").into(),
             (0.0).into(),
             activation,
         )?;

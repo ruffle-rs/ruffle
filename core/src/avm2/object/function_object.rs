@@ -136,7 +136,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         let prototype = self
             .get_property(
                 class,
-                &QName::new(Namespace::public(), "prototype"),
+                &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
