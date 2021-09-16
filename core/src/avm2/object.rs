@@ -1030,6 +1030,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Err("Object is not constructable".into())
     }
 
+    /// Construct a property of this object by Multiname lookup.
+    ///
+    /// This corresponds directly to the AVM2 operation `constructprop`.
+    fn construct_prop(
+        self,
+        multiname: &Multiname<'gc>,
+        args: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Object<'gc>, Error> {
+        let ctor = self
+            .get_property(self.into(), multiname, activation)?
+            .coerce_to_object(activation)?;
+
+        ctor.construct(activation, args)
+    }
+
     /// Construct a host object prototype of some kind and return it.
     ///
     /// This is called specifically to allocate old-style ES3 instances. The
