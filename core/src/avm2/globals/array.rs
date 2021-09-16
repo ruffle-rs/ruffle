@@ -216,14 +216,11 @@ pub fn to_locale_string<'gc>(
     join_inner(act, this, &[",".into()], |v, activation| {
         let o = v.coerce_to_object(activation)?;
 
-        let tls = o.get_property(
-            o,
+        o.call_property(
             &QName::new(Namespace::public(), "toLocaleString").into(),
+            &[],
             activation,
-        )?;
-
-        tls.coerce_to_object(activation)?
-            .call(Some(o), &[], activation, o.proto())
+        )
     })
 }
 
