@@ -1757,7 +1757,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_coerce_o(&mut self) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
-        
+
         let coerced = match value {
             Value::Undefined | Value::Null => Value::Null,
             _ => value.coerce_to_object(self)?.into(),
