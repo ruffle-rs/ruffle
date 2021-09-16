@@ -1531,11 +1531,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let source = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let ctor = source
-            .get_property(source, &multiname, self)?
-            .coerce_to_object(self)?;
-
-        let object = ctor.construct(self, &args)?;
+        let object = source.construct_prop(&multiname, &args, self)?;
 
         self.context.avm2.push(object);
 
