@@ -18,12 +18,8 @@ num-derive = "0.3"
 num-traits = "0.2"
 libflate = {version = "1.1", optional = true}
 log = "0.4"
-smallvec = "1.6.1"
 flate2 = {version = "1.0", optional = true}
 lzma-rs = {version = "0.2.0", optional = true }
-
-[dev-dependencies]
-approx = "0.5.0"
 
 [features]
 default = ["flate2", "lzma"]
