@@ -87,8 +87,6 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class_object = Self::from_class_partial(activation, class, superclass_object, scope)?;
 
-        let instance_allocator = class_object.0.read().instance_allocator.0;
-
         //TODO: Class prototypes are *not* instances of their class and should
         //not be allocated by the class allocator, but instead should be
         //regular objects
@@ -100,7 +98,7 @@ impl<'gc> ClassObject<'gc> {
                     activation,
                 )?
                 .coerce_to_object(activation)?;
-            instance_allocator(superclass_object, base_proto, activation)?
+            ScriptObject::object(activation.context.gc_context, base_proto)
         } else {
             ScriptObject::bare_object(activation.context.gc_context)
         };
