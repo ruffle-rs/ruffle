@@ -25,14 +25,6 @@ pub fn next_char_boundary(slice: &str, pos: usize) -> usize {
     }
 }
 
-/// Creates a `String` from an iterator of UTF-16 code units.
-/// TODO: Unpaired surrogates will get replaced with the Unicode replacement character.
-pub fn utf16_iter_to_string<I: Iterator<Item = u16>>(it: I) -> String {
-    char::decode_utf16(it)
-        .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
-        .collect()
-}
-
 /// Maps a UTF-16 code unit into a `char`.
 /// TODO: Surrogate characters will get replaced with the Unicode replacement character.
 pub fn utf16_code_unit_to_char(c: u16) -> char {
