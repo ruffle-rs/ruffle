@@ -276,17 +276,5 @@ macro_rules! impl_avm2_custom_object {
                 .$field
                 .install_const(name, id, value, is_final)
         }
-
-        fn interfaces(&self) -> Vec<Object<'gc>> {
-            self.0.read().$field.interfaces()
-        }
-
-        fn set_interfaces(
-            &self,
-            gc_context: MutationContext<'gc, '_>,
-            iface_list: Vec<Object<'gc>>,
-        ) {
-            self.0.write(gc_context).$field.set_interfaces(iface_list)
-        }
     };
 }
