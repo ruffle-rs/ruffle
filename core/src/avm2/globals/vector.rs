@@ -441,7 +441,7 @@ pub fn every<'gc>(
                     receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 
@@ -484,7 +484,7 @@ pub fn some<'gc>(
                     receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 
@@ -537,7 +537,7 @@ pub fn filter<'gc>(
                     receiver,
                     &[item.clone(), i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 
@@ -579,7 +579,7 @@ pub fn for_each<'gc>(
                 receiver,
                 &[item, i.into(), this.into()],
                 activation,
-                receiver.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.instance_of()),
             )?;
         }
     }
@@ -706,7 +706,7 @@ pub fn map<'gc>(
                 receiver,
                 &[item.clone(), i.into(), this.into()],
                 activation,
-                receiver.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.instance_of()),
             )?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 

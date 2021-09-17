@@ -409,12 +409,10 @@ pub fn dispatch_event_to_target<'gc>(
             break;
         }
 
-        handler.call(
-            activation.global_scope().coerce_to_object(activation).ok(),
-            &[event.into()],
-            activation,
-            None,
-        )?;
+        let object = activation.global_scope().coerce_to_object(activation).ok();
+        let superclass_object = object.and_then(|o| o.instance_of());
+
+        handler.call(object, &[event.into()], activation, superclass_object)?;
     }
 
     Ok(())
