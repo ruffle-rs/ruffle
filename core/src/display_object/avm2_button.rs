@@ -423,7 +423,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             up_state.construct_frame(context);
         }
 
-        let down_state = self.0.read().up_state;
+        let down_state = self.0.read().down_state;
         if let Some(down_state) = down_state {
             down_state.construct_frame(context);
         }
