@@ -1,0 +1,343 @@
+class
+ refid "Test"
+ instance QName(PackageNamespace(""), "Test")
+  extends QName(PackageNamespace("flash.display"), "Sprite")
+  flag SEALED
+  iinit
+   name "Test"
+   refid "Test/instance/init"
+   body
+    maxstack 1
+    localcount 1
+    initscopedepth 0
+    maxscopedepth 1
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     findpropstrict      QName(PrivateNamespace("Test"), "init")
+     callpropvoid        QName(PrivateNamespace("Test"), "init"), 0
+
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+  trait method QName(PrivateNamespace("Test"), "init")
+   method
+    name "init"
+    refid "Test/instance/Test/instance/init"
+    returns QName(PackageNamespace(""), "void")
+    body
+     maxstack 3
+     localcount 9
+     initscopedepth 0
+     maxscopedepth 1
+     code
+      getlocal0
+      pushscope
+
+      ;  ==  Coercions to int  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_i
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Coercions to uint  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_u
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Coercions to Number  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_d
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Coercions to Boolean  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_b
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Coercions to String  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_s
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Coercions to Object  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushundefined
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushnull
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushtrue
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushfalse
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushdouble 5.12
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushint -6
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushuint 42
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "Test"
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring "12.23"
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      ;  ==  Subclass -> Base class coercions  ==  
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      findpropstrict      QName(PackageNamespace("flash.utils"), "ByteArray")
+      constructprop       QName(PackageNamespace("flash.utils"), "ByteArray"), 0
+      coerce_o
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      returnvoid
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+ end ; instance
+ cinit
+  refid "Test/class/init"
+  body
+   maxstack 0
+   localcount 1
+   initscopedepth 0
+   maxscopedepth 0
+   code
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

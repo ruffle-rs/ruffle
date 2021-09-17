@@ -150,6 +150,8 @@ Run the .swf in Flash Player and create a file `output.txt` with the contents of
 
 Running `cargo test [your test]` will run the .swf in Ruffle and check the `trace()` output against `output.txt`.
 
+For opcode tests involving running particular opcodes, you can use [`RABCDAsm`](https://github.com/CyberShadow/RABCDAsm) to deassemble an existing SWF, change the generated asasm, then reassemble.
+
 ## Commit Message Guidelines
 
 Here is a sample commit message:
