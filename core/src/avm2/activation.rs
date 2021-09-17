@@ -14,7 +14,7 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr, WString};
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -1873,35 +1873,31 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // TODO: Special handling required for `Date` and ECMA-357/E4X `XML`
         let sum_value = match (value1, value2) {
             (Value::Number(n1), Value::Number(n2)) => Value::Number(n1 + n2),
-            (Value::String(s), value2) => {
-                let mut out_s = s.to_string();
-                out_s.push_str(&value2.coerce_to_string(self)?);
-
-                Value::String(AvmString::new(self.context.gc_context, out_s))
-            }
-            (value1, Value::String(s)) => {
-                let mut out_s = value1.coerce_to_string(self)?.to_string();
-                out_s.push_str(&s);
-
-                Value::String(AvmString::new(self.context.gc_context, out_s))
-            }
+            (Value::String(s), value2) => Value::String(AvmString::concat(
+                self.context.gc_context,
+                s,
+                value2.coerce_to_string(self)?,
+            )),
+            (value1, Value::String(s)) => Value::String(AvmString::concat(
+                self.context.gc_context,
+                value1.coerce_to_string(self)?,
+                s,
+            )),
             (value1, value2) => {
                 let prim_value1 = value1.coerce_to_primitive(None, self)?;
                 let prim_value2 = value2.coerce_to_primitive(None, self)?;
 
                 match (prim_value1, prim_value2) {
-                    (Value::String(s), value2) => {
-                        let mut out_s = s.to_string();
-                        out_s.push_str(&value2.coerce_to_string(self)?);
-
-                        Value::String(AvmString::new(self.context.gc_context, out_s))
-                    }
-                    (value1, Value::String(s)) => {
-                        let mut out_s = value1.coerce_to_string(self)?.to_string();
-                        out_s.push_str(&s);
-
-                        Value::String(AvmString::new(self.context.gc_context, out_s))
-                    }
+                    (Value::String(s), value2) => Value::String(AvmString::concat(
+                        self.context.gc_context,
+                        s,
+                        value2.coerce_to_string(self)?,
+                    )),
+                    (value1, Value::String(s)) => Value::String(AvmString::concat(
+                        self.context.gc_context,
+                        value1.coerce_to_string(self)?,
+                        s,
+                    )),
                     (value1, value2) => Value::Number(
                         value1.coerce_to_number(self)? + value2.coerce_to_number(self)?,
                     ),
@@ -2669,21 +2665,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let s = self.context.avm2.pop().coerce_to_string(self)?;
 
         // Implementation of `EscapeAttributeValue` from ECMA-357(10.2.1.2)
-        let mut r = String::new();
-        for c in s.chars() {
-            match c {
-                '"' => r += "&quot;",
-                '<' => r += "&lt;",
-                '&' => r += "&amp;",
-                '\u{000A}' => r += "&#xA;",
-                '\u{000D}' => r += "&#xD;",
-                '\u{0009}' => r += "&#x9;",
-                _ => r.push(c),
-            }
+        let mut r = WString::with_capacity(s.len(), s.is_wide());
+        for c in &s {
+            let escape: &[u8] = match u8::try_from(c) {
+                Ok(b'"') => b"&quot;",
+                Ok(b'<') => b"&lt;",
+                Ok(b'&') => b"&amp;",
+                Ok(b'\x0A') => b"&#xA;",
+                Ok(b'\x0D') => b"&#xD;",
+                Ok(b'\x09') => b"&#x9;",
+                _ => {
+                    r.push(c);
+                    continue;
+                }
+            };
+
+            r.push_str(WStr::from_units(escape));
         }
         self.context
             .avm2
-            .push(AvmString::new(self.context.gc_context, r));
+            .push(AvmString::new_ucs2(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }
@@ -2694,18 +2695,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
         // Implementation of `EscapeElementValue` from ECMA-357(10.2.1.1)
-        let mut r = String::new();
-        for c in s.chars() {
-            match c {
-                '<' => r += "&lt;",
-                '>' => r += "&gt;",
-                '&' => r += "&amp;",
-                _ => r.push(c),
-            }
+        let mut r = WString::with_capacity(s.len(), s.is_wide());
+        for c in &s {
+            let escape: &[u8] = match u8::try_from(c) {
+                Ok(b'<') => b"&lt;",
+                Ok(b'>') => b"&gt;",
+                Ok(b'&') => b"&amp;",
+                _ => {
+                    r.push(c);
+                    continue;
+                }
+            };
+
+            r.push_str(WStr::from_units(escape));
         }
         self.context
             .avm2
-            .push(AvmString::new(self.context.gc_context, r));
+            .push(AvmString::new_ucs2(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }

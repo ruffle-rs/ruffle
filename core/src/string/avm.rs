@@ -37,6 +37,22 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    pub fn concat(
+        gc_context: MutationContext<'gc, '_>,
+        left: AvmString<'gc>,
+        right: AvmString<'gc>,
+    ) -> AvmString<'gc> {
+        if left.is_empty() {
+            right
+        } else if right.is_empty() {
+            left
+        } else {
+            let mut out = WString::from(left.borrow());
+            out.push_str(right.borrow());
+            Self::new_ucs2(gc_context, out)
+        }
+    }
+
     #[inline]
     pub fn as_str(&self) -> &str {
         self
