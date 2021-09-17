@@ -881,6 +881,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } => self.op_debug(method, is_local_register, register_name, register),
                 Op::DebugFile { file_name } => self.op_debug_file(method, file_name),
                 Op::DebugLine { line_num } => self.op_debug_line(line_num),
+                Op::Bkpt => self.op_bkpt(),
+                Op::BkptLine { line_num } => self.op_bkpt_line(line_num),
+                Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
@@ -2941,6 +2944,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_debug_line(&mut self, line_num: u32) -> Result<FrameControl<'gc>, Error> {
         avm_debug!(self.avm2(), "Line: {}", line_num);
 
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bkpt(&mut self) -> Result<FrameControl<'gc>, Error> {
+        // while a debugger is not attached, this is a no-op
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_bkpt_line(&mut self, _line_num: u32) -> Result<FrameControl<'gc>, Error> {
+        // while a debugger is not attached, this is a no-op
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_timestamp(&mut self) -> Result<FrameControl<'gc>, Error> {
+        // while a debugger is not attached, this is a no-op
         Ok(FrameControl::Continue)
     }
 }
