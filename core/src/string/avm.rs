@@ -70,6 +70,7 @@ impl<'gc> AvmString<'gc> {
         lifetime: '_;
         self: &Self;
         deref: self.as_ucs2();
+        pattern['a,]: 'a, &'a Self;
     }
 }
 

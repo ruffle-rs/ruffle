@@ -83,6 +83,7 @@ macro_rules! impl_str_methods {
         lifetime: $lt:lifetime;
         $self:ident: $receiver:ty;
         deref: $deref:expr;
+        pattern[$($pat_gen:tt)*]: $pat_lt:lifetime, $pat_self:ty;
     ) => {
         /// Provides access to the underlying buffer.
         #[inline]
@@ -152,24 +153,29 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_cmp_ignore_case($deref, other)
         }
 
-        /// Analogue of [`str::find`].
-        // TODO: add our own Pattern trait to support several kinds of needles?
+        /// Returns `true` is the string contains only LATIN1 characters.
+        ///
+        /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.
         #[inline]
-        pub fn find($self: $receiver, needle: WStr<'_>) -> Option<usize> {
-            crate::string::ops::str_find($deref, needle)
+        pub fn is_latin1($self: $receiver) -> bool {
+            crate::string::ops::str_is_latin1($deref)
+        }
+
+        /// Analogue of [`str::find`].
+        #[inline]
+        pub fn find<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {
+            crate::string::ops::str_find($deref, pattern)
         }
 
         /// Analogue of [`str::rfind`].
-        // TODO: add our own Pattern trait to support several kinds of needles?
         #[inline]
-        pub fn rfind($self: $receiver, needle: WStr<'_>) -> Option<usize> {
-            crate::string::ops::str_rfind($deref, needle)
+        pub fn rfind<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {
+            crate::string::ops::str_rfind($deref, pattern)
         }
 
         /// Analogue of [`str::split`].
-        // TODO: add our own Pattern trait to support several kinds of needles?
         #[inline]
-        pub fn split<'s>($self: $receiver, separator: WStr<'s>) -> crate::string::ops::Split<$lt, 's> {
+        pub fn split<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, separator: P) -> crate::string::ops::Split<$pat_lt, P> {
             crate::string::ops::str_split($deref, separator)
         }
     }

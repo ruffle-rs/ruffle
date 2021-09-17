@@ -136,6 +136,7 @@ impl WString {
         lifetime: '_;
         self: &Self;
         deref: self.borrow();
+        pattern['a,]: 'a, &'a Self;
     }
 
     impl_str_mut_methods! {

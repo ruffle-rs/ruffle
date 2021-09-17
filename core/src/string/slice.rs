@@ -46,6 +46,7 @@ impl<'a> WStr<'a> {
         lifetime: 'a;
         self: Self;
         deref: self;
+        pattern[]: 'a, Self;
     }
 }
 
@@ -110,6 +111,7 @@ impl<'a> WStrMut<'a> {
         lifetime: '_;
         self: &Self;
         deref: self.borrow();
+        pattern['b,]: 'b, &'b Self;
     }
 
     impl_str_mut_methods! {
