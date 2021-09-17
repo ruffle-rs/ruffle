@@ -629,6 +629,19 @@ impl<'gc> Class<'gc> {
             ));
         }
     }
+    #[inline(never)]
+    pub fn define_private_slot_instance_traits(
+        &mut self,
+        items: &[(&'static str, &'static str, &'static str, &'static str)],
+    ) {
+        for &(ns, name, type_ns, type_name) in items {
+            self.define_instance_trait(Trait::from_slot(
+                QName::new(Namespace::Private(ns.into()), name),
+                QName::new(Namespace::Package(type_ns.into()), type_name).into(),
+                None,
+            ));
+        }
+    }
 
     /// Define a trait on the class.
     ///

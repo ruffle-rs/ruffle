@@ -863,6 +863,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
+    const PUBLIC_INSTANCE_NUMBER_SLOTS: &[(&str, Option<f64>)] =
+        &[("x", None), ("y", None), ("width", None), ("height", None)];
+    write.define_public_slot_number_instance_traits(PUBLIC_INSTANCE_NUMBER_SLOTS);
+
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("contains", contains),
         ("containsPoint", contains_point),
