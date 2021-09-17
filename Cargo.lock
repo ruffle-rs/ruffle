@@ -80,15 +80,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ansi_term"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "approx"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1047,12 +1038,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "diff"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e25ea47919b1560c4e3b7fe0aaab9becf5b84a10325ddf7db0f0ba5e1026499"
-
-[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1233,12 +1218,9 @@ name = "exporter"
 version = "0.1.0"
 dependencies = [
  "clap",
- "env_logger",
- "futures",
  "image",
  "indicatif",
  "log",
- "path-slash",
  "ruffle_core",
  "ruffle_render_wgpu",
  "walkdir",
@@ -2799,21 +2781,9 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f81e1644e1b54f5a68959a29aa86cde704219254669da328ecfdf6a1f09d427"
 dependencies = [
- "ansi_term 0.11.0",
+ "ansi_term",
  "ctor",
  "difference",
- "output_vt100",
-]
-
-[[package]]
-name = "pretty_assertions"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cab0e7c02cf376875e9335e0ba1da535775beb5450d21e1dffca068818ed98b"
-dependencies = [
- "ansi_term 0.12.1",
- "ctor",
- "diff",
  "output_vt100",
 ]
 
@@ -3084,12 +3054,10 @@ dependencies = [
  "dasp",
  "downcast-rs",
  "encoding_rs",
- "env_logger",
  "flash-lso",
  "flate2",
  "fnv",
  "gc-arena",
- "gc-arena-derive",
  "generational-arena",
  "gif",
  "h263-rs",
@@ -3106,7 +3074,6 @@ dependencies = [
  "num-traits",
  "percent-encoding",
  "png 0.17.1",
- "pretty_assertions 0.7.2",
  "quick-xml",
  "rand",
  "regress",
@@ -3182,12 +3149,8 @@ name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "fnv",
- "jpeg-decoder",
  "js-sys",
  "log",
- "percent-encoding",
- "png 0.17.1",
  "ruffle_core",
  "ruffle_render_common_tess",
  "ruffle_web_common",
@@ -3204,7 +3167,6 @@ dependencies = [
  "enum-map",
  "futures",
  "image",
- "jpeg-decoder",
  "log",
  "raw-window-handle",
  "ruffle_core",
@@ -3219,7 +3181,6 @@ dependencies = [
  "clap",
  "crossbeam-channel",
  "csv",
- "env_logger",
  "indicatif",
  "log",
  "path-slash",
@@ -3547,7 +3508,6 @@ checksum = "e72d8b19ab05827afefcca66bf47040c1e66a0901eb814784c77d4ec118bd309"
 name = "swf"
 version = "0.1.2"
 dependencies = [
- "approx",
  "bitflags",
  "bitstream-io",
  "byteorder",
@@ -3558,7 +3518,6 @@ dependencies = [
  "lzma-rs",
  "num-derive",
  "num-traits",
- "smallvec",
 ]
 
 [[package]]
@@ -3666,7 +3625,7 @@ dependencies = [
  "approx",
  "env_logger",
  "image",
- "pretty_assertions 0.6.1",
+ "pretty_assertions",
  "ruffle_core",
  "ruffle_render_wgpu",
 ]
