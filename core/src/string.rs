@@ -12,6 +12,7 @@ mod common;
 mod avm;
 mod buf;
 mod ops;
+mod pattern;
 mod raw;
 mod slice;
 mod tables;
@@ -24,6 +25,7 @@ pub use avm::AvmString;
 pub use buf::WString;
 pub use common::{BorrowWStr, BorrowWStrMut, Units};
 pub use ops::{Iter, Split};
+pub use pattern::Pattern;
 pub use slice::{WStr, WStrMut};
 
 use common::panic_on_invalid_length;

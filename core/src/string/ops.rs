@@ -2,7 +2,8 @@ use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
-use super::{utils, Units, WStr};
+use super::pattern::Searcher;
+use super::{utils, Pattern, WStr, Units};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -113,53 +114,56 @@ pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {
     }
 }
 
-pub fn str_find(haystack: WStr<'_>, needle: WStr<'_>) -> Option<usize> {
-    let max = haystack.len().checked_sub(needle.len())?;
-
-    (0..=max).find(|i| haystack.slice(*i..*i + needle.len()) == needle)
-}
-
-pub fn str_rfind(haystack: WStr<'_>, needle: WStr<'_>) -> Option<usize> {
-    let max = haystack.len().checked_sub(needle.len())?;
-
-    (0..=max)
-        .rev()
-        .find(|i| haystack.slice(*i..*i + needle.len()) == needle)
-}
-
-#[inline]
-pub fn str_split<'a, 'b>(string: WStr<'a>, separator: WStr<'b>) -> Split<'a, 'b> {
-    Split {
-        string,
-        separator,
-        done: false,
+pub fn str_is_latin1(s: WStr<'_>) -> bool {
+    match s.units() {
+        Units::Bytes(_) => true,
+        Units::Wide(us) => us.iter().all(|c| *c <= u16::from(u8::MAX)),
     }
 }
 
-pub struct Split<'a, 'b> {
-    string: WStr<'a>,
-    separator: WStr<'b>,
-    done: bool,
+pub fn str_find<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
+    pattern
+        .into_searcher(haystack)
+        .next_match()
+        .map(|(start, _)| start)
 }
 
-impl<'a, 'b> Iterator for Split<'a, 'b> {
+pub fn str_rfind<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
+    pattern
+        .into_searcher(haystack)
+        .next_match_back()
+        .map(|(start, _)| start)
+}
+
+#[inline]
+pub fn str_split<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Split<'a, P> {
+    Split {
+        string: Some(string),
+        searcher: pattern.into_searcher(string),
+        prev_end: 0,
+    }
+}
+
+pub struct Split<'a, P: Pattern<'a>> {
+    string: Option<WStr<'a>>,
+    searcher: P::Searcher,
+    prev_end: usize,
+}
+
+impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
     type Item = WStr<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.done {
-            return None;
-        }
+        let string = self.string?;
 
-        match self.string.find(self.separator) {
-            Some(i) => {
-                let prefix = self.string.slice(..i);
-                let suffix = self.string.slice((i + self.separator.len())..);
-                self.string = suffix;
-                Some(prefix)
+        match self.searcher.next_match() {
+            Some((start, end)) => {
+                let end = std::mem::replace(&mut self.prev_end, end);
+                Some(string.slice(end..start))
             }
             None => {
-                self.done = true;
-                Some(self.string)
+                self.string = None;
+                Some(string.slice(self.prev_end..))
             }
         }
     }
