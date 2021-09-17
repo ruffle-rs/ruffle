@@ -64,6 +64,9 @@ pub struct ClassObjectData<'gc> {
     /// classes, though we consider the parameter to be the class `Object` when
     /// we get a param of `null`.
     applications: HashMap<Option<Object<'gc>>, Object<'gc>>,
+
+    /// Interfaces implemented by this class.
+    interfaces: Vec<Object<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -149,6 +152,7 @@ impl<'gc> ClassObject<'gc> {
                 native_constructor,
                 params: None,
                 applications: HashMap::new(),
+                interfaces: Vec::new(),
             },
         ));
 
@@ -205,6 +209,7 @@ impl<'gc> ClassObject<'gc> {
                 native_constructor,
                 params: None,
                 applications: HashMap::new(),
+                interfaces: Vec::new(),
             },
         ))
         .into();
@@ -295,7 +300,7 @@ impl<'gc> ClassObject<'gc> {
         }
 
         if !interfaces.is_empty() {
-            self.set_interfaces(activation.context.gc_context, interfaces);
+            self.0.write(activation.context.gc_context).interfaces = interfaces;
         }
 
         Ok(())
@@ -329,6 +334,10 @@ impl<'gc> ClassObject<'gc> {
         }
 
         Ok(())
+    }
+
+    pub fn interfaces(self) -> Vec<Object<'gc>> {
+        self.0.read().interfaces.clone()
     }
 }
 
@@ -477,6 +486,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         None //AS3 does not have metaclasses
     }
 
+    fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
+        Some(*self)
+    }
+
     fn as_class_params(&self) -> Option<Option<Object<'gc>>> {
         self.0.read().params
     }
@@ -602,6 +615,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 native_constructor,
                 params: Some(object_params[0]),
                 applications: HashMap::new(),
+                interfaces: Vec::new(),
             },
         ));
 

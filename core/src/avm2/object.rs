@@ -952,14 +952,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// primitive value. Typically, this would be a number of some kind.
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error>;
 
-    /// Enumerate all interfaces implemented by this class object.
-    ///
-    /// Non-classes do not implement interfaces.
-    fn interfaces(&self) -> Vec<Object<'gc>>;
-
-    /// Set the interface list for this class object.
-    fn set_interfaces(&self, gc_context: MutationContext<'gc, '_>, iface_list: Vec<Object<'gc>>);
-
     /// Determine if this object is an instance of a given type.
     ///
     /// This uses the ES3 definition of instance, which walks the prototype
@@ -1045,9 +1037,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            for interface in class.interfaces() {
-                if Object::ptr_eq(interface, test_class) {
-                    return Ok(true);
+            if let Some(class) = class.as_class_object_really() {
+                for interface in class.interfaces() {
+                    if Object::ptr_eq(interface, test_class) {
+                        return Ok(true);
+                    }
                 }
             }
 
@@ -1083,6 +1077,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's class object, if it has one.
     fn as_class_object(&self) -> Option<Object<'gc>>;
+
+    fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
+        None
+    }
 
     /// Get the parameters of this class object, if present.
     ///
