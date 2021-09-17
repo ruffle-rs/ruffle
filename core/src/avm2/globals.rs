@@ -350,7 +350,14 @@ fn class<'gc>(
             .get_property(global, &super_name, activation)?
             .coerce_to_object(activation)
             .map_err(|_e| {
-                format!("Could not resolve superclass {:?}", super_name.local_name()).into()
+                format!(
+                    "Could not resolve superclass {:?} when defining global class {:?}",
+                    sc_name
+                        .local_name(activation)
+                        .unwrap_or_else(|_| Some("<uncoercible name>".into())),
+                    class_read.name().local_name()
+                )
+                .into()
             });
 
         Some(super_class?)
