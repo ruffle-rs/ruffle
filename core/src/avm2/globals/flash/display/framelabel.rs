@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
+use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
@@ -31,13 +32,13 @@ pub fn instance_init<'gc>(
 
         this.set_property(
             this,
-            &QName::new(Namespace::Private("ruffle".into()), "name"),
+            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             name.into(),
             activation,
         )?;
         this.set_property(
             this,
-            &QName::new(Namespace::Private("ruffle".into()), "frame"),
+            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "frame").into(),
             frame.into(),
             activation,
         )?;
@@ -64,7 +65,7 @@ pub fn name<'gc>(
     if let Some(this) = this {
         return this.get_property(
             this,
-            &QName::new(Namespace::Private("ruffle".into()), "name"),
+            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             activation,
         );
     }
@@ -81,7 +82,7 @@ pub fn frame<'gc>(
     if let Some(this) = this {
         return this.get_property(
             this,
-            &QName::new(Namespace::Private("ruffle".into()), "frame"),
+            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "frame").into(),
             activation,
         );
     }
@@ -107,6 +108,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Option<NativeMethodImpl>,
     )] = &[("name", Some(name), None), ("frame", Some(frame), None)];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PRIVATE_INSTANCE_SLOTS: &[(&str, &str, &str, &str)] = &[
+        (NS_RUFFLE_INTERNAL, "name", "", "String"),
+        (NS_RUFFLE_INTERNAL, "frame", "", "int"),
+    ];
+    write.define_private_slot_instance_traits(PRIVATE_INSTANCE_SLOTS);
 
     class
 }
