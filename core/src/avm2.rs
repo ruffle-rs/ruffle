@@ -254,7 +254,7 @@ impl<'gc> Avm2<'gc> {
             reciever,
             args,
             &mut evt_activation,
-            reciever.and_then(|r| r.proto()),
+            reciever.and_then(|r| r.instance_of()),
         )?;
 
         Ok(())

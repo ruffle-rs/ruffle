@@ -1068,8 +1068,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self).ok();
         let function = self.context.avm2.pop().coerce_to_object(self)?;
-        let base_proto = receiver.and_then(|r| r.proto());
-        let value = function.call(receiver, &args, self, base_proto)?;
+        let superclass_object = receiver.and_then(|r| r.instance_of());
+        let value = function.call(receiver, &args, self, superclass_object)?;
 
         self.context.avm2.push(value);
 
@@ -1086,8 +1086,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function: Result<Object<'gc>, Error> = receiver
             .get_method(index.0)
             .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
-        let base_proto = receiver.proto();
-        let value = function?.call(Some(receiver), &args, self, base_proto)?;
+        let superclass_object = receiver.instance_of();
+        let value = function?.call(Some(receiver), &args, self, superclass_object)?;
 
         self.context.avm2.push(value);
 

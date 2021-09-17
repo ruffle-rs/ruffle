@@ -378,7 +378,7 @@ pub fn for_each<'gc>(
                 receiver,
                 &[item, i.into(), this.into()],
                 activation,
-                receiver.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.instance_of()),
             )?;
         }
     }
@@ -413,7 +413,7 @@ pub fn map<'gc>(
                 receiver,
                 &[item, i.into(), this.into()],
                 activation,
-                receiver.and_then(|r| r.proto()),
+                receiver.and_then(|r| r.instance_of()),
             )?;
 
             new_array.push(new_item);
@@ -453,7 +453,7 @@ pub fn filter<'gc>(
                     receiver,
                     &[item.clone(), i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 
@@ -496,7 +496,7 @@ pub fn every<'gc>(
                     receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 
@@ -539,7 +539,7 @@ pub fn some<'gc>(
                     receiver,
                     &[item, i.into(), this.into()],
                     activation,
-                    receiver.and_then(|r| r.proto()),
+                    receiver.and_then(|r| r.instance_of()),
                 )?
                 .coerce_to_boolean();
 

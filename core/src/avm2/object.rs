@@ -846,18 +846,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Some(superclass_object),
             )
         } else {
-            if let Ok(callee) = reciever
-                .get_property(reciever, multiname, activation)
-                .and_then(|v| v.coerce_to_object(activation))
-            {
-                return callee.call(Some(reciever), arguments, activation, None);
-            }
-
-            Err(format!(
-                "Attempted to supercall method {:?}, which does not exist",
-                name
-            )
-            .into())
+            reciever.call_property(multiname, arguments, activation)
         }
     }
 
