@@ -353,6 +353,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     )] = &[("length", Some(length), None)];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
+    const PUBLIC_INSTANCE_NUMBER_SLOTS: &[(&str, Option<f64>)] = &[("x", None), ("y", None)];
+    write.define_public_slot_number_instance_traits(PUBLIC_INSTANCE_NUMBER_SLOTS);
+
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("distance", distance),
         ("interpolate", interpolate),
