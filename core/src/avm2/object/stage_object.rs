@@ -285,10 +285,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         None
     }
 
-    fn as_class_object(&self) -> Option<Object<'gc>> {
-        self.0.read().base.as_class_object()
-    }
-
     fn instance_of(&self) -> Option<Object<'gc>> {
         self.0.read().base.instance_of()
     }

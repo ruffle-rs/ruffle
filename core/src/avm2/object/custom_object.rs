@@ -110,10 +110,6 @@ macro_rules! impl_avm2_custom_object_instance {
             self.0.read().$field.resolve_any_trait(local_name)
         }
 
-        fn as_class_object(&self) -> Option<Object<'gc>> {
-            self.0.read().$field.as_class_object()
-        }
-
         fn instance_of(&self) -> Option<Object<'gc>> {
             self.0.read().$field.instance_of()
         }

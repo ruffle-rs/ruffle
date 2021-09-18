@@ -494,10 +494,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .resolve_any_class_trait(local_name))
     }
 
-    fn as_class_object(&self) -> Option<Object<'gc>> {
-        None //AS3 does not have metaclasses
-    }
-
     fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
         Some(*self)
     }
