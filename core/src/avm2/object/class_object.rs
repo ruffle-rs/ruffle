@@ -344,8 +344,8 @@ impl<'gc> ClassObject<'gc> {
         Ok(())
     }
 
-    pub fn inner_class_definition(self) -> Option<GcCell<'gc, Class<'gc>>> {
-        Some(self.0.read().class)
+    pub fn inner_class_definition(self) -> GcCell<'gc, Class<'gc>> {
+        self.0.read().class
     }
 
     pub fn interfaces(self) -> Vec<Object<'gc>> {
