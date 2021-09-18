@@ -311,6 +311,10 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
         self.0.write(mc).set_class_object(class_object);
     }
+
+    fn instance_of(&self) -> Option<Object<'gc>> {
+        self.0.read().instance_of()
+    }
 }
 
 impl<'gc> ScriptObject<'gc> {
@@ -527,6 +531,7 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(true);
                     }
 
+                    let class = class.as_class_object_really().unwrap();
                     cur_class = class.superclass_object();
                 }
 
@@ -590,6 +595,7 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(Some(ns));
                     }
 
+                    let class = class.as_class_object_really().unwrap();
                     cur_class = class.superclass_object();
                 }
 
@@ -832,6 +838,11 @@ impl<'gc> ScriptObjectData<'gc> {
 
     /// Get the class object for this object, if it has one.
     pub fn as_class_object(&self) -> Option<Object<'gc>> {
+        self.instance_of
+    }
+
+    /// Get the class object for this object, if it has one.
+    pub fn instance_of(&self) -> Option<Object<'gc>> {
         self.instance_of
     }
 

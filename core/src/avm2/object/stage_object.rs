@@ -298,6 +298,10 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.write(mc).base.set_class_object(class_object);
     }
 
+    fn instance_of(&self) -> Option<Object<'gc>> {
+        self.0.read().base.instance_of()
+    }
+
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
         self.0.read().display_object
     }
