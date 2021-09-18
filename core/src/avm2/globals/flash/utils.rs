@@ -34,12 +34,13 @@ pub fn get_qualified_class_name<'gc>(
         None => match obj.instance_of() {
             Some(cls) => cls.as_class_object().unwrap(),
             None => return Ok(Value::Null),
-        }
+        },
     };
 
     Ok(AvmString::new(
         activation.context.gc_context,
-        class.get_own_class_definition()
+        class
+            .get_own_class_definition()
             .ok_or("This object does not have a class")?
             .read()
             .name()
@@ -64,7 +65,7 @@ pub fn get_qualified_super_class_name<'gc>(
         None => match obj.instance_of() {
             Some(cls) => cls.as_class_object().unwrap(),
             None => return Ok(Value::Null),
-        }
+        },
     };
 
     if let Some(super_class) = class.superclass_object() {

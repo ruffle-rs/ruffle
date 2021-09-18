@@ -106,11 +106,11 @@ impl<'gc> ClassObject<'gc> {
         let instance_allocator = class
             .read()
             .instance_allocator()
-            .or_else(||
+            .or_else(|| {
                 superclass_object
-                .and_then(|c| c.as_class_object())
-                .and_then(|c| c.instance_allocator())
-            )
+                    .and_then(|c| c.as_class_object())
+                    .and_then(|c| c.instance_allocator())
+            })
             .unwrap_or(scriptobject_allocator);
 
         //TODO: Class prototypes are *not* instances of their class and should
@@ -195,11 +195,11 @@ impl<'gc> ClassObject<'gc> {
         let instance_allocator = class
             .read()
             .instance_allocator()
-            .or_else(||
+            .or_else(|| {
                 superclass_object
-                .and_then(|c| c.as_class_object())
-                .and_then(|c| c.instance_allocator())
-            )
+                    .and_then(|c| c.as_class_object())
+                    .and_then(|c| c.instance_allocator())
+            })
             .unwrap_or(scriptobject_allocator);
 
         let constructor = Executable::from_method(class.read().instance_init(), scope, None, mc);

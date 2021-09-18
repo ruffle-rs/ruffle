@@ -138,7 +138,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return Ok(Some(self.into()));
         }
 
-        if let Some(base) = self.as_class_object().and_then(|cls| cls.superclass_object()) {
+        if let Some(base) = self
+            .as_class_object()
+            .and_then(|cls| cls.superclass_object())
+        {
             return base.find_class_for_trait(name);
         }
 
@@ -1047,7 +1050,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
 
-            if let (Some(class), Some(test_class)) = 
+            if let (Some(class), Some(test_class)) =
                 (class.as_class_object(), test_class.as_class_object())
             {
                 if let (Some(my_param), Some(test_param)) =
@@ -1086,9 +1089,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This this object is already a ClassObject, return its own Class.
     /// Note: this probably shouldn't be used in most cases.
     fn get_own_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        let class = self.as_class_object().or_else(||
-            self.instance_of().and_then(|cls| cls.as_class_object())
-        );
+        let class = self
+            .as_class_object()
+            .or_else(|| self.instance_of().and_then(|cls| cls.as_class_object()));
         class.map(|cls| cls.inner_class_definition())
     }
 
