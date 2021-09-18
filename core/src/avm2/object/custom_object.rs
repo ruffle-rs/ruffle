@@ -122,10 +122,6 @@ macro_rules! impl_avm2_custom_object_instance {
             self.0.read().$field.instance_of()
         }
 
-        fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
-            self.0.write(mc).$field.set_class_object(class_object);
-        }
-
         fn set_local_property_is_enumerable(
             &self,
             mc: MutationContext<'gc, '_>,

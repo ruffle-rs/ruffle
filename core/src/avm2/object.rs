@@ -1094,13 +1094,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Associate the object with a particular class object.
-    ///
-    /// This turns the object into an instance of that class. It should only be
-    /// used in situations where the object cannot be made an instance of the
-    /// class at allocation time, such as during early runtime setup.
-    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>);
-
     /// Get this class's instance allocator.
     fn instance_allocator(self) -> Option<AllocatorFn> {
         None
