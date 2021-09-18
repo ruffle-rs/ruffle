@@ -22,8 +22,7 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         let name = this
-            .instance_of()
-            .and_then(|t| t.get_own_class_definition())
+            .instance_of_class_definition()
             .map(|c| c.read().name().clone());
         let character = this
             .instance_of()

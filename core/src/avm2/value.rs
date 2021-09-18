@@ -611,7 +611,7 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        if let Some(static_class) = class.get_own_class_definition() {
+        if let Some(static_class) = class.as_class_definition() {
             return Err(format!(
                 "Cannot coerce {:?} to an {:?}",
                 self,
@@ -671,7 +671,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         type_object: Object<'gc>,
     ) -> Result<bool, Error> {
-        if let Some(type_class) = type_object.get_own_class_definition() {
+        if let Some(type_class) = type_object.as_class_definition() {
             if type_class.read().name() == &QName::new(Namespace::public(), "Number") {
                 return Ok(self.is_number());
             }
