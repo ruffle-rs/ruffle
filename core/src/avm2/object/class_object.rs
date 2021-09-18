@@ -343,6 +343,10 @@ impl<'gc> ClassObject<'gc> {
     pub fn superclass_object(self) -> Option<Object<'gc>> {
         self.0.read().superclass_object
     }
+
+    pub fn as_class_params(self) -> Option<Option<Object<'gc>>> {
+        self.0.read().params
+    }
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
@@ -492,10 +496,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn instance_of(&self) -> Option<Object<'gc>> {
         self.0.read().base.instance_of()
-    }
-
-    fn as_class_params(&self) -> Option<Option<Object<'gc>>> {
-        self.0.read().params
     }
 
     fn set_class_object(self, _mc: MutationContext<'gc, '_>, _class_object: Object<'gc>) {
