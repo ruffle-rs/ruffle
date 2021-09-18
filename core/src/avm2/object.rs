@@ -1047,21 +1047,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
 
-            if let (Some(my_param), Some(test_param)) =
-                (class.as_class_params(), test_class.as_class_params())
+            if let (Some(class), Some(test_class)) = 
+                (class.as_class_object_really(), test_class.as_class_object_really())
             {
-                let mut are_all_params_coercible = true;
+                if let (Some(my_param), Some(test_param)) =
+                    (class.as_class_params(), test_class.as_class_params())
+                {
+                    let mut are_all_params_coercible = true;
 
-                are_all_params_coercible &= match (my_param, test_param) {
-                    (Some(my_param), Some(test_param)) => {
-                        my_param.has_class_in_chain(test_param, activation)?
+                    are_all_params_coercible &= match (my_param, test_param) {
+                        (Some(my_param), Some(test_param)) => {
+                            my_param.has_class_in_chain(test_param, activation)?
+                        }
+                        (None, Some(_)) => false,
+                        _ => true,
+                    };
+
+                    if are_all_params_coercible {
+                        return Ok(true);
                     }
-                    (None, Some(_)) => false,
-                    _ => true,
-                };
-
-                if are_all_params_coercible {
-                    return Ok(true);
                 }
             }
 
@@ -1087,13 +1091,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn instance_of(&self) -> Option<Object<'gc>>;
 
     fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
-        None
-    }
-
-    /// Get the parameters of this class object, if present.
-    ///
-    /// Only specialized generic classes will yield their parameters.
-    fn as_class_params(&self) -> Option<Option<Object<'gc>>> {
         None
     }
 

@@ -26,6 +26,8 @@ pub fn vector_allocator<'gc>(
     //the unspecialized Vector class, we have to fall back to Object when
     //getting the parameter type for our storage.
     let param_type = class
+        .as_class_object_really()
+        .unwrap()
         .as_class_params()
         .flatten()
         .unwrap_or_else(|| activation.avm2().classes().object);
