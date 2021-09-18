@@ -34,10 +34,10 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
         None,
         Method::from_builtin(
             bodiless_method,
-            "<IBitmapDrawable instance initializer>",
+            "<IFlexAsset instance initializer>",
             mc,
         ),
-        Method::from_builtin(class_init, "<IFlexAsset interface initializer>", mc),
+        Method::from_builtin(class_init, "<IFlexAsset class initializer>", mc),
         mc,
     );
 
