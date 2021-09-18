@@ -7,7 +7,8 @@
     "scripts": {
         "build": "npm run build:generic && npm run build:firefox",
         "build:generic": "webpack --env generic && node tools/zip.js dist/ruffle_extension.zip",
-        "build:firefox": "webpack --env firefox && node tools/zip.js dist/firefox_unsigned.xpi && node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
+        "build:firefox": "webpack --env firefox && node tools/zip.js dist/firefox_unsigned.xpi && npm run sign-firefox",
+        "sign-firefox": "node tools/sign_xpi.js dist/firefox_unsigned.xpi dist/firefox.xpi"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"
