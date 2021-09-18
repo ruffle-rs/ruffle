@@ -138,7 +138,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return Ok(Some(self.into()));
         }
 
-        if let Some(base) = self.superclass_object() {
+        if let Some(base) = self.as_class_object_really().and_then(|cls| cls.superclass_object()) {
             return base.find_class_for_trait(name);
         }
 
@@ -427,8 +427,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         from_class_object: Object<'gc>,
     ) -> Result<(), Error> {
-        if let Some(superclass_object) = from_class_object.superclass_object() {
-            self.install_instance_traits(activation, superclass_object)?;
+        if let Some(from_class_object) = from_class_object.as_class_object_really() {
+            if let Some(superclass_object) = from_class_object.superclass_object() {
+                self.install_instance_traits(activation, superclass_object)?;
+            }
         }
 
         if let Some(class) = from_class_object.as_class() {
@@ -1063,7 +1065,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
 
-            my_class = class.superclass_object()
+            if let Some(class) = class.as_class_object_really() {
+                my_class = class.superclass_object()
+            } else {
+                my_class = None;
+            }
         }
 
         Ok(false)
@@ -1077,6 +1083,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's class object, if it has one.
     fn as_class_object(&self) -> Option<Object<'gc>>;
+
+    fn instance_of(&self) -> Option<Object<'gc>>;
 
     fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
         None
@@ -1095,11 +1103,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// used in situations where the object cannot be made an instance of the
     /// class at allocation time, such as during early runtime setup.
     fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>);
-
-    /// Get the superclass object of this object.
-    fn superclass_object(self) -> Option<Object<'gc>> {
-        None
-    }
 
     /// Get this class's instance allocator.
     fn instance_allocator(self) -> Option<AllocatorFn> {

@@ -29,9 +29,17 @@ pub fn get_qualified_class_name<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
 
+    let class = match obj.as_class_object_really() {
+        Some(class) => class,
+        None => match obj.instance_of() {
+            Some(cls) => cls.as_class_object_really().unwrap(),
+            None => return Ok(Value::Null),
+        }
+    };
+
     Ok(AvmString::new(
         activation.context.gc_context,
-        obj.as_class()
+        class.as_class()
             .ok_or("This object does not have a class")?
             .read()
             .name()
@@ -51,7 +59,15 @@ pub fn get_qualified_super_class_name<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)?;
 
-    if let Some(super_class) = obj.superclass_object() {
+    let class = match obj.as_class_object_really() {
+        Some(class) => class,
+        None => match obj.instance_of() {
+            Some(cls) => cls.as_class_object_really().unwrap(),
+            None => return Ok(Value::Null),
+        }
+    };
+
+    if let Some(super_class) = class.superclass_object() {
         Ok(AvmString::new(
             activation.context.gc_context,
             super_class

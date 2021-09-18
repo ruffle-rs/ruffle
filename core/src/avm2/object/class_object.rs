@@ -339,6 +339,10 @@ impl<'gc> ClassObject<'gc> {
     pub fn interfaces(self) -> Vec<Object<'gc>> {
         self.0.read().interfaces.clone()
     }
+
+    pub fn superclass_object(self) -> Option<Object<'gc>> {
+        self.0.read().superclass_object
+    }
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
@@ -443,10 +447,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         .into())
     }
 
-    fn superclass_object(self) -> Option<Object<'gc>> {
-        self.0.read().superclass_object
-    }
-
     fn instance_allocator(self) -> Option<AllocatorFn> {
         Some(self.0.read().instance_allocator.0)
     }
@@ -488,6 +488,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
         Some(*self)
+    }
+
+    fn instance_of(&self) -> Option<Object<'gc>> {
+        self.0.read().base.instance_of()
     }
 
     fn as_class_params(&self) -> Option<Option<Object<'gc>>> {

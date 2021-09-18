@@ -118,6 +118,10 @@ macro_rules! impl_avm2_custom_object_instance {
             self.0.read().$field.as_class_object()
         }
 
+        fn instance_of(&self) -> Option<Object<'gc>> {
+            self.0.read().$field.instance_of()
+        }
+
         fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
             self.0.write(mc).$field.set_class_object(class_object);
         }
