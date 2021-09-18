@@ -106,7 +106,11 @@ impl<'gc> ClassObject<'gc> {
         let instance_allocator = class
             .read()
             .instance_allocator()
-            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
+            .or_else(||
+                superclass_object
+                .and_then(|c| c.as_class_object_really())
+                .and_then(|c| c.instance_allocator())
+            )
             .unwrap_or(scriptobject_allocator);
 
         //TODO: Class prototypes are *not* instances of their class and should
@@ -191,7 +195,11 @@ impl<'gc> ClassObject<'gc> {
         let instance_allocator = class
             .read()
             .instance_allocator()
-            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
+            .or_else(||
+                superclass_object
+                .and_then(|c| c.as_class_object_really())
+                .and_then(|c| c.instance_allocator())
+            )
             .unwrap_or(scriptobject_allocator);
 
         let constructor = Executable::from_method(class.read().instance_init(), scope, None, mc);
@@ -347,6 +355,10 @@ impl<'gc> ClassObject<'gc> {
     pub fn as_class_params(self) -> Option<Option<Object<'gc>>> {
         self.0.read().params
     }
+
+    fn instance_allocator(self) -> Option<AllocatorFn> {
+        Some(self.0.read().instance_allocator.0)
+    }
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
@@ -449,10 +461,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             self.0.read().clone(),
         ))
         .into())
-    }
-
-    fn instance_allocator(self) -> Option<AllocatorFn> {
-        Some(self.0.read().instance_allocator.0)
     }
 
     fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
