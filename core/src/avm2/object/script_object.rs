@@ -218,7 +218,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.as_class() {
+        if let Some(class) = self.get_own_class_definition() {
             Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
         } else {
             Ok("[object Object]".into())
@@ -512,7 +512,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
                 while let Some(class) = cur_class {
                     let cur_static_class = class
-                        .as_class()
+                        .get_own_class_definition()
                         .ok_or("Object is not a class constructor")?;
                     if cur_static_class.read().has_instance_trait(name) {
                         return Ok(true);
@@ -573,7 +573,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
                 while let Some(class) = cur_class {
                     let cur_static_class = class
-                        .as_class()
+                        .get_own_class_definition()
                         .ok_or("Object is not a class constructor")?;
                     if let Some(ns) = cur_static_class
                         .read()
@@ -761,7 +761,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error> {
         if let Some(class) = self.instance_of() {
-            if let Some(class) = class.as_class() {
+            if let Some(class) = class.get_own_class_definition() {
                 if class.read().is_sealed() {
                     return Err(format!(
                         "Objects of type {:?} are not dynamic",

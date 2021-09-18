@@ -85,7 +85,7 @@ impl<'gc> ClassObject<'gc> {
         superclass_object: Option<Object<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Object<'gc>, Error> {
-        if let Some(base_class) = superclass_object.and_then(|b| b.as_class()) {
+        if let Some(base_class) = superclass_object.and_then(|b| b.get_own_class_definition()) {
             if base_class.read().is_final() {
                 return Err(format!(
                     "Base class {:?} is final and cannot be extended",
@@ -294,7 +294,7 @@ impl<'gc> ClassObject<'gc> {
             }
 
             let interface = interface.unwrap().coerce_to_object(activation)?;
-            if let Some(class) = interface.as_class() {
+            if let Some(class) = interface.get_own_class_definition() {
                 if !class.read().is_interface() {
                     return Err(format!(
                         "Class {:?} is not an interface and cannot be implemented by classes",
@@ -530,7 +530,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         nullable_params: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let self_class = self
-            .as_class()
+            .get_own_class_definition()
             .ok_or("Attempted to apply type arguments to non-class!")?;
 
         if !self_class.read().is_generic() {
@@ -570,7 +570,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             class_params.push(
                 param
                     .unwrap_or(activation.avm2().classes().object)
-                    .as_class()
+                    .get_own_class_definition()
                     .ok_or(format!(
                         "Cannot apply class {:?} with non-class parameter",
                         self_class.read().name()

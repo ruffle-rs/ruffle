@@ -131,7 +131,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// defined prototype methods for ES3-style classes.
     fn find_class_for_trait(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
         let class = self
-            .as_class()
+            .get_own_class_definition()
             .ok_or("Cannot get base traits on non-class object")?;
 
         if class.read().has_instance_trait(name) {
@@ -433,7 +433,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        if let Some(class) = from_class_object.as_class() {
+        if let Some(class) = from_class_object.get_own_class_definition() {
             self.install_traits(activation, class.read().instance_traits())?;
         }
 
@@ -698,7 +698,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .as_class()
+            .get_own_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -764,7 +764,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .as_class()
+            .get_own_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -824,7 +824,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .as_class()
+            .get_own_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -923,7 +923,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions.
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .as_class()
+            .get_own_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -940,7 +940,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// of the class that created this object).
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .as_class()
+            .get_own_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -1083,7 +1083,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_ptr(&self) -> *const ObjectPtr;
 
     /// Get this object's `Class`, if it has one.
-    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+    /// This this object is already a ClassObject, return its own Class.
+    /// Note: this probably shouldn't be used in most cases.
+    fn get_own_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
         let class = match self.as_class_object() {
             Some(class) => class,
             None => match self.instance_of() {

@@ -311,7 +311,7 @@ fn dynamic_class<'gc>(
     script: Script<'gc>,
 ) -> Result<(), Error> {
     let class = class_object
-        .as_class()
+        .get_own_class_definition()
         .ok_or("Attempted to create builtin dynamic class without class on it's constructor!")?;
     let name = class.read().name().clone();
 
@@ -463,15 +463,15 @@ pub fn load_player_globals<'gc>(
     // usually are done in the associated constructor for `ClassObject`.
     object_class.install_traits(
         activation,
-        object_class.as_class().unwrap().read().class_traits(),
+        object_class.get_own_class_definition().unwrap().read().class_traits(),
     )?;
     function_class.install_traits(
         activation,
-        function_class.as_class().unwrap().read().class_traits(),
+        function_class.get_own_class_definition().unwrap().read().class_traits(),
     )?;
     class_class.install_traits(
         activation,
-        class_class.as_class().unwrap().read().class_traits(),
+        class_class.get_own_class_definition().unwrap().read().class_traits(),
     )?;
 
     object_cinit.call(Some(object_class), &[], activation, Some(object_class))?;
