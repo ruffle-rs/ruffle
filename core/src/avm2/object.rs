@@ -1086,14 +1086,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This this object is already a ClassObject, return its own Class.
     /// Note: this probably shouldn't be used in most cases.
     fn get_own_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        let class = match self.as_class_object() {
-            Some(class) => class,
-            None => match self.instance_of() {
-                Some(cls) => cls.as_class_object().unwrap(),
-                None => return None,
-            }
-        };
-        Some(class.inner_class_definition())
+        let class = self.as_class_object().or_else(||
+            self.instance_of().and_then(|cls| cls.as_class_object())
+        );
+        class.map(|cls| cls.inner_class_definition())
     }
 
     fn instance_of(&self) -> Option<Object<'gc>>;
