@@ -1107,7 +1107,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let superclass_object = if let Some(c) = receiver.as_class_object() {
+        let superclass_object = if let Some(c) = receiver.instance_of() {
             c.find_class_for_trait(&name)?
         } else {
             None
@@ -1157,7 +1157,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .resolve_multiname(&multiname)?
             .ok_or_else(|| format!("Could not find method {:?}", multiname.local_name()).into());
         let name = name?;
-        let superclass_object = if let Some(c) = receiver.as_class_object() {
+        let superclass_object = if let Some(c) = receiver.instance_of() {
             c.find_class_for_trait(&name)?
         } else {
             None
@@ -1182,7 +1182,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method = self.table_method(method, index, false)?;
         let scope = self.scope(); //TODO: Is this correct?
         let function = FunctionObject::from_method(self, method.into(), scope, None);
-        let value = function.call(Some(receiver), &args, self, receiver.as_class_object())?;
+        let value = function.call(Some(receiver), &args, self, receiver.instance_of())?;
 
         self.context.avm2.push(value);
 

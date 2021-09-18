@@ -22,11 +22,11 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         let name = this
-            .as_class_object()
+            .instance_of()
             .and_then(|t| t.as_class())
             .map(|c| c.read().name().clone());
         let character = this
-            .as_class_object()
+            .instance_of()
             .and_then(|t| {
                 activation
                     .context

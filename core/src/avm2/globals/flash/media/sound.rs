@@ -23,8 +23,8 @@ pub fn instance_init<'gc>(
 
         if this.as_sound().is_none() {
             let class_object = this
-                .as_class_object()
-                .ok_or("Attempted to construct non-instance Sound.")?;
+                .instance_of()
+                .ok_or("Attempted to construct Sound on a bare object.")?;
 
             if let Some((movie, symbol)) = activation
                 .context
