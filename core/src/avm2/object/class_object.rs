@@ -3,11 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::function::Executable;
+use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
-use crate::avm2::scope::ScopeChain;
+use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -31,8 +32,11 @@ pub struct ClassObjectData<'gc> {
     /// The class associated with this class object.
     class: GcCell<'gc, Class<'gc>>,
 
-    /// The scope this class was defined in.
-    scope: ScopeChain<'gc>,
+    /// The captured scope that all class traits will use.
+    class_scope: ScopeChain<'gc>,
+
+    /// The captured scope that all instance traits will use.
+    instance_scope: ScopeChain<'gc>,
 
     /// The base class of this one.
     ///
@@ -44,10 +48,10 @@ pub struct ClassObjectData<'gc> {
     instance_allocator: Allocator,
 
     /// The instance constructor function
-    constructor: Executable<'gc>,
+    constructor: Method<'gc>,
 
     /// The native instance constructor function
-    native_constructor: Executable<'gc>,
+    native_constructor: Method<'gc>,
 
     /// The parameters of this specialized class.
     ///
@@ -155,34 +159,33 @@ impl<'gc> ClassObject<'gc> {
             .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
             .unwrap_or(scriptobject_allocator);
 
-        let constructor = Executable::from_method(
-            class.read().instance_init(),
-            scope,
-            None,
-            activation.context.gc_context,
-        );
-        let native_constructor = Executable::from_method(
-            class.read().native_instance_init(),
-            scope,
-            None,
-            activation.context.gc_context,
-        );
-
         let class_object = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
                 base: ScriptObjectData::base_new(None, None),
                 class,
-                scope: scope,
+                class_scope: scope,
+                instance_scope: scope,
                 superclass_object,
                 instance_allocator: Allocator(instance_allocator),
-                constructor,
-                native_constructor,
+                constructor: class.read().instance_init(),
+                native_constructor: class.read().native_instance_init(),
                 params: None,
                 applications: HashMap::new(),
                 interfaces: Vec::new(),
             },
         ));
+
+        // instance scope = [..., class object]
+        let instance_scope = scope.chain(
+            activation.context.gc_context,
+            &[Scope::new(class_object.into())],
+        );
+
+        class_object
+            .0
+            .write(activation.context.gc_context)
+            .instance_scope = instance_scope;
 
         Ok(class_object)
     }
@@ -210,7 +213,7 @@ impl<'gc> ClassObject<'gc> {
         )?;
 
         self.link_interfaces(activation)?;
-        self.install_traits(activation, class.read().class_traits())?;
+        self.install_traits(activation, class.read().class_traits(), self.class_scope())?;
         self.install_instance_traits(activation, class_class)?;
         self.run_class_initializer(activation)?;
 
@@ -244,7 +247,7 @@ impl<'gc> ClassObject<'gc> {
     /// Link this class to it's interfaces.
     pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc, '_>) -> Result<(), Error> {
         let class = self.0.read().class;
-        let scope = self.0.read().scope;
+        let scope = self.0.read().class_scope;
 
         let interface_names = class.read().interfaces().to_vec();
         let mut interfaces = Vec::with_capacity(interface_names.len());
@@ -300,7 +303,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<(), Error> {
         let object: Object<'gc> = self.into();
 
-        let scope = self.0.read().scope;
+        let scope = self.0.read().class_scope;
         let class = self.0.read().class;
         let class_read = class.read();
 
@@ -400,7 +403,13 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let constructor = self.0.read().constructor.clone();
+        let scope = self.0.read().instance_scope;
+        let constructor = Executable::from_method(
+            self.0.read().constructor.clone(),
+            scope,
+            None,
+            activation.context.gc_context,
+        );
 
         constructor.exec(
             receiver,
@@ -423,9 +432,15 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
-        let native_constructor = self.0.read().native_constructor.clone();
+        let scope = self.0.read().instance_scope;
+        let constructor = Executable::from_method(
+            self.0.read().native_constructor.clone(),
+            scope,
+            None,
+            activation.context.gc_context,
+        );
 
-        native_constructor.exec(
+        constructor.exec(
             receiver,
             arguments,
             activation,
@@ -490,7 +505,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
-        let scope = superclass_object.scope();
+        let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -562,7 +577,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
-        let scope = superclass_object.scope();
+        let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -631,7 +646,7 @@ impl<'gc> ClassObject<'gc> {
         let base_trait = class_traits
             .iter()
             .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
-        let scope = superclass_object.scope();
+        let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
             let callee =
@@ -658,8 +673,12 @@ impl<'gc> ClassObject<'gc> {
         self.0.read().interfaces.clone()
     }
 
-    pub fn scope(self) -> ScopeChain<'gc> {
-        self.0.read().scope
+    pub fn class_scope(self) -> ScopeChain<'gc> {
+        self.0.read().class_scope
+    }
+
+    pub fn instance_scope(self) -> ScopeChain<'gc> {
+        self.0.read().instance_scope
     }
 
     pub fn superclass_object(self) -> Option<ClassObject<'gc>> {
@@ -849,7 +868,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .read()
             .with_type_params(&[class_param], activation.context.gc_context);
 
-        let scope = self.0.read().scope;
+        let class_scope = self.0.read().class_scope;
+        let instance_scope = self.0.read().instance_scope;
         let instance_allocator = self.0.read().instance_allocator.clone();
         let superclass_object = self.0.read().superclass_object;
 
@@ -880,7 +900,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             ClassObjectData {
                 base: ScriptObjectData::base_new(Some(class_class_proto), Some(class_class)),
                 class: parameterized_class,
-                scope,
+                class_scope,
+                instance_scope,
                 superclass_object,
                 instance_allocator,
                 constructor,
@@ -893,7 +914,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         class_object.link_prototype(activation, class_proto)?;
         class_object.link_interfaces(activation)?;
-        class_object.install_traits(activation, parameterized_class.read().class_traits())?;
+        class_object.install_traits(
+            activation,
+            parameterized_class.read().class_traits(),
+            class_scope,
+        )?;
         class_object.install_instance_traits(activation, class_class)?;
         class_object.run_class_initializer(activation)?;
 

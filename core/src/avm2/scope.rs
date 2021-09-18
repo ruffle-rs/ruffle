@@ -6,7 +6,7 @@ use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, GcCell, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::ops::Deref;
 
 /// Represents a Scope that can be on either a ScopeChain or local ScopeStack.
@@ -59,13 +59,10 @@ impl<'gc> Scope<'gc> {
 /// ScopeChain's are copy-on-write, meaning when we chain new scopes on top of a ScopeChain, we
 /// actually create a completely brand new ScopeChain. The Domain of the ScopeChain we are chaining
 /// on top of will be used for the new ScopeChain.
-///
-/// Alternatively, the `add` method allows mutating the ScopeChain, but it should be used with caution.
-/// Mutating a ScopeChain that functions/classes saved could cause bizzare bugs.
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ScopeChain<'gc> {
-    scopes: Option<GcCell<'gc, Vec<Scope<'gc>>>>,
+    scopes: Option<Gc<'gc, Vec<Scope<'gc>>>>,
     domain: Domain<'gc>,
 }
 
@@ -80,15 +77,19 @@ impl<'gc> ScopeChain<'gc> {
 
     /// Creates a new ScopeChain by chaining new scopes on top of this ScopeChain
     pub fn chain(&self, mc: MutationContext<'gc, '_>, new_scopes: &[Scope<'gc>]) -> Self {
+        if new_scopes.is_empty() {
+            // If we are not actually adding any new scopes, we don't need to do anything.
+            return *self;
+        }
         // TODO: This current implementation is a bit expensive, but it is exactly what avmplus does, so it's good enough for now.
         match self.scopes {
             Some(scopes) => {
                 // The new ScopeChain is created by cloning the scopes of this ScopeChain,
                 // and pushing the new scopes on top of that.
-                let mut cloned = scopes.read().deref().clone();
+                let mut cloned = scopes.deref().clone();
                 cloned.extend_from_slice(new_scopes);
                 Self {
-                    scopes: Some(GcCell::allocate(mc, cloned)),
+                    scopes: Some(Gc::allocate(mc, cloned)),
                     domain: self.domain,
                 }
             }
@@ -96,35 +97,19 @@ impl<'gc> ScopeChain<'gc> {
                 // We are chaining on top of an empty ScopeChain, so we don't actually
                 // need to chain anything.
                 Self {
-                    scopes: Some(GcCell::allocate(mc, new_scopes.to_vec())),
+                    scopes: Some(Gc::allocate(mc, new_scopes.to_vec())),
                     domain: self.domain,
                 }
             }
         }
     }
 
-    /// Adds a new scope to this ScopeChain. Unlike `chain`, this will actually mutate the
-    /// underlying scopes.
-    ///
-    /// If this ScopeChain is empty (self.scopes is None), this is a no-op.
-    ///
-    /// WARNING: This can cause bizarre bugs, because it can change the saved ScopeChain
-    /// of functions/classes that are using it.
-    pub fn add(&self, mc: MutationContext<'gc, '_>, scope: Scope<'gc>) {
-        if let Some(scopes) = self.scopes {
-            scopes.write(mc).push(scope)
-        }
-    }
-
     pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
-        self.scopes
-            .and_then(|scopes| scopes.read().get(index).cloned())
+        self.scopes.and_then(|scopes| scopes.get(index).cloned())
     }
 
     pub fn is_empty(&self) -> bool {
-        self.scopes
-            .map(|scopes| scopes.read().is_empty())
-            .unwrap_or(true)
+        self.scopes.map(|scopes| scopes.is_empty()).unwrap_or(true)
     }
 
     /// Returns the domain associated with this ScopeChain.
@@ -139,7 +124,7 @@ impl<'gc> ScopeChain<'gc> {
     ) -> Result<Option<Object<'gc>>, Error> {
         // First search our scopes
         if let Some(scopes) = self.scopes {
-            for (depth, scope) in scopes.read().iter().enumerate().rev() {
+            for (depth, scope) in scopes.iter().enumerate().rev() {
                 let values = scope.values();
                 if let Some(qname) = values.resolve_multiname(name)? {
                     // We search the dynamic properties if either conditions are met:
