@@ -1083,7 +1083,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_ptr(&self) -> *const ObjectPtr;
 
     /// Get this object's `Class`, if it has one.
-    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>>;
+    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        let class = match self.as_class_object_really() {
+            Some(class) => class,
+            None => match self.instance_of() {
+                Some(cls) => cls.as_class_object_really().unwrap(),
+                None => return None,
+            }
+        };
+        class.inner_class_definition()
+    }
 
     /// Get this object's class object, if it has one.
     fn as_class_object(&self) -> Option<Object<'gc>>;

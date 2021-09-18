@@ -344,6 +344,10 @@ impl<'gc> ClassObject<'gc> {
         Ok(())
     }
 
+    pub fn inner_class_definition(self) -> Option<GcCell<'gc, Class<'gc>>> {
+        Some(self.0.read().class)
+    }
+
     pub fn interfaces(self) -> Vec<Object<'gc>> {
         self.0.read().interfaces.clone()
     }
@@ -488,10 +492,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .class
             .read()
             .resolve_any_class_trait(local_name))
-    }
-
-    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        Some(self.0.read().class)
     }
 
     fn as_class_object(&self) -> Option<Object<'gc>> {

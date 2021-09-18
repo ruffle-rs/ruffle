@@ -1,7 +1,6 @@
 //! Boxed namespaces
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};

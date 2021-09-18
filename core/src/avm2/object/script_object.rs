@@ -1,7 +1,6 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
@@ -298,10 +297,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         is_final: bool,
     ) {
         self.0.write(mc).install_const(name, id, value, is_final)
-    }
-
-    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        self.0.read().as_class()
     }
 
     fn as_class_object(&self) -> Option<Object<'gc>> {
@@ -769,13 +764,15 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error> {
-        if let Some(class) = self.as_class() {
-            if class.read().is_sealed() {
-                return Err(format!(
-                    "Objects of type {:?} are not dynamic",
-                    class.read().name().local_name()
-                )
-                .into());
+        if let Some(class) = self.instance_of() {
+            if let Some(class) = class.as_class() {
+                if class.read().is_sealed() {
+                    return Err(format!(
+                        "Objects of type {:?} are not dynamic",
+                        class.read().name().local_name()
+                    )
+                    .into());
+                }
             }
         }
 
@@ -825,11 +822,6 @@ impl<'gc> ScriptObjectData<'gc> {
                 *slot = Slot::new_const(value);
             }
         }
-    }
-
-    /// Get the class for this object, if it has one.
-    pub fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        self.instance_of.and_then(|class| class.as_class())
     }
 
     /// Get the class object for this object, if it has one.
