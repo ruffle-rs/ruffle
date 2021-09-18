@@ -1,7 +1,6 @@
 //! Dispatch list object representation
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::events::DispatchList;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;

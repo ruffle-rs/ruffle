@@ -1,7 +1,6 @@
 //! AVM2 object impl for the display hierarchy.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -284,10 +283,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
         None
-    }
-
-    fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        self.0.read().base.as_class()
     }
 
     fn as_class_object(&self) -> Option<Object<'gc>> {
