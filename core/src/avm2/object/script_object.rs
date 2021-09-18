@@ -299,10 +299,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.write(mc).install_const(name, id, value, is_final)
     }
 
-    fn as_class_object(&self) -> Option<Object<'gc>> {
-        self.0.read().as_class_object()
-    }
-
     fn instance_of(&self) -> Option<Object<'gc>> {
         self.0.read().instance_of()
     }
@@ -366,7 +362,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 Some(
                     activation
                         .subclass_object()
-                        .or_else(|| self.as_class_object())
+                        .or_else(|| self.instance_of())
                         .unwrap_or(receiver),
                 ),
             )
@@ -382,7 +378,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let class = self.as_class_object();
+        let class = self.instance_of();
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
                 Some(slot_id)
@@ -420,7 +416,7 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let class = self.as_class_object();
+        let class = self.instance_of();
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.init_slot(slot_id, value, activation.context.gc_context)?;
@@ -822,11 +818,6 @@ impl<'gc> ScriptObjectData<'gc> {
                 *slot = Slot::new_const(value);
             }
         }
-    }
-
-    /// Get the class object for this object, if it has one.
-    pub fn as_class_object(&self) -> Option<Object<'gc>> {
-        self.instance_of
     }
 
     /// Get the class object for this object, if it has one.

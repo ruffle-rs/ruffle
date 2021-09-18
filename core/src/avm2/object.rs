@@ -1094,8 +1094,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class.inner_class_definition()
     }
 
-    /// Get this object's class object, if it has one.
-    fn as_class_object(&self) -> Option<Object<'gc>>;
+    /// Get this object's class object, if it has one - unless it's a class itself.
+    fn as_class_object(&self) -> Option<Object<'gc>> {
+        match self.as_class_object_really() {
+            Some(_class) => None,
+            None => self.instance_of()
+        }
+    }
 
     fn instance_of(&self) -> Option<Object<'gc>>;
 
