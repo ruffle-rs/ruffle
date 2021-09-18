@@ -38,16 +38,13 @@ pub fn font_name<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some((movie, character_id)) =
-        this.and_then(|this| this.instance_of())
-            .and_then(|this| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(this)
-            })
-    {
+    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+        activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(this)
+    }) {
         if let Some(Character::Font(font)) = activation
             .context
             .library
@@ -69,16 +66,13 @@ pub fn font_style<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some((movie, character_id)) =
-        this.and_then(|this| this.instance_of())
-            .and_then(|this| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(this)
-            })
-    {
+    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+        activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(this)
+    }) {
         if let Some(Character::Font(font)) = activation
             .context
             .library
@@ -103,16 +97,13 @@ pub fn font_type<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some((movie, character_id)) =
-        this.and_then(|this| this.instance_of())
-            .and_then(|this| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(this)
-            })
-    {
+    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+        activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(this)
+    }) {
         if let Some(Character::Font(_)) = activation
             .context
             .library
@@ -133,16 +124,13 @@ pub fn has_glyphs<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some((movie, character_id)) =
-        this.and_then(|this| this.instance_of())
-            .and_then(|this| {
-                activation
-                    .context
-                    .library
-                    .avm2_class_registry()
-                    .class_symbol(this)
-            })
-    {
+    if let Some((movie, character_id)) = this.and_then(|this| this.instance_of()).and_then(|this| {
+        activation
+            .context
+            .library
+            .avm2_class_registry()
+            .class_symbol(this)
+    }) {
         let my_str = args
             .get(0)
             .cloned()

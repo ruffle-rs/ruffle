@@ -463,15 +463,27 @@ pub fn load_player_globals<'gc>(
     // usually are done in the associated constructor for `ClassObject`.
     object_class.install_traits(
         activation,
-        object_class.get_own_class_definition().unwrap().read().class_traits(),
+        object_class
+            .get_own_class_definition()
+            .unwrap()
+            .read()
+            .class_traits(),
     )?;
     function_class.install_traits(
         activation,
-        function_class.get_own_class_definition().unwrap().read().class_traits(),
+        function_class
+            .get_own_class_definition()
+            .unwrap()
+            .read()
+            .class_traits(),
     )?;
     class_class.install_traits(
         activation,
-        class_class.get_own_class_definition().unwrap().read().class_traits(),
+        class_class
+            .get_own_class_definition()
+            .unwrap()
+            .read()
+            .class_traits(),
     )?;
 
     object_cinit.call(Some(object_class), &[], activation, Some(object_class))?;
