@@ -1091,7 +1091,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 None => return None,
             }
         };
-        class.inner_class_definition()
+        Some(class.inner_class_definition())
     }
 
     /// Get this object's class object, if it has one - unless it's a class itself.
