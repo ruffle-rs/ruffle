@@ -519,7 +519,7 @@ pub fn filter<'gc>(
         let value_type = this
             .instance_of()
             .unwrap()
-            .as_class_object_really()
+            .as_class_object()
             .unwrap()
             .as_class_params()
             .ok_or("Cannot filter unparameterized vector")?
@@ -681,7 +681,7 @@ pub fn map<'gc>(
         let value_type = this
             .instance_of()
             .unwrap()
-            .as_class_object_really()
+            .as_class_object()
             .unwrap()
             .as_class_params()
             .ok_or("Cannot filter unparameterized vector")?

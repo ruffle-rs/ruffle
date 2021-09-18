@@ -138,7 +138,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             return Ok(Some(self.into()));
         }
 
-        if let Some(base) = self.as_class_object_really().and_then(|cls| cls.superclass_object()) {
+        if let Some(base) = self.as_class_object().and_then(|cls| cls.superclass_object()) {
             return base.find_class_for_trait(name);
         }
 
@@ -427,7 +427,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         from_class_object: Object<'gc>,
     ) -> Result<(), Error> {
-        if let Some(from_class_object) = from_class_object.as_class_object_really() {
+        if let Some(from_class_object) = from_class_object.as_class_object() {
             if let Some(superclass_object) = from_class_object.superclass_object() {
                 self.install_instance_traits(activation, superclass_object)?;
             }
@@ -1039,7 +1039,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 return Ok(true);
             }
 
-            if let Some(class) = class.as_class_object_really() {
+            if let Some(class) = class.as_class_object() {
                 for interface in class.interfaces() {
                     if Object::ptr_eq(interface, test_class) {
                         return Ok(true);
@@ -1048,7 +1048,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
 
             if let (Some(class), Some(test_class)) = 
-                (class.as_class_object_really(), test_class.as_class_object_really())
+                (class.as_class_object(), test_class.as_class_object())
             {
                 if let (Some(my_param), Some(test_param)) =
                     (class.as_class_params(), test_class.as_class_params())
@@ -1069,7 +1069,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
 
-            if let Some(class) = class.as_class_object_really() {
+            if let Some(class) = class.as_class_object() {
                 my_class = class.superclass_object()
             } else {
                 my_class = None;
@@ -1084,10 +1084,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's `Class`, if it has one.
     fn as_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        let class = match self.as_class_object_really() {
+        let class = match self.as_class_object() {
             Some(class) => class,
             None => match self.instance_of() {
-                Some(cls) => cls.as_class_object_really().unwrap(),
+                Some(cls) => cls.as_class_object().unwrap(),
                 None => return None,
             }
         };
@@ -1096,7 +1096,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     fn instance_of(&self) -> Option<Object<'gc>>;
 
-    fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
+    fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         None
     }
 

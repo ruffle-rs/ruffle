@@ -108,7 +108,7 @@ impl<'gc> ClassObject<'gc> {
             .instance_allocator()
             .or_else(||
                 superclass_object
-                .and_then(|c| c.as_class_object_really())
+                .and_then(|c| c.as_class_object())
                 .and_then(|c| c.instance_allocator())
             )
             .unwrap_or(scriptobject_allocator);
@@ -197,7 +197,7 @@ impl<'gc> ClassObject<'gc> {
             .instance_allocator()
             .or_else(||
                 superclass_object
-                .and_then(|c| c.as_class_object_really())
+                .and_then(|c| c.as_class_object())
                 .and_then(|c| c.instance_allocator())
             )
             .unwrap_or(scriptobject_allocator);
@@ -494,7 +494,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .resolve_any_class_trait(local_name))
     }
 
-    fn as_class_object_really(&self) -> Option<ClassObject<'gc>> {
+    fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         Some(*self)
     }
 

@@ -518,7 +518,7 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(true);
                     }
 
-                    let class = class.as_class_object_really().unwrap();
+                    let class = class.as_class_object().unwrap();
                     cur_class = class.superclass_object();
                 }
 
@@ -582,7 +582,7 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(Some(ns));
                     }
 
-                    let class = class.as_class_object_really().unwrap();
+                    let class = class.as_class_object().unwrap();
                     cur_class = class.superclass_object();
                 }
 
