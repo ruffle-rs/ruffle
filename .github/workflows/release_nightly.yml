@@ -305,7 +305,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Firefox extension (signed)
-        if: ${{ steps.sign-firefox.outcome == 'success' }}
+        if: steps.sign-firefox.outcome == 'success'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -316,7 +316,7 @@ jobs:
           asset_content_type: application/x-xpinstall
 
       - name: Upload Firefox extension (unsigned)
-        if: ${{ steps.sign-firefox.outcome == 'failure' }}
+        if: steps.sign-firefox.outcome == 'failure'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
