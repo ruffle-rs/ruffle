@@ -256,7 +256,7 @@ jobs:
         shell: bash -l {0}
         run: conda install -c conda-forge binaryen
 
-      - name: Build web (generic)
+      - name: Build web
         env:
           BUILD_ID: ${{ github.run_number }}
         working-directory: web
@@ -266,8 +266,8 @@ jobs:
           npm run build
           npm run docs
 
-      - name: Build web (firefox)
-        id: build-firefox
+      - name: Sign Firefox extension
+        id: sign-firefox
         continue-on-error: true
         env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
@@ -305,7 +305,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Firefox extension (signed)
-        if: ${{ steps.build-firefox.outcome == 'success' }}
+        if: ${{ steps.sign-firefox.outcome == 'success' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -316,7 +316,7 @@ jobs:
           asset_content_type: application/x-xpinstall
 
       - name: Upload Firefox extension (unsigned)
-        if: ${{ steps.build-firefox.outcome == 'failure' }}
+        if: ${{ steps.sign-firefox.outcome == 'failure' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
