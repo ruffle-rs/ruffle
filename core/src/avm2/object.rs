@@ -1007,7 +1007,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         test_class: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<bool, Error> {
-        let my_class = self.as_class_object();
+        let my_class = self.instance_of();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
@@ -1092,14 +1092,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         };
         Some(class.inner_class_definition())
-    }
-
-    /// Get this object's class object, if it has one - unless it's a class itself.
-    fn as_class_object(&self) -> Option<Object<'gc>> {
-        match self.as_class_object_really() {
-            Some(_class) => None,
-            None => self.instance_of()
-        }
     }
 
     fn instance_of(&self) -> Option<Object<'gc>>;

@@ -275,7 +275,7 @@ pub fn concat<'gc>(
         };
 
         let my_class = this
-            .as_class_object()
+            .instance_of()
             .ok_or("TypeError: Tried to concat into a bare object")?;
         let val_class = new_vector_storage.value_type();
 

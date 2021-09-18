@@ -39,7 +39,7 @@ pub fn font_name<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some((movie, character_id)) =
-        this.and_then(|this| this.as_class_object())
+        this.and_then(|this| this.instance_of())
             .and_then(|this| {
                 activation
                     .context
@@ -70,7 +70,7 @@ pub fn font_style<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some((movie, character_id)) =
-        this.and_then(|this| this.as_class_object())
+        this.and_then(|this| this.instance_of())
             .and_then(|this| {
                 activation
                     .context
@@ -104,7 +104,7 @@ pub fn font_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some((movie, character_id)) =
-        this.and_then(|this| this.as_class_object())
+        this.and_then(|this| this.instance_of())
             .and_then(|this| {
                 activation
                     .context
@@ -134,7 +134,7 @@ pub fn has_glyphs<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some((movie, character_id)) =
-        this.and_then(|this| this.as_class_object())
+        this.and_then(|this| this.instance_of())
             .and_then(|this| {
                 activation
                     .context

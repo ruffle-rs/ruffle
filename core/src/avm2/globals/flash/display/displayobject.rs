@@ -34,8 +34,8 @@ pub fn native_instance_init<'gc>(
 
         if this.as_display_object().is_none() {
             let class_object = this
-                .as_class_object()
-                .ok_or("Attempted to construct non-instance DisplayObject.")?;
+                .instance_of()
+                .ok_or("Attempted to construct DisplayObject on a bare object.")?;
 
             if let Some((movie, symbol)) = activation
                 .context

@@ -25,8 +25,8 @@ pub fn instance_init<'gc>(
 
         if this.as_display_object().is_none() {
             let class_object = this
-                .as_class_object()
-                .ok_or("Attempted to construct non-instance MovieClip")?;
+                .instance_of()
+                .ok_or("Attempted to construct MovieClip on a bare object")?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
             let new_do = MovieClip::new_with_avm2(
                 SwfSlice::empty(movie),

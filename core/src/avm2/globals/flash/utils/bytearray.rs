@@ -23,8 +23,8 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         let class_object = this
-            .as_class_object()
-            .ok_or("Attempted to construct non-instance ByteArray")?;
+            .instance_of()
+            .ok_or("Attempted to construct ByteArray on a bare object")?;
         if let Some((movie, id)) = activation
             .context
             .library
