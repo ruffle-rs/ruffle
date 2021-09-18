@@ -9,6 +9,7 @@ use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::regexp::RegExp;
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
@@ -649,7 +650,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let class = from_class_object.inner_class_definition();
-        self.install_traits(activation, class.read().instance_traits())?;
+        self.install_traits(
+            activation,
+            class.read().instance_traits(),
+            from_class_object.instance_scope(),
+        )?;
 
         Ok(())
     }
@@ -665,9 +670,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         traits: &[Trait<'gc>],
+        scope: ScopeChain<'gc>,
     ) -> Result<(), Error> {
         for trait_entry in traits {
-            self.install_trait(activation, trait_entry)?;
+            self.install_trait(activation, trait_entry, scope)?;
         }
 
         Ok(())
@@ -694,9 +700,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: &Trait<'gc>,
+        scope: ScopeChain<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let receiver = (*self).into();
-        let scope = activation.create_scopechain();
         let trait_name = trait_entry.name().clone();
 
         if trait_entry.is_override() && !self.has_own_property(&trait_name)? {
