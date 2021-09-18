@@ -273,11 +273,9 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
           MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
-        working-directory: web
+        working-directory: web/packages/extension
         shell: bash -l {0}
-        run: |
-          cd web/packages/extension/
-          npm run sign-firefox
+        run: npm run sign-firefox
 
       - name: Package selfhosted
         run: |
