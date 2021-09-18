@@ -131,7 +131,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// defined prototype methods for ES3-style classes.
     fn find_class_for_trait(self, name: &QName<'gc>) -> Result<Option<Object<'gc>>, Error> {
         let class = self
-            .get_own_class_definition()
+            .as_class_definition()
             .ok_or("Cannot get base traits on non-class object")?;
 
         if class.read().has_instance_trait(name) {
@@ -436,7 +436,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        if let Some(class) = from_class_object.get_own_class_definition() {
+        if let Some(class) = from_class_object.as_class_definition() {
             self.install_traits(activation, class.read().instance_traits())?;
         }
 
@@ -701,7 +701,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .get_own_class_definition()
+            .as_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -767,7 +767,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .get_own_class_definition()
+            .as_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -827,7 +827,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         })?;
         let mut class_traits = Vec::new();
         superclass_object
-            .get_own_class_definition()
+            .as_class_definition()
             .unwrap()
             .read()
             .lookup_instance_traits(name, &mut class_traits)?;
@@ -926,7 +926,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions.
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .get_own_class_definition()
+            .instance_of_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -943,7 +943,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// of the class that created this object).
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let class_name = self
-            .get_own_class_definition()
+            .instance_of_class_definition()
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -1085,20 +1085,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
-    /// Get this object's `Class`, if it has one.
-    /// This this object is already a ClassObject, return its own Class.
-    /// Note: this probably shouldn't be used in most cases.
-    fn get_own_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        let class = self
-            .as_class_object()
-            .or_else(|| self.instance_of().and_then(|cls| cls.as_class_object()));
-        class.map(|cls| cls.inner_class_definition())
-    }
-
+    /// Get this object's class, if it has one.
     fn instance_of(&self) -> Option<Object<'gc>>;
 
+    /// Get this object's class's `Class`, if it has one.
+    fn instance_of_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        self.instance_of().and_then(|cls| cls.as_class_definition())
+    }
+
+    /// Try to corece this object into a `ClassObject`.
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         None
+    }
+
+    /// Get this object's `Class`, if it's a `ClassObject`.
+    fn as_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        self.as_class_object()
+            .map(|cls| cls.inner_class_definition())
     }
 
     /// Get this object's `Executable`, if it has one.
