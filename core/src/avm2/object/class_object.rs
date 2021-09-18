@@ -498,10 +498,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0.read().base.instance_of()
     }
 
-    fn set_class_object(self, _mc: MutationContext<'gc, '_>, _class_object: Object<'gc>) {
-        //Do nothing, as classes cannot be turned into instances.
-    }
-
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,

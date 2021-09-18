@@ -308,10 +308,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.read().as_class_object()
     }
 
-    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
-        self.0.write(mc).set_class_object(class_object);
-    }
-
     fn instance_of(&self) -> Option<Object<'gc>> {
         self.0.read().instance_of()
     }
@@ -844,14 +840,5 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Get the class object for this object, if it has one.
     pub fn instance_of(&self) -> Option<Object<'gc>> {
         self.instance_of
-    }
-
-    /// Associate the object with a particular class object.
-    ///
-    /// This turns the object into an instance of that class. It should only be
-    /// used in situations where the object cannot be made an instance of the
-    /// class at allocation time, such as during early runtime setup.
-    pub fn set_class_object(&mut self, class_object: Object<'gc>) {
-        self.instance_of = Some(class_object)
     }
 }

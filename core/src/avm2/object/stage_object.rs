@@ -294,10 +294,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         self.0.read().base.as_class_object()
     }
 
-    fn set_class_object(self, mc: MutationContext<'gc, '_>, class_object: Object<'gc>) {
-        self.0.write(mc).base.set_class_object(class_object);
-    }
-
     fn instance_of(&self) -> Option<Object<'gc>> {
         self.0.read().base.instance_of()
     }
