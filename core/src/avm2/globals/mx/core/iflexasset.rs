@@ -32,11 +32,7 @@ pub fn create_interface<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<
     let class = Class::new(
         QName::new(Namespace::package("mx.core"), "IFlexAsset"),
         None,
-        Method::from_builtin(
-            bodiless_method,
-            "<IFlexAsset instance initializer>",
-            mc,
-        ),
+        Method::from_builtin(bodiless_method, "<IFlexAsset instance initializer>", mc),
         Method::from_builtin(class_init, "<IFlexAsset class initializer>", mc),
         mc,
     );
