@@ -40,7 +40,7 @@ pub fn instance_init<'gc>(
                 {
                     this.set_sound(activation.context.gc_context, *sound);
                 } else {
-                    log::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.as_class().expect("Class object is also a class").read().name().local_name(), symbol);
+                    log::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.get_own_class_definition().expect("Class object is also a class").read().name().local_name(), symbol);
                 }
             }
         }

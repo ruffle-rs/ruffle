@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
 
         let name = this
             .instance_of()
-            .and_then(|t| t.as_class())
+            .and_then(|t| t.get_own_class_definition())
             .map(|c| c.read().name().clone());
         let character = this
             .instance_of()

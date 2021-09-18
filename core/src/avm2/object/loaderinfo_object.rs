@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     impl_avm2_custom_object_instance!(base);
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.as_class() {
+        if let Some(class) = self.get_own_class_definition() {
             Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
         } else {
             Ok("[object Object]".into())

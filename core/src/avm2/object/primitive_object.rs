@@ -118,7 +118,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
             val @ Value::Integer(_) | val @ Value::Unsigned(_) => Ok(val),
             _ => {
                 let class_name = self
-                    .as_class()
+                    .get_own_class_definition()
                     .map(|c| c.read().name().local_name())
                     .unwrap_or_else(|| "Object".into());
 

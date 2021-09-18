@@ -216,7 +216,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
             .coerce_to_object(self)?;
 
-        if class.as_class().is_none() {
+        if class.get_own_class_definition().is_none() {
             return Err(format!("Resolved parameter type {:?} is not a class", type_name).into());
         }
 
@@ -1279,7 +1279,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // dynamic properties not yet set
         if name.is_err()
             && !object
-                .as_class()
+                .get_own_class_definition()
                 .map(|c| c.read().is_sealed())
                 .unwrap_or(false)
         {
@@ -1357,7 +1357,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Unknown properties on a dynamic class delete successfully.
             self.context.avm2.push(
                 !object
-                    .as_class()
+                    .get_own_class_definition()
                     .map(|c| c.read().is_sealed())
                     .unwrap_or(false),
             )
@@ -2559,7 +2559,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         });
         let class = found?.coerce_to_object(self)?;
 
-        if class.as_class().is_none() {
+        if class.get_own_class_definition().is_none() {
             return Err("TypeError: The right-hand side of operator must be a class.".into());
         }
 
@@ -2576,7 +2576,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let class = self.context.avm2.pop().coerce_to_object(self)?;
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
-        if class.as_class().is_none() {
+        if class.get_own_class_definition().is_none() {
             return Err("TypeError: The right-hand side of operator must be a class.".into());
         }
 
