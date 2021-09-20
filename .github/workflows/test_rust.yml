@@ -97,9 +97,7 @@ jobs:
     if: needs.changes.outputs.src == 'false'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
     strategy:
-      fail-fast: false
       matrix:
         rust_version: [stable]
         os: [ubuntu-latest, windows-latest, macOS-latest]

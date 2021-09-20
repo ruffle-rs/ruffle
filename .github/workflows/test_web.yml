@@ -24,7 +24,7 @@ jobs:
 
   build:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' }}
+    if: needs.changes.outputs.src == 'true'
     name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' }}
@@ -85,12 +85,10 @@ jobs:
 
   check-required:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'false' }}
+    if: needs.changes.outputs.src == 'false'
     name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
-      fail-fast: false
       matrix:
         node_version: ["12", "14"]
         # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
