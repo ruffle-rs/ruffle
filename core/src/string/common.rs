@@ -161,6 +161,14 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_is_latin1($deref)
         }
 
+        /// Converts this string to an UTF8 `String`.
+        ///
+        /// Unpaired surrogates are replaced by the replacement character.
+        #[inline]
+        pub fn to_utf8_lossy($self: $receiver) -> std::borrow::Cow<$lt, str> {
+            crate::string::ops::WStrToUtf8::new($deref).to_utf8_lossy()
+        }
+
         /// Analogue of [`str::find`].
         #[inline]
         pub fn find<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {

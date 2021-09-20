@@ -5,7 +5,7 @@
 //  - remove implicit bound checks?
 //  - use memchr crate?
 
-use super::{WStr, Units};
+use super::{Units, WStr};
 
 /// A pattern that can be searched in a [`WStr`].
 ///

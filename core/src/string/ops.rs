@@ -1,9 +1,10 @@
+use std::borrow::Cow;
 use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
 use super::pattern::Searcher;
-use super::{utils, Pattern, WStr, Units};
+use super::{utils, Pattern, Units, WStr};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -41,7 +42,9 @@ pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
 }
 
 pub fn str_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    std::char::decode_utf16(s.iter())
+    let utf8 = WStrToUtf8::new(s);
+    f.write_str(utf8.head)?;
+    std::char::decode_utf16(utf8.tail.iter())
         .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
         .try_for_each(|c| f.write_char(c))
 }
@@ -120,7 +123,6 @@ pub fn str_is_latin1(s: WStr<'_>) -> bool {
         Units::Wide(us) => us.iter().all(|c| *c <= u16::from(u8::MAX)),
     }
 }
-
 pub fn str_find<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
     pattern
         .into_searcher(haystack)
@@ -166,5 +168,41 @@ impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
                 Some(string.slice(self.prev_end..))
             }
         }
+    }
+}
+
+/// A struct for converting a `WStr<'_>` to an UTF8 `String`.
+pub struct WStrToUtf8<'a> {
+    head: &'a str,
+    tail: WStr<'a>,
+}
+
+impl<'a> WStrToUtf8<'a> {
+    pub fn new(s: WStr<'a>) -> Self {
+        let (head, tail) = match s.units() {
+            Units::Bytes(b) => {
+                let (head, tail) = utils::split_ascii_prefix_bytes(b);
+                (head, WStr::from_units(tail))
+            }
+            Units::Wide(_) => ("", s),
+        };
+
+        Self { head, tail }
+    }
+
+    pub fn to_utf8_lossy(&self) -> Cow<'a, str> {
+        if self.tail.is_empty() {
+            Cow::Borrowed(self.head)
+        } else {
+            let mut out = String::with_capacity(self.head.len() + self.tail.len());
+            out.push_str(self.head);
+            write!(out, "{}", self.tail).unwrap();
+            Cow::Owned(out)
+        }
+    }
+
+    #[inline]
+    pub fn prefix(&self) -> &str {
+        self.head
     }
 }

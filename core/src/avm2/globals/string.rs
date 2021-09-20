@@ -5,6 +5,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_allocator, Object, TObject};
+use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
@@ -230,18 +231,18 @@ fn match_s<'gc>(
 
         if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
             let mut storage = ArrayStorage::new(0);
-            if regexp.global() {
+            if regexp.flags().contains(RegExpFlags::GLOBAL) {
                 let mut last = regexp.last_index();
                 let old_last_index = regexp.last_index();
                 regexp.set_last_index(0);
-                while let Some(result) = regexp.exec(this.as_str()) {
+                while let Some(result) = regexp.exec(this) {
                     if regexp.last_index() == last {
                         break;
                     }
                     storage.push(
-                        AvmString::new(
+                        AvmString::new_ucs2(
                             activation.context.gc_context,
-                            this.as_str()[result.range()].to_string(),
+                            this.slice(result.range()).into(),
                         )
                         .into(),
                     );
@@ -257,15 +258,17 @@ fn match_s<'gc>(
             } else {
                 let old = regexp.last_index();
                 regexp.set_last_index(0);
-                if let Some(result) = regexp.exec(this.as_str()) {
+                if let Some(result) = regexp.exec(this) {
                     let substrings = result
                         .groups()
-                        .map(|range| this.as_str()[range.unwrap_or(0..0)].to_string());
+                        .map(|range| this.slice(range.unwrap_or(0..0)));
 
                     let mut storage = ArrayStorage::new(0);
                     for substring in substrings {
-                        storage
-                            .push(AvmString::new(activation.context.gc_context, substring).into());
+                        storage.push(
+                            AvmString::new_ucs2(activation.context.gc_context, substring.into())
+                                .into(),
+                        );
                     }
                     regexp.set_last_index(old);
                     return Ok(ArrayObject::from_storage(activation, storage)

@@ -24,7 +24,7 @@ pub const MAX_STRING_LEN: usize = raw::MAX_STRING_LEN;
 pub use avm::AvmString;
 pub use buf::WString;
 pub use common::{BorrowWStr, BorrowWStrMut, Units};
-pub use ops::{Iter, Split};
+pub use ops::{Iter, Split, WStrToUtf8};
 pub use pattern::Pattern;
 pub use slice::{WStr, WStrMut};
 
