@@ -20,10 +20,7 @@ jobs:
         with:
           filters: |
             src:
-              - '!web/package.json'
-              - '!web/package-lock.json'
-              - '!web/packages/**'
-              - '!**.md'
+              - '!(web/package.json|web/package-lock.json|web/packages/**|**.md)'
 
   build:
     needs: changes
@@ -94,3 +91,23 @@ jobs:
         with:
           name: swf_images
           path: tests/**/*.png.updated
+
+  check-required:
+    needs: changes
+    if: needs.changes.outputs.src == 'false'
+    name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: [stable]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        include:
+          - rust_version: nightly
+            os: ubuntu-latest
+          - rust_version: beta
+            os: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
