@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::regexp::RegExp;
+use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -97,19 +97,21 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         let read = self.0.read();
         let mut s = format!("/{}/", read.regexp.source());
 
-        if read.regexp.global() {
+        let flags = read.regexp.flags();
+
+        if flags.contains(RegExpFlags::GLOBAL) {
             s.push('g');
         }
-        if read.regexp.ignore_case() {
+        if flags.contains(RegExpFlags::IGNORE_CASE) {
             s.push('i');
         }
-        if read.regexp.multiline() {
+        if flags.contains(RegExpFlags::MULTILINE) {
             s.push('m');
         }
-        if read.regexp.dotall() {
+        if flags.contains(RegExpFlags::DOTALL) {
             s.push('s');
         }
-        if read.regexp.extended() {
+        if flags.contains(RegExpFlags::EXTENDED) {
             s.push('x');
         }
 

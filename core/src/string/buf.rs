@@ -1,6 +1,7 @@
 use gc_arena::Collect;
 
 use super::raw::WStrPtr;
+use super::utils::split_ascii_prefix;
 use super::{BorrowWStr, BorrowWStrMut, Units, WStr, WStrMut, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
@@ -271,15 +272,6 @@ impl WString {
             (Units::Bytes(_), Units::Wide(_)) => unreachable!(),
         })
     }
-}
-
-fn split_ascii_prefix(s: &str) -> (&[u8], &str) {
-    let first_non_ascii = s.as_bytes().iter().position(|c| *c >= 0x80);
-    let (head, tail) = match first_non_ascii {
-        Some(i) => s.split_at(i),
-        None => ("", s),
-    };
-    (head.as_bytes(), tail)
 }
 
 impl Drop for WString {

@@ -4,10 +4,11 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{regexp_allocator, ArrayObject, Object, TObject};
+use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `RegExp`'s instance initializer.
@@ -26,20 +27,24 @@ pub fn instance_init<'gc>(
                     .coerce_to_string(activation)?,
             );
 
-            let flags = args
+            let flag_chars = args
                 .get(1)
                 .unwrap_or(&Value::String("".into()))
                 .coerce_to_string(activation)?;
-            for flag in flags.chars() {
-                match flag {
-                    's' => regexp.set_dotall(true),
-                    'x' => regexp.set_extended(true),
-                    'g' => regexp.set_global(true),
-                    'i' => regexp.set_ignore_case(true),
-                    'm' => regexp.set_multiline(true),
-                    _ => {}
+
+            let mut flags = RegExpFlags::empty();
+            for c in &flag_chars {
+                flags |= match u8::try_from(c) {
+                    Ok(b's') => RegExpFlags::DOTALL,
+                    Ok(b'x') => RegExpFlags::EXTENDED,
+                    Ok(b'g') => RegExpFlags::GLOBAL,
+                    Ok(b'i') => RegExpFlags::IGNORE_CASE,
+                    Ok(b'm') => RegExpFlags::MULTILINE,
+                    _ => continue,
                 };
             }
+
+            regexp.set_flags(flags);
         }
     }
 
@@ -63,7 +68,7 @@ pub fn dotall<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(regexp) = this.as_regexp() {
-            return Ok(regexp.dotall().into());
+            return Ok(regexp.flags().contains(RegExpFlags::DOTALL).into());
         }
     }
 
@@ -78,7 +83,7 @@ pub fn extended<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(regexp) = this.as_regexp() {
-            return Ok(regexp.extended().into());
+            return Ok(regexp.flags().contains(RegExpFlags::EXTENDED).into());
         }
     }
 
@@ -93,7 +98,7 @@ pub fn global<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(regexp) = this.as_regexp() {
-            return Ok(regexp.global().into());
+            return Ok(regexp.flags().contains(RegExpFlags::GLOBAL).into());
         }
     }
 
@@ -108,7 +113,7 @@ pub fn ignore_case<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(regexp) = this.as_regexp() {
-            return Ok(regexp.ignore_case().into());
+            return Ok(regexp.flags().contains(RegExpFlags::IGNORE_CASE).into());
         }
     }
 
@@ -123,7 +128,7 @@ pub fn multiline<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(regexp) = this.as_regexp() {
-            return Ok(regexp.multiline().into());
+            return Ok(regexp.flags().contains(RegExpFlags::MULTILINE).into());
         }
     }
 
@@ -192,17 +197,16 @@ pub fn exec<'gc>(
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
 
-            let (storage, index) = match re.exec(&text) {
+            let (storage, index) = match re.exec(text) {
                 Some(matched) => {
                     let substrings = matched
                         .groups()
-                        .map(|range| text[range.unwrap_or(0..0)].to_string());
+                        .map(|range| range.map(|r| WString::from(text.slice(r))));
 
-                    let mut storage = ArrayStorage::new(0);
-                    for substring in substrings {
-                        storage
-                            .push(AvmString::new(activation.context.gc_context, substring).into());
-                    }
+                    let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
+                        None => Value::Undefined,
+                        Some(s) => AvmString::new_ucs2(activation.context.gc_context, s).into(),
+                    }));
 
                     (storage, matched.start())
                 }
@@ -244,7 +248,7 @@ pub fn test<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            return Ok(re.test(&text).into());
+            return Ok(re.test(text).into());
         }
     }
 

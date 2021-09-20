@@ -54,6 +54,15 @@ impl<'gc> AvmString<'gc> {
     }
 
     #[inline]
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        match (this.source, other.source) {
+            (Source::Owned(this), Source::Owned(other)) => Gc::ptr_eq(this, other),
+            (Source::Static(this), Source::Static(other)) => std::ptr::eq(this, other),
+            _ => false,
+        }
+    }
+
+    #[inline]
     pub fn as_str(&self) -> &str {
         self
     }
