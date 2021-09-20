@@ -19,6 +19,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use swf::{CharacterId, DefineVideoStream, VideoFrame};
 
+use super::StageQuality;
+
 /// A Video display object is a high-level interface to a video player.
 ///
 /// Video data may be embedded within a variety of container formats, including
@@ -440,7 +442,9 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
         context.transform_stack.push(&*self.base().transform());
 
-        if let Some((_frame_id, ref bitmap)) = self.0.read().decoded_frame {
+        let read = self.0.read();
+
+        if let Some((_frame_id, ref bitmap)) = read.decoded_frame {
             let mut transform = context.transform_stack.transform().clone();
             let bounds = self.self_bounds();
 
@@ -451,9 +455,25 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 bounds.height().to_pixels() as f32 / bitmap.height as f32,
             );
 
+            let (smoothed_flag, num_frames, version) = match &*read.source.read() {
+                VideoSource::Swf {
+                    streamdef,
+                    frames,
+                    movie,
+                } => (streamdef.is_smoothed, frames.len(), movie.version()),
+            };
+
+            let smoothing = match (context.stage.quality(), version) {
+                (StageQuality::Low, _) => false,
+                (_, 8..) => smoothed_flag,
+                (StageQuality::Medium, _) => false,
+                (StageQuality::High, _) => num_frames == 1,
+                (_, _) => true,
+            };
+
             context
                 .renderer
-                .render_bitmap(bitmap.handle, &transform, false);
+                .render_bitmap(bitmap.handle, &transform, smoothing);
         } else {
             log::warn!("Video has no decoded frame to render.");
         }
