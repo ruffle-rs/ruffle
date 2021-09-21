@@ -824,4 +824,9 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn instance_of(&self) -> Option<Object<'gc>> {
         self.instance_of
     }
+
+    /// Set the class object for this object.
+    pub fn set_instance_of(&mut self, instance_of: Object<'gc>) {
+        self.instance_of = Some(instance_of);
+    }
 }

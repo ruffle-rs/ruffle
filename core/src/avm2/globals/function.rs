@@ -5,10 +5,10 @@ use crate::avm2::class::Class;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
-use crate::avm2::scope::Scope;
+use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -25,10 +25,38 @@ pub fn instance_init<'gc>(
 
 /// Implements `Function`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let mut function_proto = this
+            .get_property(this, &QName::dynamic_name("prototype"), activation)?
+            .coerce_to_object(activation)?;
+
+        function_proto.install_dynamic_property(
+            activation.context.gc_context,
+            QName::new(Namespace::as3_namespace(), "call"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(call, "call", activation.context.gc_context),
+                None,
+                None,
+            )
+            .into(),
+        )?;
+        function_proto.install_dynamic_property(
+            activation.context.gc_context,
+            QName::new(Namespace::as3_namespace(), "apply"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(apply, "apply", activation.context.gc_context),
+                None,
+                None,
+            )
+            .into(),
+        )?;
+    }
     Ok(Value::Undefined)
 }
 
@@ -95,74 +123,15 @@ fn apply<'gc>(
     }
 }
 
-/// Create Function prototype.
-///
-/// This function creates a suitable prototype and returns it.
-pub fn create_proto<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    super_proto: Object<'gc>,
-) -> Object<'gc> {
-    ScriptObject::object(activation.context.gc_context, super_proto)
-}
-
-/// Fill `Function.prototype` and allocate it's class object.
-///
-/// This function returns both the class object and it's class initializer,
-/// which must be called before user code runs.
-pub fn fill_proto<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    globals: Object<'gc>,
-    mut function_proto: Object<'gc>,
-    superclass: Object<'gc>,
-) -> Result<(Object<'gc>, Object<'gc>), Error> {
+/// Construct `Function`'s class.
+pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let function_class = Class::new(
         QName::new(Namespace::public(), "Function"),
         Some(QName::new(Namespace::public(), "Object").into()),
-        Method::from_builtin(
-            instance_init,
-            "<Function instance initializer>",
-            activation.context.gc_context,
-        ),
-        Method::from_builtin(
-            class_init,
-            "<Function class initializer>",
-            activation.context.gc_context,
-        ),
-        activation.context.gc_context,
+        Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
+        Method::from_builtin(class_init, "<Function class initializer>", gc_context),
+        gc_context,
     );
-    let scope = Scope::push_scope(globals.get_scope(), globals, activation.context.gc_context);
 
-    function_proto.install_dynamic_property(
-        activation.context.gc_context,
-        QName::new(Namespace::as3_namespace(), "call"),
-        FunctionObject::from_method_and_proto(
-            activation.context.gc_context,
-            Method::from_builtin(call, "call", activation.context.gc_context),
-            None,
-            function_proto,
-            None,
-        )
-        .into(),
-    )?;
-    function_proto.install_dynamic_property(
-        activation.context.gc_context,
-        QName::new(Namespace::as3_namespace(), "apply"),
-        FunctionObject::from_method_and_proto(
-            activation.context.gc_context,
-            Method::from_builtin(apply, "apply", activation.context.gc_context),
-            None,
-            function_proto,
-            None,
-        )
-        .into(),
-    )?;
-
-    ClassObject::from_builtin_class(
-        activation.context.gc_context,
-        Some(superclass),
-        function_class,
-        Some(scope),
-        function_proto,
-        function_proto,
-    )
+    function_class
 }

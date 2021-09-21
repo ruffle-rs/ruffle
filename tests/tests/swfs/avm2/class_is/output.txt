@@ -1,0 +1,32 @@
+///Test is Test
+false
+///Test is Class
+true
+///Test is Function
+false
+///Test is Object
+true
+///Class is Test
+false
+///Class is Class
+true
+///Class is Function
+false
+///Class is Object
+true
+///Function is Test
+false
+///Function is Class
+true
+///Function is Function
+false
+///Function is Object
+true
+///Object is Test
+false
+///Object is Class
+true
+///Object is Function
+false
+///Object is Object
+true
