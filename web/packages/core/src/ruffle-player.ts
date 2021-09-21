@@ -24,7 +24,7 @@ export const FLASH_ACTIVEX_CLASSID =
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
-enum PanicError {
+const enum PanicError {
     Unknown,
     CSPConflict,
     FileProtocol,
@@ -427,25 +427,17 @@ export class RufflePlayer extends HTMLElement {
             this.container.style.visibility = "";
         }
 
-        const autoplay = Object.values(Object(AutoPlay)).includes(
-            config.autoplay
-        )
-            ? config.autoplay
-            : AutoPlay.Auto;
-        const unmuteVisibility = Object.values(Object(UnmuteOverlay)).includes(
-            config.unmuteOverlay
-        )
-            ? config.unmuteOverlay
-            : UnmuteOverlay.Visible;
-
+        // Treat unspecified and invalid values as `AutoPlay.Auto`.
         if (
-            autoplay == AutoPlay.On ||
-            (autoplay == AutoPlay.Auto && this.audioState() === "running")
+            config.autoplay === AutoPlay.On ||
+            (config.autoplay !== AutoPlay.Off &&
+                this.audioState() === "running")
         ) {
             this.play();
 
             if (this.audioState() !== "running") {
-                if (unmuteVisibility === UnmuteOverlay.Visible) {
+                // Treat unspecified and invalid values as `UnmuteOverlay.Visible`.
+                if (config.unmuteOverlay !== UnmuteOverlay.Hidden) {
                     this.unmuteOverlay.style.display = "block";
                 }
 
@@ -1251,7 +1243,7 @@ export class RufflePlayer extends HTMLElement {
 /**
  * Describes the loading state of an SWF movie.
  */
-export enum ReadyState {
+export const enum ReadyState {
     /**
      * No movie is loaded, or no information is yet available about the movie.
      */
