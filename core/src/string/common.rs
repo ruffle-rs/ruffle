@@ -181,11 +181,78 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_rfind($deref, pattern)
         }
 
+        /// Analogue of [`str::contains`].
+        #[inline]
+        pub fn contains<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
+            $self.find(pattern).is_some()
+        }
+
         /// Analogue of [`str::split`].
         #[inline]
         pub fn split<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, separator: P) -> crate::string::ops::Split<$pat_lt, P> {
             crate::string::ops::str_split($deref, separator)
         }
+
+        /// Analogue of [`str::trim_matches`].
+        #[inline]
+        pub fn trim_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
+            crate::string::ops::str_trim_matches($deref, pattern)
+        }
+
+        /// Analogue of [`str::trim_start_matches`].
+        #[inline]
+        pub fn trim_start_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
+            crate::string::ops::str_trim_start_matches($deref, pattern)
+        }
+
+        /// Analogue of [`str::trim_end_matches`].
+        #[inline]
+        pub fn trim_end_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
+            crate::string::ops::str_trim_end_matches($deref, pattern)
+        }
+
+        /// Analogue of [`str::trim`], but uses Flash's definition of whitespace.
+        #[inline]
+        pub fn trim<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
+            $self.trim_matches(crate::string::utils::swf_is_whitespace)
+        }
+
+        /// Analogue of [`str::trim_start`], but uses Flash's definition of whitespace.
+        #[inline]
+        pub fn trim_start<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
+            $self.trim_start_matches(crate::string::utils::swf_is_whitespace)
+        }
+
+        /// Analogue of [`str::trim_end`], but uses Flash's definition of whitespace.
+        #[inline]
+        pub fn trim_end<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
+            $self.trim_end_matches(crate::string::utils::swf_is_whitespace)
+        }
+
+        /// Analogue of [`str::starts_with`]
+        #[inline]
+        pub fn starts_with<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
+            crate::string::ops::starts_with($deref, pattern)
+        }
+
+        /// Analogue of [`str::ends_with`]
+        #[inline]
+        pub fn ends_with<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
+            crate::string::ops::ends_with($deref, pattern)
+        }
+
+        /// Analogue of [`str::strip_prefix`]
+        #[inline]
+        pub fn strip_prefix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
+            crate::string::ops::strip_prefix($deref, pattern)
+        }
+
+        /// Analogue of [`str::strip_suffix`]
+        #[inline]
+        pub fn strip_suffix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
+            crate::string::ops::strip_suffix($deref, pattern)
+        }
+
     }
 }
 

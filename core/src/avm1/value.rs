@@ -6,7 +6,7 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::Collect;
 use std::borrow::Cow;
 
@@ -125,7 +125,8 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Bool(true) => 1.0,
             Value::Number(v) => v,
-            Value::String(v) => v.parse().unwrap_or(0.0),
+            // TODO: avoid this conversion to UTF8?
+            Value::String(v) => v.to_utf8_lossy().parse().unwrap_or(0.0),
             _ => 0.0,
         }
     }
@@ -139,74 +140,71 @@ impl<'gc> Value<'gc> {
     /// rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
     fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
-        match self {
-            Value::Undefined if activation.swf_version() < 7 => 0.0,
-            Value::Null if activation.swf_version() < 7 => 0.0,
-            Value::Undefined => f64::NAN,
-            Value::Null => f64::NAN,
-            Value::Bool(false) => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Number(v) => *v,
-            Value::String(v) => match v.as_str() {
-                v if activation.swf_version() >= 6 && v.starts_with("0x") => {
-                    let mut n: u32 = 0;
-                    for c in v[2..].bytes() {
-                        n = n.wrapping_shl(4);
-                        n |= match c {
-                            b'0' => 0,
-                            b'1' => 1,
-                            b'2' => 2,
-                            b'3' => 3,
-                            b'4' => 4,
-                            b'5' => 5,
-                            b'6' => 6,
-                            b'7' => 7,
-                            b'8' => 8,
-                            b'9' => 9,
-                            b'a' | b'A' => 10,
-                            b'b' | b'B' => 11,
-                            b'c' | b'C' => 12,
-                            b'd' | b'D' => 13,
-                            b'e' | b'E' => 14,
-                            b'f' | b'F' => 15,
-                            _ => return f64::NAN,
-                        }
-                    }
-                    f64::from(n as i32)
-                }
-                v if activation.swf_version() >= 6
-                    && (v.starts_with('0') || v.starts_with("+0") || v.starts_with("-0"))
-                    && v[1..].bytes().all(|c| c >= b'0' && c <= b'7') =>
-                {
-                    let trimmed = v.trim_start_matches(|c| c == '+' || c == '-');
-                    let mut n: u32 = 0;
-                    for c in trimmed.bytes() {
-                        n = n.wrapping_shl(3);
-                        n |= (c - b'0') as u32;
-                    }
-                    if v.starts_with('-') {
-                        n = n.wrapping_neg();
-                    }
-                    f64::from(n as i32)
-                }
-                "" => f64::NAN,
-                _ => {
-                    // Rust parses "inf" and "+inf" into Infinity, but Flash doesn't.
-                    // (as of nightly 4/13, Rust also accepts "infinity")
-                    // Check if the strign starts with 'i' (ignoring any leading +/-).
-                    if v.strip_prefix(['+', '-'].as_ref())
-                        .unwrap_or(v)
-                        .starts_with(['i', 'I'].as_ref())
-                    {
-                        f64::NAN
-                    } else {
-                        v.trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
-                            .parse()
-                            .unwrap_or(f64::NAN)
+        let v = match self {
+            Value::Undefined if activation.swf_version() < 7 => return 0.0,
+            Value::Null if activation.swf_version() < 7 => return 0.0,
+            Value::Undefined => return f64::NAN,
+            Value::Null => return f64::NAN,
+            Value::Bool(false) => return 0.0,
+            Value::Bool(true) => return 1.0,
+            Value::Number(v) => return *v,
+            Value::Object(_) => return f64::NAN,
+            Value::String(v) => v,
+        };
+
+        if v.is_empty() {
+            return f64::NAN;
+        }
+
+        if activation.swf_version() >= 6 {
+            if let Some(v) = v.strip_prefix(WStr::from_units(b"0x")) {
+                let mut n: u32 = 0;
+                for c in &v {
+                    n = n.wrapping_shl(4);
+                    n |= match u8::try_from(c) {
+                        Ok(b'0'..=b'9') => c as u32 - b'0' as u32,
+                        Ok(b'A'..=b'F') => c as u32 - b'A' as u32 + 10,
+                        Ok(b'a'..=b'f') => c as u32 - b'a' as u32 + 10,
+                        _ => return f64::NAN,
                     }
                 }
-            },
-            Value::Object(_) => f64::NAN,
+                return f64::from(n as i32);
+            }
+
+            if (v.starts_with(b'0')
+                || v.starts_with(WStr::from_units(b"+0"))
+                || v.starts_with(WStr::from_units(b"-0")))
+                && v.slice(1..)
+                    .iter()
+                    .all(|c| c >= b'0'.into() && c <= b'7'.into())
+            {
+                let trimmed = v.trim_start_matches(&b"+-"[..]);
+                let mut n: u32 = 0;
+                for c in &trimmed {
+                    n = n.wrapping_shl(3);
+                    n |= (c - b'0' as u16) as u32;
+                }
+                if v.starts_with(b'-') {
+                    n = n.wrapping_neg();
+                }
+                return f64::from(n as i32);
+            }
+        }
+
+        // Rust parses "inf" and "+inf" into Infinity, but Flash doesn't.
+        // (as of nightly 4/13, Rust also accepts "infinity")
+        // Check if the string starts with 'i' (ignoring any leading +/-).
+        if v.strip_prefix(&b"+-"[..])
+            .unwrap_or_else(|| v.as_ucs2())
+            .starts_with(&b"iI"[..])
+        {
+            f64::NAN
+        } else {
+            v.trim_start_matches(&b"\t\n\r "[..])
+                // TODO: avoid this conversion to UTF8?
+                .to_utf8_lossy()
+                .parse()
+                .unwrap_or(f64::NAN)
         }
     }
 
@@ -452,7 +450,8 @@ impl<'gc> Value<'gc> {
                 if swf_version >= 7 {
                     !v.is_empty()
                 } else {
-                    let num = v.parse().unwrap_or(0.0);
+                    // TODO: avoid this conversion to UTF8?
+                    let num = v.to_utf8_lossy().parse().unwrap_or(0.0);
                     num != 0.0
                 }
             }

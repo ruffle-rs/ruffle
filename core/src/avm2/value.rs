@@ -388,7 +388,7 @@ impl<'gc> Value<'gc> {
             Value::Unsigned(u) => *u as f64,
             Value::Integer(i) => *i as f64,
             Value::String(s) => {
-                let strim = s.trim();
+                let strim = s.as_str().trim();
                 if strim.is_empty() {
                     0.0
                 } else if strim.starts_with("0x") || strim.starts_with("0X") {
