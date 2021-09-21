@@ -3,7 +3,7 @@ use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
-use super::pattern::Searcher;
+use super::pattern::{SearchStep, Searcher};
 use super::{utils, Pattern, Units, WStr};
 
 pub struct Iter<'a> {
@@ -144,6 +144,70 @@ pub fn str_split<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Split<'a, 
         searcher: pattern.into_searcher(string),
         prev_end: 0,
     }
+}
+
+pub fn starts_with<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> bool {
+    matches!(
+        pattern.into_searcher(string).next(),
+        SearchStep::Match(_, _)
+    )
+}
+
+pub fn ends_with<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> bool {
+    matches!(
+        pattern.into_searcher(string).next_back(),
+        SearchStep::Match(_, _)
+    )
+}
+
+pub fn strip_prefix<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Option<WStr<'a>> {
+    match pattern.into_searcher(string).next() {
+        SearchStep::Match(_, end) => Some(string.slice(end..)),
+        _ => None,
+    }
+}
+
+pub fn strip_suffix<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Option<WStr<'a>> {
+    match pattern.into_searcher(string).next_back() {
+        SearchStep::Match(start, _) => Some(string.slice(..start)),
+        _ => None,
+    }
+}
+
+pub fn str_trim_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+    let mut i = 0;
+    let mut j = 0;
+    let mut searcher = pattern.into_searcher(string);
+    if let Some((start, end)) = searcher.next_reject() {
+        i = start;
+        j = end;
+    }
+
+    if let Some((_, end)) = searcher.next_reject_back() {
+        j = end;
+    }
+
+    string.slice(i..j)
+}
+
+pub fn str_trim_start_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+    let mut i = string.len();
+    let mut searcher = pattern.into_searcher(string);
+    if let Some((start, _)) = searcher.next_reject() {
+        i = start;
+    }
+
+    string.slice(i..)
+}
+
+pub fn str_trim_end_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+    let mut i = 0;
+    let mut searcher = pattern.into_searcher(string);
+    if let Some((_, end)) = searcher.next_reject_back() {
+        i = end;
+    }
+
+    string.slice(..i)
 }
 
 pub struct Split<'a, P: Pattern<'a>> {

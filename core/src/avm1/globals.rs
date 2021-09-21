@@ -252,7 +252,7 @@ pub fn parse_float<'gc>(
         return Ok(f64::NAN.into());
     };
 
-    let s = s.trim_start().bytes();
+    let s = s.as_str().trim_start().bytes();
     let mut out_str = String::with_capacity(s.len());
 
     // TODO: Implementing this in a very janky way for now,
