@@ -320,7 +320,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/extension/dist/firefox-unsigned.xpi
+          asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi
           asset_content_type: application/x-xpinstall
 
