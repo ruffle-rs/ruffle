@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
+use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
@@ -27,7 +27,8 @@ pub struct BytecodeExecutable<'gc> {
     receiver: Option<Object<'gc>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
 pub struct NativeExecutable<'gc> {
     /// The method associated with the executable.
     method: Gc<'gc, NativeMethod<'gc>>,
@@ -37,13 +38,6 @@ pub struct NativeExecutable<'gc> {
 
     /// The bound reciever for this method.
     bound_receiver: Option<Object<'gc>>,
-}
-
-unsafe impl<'gc> Collect for NativeExecutable<'gc> {
-    fn trace(&self, cc: CollectionContext) {
-        self.method.trace(cc);
-        self.bound_receiver.trace(cc);
-    }
 }
 
 /// Represents code that can be executed by some means.
