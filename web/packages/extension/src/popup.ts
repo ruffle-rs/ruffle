@@ -54,7 +54,9 @@ async function queryTabStatus(
 
     let response;
     try {
-        response = await utils.tabs.sendMessage(activeTab.id!, {});
+        response = await utils.tabs.sendMessage(activeTab.id!, {
+            type: "ping",
+        });
     } catch (e) {
         listener("status_result_protected");
         reloadButton.disabled = true;

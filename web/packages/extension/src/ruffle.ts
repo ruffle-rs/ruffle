@@ -1,10 +1,38 @@
-import { PublicAPI, SourceAPI } from "ruffle-core";
+import { PublicAPI, SourceAPI, Config } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(
-    window.RufflePlayer!,
-    "extension",
-    new SourceAPI("extension")
-);
+interface LoadMessage {
+    type: "load";
+    config: Config;
+}
+
+interface PingMessage {
+    type: "ping";
+}
+
+type Message = LoadMessage | PingMessage;
+
+function handleMessage(message: Message) {
+    switch (message.type) {
+        case "load":
+            window.RufflePlayer = window.RufflePlayer || {};
+            window.RufflePlayer.config = {
+                ...window.RufflePlayer.config,
+                ...message.config,
+            };
+            window.RufflePlayer = PublicAPI.negotiate(
+                window.RufflePlayer!,
+                "extension",
+                new SourceAPI("extension")
+            );
+            return {};
+        case "ping":
+            // Ping back.
+            return {};
+        default:
+            // Ignore unknown messages.
+            return null;
+    }
+}
 
 let ID: string | null = null;
 if (
@@ -29,13 +57,15 @@ if (ID) {
 
         const { to, index, data } = event.data;
         if (to === `ruffle_page${ID}`) {
-            // Ping back.
-            const message = {
-                to: `ruffle_content${ID}`,
-                index,
-                data,
-            };
-            window.postMessage(message, "*");
+            const response = handleMessage(data);
+            if (response) {
+                const message = {
+                    to: `ruffle_content${ID}`,
+                    index,
+                    data: response,
+                };
+                window.postMessage(message, "*");
+            }
         }
     });
 }
