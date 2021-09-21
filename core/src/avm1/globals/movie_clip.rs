@@ -15,7 +15,7 @@ use crate::display_object::{
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
@@ -262,28 +262,31 @@ fn line_style<'gc>(
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+            .as_ref()
+            .map(|v| v.borrow())
         {
-            Some("normal") => (true, true),
-            Some("vertical") => (true, false),
-            Some("horizontal") => (false, true),
+            Some(v) if v == b"normal" => (true, true),
+            Some(v) if v == b"vertical" => (true, false),
+            Some(v) if v == b"horizontal" => (false, true),
             _ => (false, false),
         };
         let cap_style = match args
             .get(5)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+            .as_ref()
+            .map(|v| v.borrow())
         {
-            Some("square") => LineCapStyle::Square,
-            Some("none") => LineCapStyle::None,
+            Some(v) if v == b"square" => LineCapStyle::Square,
+            Some(v) if v == b"none" => LineCapStyle::None,
             _ => LineCapStyle::Round,
         };
         let join_style = match args
             .get(6)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+            .as_ref()
+            .map(|v| v.borrow())
         {
-            Some("miter") => {
+            Some(v) if v == b"miter" => {
                 if let Some(limit) = args.get(7) {
                     let limit = limit.coerce_to_f64(activation)?.clamp(0.0, 255.0);
                     LineJoinStyle::Miter(Fixed8::from_f64(limit))
@@ -291,7 +294,7 @@ fn line_style<'gc>(
                     LineJoinStyle::Miter(Fixed8::from_f32(3.0))
                 }
             }
-            Some("bevel") => LineJoinStyle::Bevel,
+            Some(v) if v == b"bevel" => LineJoinStyle::Bevel,
             _ => LineJoinStyle::Round,
         };
         movie_clip
@@ -468,18 +471,20 @@ fn begin_gradient_fill<'gc>(
         let spread = match args
             .get(5)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+            .as_ref()
+            .map(|v| v.borrow())
         {
-            Some("reflect") => GradientSpread::Reflect,
-            Some("repeat") => GradientSpread::Repeat,
+            Some(v) if v == b"reflect" => GradientSpread::Reflect,
+            Some(v) if v == b"repeat" => GradientSpread::Repeat,
             _ => GradientSpread::Pad,
         };
         let interpolation = match args
             .get(6)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
+            .as_ref()
+            .map(|v| v.borrow())
         {
-            Some("linearRGB") => GradientInterpolation::LinearRgb,
+            Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
             _ => GradientInterpolation::Rgb,
         };
 
@@ -489,26 +494,24 @@ fn begin_gradient_fill<'gc>(
             interpolation,
             records,
         };
-        let style = match method.as_ref() {
-            "linear" => FillStyle::LinearGradient(gradient),
-            "radial" => {
-                if let Some(focal_point) = args.get(7) {
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point: Fixed8::from_f64(focal_point.coerce_to_f64(activation)?),
-                    }
-                } else {
-                    FillStyle::RadialGradient(gradient)
+        let style = if method == b"linear" {
+            FillStyle::LinearGradient(gradient)
+        } else if method == b"radial" {
+            if let Some(focal_point) = args.get(7) {
+                FillStyle::FocalGradient {
+                    gradient,
+                    focal_point: Fixed8::from_f64(focal_point.coerce_to_f64(activation)?),
                 }
+            } else {
+                FillStyle::RadialGradient(gradient)
             }
-            other => {
-                avm_warn!(
-                    activation,
-                    "beginGradientFill() received invalid fill type {:?}",
-                    other
-                );
-                return Ok(Value::Undefined);
-            }
+        } else {
+            avm_warn!(
+                activation,
+                "beginGradientFill() received invalid fill type {:?}",
+                method
+            );
+            return Ok(Value::Undefined);
         };
         movie_clip
             .as_drawing(activation.context.gc_context)
@@ -1004,7 +1007,7 @@ pub fn goto_frame<'gc>(
                 activation.resolve_variable_path(movie_clip.into(), &frame_path)?
             {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    // TODO(moulins): we need Str::parse for avoiding allocation here.
+                    // TODO(moulins): we need WStr::parse for avoiding allocation here.
                     let frame = frame.to_string();
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
                         // First try to parse as a frame number.

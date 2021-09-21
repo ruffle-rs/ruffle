@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::bevel_filter::{BevelFilterObject, BevelFilterType};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr, WStr};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -378,8 +378,8 @@ pub fn get_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_bevel_filter_object() {
-        let type_: &str = filter.get_type().into();
-        return Ok(AvmString::new(activation.context.gc_context, type_.to_string()).into());
+        let type_: WStr<'_> = filter.get_type().into();
+        return Ok(AvmString::new_ucs2(activation.context.gc_context, type_.into()).into());
     }
 
     Ok(Value::Undefined)
@@ -394,7 +394,7 @@ pub fn set_type<'gc>(
         .get(0)
         .unwrap_or(&"inner".into())
         .coerce_to_string(activation)
-        .map(|s| s.as_str().into())?;
+        .map(|s| s.borrow().into())?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_type(activation.context.gc_context, type_);

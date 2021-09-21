@@ -1,6 +1,7 @@
 use crate::add_field_accessors;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
+use crate::string::WStr;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use std::fmt;
@@ -14,32 +15,29 @@ pub enum DisplacementMapFilterMode {
     Color,
 }
 
-impl From<&str> for DisplacementMapFilterMode {
-    fn from(v: &str) -> DisplacementMapFilterMode {
-        match v {
-            "wrap" => DisplacementMapFilterMode::Wrap,
-            "clamp" => DisplacementMapFilterMode::Clamp,
-            "ignore" => DisplacementMapFilterMode::Ignore,
-            "color" => DisplacementMapFilterMode::Color,
-            _ => DisplacementMapFilterMode::Wrap,
+impl From<WStr<'_>> for DisplacementMapFilterMode {
+    fn from(v: WStr<'_>) -> DisplacementMapFilterMode {
+        if v == b"clamp" {
+            DisplacementMapFilterMode::Clamp
+        } else if v == b"ignore" {
+            DisplacementMapFilterMode::Ignore
+        } else if v == b"color" {
+            DisplacementMapFilterMode::Color
+        } else {
+            DisplacementMapFilterMode::Wrap
         }
     }
 }
 
-impl From<DisplacementMapFilterMode> for &str {
+impl From<DisplacementMapFilterMode> for WStr<'static> {
     fn from(v: DisplacementMapFilterMode) -> Self {
-        match v {
-            DisplacementMapFilterMode::Wrap => "wrap",
-            DisplacementMapFilterMode::Clamp => "clamp",
-            DisplacementMapFilterMode::Ignore => "ignore",
-            DisplacementMapFilterMode::Color => "color",
-        }
-    }
-}
-
-impl From<DisplacementMapFilterMode> for String {
-    fn from(v: DisplacementMapFilterMode) -> Self {
-        Into::<&str>::into(v).to_string()
+        let s: &[u8] = match v {
+            DisplacementMapFilterMode::Wrap => b"wrap",
+            DisplacementMapFilterMode::Clamp => b"clamp",
+            DisplacementMapFilterMode::Ignore => b"ignore",
+            DisplacementMapFilterMode::Color => b"color",
+        };
+        WStr::from_units(s)
     }
 }
 
