@@ -279,17 +279,17 @@ impl<'gc> SystemClasses<'gc> {
 
 /// Add a free-function builtin to the global scope.
 fn function<'gc>(
-    mc: MutationContext<'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     package: impl Into<AvmString<'gc>>,
     name: &'static str,
     nf: NativeMethodImpl,
-    fn_proto: Object<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
 ) -> Result<(), Error> {
+    let mc = activation.context.gc_context;
     let qname = QName::new(Namespace::package(package), name);
     let method = Method::from_builtin(nf, name, mc);
-    let as3fn = FunctionObject::from_method_and_proto(mc, method, None, fn_proto, None).into();
+    let as3fn = FunctionObject::from_method(activation, method, None, None).into();
     domain.export_definition(qname.clone(), script, mc)?;
     script
         .init()
@@ -422,23 +422,53 @@ pub fn load_player_globals<'gc>(
 
     // public / root package
     //
-    // We have to do this particular dance so that we have Object methods whose
-    // functions have call/apply in their prototypes, and that Function is also
-    // a subclass of Object.
-    let object_proto = object::create_proto(activation);
-    let fn_proto = function::create_proto(activation, object_proto);
+    // This part of global initialization is very complicated, because
+    // everything has to circularly reference everything else:
+    //
+    //  - Object is an instance of itself, as well as it's prototype
+    //  - All other types are instances of Class, which is an instance of
+    //    itself
+    //  - Function's prototype is an instance of itself
+    //  - All methods created by the above-mentioned classes are also instances
+    //    of Function
+    //
+    // Hence, this ridiculously complicated dance of classdef, type allocation,
+    // and partial initialization.
+    let object_scope = Some(Scope::push_scope(gs.get_scope(), gs, mc));
+    let object_classdef = object::create_class(mc);
+    let object_class =
+        ClassObject::from_class_partial(activation, object_classdef, None, object_scope)?;
+    let object_proto = ScriptObject::bare_object(mc);
 
-    let (mut object_class, object_cinit) =
-        object::fill_proto(activation, gs, object_proto, fn_proto)?;
-    let (mut function_class, function_cinit) =
-        function::fill_proto(activation, gs, fn_proto, object_class)?;
+    let fn_scope = Some(Scope::push_scope(gs.get_scope(), gs, mc));
+    let fn_classdef = function::create_class(mc);
+    let fn_class = ClassObject::from_class_partial(
+        activation,
+        fn_classdef,
+        Some(object_class.into()),
+        fn_scope,
+    )?;
+    let fn_proto = ScriptObject::object(mc, object_proto);
 
-    let (mut class_class, class_proto, class_cinit) =
-        class::create_class(activation, gs, object_class, object_proto, fn_proto)?;
+    let class_scope = Some(Scope::push_scope(gs.get_scope(), gs, mc));
+    let class_classdef = class::create_class(mc);
+    let class_class = ClassObject::from_class_partial(
+        activation,
+        class_classdef,
+        Some(object_class.into()),
+        class_scope,
+    )?;
+    let class_proto = ScriptObject::object(mc, object_proto);
 
-    dynamic_class(mc, object_class, domain, script)?;
-    dynamic_class(mc, function_class, domain, script)?;
-    dynamic_class(mc, class_class, domain, script)?;
+    // Now to weave the Gordian knot...
+    object_class.link_prototype(activation, object_proto)?;
+    object_class.link_type(activation, class_proto, class_class.into());
+
+    fn_class.link_prototype(activation, fn_proto)?;
+    fn_class.link_type(activation, class_proto, class_class.into());
+
+    class_class.link_prototype(activation, class_proto)?;
+    class_class.link_type(activation, class_proto, class_class.into());
 
     // At this point, we need at least a partial set of system prototypes in
     // order to continue initializing the player. The rest of the prototypes
@@ -451,44 +481,26 @@ pub fn load_player_globals<'gc>(
     ));
 
     activation.context.avm2.system_classes = Some(SystemClasses::new(
-        object_class,
-        function_class,
-        class_class,
+        object_class.into(),
+        fn_class.into(),
+        class_class.into(),
         ScriptObject::bare_object(mc),
     ));
 
-    // We can now run all of the steps that would ordinarily be run
-    // automatically had we not been so early in VM setup. This means things
-    // like installing class traits and running class initializers, which
-    // usually are done in the associated constructor for `ClassObject`.
-    object_class.install_traits(
-        activation,
-        object_class
-            .as_class_definition()
-            .unwrap()
-            .read()
-            .class_traits(),
-    )?;
-    function_class.install_traits(
-        activation,
-        function_class
-            .as_class_definition()
-            .unwrap()
-            .read()
-            .class_traits(),
-    )?;
-    class_class.install_traits(
-        activation,
-        class_class
-            .as_class_definition()
-            .unwrap()
-            .read()
-            .class_traits(),
-    )?;
+    // Our activation environment is now functional enough to finish
+    // initializing the core class weave. The order of initialization shouldn't
+    // matter here, as long as all the initialization machinery can see and
+    // link the various system types together correctly.
+    let object_class = object_class.into_finished_class(activation)?;
+    let fn_class = fn_class.into_finished_class(activation)?;
+    let class_class = class_class.into_finished_class(activation)?;
 
-    object_cinit.call(Some(object_class), &[], activation, Some(object_class))?;
-    function_cinit.call(Some(function_class), &[], activation, Some(function_class))?;
-    class_cinit.call(Some(class_class), &[], activation, Some(class_class))?;
+    dynamic_class(mc, object_class, domain, script)?;
+    dynamic_class(mc, fn_class, domain, script)?;
+    dynamic_class(mc, class_class, domain, script)?;
+
+    // After this point, it is safe to initialize any other classes.
+    // Make sure to initialize superclasses *before* their subclasses!
 
     avm2_system_class!(
         global,
@@ -497,6 +509,12 @@ pub fn load_player_globals<'gc>(
         domain,
         script
     );
+
+    // Oh, one more small hitch: the domain everything gets put into was
+    // actually made *before* the core class weave, so let's fix that up now
+    // that the global class actually exists.
+    gs.set_proto(mc, activation.avm2().prototypes().global);
+
     avm2_system_class!(string, activation, string::create_class(mc), domain, script);
     avm2_system_class!(
         boolean,
@@ -517,13 +535,9 @@ pub fn load_player_globals<'gc>(
     );
     avm2_system_class!(array, activation, array::create_class(mc), domain, script);
 
-    // At this point we have to hide the fact that we had to create the player
-    // globals scope *before* the `Object` class
-    gs.set_proto(mc, activation.avm2().prototypes().global);
-
-    function(mc, "", "trace", trace, fn_proto, domain, script)?;
-    function(mc, "", "isFinite", is_finite, fn_proto, domain, script)?;
-    function(mc, "", "isNaN", is_nan, fn_proto, domain, script)?;
+    function(activation, "", "trace", trace, domain, script)?;
+    function(activation, "", "isFinite", is_finite, domain, script)?;
+    function(activation, "", "isNaN", is_nan, domain, script)?;
     constant(mc, "", "undefined", Value::Undefined, domain, script)?;
     constant(mc, "", "null", Value::Null, domain, script)?;
     constant(mc, "", "NaN", f64::NAN.into(), domain, script)?;
@@ -635,41 +649,37 @@ pub fn load_player_globals<'gc>(
     )?;
 
     function(
-        mc,
+        activation,
         "flash.utils",
         "getTimer",
         flash::utils::get_timer,
-        fn_proto,
         domain,
         script,
     )?;
 
     function(
-        mc,
+        activation,
         "flash.utils",
         "getQualifiedClassName",
         flash::utils::get_qualified_class_name,
-        fn_proto,
         domain,
         script,
     )?;
 
     function(
-        mc,
+        activation,
         "flash.utils",
         "getQualifiedSuperclassName",
         flash::utils::get_qualified_super_class_name,
-        fn_proto,
         domain,
         script,
     )?;
 
     function(
-        mc,
+        activation,
         "flash.utils",
         "getDefinitionByName",
         flash::utils::get_definition_by_name,
-        fn_proto,
         domain,
         script,
     )?;
@@ -925,11 +935,10 @@ pub fn load_player_globals<'gc>(
 
     // package `flash.crypto`
     function(
-        mc,
+        activation,
         "flash.crypto",
         "generateRandomBytes",
         flash::crypto::generate_random_bytes,
-        fn_proto,
         domain,
         script,
     )?;

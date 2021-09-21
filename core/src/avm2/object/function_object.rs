@@ -84,32 +84,6 @@ impl<'gc> FunctionObject<'gc> {
         ))
         .into()
     }
-
-    /// Construct a function from an ABC method, the current closure scope, and
-    /// a function prototype.
-    ///
-    /// The given `reciever`, if supplied, will override any user-specified
-    /// `this` parameter.
-    ///
-    /// This function exists primarily for early globals. Unless you are in a
-    /// position where you cannot access `Function.prototype` yet, you should
-    /// use `from_method` instead.
-    pub fn from_method_and_proto(
-        mc: MutationContext<'gc, '_>,
-        method: Method<'gc>,
-        scope: Option<GcCell<'gc, Scope<'gc>>>,
-        fn_proto: Object<'gc>,
-        receiver: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        FunctionObject(GcCell::allocate(
-            mc,
-            FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), None),
-                exec: Some(Executable::from_method(method, scope, receiver, mc)),
-            },
-        ))
-        .into()
-    }
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
