@@ -1,4 +1,4 @@
-export enum AutoPlay {
+export const enum AutoPlay {
     /**
      * The player should automatically play the movie as soon as it is loaded.
      *
@@ -32,7 +32,7 @@ export enum AutoPlay {
  * When letterboxed, black bars will be rendered around the exterior
  * margins of the content.
  */
-export enum Letterbox {
+export const enum Letterbox {
     /**
      * The content will never be letterboxed.
      */
@@ -53,7 +53,7 @@ export enum Letterbox {
  * When the player is muted, this controls whether or not Ruffle will show a
  * "click to unmute" overlay on top of the movie.
  */
-export enum UnmuteOverlay {
+export const enum UnmuteOverlay {
     /**
      * Show an overlay explaining that the movie is muted.
      */
@@ -68,7 +68,7 @@ export enum UnmuteOverlay {
 /**
  * Console logging level.
  */
-export enum LogLevel {
+export const enum LogLevel {
     Error = "error",
     Warn = "warn",
     Info = "info",
