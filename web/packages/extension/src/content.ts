@@ -106,7 +106,11 @@ function isXMLDocument(): boolean {
 }
 
 (async () => {
-    const options = await utils.getOptions(["ruffleEnable", "ignoreOptout"]);
+    const options = await utils.getOptions([
+        "ruffleEnable",
+        "ignoreOptout",
+        "warnOnUnsupportedContent",
+    ]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
         !isXMLDocument() &&
@@ -165,5 +169,12 @@ function isXMLDocument(): boolean {
                 console.warn("No pending request.");
             }
         }
+    });
+
+    await sendMessageToPage({
+        type: "load",
+        config: {
+            warnOnUnsupportedContent: options.warnOnUnsupportedContent,
+        },
     });
 })();

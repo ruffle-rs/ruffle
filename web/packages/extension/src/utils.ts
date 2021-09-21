@@ -3,6 +3,7 @@ import { Options } from "./common";
 const DEFAULT_OPTIONS: Options = {
     ruffleEnable: true,
     ignoreOptout: false,
+    warnOnUnsupportedContent: true,
 };
 
 export let i18n: {

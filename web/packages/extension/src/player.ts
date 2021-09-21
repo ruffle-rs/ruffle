@@ -1,3 +1,4 @@
+import * as utils from "./utils";
 import { PublicAPI, SourceAPI, Letterbox, LogLevel } from "ruffle-core";
 
 const api = PublicAPI.negotiate(
@@ -8,13 +9,7 @@ const api = PublicAPI.negotiate(
 window.RufflePlayer = api;
 const ruffle = api.newest()!;
 
-// Default config used by the player.
-const config = {
-    letterbox: Letterbox.On,
-    logLevel: LogLevel.Warn,
-};
-
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     const url = new URL(window.location.href);
     const swfUrl = url.searchParams.get("url");
     if (!swfUrl) {
@@ -33,5 +28,10 @@ window.addEventListener("DOMContentLoaded", () => {
     player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
+    const config = {
+        letterbox: Letterbox.On,
+        logLevel: LogLevel.Warn,
+        ...(await utils.getOptions(["warnOnUnsupportedContent"])),
+    };
     player.load({ url: swfUrl, base: swfUrl, ...config });
 });

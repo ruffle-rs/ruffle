@@ -3,6 +3,7 @@ import * as utils from "./utils";
 export interface Options {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
+    warnOnUnsupportedContent: boolean;
 }
 
 function getBooleanElements() {
