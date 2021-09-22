@@ -1,18 +1,13 @@
 //! Boxed namespaces
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::Namespace;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
-use crate::{
-    impl_avm2_custom_object, impl_avm2_custom_object_instance, impl_avm2_custom_object_properties,
-};
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::cell::Ref;
+use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates namespace objects.
 pub fn namespace_allocator<'gc>(
@@ -71,9 +66,17 @@ impl<'gc> NamespaceObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
-    impl_avm2_custom_object!(base);
-    impl_avm2_custom_object_properties!(base);
-    impl_avm2_custom_object_instance!(base);
+    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+        Ref::map(self.0.read(), |read| &read.base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+        RefMut::map(self.0.write(mc), |write| &mut write.base)
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.0.as_ptr() as *const ObjectPtr
+    }
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(self.0.read().namespace.as_uri().into())

@@ -28,7 +28,6 @@ mod array_object;
 mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
-mod custom_object;
 mod date_object;
 mod dispatch_object;
 mod domain_object;
@@ -60,7 +59,7 @@ pub use crate::avm2::object::loaderinfo_object::{
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
-pub use crate::avm2::object::script_object::ScriptObject;
+pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
@@ -96,6 +95,11 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
+    /// Get the base of this object.
+    /// Any trait method implementations that were not overrided will foward the call to this instead.
+    fn base(&self) -> Ref<ScriptObjectData<'gc>>;
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>>;
+
     /// Retrieve a property by QName, after multiname resolution, prototype
     /// lookups, and all other considerations have been taken.
     ///
@@ -106,7 +110,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         receiver: Object<'gc>,
         name: &QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error>;
+    ) -> Result<Value<'gc>, Error> {
+        let base = self.base();
+        let rv = base.get_property_local(receiver, name, activation)?;
+
+        drop(base);
+
+        rv.resolve(activation)
+    }
 
     /// Retrieve a property by Multiname lookup.
     ///
@@ -189,7 +200,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(activation.context.gc_context);
+
+        let rv = base.set_property_local(receiver, name, value, activation)?;
+
+        drop(base);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
 
     /// Set a property by Multiname lookup.
     ///
@@ -237,7 +258,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: &QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(activation.context.gc_context);
+        let rv = base.init_property_local(receiver, name, value, activation)?;
+
+        drop(base);
+
+        rv.resolve(activation)?;
+
+        Ok(())
+    }
 
     /// Initialize a property by Multiname lookup.
     ///
@@ -316,7 +346,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Retrieve a slot by its index.
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error>;
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
+        let base = self.base();
+
+        base.get_slot(id)
+    }
 
     /// Set a slot by its index.
     fn set_slot(
@@ -324,7 +358,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.set_slot(id, value, mc)
+    }
 
     /// Initialize a slot by its index.
     fn init_slot(
@@ -332,10 +370,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.init_slot(id, value, mc)
+    }
 
     /// Retrieve a method by its index.
-    fn get_method(self, id: u32) -> Option<Object<'gc>>;
+    fn get_method(self, id: u32) -> Option<Object<'gc>> {
+        let base = self.base();
+
+        base.get_method(id)
+    }
 
     /// Retrieves the scope chain of the object at time of its creation.
     ///
@@ -343,7 +389,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// object is called, as well as any class methods on the object.
     /// Non-method functions and prototype functions (ES3 methods) do not use
     /// this scope chain.
-    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>>;
+    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
+        let base = self.base();
+
+        base.get_scope()
+    }
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
@@ -381,15 +431,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Trait names will be resolve on class objects and object instances, but
     /// not prototypes. If you want to search a prototype's provided traits you
     /// must walk the prototype chain using `resolve_any_trait`.
-    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error>;
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+        let base = self.base();
+
+        base.resolve_any(local_name)
+    }
 
     /// Given a local name of a trait, find the namespace it resides in, if any.
     ///
     /// This function only works for names which are trait properties, not
     /// dynamic or prototype properties. Furthermore, instance prototypes *will*
     /// resolve trait names here, contrary to their behavior in `resolve_any.`
-    fn resolve_any_trait(self, local_name: AvmString<'gc>)
-        -> Result<Option<Namespace<'gc>>, Error>;
+    fn resolve_any_trait(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<Option<Namespace<'gc>>, Error> {
+        let base = self.base();
+
+        base.resolve_any_trait(local_name)
+    }
 
     /// Indicates whether or not a property exists on an object.
     fn has_property(self, name: &QName<'gc>) -> Result<bool, Error> {
@@ -404,47 +464,83 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Indicates whether or not a property or trait exists on an object and is
     /// not part of the prototype chain.
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error>;
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+        let base = self.base();
+
+        base.has_own_property(name)
+    }
 
     /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error>;
+    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
+        let base = self.base();
+
+        base.has_trait(name)
+    }
 
     /// Check if a particular object contains a virtual getter by the given
     /// name.
-    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool;
+    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
+        let base = self.base();
+
+        base.has_own_virtual_getter(name)
+    }
 
     /// Check if a particular object contains a virtual setter by the given
     /// name.
-    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool;
+    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool {
+        let base = self.base();
+
+        base.has_own_virtual_setter(name)
+    }
 
     /// Indicates whether or not a property is overwritable.
     fn is_property_overwritable(
         self,
-        gc_context: MutationContext<'gc, '_>,
-        _name: &QName<'gc>,
-    ) -> bool;
+        _gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> bool {
+        let base = self.base();
+
+        base.is_property_overwritable(name)
+    }
 
     /// Indicates whether or not a property is final.
-    fn is_property_final(self, _name: &QName<'gc>) -> bool;
+    fn is_property_final(self, name: &QName<'gc>) -> bool {
+        let base = self.base();
+
+        base.is_property_final(name)
+    }
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool;
+    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
+        let mut base = self.base_mut(gc_context);
+
+        base.delete_property(name)
+    }
 
     /// Retrieve the `__proto__` of a given object.
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto(&self) -> Option<Object<'gc>>;
+    fn proto(&self) -> Option<Object<'gc>> {
+        let base = self.base();
+
+        base.proto()
+    }
 
     /// Change the `__proto__` on this object.
     ///
     /// This method primarily exists so that the global scope that player
     /// globals loads into can be created before its superclasses are. It
     /// should be used sparingly, if at all.
-    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>);
+    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
+        let mut base = self.base_mut(mc);
+
+        base.set_proto(proto)
+    }
 
     /// Retrieve a given enumerable name by index.
     ///
@@ -455,12 +551,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Objects are responsible for maintaining a consistently ordered and
     /// indexed list of enumerable names which can be queried by this
     /// mechanism.
-    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>>;
+    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
+        let base = self.base();
+
+        base.get_enumerant_name(index)
+    }
 
     /// Determine if a property is currently enumerable.
     ///
     /// Properties that do not exist are also not enumerable.
-    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool;
+    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
+        let base = self.base();
+
+        base.property_is_enumerable(name)
+    }
 
     /// Mark a dynamic property on this object as enumerable.
     fn set_local_property_is_enumerable(
@@ -468,7 +572,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
         name: &QName<'gc>,
         is_enumerable: bool,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.set_local_property_is_enumerable(name, is_enumerable)
+    }
 
     /// Install a method (or any other non-slot value) on an object.
     fn install_method(
@@ -478,7 +586,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         disp_id: u32,
         function: Object<'gc>,
         is_final: bool,
-    );
+    ) {
+        let mut base = self.base_mut(mc);
+
+        base.install_method(name, disp_id, function, is_final)
+    }
 
     /// Install a getter method on an object property.
     fn install_getter(
@@ -488,7 +600,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         disp_id: u32,
         function: Object<'gc>,
         is_final: bool,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.install_getter(name, disp_id, function, is_final)
+    }
 
     /// Install a setter method on an object property.
     fn install_setter(
@@ -498,7 +614,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         disp_id: u32,
         function: Object<'gc>,
         is_final: bool,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.install_setter(name, disp_id, function, is_final)
+    }
 
     /// Install a dynamic or built-in value property on an object.
     fn install_dynamic_property(
@@ -506,7 +626,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: MutationContext<'gc, '_>,
         name: QName<'gc>,
         value: Value<'gc>,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Error> {
+        let mut base = self.base_mut(mc);
+
+        base.install_dynamic_property(name, value)
+    }
 
     /// Install a slot on an object property.
     fn install_slot(
@@ -516,7 +640,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
         is_final: bool,
-    );
+    ) {
+        let mut base = self.base_mut(mc);
+
+        base.install_slot(name, id, value, is_final)
+    }
 
     /// Install a const on an object property.
     fn install_const(
@@ -526,7 +654,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         id: u32,
         value: Value<'gc>,
         is_final: bool,
-    );
+    ) {
+        let mut base = self.base_mut(mc);
+
+        base.install_const(name, id, value, is_final)
+    }
 
     /// Install all instance traits provided by a class.
     ///
@@ -1244,7 +1376,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_ptr(&self) -> *const ObjectPtr;
 
     /// Get this object's class, if it has one.
-    fn instance_of(&self) -> Option<Object<'gc>>;
+    fn instance_of(&self) -> Option<Object<'gc>> {
+        let base = self.base();
+
+        base.instance_of()
+    }
 
     /// Get this object's class's `Class`, if it has one.
     fn instance_of_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {

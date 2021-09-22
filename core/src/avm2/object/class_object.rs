@@ -11,8 +11,8 @@ use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
-use crate::{impl_avm2_custom_object, impl_avm2_custom_object_properties};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 
 /// An Object which can be called to execute its function code.
@@ -356,8 +356,17 @@ impl<'gc> ClassObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
-    impl_avm2_custom_object!(base);
-    impl_avm2_custom_object_properties!(base);
+    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+        Ref::map(self.0.read(), |read| &read.base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+        RefMut::map(self.0.write(mc), |write| &mut write.base)
+    }
+
+    fn as_ptr(&self) -> *const ObjectPtr {
+        self.0.as_ptr() as *const ObjectPtr
+    }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(AvmString::new(
@@ -486,10 +495,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         Some(*self)
-    }
-
-    fn instance_of(&self) -> Option<Object<'gc>> {
-        self.0.read().base.instance_of()
     }
 
     fn set_local_property_is_enumerable(
