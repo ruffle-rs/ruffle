@@ -12,6 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -60,152 +61,12 @@ pub struct ScriptObjectData<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
-    fn get_property_local(
-        self,
-        receiver: Object<'gc>,
-        name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        let rv = self
-            .0
-            .read()
-            .get_property_local(receiver, name, activation)?;
-
-        rv.resolve(activation)
+    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+        self.0.read()
     }
 
-    fn set_property_local(
-        self,
-        receiver: Object<'gc>,
-        name: &QName<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        let rv = self
-            .0
-            .write(activation.context.gc_context)
-            .set_property_local(receiver, name, value, activation)?;
-
-        rv.resolve(activation)?;
-
-        Ok(())
-    }
-
-    fn init_property_local(
-        self,
-        receiver: Object<'gc>,
-        name: &QName<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        let rv = self
-            .0
-            .write(activation.context.gc_context)
-            .init_property_local(receiver, name, value, activation)?;
-
-        rv.resolve(activation)?;
-
-        Ok(())
-    }
-
-    fn is_property_overwritable(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
-    ) -> bool {
-        self.0.write(gc_context).is_property_overwritable(name)
-    }
-
-    fn is_property_final(self, name: &QName<'gc>) -> bool {
-        self.0.read().is_property_final(name)
-    }
-
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
-        self.0.write(gc_context).delete_property(name)
-    }
-
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
-        self.0.read().get_slot(id)
-    }
-
-    fn set_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
-        self.0.write(mc).set_slot(id, value, mc)
-    }
-
-    fn init_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: MutationContext<'gc, '_>,
-    ) -> Result<(), Error> {
-        self.0.write(mc).init_slot(id, value, mc)
-    }
-
-    fn get_method(self, id: u32) -> Option<Object<'gc>> {
-        self.0.read().get_method(id)
-    }
-
-    fn get_scope(self) -> Option<GcCell<'gc, Scope<'gc>>> {
-        self.0.read().get_scope()
-    }
-
-    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
-        self.0.read().resolve_any(local_name)
-    }
-
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        self.0.read().resolve_any_trait(local_name)
-    }
-
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().has_own_property(name)
-    }
-
-    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        self.0.read().has_trait(name)
-    }
-
-    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
-        self.0.read().has_own_virtual_getter(name)
-    }
-
-    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool {
-        self.0.read().has_own_virtual_setter(name)
-    }
-
-    fn proto(&self) -> Option<Object<'gc>> {
-        self.0.read().proto
-    }
-
-    fn set_proto(self, mc: MutationContext<'gc, '_>, proto: Object<'gc>) {
-        self.0.write(mc).set_proto(proto)
-    }
-
-    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
-        self.0.read().get_enumerant_name(index)
-    }
-
-    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
-        self.0.read().property_is_enumerable(name)
-    }
-
-    fn set_local_property_is_enumerable(
-        &self,
-        mc: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
-        is_enumerable: bool,
-    ) -> Result<(), Error> {
-        self.0
-            .write(mc)
-            .set_local_property_is_enumerable(name, is_enumerable)
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>> {
+        self.0.write(mc)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -217,90 +78,8 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         Ok(ScriptObject::object(activation.context.gc_context, this))
     }
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.instance_of_class_definition() {
-            Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
-        } else {
-            Ok("[object Object]".into())
-        }
-    }
-
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
-    }
-
-    fn install_method(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-        is_final: bool,
-    ) {
-        self.0
-            .write(mc)
-            .install_method(name, disp_id, function, is_final)
-    }
-
-    fn install_getter(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-        is_final: bool,
-    ) -> Result<(), Error> {
-        self.0
-            .write(mc)
-            .install_getter(name, disp_id, function, is_final)
-    }
-
-    fn install_setter(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-        is_final: bool,
-    ) -> Result<(), Error> {
-        self.0
-            .write(mc)
-            .install_setter(name, disp_id, function, is_final)
-    }
-
-    fn install_dynamic_property(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        self.0.write(mc).install_dynamic_property(name, value)
-    }
-
-    fn install_slot(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        id: u32,
-        value: Value<'gc>,
-        is_final: bool,
-    ) {
-        self.0.write(mc).install_slot(name, id, value, is_final)
-    }
-
-    fn install_const(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        id: u32,
-        value: Value<'gc>,
-        is_final: bool,
-    ) {
-        self.0.write(mc).install_const(name, id, value, is_final)
-    }
-
-    fn instance_of(&self) -> Option<Object<'gc>> {
-        self.0.read().instance_of()
     }
 }
 
