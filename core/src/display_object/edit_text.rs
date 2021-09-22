@@ -20,7 +20,7 @@ use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
-use crate::string::{utils as string_utils, AvmString};
+use crate::string::{utils as string_utils, AvmString, BorrowWStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
@@ -1047,7 +1047,7 @@ impl<'gc> EditText<'gc> {
 
             // Avoid double-borrows by copying the string.
             // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-            let variable = (*var_path).to_string();
+            let variable_path = WString::from_utf8(&var_path);
             drop(var_path);
 
             let parent = self.avm1_parent().unwrap();
@@ -1058,9 +1058,10 @@ impl<'gc> EditText<'gc> {
                 activation.context.swf.version(),
                 |activation| {
                     if let Ok(Some((object, property))) =
-                        activation.resolve_variable_path(parent, &variable)
+                        activation.resolve_variable_path(parent, variable_path.borrow())
                     {
-                        let property = AvmString::new(activation.context.gc_context, property);
+                        let property =
+                            AvmString::new_ucs2(activation.context.gc_context, property.into());
 
                         // If this text field was just created, we immediately propagate the text to the variable (or vice versa).
                         if set_initial_value {
@@ -1124,11 +1125,11 @@ impl<'gc> EditText<'gc> {
             if let Some(variable) = self.variable() {
                 // Avoid double-borrows by copying the string.
                 // TODO: Can we avoid this somehow? Maybe when we have a better string type.
-                let variable_path = variable.to_string();
+                let variable_path = WString::from_utf8(&variable);
                 drop(variable);
 
-                if let Ok(Some((object, property))) =
-                    activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
+                if let Ok(Some((object, property))) = activation
+                    .resolve_variable_path(self.avm1_parent().unwrap(), variable_path.borrow())
                 {
                     let html_text = self.html_text(&mut activation.context);
 
@@ -1139,7 +1140,8 @@ impl<'gc> EditText<'gc> {
                         self.avm1_parent().unwrap(),
                         activation.context.swf.version(),
                         |activation| {
-                            let property = AvmString::new(activation.context.gc_context, property);
+                            let property =
+                                AvmString::new_ucs2(activation.context.gc_context, property.into());
                             let _ = object.set(
                                 property,
                                 AvmString::new(activation.context.gc_context, html_text).into(),

@@ -11,7 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::string::{AvmString, BorrowWStr, WString};
+use crate::string::{AvmString, BorrowWStr, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -557,7 +557,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::SetMember => self.action_set_member(),
                 Action::SetProperty => self.action_set_property(),
                 Action::SetTarget(target) => {
-                    self.action_set_target(&target.to_str_lossy(self.encoding()))
+                    let target = WString::from_utf8_owned(target.to_string_lossy(self.encoding()));
+                    self.action_set_target(target.borrow())
                 }
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
@@ -759,12 +760,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
+            if let Some((clip, frame)) = self.resolve_variable_path(target, frame_path.borrow())? {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
+                    let frame = frame.to_utf8_lossy(); // TODO: avoid this UTF8 conversion.
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame) {
+                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame.into()));
                     }
@@ -1908,7 +1910,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_set_target(&mut self, target: WStr<'_>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.avm1_root(&self.context)?;
@@ -1925,13 +1927,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
+            let path = if base_clip.removed() { None } else { Some(base_clip.path()) };
             let message = format!(
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
-                if base_clip.removed() {
-                    "?".to_string()
-                } else {
-                    base_clip.path()
+                match &path {
+                    Some(p) => p.borrow(),
+                    None => WStr::from_units(b"?"),
                 }
             );
             self.context.log.avm_trace(&message);
@@ -1966,7 +1968,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         match target {
             Value::String(target) => {
-                return self.action_set_target(&target);
+                return self.action_set_target(target.borrow());
             }
             Value::Undefined => {
                 // Reset.
@@ -1980,12 +1982,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } else {
                     // Other objects get coerced to string.
                     let target = target.coerce_to_string(self)?;
-                    return self.action_set_target(&target);
+                    return self.action_set_target(target.borrow());
                 }
             }
             _ => {
                 let target = target.coerce_to_string(self)?;
-                return self.action_set_target(&target);
+                return self.action_set_target(target.borrow());
             }
         };
 
@@ -2151,7 +2153,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let param = self.context.avm1.pop().coerce_to_object(self);
         let result = if let Some(display_object) = param.as_display_object() {
             let path = display_object.path();
-            AvmString::new(self.context.gc_context, path).into()
+            AvmString::new_ucs2(self.context.gc_context, path).into()
         } else {
             Value::Undefined
         };
@@ -2504,7 +2506,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let root = start.avm1_root(&self.context)?;
         let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(root, start, &path, false)?
+            .resolve_target_path(root, start, path.borrow(), false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2521,8 +2523,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         root: DisplayObject<'gc>,
         start: Object<'gc>,
-        // TODO(moulins): replace by Str<'_> once the API is good enough.
-        path: &str,
+        mut path: WStr<'_>,
         mut first_element: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
@@ -2532,9 +2533,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
-        let mut path = path.as_bytes();
-        let (mut object, mut is_slash_path) = if path[0] == b'/' {
-            path = &path[1..];
+        let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
+            path = path.slice(1..);
             (root.object().coerce_to_object(self), true)
         } else {
             (start, false)
@@ -2546,17 +2546,19 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         while !path.is_empty() {
             // Skip any number of leading :
             // `foo`, `:foo`, and `:::foo` are all the same
-            while path.get(0) == Some(&b':') {
-                path = &path[1..];
-            }
+            path = path.trim_start_matches(b':');
 
-            let val = if let b".." | b"../" | b"..:" = &path[..std::cmp::min(path.len(), 3)] {
+            let prefix = path.slice(..path.len().min(3));
+            let val = if prefix == b".."
+                || prefix == b"../"
+                || prefix == b"..:"
+            {
                 // Check for ..
                 // SWF-4 style _parent
-                if path.get(2) == Some(&b'/') {
+                if path.try_get(2) == Some(u16::from(b'/')) {
                     is_slash_path = true;
                 }
-                path = path.get(3..).unwrap_or(&[]);
+                path = path.try_slice(3..).unwrap_or_default();
                 if let Some(parent) = object.as_display_object().and_then(|o| o.avm1_parent()) {
                     parent.object()
                 } else {
@@ -2571,10 +2573,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
-                    match path[pos] {
-                        b':' => break,
-                        b'.' if !is_slash_path => break,
-                        b'/' => {
+                    match u8::try_from(path.get(pos)) {
+                        Ok(b':') => break,
+                        Ok(b'.') if !is_slash_path => break,
+                        Ok(b'/') => {
                             is_slash_path = true;
                             break;
                         }
@@ -2584,15 +2586,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
 
                 // Slice out the identifier and step the cursor past the delimiter.
-                let ident = &path[..pos];
-                path = path.get(pos + 1..).unwrap_or(&[]);
+                let name = path.slice(..pos);
+                path = path.try_slice(pos + 1..).unwrap_or_default();
 
-                // Guaranteed to be valid UTF-8.
-                let name = unsafe { std::str::from_utf8_unchecked(ident) };
-
-                if first_element && name == "this" {
+                if first_element && name == b"this" {
                     self.this_cell().into()
-                } else if first_element && name == "_root" {
+                } else if first_element && name == b"_root" {
                     self.root_object()?
                 } else {
                     // Get the value from the object.
@@ -2601,13 +2600,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     if let Some(child) = object
                         .as_display_object()
                         .and_then(|o| o.as_container())
-                        .and_then(|o| {
-                            o.child_by_name(WString::from_utf8(name).borrow(), case_sensitive)
-                        })
+                        .and_then(|o| o.child_by_name(name, case_sensitive))
                     {
                         child.object()
                     } else {
-                        let name = AvmString::new(self.context.gc_context, name);
+                        let name = AvmString::new_ucs2(self.context.gc_context, name.into());
                         object.get(name, self).unwrap()
                     }
                 }
@@ -2634,29 +2631,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn resolve_variable_path<'s>(
         &mut self,
         start: DisplayObject<'gc>,
-        // TODO(moulins): replace by Str<'_> once the API is good enough.
-        path: &'s str,
-    ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
+        path: WStr<'s>,
+    ) -> Result<Option<(Object<'gc>, WStr<'s>)>, Error<'gc>> {
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        // We also check for a / to skip some unnecessary work later.
-        let mut has_slash = false;
-        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
-            b':' | b'.' => true,
-            b'/' => {
-                has_slash = true;
-                false
-            }
-            _ => false,
-        });
-
-        let b = var_iter.next();
-        let a = var_iter.next();
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            let (path, var_name) = (path.slice(..separator), path.slice(separator + 1..));
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2708,24 +2690,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        // We also check for a / to skip some unnecessary work later.
-        let mut has_slash = false;
-        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
-            b':' | b'.' => true,
-            b'/' => {
-                has_slash = true;
-                false
-            }
-            _ => false,
-        });
-
-        let b = var_iter.next();
-        let a = var_iter.next();
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            let (path, var_name) = (path.slice(..separator), path.slice(separator + 1..));
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2733,7 +2701,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
-                    let var_name = AvmString::new(self.context.gc_context, var_name);
+                    let var_name = AvmString::new_ucs2(self.context.gc_context, var_name.into());
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
@@ -2745,14 +2713,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
-        // We can skip this step if we didn't find a slash above.
-        if has_slash {
+        if path.contains(b'/') {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root(&self.context)?;
-                if let Some(object) =
-                    self.resolve_target_path(avm1_root, *scope.read().locals(), &path, false)?
-                {
+                if let Some(object) = self.resolve_target_path(
+                    avm1_root,
+                    *scope.read().locals(),
+                    path.borrow(),
+                    false,
+                )? {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
                 current_scope = scope.read().parent_cell();
@@ -2801,16 +2771,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        let mut var_iter = path.as_bytes().rsplitn(2, |&c| c == b':' || c == b'.');
-        let b = var_iter.next();
-        let a = var_iter.next();
+        let separator = path.rfind(b":.".as_ref());
 
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(sep) = separator {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
-            let var_name = AvmString::new(self.context.gc_context, var_name);
+            let (path, var_name) = (path.slice(..sep), path.slice(sep + 1..));
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2818,6 +2784,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
+                    let var_name = AvmString::new_ucs2(self.context.gc_context, var_name.into());
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }

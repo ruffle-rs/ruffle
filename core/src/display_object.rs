@@ -10,7 +10,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
@@ -789,34 +789,34 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
-    fn path(&self) -> String {
+    fn path(&self) -> WString {
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
-            path.push('.');
-            path.push_str(&*self.name());
+            path.push_byte(b'.');
+            path.push_str(self.name().borrow());
             path
         } else {
-            format!("_level{}", self.depth())
+            WString::from_utf8_owned(format!("_level{}", self.depth()))
         }
     }
 
     /// Returns the Flash 4 slash-syntax path to this display object, e.g. `/foo/clip`.
     /// Returned by the `_target` property in AVM1.
-    fn slash_path(&self) -> String {
-        fn build_slash_path(object: DisplayObject<'_>) -> String {
+    fn slash_path(&self) -> WString {
+        fn build_slash_path(object: DisplayObject<'_>) -> WString {
             if let Some(parent) = object.avm1_parent() {
                 let mut path = build_slash_path(parent);
-                path.push('/');
-                path.push_str(&*object.name());
+                path.push_byte(b'/');
+                path.push_str(object.name().borrow());
                 path
             } else {
                 let level = object.depth();
                 if level == 0 {
                     // _level0 does not append its name in slash syntax.
-                    String::new()
+                    WString::new()
                 } else {
                     // Other levels do append their name.
-                    format!("_level{}", level)
+                    WString::from_utf8_owned(format!("_level{}", level))
                 }
             }
         }
@@ -825,7 +825,7 @@ pub trait TDisplayObject<'gc>:
             build_slash_path((*self).into())
         } else {
             // _target of _level0 should just be '/'.
-            '/'.to_string()
+            WString::from_unit(b'/'.into())
         }
     }
 

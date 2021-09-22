@@ -1004,7 +1004,7 @@ pub fn goto_frame<'gc>(
             // This can direct other clips than the one this method was called on!
             let frame_path = val.coerce_to_string(activation)?;
             if let Some((clip, frame)) =
-                activation.resolve_variable_path(movie_clip.into(), &frame_path)?
+                activation.resolve_variable_path(movie_clip.into(), frame_path.borrow())?
             {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
                     // TODO(moulins): we need WStr::parse for avoiding allocation here.
