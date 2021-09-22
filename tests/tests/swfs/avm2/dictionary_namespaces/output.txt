@@ -1,0 +1,37 @@
+///var dict = new TestDictionary()
+///var test1 = {"toString": function() { return "test1"; }};
+///dict.test::[test1] = "Test Object from test ns"
+///dict.test2::[test1] = "Test Object from test2 ns"
+///dict[test1]
+Test Object from test2 ns
+///dict.test::[test1]
+Test Object from test2 ns
+///dict.test2::[test1]
+Test Object from test2 ns
+///dict.test::["test1"]
+
+///dict.test2::["test1"]
+
+///dict[test1] = "Test Object from public ns"
+///dict[test1]
+Test Object from public ns
+///dict.test::[test1]
+Test Object from public ns
+///dict.test2::[test1]
+Test Object from public ns
+///dict.test::["test1"]
+
+///dict.test2::["test1"]
+
+///delete dict.test::[test1]
+true
+///dict[test1]
+undefined
+///dict.test::[test1]
+undefined
+///dict.test2::[test1]
+undefined
+///dict.test::["test1"]
+
+///dict.test2::["test1"]
+

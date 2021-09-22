@@ -1,0 +1,62 @@
+///var a = new Dictionary()
+///a["key"] = 5
+///a["key"]
+5
+///a["key"] = 6
+///var key2 = new Test()
+///a[key2] = 23
+///var key3 = new Test()
+///a[key3] = "Key3 True Value"
+///a["key3"] = "Key3 False Value"
+///var key4 = {"toString": function() { return "key4"; }}
+///a[key4] = "Key4 True Value"
+///a["key4"] = "Key4 False Value"
+///a[13] = "i've been found!"
+///a["13"] = "no I haven't"
+///a[1.123] = "this violates Rust!"
+///a["1.123"] = "this is perfectly acceptable"
+///a[undefined] = "oh no"
+///a["undefined"] = "uh huh..."
+///a[null] = "oh YES!"
+///a["null"] = "yeah sure"
+///a[true] = "true"
+///a["true"] = "stringy true"
+///a[false] = "false"
+///a["false"] = "stringy false"
+///"key" in a
+true
+///key2 in a
+true
+///key3 in a
+true
+///"key3" in a
+true
+///key4 in a
+true
+///"key4" in a
+true
+///13 in a
+true
+///1.123 in a
+true
+///"1.123" in a
+true
+///undefined in a
+true
+///"undefined" in a
+true
+///null in a
+true
+///"null" in a
+true
+///true in a
+true
+///"true" in a
+true
+///false in a
+true
+///"false" in a
+true
+///a[a] = a
+///a in a
+true

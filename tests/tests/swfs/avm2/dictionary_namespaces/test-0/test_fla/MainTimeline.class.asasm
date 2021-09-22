@@ -1,0 +1,76 @@
+class
+ refid "test_fla:MainTimeline"
+ instance QName(PackageNamespace("test_fla"), "MainTimeline")
+  extends QName(PackageNamespace("flash.display"), "MovieClip")
+  flag PROTECTEDNS
+  protectedns ProtectedNamespace("test_fla:MainTimeline")
+  iinit
+   name "test_fla:MainTimeline/test_fla:MainTimeline"
+   refid "test_fla:MainTimeline/instance/init"
+   body
+    maxstack 3
+    localcount 1
+    initscopedepth 10
+    maxscopedepth 11
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     findpropstrict      QName(PackageNamespace(""), "addFrameScript")
+     debugfile           "test_fla.MainTimeline::MainTimeline"
+     debugline           1
+     pushbyte            0
+     getlocal0
+     getproperty         QName(PackageInternalNs("test_fla"), "frame1")
+     callpropvoid        QName(PackageNamespace(""), "addFrameScript"), 2
+
+     debugline           2
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+  trait method QName(PackageInternalNs("test_fla"), "frame1")
+   method
+    name "test_fla:MainTimeline/test_fla:frame1"
+    refid "test_fla:MainTimeline/instance/test_fla:frame1"
+    body
+     maxstack 1
+     localcount 1
+     initscopedepth 10
+     maxscopedepth 11
+     code
+      getlocal0
+      pushscope
+
+      debugfile           "test_fla.MainTimeline::frame1"
+      debugline           3
+      findpropstrict      QName(PackageNamespace(""), "Test")
+      constructprop       QName(PackageNamespace(""), "Test"), 0
+      pop
+      debugline           4
+      returnvoid
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+ end ; instance
+ cinit
+  name ""
+  refid "test_fla:MainTimeline/class/init"
+  body
+   maxstack 1
+   localcount 1
+   initscopedepth 9
+   maxscopedepth 10
+   code
+    getlocal0
+    pushscope
+
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

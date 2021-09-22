@@ -1,0 +1,16 @@
+method
+ name ""
+ refid "Test/init/inline_method"
+ body
+  maxstack 1
+  localcount 1
+  initscopedepth 1
+  maxscopedepth 1
+  code
+   pushstring          "test1"
+   debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+   debugline           20
+   returnvalue
+  end ; code
+ end ; body
+end ; method
