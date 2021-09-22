@@ -89,7 +89,7 @@ pub fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
-        Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
+        Ok(AvmString::new_ucs2(activation.context.gc_context, display_object.path()).into())
     } else {
         Ok(Value::Undefined)
     }

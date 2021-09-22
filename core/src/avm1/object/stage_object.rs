@@ -782,7 +782,7 @@ fn set_rotation<'gc>(
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new(activation.context.gc_context, this.slash_path()).into()
+    AvmString::new_ucs2(activation.context.gc_context, this.slash_path()).into()
 }
 
 fn frames_loaded<'gc>(
@@ -794,8 +794,8 @@ fn frames_loaded<'gc>(
         .map_or(Value::Undefined, Value::from)
 }
 
-fn name<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new(activation.context.gc_context, this.name().to_string()).into()
+fn name<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.name().into()
 }
 
 fn set_name<'gc>(
@@ -817,7 +817,7 @@ fn drop_target<'gc>(
         .map_or_else(
             || "".into(),
             |drop_target| {
-                AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
+                AvmString::new_ucs2(activation.context.gc_context, drop_target.slash_path()).into()
             },
         )
 }
