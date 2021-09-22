@@ -1,0 +1,307 @@
+script
+ sinit
+  name ""
+  refid "Test/init"
+  body
+   maxstack 3
+   localcount 2
+   initscopedepth 1
+   maxscopedepth 4
+   code
+    getlocal0
+    pushscope
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+    debugline           2
+    findpropstrict      Multiname("Test", [PackageNamespace("")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace(""), "Object")
+    newclass            "Test"
+    popscope
+    initproperty        QName(PackageNamespace(""), "Test")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+    debugline           9
+    findpropstrict      Multiname("TestDictionary", [PrivateNamespace("Test.as$38")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.utils"), "Dictionary")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.utils"), "Dictionary")
+    newclass            "Test/init/TestDictionary"
+    popscope
+    popscope
+    initproperty        QName(PrivateNamespace("Test.as$38"), "TestDictionary")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+    debugline           15
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///var dict = new TestDictionary()"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           16
+    findpropstrict      Multiname("dict", [PrivateNamespace("Test.as$38")])
+    findpropstrict      QName(PrivateNamespace("Test.as$38"), "TestDictionary")
+    constructprop       QName(PrivateNamespace("Test.as$38"), "TestDictionary"), 0
+    setproperty         QName(PrivateNamespace("Test.as$38"), "dict")
+
+    debugline           18
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///var test1 = {\"toString\": function() { return \"test1\"; }};"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           19
+    findpropstrict      Multiname("test1", [PrivateNamespace("Test.as$38")])
+    pushstring          "toString"
+    newfunction         "Test/init/inline_method"
+    newobject           1
+    setproperty         QName(PrivateNamespace("Test.as$38"), "test1")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+    debugline           23
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[test1] = \"Test Object from test ns\""
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           24
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    pushstring          "Test Object from test ns"
+    setproperty         MultinameL([Namespace("NS::test")])
+
+    debugline           25
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[test1] = \"Test Object from test2 ns\""
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           26
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    pushstring          "Test Object from test2 ns"
+    setproperty         MultinameL([Namespace("NS::test2")])
+
+    debugline           28
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           29
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           30
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           31
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           32
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           33
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           35
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           36
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           37
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           38
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           40
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict[test1] = \"Test Object from public ns\""
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           41
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    pushstring          "Test Object from public ns"
+    setproperty         MultinameL([PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+
+    debugline           43
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           44
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           45
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           46
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           47
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           48
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           50
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           51
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           52
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           53
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           55
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete dict.test::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           56
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    deleteproperty      MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           58
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           59
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           60
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           61
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           62
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[test1]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           63
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    getlex              QName(PrivateNamespace("Test.as$38"), "test1")
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           65
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           66
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           67
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///dict.test2::[\"test1\"]"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           68
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "dict")
+    pushstring          "test1"
+    getproperty         MultinameL([Namespace("NS::test2")])
+    callproperty        QName(PackageNamespace(""), "trace"), 1
+    coerce_a
+    setlocal1
+
+    getlocal1
+    returnvalue
+   end ; code
+  end ; body
+ end ; method
+ trait const QName(PrivateNamespace("Test.as$38"), "test") value Namespace(Namespace("NS::test")) end
+ trait const QName(PrivateNamespace("Test.as$38"), "test2") value Namespace(Namespace("NS::test2")) end
+ trait class QName(PackageNamespace(""), "Test")
+  #include "Test.class.asasm"
+ end ; trait
+ trait class QName(PrivateNamespace("Test.as$38"), "TestDictionary")
+  #include "Test.init/TestDictionary.class.asasm"
+ end ; trait
+ trait slot QName(PrivateNamespace("Test.as$38"), "dict") end
+ trait slot QName(PrivateNamespace("Test.as$38"), "test1") end
+end ; script

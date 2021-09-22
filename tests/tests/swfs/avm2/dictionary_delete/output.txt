@@ -1,0 +1,101 @@
+///var a = new Dictionary()
+///a["key"] = 5
+///a["key"]
+5
+///a["key"] = 6
+///var key2 = new Test()
+///a[key2] = 23
+///var key3 = new Test()
+///a[key3] = "Key3 True Value"
+///a["key3"] = "Key3 False Value"
+///var key4 = {"toString": function() { return "key4"; }}
+///a[key4] = "Key4 True Value"
+///a["key4"] = "Key4 False Value"
+///a[13] = "i've been found!"
+///a["13"] = "no I haven't"
+///a[1.123] = "this violates Rust!"
+///a["1.123"] = "this is perfectly acceptable"
+///a[undefined] = "oh no"
+///a["undefined"] = "uh huh..."
+///a[null] = "oh YES!"
+///a["null"] = "yeah sure"
+///a[true] = "true"
+///a["true"] = "stringy true"
+///a[false] = "false"
+///a["false"] = "stringy false"
+///delete a["key"]
+true
+///a["key"]
+undefined
+///delete a[key2]
+true
+///a[key2]
+undefined
+///delete a[key3]
+true
+///a[key3]
+undefined
+///a["key3"]
+Key3 False Value
+///delete a["key3"]
+true
+///a[key3]
+undefined
+///a["key3"]
+undefined
+///delete a[key4]
+true
+///a[key4]
+undefined
+///a["key4"]
+Key4 False Value
+///delete a["key4"]
+true
+///a[key4]
+undefined
+///a["key4"]
+undefined
+///delete a[13]
+true
+///a[13]
+undefined
+///delete a[1.123]
+true
+///a[1.123]
+undefined
+///a["1.123"]
+undefined
+///delete a[undefined]
+true
+///a[undefined]
+undefined
+///a["undefined"]
+undefined
+///delete a[null]
+true
+///a[null]
+undefined
+///a["null"]
+undefined
+///delete a[true]
+true
+///a[true]
+undefined
+///a["true"]
+undefined
+///delete a[false]
+true
+///a[false]
+undefined
+///a["false"]
+undefined
+///a[a] = a
+///a[a]
+[object Dictionary]
+///delete a[a]
+true
+///a[a]
+undefined
+///var key5 = {"toString": function() { return "key5"; }}
+///delete a[key5]
+true

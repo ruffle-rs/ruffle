@@ -1,0 +1,48 @@
+class
+ refid "Test/init/TestDictionary"
+ instance QName(PrivateNamespace("Test.as$38"), "TestDictionary")
+  extends QName(PackageNamespace("flash.utils"), "Dictionary")
+  flag SEALED
+  flag PROTECTEDNS
+  protectedns ProtectedNamespace("Test.as$38:TestDictionary")
+  iinit
+   name "Test.as$38:TestDictionary/TestDictionary"
+   refid "Test/init/TestDictionary/instance/init"
+   body
+    maxstack 1
+    localcount 1
+    initscopedepth 5
+    maxscopedepth 6
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces;;Test.as"
+     debugline           69
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+  trait slot QName(Namespace("NS::test"), "test1") value Utf8("") end
+  trait slot QName(Namespace("NS::test2"), "test1") value Utf8("") end
+ end ; instance
+ cinit
+  name ""
+  refid "Test/init/TestDictionary/class/init"
+  body
+   maxstack 1
+   localcount 1
+   initscopedepth 4
+   maxscopedepth 5
+   code
+    getlocal0
+    pushscope
+
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

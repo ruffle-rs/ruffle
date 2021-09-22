@@ -1,0 +1,56 @@
+script
+ sinit
+  name ""
+  refid "test_fla:MainTimeline/init"
+  body
+   maxstack 2
+   localcount 1
+   initscopedepth 1
+   maxscopedepth 9
+   code
+    getlocal0
+    pushscope
+
+    getscopeobject      0
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.events"), "EventDispatcher")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "DisplayObject")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "InteractiveObject")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "DisplayObjectContainer")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "Sprite")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "MovieClip")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.display"), "MovieClip")
+    newclass            "test_fla:MainTimeline"
+    popscope
+    popscope
+    popscope
+    popscope
+    popscope
+    popscope
+    popscope
+    initproperty        QName(PackageNamespace("test_fla"), "MainTimeline")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\dictionary_namespaces\\"
+    debugline           24
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+ trait class QName(PackageNamespace("test_fla"), "MainTimeline") slotid 1
+  #include "MainTimeline.class.asasm"
+ end ; trait
+end ; script
