@@ -48,7 +48,11 @@ export async function bindBooleanOptions(
             utils.storage.sync.set({ [key]: value });
         });
 
-        label.textContent = utils.i18n.getMessage(`settings_${checkbox.id}`);
+        // Localize label.
+        const message = utils.i18n.getMessage(`settings_${checkbox.id}`);
+        if (message) {
+            label.textContent = message;
+        }
     }
 
     // Listen for future changes.
