@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
 pub fn vector_allocator<'gc>(
-    class: Object<'gc>,
+    class: ClassObject<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
@@ -23,8 +23,6 @@ pub fn vector_allocator<'gc>(
     //the unspecialized Vector class, we have to fall back to Object when
     //getting the parameter type for our storage.
     let param_type = class
-        .as_class_object()
-        .unwrap()
         .as_class_params()
         .flatten()
         .unwrap_or_else(|| activation.avm2().classes().object);
@@ -66,7 +64,7 @@ impl<'gc> VectorObject<'gc> {
         let applied_class = vector_class.apply(activation, &[value_type.into()])?;
         let applied_proto = applied_class
             .get_property(
-                applied_class,
+                applied_class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::Namespace;
 use crate::avm2::names::QName;
-use crate::avm2::object::{NamespaceObject, Object, PrimitiveObject, TObject};
+use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
@@ -603,7 +603,7 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_type(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        class: Object<'gc>,
+        class: ClassObject<'gc>,
     ) -> Result<Value<'gc>, Error> {
         if Object::ptr_eq(class, activation.avm2().classes().int) {
             return Ok(self.coerce_to_i32(activation)?.into());
@@ -635,16 +635,13 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        if let Some(static_class) = class.as_class_definition() {
-            return Err(format!(
-                "Cannot coerce {:?} to an {:?}",
-                self,
-                static_class.read().name()
-            )
-            .into());
-        } else {
-            return Err(format!("Cannot coerce {:?} to {:?}", self, class).into());
-        }
+        let static_class = class.inner_class_definition();
+        Err(format!(
+            "Cannot coerce {:?} to an {:?}",
+            self,
+            static_class.read().name()
+        )
+        .into())
     }
 
     /// Determine if this value is any kind of number.
@@ -693,20 +690,16 @@ impl<'gc> Value<'gc> {
     pub fn is_of_type(
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
-        type_object: Object<'gc>,
+        type_object: ClassObject<'gc>,
     ) -> Result<bool, Error> {
-        if let Some(type_class) = type_object.as_class_definition() {
-            if type_class.read().name() == &QName::new(Namespace::public(), "Number") {
-                return Ok(self.is_number());
-            }
-
-            if type_class.read().name() == &QName::new(Namespace::public(), "uint") {
-                return Ok(self.is_u32());
-            }
-
-            if type_class.read().name() == &QName::new(Namespace::public(), "int") {
-                return Ok(self.is_i32());
-            }
+        if Object::ptr_eq(type_object, activation.avm2().classes().number) {
+            return Ok(self.is_number());
+        }
+        if Object::ptr_eq(type_object, activation.avm2().classes().uint) {
+            return Ok(self.is_u32());
+        }
+        if Object::ptr_eq(type_object, activation.avm2().classes().int) {
+            return Ok(self.is_i32());
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {

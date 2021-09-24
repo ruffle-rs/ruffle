@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::return_value::ReturnValue;
@@ -18,7 +18,7 @@ use std::fmt::Debug;
 
 /// A class instance allocator that allocates `ScriptObject`s.
 pub fn scriptobject_allocator<'gc>(
-    class: Object<'gc>,
+    class: ClassObject<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
@@ -54,7 +54,7 @@ pub struct ScriptObjectData<'gc> {
 
     /// The class object that this is an instance of.
     /// If `None`, this is either a class itself, or not an ES4 object at all.
-    instance_of: Option<Object<'gc>>,
+    instance_of: Option<ClassObject<'gc>>,
 
     /// Enumeratable property names.
     enumerants: Vec<QName<'gc>>,
@@ -104,7 +104,7 @@ impl<'gc> ScriptObject<'gc> {
     /// Construct an instance with a class and scope stack.
     pub fn instance(
         mc: MutationContext<'gc, '_>,
-        class: Object<'gc>,
+        class: ClassObject<'gc>,
         proto: Object<'gc>,
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
@@ -116,7 +116,7 @@ impl<'gc> ScriptObject<'gc> {
 }
 
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<Object<'gc>>) -> Self {
+    pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
         ScriptObjectData {
             values: HashMap::new(),
             slots: Vec::new(),
@@ -138,12 +138,10 @@ impl<'gc> ScriptObjectData<'gc> {
         if let Some(prop) = prop {
             prop.get(
                 receiver,
-                Some(
-                    activation
-                        .subclass_object()
-                        .or_else(|| self.instance_of())
-                        .unwrap_or(receiver),
-                ),
+                // TODO: This used to also .unwrap_or(receiver),
+                // but this no longer can be done as it's not a ClassObject.
+                // Despite this, somehow, no tests fail.
+                activation.subclass_object().or_else(|| self.instance_of()),
             )
         } else {
             Ok(Value::Undefined.into())
@@ -175,7 +173,10 @@ impl<'gc> ScriptObjectData<'gc> {
             let prop = self.values.get_mut(name).unwrap();
             prop.set(
                 receiver,
-                Some(activation.subclass_object().or(class).unwrap_or(receiver)),
+                // TODO: This used to also .unwrap_or(receiver),
+                // but this no longer can be done as it's not a ClassObject.
+                // Despite this, somehow, no tests fail.
+                activation.subclass_object().or(class),
                 value,
             )
         } else {
@@ -203,7 +204,10 @@ impl<'gc> ScriptObjectData<'gc> {
             } else {
                 prop.init(
                     receiver,
-                    Some(activation.subclass_object().or(class).unwrap_or(receiver)),
+                    // TODO: This used to also .unwrap_or(receiver),
+                    // but this no longer can be done as it's not a ClassObject.
+                    // Despite this, somehow, no tests fail.
+                    activation.subclass_object().or(class),
                     value,
                 )
             }
@@ -290,14 +294,11 @@ impl<'gc> ScriptObjectData<'gc> {
                 let mut cur_class = Some(class);
 
                 while let Some(class) = cur_class {
-                    let cur_static_class = class
-                        .as_class_definition()
-                        .ok_or("Object is not a class constructor")?;
+                    let cur_static_class = class.inner_class_definition();
                     if cur_static_class.read().has_instance_trait(name) {
                         return Ok(true);
                     }
 
-                    let class = class.as_class_object().unwrap();
                     cur_class = class.superclass_object();
                 }
 
@@ -351,9 +352,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 let mut cur_class = Some(*class);
 
                 while let Some(class) = cur_class {
-                    let cur_static_class = class
-                        .as_class_definition()
-                        .ok_or("Object is not a class constructor")?;
+                    let cur_static_class = class.inner_class_definition();
                     if let Some(ns) = cur_static_class
                         .read()
                         .resolve_any_instance_trait(local_name)
@@ -361,7 +360,6 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(Some(ns));
                     }
 
-                    let class = class.as_class_object().unwrap();
                     cur_class = class.superclass_object();
                 }
 
@@ -551,14 +549,13 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
     ) -> Result<(), Error> {
         if let Some(class) = self.instance_of() {
-            if let Some(class) = class.as_class_definition() {
-                if class.read().is_sealed() {
-                    return Err(format!(
-                        "Objects of type {:?} are not dynamic",
-                        class.read().name().local_name()
-                    )
-                    .into());
-                }
+            let class = class.inner_class_definition();
+            if class.read().is_sealed() {
+                return Err(format!(
+                    "Objects of type {:?} are not dynamic",
+                    class.read().name().local_name()
+                )
+                .into());
             }
         }
 
@@ -611,12 +608,12 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Get the class object for this object, if it has one.
-    pub fn instance_of(&self) -> Option<Object<'gc>> {
+    pub fn instance_of(&self) -> Option<ClassObject<'gc>> {
         self.instance_of
     }
 
     /// Set the class object for this object.
-    pub fn set_instance_of(&mut self, instance_of: Object<'gc>) {
+    pub fn set_instance_of(&mut self, instance_of: ClassObject<'gc>) {
         self.instance_of = Some(instance_of);
     }
 }

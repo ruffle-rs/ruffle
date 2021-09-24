@@ -1,6 +1,6 @@
 use crate::avm1::function::FunctionObject;
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
-use crate::avm2::{Domain as Avm2Domain, Object as Avm2Object};
+use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::{audio::SoundHandle, render};
 use crate::character::Character;
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
@@ -80,7 +80,7 @@ impl WeakElement for WeakMovieSymbol {
 pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
-    class_map: WeakValueHashMap<Avm2Object<'gc>, WeakMovieSymbol>,
+    class_map: WeakValueHashMap<Avm2ClassObject<'gc>, WeakMovieSymbol>,
 }
 
 unsafe impl Collect for Avm2ClassRegistry<'_> {
@@ -110,7 +110,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     /// a library symbol.
     pub fn class_symbol(
         &self,
-        class_object: Avm2Object<'gc>,
+        class_object: Avm2ClassObject<'gc>,
     ) -> Option<(Arc<SwfMovie>, CharacterId)> {
         match self.class_map.get(&class_object) {
             Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
@@ -121,7 +121,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     /// Associate an AVM2 class object with a given library symbol.
     pub fn set_class_symbol(
         &mut self,
-        class_object: Avm2Object<'gc>,
+        class_object: Avm2ClassObject<'gc>,
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {

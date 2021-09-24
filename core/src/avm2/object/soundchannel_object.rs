@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
@@ -12,7 +12,7 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates SoundChannel objects.
 pub fn soundchannel_allocator<'gc>(
-    class: Object<'gc>,
+    class: ClassObject<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
@@ -49,7 +49,7 @@ impl<'gc> SoundChannelObject<'gc> {
         let class = activation.avm2().classes().soundchannel;
         let proto = class
             .get_property(
-                class,
+                class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?

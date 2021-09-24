@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Multiname, Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
@@ -50,7 +50,7 @@ bitflags! {
 ///  * `proto` - The prototype attached to the class object.
 ///  * `activation` - The current AVM2 activation.
 pub type AllocatorFn = for<'gc> fn(
-    Object<'gc>,
+    ClassObject<'gc>,
     Object<'gc>,
     &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error>;

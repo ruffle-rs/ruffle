@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -11,7 +11,7 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
 pub fn bytearray_allocator<'gc>(
-    class: Object<'gc>,
+    class: ClassObject<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {

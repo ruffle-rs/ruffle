@@ -116,7 +116,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// the same method again.
     ///
     /// This will not be available outside of method, setter, or getter calls.
-    subclass_object: Option<Object<'gc>>,
+    subclass_object: Option<ClassObject<'gc>>,
 
     /// The class of all objects returned from `newactivation`.
     ///
@@ -126,7 +126,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     ///
     /// If this is `None`, then the method did not ask for an activation object
     /// and we will not allocate a class for one.
-    activation_class: Option<Object<'gc>>,
+    activation_class: Option<ClassObject<'gc>>,
 
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
@@ -203,7 +203,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// This returns an error if a type is named but does not exist; or if the
     /// typed named is not a class object.
-    fn resolve_type(&mut self, type_name: Multiname<'gc>) -> Result<Option<Object<'gc>>, Error> {
+    fn resolve_type(
+        &mut self,
+        type_name: Multiname<'gc>,
+    ) -> Result<Option<ClassObject<'gc>>, Error> {
         if type_name.is_any() {
             return Ok(None);
         }
@@ -216,9 +219,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
             .coerce_to_object(self)?;
 
-        if class.as_class_object().is_none() {
-            return Err(format!("Resolved parameter type {:?} is not a class", type_name).into());
-        }
+        let class = class
+            .as_class_object()
+            .ok_or_else(|| format!("Resolved parameter type {:?} is not a class", type_name))?;
 
         // Type parameters should specialize the returned class.
         // Unresolvable parameter types are treated as Any, which is treated as
@@ -228,7 +231,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             for param in type_name.params() {
                 param_types.push(match self.resolve_type(param.clone())? {
-                    Some(o) => Value::Object(o),
+                    Some(o) => Value::Object(o.into()),
                     None => Value::Null,
                 });
             }
@@ -324,7 +327,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
         user_arguments: &[Value<'gc>],
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
@@ -449,7 +452,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         context: UpdateContext<'a, 'gc, 'gc_context>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
         this: Option<Object<'gc>>,
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error> {
         let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
@@ -500,14 +503,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         receiver: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error> {
-        let superclass_object: Result<Object<'gc>, Error> = self
+        let superclass_object = self
             .subclass_object()
-            .and_then(|c| c.as_class_object())
             .and_then(|c| c.superclass_object())
             .ok_or_else(|| {
-                "Attempted to call super constructor without a superclass."
-                    .to_string()
-                    .into()
+                Error::from("Attempted to call super constructor without a superclass.")
             });
         let superclass_object = superclass_object?;
 
@@ -581,7 +581,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Get the base prototype of the object that the currently executing
     /// method was retrieved from, if one exists.
-    pub fn subclass_object(&self) -> Option<Object<'gc>> {
+    pub fn subclass_object(&self) -> Option<ClassObject<'gc>> {
         self.subclass_object
     }
 
@@ -1173,16 +1173,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let superclass_object: Result<Object<'gc>, Error> = self
+        let superclass_object = self
             .subclass_object()
-            .and_then(|c| c.as_class_object())
             .and_then(|bc| bc.superclass_object())
-            .ok_or_else(|| {
-                "Attempted to call super method without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let superclass_object = superclass_object?;
+            .ok_or_else(|| Error::from("Attempted to call super method without a superclass."))?;
 
         let value = superclass_object.call_super(&multiname, receiver, &args, self)?;
 
@@ -1201,16 +1195,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let superclass_object: Result<Object<'gc>, Error> = self
+        let superclass_object = self
             .subclass_object()
-            .and_then(|c| c.as_class_object())
             .and_then(|bc| bc.superclass_object())
-            .ok_or_else(|| {
-                "Attempted to call super method without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let superclass_object = superclass_object?;
+            .ok_or_else(|| Error::from("Attempted to call super method without a superclass."))?;
 
         superclass_object.call_super(&multiname, receiver, &args, self)?;
 
@@ -1399,16 +1387,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let superclass_object: Result<Object<'gc>, Error> = self
+        let superclass_object = self
             .subclass_object()
-            .and_then(|c| c.as_class_object())
             .and_then(|bc| bc.superclass_object())
-            .ok_or_else(|| {
-                "Attempted to call super method without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let superclass_object = superclass_object?;
+            .ok_or_else(|| Error::from("Attempted to call super method without a superclass."))?;
 
         let value = superclass_object.get_super(&multiname, object, self)?;
 
@@ -1426,16 +1408,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let superclass_object: Result<Object<'gc>, Error> = self
+        let superclass_object = self
             .subclass_object()
-            .and_then(|c| c.as_class_object())
             .and_then(|bc| bc.superclass_object())
-            .ok_or_else(|| {
-                "Attempted to call super method without a superclass."
-                    .to_string()
-                    .into()
-            });
-        let superclass_object = superclass_object?;
+            .ok_or_else(|| Error::from("Attempted to call super method without a superclass."))?;
 
         superclass_object.set_super(&multiname, value, object, self)?;
 
@@ -1548,13 +1524,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
-        let found: Result<Object<'gc>, Error> = if let Some(scope) = self.scope() {
+        let result = if let Some(scope) = self.scope() {
             scope.read().find(&multiname, self)?
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
-        let result: Value<'gc> = found?.into();
+        .ok_or_else(|| Error::from(format!("Property does not exist: {:?}", multiname)))?;
 
         self.context.avm2.push(result);
 
@@ -1568,13 +1543,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let multiname = self.pool_multiname_static(method, index)?;
         avm_debug!(self.avm2(), "Resolving {:?}", multiname);
-        let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
+        let result = if let Some(scope) = self.scope() {
             scope.read().resolve(&multiname, self)?
         } else {
             None
         }
-        .ok_or_else(|| format!("Property does not exist: {:?}", multiname).into());
-        let result: Value<'gc> = found?;
+        .ok_or_else(|| Error::from(format!("Property does not exist: {:?}", multiname)))?;
 
         self.context.avm2.push(result);
 
@@ -1710,7 +1684,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let base_value = self.context.avm2.pop();
         let base_class = match base_value {
-            Value::Object(o) => Some(o),
+            Value::Object(o) => match o.as_class_object() {
+                Some(cls) => Some(cls),
+                None => return Err("Base class for new class is not a class.".into()),
+            },
             Value::Null => None,
             _ => return Err("Base class for new class is not Object or null.".into()),
         };
@@ -2523,19 +2500,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop();
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
+        let found = if let Some(scope) = self.scope() {
             scope.read().resolve(&multiname, self)?
         } else {
             None
         }
         .ok_or_else(|| {
-            format!(
+            Error::from(format!(
                 "Attempted to check against nonexistent type {:?}",
                 multiname
-            )
-            .into()
-        });
-        let type_object = found?.coerce_to_object(self)?;
+            ))
+        })?;
+        let type_object = found
+            .coerce_to_object(self)?
+            .as_class_object()
+            .ok_or_else(|| {
+                Error::from(format!(
+                    "Attempted to check against nonexistent type {:?}",
+                    multiname
+                ))
+            })?;
 
         let is_instance_of = value.is_of_type(self, type_object)?;
         self.context.avm2.push(is_instance_of);
@@ -2546,6 +2530,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_is_type_late(&mut self) -> Result<FrameControl<'gc>, Error> {
         let type_object = self.context.avm2.pop().coerce_to_object(self)?;
         let value = self.context.avm2.pop();
+
+        let type_object = type_object
+            .as_class_object()
+            .ok_or_else(|| Error::from("Attempted to check against non-type"))?;
 
         let is_instance_of = value.is_of_type(self, type_object)?;
 
@@ -2562,23 +2550,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let found: Result<Value<'gc>, Error> = if let Some(scope) = self.scope() {
+        let found = if let Some(scope) = self.scope() {
             scope.read().resolve(&multiname, self)?
         } else {
             None
         }
         .ok_or_else(|| {
-            format!(
+            Error::from(format!(
                 "Attempted to check against nonexistent type {:?}",
                 multiname
-            )
-            .into()
+            ))
         });
-        let class = found?.coerce_to_object(self)?;
-
-        if class.as_class_object().is_none() {
-            return Err("TypeError: The right-hand side of operator must be a class.".into());
-        }
+        let class = found?
+            .coerce_to_object(self)?
+            .as_class_object()
+            .ok_or_else(|| {
+                Error::from("TypeError: The right-hand side of operator must be a class.")
+            })?;
 
         if value.is_of_type(class, self)? {
             self.context.avm2.push(value);
@@ -2593,9 +2581,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let class = self.context.avm2.pop().coerce_to_object(self)?;
         let value = self.context.avm2.pop().coerce_to_object(self)?;
 
-        if class.as_class_object().is_none() {
-            return Err("TypeError: The right-hand side of operator must be a class.".into());
-        }
+        let class = class.as_class_object().ok_or_else(|| {
+            Error::from("TypeError: The right-hand side of operator must be a class.")
+        })?;
 
         if value.is_of_type(class, self)? {
             self.context.avm2.push(value);

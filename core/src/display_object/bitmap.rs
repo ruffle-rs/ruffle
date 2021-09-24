@@ -2,8 +2,8 @@
 
 use crate::avm1;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
+    StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
@@ -58,7 +58,7 @@ pub struct BitmapData<'gc> {
     ///
     /// This association is unusual relative to other things that use AS3
     /// linkage, where the symbol class usually directly represents the symbol.
-    avm2_bitmapdata_class: Option<Avm2Object<'gc>>,
+    avm2_bitmapdata_class: Option<Avm2ClassObject<'gc>>,
 }
 
 impl<'gc> Bitmap<'gc> {
@@ -164,11 +164,15 @@ impl<'gc> Bitmap<'gc> {
         }
     }
 
-    pub fn avm2_bitmapdata_class(self) -> Option<Avm2Object<'gc>> {
+    pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
         self.0.read().avm2_bitmapdata_class
     }
 
-    pub fn set_avm2_bitmapdata_class(self, mc: MutationContext<'gc, '_>, class: Avm2Object<'gc>) {
+    pub fn set_avm2_bitmapdata_class(
+        self,
+        mc: MutationContext<'gc, '_>,
+        class: Avm2ClassObject<'gc>,
+    ) {
         self.0.write(mc).avm2_bitmapdata_class = Some(class);
     }
 

@@ -185,44 +185,44 @@ impl<'gc> SystemPrototypes<'gc> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct SystemClasses<'gc> {
-    pub object: Object<'gc>,
-    pub function: Object<'gc>,
-    pub class: Object<'gc>,
-    pub global: Object<'gc>,
-    pub string: Object<'gc>,
-    pub boolean: Object<'gc>,
-    pub number: Object<'gc>,
-    pub int: Object<'gc>,
-    pub uint: Object<'gc>,
-    pub namespace: Object<'gc>,
-    pub array: Object<'gc>,
-    pub movieclip: Object<'gc>,
-    pub framelabel: Object<'gc>,
-    pub scene: Object<'gc>,
-    pub application_domain: Object<'gc>,
-    pub event: Object<'gc>,
-    pub video: Object<'gc>,
-    pub xml: Object<'gc>,
-    pub xml_list: Object<'gc>,
-    pub display_object: Object<'gc>,
-    pub shape: Object<'gc>,
-    pub point: Object<'gc>,
-    pub rectangle: Object<'gc>,
-    pub textfield: Object<'gc>,
-    pub textformat: Object<'gc>,
-    pub graphics: Object<'gc>,
-    pub loaderinfo: Object<'gc>,
-    pub bytearray: Object<'gc>,
-    pub stage: Object<'gc>,
-    pub sprite: Object<'gc>,
-    pub simplebutton: Object<'gc>,
-    pub regexp: Object<'gc>,
-    pub vector: Object<'gc>,
-    pub soundtransform: Object<'gc>,
-    pub soundchannel: Object<'gc>,
-    pub bitmap: Object<'gc>,
-    pub bitmapdata: Object<'gc>,
-    pub date: Object<'gc>,
+    pub object: ClassObject<'gc>,
+    pub function: ClassObject<'gc>,
+    pub class: ClassObject<'gc>,
+    pub global: ClassObject<'gc>,
+    pub string: ClassObject<'gc>,
+    pub boolean: ClassObject<'gc>,
+    pub number: ClassObject<'gc>,
+    pub int: ClassObject<'gc>,
+    pub uint: ClassObject<'gc>,
+    pub namespace: ClassObject<'gc>,
+    pub array: ClassObject<'gc>,
+    pub movieclip: ClassObject<'gc>,
+    pub framelabel: ClassObject<'gc>,
+    pub scene: ClassObject<'gc>,
+    pub application_domain: ClassObject<'gc>,
+    pub event: ClassObject<'gc>,
+    pub video: ClassObject<'gc>,
+    pub xml: ClassObject<'gc>,
+    pub xml_list: ClassObject<'gc>,
+    pub display_object: ClassObject<'gc>,
+    pub shape: ClassObject<'gc>,
+    pub point: ClassObject<'gc>,
+    pub rectangle: ClassObject<'gc>,
+    pub textfield: ClassObject<'gc>,
+    pub textformat: ClassObject<'gc>,
+    pub graphics: ClassObject<'gc>,
+    pub loaderinfo: ClassObject<'gc>,
+    pub bytearray: ClassObject<'gc>,
+    pub stage: ClassObject<'gc>,
+    pub sprite: ClassObject<'gc>,
+    pub simplebutton: ClassObject<'gc>,
+    pub regexp: ClassObject<'gc>,
+    pub vector: ClassObject<'gc>,
+    pub soundtransform: ClassObject<'gc>,
+    pub soundchannel: ClassObject<'gc>,
+    pub bitmap: ClassObject<'gc>,
+    pub bitmapdata: ClassObject<'gc>,
+    pub date: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -233,51 +233,47 @@ impl<'gc> SystemClasses<'gc> {
     /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
-    fn new(
-        object: Object<'gc>,
-        function: Object<'gc>,
-        class: Object<'gc>,
-        empty: Object<'gc>,
-    ) -> Self {
+    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>) -> Self {
         SystemClasses {
             object,
             function,
             class,
-            global: empty,
-            string: empty,
-            boolean: empty,
-            number: empty,
-            int: empty,
-            uint: empty,
-            namespace: empty,
-            array: empty,
-            movieclip: empty,
-            framelabel: empty,
-            scene: empty,
-            application_domain: empty,
-            event: empty,
-            video: empty,
-            xml: empty,
-            xml_list: empty,
-            display_object: empty,
-            shape: empty,
-            point: empty,
-            rectangle: empty,
-            textfield: empty,
-            textformat: empty,
-            graphics: empty,
-            loaderinfo: empty,
-            bytearray: empty,
-            stage: empty,
-            sprite: empty,
-            simplebutton: empty,
-            regexp: empty,
-            vector: empty,
-            soundtransform: empty,
-            soundchannel: empty,
-            bitmap: empty,
-            bitmapdata: empty,
-            date: empty,
+            // temporary initialization
+            global: object,
+            string: object,
+            boolean: object,
+            number: object,
+            int: object,
+            uint: object,
+            namespace: object,
+            array: object,
+            movieclip: object,
+            framelabel: object,
+            scene: object,
+            application_domain: object,
+            event: object,
+            video: object,
+            xml: object,
+            xml_list: object,
+            display_object: object,
+            shape: object,
+            point: object,
+            rectangle: object,
+            textfield: object,
+            textformat: object,
+            graphics: object,
+            loaderinfo: object,
+            bytearray: object,
+            stage: object,
+            sprite: object,
+            simplebutton: object,
+            regexp: object,
+            vector: object,
+            soundtransform: object,
+            soundchannel: object,
+            bitmap: object,
+            bitmapdata: object,
+            date: object,
         }
     }
 }
@@ -311,13 +307,11 @@ fn function<'gc>(
 /// properties, if necessary.
 fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
-    class_object: Object<'gc>,
+    class_object: ClassObject<'gc>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
 ) -> Result<(), Error> {
-    let class = class_object
-        .as_class_definition()
-        .ok_or("Attempted to create builtin dynamic class without class on it's constructor!")?;
+    let class = class_object.inner_class_definition();
     let name = class.read().name().clone();
 
     script
@@ -336,7 +330,7 @@ fn class<'gc>(
     class_def: GcCell<'gc, Class<'gc>>,
     mut domain: Domain<'gc>,
     script: Script<'gc>,
-) -> Result<(Object<'gc>, Object<'gc>), Error> {
+) -> Result<(ClassObject<'gc>, Object<'gc>), Error> {
     let mut global = script.init().1;
     let global_scope = Scope::push_scope(global.get_scope(), global, activation.context.gc_context);
 
@@ -353,8 +347,11 @@ fn class<'gc>(
                 )
                 .into()
             });
+        let super_class = super_class?
+            .as_class_object()
+            .ok_or_else(|| Error::from("Base class of a global class is not a class"))?;
 
-        Some(super_class?)
+        Some(super_class)
     } else {
         None
     };
@@ -375,7 +372,7 @@ fn class<'gc>(
 
     let proto = class_object
         .get_property(
-            class_object,
+            class_object.into(),
             &QName::new(Namespace::public(), "prototype").into(),
             activation,
         )?
@@ -448,12 +445,8 @@ pub fn load_player_globals<'gc>(
 
     let fn_scope = Some(Scope::push_scope(gs.get_scope(), gs, mc));
     let fn_classdef = function::create_class(mc);
-    let fn_class = ClassObject::from_class_partial(
-        activation,
-        fn_classdef,
-        Some(object_class.into()),
-        fn_scope,
-    )?;
+    let fn_class =
+        ClassObject::from_class_partial(activation, fn_classdef, Some(object_class), fn_scope)?;
     let fn_proto = ScriptObject::object(mc, object_proto);
 
     let class_scope = Some(Scope::push_scope(gs.get_scope(), gs, mc));
@@ -461,20 +454,20 @@ pub fn load_player_globals<'gc>(
     let class_class = ClassObject::from_class_partial(
         activation,
         class_classdef,
-        Some(object_class.into()),
+        Some(object_class),
         class_scope,
     )?;
     let class_proto = ScriptObject::object(mc, object_proto);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
-    object_class.link_type(activation, class_proto, class_class.into());
+    object_class.link_type(activation, class_proto, class_class);
 
     fn_class.link_prototype(activation, fn_proto)?;
-    fn_class.link_type(activation, class_proto, class_class.into());
+    fn_class.link_type(activation, class_proto, class_class);
 
     class_class.link_prototype(activation, class_proto)?;
-    class_class.link_type(activation, class_proto, class_class.into());
+    class_class.link_type(activation, class_proto, class_class);
 
     // At this point, we need at least a partial set of system prototypes in
     // order to continue initializing the player. The rest of the prototypes
@@ -486,12 +479,8 @@ pub fn load_player_globals<'gc>(
         ScriptObject::bare_object(mc),
     ));
 
-    activation.context.avm2.system_classes = Some(SystemClasses::new(
-        object_class.into(),
-        fn_class.into(),
-        class_class.into(),
-        ScriptObject::bare_object(mc),
-    ));
+    activation.context.avm2.system_classes =
+        Some(SystemClasses::new(object_class, fn_class, class_class));
 
     // Our activation environment is now functional enough to finish
     // initializing the core class weave. The order of initialization shouldn't

@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
-use crate::avm2::object::Object;
+use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -97,7 +97,7 @@ impl<'gc> Executable<'gc> {
         unbound_receiver: Option<Object<'gc>>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
