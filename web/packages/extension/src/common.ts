@@ -41,18 +41,18 @@ export async function bindBooleanOptions(
         label.offsetHeight; // Trigger a reflow, flushing the CSS changes.
         label.classList.remove("notransition");
 
-        // TODO: click/change/input?
-        checkbox.addEventListener("click", () => {
-            const value = checkbox.checked;
-            options[key] = value;
-            utils.storage.sync.set({ [key]: value });
-        });
-
         // Localize label.
         const message = utils.i18n.getMessage(`settings_${checkbox.id}`);
         if (message) {
             label.textContent = message;
         }
+
+        // Listen for user input.
+        checkbox.addEventListener("change", () => {
+            const value = checkbox.checked;
+            options[key] = value;
+            utils.storage.sync.set({ [key]: value });
+        });
     }
 
     // Listen for future changes.
