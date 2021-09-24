@@ -1,7 +1,7 @@
 //! Return value enum
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Error, Value};
 use std::fmt;
 
@@ -40,7 +40,7 @@ pub enum ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
     },
 }
 
@@ -70,7 +70,7 @@ impl<'gc> ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
     ) -> Self {
         Self::ResultOf {
             callee,

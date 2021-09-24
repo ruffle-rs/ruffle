@@ -5,7 +5,7 @@ use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -117,7 +117,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        subclass_object: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
             exec.exec(

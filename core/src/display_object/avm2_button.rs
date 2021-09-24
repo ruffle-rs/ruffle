@@ -1,7 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, Object as Avm2Object,
-    StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Error as Avm2Error,
+    Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -48,7 +48,7 @@ pub struct Avm2ButtonData<'gc> {
     ///
     /// If not specified in `SymbolClass`, this will be
     /// `flash.display.SimpleButton`.
-    class: Avm2Object<'gc>,
+    class: Avm2ClassObject<'gc>,
 
     /// The AVM2 representation of this button.
     object: Option<Avm2Object<'gc>>,
@@ -379,7 +379,7 @@ impl<'gc> Avm2Button<'gc> {
         self.0.write(context.gc_context).tracking = tracking;
     }
 
-    pub fn set_avm2_class(self, mc: MutationContext<'gc, '_>, class: Avm2Object<'gc>) {
+    pub fn set_avm2_class(self, mc: MutationContext<'gc, '_>, class: Avm2ClassObject<'gc>) {
         self.0.write(mc).class = class;
     }
 }

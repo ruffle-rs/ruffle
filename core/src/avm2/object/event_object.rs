@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Event objects.
 pub fn event_allocator<'gc>(
-    class: Object<'gc>,
+    class: ClassObject<'gc>,
     proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
@@ -50,12 +50,12 @@ impl<'gc> EventObject<'gc> {
     /// we will pull the `prototype` off the `class` given to us.
     pub fn from_event(
         activation: &mut Activation<'_, 'gc, '_>,
-        class: Object<'gc>,
+        class: ClassObject<'gc>,
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let proto = class
             .get_property(
-                class,
+                class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?

@@ -49,7 +49,9 @@ pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
 pub use crate::avm2::events::Event;
 pub use crate::avm2::names::{Namespace, QName};
-pub use crate::avm2::object::{ArrayObject, Object, ScriptObject, StageObject, TObject};
+pub use crate::avm2::object::{
+    ArrayObject, ClassObject, Object, ScriptObject, StageObject, TObject,
+};
 pub use crate::avm2::value::Value;
 
 const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];
@@ -208,7 +210,7 @@ impl<'gc> Avm2<'gc> {
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: Event<'gc>,
-        on_type: Object<'gc>,
+        on_type: ClassObject<'gc>,
     ) -> Result<(), Error> {
         let event_name = event.event_type();
         if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {

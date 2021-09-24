@@ -67,8 +67,7 @@ pub fn class_init<'gc>(
         let int_vector_class = this.apply(activation, &[int_class.into()])?;
         let int_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$int");
         int_vector_class
-            .as_class_definition()
-            .unwrap()
+            .inner_class_definition()
             .write(activation.context.gc_context)
             .set_name(int_vector_name.clone());
 
@@ -85,8 +84,7 @@ pub fn class_init<'gc>(
         let uint_vector_class = this.apply(activation, &[uint_class.into()])?;
         let uint_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$uint");
         uint_vector_class
-            .as_class_definition()
-            .unwrap()
+            .inner_class_definition()
             .write(activation.context.gc_context)
             .set_name(uint_vector_name.clone());
 
@@ -103,8 +101,7 @@ pub fn class_init<'gc>(
         let number_vector_class = this.apply(activation, &[number_class.into()])?;
         let number_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$double");
         number_vector_class
-            .as_class_definition()
-            .unwrap()
+            .inner_class_definition()
             .write(activation.context.gc_context)
             .set_name(number_vector_name.clone());
 
@@ -120,8 +117,7 @@ pub fn class_init<'gc>(
         let object_vector_class = this.apply(activation, &[Value::Null])?;
         let object_vector_name = QName::new(Namespace::internal(NS_VECTOR), "Vector$object");
         object_vector_class
-            .as_class_definition()
-            .unwrap()
+            .inner_class_definition()
             .write(activation.context.gc_context)
             .set_name(object_vector_name.clone());
 
@@ -288,11 +284,7 @@ pub fn concat<'gc>(
                 return Err(format!(
                     "TypeError: Cannot coerce argument of type {:?} to argument of type {:?}",
                     arg_class.read().name(),
-                    my_class
-                        .as_class_definition()
-                        .ok_or("TypeError: Tried to concat into a bare object")?
-                        .read()
-                        .name()
+                    my_class.inner_class_definition().read().name()
                 )
                 .into());
             }
@@ -313,11 +305,7 @@ pub fn concat<'gc>(
                         return Err(format!(
                             "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
                             other_val_class.read().name(),
-                            val_class
-                                .as_class_definition()
-                                .ok_or("TypeError: Tried to concat into a bare object")?
-                                .read()
-                                .name()
+                            val_class.inner_class_definition().read().name()
                         )
                         .into());
                     }
@@ -521,8 +509,6 @@ pub fn filter<'gc>(
         let value_type = this
             .instance_of()
             .unwrap()
-            .as_class_object()
-            .unwrap()
             .as_class_params()
             .ok_or("Cannot filter unparameterized vector")?
             .unwrap_or(activation.avm2().classes().object);
@@ -690,8 +676,6 @@ pub fn map<'gc>(
 
         let value_type = this
             .instance_of()
-            .unwrap()
-            .as_class_object()
             .unwrap()
             .as_class_params()
             .ok_or("Cannot filter unparameterized vector")?

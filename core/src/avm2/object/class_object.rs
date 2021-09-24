@@ -6,14 +6,16 @@ use crate::avm2::function::Executable;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
 use crate::avm2::scope::Scope;
+use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Debug, Clone, Copy)]
@@ -36,7 +38,7 @@ pub struct ClassObjectData<'gc> {
     ///
     /// If `None`, this class has no parent. In practice, this is only used for
     /// interfaces (at least by the AS3 compiler in Animate CC 2020.)
-    superclass_object: Option<Object<'gc>>,
+    superclass_object: Option<ClassObject<'gc>>,
 
     /// The instance allocator for this class.
     instance_allocator: Allocator,
@@ -53,7 +55,7 @@ pub struct ClassObjectData<'gc> {
     ///
     /// An individual parameter of `None` signifies the parameter `*`, which is
     /// represented in AVM2 as `null` with regards to type application.
-    params: Option<Option<Object<'gc>>>,
+    params: Option<Option<ClassObject<'gc>>>,
 
     /// List of all applications of this class.
     ///
@@ -63,10 +65,10 @@ pub struct ClassObjectData<'gc> {
     /// as `None` here. AVM2 considers both applications to be separate
     /// classes, though we consider the parameter to be the class `Object` when
     /// we get a param of `null`.
-    applications: HashMap<Option<Object<'gc>>, Object<'gc>>,
+    applications: HashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
 
     /// Interfaces implemented by this class.
-    interfaces: Vec<Object<'gc>>,
+    interfaces: Vec<ClassObject<'gc>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -82,9 +84,9 @@ impl<'gc> ClassObject<'gc> {
     pub fn from_class(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
-        superclass_object: Option<Object<'gc>>,
+        superclass_object: Option<ClassObject<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<ClassObject<'gc>, Error> {
         let class_object = Self::from_class_partial(activation, class, superclass_object, scope)?;
 
         //TODO: Class prototypes are *not* instances of their class and should
@@ -93,7 +95,7 @@ impl<'gc> ClassObject<'gc> {
         let class_proto = if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object
                 .get_property(
-                    superclass_object,
+                    superclass_object.into(),
                     &QName::new(Namespace::public(), "prototype").into(),
                     activation,
                 )?
@@ -127,10 +129,10 @@ impl<'gc> ClassObject<'gc> {
     pub fn from_class_partial(
         activation: &mut Activation<'_, 'gc, '_>,
         class: GcCell<'gc, Class<'gc>>,
-        superclass_object: Option<Object<'gc>>,
+        superclass_object: Option<ClassObject<'gc>>,
         scope: Option<GcCell<'gc, Scope<'gc>>>,
     ) -> Result<Self, Error> {
-        if let Some(base_class) = superclass_object.and_then(|b| b.as_class_definition()) {
+        if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.read().is_final() {
                 return Err(format!(
                     "Base class {:?} is final and cannot be extended",
@@ -151,11 +153,7 @@ impl<'gc> ClassObject<'gc> {
         let instance_allocator = class
             .read()
             .instance_allocator()
-            .or_else(|| {
-                superclass_object
-                    .and_then(|c| c.as_class_object())
-                    .and_then(|c| c.instance_allocator())
-            })
+            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
             .unwrap_or(scriptobject_allocator);
 
         let constructor = Executable::from_method(
@@ -206,7 +204,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn into_finished_class(
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<ClassObject<'gc>, Error> {
         let class = self.inner_class_definition();
         let class_class = self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
@@ -217,7 +215,7 @@ impl<'gc> ClassObject<'gc> {
         self.install_instance_traits(activation, class_class)?;
         self.run_class_initializer(activation)?;
 
-        Ok(self.into())
+        Ok(self)
     }
 
     /// Link this class to a prototype.
@@ -265,17 +263,17 @@ impl<'gc> ClassObject<'gc> {
             }
 
             let interface = interface.unwrap().coerce_to_object(activation)?;
-            if let Some(class) = interface.as_class_definition() {
-                if !class.read().is_interface() {
-                    return Err(format!(
-                        "Class {:?} is not an interface and cannot be implemented by classes",
-                        class.read().name().local_name()
-                    )
-                    .into());
-                }
+            let class = interface
+                .as_class_object()
+                .ok_or_else(|| Error::from("Object is not an interface"))?;
+            if !class.inner_class_definition().read().is_interface() {
+                return Err(format!(
+                    "Class {:?} is not an interface and cannot be implemented by classes",
+                    class.inner_class_definition().read().name().local_name()
+                )
+                .into());
             }
-
-            interfaces.push(interface);
+            interfaces.push(class);
         }
 
         if !interfaces.is_empty() {
@@ -294,7 +292,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         proto: Object<'gc>,
-        instance_of: Object<'gc>,
+        instance_of: ClassObject<'gc>,
     ) {
         let mut write = self.0.write(activation.context.gc_context);
 
@@ -332,19 +330,349 @@ impl<'gc> ClassObject<'gc> {
         Ok(())
     }
 
+    /// Retrieve the class object that a particular QName trait is defined in.
+    ///
+    /// Must be called on a class object; will error out if called on
+    /// anything else.
+    ///
+    /// This function returns `None` for non-trait properties, such as actually
+    /// defined prototype methods for ES3-style classes.
+    pub fn find_class_for_trait(
+        self,
+        name: &QName<'gc>,
+    ) -> Result<Option<ClassObject<'gc>>, Error> {
+        let class_definition = self.inner_class_definition();
+
+        if class_definition.read().has_instance_trait(name) {
+            return Ok(Some(self));
+        }
+
+        if let Some(base) = self.superclass_object() {
+            return base.find_class_for_trait(name);
+        }
+
+        Ok(None)
+    }
+
+    /// Determine if this class has a given type in its superclass chain.
+    ///
+    /// The given object `test_class` should be either a superclass or
+    /// interface we are checking against this class.
+    ///
+    /// To test if a class *instance* is of a given type, see is_of_type.
+    pub fn has_class_in_chain(
+        self,
+        test_class: ClassObject<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<bool, Error> {
+        let mut my_class = Some(self);
+
+        while let Some(class) = my_class {
+            if Object::ptr_eq(class, test_class) {
+                return Ok(true);
+            }
+
+            for interface in class.interfaces() {
+                if Object::ptr_eq(interface, test_class) {
+                    return Ok(true);
+                }
+            }
+
+            if let (Some(my_param), Some(test_param)) =
+                (class.as_class_params(), test_class.as_class_params())
+            {
+                let mut are_all_params_coercible = true;
+
+                are_all_params_coercible &= match (my_param, test_param) {
+                    (Some(my_param), Some(test_param)) => {
+                        my_param.has_class_in_chain(test_param, activation)?
+                    }
+                    (None, Some(_)) => false,
+                    _ => true,
+                };
+
+                if are_all_params_coercible {
+                    return Ok(true);
+                }
+            }
+
+            my_class = class.superclass_object()
+        }
+
+        Ok(false)
+    }
+
+    /// Call the instance initializer.
+    pub fn call_init(
+        self,
+        receiver: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        let constructor = self.0.read().constructor.clone();
+
+        constructor.exec(
+            receiver,
+            arguments,
+            activation,
+            superclass_object,
+            self.into(),
+        )
+    }
+
+    /// Call the instance's native initializer.
+    ///
+    /// The native initializer is called when native code needs to construct an
+    /// object, or when supercalling into a parent constructor (as there are
+    /// classes that cannot be constructed but can be supercalled).
+    pub fn call_native_init(
+        self,
+        receiver: Option<Object<'gc>>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Result<Value<'gc>, Error> {
+        let native_constructor = self.0.read().native_constructor.clone();
+
+        native_constructor.exec(
+            receiver,
+            arguments,
+            activation,
+            superclass_object,
+            self.into(),
+        )
+    }
+
+    /// Supercall a method defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same method will call parent and
+    /// grandparent methods, and so on.
+    ///
+    /// If no method exists with the given name, this falls back to calling a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a method trait with the given name. If it
+    /// is found, it will be called with the reciever and arguments you
+    /// provided, as if it were defined on the target instance object.
+    ///
+    /// The class that defined the method being called will also be provided to
+    /// the `Activation` that the method runs on so that further supercalls
+    /// will work as expected.
+    ///
+    /// This method corresponds directly to the AVM2 operation `callsuper`,
+    /// with the caveat listed above about what object to call it on.
+    pub fn call_super(
+        self,
+        multiname: &Multiname<'gc>,
+        reciever: Object<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall method {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .inner_class_definition()
+            .read()
+            .lookup_instance_traits(&name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
+
+            callee.call(
+                Some(reciever),
+                arguments,
+                activation,
+                Some(superclass_object),
+            )
+        } else {
+            reciever.call_property(multiname, arguments, activation)
+        }
+    }
+
+    /// Supercall a getter defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same getter will call parent and
+    /// grandparent getters, and so on.
+    ///
+    /// If no getter exists with the given name, this falls back to getting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a getter trait with the given name. If it
+    /// is found, it will be called with the reciever you provided, as if it
+    /// were defined on the target instance object.
+    ///
+    /// The class that defined the getter being called will also be provided to
+    /// the `Activation` that the getter runs on so that further supercalls
+    /// will work as expected.
+    ///
+    /// This method corresponds directly to the AVM2 operation `getsuper`,
+    /// with the caveat listed above about what object to call it on.
+    pub fn get_super(
+        self,
+        multiname: &Multiname<'gc>,
+        reciever: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall getter {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .inner_class_definition()
+            .read()
+            .lookup_instance_traits(&name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
+
+            callee.call(Some(reciever), &[], activation, Some(superclass_object))
+        } else {
+            reciever.get_property(reciever, multiname, activation)
+        }
+    }
+
+    /// Supercall a setter defined in this class.
+    ///
+    /// This is intended to be called on the class object that is the
+    /// superclass of the one that defined the currently called property. If no
+    /// such superclass exists, you should use the class object for the
+    /// reciever's actual type (i.e. the lowest in the chain). This ensures
+    /// that repeated supercalls to the same setter will call parent and
+    /// grandparent setter, and so on.
+    ///
+    /// If no setter exists with the given name, this falls back to setting a
+    /// property of the `reciever`. This fallback only triggers if the property
+    /// is associated with a trait. Dynamic properties will still error out.
+    ///
+    /// This function will search through the class object tree starting from
+    /// this class up to `Object` for a setter trait with the given name. If it
+    /// is found, it will be called with the reciever and value you provided,
+    /// as if it were defined on the target instance object.
+    ///
+    /// The class that defined the setter being called will also be provided to
+    /// the `Activation` that the setter runs on so that further supercalls
+    /// will work as expected.
+    ///
+    /// This method corresponds directly to the AVM2 operation `setsuper`,
+    /// with the caveat listed above about what object to call it on.
+    #[allow(unused_mut)]
+    pub fn set_super(
+        self,
+        multiname: &Multiname<'gc>,
+        value: Value<'gc>,
+        mut reciever: Object<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let name = reciever.resolve_multiname(multiname)?;
+        if name.is_none() {
+            return Err(format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                multiname.local_name()
+            )
+            .into());
+        }
+
+        let name = name.unwrap();
+
+        let superclass_object = self.find_class_for_trait(&name)?.ok_or_else(|| {
+            format!(
+                "Attempted to supercall setter {:?}, which does not exist",
+                name
+            )
+        })?;
+        let mut class_traits = Vec::new();
+        superclass_object
+            .inner_class_definition()
+            .read()
+            .lookup_instance_traits(&name, &mut class_traits)?;
+        let base_trait = class_traits
+            .iter()
+            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
+        let scope = superclass_object.get_scope();
+
+        if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
+            let callee =
+                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
+
+            callee.call(
+                Some(reciever),
+                &[value],
+                activation,
+                Some(superclass_object),
+            )?;
+
+            Ok(())
+        } else {
+            reciever.set_property(reciever, multiname, value, activation)
+        }
+    }
+
     pub fn inner_class_definition(self) -> GcCell<'gc, Class<'gc>> {
         self.0.read().class
     }
 
-    pub fn interfaces(self) -> Vec<Object<'gc>> {
+    pub fn interfaces(self) -> Vec<ClassObject<'gc>> {
         self.0.read().interfaces.clone()
     }
 
-    pub fn superclass_object(self) -> Option<Object<'gc>> {
+    pub fn superclass_object(self) -> Option<ClassObject<'gc>> {
         self.0.read().superclass_object
     }
 
-    pub fn as_class_params(self) -> Option<Option<Object<'gc>>> {
+    pub fn as_class_params(self) -> Option<Option<ClassObject<'gc>>> {
         self.0.read().params
     }
 
@@ -387,49 +715,13 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         _receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        _superclass_object: Option<Object<'gc>>,
+        _superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         arguments
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_type(activation, self.into())
-    }
-
-    fn call_init(
-        self,
-        receiver: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        let constructor = self.0.read().constructor.clone();
-
-        constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-        )
-    }
-
-    fn call_native_init(
-        self,
-        receiver: Option<Object<'gc>>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<Object<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        let native_constructor = self.0.read().native_constructor.clone();
-
-        native_constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-        )
+            .coerce_to_type(activation, self)
     }
 
     fn construct(
@@ -438,20 +730,19 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let instance_allocator = self.0.read().instance_allocator.0;
-        let class_object: Object<'gc> = self.into();
         let prototype = self
             .get_property(
-                class_object,
+                self.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
             .coerce_to_object(activation)?;
 
-        let mut instance = instance_allocator(class_object, prototype, activation)?;
+        let mut instance = instance_allocator(self, prototype, activation)?;
 
-        instance.install_instance_traits(activation, class_object)?;
+        instance.install_instance_traits(activation, self)?;
 
-        self.call_init(Some(instance), arguments, activation, Some(class_object))?;
+        self.call_init(Some(instance), arguments, activation, Some(self))?;
 
         Ok(instance)
     }
@@ -521,7 +812,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc, '_>,
         nullable_params: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<ClassObject<'gc>, Error> {
         let self_class = self.inner_class_definition();
 
         if !self_class.read().is_generic() {
@@ -543,35 +834,30 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         //Because `null` is a valid parameter, we have to accept values as
         //parameters instead of objects. We coerce them to objects now.
-        let mut object_params = Vec::new();
-        for param in nullable_params {
-            object_params.push(match param {
-                Value::Null => None,
-                Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
-                v => Some(v.coerce_to_object(activation)?),
-            });
-        }
+        let object_param = match &nullable_params[0] {
+            Value::Null => None,
+            Value::Undefined => return Err("Undefined is not a valid type parameter".into()),
+            v => Some(v.coerce_to_object(activation)?),
+        };
+        let object_param = match object_param {
+            None => None,
+            Some(cls) => Some(cls.as_class_object().ok_or(format!(
+                "Cannot apply class {:?} with non-class parameter",
+                self_class.read().name()
+            ))?),
+        };
 
-        if let Some(application) = self.0.read().applications.get(&object_params[0]) {
+        if let Some(application) = self.0.read().applications.get(&object_param) {
             return Ok(*application);
         }
 
-        let mut class_params = Vec::new();
-        for param in object_params.iter() {
-            class_params.push(
-                param
-                    .unwrap_or(activation.avm2().classes().object)
-                    .as_class_definition()
-                    .ok_or(format!(
-                        "Cannot apply class {:?} with non-class parameter",
-                        self_class.read().name()
-                    ))?,
-            );
-        }
+        let class_param = object_param
+            .unwrap_or(activation.avm2().classes().object)
+            .inner_class_definition();
 
         let parameterized_class = self_class
             .read()
-            .with_type_params(&class_params, activation.context.gc_context);
+            .with_type_params(&[class_param], activation.context.gc_context);
 
         let scope = self.get_scope();
         let instance_allocator = self.0.read().instance_allocator.clone();
@@ -583,7 +869,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let class_proto = if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object
                 .get_property(
-                    superclass_object,
+                    superclass_object.into(),
                     &QName::new(Namespace::public(), "prototype").into(),
                     activation,
                 )?
@@ -609,7 +895,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
-                params: Some(object_params[0]),
+                params: Some(object_param),
                 applications: HashMap::new(),
                 interfaces: Vec::new(),
             },
@@ -624,8 +910,22 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0
             .write(activation.context.gc_context)
             .applications
-            .insert(object_params[0], class_object.into());
+            .insert(object_param, class_object);
 
-        Ok(class_object.into())
+        Ok(class_object)
+    }
+}
+
+impl<'gc> PartialEq for ClassObject<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        Object::ptr_eq(*self, *other)
+    }
+}
+
+impl<'gc> Eq for ClassObject<'gc> {}
+
+impl<'gc> Hash for ClassObject<'gc> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_ptr().hash(state);
     }
 }

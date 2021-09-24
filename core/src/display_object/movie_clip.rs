@@ -4,8 +4,9 @@ use crate::avm1::{
 };
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
-    Avm2, Error as Avm2Error, Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName,
-    StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
+    Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Namespace as Avm2Namespace,
+    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
+    TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{PreloadStreamHandle, SoundHandle, SoundInstanceHandle};
 use crate::backend::ui::MouseCursor;
@@ -79,7 +80,7 @@ pub struct MovieClipData<'gc> {
     clip_event_flags: ClipEventFlag,
     frame_scripts: Vec<Avm2FrameScript<'gc>>,
     flags: MovieClipFlags,
-    avm2_class: Option<Avm2Object<'gc>>,
+    avm2_class: Option<Avm2ClassObject<'gc>>,
     drawing: Drawing,
     is_focusable: bool,
     has_focus: bool,
@@ -123,7 +124,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn new_with_avm2(
         swf: SwfSlice,
         this: Avm2Object<'gc>,
-        constr: Avm2Object<'gc>,
+        class: Avm2ClassObject<'gc>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
         MovieClip(GcCell::allocate(
@@ -140,7 +141,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                avm2_class: Some(constr),
+                avm2_class: Some(class),
                 drawing: Drawing::new(),
                 is_focusable: false,
                 has_focus: false,
@@ -588,7 +589,14 @@ impl<'gc> MovieClip<'gc> {
             let domain = library.avm2_domain();
             let class_object = domain
                 .get_defined_value(&mut activation, name.clone())
-                .and_then(|v| v.coerce_to_object(&mut activation));
+                .and_then(|v| v.coerce_to_object(&mut activation))
+                .and_then(|v| {
+                    v.as_class_object().ok_or_else(|| {
+                        "Attempted to assign a non-class to symbol"
+                            .to_string()
+                            .into()
+                    })
+                });
 
             match class_object {
                 Ok(class_object) => {
@@ -927,7 +935,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_avm2_class(
         self,
         gc_context: MutationContext<'gc, '_>,
-        constr: Option<Avm2Object<'gc>>,
+        constr: Option<Avm2ClassObject<'gc>>,
     ) {
         let mut write = self.0.write(gc_context);
         write.avm2_class = constr;

@@ -1,7 +1,7 @@
 //! Storage for AS3 Vectors
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::Object;
+use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
@@ -35,14 +35,14 @@ pub struct VectorStorage<'gc> {
     /// incorrectly typed values to the given type if possible. Values that do
     /// not coerce are replaced with the default value for the given value
     /// type.
-    value_type: Object<'gc>,
+    value_type: ClassObject<'gc>,
 }
 
 impl<'gc> VectorStorage<'gc> {
     pub fn new(
         length: usize,
         is_fixed: bool,
-        value_type: Object<'gc>,
+        value_type: ClassObject<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Self {
         let storage = Vec::new();
@@ -64,7 +64,11 @@ impl<'gc> VectorStorage<'gc> {
     ///
     /// The values are assumed to already have been coerced to the value type
     /// given.
-    pub fn from_values(storage: Vec<Value<'gc>>, is_fixed: bool, value_type: Object<'gc>) -> Self {
+    pub fn from_values(
+        storage: Vec<Value<'gc>>,
+        is_fixed: bool,
+        value_type: ClassObject<'gc>,
+    ) -> Self {
         VectorStorage {
             storage,
             is_fixed,
@@ -112,7 +116,7 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Get the value type this vector coerces things to.
-    pub fn value_type(&self) -> Object<'gc> {
+    pub fn value_type(&self) -> ClassObject<'gc> {
         self.value_type
     }
 
