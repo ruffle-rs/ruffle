@@ -207,10 +207,8 @@ impl<'gc> ClassObject<'gc> {
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        let class = self
-            .as_class_definition()
-            .ok_or("Cannot finish initialization of core class without a class definition!")?;
-        let class_class = self.0.read().base.instance_of().ok_or(
+        let class = self.inner_class_definition();
+        let class_class = self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
         )?;
 
@@ -524,9 +522,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         nullable_params: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        let self_class = self
-            .as_class_definition()
-            .ok_or("Attempted to apply type arguments to non-class!")?;
+        let self_class = self.inner_class_definition();
 
         if !self_class.read().is_generic() {
             return Err(format!("Class {:?} is not generic", self_class.read().name()).into());
