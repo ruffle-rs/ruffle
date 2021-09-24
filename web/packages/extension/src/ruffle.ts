@@ -6,34 +6,32 @@ window.RufflePlayer = PublicAPI.negotiate(
     new SourceAPI("extension")
 );
 
-let uniqueMessageSuffix: string | null = null;
+let ID: string | null = null;
 if (
     document.currentScript !== undefined &&
     document.currentScript !== null &&
     "src" in document.currentScript &&
     document.currentScript.src !== ""
 ) {
-    // Default to the directory where this script resides.
     try {
-        uniqueMessageSuffix = new URL(
-            document.currentScript.src
-        ).searchParams.get("uniqueMessageSuffix");
+        ID = new URL(document.currentScript.src).searchParams.get("id");
     } catch (_) {
-        // uniqueMessageSuffix remains null.
+        // ID remains null.
     }
 }
-if (uniqueMessageSuffix) {
+
+if (ID) {
     window.addEventListener("message", (event) => {
         // We only accept messages from ourselves.
         if (event.source !== window) {
             return;
         }
 
-        const { type, index, data } = event.data;
-        if (type === `FROM_RUFFLE${uniqueMessageSuffix}`) {
+        const { to, index, data } = event.data;
+        if (to === `ruffle_page${ID}`) {
             // Ping back.
             const message = {
-                type: `TO_RUFFLE${uniqueMessageSuffix}`,
+                to: `ruffle_content${ID}`,
                 index,
                 data,
             };
