@@ -1,6 +1,6 @@
 import { Options } from "./common";
 
-const DEFAULT_OPTIONS = {
+const DEFAULT_OPTIONS: Options = {
     ruffleEnable: true,
     ignoreOptout: false,
 };
@@ -194,7 +194,9 @@ if (typeof chrome !== "undefined") {
     throw new Error("Extension API not found.");
 }
 
-export async function getOptions(keys: string[]): Promise<Options> {
+export async function getOptions<T extends keyof Options>(
+    keys: T[]
+): Promise<Pick<Options, T>> {
     const options = await storage.sync.get(keys);
 
     // Copy over default options if they don't exist yet.
