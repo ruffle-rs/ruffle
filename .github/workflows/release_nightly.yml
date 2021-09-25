@@ -413,7 +413,7 @@ jobs:
         run: sed -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/" -i ./PKGBUILD
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@986ddd34dff0100127f95aee3590b4c303617c2f
+        uses: KSXGitHub/github-actions-deploy-aur@v2.2.5
         with:
           pkgname: ruffle-nightly-bin
           pkgbuild: ./PKGBUILD
