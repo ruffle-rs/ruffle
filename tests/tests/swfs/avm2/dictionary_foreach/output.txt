@@ -24,17 +24,14 @@
 ///a[false] = "false"
 ///a["false"] = "stringy false"
 ///a[a] = a
-/// for (var k in a) { ... }
-13
-false
-key
-1.123
-[object Dictionary]
-[object Test]
-undefined
-key4
-null
-[object Test]
-key3
-true
-key4
+/// (enumerating object keys...)
+/// (Found key2!)
+/// (Found key3!)
+/// (Found key4!)
+///a.setPropertyIsEnumerable(key2, false);
+///a.setPropertyIsEnumerable(key3, false);
+///a.setPropertyIsEnumerable(key4, false);
+/// (enumerating object keys...)
+/// (Found key2!)
+/// (Found key3!)
+/// (Found key4!)

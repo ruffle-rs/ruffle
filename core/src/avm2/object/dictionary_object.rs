@@ -110,4 +110,21 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
         Some(self)
     }
+
+    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+        let read = self.0.read();
+        let last_enumerant = read.base.get_last_enumerant();
+
+        if index < last_enumerant {
+            read.base.get_enumerant_name(index)
+        } else {
+            let object_space_index = index.saturating_sub(last_enumerant);
+
+            read.object_space
+                .keys()
+                .nth(object_space_index as usize)
+                .cloned()
+                .map(|v| v.into())
+        }
+    }
 }

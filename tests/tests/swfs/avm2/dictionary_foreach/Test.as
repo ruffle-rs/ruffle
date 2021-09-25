@@ -76,7 +76,65 @@ a["false"] = "stringy false";
 trace('///a[a] = a');
 a[a] = a;
 
-trace("/// for (var k in a) { ... }");
+var has_key2 = false;
+var has_key3 = false;
+var has_key4 = false;
+
+trace("/// (enumerating object keys...)");
 for (var k in a) {
-	trace(k);
+	if (k === key2) {
+		has_key2 = true;
+	} else if (k === key3) {
+		has_key3 = true;
+	} else if (k === key4) {
+		has_key4 = true;
+	}
+}
+
+if (has_key2) {
+	trace("/// (Found key2!)");
+}
+
+if (has_key3) {
+	trace("/// (Found key3!)");
+}
+
+if (has_key4) {
+	trace("/// (Found key4!)");
+}
+
+trace("///a.setPropertyIsEnumerable(key2, false);");
+a.setPropertyIsEnumerable(key2, false);
+
+trace("///a.setPropertyIsEnumerable(key3, false);");
+a.setPropertyIsEnumerable(key3, false);
+
+trace("///a.setPropertyIsEnumerable(key4, false);");
+a.setPropertyIsEnumerable(key4, false);
+
+has_key2 = false;
+has_key3 = false;
+has_key4 = false;
+
+trace("/// (enumerating object keys...)");
+for (var k in a) {
+	if (k === key2) {
+		has_key2 = true;
+	} else if (k === key3) {
+		has_key3 = true;
+	} else if (k === key4) {
+		has_key4 = true;
+	}
+}
+
+if (has_key2) {
+	trace("/// (Found key2!)");
+}
+
+if (has_key3) {
+	trace("/// (Found key3!)");
+}
+
+if (has_key4) {
+	trace("/// (Found key4!)");
 }

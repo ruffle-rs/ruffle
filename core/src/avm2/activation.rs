@@ -2491,9 +2491,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name = object
-            .get_enumerant_name(cur_index as u32)
-            .map(|n| n.local_name().into());
+        let name = object.get_enumerant_name(cur_index as u32);
 
         self.context.avm2.push(name.unwrap_or(Value::Undefined));
 
@@ -2506,7 +2504,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name = object.get_enumerant_name(cur_index as u32);
         let value = if let Some(name) = name {
-            object.get_property(object, &name.into(), self)?
+            let name = name.coerce_to_string(self)?;
+            object.get_property(object, &QName::dynamic_name(name).into(), self)?
         } else {
             Value::Undefined
         };
