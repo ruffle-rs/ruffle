@@ -47,13 +47,15 @@ body {
     margin-top: 24px;
 }
 
-.option input {
+.option input,
+.option select {
     position: absolute;
+    right: 0;
+}
+
+.option.checkbox input {
     width: 40px;
     height: 20px;
-    top: 0;
-    bottom: 0;
-    right: 0;
     margin: auto;
     cursor: pointer;
     z-index: 1;
@@ -65,8 +67,8 @@ body {
     padding-right: 40px;
 }
 
-.option label::before,
-.option label::after {
+.option.checkbox label::before,
+.option.checkbox label::after {
     content: "";
     position: absolute;
     border-radius: 10px;
@@ -76,25 +78,25 @@ body {
     transition: background 0.2s, right 0.2s;
 }
 
-.option label::before {
+.option.checkbox label::before {
     height: 20px;
     width: 40px;
     right: 0;
     background: gray;
 }
 
-.option label::after {
+.option.checkbox label::after {
     height: 18px;
     width: 18px;
     right: 21px;
     background: silver;
 }
 
-.option input:checked + label::before {
+.option.checkbox input:checked + label::before {
     background: var(--ruffle-dark-orange);
 }
 
-.option input:checked + label::after {
+.option.checkbox input:checked + label::after {
     background: var(--ruffle-orange);
     right: 1px;
 }

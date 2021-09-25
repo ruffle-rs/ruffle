@@ -19,17 +19,25 @@
             </a>
         </div>
         <div class="container">
-            <div class="option">
+            <div class="option checkbox">
                 <input type="checkbox" id="ruffle_enable" />
                 <label for="ruffle_enable">Play Flash content in Ruffle</label>
             </div>
-            <div class="option">
+            <div class="option checkbox">
                 <input type="checkbox" id="ignore_optout" />
                 <label for="ignore_optout">Ignore website compatibility warnings</label>
             </div>
-            <div class="option">
+            <div class="option checkbox">
                 <input type="checkbox" id="warn_on_unsupported_content" />
                 <label for="warn_on_unsupported_content">Warn on unsupported content</label>
+            </div>
+            <div class="option select">
+                <select id="log_level">
+                    <option value="info">Info</option>
+                    <option value="warn">Warning</option>
+                    <option value="error">Error</option>
+                </select>
+                <label for="log_level">Log level</label>
             </div>
         </div>
         <script src="dist/options.js"></script>

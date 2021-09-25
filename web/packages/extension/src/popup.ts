@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import { Options, bindBooleanOptions } from "./common";
+import { Options, bindOptions } from "./common";
 
 let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
 let savedOptions: Options;
@@ -114,7 +114,7 @@ function displayTabStatus() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    bindBooleanOptions((options) => {
+    bindOptions((options) => {
         savedOptions = options;
         optionsChanged();
     });

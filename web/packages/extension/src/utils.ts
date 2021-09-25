@@ -1,9 +1,11 @@
 import { Options } from "./common";
+import { LogLevel } from "ruffle-core";
 
 const DEFAULT_OPTIONS: Options = {
     ruffleEnable: true,
     ignoreOptout: false,
     warnOnUnsupportedContent: true,
+    logLevel: LogLevel.Error,
 };
 
 export let i18n: {
