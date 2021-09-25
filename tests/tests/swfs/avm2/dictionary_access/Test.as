@@ -14,7 +14,7 @@ a["key"] = 5;
 trace("///a[\"key\"]");
 trace(a["key"]);
 trace("///a[\"key\"] = 6");
-a["key"] = 6;
+a["key"] = 6;
 trace("///var key2 = new Test()");
 var key2 = new Test();
 
