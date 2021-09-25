@@ -558,7 +558,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Objects are responsible for maintaining a consistently ordered and
     /// indexed list of enumerable names which can be queried by this
     /// mechanism.
-    fn get_enumerant_name(&self, index: u32) -> Option<QName<'gc>> {
+    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
         let base = self.base();
 
         base.get_enumerant_name(index)
