@@ -83,9 +83,11 @@ trace(a.hasOwnProperty("key"));
 trace('///a.hasOwnProperty(key2)');
 trace(a.hasOwnProperty(key2));
 
-trace('///a.hasOwnProperty(key3)');trace(a.hasOwnProperty(key3));
+trace('///a.hasOwnProperty(key3)');
+trace(a.hasOwnProperty(key3));
 
-trace('///a.hasOwnProperty("key3")');trace(a.hasOwnProperty("key3"));
+trace('///a.hasOwnProperty("key3")');
+trace(a.hasOwnProperty("key3"));
 
 trace('///a.hasOwnProperty(key4)');
 trace(a.hasOwnProperty(key4));
@@ -111,7 +113,8 @@ trace(a.hasOwnProperty("undefined"));
 trace('///a.hasOwnProperty(null)');
 trace(a.hasOwnProperty(null));
 
-trace('///a.hasOwnProperty("null")');trace(a.hasOwnProperty("null"));
+trace('///a.hasOwnProperty("null")');
+trace(a.hasOwnProperty("null"));
 
 trace('///a.hasOwnProperty(true)');
 trace(a.hasOwnProperty(true));
@@ -119,7 +122,8 @@ trace(a.hasOwnProperty(true));
 trace('///a.hasOwnProperty("true")');
 trace(a.hasOwnProperty("true"));
 
-trace('///a.hasOwnProperty(false)');trace(a.hasOwnProperty(false));
+trace('///a.hasOwnProperty(false)');
+trace(a.hasOwnProperty(false));
 
 trace('///a.hasOwnProperty("false")');
 trace(a.hasOwnProperty("false"));
