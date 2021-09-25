@@ -431,10 +431,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
+        let mut reader = Reader::new(code.as_ref(), self.swf_version());
 
         loop {
-            let result = self.do_action(&code, &mut read);
+            let result = self.do_action(&code, &mut reader);
             match result {
                 Ok(FrameControl::Return(return_type)) => break Ok(return_type),
                 Ok(FrameControl::Continue) => {}
