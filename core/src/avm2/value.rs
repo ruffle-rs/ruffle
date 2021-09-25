@@ -250,13 +250,21 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Yields `true` if the given value is a primitive value.
+    /// Yields `true` if the given value is an unboxed primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is
     /// expected that their `toString`/`valueOf` handlers have already had a
     /// chance to unbox the primitive contained within.
     pub fn is_primitive(&self) -> bool {
         !matches!(self, Value::Object(_))
+    }
+
+    /// Yields `true` if the given value is a primitive value, boxed or no.
+    pub fn is_boxed_primitive(&self) -> bool {
+        match self {
+            Value::Object(o) => o.as_primitive().is_some(),
+            _ => true,
+        }
     }
 
     /// Coerce the value to a boolean.
