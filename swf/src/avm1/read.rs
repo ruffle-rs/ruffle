@@ -237,11 +237,12 @@ impl<'a> Reader<'a> {
                     num_actions_to_skip: self.read_u8()?,
                 },
                 OpCode::With => {
-                    let code_length: usize = (self.read_u16()?).into();
+                    let code_length: usize = self.read_u16()?.into();
+                    // Read in bounds of the DoAction tag.
+                    let code_length = code_length.min(self.input.len());
                     *length += code_length;
-                    Action::With {
-                        actions: self.read_slice(code_length)?,
-                    }
+                    let actions = self.read_slice(code_length).unwrap();
+                    Action::With { actions }
                 }
                 OpCode::WaitForFrame2 => Action::WaitForFrame2 {
                     num_actions_to_skip: self.read_u8()?,
