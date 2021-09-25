@@ -1232,8 +1232,39 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
-        let object = self.context.avm2.pop().coerce_to_object(self)?;
+        let txunit = method.translation_unit();
+        let abc = txunit.abc();
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let (multiname, object) = if matches!(
+            abc_multiname,
+            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
+        ) {
+            // `MultinameL` is the only form of multiname that allows fast-path
+            // or alternate-path lookups based on the local name *value*,
+            // rather than it's string representation.
+
+            let name_value = self.context.avm2.pop();
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+            if !name_value.is_boxed_primitive() {
+                if let Some(dictionary) = object.as_dictionary_object() {
+                    let value =
+                        dictionary.get_property_by_object(name_value.coerce_to_object(self)?);
+                    self.context.avm2.push(value);
+
+                    return Ok(FrameControl::Continue);
+                }
+            }
+
+            (
+                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
+                object,
+            )
+        } else {
+            let multiname = self.pool_multiname(method, index)?;
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+
+            (multiname, object)
+        };
 
         let value = object.get_property(object, &multiname, self)?;
         self.context.avm2.push(value);
@@ -1247,8 +1278,41 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
-        let mut object = self.context.avm2.pop().coerce_to_object(self)?;
+        let txunit = method.translation_unit();
+        let abc = txunit.abc();
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let (multiname, mut object) = if matches!(
+            abc_multiname,
+            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
+        ) {
+            // `MultinameL` is the only form of multiname that allows fast-path
+            // or alternate-path lookups based on the local name *value*,
+            // rather than it's string representation.
+
+            let name_value = self.context.avm2.pop();
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+            if !name_value.is_boxed_primitive() {
+                if let Some(dictionary) = object.as_dictionary_object() {
+                    dictionary.set_property_by_object(
+                        name_value.coerce_to_object(self)?,
+                        value,
+                        self.context.gc_context,
+                    );
+
+                    return Ok(FrameControl::Continue);
+                }
+            }
+
+            (
+                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
+                object,
+            )
+        } else {
+            let multiname = self.pool_multiname(method, index)?;
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+
+            (multiname, object)
+        };
 
         object.set_property(object, &multiname, value, self)?;
 
@@ -1274,8 +1338,41 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
-        let object = self.context.avm2.pop().coerce_to_object(self)?;
+        let txunit = method.translation_unit();
+        let abc = txunit.abc();
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let (multiname, object) = if matches!(
+            abc_multiname,
+            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
+        ) {
+            // `MultinameL` is the only form of multiname that allows fast-path
+            // or alternate-path lookups based on the local name *value*,
+            // rather than it's string representation.
+
+            let name_value = self.context.avm2.pop();
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+            if !name_value.is_boxed_primitive() {
+                if let Some(dictionary) = object.as_dictionary_object() {
+                    dictionary.delete_property_by_object(
+                        name_value.coerce_to_object(self)?,
+                        self.context.gc_context,
+                    );
+
+                    self.context.avm2.push(true);
+                    return Ok(FrameControl::Continue);
+                }
+            }
+
+            (
+                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
+                object,
+            )
+        } else {
+            let multiname = self.pool_multiname(method, index)?;
+            let object = self.context.avm2.pop().coerce_to_object(self)?;
+
+            (multiname, object)
+        };
 
         if let Some(name) = object.resolve_multiname(&multiname)? {
             self.context
@@ -1347,8 +1444,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_in(&mut self) -> Result<FrameControl<'gc>, Error> {
         let obj = self.context.avm2.pop().coerce_to_object(self)?;
-        let name = self.context.avm2.pop().coerce_to_string(self)?;
+        let name_value = self.context.avm2.pop();
 
+        if let Some(dictionary) = obj.as_dictionary_object() {
+            if !name_value.is_boxed_primitive() {
+                let obj_key = name_value.coerce_to_object(self)?;
+                self.context
+                    .avm2
+                    .push(dictionary.has_property_by_object(obj_key));
+
+                return Ok(FrameControl::Continue);
+            }
+        }
+
+        let name = name_value.coerce_to_string(self)?;
         let qname = QName::new(Namespace::public(), name);
         let has_prop = obj.has_property(&qname)?;
 
