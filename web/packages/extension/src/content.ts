@@ -110,6 +110,7 @@ function isXMLDocument(): boolean {
         "ruffleEnable",
         "ignoreOptout",
         "warnOnUnsupportedContent",
+        "logLevel",
     ]);
     const pageOptout = checkPageOptout();
     const shouldLoad =
@@ -175,6 +176,7 @@ function isXMLDocument(): boolean {
         type: "load",
         config: {
             warnOnUnsupportedContent: options.warnOnUnsupportedContent,
+            logLevel: options.logLevel,
         },
     });
 })();

@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import { PublicAPI, SourceAPI, Letterbox, LogLevel } from "ruffle-core";
+import { PublicAPI, SourceAPI, Letterbox } from "ruffle-core";
 
 const api = PublicAPI.negotiate(
     window.RufflePlayer!,
@@ -30,8 +30,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const config = {
         letterbox: Letterbox.On,
-        logLevel: LogLevel.Warn,
-        ...(await utils.getOptions(["warnOnUnsupportedContent"])),
+        ...(await utils.getOptions(["warnOnUnsupportedContent", "logLevel"])),
     };
     player.load({ url: swfUrl, base: swfUrl, ...config });
 });
