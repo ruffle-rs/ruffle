@@ -38,7 +38,7 @@
         "demo": "lerna run --scope ruffle-demo serve --stream",
         "test": "lerna run test --stream",
         "docs": "lerna run docs --stream",
-        "format": "eslint . --fix",
-        "lint": "eslint . && stylelint **.css"
+        "lint": "eslint . && stylelint **.css",
+        "format": "eslint . --fix && stylelint --fix **.css"
     }
 }
