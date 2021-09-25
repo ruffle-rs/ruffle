@@ -1,4 +1,4 @@
-//! Object representation for sounds
+//! Object representation for `flash.utils.Dictionary`
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
