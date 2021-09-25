@@ -353,7 +353,8 @@ impl<W: Write> Writer<W> {
                 self.write_u8(num_actions_to_skip)?;
             }
             Action::With { actions } => {
-                self.write_action_header(OpCode::With, actions.len())?;
+                self.write_action_header(OpCode::With, 2)?;
+                self.write_u16(actions.len() as u16)?;
                 self.output.write_all(actions)?;
             }
             Action::Unknown { opcode, data } => {
