@@ -29,6 +29,7 @@ mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
 mod date_object;
+mod dictionary_object;
 mod dispatch_object;
 mod domain_object;
 mod event_object;
@@ -49,6 +50,7 @@ pub use crate::avm2::object::bitmapdata_object::{bitmapdata_allocator, BitmapDat
 pub use crate::avm2::object::bytearray_object::{bytearray_allocator, ByteArrayObject};
 pub use crate::avm2::object::class_object::ClassObject;
 pub use crate::avm2::object::date_object::{date_allocator, DateObject};
+pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
@@ -92,6 +94,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         SoundChannelObject(SoundChannelObject<'gc>),
         BitmapDataObject(BitmapDataObject<'gc>),
         DateObject(DateObject<'gc>),
+        DictionaryObject(DictionaryObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -121,7 +124,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a property by Multiname lookup.
     ///
-    /// This corresponds directly to the AVM2 operation `getproperty`.
+    /// This corresponds directly to the AVM2 operation `getproperty`, with the
+    /// exception that it does not special-case object lookups on dictionary
+    /// structured objects.
     fn get_property(
         self,
         receiver: Object<'gc>,
@@ -214,7 +219,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Set a property by Multiname lookup.
     ///
-    /// This corresponds directly with the AVM2 operation `setproperty`.
+    /// This corresponds directly with the AVM2 operation `setproperty`, with
+    /// the exception that it does not special-case object lookups on
+    /// dictionary structured objects.
     fn set_property(
         &mut self,
         receiver: Object<'gc>,
@@ -1552,6 +1559,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this objects `DateObject`, if it has one.
     fn as_date_object(&self) -> Option<DateObject<'gc>> {
+        None
+    }
+
+    /// Get this object as a `DictionaryObject`, if it is one.
+    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
         None
     }
 }

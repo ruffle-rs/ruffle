@@ -656,6 +656,13 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    class(
+        activation,
+        flash::utils::dictionary::create_class(mc),
+        domain,
+        script,
+    )?;
+
     function(
         activation,
         "flash.utils",
