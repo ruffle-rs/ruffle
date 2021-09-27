@@ -6,7 +6,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = "0.9.0"
+wgpu = "0.10.2"
 image = "0.23.14"
 log = "0.4"
 ruffle_core = { path = "../../core" }
