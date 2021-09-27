@@ -297,6 +297,12 @@ impl<'gc> DispatchList<'gc> {
     }
 }
 
+impl<'gc> Default for DispatchList<'gc> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A single instance of an event handler.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
