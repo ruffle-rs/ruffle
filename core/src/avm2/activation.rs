@@ -1233,7 +1233,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let name_value = self.context.avm2.pop();
             let object = self.context.avm2.pop().coerce_to_object(self)?;
-            if !name_value.is_boxed_primitive() {
+            if !name_value.is_primitive() {
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let value =
                         dictionary.get_property_by_object(name_value.coerce_to_object(self)?);
@@ -1279,7 +1279,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let name_value = self.context.avm2.pop();
             let object = self.context.avm2.pop().coerce_to_object(self)?;
-            if !name_value.is_boxed_primitive() {
+            if !name_value.is_primitive() {
                 if let Some(dictionary) = object.as_dictionary_object() {
                     dictionary.set_property_by_object(
                         name_value.coerce_to_object(self)?,
@@ -1339,7 +1339,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let name_value = self.context.avm2.pop();
             let object = self.context.avm2.pop().coerce_to_object(self)?;
-            if !name_value.is_boxed_primitive() {
+            if !name_value.is_primitive() {
                 if let Some(dictionary) = object.as_dictionary_object() {
                     dictionary.delete_property_by_object(
                         name_value.coerce_to_object(self)?,
@@ -1423,7 +1423,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_value = self.context.avm2.pop();
 
         if let Some(dictionary) = obj.as_dictionary_object() {
-            if !name_value.is_boxed_primitive() {
+            if !name_value.is_primitive() {
                 let obj_key = name_value.coerce_to_object(self)?;
                 self.context
                     .avm2
