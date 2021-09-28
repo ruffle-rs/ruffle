@@ -259,14 +259,6 @@ impl<'gc> Value<'gc> {
         !matches!(self, Value::Object(_))
     }
 
-    /// Yields `true` if the given value is a primitive value, boxed or no.
-    pub fn is_boxed_primitive(&self) -> bool {
-        match self {
-            Value::Object(o) => o.as_primitive().is_some(),
-            _ => true,
-        }
-    }
-
     /// Coerce the value to a boolean.
     ///
     /// Boolean coercion happens according to the rules specified in the ES4
