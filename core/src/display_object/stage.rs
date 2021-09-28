@@ -18,6 +18,7 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
+use crate::string::{FromWStr, WStr};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -825,6 +826,22 @@ impl FromStr for StageDisplayState {
             _ => return Err(ParseEnumError),
         };
         Ok(display_state)
+    }
+}
+
+impl FromWStr for StageDisplayState {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"fullscreen")) {
+            Ok(StageDisplayState::FullScreen)
+        } else if s.eq_ignore_case(WStr::from_units(b"fullscreeninteractive")) {
+            Ok(StageDisplayState::FullScreenInteractive)
+        } else if s.eq_ignore_case(WStr::from_units(b"normal")) {
+            Ok(StageDisplayState::Normal)
+        } else {
+            Err(ParseEnumError)
+        }
     }
 }
 

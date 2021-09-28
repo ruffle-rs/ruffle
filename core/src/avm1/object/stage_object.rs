@@ -8,7 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Valu
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::{AvmString, BorrowWStr, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -118,15 +118,15 @@ impl<'gc> StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
     ) -> Option<Value<'gc>> {
-        let name = name.as_str();
-        if let Some(slice) = name.get(0..6) {
+        if let Some(slice) = name.try_slice(0..6) {
+            let level_prefix = WStr::from_units(b"_level");
             let is_level = if case_sensitive {
-                slice == "_level"
+                slice == level_prefix
             } else {
-                slice.eq_ignore_ascii_case("_level")
+                slice.eq_ignore_case(level_prefix)
             };
             if is_level {
-                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<i32>().ok()) {
+                if let Some(level_id) = name.try_slice(6..).and_then(|v| v.parse::<i32>().ok()) {
                     let level = context
                         .stage
                         .child_by_depth(level_id)
@@ -918,7 +918,7 @@ fn set_quality<'gc>(
     _this: DisplayObject<'gc>,
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Ok(quality) = val.coerce_to_string(activation)?.parse() {
+    if let Ok(quality) = val.coerce_to_string(activation)?.as_str().parse() {
         activation
             .context
             .stage

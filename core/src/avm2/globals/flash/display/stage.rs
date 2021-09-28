@@ -299,6 +299,7 @@ pub fn set_align<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?
+        .as_str()
         .parse()
         .unwrap_or_default();
     activation
@@ -530,6 +531,7 @@ pub fn set_scale_mode<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?
+        .as_str()
         .parse()
     {
         activation
@@ -640,6 +642,7 @@ pub fn set_quality<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?
+        .as_str()
         .parse()
     {
         activation

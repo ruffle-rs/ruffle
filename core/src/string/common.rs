@@ -153,6 +153,11 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_cmp_ignore_case($deref, other)
         }
 
+        #[inline]
+        pub fn parse<T: crate::string::FromWStr>($self: $receiver) -> Result<T, T::Err> {
+            T::from_wstr($deref)
+        }
+
         /// Returns `true` is the string contains only LATIN1 characters.
         ///
         /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.

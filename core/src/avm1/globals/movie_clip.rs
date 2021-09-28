@@ -1007,12 +1007,11 @@ pub fn goto_frame<'gc>(
                 activation.resolve_variable_path(movie_clip.into(), frame_path.borrow())?
             {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    // TODO(moulins): we need WStr::parse for avoiding allocation here.
-                    let frame = frame.to_string();
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
+                    // TODO(moulins): remove this UTF8 conversion
+                    } else if let Some(frame) = clip.frame_label_to_number(&frame.to_utf8_lossy()) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame as i32));
                     }
