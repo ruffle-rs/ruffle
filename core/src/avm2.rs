@@ -294,7 +294,13 @@ impl<'gc> Avm2<'gc> {
 
     /// Push a value onto the operand stack.
     fn push(&mut self, value: impl Into<Value<'gc>>) {
-        let value = value.into();
+        let mut value = value.into();
+        if let Value::Object(o) = value {
+            if let Some(prim) = o.as_primitive() {
+                value = prim.clone();
+            }
+        }
+
         avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
         self.stack.push(value);
     }
