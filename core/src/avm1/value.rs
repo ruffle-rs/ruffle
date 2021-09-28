@@ -6,9 +6,10 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, BorrowWStr, Integer, WStr};
 use gc_arena::Collect;
 use std::borrow::Cow;
+use std::num::Wrapping;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -125,8 +126,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Bool(true) => 1.0,
             Value::Number(v) => v,
-            // TODO: avoid this conversion to UTF8?
-            Value::String(v) => v.to_utf8_lossy().parse().unwrap_or(0.0),
+            Value::String(v) => v.parse().unwrap_or(0.0),
             _ => 0.0,
         }
     }
@@ -158,36 +158,19 @@ impl<'gc> Value<'gc> {
 
         if activation.swf_version() >= 6 {
             if let Some(v) = v.strip_prefix(WStr::from_units(b"0x")) {
-                let mut n: u32 = 0;
-                for c in &v {
-                    n = n.wrapping_shl(4);
-                    n |= match u8::try_from(c) {
-                        Ok(b'0'..=b'9') => c as u32 - b'0' as u32,
-                        Ok(b'A'..=b'F') => c as u32 - b'A' as u32 + 10,
-                        Ok(b'a'..=b'f') => c as u32 - b'a' as u32 + 10,
-                        _ => return f64::NAN,
-                    }
-                }
-                return f64::from(n as i32);
-            }
-
-            if (v.starts_with(b'0')
+                // Flash allows the '-' sign here.
+                return match Wrapping::<i32>::from_wstr_radix(v, 16) {
+                    Ok(n) => f64::from(n.0 as i32),
+                    Err(_) => f64::NAN,
+                };
+            } else if v.starts_with(b'0')
                 || v.starts_with(WStr::from_units(b"+0"))
-                || v.starts_with(WStr::from_units(b"-0")))
-                && v.slice(1..)
-                    .iter()
-                    .all(|c| c >= b'0'.into() && c <= b'7'.into())
+                || v.starts_with(WStr::from_units(b"-0"))
             {
-                let trimmed = v.trim_start_matches(&b"+-"[..]);
-                let mut n: u32 = 0;
-                for c in &trimmed {
-                    n = n.wrapping_shl(3);
-                    n |= (c - b'0' as u16) as u32;
+                // Flash allows the '-' sign here.
+                if let Ok(n) = Wrapping::<i32>::from_wstr_radix(v.borrow(), 8) {
+                    return f64::from(n.0);
                 }
-                if v.starts_with(b'-') {
-                    n = n.wrapping_neg();
-                }
-                return f64::from(n as i32);
             }
         }
 
@@ -201,8 +184,6 @@ impl<'gc> Value<'gc> {
             f64::NAN
         } else {
             v.trim_start_matches(&b"\t\n\r "[..])
-                // TODO: avoid this conversion to UTF8?
-                .to_utf8_lossy()
                 .parse()
                 .unwrap_or(f64::NAN)
         }
@@ -450,8 +431,7 @@ impl<'gc> Value<'gc> {
                 if swf_version >= 7 {
                     !v.is_empty()
                 } else {
-                    // TODO: avoid this conversion to UTF8?
-                    let num = v.to_utf8_lossy().parse().unwrap_or(0.0);
+                    let num = v.parse().unwrap_or(0.0);
                     num != 0.0
                 }
             }

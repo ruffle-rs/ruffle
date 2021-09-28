@@ -12,6 +12,7 @@ mod common;
 mod avm;
 mod buf;
 mod ops;
+mod parse;
 mod pattern;
 mod raw;
 mod slice;
@@ -25,6 +26,7 @@ pub use avm::AvmString;
 pub use buf::WString;
 pub use common::{BorrowWStr, BorrowWStrMut, Units};
 pub use ops::{Iter, Split, WStrToUtf8};
+pub use parse::{FromWStr, Integer};
 pub use pattern::Pattern;
 pub use slice::{WStr, WStrMut};
 

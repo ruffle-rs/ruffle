@@ -762,11 +762,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let frame_path = arg.coerce_to_string(self)?;
             if let Some((clip, frame)) = self.resolve_variable_path(target, frame_path.borrow())? {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    let frame = frame.to_utf8_lossy(); // TODO: avoid this UTF8 conversion.
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(&frame) {
+                    // TODO(moulins): remove this UTF8 conversion
+                    } else if let Some(frame) = clip.frame_label_to_number(&frame.to_utf8_lossy()) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame.into()));
                     }
@@ -1331,9 +1331,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             }
             return Ok(FrameControl::Continue);
-        } else if window_target.as_str().starts_with("_level") && window_target.len() > 6 {
+        } else if window_target.starts_with(WStr::from_units(b"_level")) && window_target.len() > 6
+        {
             // target of `_level#` indicates a `loadMovieNum` call.
-            match window_target[6..].parse::<i32>() {
+            match window_target.slice(6..).parse::<i32>() {
                 Ok(level_id) => {
                     let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
