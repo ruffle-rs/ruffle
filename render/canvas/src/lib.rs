@@ -7,10 +7,14 @@ use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::matrix::Matrix;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
 use ruffle_web_common::JsResult;
-use wasm_bindgen::{JsCast, JsValue};
+use std::{
+    cell::{Ref, RefCell},
+    convert::TryInto,
+};
+use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, Element,
-    HtmlCanvasElement, HtmlImageElement, Path2d, SvgsvgElement,
+    HtmlCanvasElement, HtmlImageElement, ImageData, Path2d, SvgsvgElement,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -103,12 +107,140 @@ impl CanvasFillStyle {
     }
 }
 
+/// Stores the actual bitmap data on the browser side in one of two ways.
+/// Each better suited for different scenarios and source data formats.
+/// ImageBitmap could unify these somewhat, but Safari doesn't support it.
+enum BitmapDataStorage {
+    /// Utilizes the JPEG decoder of the browser, and can be drawn onto a canvas directly.
+    /// Needs to be drawn onto a temporary canvas to retrieve the stored pixel data.
+    ImageElement(HtmlImageElement),
+    /// Much easier to create from raw RGB[A] data, through a temporary ImageData.
+    /// The pixel data can also be retrieved through a temporary ImageData.
+    CanvasElement(HtmlCanvasElement, CanvasRenderingContext2d),
+}
+
+impl BitmapDataStorage {
+    /// Puts the image data into a newly created <canvas>, and caches it.
+    fn from_image_data(data: ImageData) -> Self {
+        let window = web_sys::window().unwrap();
+        let document = window.document().unwrap();
+
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        canvas.set_width(data.width());
+        canvas.set_height(data.height());
+
+        let context: CanvasRenderingContext2d = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into()
+            .unwrap();
+
+        let _ = context.put_image_data(&data, 0.0, 0.0).unwrap();
+
+        BitmapDataStorage::CanvasElement(canvas, context)
+    }
+}
+
 #[allow(dead_code)]
 struct BitmapData {
-    image: HtmlImageElement,
+    image: BitmapDataStorage,
     width: u32,
     height: u32,
-    data: String,
+    /// Might be computed lazily if not available at creation.
+    data_uri: RefCell<Option<String>>,
+}
+
+impl BitmapData {
+    pub fn get_pixels(&self) -> Option<Bitmap> {
+        let newcontext: CanvasRenderingContext2d; // temporarily created, only for image elements
+        let context = match &self.image {
+            BitmapDataStorage::ImageElement(image) => {
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+
+                let canvas: HtmlCanvasElement = document
+                    .create_element("canvas")
+                    .unwrap()
+                    .dyn_into()
+                    .unwrap();
+
+                canvas.set_width(self.width);
+                canvas.set_height(self.height);
+
+                newcontext = canvas
+                    .get_context("2d")
+                    .unwrap()
+                    .unwrap()
+                    .dyn_into()
+                    .unwrap();
+
+                newcontext.set_image_smoothing_enabled(false);
+                newcontext
+                    .draw_image_with_html_image_element(image, 0.0, 0.0)
+                    .unwrap();
+
+                &newcontext
+            }
+            BitmapDataStorage::CanvasElement(_canvas, context) => context,
+        };
+
+        if let Ok(bitmap_pixels) =
+            context.get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
+        {
+            Some(Bitmap {
+                width: self.width,
+                height: self.height,
+                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Converts an RGBA image into a PNG encoded as a data URI referencing a Blob.
+    fn bitmap_to_png_data_uri(bitmap: Bitmap) -> Result<String, Box<dyn std::error::Error>> {
+        use png::Encoder;
+        let mut png_data: Vec<u8> = vec![];
+        {
+            let mut encoder = Encoder::new(&mut png_data, bitmap.width, bitmap.height);
+            encoder.set_depth(png::BitDepth::Eight);
+            let data = match bitmap.data {
+                BitmapFormat::Rgba(mut data) => {
+                    ruffle_core::backend::render::unmultiply_alpha_rgba(&mut data[..]);
+                    encoder.set_color(png::ColorType::Rgba);
+                    data
+                }
+                BitmapFormat::Rgb(data) => {
+                    encoder.set_color(png::ColorType::Rgb);
+                    data
+                }
+            };
+            let mut writer = encoder.write_header()?;
+            writer.write_image_data(&data)?;
+        }
+
+        Ok(format!(
+            "data:image/png;base64,{}",
+            &base64::encode(&png_data[..])
+        ))
+    }
+
+    pub fn get_or_compute_data_uri(&self) -> Ref<Option<String>> {
+        {
+            let mut uri = self.data_uri.borrow_mut();
+
+            if uri.is_none() {
+                *uri = Some(Self::bitmap_to_png_data_uri(self.get_pixels().unwrap()).unwrap());
+            }
+        }
+        self.data_uri.borrow()
+    }
 }
 
 impl WebCanvasRenderBackend {
@@ -221,34 +353,6 @@ impl WebCanvasRenderBackend {
             },
         };
         Ok(renderer)
-    }
-
-    /// Converts an RGBA image into a PNG encoded as a base64 data URI.
-    fn bitmap_to_png_data_uri(bitmap: Bitmap) -> Result<String, Box<dyn std::error::Error>> {
-        use png::Encoder;
-        let mut png_data: Vec<u8> = vec![];
-        {
-            let mut encoder = Encoder::new(&mut png_data, bitmap.width, bitmap.height);
-            encoder.set_depth(png::BitDepth::Eight);
-            let data = match bitmap.data {
-                BitmapFormat::Rgba(mut data) => {
-                    ruffle_core::backend::render::unmultiply_alpha_rgba(&mut data[..]);
-                    encoder.set_color(png::ColorType::Rgba);
-                    data
-                }
-                BitmapFormat::Rgb(data) => {
-                    encoder.set_color(png::ColorType::Rgb);
-                    data
-                }
-            };
-            let mut writer = encoder.write_header()?;
-            writer.write_image_data(&data)?;
-        }
-
-        Ok(format!(
-            "data:image/png;base64,{}",
-            &base64::encode(&png_data[..])
-        ))
     }
 
     // Pushes a fresh canvas onto the stack to use as a render target.
@@ -374,10 +478,10 @@ impl WebCanvasRenderBackend {
 
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
-            image,
+            image: BitmapDataStorage::ImageElement(image),
             width: metadata.width.into(),
             height: metadata.height.into(),
-            data: jpeg_encoded,
+            data_uri: RefCell::new(Some(jpeg_encoded)),
         });
         Ok(BitmapInfo {
             handle,
@@ -386,25 +490,41 @@ impl WebCanvasRenderBackend {
         })
     }
 
+    /// Puts the contents of the given Bitmap into an ImageData on the browser side,
+    /// doing the RGB to RGBA expansion if needed.
+    fn swf_bitmap_to_js_imagedata(bitmap: &Bitmap) -> ImageData {
+        match &bitmap.data {
+            BitmapFormat::Rgb(rgb_data) => {
+                let mut rgba_data = vec![0u8; (bitmap.width * bitmap.height * 4) as usize];
+                for (rgba, rgb) in rgba_data.chunks_exact_mut(4).zip(rgb_data.chunks_exact(3)) {
+                    rgba.copy_from_slice(&[rgb[0], rgb[1], rgb[2], 255]);
+                }
+                ImageData::new_with_u8_clamped_array(Clamped(&rgba_data), bitmap.width)
+            }
+            BitmapFormat::Rgba(rgba_data) => {
+                ImageData::new_with_u8_clamped_array(Clamped(rgba_data), bitmap.width)
+            }
+        }
+        .unwrap()
+    }
+
     fn register_bitmap_raw(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
         let (width, height) = (bitmap.width, bitmap.height);
-        let png = Self::bitmap_to_png_data_uri(bitmap)?;
 
-        let image = HtmlImageElement::new().unwrap();
-        image.set_src(&png);
+        let image = Self::swf_bitmap_to_js_imagedata(&bitmap);
 
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
-            image,
+            image: BitmapDataStorage::from_image_data(image),
             width,
             height,
-            data: png,
+            data_uri: RefCell::new(None),
         });
 
         Ok(BitmapInfo {
             handle,
-            width: width.try_into().expect("JPEG dimensions too large"),
-            height: height.try_into().expect("JPEG dimensions too large"),
+            width: width.try_into().expect("Bitmap dimensions too large"),
+            height: height.try_into().expect("Bitmap dimensions too large"),
         })
     }
 }
@@ -506,17 +626,14 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> Result<BitmapInfo, Error> {
         let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
 
-        let png = Self::bitmap_to_png_data_uri(bitmap)?;
-
-        let image = HtmlImageElement::new().unwrap();
-        image.set_src(&png);
+        let image = Self::swf_bitmap_to_js_imagedata(&bitmap);
 
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
-            image,
+            image: BitmapDataStorage::from_image_data(image),
             width: swf_tag.width.into(),
             height: swf_tag.height.into(),
-            data: png,
+            data_uri: RefCell::new(None),
         });
         Ok(BitmapInfo {
             handle,
@@ -544,7 +661,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         // Noop
     }
 
-    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, _smoothing: bool) {
+    fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         if self.deactivating_mask {
             return;
         }
@@ -552,9 +669,18 @@ impl RenderBackend for WebCanvasRenderBackend {
         self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
-            let _ = self
-                .context
-                .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0);
+            match &bitmap.image {
+                BitmapDataStorage::ImageElement(image) => {
+                    let _ = self
+                        .context
+                        .draw_image_with_html_image_element(image, 0.0, 0.0);
+                }
+                BitmapDataStorage::CanvasElement(canvas, _context) => {
+                    let _ = self
+                        .context
+                        .draw_image_with_html_canvas_element(canvas, 0.0, 0.0);
+                }
+            }
         }
         self.clear_color_filter();
     }
@@ -703,42 +829,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        let window = web_sys::window().unwrap();
-        let document = window.document().unwrap();
-
-        let canvas: HtmlCanvasElement = document
-            .create_element("canvas")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
-        let context: CanvasRenderingContext2d = canvas
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-
         let bitmap = &self.bitmaps[bitmap.0];
-
-        canvas.set_width(bitmap.width);
-        canvas.set_height(bitmap.height);
-
-        context
-            .draw_image_with_html_image_element(&bitmap.image, 0.0, 0.0)
-            .unwrap();
-
-        if let Ok(bitmap_pixels) =
-            context.get_image_data(0.0, 0.0, bitmap.width as f64, bitmap.height as f64)
-        {
-            Some(Bitmap {
-                width: bitmap.width,
-                height: bitmap.height,
-                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
-            })
-        } else {
-            None
-        }
+        bitmap.get_pixels()
     }
 
     fn register_bitmap_raw(
@@ -763,20 +855,14 @@ impl RenderBackend for WebCanvasRenderBackend {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let png = Self::bitmap_to_png_data_uri(Bitmap {
-            width,
-            height,
-            data: BitmapFormat::Rgba(rgba),
-        })?;
-
-        let image = HtmlImageElement::new().unwrap();
-        image.set_src(&png);
 
         self.bitmaps[handle.0] = BitmapData {
-            image,
+            image: BitmapDataStorage::from_image_data(
+                ImageData::new_with_u8_clamped_array(Clamped(&rgba), width).unwrap(),
+            ),
             width,
             height,
-            data: png,
+            data_uri: RefCell::new(None),
         };
 
         Ok(handle)
@@ -1050,7 +1136,10 @@ fn swf_shape_to_svg(
                                 let mut image = Image::new()
                                     .set("width", bitmap.width)
                                     .set("height", bitmap.height)
-                                    .set("xlink:href", bitmap.data.as_str());
+                                    .set(
+                                        "xlink:href",
+                                        bitmap.get_or_compute_data_uri().as_ref().unwrap().clone(),
+                                    );
 
                                 if !*is_smoothed {
                                     image = image.set("image-rendering", pixelated_property_value);
@@ -1329,12 +1418,6 @@ fn swf_shape_to_canvas_commands(
                             .bitmap(*id)
                             .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
                         {
-                            let image = HtmlImageElement::new_with_width_and_height(
-                                bitmap.width,
-                                bitmap.height,
-                            )
-                            .expect("html image element");
-
                             if !*is_smoothed {
                                 //image = image.set("image-rendering", pixelated_property_value);
                             }
@@ -1345,13 +1428,14 @@ fn swf_shape_to_canvas_commands(
                                 "repeat"
                             };
 
-                            let bitmap_pattern = context
-                                .create_pattern_with_html_image_element(&image, repeat)
-                                .expect("pattern creation success")?;
-
-                            // Set source below the pattern creation because otherwise the bitmap gets screwed up
-                            // when cached? (Issue #412)
-                            image.set_src(&bitmap.data);
+                            let bitmap_pattern = match &bitmap.image {
+                                BitmapDataStorage::ImageElement(elem) => context
+                                    .create_pattern_with_html_image_element(elem, repeat)
+                                    .expect("pattern creation success")?,
+                                BitmapDataStorage::CanvasElement(canvas, _context) => context
+                                    .create_pattern_with_html_canvas_element(canvas, repeat)
+                                    .expect("pattern creation success")?,
+                            };
 
                             let a = *matrix;
 
