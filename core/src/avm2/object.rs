@@ -37,6 +37,7 @@ mod function_object;
 mod loaderinfo_object;
 mod namespace_object;
 mod primitive_object;
+mod qname_object;
 mod regexp_object;
 mod script_object;
 mod sound_object;
@@ -60,6 +61,7 @@ pub use crate::avm2::object::loaderinfo_object::{
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
+pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
@@ -95,6 +97,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         BitmapDataObject(BitmapDataObject<'gc>),
         DateObject(DateObject<'gc>),
         DictionaryObject(DictionaryObject<'gc>),
+        QNameObject(QNameObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1073,6 +1076,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
+        None
+    }
+
+    /// Unwrap this object's `QName`, if the object is a boxed QName.
+    fn as_qname(&self) -> Option<Ref<QName<'gc>>> {
         None
     }
 

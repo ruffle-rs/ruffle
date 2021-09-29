@@ -227,6 +227,34 @@ impl<'gc> QName<'gc> {
     pub fn namespace(&self) -> &Namespace<'gc> {
         &self.ns
     }
+
+    /// Get the string value of this QName, including the namespace URI.
+    pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        match self.ns {
+            Namespace::Namespace(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::Package(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::PackageInternal(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::Protected(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::Explicit(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::StaticProtected(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            Namespace::Private(s) if s != "" => {
+                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
+            }
+            _ => self.name,
+        }
+    }
 }
 
 /// A `Multiname` consists of a name which could be resolved in one or more
