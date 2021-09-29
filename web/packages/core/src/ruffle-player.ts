@@ -852,7 +852,7 @@ export class RufflePlayer extends HTMLElement {
             }
 
             for (const node of Array.from(elem.children)) {
-                this.appendChild(node);
+                this.appendChild(node);F
             }
         }
     }
@@ -1197,6 +1197,8 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Pause content until message is dismissed
         div.innerHTML = `<div class="message">
             <p>Flash Player has been removed from browsers in 2021.</p>
+            <p>This content is not yet supported by the Ruffle emulator and will likely not run as intended.</p> 
+            
             <p>For more info check the #faq in <a href="discord.gg/ruffle>The Ruffle Discord </a></p>
             <div>
                 <a target="_blank" class="more-info-link" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users">More info</a>
