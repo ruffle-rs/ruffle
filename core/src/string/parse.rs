@@ -31,7 +31,6 @@ impl FromWStr for f64 {
 
 mod int_parse {
     use super::*;
-    use std::convert::TryFrom;
 
     pub trait IntParse: Sized {
         const SIGNED: bool;
