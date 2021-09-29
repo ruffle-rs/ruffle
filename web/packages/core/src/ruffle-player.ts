@@ -852,7 +852,7 @@ export class RufflePlayer extends HTMLElement {
             }
 
             for (const node of Array.from(elem.children)) {
-                this.appendChild(node);F
+                this.appendChild(node);
             }
         }
     }
