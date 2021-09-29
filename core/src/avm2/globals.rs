@@ -27,6 +27,7 @@ mod math;
 mod namespace;
 mod number;
 mod object;
+mod qname;
 mod regexp;
 mod string;
 mod r#uint;
@@ -122,6 +123,7 @@ pub struct SystemPrototypes<'gc> {
     pub bitmap: Object<'gc>,
     pub bitmapdata: Object<'gc>,
     pub date: Object<'gc>,
+    pub qname: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -177,6 +179,7 @@ impl<'gc> SystemPrototypes<'gc> {
             bitmap: empty,
             bitmapdata: empty,
             date: empty,
+            qname: empty,
         }
     }
 }
@@ -223,6 +226,7 @@ pub struct SystemClasses<'gc> {
     pub bitmap: ClassObject<'gc>,
     pub bitmapdata: ClassObject<'gc>,
     pub date: ClassObject<'gc>,
+    pub qname: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -274,6 +278,7 @@ impl<'gc> SystemClasses<'gc> {
             bitmap: object,
             bitmapdata: object,
             date: object,
+            qname: object,
         }
     }
 }
@@ -528,6 +533,7 @@ pub fn load_player_globals<'gc>(
         domain,
         script
     );
+    avm2_system_class!(qname, activation, qname::create_class(mc), domain, script);
     avm2_system_class!(array, activation, array::create_class(mc), domain, script);
 
     function(activation, "", "trace", trace, domain, script)?;
