@@ -1,5 +1,6 @@
 //! XML tests
 
+use crate::string::WStr;
 use crate::xml;
 use crate::xml::{XmlDocument, XmlName};
 use gc_arena::rootless_arena;
@@ -10,7 +11,7 @@ fn parse_single_element() {
     rootless_arena(|mc| {
         let xml = XmlDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, "<test></test>", true, false)
+            .replace_with_str(mc, WStr::from_units(b"<test></test>"), true, false)
             .expect("Parsed document");
         let mut roots = xml.as_node().children();
 
@@ -33,7 +34,9 @@ fn double_ended_children() {
         xml.as_node()
             .replace_with_str(
                 mc,
-                "<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
+                WStr::from_units(
+                    b"<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
+                ),
                 true,
                 false,
             )
@@ -69,12 +72,12 @@ fn double_ended_children() {
 /// Tests round-trip XML writing behavior.
 #[test]
 fn round_trip_tostring() {
-    let test_string = "<test><!-- Comment -->This is a text node</test>";
+    let test_string = b"<test><!-- Comment -->This is a text node</test>";
 
     rootless_arena(|mc| {
         let xml = XmlDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string, true, false)
+            .replace_with_str(mc, WStr::from_units(test_string), true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -82,19 +85,19 @@ fn round_trip_tostring() {
             .into_string(&mut |_| true)
             .expect("Successful toString");
 
-        assert_eq!(test_string, result);
+        assert_eq!(std::str::from_utf8(test_string).unwrap(), result);
     })
 }
 
 /// Tests filtered XML writing behavior.
 #[test]
 fn round_trip_filtered_tostring() {
-    let test_string = "<test><!-- Comment -->This is a text node</test>";
+    let test_string = b"<test><!-- Comment -->This is a text node</test>";
 
     rootless_arena(|mc| {
         let xml = XmlDocument::new(mc);
         xml.as_node()
-            .replace_with_str(mc, test_string, true, false)
+            .replace_with_str(mc, WStr::from_units(test_string), true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -114,7 +117,7 @@ fn ignore_white() {
         xml.as_node()
             .replace_with_str(
                 mc,
-                "<test>   <test2>   <test3> foo </test3>   </test2>   </test>",
+                WStr::from_units(b"<test>   <test2>   <test3> foo </test3>   </test2>   </test>"),
                 true,
                 true,
             )
@@ -136,7 +139,7 @@ fn ignore_white() {
 
         node = node.children().next().expect("Should have text");
         assert_eq!(node.node_type(), xml::TEXT_NODE);
-        assert_eq!(node.node_value(), Some(" foo ".to_string()));
+        assert_eq!(node.node_value(), Some(" foo ".into()));
 
         assert!(root.next().is_none());
     })

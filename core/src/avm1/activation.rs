@@ -1928,7 +1928,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
-            let path = if base_clip.removed() { None } else { Some(base_clip.path()) };
+            let path = if base_clip.removed() {
+                None
+            } else {
+                Some(base_clip.path())
+            };
             let message = format!(
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
@@ -2550,10 +2554,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             path = path.trim_start_matches(b':');
 
             let prefix = path.slice(..path.len().min(3));
-            let val = if prefix == b".."
-                || prefix == b"../"
-                || prefix == b"..:"
-            {
+            let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
                 // Check for ..
                 // SWF-4 style _parent
                 if path.try_get(2) == Some(u16::from(b'/')) {

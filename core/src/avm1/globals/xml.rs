@@ -7,7 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use crate::xml;
 use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::MutationContext;
@@ -93,13 +93,13 @@ pub fn xmlnode_constructor<'gc>(
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XmlNode::new_element(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_element(activation.context.gc_context, *strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
             let mut xmlelement =
-                XmlNode::new_text(activation.context.gc_context, strval, blank_document);
+                XmlNode::new_text(activation.context.gc_context, *strval, blank_document);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
@@ -200,8 +200,10 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
-        if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
-            Ok(AvmString::new(activation.context.gc_context, uri).into())
+        if let Some(uri) =
+            xmlnode.lookup_uri_for_namespace(activation.context.gc_context, prefix_string?.borrow())
+        {
+            Ok(uri.into())
         } else {
             Ok(Value::Null)
         }
@@ -219,8 +221,8 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
-        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
-            Ok(AvmString::new(activation.context.gc_context, prefix).into())
+        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(uri_string?.borrow()) {
+            Ok(AvmString::new_ucs2(activation.context.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
         }
@@ -322,14 +324,14 @@ pub fn xmlnode_node_type<'gc>(
 }
 
 pub fn xmlnode_node_value<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.node_value())
-        .map(|n| AvmString::new(activation.context.gc_context, n).into())
+        .map(|v| v.into())
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -342,13 +344,10 @@ pub fn xmlnode_prefix<'gc>(
         .as_xml_node()
         .and_then(|n| n.tag_name())
         .map(|n| {
-            AvmString::new(
-                activation.context.gc_context,
-                n.prefix()
-                    .map(|n| n.to_string())
-                    .unwrap_or_else(|| "".to_string()),
-            )
-            .into()
+            n.prefix()
+                .map(|n| AvmString::new_ucs2(activation.context.gc_context, n.into()))
+                .unwrap_or_default()
+                .into()
         })
         .unwrap_or_else(|| Value::Null))
 }
@@ -540,12 +539,13 @@ pub fn xmlnode_namespace_uri<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(name) = node.tag_name() {
-            return Ok(AvmString::new(
-                activation.context.gc_context,
-                node.lookup_uri_for_namespace(name.prefix().unwrap_or(""))
-                    .unwrap_or_else(|| "".to_string()),
-            )
-            .into());
+            return Ok(node
+                .lookup_uri_for_namespace(
+                    activation.context.gc_context,
+                    name.prefix().unwrap_or_default(),
+                )
+                .unwrap_or_default()
+                .into());
         }
 
         return Ok(Value::Null);
@@ -587,7 +587,7 @@ pub fn xml_constructor<'gc>(
 
             if let Err(e) = this_node.replace_with_str(
                 activation.context.gc_context,
-                string,
+                string.borrow(),
                 true,
                 ignore_whitespace,
             ) {
@@ -626,7 +626,7 @@ pub fn xml_create_element<'gc>(
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XmlNode::new_element(activation.context.gc_context, &nodename, document);
+    let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename, document);
     let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
@@ -653,7 +653,7 @@ pub fn xml_create_text_node<'gc>(
         .get(0)
         .map(|v| v.coerce_to_string(activation).unwrap_or_default())
         .unwrap_or_default();
-    let mut xml_node = XmlNode::new_text(activation.context.gc_context, &text_node, document);
+    let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node, document);
     let object = XmlObject::from_xml_node(
         activation.context.gc_context,
         xml_node,
@@ -696,7 +696,7 @@ pub fn xml_parse_xml<'gc>(
 
         let result = node.replace_with_str(
             activation.context.gc_context,
-            &xmlstring,
+            xmlstring.borrow(),
             true,
             ignore_whitespace,
         );

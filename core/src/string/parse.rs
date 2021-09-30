@@ -101,7 +101,7 @@ macro_rules! impl_int_parse {
     )* }
 }
 
-impl_int_parse! { u32 i32 usize }
+impl_int_parse! { u8 u32 i32 usize }
 
 macro_rules! impl_wrapping_int_parse {
     ($($ty:ty)*) => { $(
@@ -132,7 +132,7 @@ macro_rules! impl_wrapping_int_parse {
     )* }
 }
 
-impl_wrapping_int_parse! { u32 i32 usize }
+impl_wrapping_int_parse! { u8 u32 i32 usize }
 
 macro_rules! impl_from_str_int {
     ($($ty:ty)*) => { $(
@@ -168,4 +168,4 @@ macro_rules! impl_from_str_int {
     )* }
 }
 
-impl_from_str_int! { u32 i32 usize }
+impl_from_str_int! { u8 u32 i32 usize }
