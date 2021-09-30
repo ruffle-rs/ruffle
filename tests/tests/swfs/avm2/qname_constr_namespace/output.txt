@@ -1,0 +1,17 @@
+namespace ns_public = ""
+var qname_public = new QName(ns_public, "name");
+///qname_public.localName
+name
+///qname_public.uri
+
+namespace ns_ruffle = "https://ruffle.rs/AS3/tests/qname";
+var qname_scoped = new QName(ns_ruffle, "name");
+///qname_scoped.localName
+name
+///qname_scoped.uri
+https://ruffle.rs/AS3/tests/qname
+var qname_rescoped = new QName(ns_ruffle, qname_public);
+///qname_rescoped.localName
+name
+///qname_rescoped.uri
+https://ruffle.rs/AS3/tests/qname
