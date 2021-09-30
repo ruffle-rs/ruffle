@@ -1,0 +1,25 @@
+var qname_public = new QName("name");
+///qname_public.localName
+name
+///qname_public.uri
+
+var qname_scoped = new QName("https://ruffle.rs/AS3/tests/qname", "name");
+///qname_scoped.localName
+name
+///qname_scoped.uri
+https://ruffle.rs/AS3/tests/qname
+var qname_rescoped = new QName("https://ruffle.rs/AS3/tests/qname/2", qname_scoped);
+///qname_rescoped.localName
+name
+///qname_rescoped.uri
+https://ruffle.rs/AS3/tests/qname/2
+var qname_clone = new QName(qname_scoped);
+///qname_clone.localName
+name
+///qname_clone.uri
+https://ruffle.rs/AS3/tests/qname
+var qname_null = new QName(null, "name");
+///qname_null.localName
+name
+///qname_null.uri
+null

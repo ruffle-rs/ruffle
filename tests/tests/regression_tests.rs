@@ -689,6 +689,10 @@ swf_tests! {
     (as3_dictionary_namespaces, "avm2/dictionary_namespaces", 1),
     (as3_dictionary_in, "avm2/dictionary_in", 1),
     (as3_dictionary_foreach, "avm2/dictionary_foreach", 1),
+    (as3_qname_constr, "avm2/qname_constr", 1),
+    (as3_qname_constr_namespace, "avm2/qname_constr_namespace", 1),
+    (as3_qname_tostring, "avm2/qname_tostring", 1),
+    (as3_qname_valueof, "avm2/qname_valueof", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
