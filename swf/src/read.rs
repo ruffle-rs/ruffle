@@ -3035,13 +3035,11 @@ pub mod tests {
                 Ok(tag) => tag,
                 Err(e) => panic!("Error parsing tag: {}", e),
             };
-            if parsed_tag != expected_tag {
-                // Failed, result doesn't match.
-                panic!(
-                    "Incorrectly parsed tag.\nRead:\n{:#?}\n\nExpected:\n{:#?}",
-                    parsed_tag, expected_tag
-                );
-            }
+            assert_eq!(
+                parsed_tag, expected_tag,
+                "Incorrectly parsed tag.\nRead:\n{:#?}\n\nExpected:\n{:#?}",
+                parsed_tag, expected_tag
+            );
         }
     }
 

@@ -370,13 +370,11 @@ pub mod tests {
         for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
             let mut reader = Reader::new(&action_bytes[..], swf_version);
             let parsed_action = reader.read_action().unwrap().unwrap();
-            if parsed_action != expected_action {
-                // Failed, result doesn't match.
-                panic!(
-                    "Incorrectly parsed action.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                    parsed_action, expected_action
-                );
-            }
+            assert_eq!(
+                parsed_action, expected_action,
+                "Incorrectly parsed action.\nRead:\n{:?}\n\nExpected:\n{:?}",
+                parsed_action, expected_action
+            );
         }
     }
 
