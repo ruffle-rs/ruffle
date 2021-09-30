@@ -78,26 +78,8 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self
-            .0
-            .read()
-            .qname
-            .as_ref()
-            .ok_or("Uninitialized QName!")?
-            .as_uri(mc)
-            .into())
-    }
-
-    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self
-            .0
-            .read()
-            .qname
-            .as_ref()
-            .ok_or("Uninitialized QName!")?
-            .as_uri(mc)
-            .into())
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_qname(&self) -> Option<Ref<QName<'gc>>> {
