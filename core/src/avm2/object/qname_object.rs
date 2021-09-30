@@ -63,6 +63,17 @@ impl<'gc> QNameObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn qname(&self) -> Option<Ref<QName<'gc>>> {
+        let read = self.0.read();
+        read.qname.as_ref()?;
+
+        Some(Ref::map(read, |r| r.qname.as_ref().unwrap()))
+    }
+
+    pub fn init_qname(self, mc: MutationContext<'gc, '_>, qname: QName<'gc>) {
+        self.0.write(mc).qname = Some(qname);
+    }
 }
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
@@ -82,15 +93,8 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_qname(&self) -> Option<Ref<QName<'gc>>> {
-        let read = self.0.read();
-        read.qname.as_ref()?;
-
-        Some(Ref::map(read, |r| r.qname.as_ref().unwrap()))
-    }
-
-    fn init_qname(self, mc: MutationContext<'gc, '_>, qname: QName<'gc>) {
-        self.0.write(mc).qname = Some(qname);
+    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
+        Some(self)
     }
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
