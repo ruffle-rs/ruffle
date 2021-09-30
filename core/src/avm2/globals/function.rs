@@ -36,6 +36,29 @@ pub fn class_init<'gc>(
 
         function_proto.install_dynamic_property(
             activation.context.gc_context,
+            QName::new(Namespace::public(), "call"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(call, "call", activation.context.gc_context),
+                None,
+                None,
+            )
+            .into(),
+        )?;
+        function_proto.install_dynamic_property(
+            activation.context.gc_context,
+            QName::new(Namespace::public(), "apply"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(apply, "apply", activation.context.gc_context),
+                None,
+                None,
+            )
+            .into(),
+        )?;
+
+        function_proto.install_dynamic_property(
+            activation.context.gc_context,
             QName::new(Namespace::as3_namespace(), "call"),
             FunctionObject::from_method(
                 activation,
