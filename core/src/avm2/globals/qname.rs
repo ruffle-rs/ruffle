@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{qname_allocator, Object, TObject};
+use crate::avm2::object::{qname_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -59,10 +59,41 @@ pub fn instance_init<'gc>(
 
 /// Implements `QName`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    let this = this.unwrap();
+    let mut qname_proto = this
+        .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+        .coerce_to_object(activation)?;
+
+    qname_proto.set_property(
+        qname_proto,
+        &QName::dynamic_name("toString").into(),
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toString", activation.context.gc_context),
+            qname_proto.get_scope(),
+            None,
+        )
+        .into(),
+        activation,
+    )?;
+
+    qname_proto.set_property(
+        qname_proto,
+        &QName::dynamic_name("valueOf").into(),
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(value_of, "valueOf", activation.context.gc_context),
+            qname_proto.get_scope(),
+            None,
+        )
+        .into(),
+        activation,
+    )?;
+
     Ok(Value::Undefined)
 }
 
@@ -99,6 +130,34 @@ pub fn uri<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `QName.AS3::toString` and `QName.prototype.toString`
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(qname) = this.as_qname() {
+            return Ok(qname.as_uri(activation.context.gc_context).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `QName.AS3::valueOf` and `QName.prototype.valueOf`
+pub fn value_of<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        return Ok(this.into());
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `QName`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -121,6 +180,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("uri", Some(uri), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("toString", to_string), ("valueOf", value_of)];
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
 }

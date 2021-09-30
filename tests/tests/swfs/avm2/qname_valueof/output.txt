@@ -1,15 +1,29 @@
 var qname_public = new QName("name");
 ///qname_public.valueOf()
 name
+///qname_public.valueOf().localName
+name
+///Object.prototype.valueOf.call(qname_public)
+name
+///Object.prototype.valueOf.call(qname_public).localName
+name
 var qname_scoped = new QName("https://ruffle.rs/AS3/tests/qname", "name");
 ///qname_scoped.valueOf()
+https://ruffle.rs/AS3/tests/qname::name
+///Object.prototype.valueOf.call(qname_scoped)
 https://ruffle.rs/AS3/tests/qname::name
 var qname_rescoped = new QName("https://ruffle.rs/AS3/tests/qname/2", qname_scoped);
 ///qname_rescoped.valueOf()
 https://ruffle.rs/AS3/tests/qname/2::name
+///Object.prototype.valueOf.call(qname_rescoped)
+https://ruffle.rs/AS3/tests/qname/2::name
 var qname_clone = new QName(qname_scoped);
 ///qname_clone.valueOf()
 https://ruffle.rs/AS3/tests/qname::name
+///Object.prototype.valueOf.call(qname_clone)
+https://ruffle.rs/AS3/tests/qname::name
 var qname_null = new QName(null, "name");
 ///qname_null.valueOf()
+*::name
+///Object.prototype.valueOf.call(qname_null)
 *::name
