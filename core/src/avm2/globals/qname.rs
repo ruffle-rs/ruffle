@@ -15,8 +15,8 @@ pub fn instance_init<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if this.as_qname().is_none() {
+    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+        if this.qname().is_none() {
             let (namespace, local_arg) = if args.len() > 1 {
                 let ns_arg = args.get(0).cloned().unwrap();
                 let local_arg = args.get(1).cloned().unwrap_or(Value::Undefined);
@@ -33,9 +33,13 @@ pub fn instance_init<'gc>(
             } else {
                 let qname_arg = args.get(0).cloned().unwrap_or(Value::Undefined);
                 let namespace = match qname_arg {
-                    Value::Object(o) if o.as_qname().is_some() => {
-                        o.as_qname().unwrap().namespace().clone()
-                    }
+                    Value::Object(o) if o.as_qname_object().is_some() => o
+                        .as_qname_object()
+                        .unwrap()
+                        .qname()
+                        .unwrap()
+                        .namespace()
+                        .clone(),
                     _ => Namespace::Namespace("".into()),
                 };
 
@@ -43,7 +47,9 @@ pub fn instance_init<'gc>(
             };
 
             let local_name = match local_arg {
-                Value::Object(o) if o.as_qname().is_some() => o.as_qname().unwrap().local_name(),
+                Value::Object(o) if o.as_qname_object().is_some() => {
+                    o.as_qname_object().unwrap().qname().unwrap().local_name()
+                }
                 v => v.coerce_to_string(activation)?,
             };
 
@@ -103,8 +109,8 @@ pub fn local_name<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(qname) = this.as_qname() {
+    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+        if let Some(qname) = this.qname() {
             return Ok(qname.local_name().into());
         }
     }
@@ -118,8 +124,8 @@ pub fn uri<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(qname) = this.as_qname() {
+    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+        if let Some(qname) = this.qname() {
             return Ok(match qname.namespace() {
                 Namespace::Any => Value::Null,
                 ns => ns.as_uri().into(),
@@ -136,8 +142,8 @@ pub fn to_string<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        if let Some(qname) = this.as_qname() {
+    if let Some(this) = this.and_then(|t| t.as_qname_object()) {
+        if let Some(qname) = this.qname() {
             return Ok(qname.as_uri(activation.context.gc_context).into());
         }
     }

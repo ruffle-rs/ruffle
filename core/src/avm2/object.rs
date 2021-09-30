@@ -1079,13 +1079,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Unwrap this object's `QName`, if the object is a boxed QName.
-    fn as_qname(&self) -> Option<Ref<QName<'gc>>> {
+    /// Unwrap this object as a `QNameObject`
+    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
         None
     }
-
-    /// Initialize this object as a `QName` (if it can be)
-    fn init_qname(self, _mc: MutationContext<'gc, '_>, _qname: QName<'gc>) {}
 
     /// Unwrap this object as array storage.
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
