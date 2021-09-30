@@ -46,9 +46,7 @@ impl TransformStack {
     }
 
     pub fn pop(&mut self) {
-        if self.0.len() <= 1 {
-            panic!("Transform stack underflow");
-        }
+        assert!(self.0.len() > 1, "Transform stack underflow");
         self.0.pop();
     }
 
