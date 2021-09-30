@@ -61,7 +61,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
         let name = name.into();
-        if let Some(mut node) = self.document().get_node_by_id(&name) {
+        if let Some(mut node) = self.document().get_node_by_id(name) {
             Some(
                 node.script_object(
                     activation.context.gc_context,
@@ -207,7 +207,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         name: AvmString<'gc>,
     ) -> bool {
-        self.document().get_node_by_id(&name).is_some()
+        self.document().get_node_by_id(name).is_some()
             || self.base().has_own_property(activation, name)
     }
 
@@ -229,12 +229,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
 
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         let mut keys = self.base().get_keys(activation);
-        keys.extend(
-            self.document()
-                .get_node_ids()
-                .into_iter()
-                .map(|n| AvmString::new(activation.context.gc_context, n)),
-        );
+        keys.extend(self.document().get_node_ids().into_iter());
         keys
     }
 

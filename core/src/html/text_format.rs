@@ -2,6 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::xml::{XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
@@ -1112,58 +1113,59 @@ impl FormatSpans {
                 || ls.tab_stops != span.tab_stops
                 || last_text_format_element.is_none()
             {
-                let new_tf = XmlNode::new_element(mc, "TEXTFORMAT", document);
+                let new_tf = XmlNode::new_element(mc, "TEXTFORMAT".into(), document);
 
                 if ls.left_margin != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("LEFTMARGIN"),
-                        &format!("{}", span.left_margin),
+                        XmlName::from_str("LEFTMARGIN"),
+                        AvmString::new(mc, span.left_margin.to_string()),
                     );
                 }
 
                 if ls.right_margin != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("RIGHTMARGIN"),
-                        &format!("{}", span.right_margin),
+                        XmlName::from_str("RIGHTMARGIN"),
+                        AvmString::new(mc, span.right_margin.to_string()),
                     );
                 }
 
                 if ls.indent != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("INDENT"),
-                        &format!("{}", span.indent),
+                        XmlName::from_str("INDENT"),
+                        AvmString::new(mc, span.indent.to_string()),
                     );
                 }
 
                 if ls.block_indent != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("BLOCKINDENT"),
-                        &format!("{}", span.block_indent),
+                        XmlName::from_str("BLOCKINDENT"),
+                        AvmString::new(mc, span.block_indent.to_string()),
                     );
                 }
 
                 if ls.leading != 0.0 {
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("LEADING"),
-                        &format!("{}", span.leading),
+                        XmlName::from_str("LEADING"),
+                        AvmString::new(mc, span.leading.to_string()),
                     );
                 }
 
                 if !ls.tab_stops.is_empty() {
+                    let tab_stops = span
+                        .tab_stops
+                        .iter()
+                        .map(|s| format!("{}", s))
+                        .collect::<Vec<_>>()
+                        .join(",");
                     new_tf.set_attribute_value(
                         mc,
-                        &XmlName::from_str("TABSTOPS"),
-                        &span
-                            .tab_stops
-                            .iter()
-                            .map(|s| format!("{}", s))
-                            .collect::<Vec<_>>()
-                            .join(","),
+                        XmlName::from_str("TABSTOPS"),
+                        AvmString::new(mc, tab_stops),
                     );
                 }
 
@@ -1184,7 +1186,7 @@ impl FormatSpans {
                 if can_span_create_bullets && span.bullet
                     || !can_span_create_bullets && last_span.map(|ls| ls.bullet).unwrap_or(false)
                 {
-                    let new_li = XmlNode::new_element(mc, "LI", document);
+                    let new_li = XmlNode::new_element(mc, "LI".into(), document);
 
                     last_bullet = Some(new_li);
                     last_paragraph = None;
@@ -1201,18 +1203,15 @@ impl FormatSpans {
                 }
 
                 if ls.align != span.align || last_paragraph.is_none() {
-                    let new_p = XmlNode::new_element(mc, "P", document);
+                    let new_p = XmlNode::new_element(mc, "P".into(), document);
+                    let align: &str = match span.align {
+                        swf::TextAlign::Left => "LEFT",
+                        swf::TextAlign::Center => "CENTER",
+                        swf::TextAlign::Right => "RIGHT",
+                        swf::TextAlign::Justify => "JUSTIFY",
+                    };
 
-                    new_p.set_attribute_value(
-                        mc,
-                        &XmlName::from_str("ALIGN"),
-                        match span.align {
-                            swf::TextAlign::Left => "LEFT",
-                            swf::TextAlign::Center => "CENTER",
-                            swf::TextAlign::Right => "RIGHT",
-                            swf::TextAlign::Justify => "JUSTIFY",
-                        },
-                    );
+                    new_p.set_attribute_value(mc, XmlName::from_str("ALIGN"), align.into());
 
                     last_bullet
                         .or(last_text_format_element)
@@ -1234,44 +1233,50 @@ impl FormatSpans {
                     || ls.kerning != span.kerning
                     || last_font.is_none()
                 {
-                    let new_font = XmlNode::new_element(mc, "FONT", document);
+                    let new_font = XmlNode::new_element(mc, "FONT".into(), document);
 
                     if ls.font != span.font || last_font.is_none() {
-                        new_font.set_attribute_value(mc, &XmlName::from_str("FACE"), &span.font);
+                        new_font.set_attribute_value(
+                            mc,
+                            XmlName::from_str("FACE"),
+                            // TODO(moulins): remove this alloc
+                            AvmString::new(mc, span.font.clone()),
+                        );
                     }
 
                     if ls.size != span.size || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XmlName::from_str("SIZE"),
-                            &format!("{}", span.size),
+                            XmlName::from_str("SIZE"),
+                            AvmString::new(mc, span.size.to_string()),
                         );
                     }
 
                     if ls.color != span.color || last_font.is_none() {
+                        let color = format!(
+                            "#{:0>2X}{:0>2X}{:0>2X}",
+                            span.color.r, span.color.g, span.color.b
+                        );
                         new_font.set_attribute_value(
                             mc,
-                            &XmlName::from_str("COLOR"),
-                            &format!(
-                                "#{:0>2X}{:0>2X}{:0>2X}",
-                                span.color.r, span.color.g, span.color.b
-                            ),
+                            XmlName::from_str("COLOR"),
+                            AvmString::new(mc, color),
                         );
                     }
 
                     if ls.letter_spacing != span.letter_spacing || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XmlName::from_str("LETTERSPACING"),
-                            &format!("{}", span.letter_spacing),
+                            XmlName::from_str("LETTERSPACING"),
+                            AvmString::new(mc, span.letter_spacing.to_string()),
                         );
                     }
 
                     if ls.kerning != span.kerning || last_font.is_none() {
                         new_font.set_attribute_value(
                             mc,
-                            &XmlName::from_str("KERNING"),
-                            if span.kerning { "1" } else { "0" },
+                            XmlName::from_str("KERNING"),
+                            if span.kerning { "1".into() } else { "0".into() },
                         );
                     }
 
@@ -1291,12 +1296,22 @@ impl FormatSpans {
                 }
 
                 if !span.url.is_empty() && (ls.url != span.url || last_a.is_none()) {
-                    let new_a = XmlNode::new_element(mc, "A", document);
+                    let new_a = XmlNode::new_element(mc, "A".into(), document);
 
-                    new_a.set_attribute_value(mc, &XmlName::from_str("HREF"), &span.url);
+                    new_a.set_attribute_value(
+                        mc,
+                        XmlName::from_str("HREF"),
+                        // TODO(moulins): avoid this alloc
+                        AvmString::new(mc, span.url.clone()),
+                    );
 
                     if !span.target.is_empty() {
-                        new_a.set_attribute_value(mc, &XmlName::from_str("TARGET"), &span.target);
+                        new_a.set_attribute_value(
+                            mc,
+                            XmlName::from_str("TARGET"),
+                            // TODO(moulins): avoid this alloc
+                            AvmString::new(mc, span.target.clone()),
+                        );
                     }
 
                     last_font
@@ -1318,7 +1333,7 @@ impl FormatSpans {
                 }
 
                 if span.bold && last_b.is_none() {
-                    let new_b = XmlNode::new_element(mc, "B", document);
+                    let new_b = XmlNode::new_element(mc, "B".into(), document);
 
                     last_a
                         .or(last_font)
@@ -1339,7 +1354,7 @@ impl FormatSpans {
                 }
 
                 if span.italic && last_i.is_none() {
-                    let new_i = XmlNode::new_element(mc, "I", document);
+                    let new_i = XmlNode::new_element(mc, "I".into(), document);
 
                     last_b
                         .or(last_a)
@@ -1359,7 +1374,7 @@ impl FormatSpans {
                 }
 
                 if span.underline && last_u.is_none() {
-                    let new_u = XmlNode::new_element(mc, "U", document);
+                    let new_u = XmlNode::new_element(mc, "U".into(), document);
 
                     last_i
                         .or(last_b)
@@ -1378,7 +1393,8 @@ impl FormatSpans {
                 }
 
                 let span_text = if last_bullet.is_some() {
-                    XmlNode::new_text(mc, line, document)
+                    // TODO(moulins): remove this UTF8 conversion
+                    XmlNode::new_text(mc, AvmString::new(mc, line), document)
                 } else {
                     let line_start = line.as_ptr() as usize - text.as_ptr() as usize;
                     let line_with_newline = if line_start > 0 {
@@ -1388,7 +1404,8 @@ impl FormatSpans {
                         line
                     };
 
-                    XmlNode::new_text(mc, line_with_newline, document)
+                    // TODO(moulins): remove this UTF8 conversion
+                    XmlNode::new_text(mc, AvmString::new(mc, line_with_newline), document)
                 };
 
                 last_u

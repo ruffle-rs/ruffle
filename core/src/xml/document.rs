@@ -2,6 +2,7 @@
 
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::Object;
+use crate::string::AvmString;
 use crate::xml::{Error, ParseError, XmlName, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
@@ -25,13 +26,13 @@ pub struct XmlDocumentData<'gc> {
     has_xmldecl: bool,
 
     /// The XML version string, if set.
-    version: String,
+    version: String, // TODO(moulins)?
 
     /// The XML document encoding, if set.
-    encoding: Option<String>,
+    encoding: Option<String>, // TODO(moulins)?
 
     /// The XML standalone flag, if set.
-    standalone: Option<String>,
+    standalone: Option<String>, // TODO(moulins)?
 
     /// The XML doctype, if set.
     doctype: Option<XmlNode<'gc>>,
@@ -41,7 +42,7 @@ pub struct XmlDocumentData<'gc> {
     /// When nodes are parsed into the document by way of `parseXML` or the
     /// document constructor, they get put into this list here, which is used
     /// to populate the document's `idMap`.
-    idmap: BTreeMap<String, XmlNode<'gc>>,
+    idmap: BTreeMap<AvmString<'gc>, XmlNode<'gc>>,
 
     /// The script object associated with this XML node, if any.
     idmap_script_object: Option<Object<'gc>>,
@@ -214,7 +215,7 @@ impl<'gc> XmlDocument<'gc> {
 
     /// Update the idmap object with a given new node.
     pub fn update_idmap(&mut self, mc: MutationContext<'gc, '_>, node: XmlNode<'gc>) {
-        if let Some(id) = node.attribute_value(&XmlName::from_str("id")) {
+        if let Some(id) = node.attribute_value(XmlName::from_str("id")) {
             self.0.write(mc).idmap.insert(id, node);
         }
     }
@@ -225,16 +226,16 @@ impl<'gc> XmlDocument<'gc> {
     /// parsing*. Nodes which obtained the `id` after the fact, or nodes with
     /// the `id` that were added to the document after the fact, will not be
     /// returned by this function.
-    pub fn get_node_by_id(self, id: &str) -> Option<XmlNode<'gc>> {
-        self.0.read().idmap.get(id).copied()
+    pub fn get_node_by_id(self, id: AvmString<'gc>) -> Option<XmlNode<'gc>> {
+        self.0.read().idmap.get(&id).copied()
     }
 
     /// Retrieve all IDs currently present in the idmap.
-    pub fn get_node_ids(self) -> HashSet<String> {
+    pub fn get_node_ids(self) -> HashSet<AvmString<'gc>> {
         let mut result = HashSet::new();
 
         for key in self.0.read().idmap.keys() {
-            result.insert(key.to_string());
+            result.insert(*key);
         }
 
         result
