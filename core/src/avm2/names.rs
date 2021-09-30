@@ -252,6 +252,7 @@ impl<'gc> QName<'gc> {
             Namespace::Private(s) if s != "" => {
                 AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
             }
+            Namespace::Any => AvmString::new(mc, format!("*::{}", &*self.name)),
             _ => self.name,
         }
     }
