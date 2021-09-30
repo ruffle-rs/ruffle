@@ -19,10 +19,7 @@ pub fn qname_allocator<'gc>(
 
     Ok(QNameObject(GcCell::allocate(
         activation.context.gc_context,
-        QNameObjectData {
-            base,
-            qname: QName::dynamic_name(""),
-        },
+        QNameObjectData { base, qname: None },
     ))
     .into())
 }
@@ -39,7 +36,7 @@ pub struct QNameObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// The QName name this object is associated with.
-    qname: QName<'gc>,
+    qname: Option<QName<'gc>>,
 }
 
 impl<'gc> QNameObject<'gc> {
@@ -54,7 +51,10 @@ impl<'gc> QNameObject<'gc> {
 
         let mut this: Object<'gc> = QNameObject(GcCell::allocate(
             activation.context.gc_context,
-            QNameObjectData { base, qname },
+            QNameObjectData {
+                base,
+                qname: Some(qname),
+            },
         ))
         .into();
         this.install_instance_traits(activation, class)?;
@@ -79,15 +79,36 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self.0.read().qname.as_uri(mc).into())
+        Ok(self
+            .0
+            .read()
+            .qname
+            .as_ref()
+            .ok_or("Uninitialized QName!")?
+            .as_uri(mc)
+            .into())
     }
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self.0.read().qname.as_uri(mc).into())
+        Ok(self
+            .0
+            .read()
+            .qname
+            .as_ref()
+            .ok_or("Uninitialized QName!")?
+            .as_uri(mc)
+            .into())
     }
 
     fn as_qname(&self) -> Option<Ref<QName<'gc>>> {
-        Some(Ref::map(self.0.read(), |s| &s.qname))
+        let read = self.0.read();
+        read.qname.as_ref()?;
+
+        Some(Ref::map(read, |r| r.qname.as_ref().unwrap()))
+    }
+
+    fn init_qname(self, mc: MutationContext<'gc, '_>, qname: QName<'gc>) {
+        self.0.write(mc).qname = Some(qname);
     }
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
@@ -96,10 +117,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
 
         Ok(QNameObject(GcCell::allocate(
             activation.context.gc_context,
-            QNameObjectData {
-                base,
-                qname: QName::dynamic_name(""),
-            },
+            QNameObjectData { base, qname: None },
         ))
         .into())
     }

@@ -1084,6 +1084,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    /// Initialize this object as a `QName` (if it can be)
+    fn init_qname(self, _mc: MutationContext<'gc, '_>, _qname: QName<'gc>) {}
+
     /// Unwrap this object as array storage.
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
         None
