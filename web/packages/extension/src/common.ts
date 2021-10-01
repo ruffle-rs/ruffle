@@ -95,7 +95,7 @@ export async function bindOptions(
     onChange?: (options: Options) => void
 ): Promise<void> {
     const elements = findOptionElements();
-    const options = await utils.getOptions(Array.from(elements.keys()));
+    const options = await utils.getOptions();
 
     for (const [key, element] of elements.entries()) {
         // Bind initial value.
