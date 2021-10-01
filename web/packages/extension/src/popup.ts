@@ -68,7 +68,7 @@ async function queryTabStatus(
         return;
     }
 
-    tabOptions = response.tabSettings;
+    tabOptions = response.tabOptions;
 
     if (response.loaded) {
         listener("status_result_running");
