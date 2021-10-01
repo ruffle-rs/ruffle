@@ -9,46 +9,46 @@ const DEFAULT_OPTIONS: Options = {
 };
 
 export let i18n: {
-    getMessage(name: string): string;
+    getMessage: (name: string) => string;
 };
 
 interface StorageArea {
-    get(keys?: string[]): Promise<Record<string, unknown>>;
-    remove(keys: string[]): Promise<void>;
-    set(items: Record<string, unknown>): Promise<void>;
+    get: (keys?: string[]) => Promise<Record<string, unknown>>;
+    remove: (keys: string[]) => Promise<void>;
+    set: (items: Record<string, unknown>) => Promise<void>;
 }
 
 export let storage: {
     local: StorageArea;
     sync: StorageArea;
     onChanged: {
-        addListener(
+        addListener: (
             listener: (
                 changes:
                     | Record<string, chrome.storage.StorageChange>
                     | Record<string, browser.storage.StorageChange>,
                 areaName: string
             ) => void
-        ): void;
+        ) => void;
     };
 };
 
 export let tabs: {
-    reload(tabId: number): Promise<void>;
-    query(
+    reload: (tabId: number) => Promise<void>;
+    query: (
         query: chrome.tabs.QueryInfo & browser.tabs._QueryQueryInfo
-    ): Promise<chrome.tabs.Tab[] | browser.tabs.Tab[]>;
-    sendMessage(
+    ) => Promise<chrome.tabs.Tab[] | browser.tabs.Tab[]>;
+    sendMessage: (
         tabId: number,
         message: unknown,
         options?: chrome.tabs.MessageSendOptions &
             browser.tabs._SendMessageOptions
-    ): Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    ) => Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
 export let runtime: {
     onMessage: {
-        addListener(
+        addListener: (
             listener: (
                 message: unknown,
                 sender:
@@ -56,9 +56,9 @@ export let runtime: {
                     | browser.runtime.MessageSender,
                 sendResponse: (response?: unknown) => void
             ) => void
-        ): void;
+        ) => void;
     };
-    getURL(path: string): string;
+    getURL: (path: string) => string;
 };
 
 export let openOptionsPage: () => Promise<void>;
@@ -82,7 +82,8 @@ function promisifyStorageArea(
     storage: chrome.storage.StorageArea
 ): StorageArea {
     return {
-        get: (keys: string[]) => promisify((cb) => storage.get(keys, cb)),
+        get: (keys?: string[]) =>
+            promisify((cb) => storage.get(keys || null, cb)),
         remove: (keys: string[]) => promisify((cb) => storage.remove(keys, cb)),
         set: (items: Record<string, unknown>) =>
             promisify((cb) => storage.set(items, cb)),
@@ -113,10 +114,10 @@ if (typeof chrome !== "undefined") {
         sendMessage: (
             tabId: number,
             message: unknown,
-            options: chrome.tabs.MessageSendOptions
+            options?: chrome.tabs.MessageSendOptions
         ) =>
             promisify((cb) =>
-                chrome.tabs.sendMessage(tabId, message, options, cb)
+                chrome.tabs.sendMessage(tabId, message, options || {}, cb)
             ),
     };
 
