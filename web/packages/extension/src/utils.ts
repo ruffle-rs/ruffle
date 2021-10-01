@@ -13,7 +13,7 @@ export let i18n: {
 };
 
 interface StorageArea {
-    get(keys: string[]): Promise<Record<string, unknown>>;
+    get(keys?: string[]): Promise<Record<string, unknown>>;
     remove(keys: string[]): Promise<void>;
     set(items: Record<string, unknown>): Promise<void>;
 }
@@ -136,10 +136,8 @@ if (typeof chrome !== "undefined") {
     throw new Error("Extension API not found.");
 }
 
-export async function getOptions<T extends keyof Options>(
-    keys: T[]
-): Promise<Pick<Options, T>> {
-    const options = await storage.sync.get(keys);
+export async function getOptions(): Promise<Options> {
+    const options = await storage.sync.get();
 
     // Copy over default options if they don't exist yet.
     return { ...DEFAULT_OPTIONS, ...options };

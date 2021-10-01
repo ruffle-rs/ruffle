@@ -106,12 +106,7 @@ function isXMLDocument(): boolean {
 }
 
 (async () => {
-    const options = await utils.getOptions([
-        "ruffleEnable",
-        "ignoreOptout",
-        "warnOnUnsupportedContent",
-        "logLevel",
-    ]);
+    const options = await utils.getOptions();
     const pageOptout = checkPageOptout();
     const shouldLoad =
         !isXMLDocument() &&

@@ -60,7 +60,7 @@ function disable() {
 }
 
 (async () => {
-    const { ruffleEnable } = await utils.getOptions(["ruffleEnable"]);
+    const { ruffleEnable } = await utils.getOptions();
 
     if (ruffleEnable) {
         enable();
