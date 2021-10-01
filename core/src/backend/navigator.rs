@@ -1,6 +1,7 @@
 //! Browser-related platform functions
 
 use crate::loader::Error;
+use crate::string::WStr;
 use indexmap::IndexMap;
 use std::borrow::Cow;
 use std::collections::VecDeque;
@@ -88,11 +89,13 @@ impl NavigationMethod {
         }
     }
 
-    pub fn from_method_str(method: &str) -> Option<Self> {
-        match method {
-            "GET" => Some(Self::Get),
-            "POST" => Some(Self::Post),
-            _ => None,
+    pub fn from_method_str(method: WStr<'_>) -> Option<Self> {
+        if method == b"GET" {
+            Some(Self::Get)
+        } else if method == b"POST" {
+            Some(Self::Post)
+        } else {
+            None
         }
     }
 }

@@ -15,7 +15,6 @@ use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
-use std::str::FromStr;
 
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -416,15 +415,16 @@ pub fn set_endian<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            match args
+            let endian = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?
-                .as_str()
-            {
-                "bigEndian" => bytearray.set_endian(Endian::Big),
-                "littleEndian" => bytearray.set_endian(Endian::Little),
-                _ => return Err("Parameter type must be one of the accepted values.".into()),
+                .coerce_to_string(activation)?;
+            if endian == b"bigEndian" {
+                bytearray.set_endian(Endian::Big);
+            } else if endian == b"littleEndian" {
+                bytearray.set_endian(Endian::Little);
+            } else {
+                return Err("Parameter type must be one of the accepted values.".into());
             }
         }
     }
@@ -763,7 +763,7 @@ pub fn compress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer = bytearray.compress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            let buffer = bytearray.compress(algorithm.parse()?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }
@@ -783,8 +783,7 @@ pub fn uncompress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer =
-                bytearray.decompress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            let buffer = bytearray.decompress(algorithm.parse()?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }

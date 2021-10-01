@@ -85,11 +85,14 @@ pub fn set_autosize<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
         this.set_autosize(
-            match &*value {
-                "left" => AutoSizeMode::Left,
-                "center" => AutoSizeMode::Center,
-                "right" => AutoSizeMode::Right,
-                _ => AutoSizeMode::None,
+            if value == b"left" {
+                AutoSizeMode::Left
+            } else if value == b"center" {
+                AutoSizeMode::Center
+            } else if value == b"right" {
+                AutoSizeMode::Right
+            } else {
+                AutoSizeMode::None
             },
             &mut activation.context,
         );
@@ -586,10 +589,12 @@ pub fn set_type<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
-        match is_editable.to_ascii_lowercase().as_str() {
-            "input" => this.set_editable(true, &mut activation.context),
-            "dynamic" => this.set_editable(false, &mut activation.context),
-            value => return Err(format!("Invalid TextField.type: {}", value).into()),
+        if is_editable == b"input" {
+            this.set_editable(true, &mut activation.context);
+        } else if is_editable == b"dynamic" {
+            this.set_editable(false, &mut activation.context);
+        } else {
+            return Err(format!("Invalid TextField.type: {}", is_editable).into());
         }
     }
 

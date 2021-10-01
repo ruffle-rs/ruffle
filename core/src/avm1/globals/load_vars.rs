@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use gc_arena::MutationContext;
 use std::borrow::Cow;
 
@@ -156,7 +156,8 @@ fn send<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
+    let method =
+        NavigationMethod::from_method_str(method_name.borrow()).unwrap_or(NavigationMethod::Post);
 
     use indexmap::IndexMap;
 
@@ -203,7 +204,8 @@ fn send_and_load<'gc>(
         .get(2)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
+    let method =
+        NavigationMethod::from_method_str(method_name.borrow()).unwrap_or(NavigationMethod::Post);
 
     spawn_load_var_fetch(activation, target, &url, Some((this, method)))?;
 
