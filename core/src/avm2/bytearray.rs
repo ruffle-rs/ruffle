@@ -1,4 +1,5 @@
 use crate::avm2::Error;
+use crate::string::{FromWStr, WStr};
 use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
@@ -7,7 +8,6 @@ use std::cmp;
 use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::io::{self, Read, SeekFrom};
-use std::str::FromStr;
 
 #[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
 #[collect(no_drop)]
@@ -34,16 +34,19 @@ impl Display for CompressionAlgorithm {
     }
 }
 
-impl FromStr for CompressionAlgorithm {
+impl FromWStr for CompressionAlgorithm {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "zlib" => CompressionAlgorithm::Zlib,
-            "deflate" => CompressionAlgorithm::Deflate,
-            "lzma" => CompressionAlgorithm::Lzma,
-            _ => return Err("Unknown compression algorithm".into()),
-        })
+    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+        if s == b"zlib" {
+            Ok(CompressionAlgorithm::Zlib)
+        } else if s == b"deflate" {
+            Ok(CompressionAlgorithm::Deflate)
+        } else if s == b"lzma" {
+            Ok(CompressionAlgorithm::Lzma)
+        } else {
+            Err("Unknown compression algorithm".into())
+        }
     }
 }
 

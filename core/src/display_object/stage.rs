@@ -780,6 +780,24 @@ impl FromStr for StageScaleMode {
     }
 }
 
+impl FromWStr for StageScaleMode {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"exactfit")) {
+            Ok(StageScaleMode::ExactFit)
+        } else if s.eq_ignore_case(WStr::from_units(b"noborder")) {
+            Ok(StageScaleMode::NoBorder)
+        } else if s.eq_ignore_case(WStr::from_units(b"noscale")) {
+            Ok(StageScaleMode::NoScale)
+        } else if s.eq_ignore_case(WStr::from_units(b"showall")) {
+            Ok(StageScaleMode::ShowAll)
+        } else {
+            Err(ParseEnumError)
+        }
+    }
+}
+
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
@@ -889,6 +907,26 @@ impl FromStr for StageAlign {
     }
 }
 
+impl FromWStr for StageAlign {
+    type Err = std::convert::Infallible;
+
+    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+        // Chars get converted into flags.
+        // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
+        let mut align = StageAlign::default();
+        for c in s.iter() {
+            match u8::try_from(c).map(|c| c.to_ascii_uppercase()) {
+                Ok(b'T') => align.insert(StageAlign::TOP),
+                Ok(b'B') => align.insert(StageAlign::BOTTOM),
+                Ok(b'L') => align.insert(StageAlign::LEFT),
+                Ok(b'R') => align.insert(StageAlign::RIGHT),
+                _ => (),
+            }
+        }
+        Ok(align)
+    }
+}
+
 /// The quality setting of the `Stage`.
 ///
 /// In the Flash Player, this settings affects anti-aliasing and bitmap smoothing.
@@ -988,5 +1026,31 @@ impl FromStr for StageQuality {
             _ => return Err(ParseEnumError),
         };
         Ok(quality)
+    }
+}
+
+impl FromWStr for StageQuality {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"low")) {
+            Ok(StageQuality::Low)
+        } else if s.eq_ignore_case(WStr::from_units(b"medium")) {
+            Ok(StageQuality::Medium)
+        } else if s.eq_ignore_case(WStr::from_units(b"high")) {
+            Ok(StageQuality::High)
+        } else if s.eq_ignore_case(WStr::from_units(b"best")) {
+            Ok(StageQuality::Best)
+        } else if s.eq_ignore_case(WStr::from_units(b"8x8")) {
+            Ok(StageQuality::High8x8)
+        } else if s.eq_ignore_case(WStr::from_units(b"8x8linear")) {
+            Ok(StageQuality::High8x8Linear)
+        } else if s.eq_ignore_case(WStr::from_units(b"16x16")) {
+            Ok(StageQuality::High16x16)
+        } else if s.eq_ignore_case(WStr::from_units(b"16x16linear")) {
+            Ok(StageQuality::High16x16Linear)
+        } else {
+            Err(ParseEnumError)
+        }
     }
 }
