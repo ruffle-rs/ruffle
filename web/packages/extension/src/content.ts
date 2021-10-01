@@ -124,7 +124,7 @@ function isXMLDocument(): boolean {
             sendMessageToPage(message).then((response) => {
                 sendResponse({
                     loaded: true,
-                    tabSettings: options,
+                    tabOptions: options,
                     optout: pageOptout,
                     data: response,
                 });
@@ -133,7 +133,7 @@ function isXMLDocument(): boolean {
         } else {
             sendResponse({
                 loaded: false,
-                tabSettings: options,
+                tabOptions: options,
                 optout: pageOptout,
             });
             return false;
