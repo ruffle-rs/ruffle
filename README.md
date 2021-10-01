@@ -106,6 +106,9 @@ Sincere thanks to the diamond level sponsors of Ruffle:
   <a href="http://kupogames.com/">
     <img src="https://ruffle.rs/assets/sponsors/mattroszak.png" alt="Matt Roszak">
   </a>
+  <a href="https://www.dolldivine.com/">
+    <img src="https://ruffle.rs/assets/sponsors/dolldivine.png" alt="Doll Divine">
+  </a>
 </p>
 
 ## License
