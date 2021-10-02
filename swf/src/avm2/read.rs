@@ -895,13 +895,11 @@ pub mod tests {
         for (_, abc_file, bytes) in test_data::avm2_tests() {
             let mut reader = Reader::new(&bytes[..]);
             let parsed = reader.read().unwrap();
-            if parsed != abc_file {
-                // Failed, result doesn't match.
-                panic!(
-                    "Incorrectly parsed ABC.\nRead:\n{:?}\n\nExpected:\n{:?}",
-                    parsed, abc_file
-                );
-            }
+            assert_eq!(
+                parsed, abc_file,
+                "Incorrectly parsed ABC.\nRead:\n{:?}\n\nExpected:\n{:?}",
+                parsed, abc_file
+            );
         }
     }
 

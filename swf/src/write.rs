@@ -2793,12 +2793,11 @@ mod tests {
             Writer::new(&mut written_tag_bytes, swf_version)
                 .write_tag(&tag)
                 .unwrap();
-            if written_tag_bytes != expected_tag_bytes {
-                panic!(
-                    "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
-                    tag, written_tag_bytes, expected_tag_bytes
-                );
-            }
+            assert_eq!(
+                written_tag_bytes, expected_tag_bytes,
+                "Error reading tag.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
+                tag, written_tag_bytes, expected_tag_bytes
+            );
         }
     }
 

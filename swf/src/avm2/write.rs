@@ -1068,13 +1068,11 @@ pub mod tests {
                 let mut writer = Writer::new(&mut out);
                 writer.write(abc_file).unwrap();
             }
-            if bytes != out {
-                // Failed, result doesn't match.
-                panic!(
-                    "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
-                    out, bytes
-                );
-            }
+            assert_eq!(
+                out, bytes,
+                "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
+                out, bytes
+            );
         }
     }
 

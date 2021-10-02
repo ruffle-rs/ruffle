@@ -439,12 +439,11 @@ mod tests {
             Writer::new(&mut written_bytes, swf_version)
                 .write_action(&action)
                 .unwrap();
-            if written_bytes != expected_bytes {
-                panic!(
-                    "Error writing action.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
-                    action, written_bytes, expected_bytes
-                );
-            }
+            assert_eq!(
+                written_bytes, expected_bytes,
+                "Error writing action.\nTag:\n{:?}\n\nWrote:\n{:?}\n\nExpected:\n{:?}",
+                action, written_bytes, expected_bytes
+            );
         }
     }
 }

@@ -41,17 +41,23 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     let enum_input = parse_macro_input!(args as ItemEnum);
     let enum_name = enum_input.ident.clone();
 
-    if trait_generics.lifetimes().count() > 1 {
-        panic!("Only one lifetime parameter is currently supported");
-    }
+    // TODO: Revise whether the first two asserts are needed at all, and whether
+    // the second condition should be `== 0` instead, based on the error message.
+    assert!(
+        trait_generics.lifetimes().count() <= 1,
+        "Only one lifetime parameter is currently supported"
+    );
 
-    if trait_generics.type_params().count() > 1 {
-        panic!("Generic type parameters are currently unsupported");
-    }
+    assert!(
+        trait_generics.type_params().count() <= 1,
+        "Generic type parameters are currently unsupported"
+    );
 
-    if trait_generics != enum_input.generics {
-        panic!("Trait and enum should have the same generic parameters");
-    }
+    assert_eq!(
+        trait_generics, enum_input.generics,
+        "Trait and enum should have the same generic parameters"
+    );
+
     // Implement each trait. This will match against each enum variant and delegate
     // to the underlying type.
     let trait_methods: Vec<_> = input_trait
