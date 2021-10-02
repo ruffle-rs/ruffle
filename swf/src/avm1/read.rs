@@ -4,8 +4,6 @@ use crate::read_base::ReaderBase;
 
 pub struct Reader<'a> {
     base: ReaderBase<'a>,
-    #[allow(dead_code)]
-    version: u8,
 }
 
 impl<'a> std::ops::Deref for Reader<'a> {
@@ -26,10 +24,9 @@ impl<'a> std::ops::DerefMut for Reader<'a> {
 
 impl<'a> Reader<'a> {
     #[inline]
-    pub const fn new(input: &'a [u8], version: u8) -> Self {
+    pub const fn new(input: &'a [u8]) -> Self {
         Self {
             base: ReaderBase::new(input),
-            version,
         }
     }
 
@@ -359,8 +356,8 @@ pub mod tests {
 
     #[test]
     fn read_action() {
-        for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
-            let mut reader = Reader::new(&action_bytes[..], swf_version);
+        for (_swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
+            let mut reader = Reader::new(&action_bytes[..]);
             let parsed_action = reader.read_action().unwrap().unwrap();
             assert_eq!(
                 parsed_action, expected_action,
@@ -374,7 +371,7 @@ pub mod tests {
     #[test]
     fn read_parse_error() {
         let action_bytes = [0xff, 0xff, 0xff, 0x00, 0x00];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
         match reader.read_action() {
             Err(crate::error::Error::Avm1ParseError { .. }) => (),
             result => {
@@ -390,7 +387,7 @@ pub mod tests {
             0x9b, 0x08, 0x00, 0x66, 0x6f, 0x6f, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x96, 0x06, 0x00,
             0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26, 0x00,
         ];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
         let action = reader.read_action().unwrap().unwrap();
         assert_eq!(
             action,
@@ -402,7 +399,7 @@ pub mod tests {
         );
 
         if let Action::DefineFunction { actions, .. } = action {
-            let mut reader = Reader::new(actions, 5);
+            let mut reader = Reader::new(actions);
             let action = reader.read_action().unwrap().unwrap();
             assert_eq!(
                 action,
@@ -418,7 +415,7 @@ pub mod tests {
         // ActionPush doesn't provide an explicit # of values, but instead reads values
         // until the end of the action. Ensure we don't read extra values.
         let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
         let action = reader.read_action().unwrap().unwrap();
         assert_eq!(action, Action::Push(vec![Value::Null, Value::Undefined]));
     }
@@ -436,7 +433,7 @@ pub mod tests {
             OpCode::Add as u8,
             OpCode::Subtract as u8,
         ];
-        let mut reader = Reader::new(&action_bytes[..], 5);
+        let mut reader = Reader::new(&action_bytes[..]);
 
         let action = reader.read_action().unwrap().unwrap();
         assert_eq!(action, Action::ConstantPool(vec!["a".into()]));

@@ -431,7 +431,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut reader = Reader::new(code.movie.data(), self.swf_version());
+        let mut reader = Reader::new(code.movie.data());
         reader.seek(code.start as isize);
 
         loop {

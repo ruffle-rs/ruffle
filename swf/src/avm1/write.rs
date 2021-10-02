@@ -7,8 +7,6 @@ use std::io::{Result, Write};
 
 pub struct Writer<W: Write> {
     output: W,
-    #[allow(dead_code)]
-    version: u8,
 }
 
 impl<W: Write> SwfWriteExt for Writer<W> {
@@ -65,8 +63,8 @@ impl<W: Write> SwfWriteExt for Writer<W> {
 }
 
 impl<W: Write> Writer<W> {
-    pub fn new(output: W, version: u8) -> Self {
-        Self { output, version }
+    pub fn new(output: W) -> Self {
+        Self { output }
     }
 
     #[inline]
@@ -434,9 +432,9 @@ mod tests {
 
     #[test]
     fn write_action() {
-        for (swf_version, action, expected_bytes) in test_data::avm1_tests() {
+        for (_swf_version, action, expected_bytes) in test_data::avm1_tests() {
             let mut written_bytes = Vec::new();
-            Writer::new(&mut written_bytes, swf_version)
+            Writer::new(&mut written_bytes)
                 .write_action(&action)
                 .unwrap();
             assert_eq!(
