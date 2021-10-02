@@ -5,7 +5,9 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ClassObject, FunctionObject, Object, ScriptObject, TObject};
+use crate::avm2::object::{
+    ClassObject, FunctionObject, NamespaceObject, Object, ScriptObject, TObject,
+};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
@@ -398,6 +400,23 @@ fn constant<'gc>(
     Ok(())
 }
 
+fn namespace<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    package: impl Into<AvmString<'gc>>,
+    name: impl Into<AvmString<'gc>>,
+    uri: impl Into<AvmString<'gc>>,
+    script: Script<'gc>,
+) -> Result<(), Error> {
+    let namespace = NamespaceObject::from_namespace(activation, Namespace::Namespace(uri.into()))?;
+    constant(
+        activation.context.gc_context,
+        package,
+        name,
+        namespace.into(),
+        script,
+    )
+}
+
 macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $script:expr) => {
         let (class_object, proto) = class($activation, $class, $script)?;
@@ -600,6 +619,15 @@ pub fn load_player_globals<'gc>(
         flash::utils::dictionary::create_class(mc),
         script,
     )?;
+
+    namespace(
+        activation,
+        "flash.utils",
+        "flash_proxy",
+        flash::utils::NS_FLASH_PROXY,
+        script,
+    )?;
+    class(activation, flash::utils::proxy::create_class(mc), script)?;
 
     function(
         activation,
