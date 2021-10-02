@@ -647,6 +647,20 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
+    pub fn define_ns_builtin_instance_methods(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        ns: &'static str,
+        items: &[(&'static str, NativeMethodImpl)],
+    ) {
+        for &(name, value) in items {
+            self.define_instance_trait(Trait::from_method(
+                QName::new(Namespace::Namespace(ns.into()), name),
+                Method::from_builtin(value, name, mc),
+            ));
+        }
+    }
+    #[inline(never)]
     pub fn define_public_builtin_class_methods(
         &mut self,
         mc: MutationContext<'gc, '_>,

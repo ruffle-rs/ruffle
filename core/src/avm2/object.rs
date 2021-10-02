@@ -38,6 +38,7 @@ mod function_object;
 mod loaderinfo_object;
 mod namespace_object;
 mod primitive_object;
+mod proxy_object;
 mod qname_object;
 mod regexp_object;
 mod script_object;
@@ -63,6 +64,7 @@ pub use crate::avm2::object::loaderinfo_object::{
 };
 pub use crate::avm2::object::namespace_object::{namespace_allocator, NamespaceObject};
 pub use crate::avm2::object::primitive_object::{primitive_allocator, PrimitiveObject};
+pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject};
 pub use crate::avm2::object::qname_object::{qname_allocator, QNameObject};
 pub use crate::avm2::object::regexp_object::{regexp_allocator, RegExpObject};
 pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
@@ -102,6 +104,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         DictionaryObject(DictionaryObject<'gc>),
         QNameObject(QNameObject<'gc>),
         TextFormatObject(TextFormatObject<'gc>),
+        ProxyObject(ProxyObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
