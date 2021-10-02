@@ -4,7 +4,7 @@ use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
-use super::{utils, Pattern, Units, WStr, WString};
+use super::{utils, BorrowWStr, Pattern, Units, WStr, WString};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -146,6 +146,49 @@ pub fn str_is_latin1(s: WStr<'_>) -> bool {
         Units::Wide(us) => us.iter().all(|c| *c <= u16::from(u8::MAX)),
     }
 }
+
+pub fn str_join<E: BorrowWStr>(elems: &[E], sep: WStr<'_>) -> WString {
+    fn join_inner<T, E, F>(total_len: usize, elems: &[E], sep: WStr<'_>, mut extend: F) -> Vec<T>
+    where
+        E: BorrowWStr,
+        F: FnMut(&mut Vec<T>, WStr<'_>),
+    {
+        let mut buf = Vec::with_capacity(total_len);
+        extend(&mut buf, elems[0].borrow());
+        for e in &elems[1..] {
+            extend(&mut buf, sep);
+            extend(&mut buf, e.borrow());
+        }
+        buf
+    }
+
+    if elems.is_empty() {
+        return WString::default();
+    }
+
+    let (len, is_latin1) = elems.iter().fold(
+        (sep.len() * elems.len().saturating_sub(1), sep.is_latin1()),
+        |(len, is_latin1), e| {
+            let e = e.borrow();
+            (len + e.len(), is_latin1 && e.is_latin1())
+        },
+    );
+
+    if is_latin1 {
+        let buf = join_inner(len, elems, sep, |buf: &mut Vec<u8>, e| match e.units() {
+            Units::Bytes(us) => buf.extend_from_slice(us),
+            Units::Wide(us) => buf.extend(us.iter().map(|c| *c as u8)),
+        });
+        WString::from_buf(buf)
+    } else {
+        let buf = join_inner(len, elems, sep, |buf: &mut Vec<u16>, e| match e.units() {
+            Units::Bytes(us) => buf.extend(us.iter().map(|c| *c as u16)),
+            Units::Wide(us) => buf.extend_from_slice(us),
+        });
+        WString::from_buf(buf)
+    }
+}
+
 pub fn str_find<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
     pattern
         .into_searcher(haystack)

@@ -270,7 +270,6 @@ macro_rules! impl_str_methods {
         pub fn strip_suffix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
             crate::string::ops::strip_suffix($deref, pattern)
         }
-
     }
 }
 
