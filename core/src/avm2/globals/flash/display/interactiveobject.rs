@@ -2,11 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::{TDisplayObject, TInteractiveObject};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.InteractiveObject`'s instance constructor.
@@ -40,6 +41,80 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `InteractiveObject.mouseEnabled`'s getter.
+pub fn mouse_enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        return Ok(int.mouse_enabled().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `InteractiveObject.mouseEnabled`'s setter.
+pub fn set_mouse_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        let value = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+        int.set_mouse_enabled(activation.context.gc_context, value);
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `InteractiveObject.doubleClickEnabled`'s getter.
+pub fn double_click_enabled<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        return Ok(int.double_click_enabled().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `InteractiveObject.doubleClickEnabled`'s setter.
+pub fn set_double_click_enabled<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        let value = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+        int.set_double_click_enabled(activation.context.gc_context, value);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `InteractiveObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -61,6 +136,20 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<InteractiveObject native instance initializer>",
         mc,
     ));
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
+        ("mouseEnabled", Some(mouse_enabled), Some(set_mouse_enabled)),
+        (
+            "doubleClickEnabled",
+            Some(double_click_enabled),
+            Some(set_double_click_enabled),
+        ),
+    ];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

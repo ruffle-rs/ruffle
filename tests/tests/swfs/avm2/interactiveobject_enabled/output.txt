@@ -1,0 +1,25 @@
+///(Initial state of event enabled flags...)
+///this.mouseEnabled
+true
+///this.doubleClickEnabled
+false
+///this.doubleClickEnabled = true
+///this.mouseEnabled
+true
+///this.doubleClickEnabled
+true
+///this.mouseEnabled = false
+///this.mouseEnabled
+false
+///this.doubleClickEnabled
+true
+///this.doubleClickEnabled = false
+///this.mouseEnabled
+false
+///this.doubleClickEnabled
+false
+///this.mouseEnabled = true
+///this.mouseEnabled
+true
+///this.doubleClickEnabled
+false
