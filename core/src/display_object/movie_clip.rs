@@ -20,6 +20,9 @@ use crate::display_object::container::{
     dispatch_added_event_only, dispatch_added_to_stage_event_only, dispatch_removed_event,
     ChildContainer, TDisplayObjectContainer,
 };
+use crate::display_object::interactive::{
+    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+};
 use crate::display_object::{
     Avm1Button, Avm2Button, Bitmap, DisplayObjectBase, EditText, Graphic, MorphShapeStatic,
     TDisplayObject, Text, Video,
@@ -68,6 +71,7 @@ pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: DisplayObjectBase<'gc>,
+    interactive_base: InteractiveObjectBase,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
@@ -98,6 +102,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -132,6 +137,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -166,6 +172,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
                     MovieClipStatic::with_data(id, swf, num_frames),
@@ -200,6 +207,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
                     MovieClipStatic::with_data(0, movie.into(), num_frames),
@@ -2029,6 +2037,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         Some(self.into())
     }
 
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        Some(self.into())
+    }
+
     fn as_drawing(&self, gc_context: MutationContext<'gc, '_>) -> Option<RefMut<'_, Drawing>> {
         Some(RefMut::map(self.0.write(gc_context), |s| &mut s.drawing))
     }
@@ -2127,6 +2139,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
 impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     impl_display_object_container!(container);
+}
+
+impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
+    fn base(&self) -> Ref<InteractiveObjectBase> {
+        Ref::map(self.0.read(), |r| &r.interactive_base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
+        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
 }
 
 impl<'gc> MovieClipData<'gc> {
