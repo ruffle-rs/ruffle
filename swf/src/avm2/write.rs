@@ -1069,7 +1069,7 @@ pub mod tests {
                 writer.write(abc_file).unwrap();
             }
             assert_eq!(
-                bytes, out,
+                out, bytes,
                 "Incorrectly written ABC.\nWritten:\n{:?}\n\nExpected:\n{:?}",
                 out, bytes
             );

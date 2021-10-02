@@ -41,13 +41,15 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     let enum_input = parse_macro_input!(args as ItemEnum);
     let enum_name = enum_input.ident.clone();
 
+    // TODO: Revise whether the first two asserts are needed at all, and whether
+    // the second condition should be `== 0` instead, based on the error message.
     assert!(
         trait_generics.lifetimes().count() <= 1,
         "Only one lifetime parameter is currently supported"
     );
 
     assert!(
-        trait_generics.type_params().count() <= 1, // XXX shouldn't this be <= 0; or rather, == 0; or similar to .is_empty() or .has_next()?
+        trait_generics.type_params().count() <= 1,
         "Generic type parameters are currently unsupported"
     );
 
