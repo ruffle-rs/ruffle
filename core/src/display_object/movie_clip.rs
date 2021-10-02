@@ -37,7 +37,6 @@ use smallvec::SmallVec;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::HashMap;
 use std::sync::Arc;
-use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, FrameLabelData, Tag};
 
 type FrameNumber = u16;

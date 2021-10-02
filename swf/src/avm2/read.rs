@@ -2,33 +2,34 @@
 
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
-use crate::extensions::ReadSwfExt;
+use crate::read_base::ReaderBase;
 use std::io::Read;
 
 pub struct Reader<'a> {
-    input: &'a [u8],
+    base: ReaderBase<'a>,
 }
 
-impl<'a> ReadSwfExt<'a> for Reader<'a> {
-    #[inline(always)]
-    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
+impl<'a> std::ops::Deref for Reader<'a> {
+    type Target = ReaderBase<'a>;
 
-    #[inline(always)]
-    fn as_slice(&self) -> &'a [u8] {
-        self.input
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl<'a> std::ops::DerefMut for Reader<'a> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl<'a> Reader<'a> {
     pub fn new(input: &'a [u8]) -> Self {
-        Self { input }
-    }
-
-    #[inline]
-    pub fn seek(&mut self, data: &'a [u8], relative_offset: i32) {
-        ReadSwfExt::seek(self, data, relative_offset as isize)
+        Self {
+            base: ReaderBase::new(input),
+        }
     }
 
     pub fn read(&mut self) -> Result<AbcFile> {
