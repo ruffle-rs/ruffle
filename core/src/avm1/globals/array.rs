@@ -258,14 +258,15 @@ pub fn join<'gc>(
         return Ok("".into());
     }
 
-    let parts: Result<Vec<_>, Error<'gc>> = (0..length)
+    let parts = (0..length)
         .map(|i| {
             let element = this.get_element(activation, i);
-            Ok(element.coerce_to_string(activation)?.to_string())
+            element.coerce_to_string(activation)
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(AvmString::new(activation.context.gc_context, parts?.join(&separator)).into())
+    let joined = crate::string::join(&parts, &separator);
+    Ok(AvmString::new_ucs2(activation.context.gc_context, joined).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).

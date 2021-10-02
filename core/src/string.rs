@@ -31,3 +31,9 @@ pub use pattern::Pattern;
 pub use slice::{WStr, WStrMut};
 
 use common::panic_on_invalid_length;
+
+/// Flattens a slice of strings, placing `sep` as a separator between each.
+#[inline]
+pub fn join<E: BorrowWStr, S: BorrowWStr>(elems: &[E], sep: &S) -> WString {
+    crate::string::ops::str_join(elems, sep.borrow())
+}

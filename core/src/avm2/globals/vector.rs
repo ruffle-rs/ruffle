@@ -341,17 +341,13 @@ where
                 if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                     accum.push("".into());
                 } else {
-                    accum.push(
-                        conv(item, activation)?
-                            .coerce_to_string(activation)?
-                            .to_string(),
-                    );
+                    accum.push(conv(item, activation)?.coerce_to_string(activation)?);
                 }
             }
 
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_ucs2(
                 activation.context.gc_context,
-                accum.join(&string_separator),
+                crate::string::join(&accum, &string_separator),
             )
             .into());
         }
