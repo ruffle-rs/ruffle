@@ -1205,7 +1205,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         target: &'_ SwfStr,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = target.to_str_lossy(self.encoding());
-        let target = target.as_ref();
         let url = url.to_string_lossy(self.encoding());
         if target.starts_with("_level") && target.len() > 6 {
             match target[6..].parse::<i32>() {
@@ -1240,13 +1239,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(&url) {
-            let fsargs = target;
-            fscommand::handle(fscommand, fsargs, self)?;
+        if let Some(fscommand) = fscommand::parse(WString::from_utf8(&url).borrow()) {
+            let fsargs = WString::from_utf8(&target);
+            fscommand::handle(fscommand, fsargs.borrow(), self)?;
         } else {
             self.context
                 .navigator
-                .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
+                .navigate_to_url(url.to_owned(), Some(target.into_owned()), None);
         }
 
         Ok(FrameControl::Continue)
@@ -1264,9 +1263,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let url_val = self.context.avm1.pop();
         let url = url_val.coerce_to_string(self)?;
 
-        if let Some(fscommand) = fscommand::parse(&url) {
-            let fsargs = target.coerce_to_string(self)?.to_string();
-            fscommand::handle(fscommand, &fsargs, self)?;
+        if let Some(fscommand) = fscommand::parse(url.borrow()) {
+            let fsargs = target.coerce_to_string(self)?;
+            fscommand::handle(fscommand, fsargs.borrow(), self)?;
             return Ok(FrameControl::Continue);
         }
 
@@ -1290,7 +1289,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .object()
                     .coerce_to_object(self);
                 let (url, opts) = self.locals_into_request_options(
-                    Cow::Borrowed(&url),
+                    url.borrow(),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = self.context.navigator.fetch(&url, opts);
@@ -1307,7 +1306,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
-                    Cow::Borrowed(&url),
+                    url.borrow(),
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
 
@@ -1335,7 +1334,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target.slice(6..).parse::<i32>() {
                 Ok(level_id) => {
-                    let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
+                    let fetch = self
+                        .context
+                        .navigator
+                        .fetch(&url.to_utf8_lossy(), RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
                     let process = self.context.load_manager.load_movie_into_clip(
@@ -2216,7 +2218,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             val.coerce_to_string(self)?
         };
-        self.context.log.avm_trace(&out);
+        self.context.log.avm_trace(&out.to_utf8_lossy());
         Ok(FrameControl::Continue)
     }
 
@@ -2414,7 +2416,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn object_into_request_options<'c>(
         &mut self,
         object: Object<'gc>,
-        url: Cow<'c, str>,
+        url: WStr<'c>,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         match method {
@@ -2425,7 +2427,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .finish();
 
                 match method {
-                    NavigationMethod::Get if url.find('?').is_none() => (
+                    NavigationMethod::Get if url.find(b'?').is_none() => (
                         Cow::Owned(format!("{}?{}", url, qstring)),
                         RequestOptions::get(),
                     ),
@@ -2434,7 +2436,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         RequestOptions::get(),
                     ),
                     NavigationMethod::Post => (
-                        url,
+                        url.to_utf8_lossy(),
                         RequestOptions::post(Some((
                             qstring.as_bytes().to_owned(),
                             "application/x-www-form-urlencoded".to_string(),
@@ -2442,7 +2444,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     ),
                 }
             }
-            None => (url, RequestOptions::get()),
+            None => (url.to_utf8_lossy(), RequestOptions::get()),
         }
     }
 
@@ -2462,7 +2464,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// form data in the request body or URL.
     pub fn locals_into_request_options<'c>(
         &mut self,
-        url: Cow<'c, str>,
+        url: WStr<'c>,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         let scope = self.scope_cell();
