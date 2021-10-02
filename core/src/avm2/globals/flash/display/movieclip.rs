@@ -9,7 +9,7 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
@@ -111,7 +111,7 @@ pub fn current_frame_label<'gc>(
                 if start_frame < mc.current_frame() {
                     None
                 } else {
-                    Some(AvmString::new(activation.context.gc_context, label).into())
+                    Some(AvmString::new_ucs2(activation.context.gc_context, label).into())
                 }
             })
             .unwrap_or(Value::Null));
@@ -133,7 +133,7 @@ pub fn current_label<'gc>(
         return Ok(mc
             .current_label()
             .map(|(label, _start_frame)| {
-                AvmString::new(activation.context.gc_context, label).into()
+                AvmString::new_ucs2(activation.context.gc_context, label).into()
             })
             .unwrap_or(Value::Null));
     }
@@ -160,7 +160,7 @@ fn labels_for_scene<'gc>(
     let mut frame_labels = Vec::with_capacity(labels.len());
 
     for (name, frame) in labels {
-        let name: Value<'gc> = AvmString::new(activation.context.gc_context, name).into();
+        let name: Value<'gc> = AvmString::new_ucs2(activation.context.gc_context, name).into();
         let local_frame = frame - scene_start + 1;
         let args = [name, local_frame.into()];
         let frame_label = frame_label_class.construct(activation, &args)?;
@@ -186,7 +186,7 @@ pub fn current_labels<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: mc.total_frames(),
         });
@@ -207,7 +207,7 @@ pub fn current_scene<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: mc.total_frames(),
         });
@@ -240,7 +240,7 @@ pub fn scenes<'gc>(
         let mut mc_scenes = mc.scenes();
         if mc.scenes().is_empty() {
             mc_scenes.push(Scene {
-                name: "".to_string(),
+                name: WString::default(),
                 start: 0,
                 length: mc.total_frames(),
             });
@@ -364,7 +364,7 @@ pub fn goto_frame<'gc>(
     let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
         Value::Null => None,
         v => mc
-            .scene_label_to_number(&v.coerce_to_string(activation)?)
+            .scene_label_to_number(v.coerce_to_string(activation)?.borrow())
             .map(|v| v.saturating_sub(1)),
     }
     .unwrap_or(0) as u32;
@@ -380,7 +380,7 @@ pub fn goto_frame<'gc>(
                     //If the user specified a scene, we need to validate that
                     //the requested frame exists within that scene.
                     let scene = scene.coerce_to_string(activation)?;
-                    if !mc.frame_exists_within_scene(&frame_or_label, &scene) {
+                    if !mc.frame_exists_within_scene(frame_or_label.borrow(), scene.borrow()) {
                         return Err(format!(
                             "ArgumentError: Frame label {} not found in scene {}",
                             frame_or_label, scene
@@ -389,12 +389,13 @@ pub fn goto_frame<'gc>(
                     }
                 }
 
-                mc.frame_label_to_number(&frame_or_label).ok_or_else(|| {
-                    format!(
-                        "ArgumentError: {} is not a valid frame label.",
-                        frame_or_label
-                    )
-                })? as u32
+                mc.frame_label_to_number(frame_or_label.borrow())
+                    .ok_or_else(|| {
+                        format!(
+                            "ArgumentError: {} is not a valid frame label.",
+                            frame_or_label
+                        )
+                    })? as u32
             }
         }
     };

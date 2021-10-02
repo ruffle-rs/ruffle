@@ -31,7 +31,7 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
@@ -662,7 +662,7 @@ impl<'gc> MovieClip<'gc> {
     fn scene_and_frame_labels(
         self,
         reader: &mut SwfStream<'_>,
-        static_data: &mut MovieClipStatic,
+        static_data: &mut MovieClipStatic<'gc>,
     ) -> DecodeResult {
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
         sfl_data
@@ -677,7 +677,7 @@ impl<'gc> MovieClip<'gc> {
                 .map(|fld| fld.frame_num + 1)
                 .unwrap_or_else(|| static_data.total_frames as u32 + 1);
 
-            let label = label.to_string_lossy(reader.encoding());
+            let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
             static_data.scene_labels.insert(
                 label.clone(),
                 Scene {
@@ -690,7 +690,7 @@ impl<'gc> MovieClip<'gc> {
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
             static_data.frame_labels.insert(
-                label.to_string_lossy(reader.encoding()),
+                WString::from_utf8(&label.to_string_lossy(reader.encoding())),
                 frame_num as u16 + 1,
             );
         }
@@ -903,10 +903,10 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Yield the current frame label as a tuple of string and frame number.
-    pub fn current_label(self) -> Option<(String, FrameNumber)> {
+    pub fn current_label(self) -> Option<(WString, FrameNumber)> {
         let read = self.0.read();
         let current_frame = read.current_frame();
-        let mut best: Option<(&str, FrameNumber)> = None;
+        let mut best: Option<(&WString, FrameNumber)> = None;
 
         for (label, frame) in read.static_data.frame_labels.iter() {
             if *frame > current_frame {
@@ -918,16 +918,20 @@ impl<'gc> MovieClip<'gc> {
             }
         }
 
-        best.map(|(s, fnum)| (s.to_string(), fnum))
+        best.map(|(s, fnum)| (s.clone(), fnum))
     }
 
     /// Yield a list of labels and frame-numbers in the current scene.
     ///
     /// Labels are returned sorted by frame number.
-    pub fn labels_in_range(self, from: FrameNumber, to: FrameNumber) -> Vec<(String, FrameNumber)> {
+    pub fn labels_in_range(
+        self,
+        from: FrameNumber,
+        to: FrameNumber,
+    ) -> Vec<(WString, FrameNumber)> {
         let read = self.0.read();
 
-        let mut values: Vec<(String, FrameNumber)> = read
+        let mut values: Vec<(WString, FrameNumber)> = read
             .static_data
             .frame_labels
             .iter()
@@ -958,24 +962,25 @@ impl<'gc> MovieClip<'gc> {
         write.avm2_class = constr;
     }
 
-    pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
-        // Frame labels are case insensitive.
+    pub fn frame_label_to_number(self, frame_label: WStr<'_>) -> Option<FrameNumber> {
+        // Frame labels are case insensitive (ASCII).
+        // TODO: Should be case sensitive in AVM2.
         let label = frame_label.to_ascii_lowercase();
         self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
-    pub fn scene_label_to_number(self, scene_label: &str) -> Option<FrameNumber> {
-        //TODO: Are scene labels also case insensitive?
+    pub fn scene_label_to_number(self, scene_label: WStr<'_>) -> Option<FrameNumber> {
+        // Never used in AVM1, so always be case sensitive.
         self.0
             .read()
             .static_data
             .scene_labels
-            .get(scene_label)
+            .get(&WString::from(scene_label))
             .map(|Scene { start, .. }| start)
             .copied()
     }
 
-    pub fn frame_exists_within_scene(self, frame_label: &str, scene_label: &str) -> bool {
+    pub fn frame_exists_within_scene(self, frame_label: WStr<'_>, scene_label: WStr<'_>) -> bool {
         let scene = self.scene_label_to_number(scene_label);
         let frame = self.frame_label_to_number(frame_label);
 
@@ -2132,9 +2137,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         let frame_name = match event {
-            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some("_up"),
-            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => Some("_over"),
-            ClipEvent::Press | ClipEvent::DragOver => Some("_down"),
+            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some(WStr::from_units(b"_up")),
+            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => {
+                Some(WStr::from_units(b"_over"))
+            }
+            ClipEvent::Press | ClipEvent::DragOver => Some(WStr::from_units(b"_down")),
             _ => None,
         };
 
@@ -3102,14 +3109,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         cur_frame: FrameNumber,
-        static_data: &mut MovieClipStatic,
+        static_data: &mut MovieClipStatic<'gc>,
     ) -> DecodeResult {
         let frame_label = reader.read_frame_label(tag_len)?;
-        // Frame labels are case insensitive (ASCII).
-        let label = frame_label
+        let mut label = frame_label
             .label
             .to_str_lossy(reader.encoding())
-            .to_ascii_lowercase();
+            .into_owned();
+
+        // Frame labels are case insensitive (ASCII).
+        label.make_ascii_lowercase();
+        let label = WString::from_utf8_owned(label);
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {
             v.insert(cur_frame);
@@ -3366,7 +3376,7 @@ impl<'gc, 'a> MovieClip<'gc> {
 
 #[derive(Clone)]
 pub struct Scene {
-    pub name: String,
+    pub name: WString,
     pub start: FrameNumber,
     pub length: FrameNumber,
 }
@@ -3374,7 +3384,7 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: u16::MAX,
         }
@@ -3388,9 +3398,9 @@ impl Default for Scene {
 struct MovieClipStatic<'gc> {
     id: CharacterId,
     swf: SwfSlice,
-    frame_labels: HashMap<String, FrameNumber>,
+    frame_labels: HashMap<WString, FrameNumber>,
     #[collect(require_static)]
-    scene_labels: HashMap<String, Scene>,
+    scene_labels: HashMap<WString, Scene>,
     #[collect(require_static)]
     audio_stream_info: Option<swf::SoundStreamHead>,
     #[collect(require_static)]
