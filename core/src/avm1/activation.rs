@@ -431,10 +431,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
+        let mut reader = Reader::new(code.movie.data(), self.swf_version());
+        reader.seek(code.start as isize);
 
         loop {
-            let result = self.do_action(&code, &mut read);
+            let result = self.do_action(&code, &mut reader);
             match result {
                 Ok(FrameControl::Return(return_type)) => break Ok(return_type),
                 Ok(FrameControl::Continue) => {}
@@ -527,13 +528,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } => self.action_goto_frame_2(set_playing, scene_offset),
                 Action::Greater => self.action_greater(),
                 Action::GotoLabel(label) => self.action_goto_label(label),
-                Action::If { offset } => self.action_if(offset, reader, data),
+                Action::If { offset } => self.action_if(offset, reader),
                 Action::Increment => self.action_increment(),
                 Action::InitArray => self.action_init_array(),
                 Action::InitObject => self.action_init_object(),
                 Action::ImplementsOp => self.action_implements_op(),
                 Action::InstanceOf => self.action_instance_of(),
-                Action::Jump { offset } => self.action_jump(offset, reader, data),
+                Action::Jump { offset } => self.action_jump(offset, reader),
                 Action::Less => self.action_less(),
                 Action::Less2 => self.action_less_2(),
                 Action::MBAsciiToChar => self.action_mb_ascii_to_char(),
@@ -1441,11 +1442,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         jump_offset: i16,
         reader: &mut Reader<'b>,
-        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         if val.as_bool(self.swf_version()) {
-            reader.seek(data.movie.data(), jump_offset);
+            reader.seek(jump_offset.into());
         }
         Ok(FrameControl::Continue)
     }
@@ -1545,9 +1545,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         jump_offset: i16,
         reader: &mut Reader<'b>,
-        data: &'b SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        reader.seek(data.movie.data(), jump_offset);
+        reader.seek(jump_offset.into());
         Ok(FrameControl::Continue)
     }
 

@@ -1,44 +1,36 @@
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
-use crate::extensions::ReadSwfExt;
+use crate::read_base::ReaderBase;
 
 pub struct Reader<'a> {
-    input: &'a [u8],
+    base: ReaderBase<'a>,
     #[allow(dead_code)]
     version: u8,
 }
 
-impl<'a> ReadSwfExt<'a> for Reader<'a> {
-    #[inline(always)]
-    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
+impl<'a> std::ops::Deref for Reader<'a> {
+    type Target = ReaderBase<'a>;
 
-    #[inline(always)]
-    fn as_slice(&self) -> &'a [u8] {
-        self.input
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl<'a> std::ops::DerefMut for Reader<'a> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl<'a> Reader<'a> {
     #[inline]
     pub const fn new(input: &'a [u8], version: u8) -> Self {
-        Self { input, version }
-    }
-
-    #[inline]
-    pub fn seek(&mut self, data: &'a [u8], jump_offset: i16) {
-        ReadSwfExt::seek(self, data, jump_offset as isize)
-    }
-
-    #[inline]
-    pub const fn get_ref(&self) -> &'a [u8] {
-        self.input
-    }
-
-    #[inline]
-    pub fn get_mut(&mut self) -> &mut &'a [u8] {
-        &mut self.input
+        Self {
+            base: ReaderBase::new(input),
+            version,
+        }
     }
 
     #[inline]
@@ -51,7 +43,7 @@ impl<'a> Reader<'a> {
     #[inline]
     pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
         let (opcode, mut length) = self.read_opcode_and_length()?;
-        let start = self.input;
+        let start = self.get_ref();
 
         let action = self.read_op(opcode, &mut length);
 
@@ -60,11 +52,11 @@ impl<'a> Reader<'a> {
         }
 
         // Verify that we parsed the correct amount of data.
-        let end_pos = (start.as_ptr() as usize + length) as *const u8;
-        if self.input.as_ptr() != end_pos {
+        let end = (start.as_ptr() as usize + length) as *const u8;
+        if self.get_ref().as_ptr() != end {
             // We incorrectly parsed this action.
             // Re-sync to the expected end of the action and throw an error.
-            self.input = &start[length.min(start.len())..];
+            *self.get_mut() = &start[length.min(start.len())..];
             log::warn!("Length mismatch in AVM1 action: {}", OpCode::format(opcode));
         }
 
@@ -262,9 +254,9 @@ impl<'a> Reader<'a> {
     }
 
     fn read_push(&mut self, length: usize) -> Result<Action<'a>> {
-        let end_pos = (self.input.as_ptr() as usize + length) as *const u8;
+        let end = (self.get_ref().as_ptr() as usize + length) as *const u8;
         let mut values = Vec::with_capacity(4);
-        while self.input.as_ptr() < end_pos {
+        while self.get_ref().as_ptr() < end {
             values.push(self.read_push_value()?);
         }
         Ok(Action::Push(values))
