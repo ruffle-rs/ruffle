@@ -330,27 +330,27 @@ impl<'a> Reader<'a> {
     }
 
     fn read_try(&mut self, length: &mut usize) -> Result<Action<'a>> {
-        let flags = self.read_u8()?;
-        let try_length: usize = (self.read_u16()?).into();
-        let catch_length: usize = (self.read_u16()?).into();
-        let finally_length: usize = (self.read_u16()?).into();
-        *length += try_length + catch_length + finally_length;
-        let catch_var = if flags & 0b100 == 0 {
-            CatchVar::Var(self.read_str()?)
-        } else {
+        let flags = TryFlags::from_bits_truncate(self.read_u8()?);
+        let try_size: usize = self.read_u16()?.into();
+        let catch_size: usize = self.read_u16()?.into();
+        let finally_size: usize = self.read_u16()?.into();
+        *length += try_size + catch_size + finally_size;
+        let catch_var = if flags.contains(TryFlags::CATCH_IN_REGISTER) {
             CatchVar::Register(self.read_u8()?)
+        } else {
+            CatchVar::Var(self.read_str()?)
         };
-        let try_body = self.read_slice(try_length)?;
-        let catch_body = self.read_slice(catch_length)?;
-        let finally_body = self.read_slice(finally_length)?;
+        let try_body = self.read_slice(try_size)?;
+        let catch_body = self.read_slice(catch_size)?;
+        let finally_body = self.read_slice(finally_size)?;
         Ok(Action::Try(TryBlock {
             try_body,
-            catch_body: if flags & 0b1 != 0 {
+            catch_body: if flags.contains(TryFlags::CATCH_BLOCK) {
                 Some((catch_var, catch_body))
             } else {
                 None
             },
-            finally_body: if flags & 0b10 != 0 {
+            finally_body: if flags.contains(TryFlags::FINALLY_BLOCK) {
                 Some(finally_body)
             } else {
                 None

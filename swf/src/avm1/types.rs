@@ -194,3 +194,11 @@ pub enum CatchVar<'a> {
     Var(&'a SwfStr),
     Register(u8),
 }
+
+bitflags! {
+    pub struct TryFlags: u8 {
+        const CATCH_BLOCK = 1 << 0;
+        const FINALLY_BLOCK = 1 << 1;
+        const CATCH_IN_REGISTER = 1 << 2;
+    }
+}
