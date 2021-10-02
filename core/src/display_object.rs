@@ -29,6 +29,7 @@ mod bitmap;
 mod container;
 mod edit_text;
 mod graphic;
+mod interactive;
 mod morph_shape;
 mod movie_clip;
 mod stage;
@@ -46,6 +47,7 @@ pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
+pub use interactive::{InteractiveObject, TInteractiveObject};
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use stage::{Stage, StageAlign, StageQuality, StageScaleMode};
@@ -1075,6 +1077,9 @@ pub trait TDisplayObject<'gc>:
         None
     }
     fn as_bitmap(self) -> Option<Bitmap<'gc>> {
+        None
+    }
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
         None
     }
 
