@@ -10,7 +10,6 @@ use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::string::{AvmString, BorrowWStr};
 use gc_arena::MutationContext;
-use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -251,10 +250,10 @@ fn spawn_load_var_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (url, request_options) = if let Some((send_object, method)) = send_object {
         // Send properties from `send_object`.
-        activation.object_into_request_options(send_object, Cow::Borrowed(url), Some(method))
+        activation.object_into_request_options(send_object, url.borrow(), Some(method))
     } else {
         // Not sending any parameters.
-        (Cow::Borrowed(url.as_str()), RequestOptions::get())
+        (url.to_utf8_lossy(), RequestOptions::get())
     };
 
     let fetch = activation.context.navigator.fetch(&url, request_options);

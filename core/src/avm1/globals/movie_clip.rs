@@ -18,7 +18,6 @@ use crate::shape_utils::DrawCommand;
 use crate::string::{AvmString, BorrowWStr};
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
-use std::borrow::Cow;
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Twips,
@@ -1279,10 +1278,10 @@ pub fn get_url<'gc>(
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
         let url = url_val.coerce_to_string(activation)?;
-        if let Some(fscommand) = fscommand::parse(&url) {
+        if let Some(fscommand) = fscommand::parse(url.borrow()) {
             let fsargs_val = args.get(1).cloned().unwrap_or(Value::Undefined);
             let fsargs = fsargs_val.coerce_to_string(activation)?;
-            fscommand::handle(fscommand, &fsargs, activation);
+            fscommand::handle(fscommand, fsargs.borrow(), activation);
             return Ok(Value::Undefined);
         }
 
@@ -1353,7 +1352,7 @@ fn load_movie<'gc>(
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(method.coerce_to_string(activation)?.borrow());
-    let (url, opts) = activation.locals_into_request_options(Cow::Borrowed(url.as_str()), method);
+    let (url, opts) = activation.locals_into_request_options(url.borrow(), method);
     let fetch = activation.context.navigator.fetch(&url, opts);
     let process = activation.context.load_manager.load_movie_into_clip(
         activation.context.player.clone().unwrap(),
@@ -1378,7 +1377,7 @@ fn load_variables<'gc>(
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(method.coerce_to_string(activation)?.borrow());
-    let (url, opts) = activation.locals_into_request_options(Cow::Borrowed(url.as_str()), method);
+    let (url, opts) = activation.locals_into_request_options(url.borrow(), method);
     let fetch = activation.context.navigator.fetch(&url, opts);
     let target = target.object().coerce_to_object(activation);
     let process = activation.context.load_manager.load_form_into_object(
