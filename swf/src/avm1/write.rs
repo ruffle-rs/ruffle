@@ -296,15 +296,15 @@ impl<W: Write> Writer<W> {
                 let finally_length;
                 let mut action_buf = vec![];
                 {
-                    action_buf.write_all(try_block.try_actions)?;
-                    try_length = try_block.try_actions.len();
-                    catch_length = if let Some((_, catch)) = try_block.catch {
+                    action_buf.write_all(try_block.try_body)?;
+                    try_length = try_block.try_body.len();
+                    catch_length = if let Some((_, catch)) = try_block.catch_body {
                         action_buf.write_all(catch)?;
                         catch.len()
                     } else {
                         0
                     };
-                    finally_length = if let Some(finally) = try_block.finally {
+                    finally_length = if let Some(finally) = try_block.finally_body {
                         action_buf.write_all(finally)?;
                         finally.len()
                     } else {
@@ -313,24 +313,24 @@ impl<W: Write> Writer<W> {
                 }
                 let len = 7
                     + action_buf.len()
-                    + if let Some((CatchVar::Var(name), _)) = try_block.catch {
+                    + if let Some((CatchVar::Var(name), _)) = try_block.catch_body {
                         name.len() + 1
                     } else {
                         1
                     };
                 self.write_action_header(OpCode::Try, len)?;
                 self.write_u8(
-                    if let Some((CatchVar::Register(_), _)) = try_block.catch {
+                    if let Some((CatchVar::Register(_), _)) = try_block.catch_body {
                         0b100
                     } else {
                         0
-                    } | if try_block.finally.is_some() { 0b10 } else { 0 }
-                        | if try_block.catch.is_some() { 0b1 } else { 0 },
+                    } | if try_block.finally_body.is_some() { 0b10 } else { 0 }
+                        | if try_block.catch_body.is_some() { 0b1 } else { 0 },
                 )?;
                 self.write_u16(try_length as u16)?;
                 self.write_u16(catch_length as u16)?;
                 self.write_u16(finally_length as u16)?;
-                match try_block.catch {
+                match try_block.catch_body {
                     Some((CatchVar::Var(name), _)) => self.write_string(name)?,
                     Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
                     _ => (),
