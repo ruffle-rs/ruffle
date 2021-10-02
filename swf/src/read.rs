@@ -221,6 +221,13 @@ struct BitReader<'a, 'b> {
 
 impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
+    fn new(data: &'b mut &'a [u8]) -> Self {
+        Self {
+            bits: bitstream_io::BitReader::new(data),
+        }
+    }
+
+    #[inline]
     fn read_bit(&mut self) -> io::Result<bool> {
         self.bits.read_bit()
     }
@@ -318,9 +325,7 @@ impl<'a> Reader<'a> {
     }
 
     fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
-        BitReader {
-            bits: bitstream_io::BitReader::new(&mut self.input),
-        }
+        BitReader::new(&mut self.input)
     }
 
     #[inline]
