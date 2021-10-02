@@ -1,8 +1,8 @@
 #![allow(clippy::unusual_byte_groupings)]
 
-use crate::extensions::ReadSwfExt;
 use crate::{
     error::{Error, Result},
+    read_base::ReaderBase,
     string::{Encoding, SwfStr},
     tag_code::TagCode,
     types::*,
@@ -274,26 +274,33 @@ impl<'a, 'b> BitReader<'a, 'b> {
 }
 
 pub struct Reader<'a> {
-    input: &'a [u8],
+    base: ReaderBase<'a>,
     version: u8,
 }
 
-impl<'a> ReadSwfExt<'a> for Reader<'a> {
-    #[inline(always)]
-    fn as_mut_slice(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
+impl<'a> std::ops::Deref for Reader<'a> {
+    type Target = ReaderBase<'a>;
 
-    #[inline(always)]
-    fn as_slice(&self) -> &'a [u8] {
-        self.input
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+impl<'a> std::ops::DerefMut for Reader<'a> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base
     }
 }
 
 impl<'a> Reader<'a> {
     #[inline]
     pub const fn new(input: &'a [u8], version: u8) -> Self {
-        Self { input, version }
+        Self {
+            base: ReaderBase::new(input),
+            version,
+        }
     }
 
     /// Returns the suggested string encoding for this SWF.
@@ -310,22 +317,9 @@ impl<'a> Reader<'a> {
         self.version
     }
 
-    /// Returns a reference to the underlying `Reader`.
     #[inline]
-    pub const fn get_ref(&self) -> &'a [u8] {
-        self.input
-    }
-
-    /// Returns a mutable reference to the underlying `Reader`.
-    ///
-    /// Reading from this reference is not recommended.
-    #[inline]
-    pub fn get_mut(&mut self) -> &mut &'a [u8] {
-        &mut self.input
-    }
-
     fn bits<'b>(&'b mut self) -> BitReader<'a, 'b> {
-        BitReader::new(&mut self.input)
+        BitReader::new(self.get_mut())
     }
 
     #[inline]
@@ -592,7 +586,7 @@ impl<'a> Reader<'a> {
             TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
         };
 
-        if !tag_reader.input.is_empty() {
+        if !tag_reader.get_ref().is_empty() {
             // There should be no data remaining in the tag if we read it correctly.
             // If there is data remaining, the most likely scenario is we screwed up parsing.
             // But sometimes tools will export SWF tags that are larger than they should be.
@@ -1824,7 +1818,7 @@ impl<'a> Reader<'a> {
                     context.num_fill_bits = num_fill_bits;
                     context.num_line_bits = num_line_bits;
                     new_style.new_styles = Some(new_styles);
-                    *bits.reader() = reader.input;
+                    *bits.reader() = reader.get_ref();
                 }
                 Some(ShapeRecord::StyleChange(new_style))
             } else {
@@ -2622,10 +2616,13 @@ pub mod tests {
         // Halfway parse the SWF file until we find the tag we're searching for.
         let mut reader = Reader::new(&swf_buf.data, swf_buf.header.version());
         loop {
-            let tag_start = &reader.get_ref();
+            let tag_start = reader.get_ref();
             let (swf_tag_code, tag_len) = reader.read_tag_code_and_length().unwrap();
-            let tag_data = &tag_start[..reader.pos(tag_start) + tag_len];
             let tag_end = &reader.get_ref()[tag_len..];
+
+            let full_tag_len = tag_end.as_ptr() as usize - tag_start.as_ptr() as usize;
+            let tag_data = &tag_start[..full_tag_len];
+
             // Skip tag data.
             *reader.get_mut() = tag_end;
 
