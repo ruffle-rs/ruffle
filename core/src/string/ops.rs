@@ -4,7 +4,7 @@ use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
-use super::{utils, Pattern, Units, WStr};
+use super::{utils, Pattern, Units, WStr, WString};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -115,6 +115,29 @@ pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {
         Units::Bytes(us) => us.iter().for_each(|u| state.write_u16(u16::from(*u))),
         Units::Wide(us) => us.iter().for_each(|u| state.write_u16(*u)),
     }
+}
+
+fn map_latin1_chars(s: WStr<'_>, mut map: impl FnMut(u8) -> u8) -> WString {
+    match s.units() {
+        Units::Bytes(us) => {
+            let us: Vec<u8> = us.iter().map(|c| map(*c)).collect();
+            WString::from_buf(us)
+        }
+        Units::Wide(us) => {
+            let us: Vec<u16> = us
+                .iter()
+                .map(|c| match u8::try_from(*c) {
+                    Ok(c) => map(c).into(),
+                    Err(_) => *c,
+                })
+                .collect();
+            WString::from_buf(us)
+        }
+    }
+}
+
+pub fn str_to_ascii_lowercase(s: WStr<'_>) -> WString {
+    map_latin1_chars(s, |c| c.to_ascii_lowercase())
 }
 
 pub fn str_is_latin1(s: WStr<'_>) -> bool {

@@ -174,6 +174,12 @@ macro_rules! impl_str_methods {
             crate::string::ops::WStrToUtf8::new($deref).to_utf8_lossy()
         }
 
+        /// Returns a new string with all ASCII characters mapped to their lowercase equivalent.
+        #[inline]
+        pub fn to_ascii_lowercase($self: $receiver) -> crate::string::WString {
+            crate::string::ops::str_to_ascii_lowercase($deref)
+        }
+
         /// Analogue of [`str::find`].
         #[inline]
         pub fn find<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {

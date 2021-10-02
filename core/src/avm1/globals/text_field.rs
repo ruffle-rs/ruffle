@@ -580,15 +580,15 @@ pub fn set_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    match value
-        .coerce_to_string(activation)?
-        .to_ascii_lowercase()
-        .as_str()
-    {
-        "input" => this.set_editable(true, &mut activation.context),
-        "dynamic" => this.set_editable(false, &mut activation.context),
-        value => log::warn!("Invalid TextField.type: {}", value),
-    };
+    let value = value.coerce_to_string(activation)?.to_ascii_lowercase();
+
+    if value == b"input" {
+        this.set_editable(true, &mut activation.context);
+    } else if value == b"dynamic" {
+        this.set_editable(false, &mut activation.context);
+    } else {
+        log::warn!("Invalid TextField.type: {}", value);
+    }
     Ok(())
 }
 
