@@ -18,8 +18,6 @@ extern crate num_traits;
 pub mod avm1;
 pub mod avm2;
 pub mod error;
-// TODO: Make this private?
-pub mod extensions;
 pub mod read;
 mod read_base;
 mod string;
