@@ -340,18 +340,18 @@ impl<'a> Reader<'a> {
         } else {
             CatchVar::Register(self.read_u8()?)
         };
-        let try_actions = self.read_slice(try_length)?;
-        let catch_actions = self.read_slice(catch_length)?;
-        let finally_actions = self.read_slice(finally_length)?;
+        let try_body = self.read_slice(try_length)?;
+        let catch_body = self.read_slice(catch_length)?;
+        let finally_body = self.read_slice(finally_length)?;
         Ok(Action::Try(TryBlock {
-            try_actions,
-            catch: if flags & 0b1 != 0 {
-                Some((catch_var, catch_actions))
+            try_body,
+            catch_body: if flags & 0b1 != 0 {
+                Some((catch_var, catch_body))
             } else {
                 None
             },
-            finally: if flags & 0b10 != 0 {
-                Some(finally_actions)
+            finally_body: if flags & 0b10 != 0 {
+                Some(finally_body)
             } else {
                 None
             },

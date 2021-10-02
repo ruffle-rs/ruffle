@@ -2312,11 +2312,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let mut result = self.run_actions(
             parent_data
-                .to_unbounded_subslice(try_block.try_actions)
+                .to_unbounded_subslice(try_block.try_body)
                 .unwrap(),
         );
 
-        if let Some((catch_vars, actions)) = &try_block.catch {
+        if let Some((catch_vars, actions)) = &try_block.catch_body {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
                     self.context.reborrow(),
@@ -2345,7 +2345,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
         }
 
-        if let Some(actions) = try_block.finally {
+        if let Some(actions) = try_block.finally_body {
             if let ReturnType::Explicit(value) =
                 self.run_actions(parent_data.to_unbounded_subslice(actions).unwrap())?
             {
