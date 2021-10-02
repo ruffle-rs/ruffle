@@ -291,51 +291,51 @@ impl<W: Write> Writer<W> {
             Action::ToString => self.write_action_header(OpCode::ToString, 0)?,
             Action::Trace => self.write_action_header(OpCode::Trace, 0)?,
             Action::Try(ref try_block) => {
-                let try_length;
-                let catch_length;
-                let finally_length;
-                let mut action_buf = vec![];
-                {
-                    action_buf.write_all(try_block.try_body)?;
-                    try_length = try_block.try_body.len();
-                    catch_length = if let Some((_, catch)) = try_block.catch_body {
-                        action_buf.write_all(catch)?;
-                        catch.len()
-                    } else {
-                        0
-                    };
-                    finally_length = if let Some(finally) = try_block.finally_body {
-                        action_buf.write_all(finally)?;
-                        finally.len()
-                    } else {
-                        0
-                    };
-                }
-                let len = 7
-                    + action_buf.len()
-                    + if let Some((CatchVar::Var(name), _)) = try_block.catch_body {
-                        name.len() + 1
-                    } else {
-                        1
-                    };
+                let len = 7 + if let Some((CatchVar::Var(name), _)) = try_block.catch_body {
+                    name.len() + 1
+                } else {
+                    1
+                };
                 self.write_action_header(OpCode::Try, len)?;
-                self.write_u8(
-                    if let Some((CatchVar::Register(_), _)) = try_block.catch_body {
-                        0b100
-                    } else {
-                        0
-                    } | if try_block.finally_body.is_some() { 0b10 } else { 0 }
-                        | if try_block.catch_body.is_some() { 0b1 } else { 0 },
-                )?;
-                self.write_u16(try_length as u16)?;
-                self.write_u16(catch_length as u16)?;
-                self.write_u16(finally_length as u16)?;
+
+                let mut flags = TryFlags::empty();
+                flags.set(TryFlags::CATCH_BLOCK, try_block.catch_body.is_some());
+                flags.set(TryFlags::FINALLY_BLOCK, try_block.finally_body.is_some());
+                flags.set(
+                    TryFlags::CATCH_IN_REGISTER,
+                    matches!(try_block.catch_body, Some((CatchVar::Register(_), _))),
+                );
+                self.write_u8(flags.bits())?;
+
+                let try_size = try_block.try_body.len();
+                self.write_u16(try_size as u16)?;
+
+                let catch_size = try_block
+                    .catch_body
+                    .as_ref()
+                    .map_or(0, |(_, catch_body)| catch_body.len());
+                self.write_u16(catch_size as u16)?;
+
+                let finally_size = try_block
+                    .finally_body
+                    .map_or(0, |finally_body| finally_body.len());
+                self.write_u16(finally_size as u16)?;
+
                 match try_block.catch_body {
                     Some((CatchVar::Var(name), _)) => self.write_string(name)?,
                     Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
-                    _ => (),
+                    None => self.write_u8(0)?,
                 }
-                self.output.write_all(&action_buf)?;
+
+                self.output.write_all(try_block.try_body)?;
+
+                if let Some((_, catch_body)) = try_block.catch_body {
+                    self.output.write_all(catch_body)?;
+                }
+
+                if let Some(finally_body) = try_block.finally_body {
+                    self.output.write_all(finally_body)?;
+                }
             }
             Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
             Action::WaitForFrame {
