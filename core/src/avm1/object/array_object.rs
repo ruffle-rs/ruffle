@@ -59,36 +59,13 @@ impl<'gc> ArrayObject<'gc> {
         Self(GcCell::allocate(gc_context, base))
     }
 
-    #[allow(clippy::wrong_self_convention)]
-    fn to_decimal_digit(c: u8) -> Option<u32> {
-        // If not a digit, a number greater than 10 will be created.
-        let digit = (c as u32).wrapping_sub(b'0' as u32);
-        if digit < 10 {
-            Some(digit)
-        } else {
-            None
-        }
-    }
-
     fn parse_index(name: AvmString<'gc>) -> Option<i32> {
-        let mut chars = name
-            .bytes()
-            .skip_while(|c| c.is_ascii_whitespace())
-            .peekable();
-        let is_negative = chars.peek() == Some(&b'-');
-        if is_negative {
-            chars.next();
-        }
-        let mut index: i32 = 0;
-        for c in chars {
-            let digit = Self::to_decimal_digit(c)? as i32;
-            index = index.wrapping_mul(10);
-            index = index.wrapping_add(digit);
-        }
-        if is_negative {
-            index = index.wrapping_neg();
-        }
-        Some(index)
+        let name = name.trim_start_matches(|c| match u8::try_from(c) {
+            Ok(c) => c.is_ascii_whitespace(),
+            Err(_) => false,
+        });
+
+        name.parse::<std::num::Wrapping<i32>>().ok().map(|i| i.0)
     }
 }
 

@@ -510,7 +510,7 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: 
             let message = value
                 .coerce_to_string(activation)
                 .unwrap_or_else(|_| "undefined".into());
-            activation.context.log.avm_trace(&message);
+            activation.context.log.avm_trace(&message.to_utf8_lossy());
             // Continue execution without halting.
             return;
         }

@@ -7,7 +7,7 @@ use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject,
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, MutationContext};
 use std::cell::Ref;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
@@ -388,47 +388,35 @@ impl<'gc> Value<'gc> {
             Value::Unsigned(u) => *u as f64,
             Value::Integer(i) => *i as f64,
             Value::String(s) => {
-                let strim = s.as_str().trim();
+                let strim = s.trim();
                 if strim.is_empty() {
                     0.0
-                } else if strim.starts_with("0x") || strim.starts_with("0X") {
+                } else if strim.starts_with(WStr::from_units(b"0x"))
+                    || strim.starts_with(WStr::from_units(b"0X"))
+                {
                     let mut n: f64 = 0.0;
-                    for c in strim[2..].chars() {
-                        n *= 16.0;
-                        n += match c {
-                            '0' => 0.0,
-                            '1' => 1.0,
-                            '2' => 2.0,
-                            '3' => 3.0,
-                            '4' => 4.0,
-                            '5' => 5.0,
-                            '6' => 6.0,
-                            '7' => 7.0,
-                            '8' => 8.0,
-                            '9' => 9.0,
-                            'a' | 'A' => 10.0,
-                            'b' | 'B' => 11.0,
-                            'c' | 'C' => 12.0,
-                            'd' | 'D' => 13.0,
-                            'e' | 'E' => 14.0,
-                            'f' | 'F' => 15.0,
-                            _ => return Ok(f64::NAN),
-                        };
+                    for c in strim.slice(2..).iter() {
+                        let digit = u8::try_from(c).ok().and_then(|c| (c as char).to_digit(16));
+                        if let Some(digit) = digit {
+                            n = 16.0 * n + f64::from(digit);
+                        } else {
+                            return Ok(f64::NAN);
+                        }
                     }
 
                     n
                 } else {
-                    let (sign, digits) = if let Some(stripped) = strim.strip_prefix('+') {
+                    let (sign, digits) = if let Some(stripped) = strim.strip_prefix(b'+') {
                         (1.0, stripped)
-                    } else if let Some(stripped) = strim.strip_prefix('-') {
+                    } else if let Some(stripped) = strim.strip_prefix(b'-') {
                         (-1.0, stripped)
                     } else {
                         (1.0, strim)
                     };
 
-                    if digits == "Infinity" {
+                    if digits == b"Infinity" {
                         return Ok(sign * f64::INFINITY);
-                    } else if digits.starts_with(['i', 'I'].as_ref()) {
+                    } else if digits.starts_with([b'i', b'I'].as_ref()) {
                         // Avoid Rust f64::parse accepting "inf" and "infinity"
                         return Ok(f64::NAN);
                     }
