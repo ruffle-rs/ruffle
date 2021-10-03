@@ -1,0 +1,15 @@
+///(Initial state of event enabled flags...)
+///this.stage.mouseEnabled
+true
+///this.stage.doubleClickEnabled
+false
+///this.stage.doubleClickEnabled = true
+///this.stage.mouseEnabled
+true
+///this.stage.doubleClickEnabled
+true
+///this.stage.doubleClickEnabled = false
+///this.stage.mouseEnabled
+true
+///this.stage.doubleClickEnabled
+false

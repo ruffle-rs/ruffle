@@ -10,6 +10,9 @@ use crate::avm2::{
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::interactive::{
+    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
@@ -25,7 +28,7 @@ use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use crate::xml::XmlDocument;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
-use std::{cell::Ref, sync::Arc};
+use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::Twips;
 
 /// Boxed error type.
@@ -59,6 +62,9 @@ pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
 pub struct EditTextData<'gc> {
     /// DisplayObject common properties.
     base: DisplayObjectBase<'gc>,
+
+    /// InteractiveObject common properties.
+    interactive_base: InteractiveObjectBase,
 
     /// Static data shared among all instances of this `EditText`.
     static_data: Gc<'gc, EditTextStatic>,
@@ -283,6 +289,7 @@ impl<'gc> EditText<'gc> {
             context.gc_context,
             EditTextData {
                 base,
+                interactive_base: Default::default(),
                 document,
                 text_spans,
                 static_data: gc_arena::Gc::allocate(
@@ -1557,6 +1564,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         Some(*self)
     }
 
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        Some(self.into())
+    }
+
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1878,6 +1889,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             return ClipEventResult::Handled;
         }
         ClipEventResult::NotHandled
+    }
+}
+
+impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
+    fn base(&self) -> Ref<InteractiveObjectBase> {
+        Ref::map(self.0.read(), |r| &r.interactive_base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
+        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
     }
 }
 

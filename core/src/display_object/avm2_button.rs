@@ -7,6 +7,9 @@ use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
+use crate::display_object::interactive::{
+    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+};
 use crate::display_object::{DisplayObjectBase, MovieClip, TDisplayObject};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
@@ -14,6 +17,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -24,6 +28,8 @@ pub struct Avm2Button<'gc>(GcCell<'gc, Avm2ButtonData<'gc>>);
 #[collect(no_drop)]
 pub struct Avm2ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
+    interactive_base: InteractiveObjectBase,
+
     static_data: GcCell<'gc, ButtonStatic>,
 
     /// The current button state to render.
@@ -96,6 +102,7 @@ impl<'gc> Avm2Button<'gc> {
             context.gc_context,
             Avm2ButtonData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: GcCell::allocate(context.gc_context, static_data),
                 state: self::ButtonState::Up,
                 hit_area: None,
@@ -689,6 +696,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         Some(*self)
     }
 
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        Some(self.into())
+    }
+
     fn allow_as_mask(&self) -> bool {
         let state = self.0.read().state;
         let current_state = self.get_state_child(state.into());
@@ -774,6 +785,16 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             node.set_maskee(context.gc_context, None, true);
         }
         self.set_removed(context.gc_context, true);
+    }
+}
+
+impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
+    fn base(&self) -> Ref<InteractiveObjectBase> {
+        Ref::map(self.0.read(), |r| &r.interactive_base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
+        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
     }
 }
 
