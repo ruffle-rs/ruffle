@@ -586,8 +586,9 @@ impl<'gc> MovieClip<'gc> {
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
             let class_name = reader.read_str()?.to_string_lossy(reader.encoding());
+            let class_name = AvmString::new(activation.context.gc_context, class_name);
 
-            let name = Avm2QName::from_qualified_name(&class_name, activation.context.gc_context);
+            let name = Avm2QName::from_qualified_name(class_name, activation.context.gc_context);
             let library = activation
                 .context
                 .library

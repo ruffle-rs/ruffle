@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr, WStr, WString};
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,
@@ -206,32 +206,34 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE::LOCAL_NAME
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
-    pub fn from_qualified_name(name: &str, mc: MutationContext<'gc, '_>) -> Self {
-        if let Some((package_name, local_name)) = name.rsplit_once("::") {
+    pub fn from_qualified_name(name: AvmString<'gc>, mc: MutationContext<'gc, '_>) -> Self {
+        let parts = name
+            .rsplit_once(WStr::from_units(b"::"))
+            .or_else(|| name.rsplit_once(WStr::from_units(b".")));
+
+        if let Some((package_name, local_name)) = parts {
             Self {
-                ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
-                name: AvmString::new(mc, local_name.to_string()),
-            }
-        } else if let Some((package_name, local_name)) = name.rsplit_once('.') {
-            Self {
-                ns: Namespace::Package(AvmString::new(mc, package_name.to_string())),
-                name: AvmString::new(mc, local_name.to_string()),
+                ns: Namespace::Package(AvmString::new_ucs2(mc, package_name.into())),
+                name: AvmString::new_ucs2(mc, local_name.into()),
             }
         } else {
             Self {
                 ns: Namespace::public(),
-                name: AvmString::new(mc, name.to_string()),
+                name,
             }
         }
     }
 
     /// Converts this `QName` to a fully qualified name.
-    pub fn to_qualified_name(&self) -> String {
+    pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let uri = self.namespace().as_uri();
         let name = self.local_name();
-        uri.is_empty()
-            .then(|| name.to_string())
-            .unwrap_or_else(|| format!("{}::{}", uri, name))
+        uri.is_empty().then(|| name).unwrap_or_else(|| {
+            let mut buf = WString::from(uri.borrow());
+            buf.push_str(WStr::from_units(b"::"));
+            buf.push_str(name.borrow());
+            AvmString::new_ucs2(mc, buf)
+        })
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
@@ -244,31 +246,25 @@ impl<'gc> QName<'gc> {
 
     /// Get the string value of this QName, including the namespace URI.
     pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        match self.ns {
-            Namespace::Namespace(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::Package(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::PackageInternal(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::Protected(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::Explicit(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::StaticProtected(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::Private(s) if s != "" => {
-                AvmString::new(mc, format!("{}::{}", &*s, &*self.name))
-            }
-            Namespace::Any => AvmString::new(mc, format!("*::{}", &*self.name)),
-            _ => self.name,
+        let ns = match &self.ns {
+            Namespace::Namespace(s) => s.borrow(),
+            Namespace::Package(s) => s.borrow(),
+            Namespace::PackageInternal(s) => s.borrow(),
+            Namespace::Protected(s) => s.borrow(),
+            Namespace::Explicit(s) => s.borrow(),
+            Namespace::StaticProtected(s) => s.borrow(),
+            Namespace::Private(s) => s.borrow(),
+            Namespace::Any => WStr::from_units(b"*"),
+        };
+
+        if ns.is_empty() {
+            return self.name;
         }
+
+        let mut uri = WString::from(ns);
+        uri.push_str(WStr::from_units(b"::"));
+        uri.push_str(self.name.borrow());
+        AvmString::new_ucs2(mc, uri)
     }
 }
 
