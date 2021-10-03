@@ -212,6 +212,14 @@ pub fn str_split<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Split<'a, 
     }
 }
 
+pub fn str_rsplit_once<'a, P: Pattern<'a>>(
+    string: WStr<'a>,
+    pattern: P,
+) -> Option<(WStr<'a>, WStr<'a>)> {
+    let (start, end) = pattern.into_searcher(string).next_match_back()?;
+    Some((string.slice(..start), string.slice(end..)))
+}
+
 pub fn starts_with<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> bool {
     matches!(
         pattern.into_searcher(string).next(),

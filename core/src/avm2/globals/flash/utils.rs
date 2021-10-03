@@ -3,7 +3,6 @@
 use crate::avm2::object::TObject;
 use crate::avm2::QName;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::string::AvmString;
 
 pub mod bytearray;
 pub mod compression_algorithm;
@@ -42,15 +41,12 @@ pub fn get_qualified_class_name<'gc>(
         },
     };
 
-    Ok(AvmString::new(
-        activation.context.gc_context,
-        class
-            .inner_class_definition()
-            .read()
-            .name()
-            .to_qualified_name(),
-    )
-    .into())
+    Ok(class
+        .inner_class_definition()
+        .read()
+        .name()
+        .to_qualified_name(activation.context.gc_context)
+        .into())
 }
 
 /// Implements `flash.utils.getQualifiedSuperclassName`
@@ -73,15 +69,12 @@ pub fn get_qualified_super_class_name<'gc>(
     };
 
     if let Some(super_class) = class.superclass_object() {
-        Ok(AvmString::new(
-            activation.context.gc_context,
-            super_class
-                .inner_class_definition()
-                .read()
-                .name()
-                .to_qualified_name(),
-        )
-        .into())
+        Ok(super_class
+            .inner_class_definition()
+            .read()
+            .name()
+            .to_qualified_name(activation.context.gc_context)
+            .into())
     } else {
         Ok(Value::Null)
     }
@@ -98,6 +91,6 @@ pub fn get_definition_by_name<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let qname = QName::from_qualified_name(&name, activation.context.gc_context);
+    let qname = QName::from_qualified_name(name, activation.context.gc_context);
     appdomain.get_defined_value(activation, qname)
 }

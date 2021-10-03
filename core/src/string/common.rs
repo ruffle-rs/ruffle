@@ -204,11 +204,17 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_split($deref, separator)
         }
 
-        /// Analogue of [`str::split_at`]
+        /// Analogue of [`str::split_at`].
         #[inline]
         pub fn split_at($self: $receiver, index: usize) -> (crate::string::WStr<$lt>, crate::string::WStr<$lt>) {
             let s = $deref;
             (s.slice(..index), s.slice(index..))
+        }
+
+        /// Analogue of [`str::rsplit_once`].
+        #[inline]
+        pub fn rsplit_once<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<(WStr<$pat_lt>, WStr<$pat_lt>)> {
+            crate::string::ops::str_rsplit_once($deref, pattern)
         }
 
         /// Analogue of [`str::trim_matches`].
