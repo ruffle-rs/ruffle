@@ -286,8 +286,7 @@ impl Iterator for StreamTagReader {
             _ => Ok(()),
         };
 
-        let version = swf_data.version();
-        let mut reader = swf::read::Reader::new(&self.swf_data.as_ref()[self.pos..], version);
+        let mut reader = self.swf_data.read_from(self.pos as u64);
         let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback, TagCode::SoundStreamBlock);
         self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
