@@ -712,6 +712,9 @@ swf_tests! {
     (as3_propertyisenumerable_namespaces, "avm2/propertyisenumerable_namespaces", 1),
     (as3_interface_namespaces, "avm2/interface_namespaces", 1),
     (as3_interactiveobject_enabled, "avm2/interactiveobject_enabled", 1),
+    (as3_stage_mouseenabled, "avm2/stage_mouseenabled", 1),
+    (as3_simplebutton_mouseenabled, "avm2/simplebutton_mouseenabled", 1),
+    (as3_edittext_mouseenabled, "avm2/edittext_mouseenabled", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

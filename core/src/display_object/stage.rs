@@ -11,12 +11,16 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::container::{
     ChildContainer, DisplayObjectContainer, TDisplayObjectContainer,
 };
+use crate::display_object::interactive::{
+    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+};
 use crate::display_object::{render_base, DisplayObject, DisplayObjectBase, TDisplayObject};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
@@ -35,6 +39,9 @@ pub struct StageData<'gc> {
     /// expressable by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
     base: DisplayObjectBase<'gc>,
+
+    /// Base properties for interactive display objects.
+    interactive_base: InteractiveObjectBase,
 
     /// The list of all children of the stage.
     ///
@@ -98,6 +105,7 @@ impl<'gc> Stage<'gc> {
             gc_context,
             StageData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 child: Default::default(),
                 background_color: None,
                 letterbox: Letterbox::Fullscreen,
@@ -549,6 +557,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(self.into())
     }
 
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        Some(self.into())
+    }
+
     fn as_stage(&self) -> Option<Stage<'gc>> {
         Some(*self)
     }
@@ -586,6 +598,16 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
 impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
     impl_display_object_container!(child);
+}
+
+impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
+    fn base(&self) -> Ref<InteractiveObjectBase> {
+        Ref::map(self.0.read(), |r| &r.interactive_base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
+        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
 }
 
 pub struct ParseEnumError;

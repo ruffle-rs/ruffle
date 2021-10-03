@@ -1,6 +1,9 @@
 //! Interactive object enumtrait
 
+use crate::display_object::avm2_button::Avm2Button;
+use crate::display_object::edit_text::EditText;
 use crate::display_object::movie_clip::MovieClip;
+use crate::display_object::stage::Stage;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -39,7 +42,10 @@ impl Default for InteractiveObjectBase {
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum InteractiveObject<'gc> {
+        Stage(Stage<'gc>),
+        Avm2Button(Avm2Button<'gc>),
         MovieClip(MovieClip<'gc>),
+        EditText(EditText<'gc>),
     }
 )]
 pub trait TInteractiveObject<'gc>:

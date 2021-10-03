@@ -1,0 +1,26 @@
+///var text = new TextField();
+///(Initial state of event enabled flags...)
+///text.mouseEnabled
+true
+///text.doubleClickEnabled
+false
+///text.doubleClickEnabled = true
+///text.mouseEnabled
+true
+///text.doubleClickEnabled
+true
+///text.mouseEnabled = false
+///text.mouseEnabled
+false
+///text.doubleClickEnabled
+true
+///text.doubleClickEnabled = false
+///text.mouseEnabled
+false
+///text.doubleClickEnabled
+false
+///text.mouseEnabled = true
+///text.mouseEnabled
+true
+///text.doubleClickEnabled
+false

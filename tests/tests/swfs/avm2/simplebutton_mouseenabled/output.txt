@@ -1,0 +1,26 @@
+///var btn = new SimpleButton();
+///(Initial state of event enabled flags...)
+///btn.mouseEnabled
+true
+///btn.doubleClickEnabled
+false
+///btn.doubleClickEnabled = true
+///btn.mouseEnabled
+true
+///btn.doubleClickEnabled
+true
+///btn.mouseEnabled = false
+///btn.mouseEnabled
+false
+///btn.doubleClickEnabled
+true
+///btn.doubleClickEnabled = false
+///btn.mouseEnabled
+false
+///btn.doubleClickEnabled
+false
+///btn.mouseEnabled = true
+///btn.mouseEnabled
+true
+///btn.doubleClickEnabled
+false
