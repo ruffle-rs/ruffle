@@ -54,7 +54,7 @@ pub fn load_clip<'gc>(
             let fetch = activation
                 .context
                 .navigator
-                .fetch(&url, RequestOptions::get());
+                .fetch(&url.to_utf8_lossy(), RequestOptions::get());
             let process = activation.context.load_manager.load_movie_into_clip(
                 activation.context.player.clone().unwrap(),
                 DisplayObject::MovieClip(mc),

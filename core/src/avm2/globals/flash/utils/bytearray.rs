@@ -262,7 +262,11 @@ pub fn write_utf<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Some(utf_string) = args.get(0) {
                 let utf_string = utf_string.coerce_to_string(activation)?;
-                bytearray.write_utf(utf_string.as_str())?;
+                // NOTE: there is a bug on old Flash Player (e.g. v11.3); if the string to
+                // write ends with an unpaired high surrogate, the routine bails out and nothing
+                // is written.
+                // The bug is fixed on newer FP versions (e.g. v32), but the fix isn't SWF-version-gated.
+                bytearray.write_utf(&utf_string.to_utf8_lossy())?;
             }
         }
     }
@@ -700,8 +704,10 @@ pub fn write_multibyte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
-            let (encoded_bytes, _, _) = encoder.encode(string.as_str());
+            let encoder =
+                Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
+            let utf8 = string.to_utf8_lossy();
+            let (encoded_bytes, _, _) = encoder.encode(&utf8);
             bytearray.write_bytes(&encoded_bytes.into_owned())?;
         }
     }
@@ -725,7 +731,8 @@ pub fn read_multibyte<'gc>(
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
             let bytes = bytearray.read_bytes(len as usize)?;
-            let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
+            let encoder =
+                Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
             return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
         }
@@ -745,7 +752,7 @@ pub fn write_utf_bytes<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            bytearray.write_bytes(string.as_bytes())?;
+            bytearray.write_bytes(string.to_utf8_lossy().as_bytes())?;
         }
     }
 

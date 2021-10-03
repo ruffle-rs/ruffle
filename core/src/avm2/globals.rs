@@ -12,7 +12,7 @@ use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, GcCell, MutationContext};
 
 mod array;
@@ -45,16 +45,21 @@ fn trace<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let mut message = String::new();
-    if !args.is_empty() {
-        message.push_str(&args[0].clone().coerce_to_string(activation)?);
-        for arg in &args[1..] {
-            message.push(' ');
-            message.push_str(&arg.clone().coerce_to_string(activation)?);
+    match args {
+        [] => activation.context.log.avm_trace(""),
+        [arg] => {
+            let msg = arg.coerce_to_string(activation)?;
+            activation.context.log.avm_trace(&msg.to_utf8_lossy());
+        }
+        args => {
+            let strings = args
+                .iter()
+                .map(|a| a.coerce_to_string(activation))
+                .collect::<Result<Vec<_>, _>>()?;
+            let msg = crate::string::join(&strings, &WStr::from_units(b" "));
+            activation.context.log.avm_trace(&msg.to_utf8_lossy());
         }
     }
-
-    activation.context.log.avm_trace(&message);
 
     Ok(Value::Undefined)
 }

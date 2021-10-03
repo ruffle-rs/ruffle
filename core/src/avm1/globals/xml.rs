@@ -7,7 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::{AvmString, BorrowWStr, WStr};
 use crate::xml;
 use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::MutationContext;
@@ -726,7 +726,7 @@ pub fn xml_send_and_load<'gc>(
 
     if let Some(node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, &url, Some(node))?;
+        spawn_xml_fetch(activation, this, target, url.borrow(), Some(node))?;
     }
     Ok(Value::Undefined)
 }
@@ -744,7 +744,7 @@ pub fn xml_load<'gc>(
 
     if let Some(_node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, this, &url, None)?;
+        spawn_xml_fetch(activation, this, this, url.borrow(), None)?;
 
         Ok(true.into())
     } else {
@@ -871,7 +871,7 @@ fn spawn_xml_fetch<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     loader_object: Object<'gc>,
-    url: &str,
+    url: WStr<'_>,
     send_object: Option<XmlNode<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request_options = if let Some(node) = send_object {
@@ -889,7 +889,10 @@ fn spawn_xml_fetch<'gc>(
 
     this.set("loaded", false.into(), activation)?;
 
-    let fetch = activation.context.navigator.fetch(url, request_options);
+    let fetch = activation
+        .context
+        .navigator
+        .fetch(&url.to_utf8_lossy(), request_options);
     let target_clip = activation.target_clip_or_root()?;
     // given any defined loader object, sends the request. Will load into LoadVars if given.
     let process = if let Some(node) = loader_object.as_xml_node() {

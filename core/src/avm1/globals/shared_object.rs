@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
@@ -105,7 +107,7 @@ fn recursive_serialize<'gc>(
     for element_name in obj.get_keys(activation).into_iter().rev() {
         if let Ok(elem) = obj.get(element_name, activation) {
             if let Some(v) = serialize_value(activation, elem) {
-                elements.push(Element::new(element_name.as_str(), v));
+                elements.push(Element::new(element_name.to_utf8_lossy(), v));
             }
         }
     }
@@ -301,11 +303,14 @@ pub fn get_local<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: It appears that Flash does some kind of escaping here:
+    // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
+
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?
-        .to_string();
+        .coerce_to_string(activation)?;
+    let name = name.to_utf8_lossy();
 
     const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
     if name.contains(|c| INVALID_CHARS.contains(c)) {
@@ -371,11 +376,26 @@ pub fn get_local<'gc>(
         }
 
         // Remove leading/trailing slashes.
-        let mut local_path = local_path.as_str().strip_prefix('/').unwrap_or(local_path);
-        local_path = local_path.strip_suffix('/').unwrap_or(local_path);
+        let mut local_path = local_path.to_utf8_lossy();
+        if local_path.ends_with('/') {
+            match &mut local_path {
+                Cow::Owned(p) => {
+                    p.pop();
+                }
+                Cow::Borrowed(p) => *p = &p[..p.len() - 1],
+            }
+        }
+        if local_path.starts_with('/') {
+            match &mut local_path {
+                Cow::Owned(p) => {
+                    p.remove(0);
+                }
+                Cow::Borrowed(p) => *p = &p[1..],
+            }
+        }
 
         // Verify that local_path is a prefix of the SWF path.
-        if movie_path.starts_with(&local_path)
+        if movie_path.starts_with(local_path.as_ref())
             && (local_path.is_empty()
                 || movie_path.len() == local_path.len()
                 || movie_path[local_path.len()..].starts_with('/'))
@@ -386,7 +406,7 @@ pub fn get_local<'gc>(
             return Ok(Value::Null);
         }
     } else {
-        movie_path
+        Cow::Borrowed(movie_path)
     };
 
     // Final SO path: foo.com/folder/game.swf/SOName
