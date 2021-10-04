@@ -1,6 +1,7 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::html::TextSpan;
 use crate::prelude::*;
+use crate::string::WStr;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
@@ -178,9 +179,10 @@ impl<'gc> Font<'gc> {
     }
 
     /// Determine if this font contains all the glyphs within a given string.
-    pub fn has_glyphs_for_str(&self, target_str: &str) -> bool {
+    pub fn has_glyphs_for_str(&self, target_str: WStr<'_>) -> bool {
         for character in target_str.chars() {
-            if self.get_glyph_for_char(character).is_none() {
+            let c = character.unwrap_or(char::REPLACEMENT_CHARACTER);
+            if self.get_glyph_for_char(c).is_none() {
                 return false;
             }
         }
@@ -235,7 +237,7 @@ impl<'gc> Font<'gc> {
     /// to render the text on a single horizontal line.
     pub fn evaluate<FGlyph>(
         &self,
-        text: &str,
+        text: WStr<'_>, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
         mut transform: Transform,
         params: EvalParameters,
         mut glyph_func: FGlyph,
@@ -251,10 +253,12 @@ impl<'gc> Font<'gc> {
         let has_kerning_info = self.has_kerning_info();
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
+            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
                 let mut advance = Twips::new(glyph.advance);
                 if has_kerning_info && params.kerning {
-                    let next_char = char_indices.peek().cloned().unwrap_or((0, '\0')).1;
+                    let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
+                    let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
                     advance += self.get_kerning_offset(c, next_char);
                 }
                 let twips_advance =
@@ -273,7 +277,7 @@ impl<'gc> Font<'gc> {
     ///
     /// The `round` flag causes the returned coordinates to be rounded down to
     /// the nearest pixel.
-    pub fn measure(&self, text: &str, params: EvalParameters, round: bool) -> (Twips, Twips) {
+    pub fn measure(&self, text: WStr<'_>, params: EvalParameters, round: bool) -> (Twips, Twips) {
         let mut size = (Twips::ZERO, Twips::ZERO);
 
         self.evaluate(
@@ -315,7 +319,7 @@ impl<'gc> Font<'gc> {
     /// be internationalized to implement AS3 `flash.text.engine`.
     pub fn wrap_line(
         &self,
-        text: &str,
+        text: WStr<'_>,
         params: EvalParameters,
         width: Twips,
         offset: Twips,
@@ -328,13 +332,13 @@ impl<'gc> Font<'gc> {
 
         let mut line_end = 0;
 
-        for word in text.split(' ') {
-            let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+        for word in text.split(b' ') {
+            let word_start = word.offset_in(text).unwrap();
             let word_end = word_start + word.len();
 
             let measure = self.measure(
-                // +1 is fine because ' ' is 1 byte
-                text.get(word_start..word_end + 1).unwrap_or(word),
+                // +1 is fine because ' ' is 1 unit
+                text.try_slice(word_start..word_end + 1).unwrap_or(word),
                 params,
                 false,
             );
@@ -343,7 +347,7 @@ impl<'gc> Font<'gc> {
                 //Failsafe for if we get a word wider than the field.
                 let mut last_passing_breakpoint = (Twips::ZERO, Twips::ZERO);
 
-                let cur_slice = &text[word_start..];
+                let cur_slice = text.slice(word_start..);
                 let mut char_iter = cur_slice.char_indices();
                 let mut prev_char_index = word_start;
                 let mut prev_frag_end = 0;
@@ -354,7 +358,7 @@ impl<'gc> Font<'gc> {
 
                     if let Some((frag_end, _)) = char_iter.next() {
                         last_passing_breakpoint =
-                            self.measure(&cur_slice[..frag_end], params, false);
+                            self.measure(cur_slice.slice(..frag_end), params, false);
 
                         prev_frag_end = frag_end;
                     } else {
@@ -370,7 +374,7 @@ impl<'gc> Font<'gc> {
             } else {
                 //Space remains for our current word, move up the word pointer.
                 line_end = word_end;
-                is_start_of_line = is_start_of_line && text[0..line_end].trim().is_empty();
+                is_start_of_line = is_start_of_line && text.slice(0..line_end).trim().is_empty();
 
                 //If the additional space were to cause an overflow, then
                 //return now.
@@ -502,6 +506,7 @@ mod tests {
     use crate::backend::render::{NullRenderer, RenderBackend};
     use crate::font::{EvalParameters, Font};
     use crate::player::{Player, DEVICE_FONT_TAG};
+    use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
     use std::ops::DerefMut;
     use swf::Twips;
@@ -524,7 +529,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcdefghijklmnopqrstuv";
+            let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
             let breakpoint = df.wrap_line(
                 string,
                 params,
@@ -542,7 +547,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcd efgh ijkl mnop";
+            let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
                 string,
@@ -557,7 +562,7 @@ mod tests {
             last_bp += breakpoint.unwrap() + 1;
 
             let breakpoint2 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
@@ -569,7 +574,7 @@ mod tests {
             last_bp += breakpoint2.unwrap() + 1;
 
             let breakpoint3 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
@@ -581,7 +586,7 @@ mod tests {
             last_bp += breakpoint3.unwrap() + 1;
 
             let breakpoint4 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(35.0),
                 Twips::from_pixels(0.0),
@@ -597,7 +602,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcd efgh ijkl mnop";
+            let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
                 params,
@@ -615,7 +620,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcdi j kl mnop q rstuv";
+            let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
                 string,
@@ -630,7 +635,7 @@ mod tests {
             last_bp += breakpoint.unwrap() + 1;
 
             let breakpoint2 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
@@ -642,7 +647,7 @@ mod tests {
             last_bp += breakpoint2.unwrap() + 1;
 
             let breakpoint3 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
@@ -654,7 +659,7 @@ mod tests {
             last_bp += breakpoint3.unwrap() + 1;
 
             let breakpoint4 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),
@@ -666,7 +671,7 @@ mod tests {
             last_bp += breakpoint4.unwrap() + 1;
 
             let breakpoint5 = df.wrap_line(
-                &string[last_bp..],
+                string.slice(last_bp..),
                 params,
                 Twips::from_pixels(37.0),
                 Twips::from_pixels(0.0),

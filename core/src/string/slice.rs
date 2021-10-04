@@ -42,6 +42,13 @@ impl<'a> WStr<'a> {
         unsafe { Self::from_ptr(WStrPtr::new(data, len)) }
     }
 
+    /// Creates an empty string.
+    #[inline]
+    pub fn empty() -> Self {
+        // SAFETY: the pointer is non-null.
+        unsafe { Self::from_ptr(WStrPtr::new(Units::Bytes([].as_ptr()), 0)) }
+    }
+
     impl_str_methods! {
         lifetime: 'a;
         self: Self;
@@ -100,8 +107,14 @@ impl<'a> WStrMut<'a> {
         unsafe { Self::from_ptr(WStrPtr::new(data, len)) }
     }
 
-    /// Converts into a immutable reference.
+    /// Creates an empty string.
+    #[inline]
+    pub fn empty() -> Self {
+        // SAFETY: the pointer is non-null.
+        unsafe { Self::from_ptr(WStrPtr::new(Units::Bytes([].as_ptr()), 0)) }
+    }
 
+    /// Converts into a immutable reference.
     pub fn into_ref(self) -> WStr<'a> {
         // SAFETY: `WStr<'a>` is strictly less powerful that `WStrMut<'a>`
         unsafe { WStr::from_ptr(self.ptr) }

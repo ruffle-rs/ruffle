@@ -6,7 +6,7 @@ use crate::font::{EvalParameters, Font};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::shape_utils::DrawCommand;
-use crate::string::utils as string_utils;
+use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cmp::{max, min};
@@ -49,7 +49,7 @@ pub struct LayoutContext<'a, 'gc> {
     font: Option<Font<'gc>>,
 
     /// The underlying bundle of text being formatted.
-    text: &'a str,
+    text: WStr<'a>,
 
     /// The highest font size observed within the current line.
     max_font_size: Twips,
@@ -90,7 +90,7 @@ pub struct LayoutContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
-    fn new(movie: Arc<SwfMovie>, max_bounds: Twips, text: &'a str) -> Self {
+    fn new(movie: Arc<SwfMovie>, max_bounds: Twips, text: WStr<'a>) -> Self {
         Self {
             movie,
             cursor: Default::default(),
@@ -401,7 +401,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
         if let Some(font) = library
-            .get_font_by_name(&span.font, span.bold, span.italic)
+            .get_font_by_name(&span.font.to_utf8_lossy(), span.bold, span.italic)
             .filter(|f| !is_device_font && f.has_glyphs())
             .or_else(|| context.library.device_font())
         {
@@ -416,14 +416,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// The text given may or may not be separated into fragments, depending on
     /// what the layout calls for.
-    fn append_text(&mut self, text: &'a str, start: usize, end: usize, span: &TextSpan) {
+    fn append_text(&mut self, text: WStr<'a>, start: usize, end: usize, span: &TextSpan) {
         if self.effective_alignment() == swf::TextAlign::Justify {
-            for word in text.split(' ') {
-                let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+            for word in text.split(b' ') {
+                let word_start = word.offset_in(text).unwrap();
                 let word_end = min(word_start + word.len() + 1, text.len());
 
                 self.append_text_fragment(
-                    text.get(word_start..word_end).unwrap(),
+                    text.slice(word_start..word_end),
                     start + word_start,
                     start + word_end,
                     span,
@@ -438,7 +438,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function bypasses the text fragmentation necessary for justify to
     /// work and it should only be called internally.
-    fn append_text_fragment(&mut self, text: &'a str, start: usize, end: usize, span: &TextSpan) {
+    fn append_text_fragment(&mut self, text: WStr<'a>, start: usize, end: usize, span: &TextSpan) {
         let params = EvalParameters::from_span(span);
         let text_size = Size::from(self.font.unwrap().measure(text, params, false));
         let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
@@ -459,7 +459,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let library = context.library.library_for_movie_mut(self.movie.clone());
 
         if let Some(bullet_font) = library
-            .get_font_by_name(&span.font, span.bold, span.italic)
+            .get_font_by_name(&span.font.to_utf8_lossy(), span.bold, span.italic)
             .filter(|f| f.has_glyphs())
             .or_else(|| context.library.device_font())
             .or(self.font)
@@ -472,7 +472,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             );
 
             let params = EvalParameters::from_span(span);
-            let text_size = Size::from(bullet_font.measure("\u{2022}", params, false));
+            let bullet = WStr::from_units(&[0x2022u16]);
+            let text_size = Size::from(bullet_font.measure(bullet, params, false));
             let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
             let mut new_bullet = LayoutBox::from_bullet(bullet_font, span);
 
@@ -682,20 +683,19 @@ impl<'gc> LayoutBox<'gc> {
 
                 let params = EvalParameters::from_span(span);
 
-                for text in span_text.split(&['\n', '\r', '\t'][..]) {
-                    let slice_start = text.as_ptr() as usize - span_text.as_ptr() as usize;
+                for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+                    let slice_start = text.offset_in(span_text).unwrap();
                     let delimiter = if slice_start > 0 {
-                        // -1 is ok here since '\n','\r','\t' are all 1 byte
                         span_text
-                            .get(slice_start - 1..)
-                            .and_then(|s| s.chars().next())
+                            .try_get(slice_start - 1)
+                            .and_then(|c| u8::try_from(c).ok())
                     } else {
                         None
                     };
 
                     match delimiter {
-                        Some('\n' | '\r') => layout_context.explicit_newline(context),
-                        Some('\t') => layout_context.tab(),
+                        Some(b'\n' | b'\r') => layout_context.explicit_newline(context),
+                        Some(b'\t') => layout_context.tab(),
                         _ => {}
                     }
 
@@ -707,7 +707,7 @@ impl<'gc> LayoutBox<'gc> {
                         let (mut width, mut offset) = layout_context.wrap_dimensions(span);
 
                         while let Some(breakpoint) = font.wrap_line(
-                            &text[last_breakpoint..],
+                            text.slice(last_breakpoint..),
                             params,
                             width,
                             offset,
@@ -743,7 +743,7 @@ impl<'gc> LayoutBox<'gc> {
                             );
 
                             layout_context.append_text(
-                                &text[last_breakpoint..next_breakpoint],
+                                text.slice(last_breakpoint..next_breakpoint),
                                 start + last_breakpoint,
                                 start + next_breakpoint,
                                 span,
@@ -766,7 +766,7 @@ impl<'gc> LayoutBox<'gc> {
 
                     if last_breakpoint < span_end {
                         layout_context.append_text(
-                            &text[last_breakpoint..span_end],
+                            text.slice(last_breakpoint..span_end),
                             start + last_breakpoint,
                             start + span_end,
                             span,
@@ -791,8 +791,8 @@ impl<'gc> LayoutBox<'gc> {
     /// rendering parameters, if the layout box has any.
     pub fn as_renderable_text<'a>(
         &self,
-        text: &'a str,
-    ) -> Option<(&'a str, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
+        text: WStr<'a>,
+    ) -> Option<(WStr<'a>, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -802,7 +802,7 @@ impl<'gc> LayoutBox<'gc> {
                 params,
                 color,
             } => Some((
-                text.get(*start..*end)?,
+                text.try_slice(*start..*end)?,
                 text_format,
                 *font,
                 *params,
@@ -814,7 +814,7 @@ impl<'gc> LayoutBox<'gc> {
                 params,
                 color,
             } => Some((
-                "\u{2022}",
+                WStr::from_units(&[0x2022u16]),
                 text_format,
                 *font,
                 *params,

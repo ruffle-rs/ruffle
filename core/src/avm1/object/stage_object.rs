@@ -213,7 +213,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             }
         }) {
             let _ = binding.text_field.set_html_text(
-                &value.coerce_to_string(activation)?,
+                value.coerce_to_string(activation)?.borrow(),
                 &mut activation.context,
             );
         }

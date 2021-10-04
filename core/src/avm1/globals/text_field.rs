@@ -8,7 +8,7 @@ use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use gc_arena::MutationContext;
 
 macro_rules! tf_method {
@@ -216,7 +216,7 @@ fn replace_sel<'gc>(
     text_field.replace_text(
         selection.start(),
         selection.end(),
-        &text,
+        text.borrow(),
         &mut activation.context,
     );
     text_field.set_selection(
@@ -248,10 +248,14 @@ fn replace_text<'gc>(
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_string(activation)?
-        .to_string();
+        .coerce_to_string(activation)?;
 
-    text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
+    text_field.replace_text(
+        from as usize,
+        to as usize,
+        text.borrow(),
+        &mut activation.context,
+    );
 
     Ok(Value::Undefined)
 }
@@ -269,7 +273,7 @@ pub fn text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(activation.context.gc_context, this.text()).into())
+    Ok(AvmString::new_ucs2(activation.context.gc_context, this.text()).into())
 }
 
 pub fn set_text<'gc>(
@@ -278,7 +282,7 @@ pub fn set_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Err(err) = this.set_text(
-        &value.coerce_to_string(activation)?,
+        value.coerce_to_string(activation)?.borrow(),
         &mut activation.context,
     ) {
         avm_error!(activation, "Error when setting TextField.text: {}", err);
@@ -335,7 +339,7 @@ pub fn html_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let html_text = this.html_text(&mut activation.context);
-    Ok(AvmString::new(activation.context.gc_context, html_text).into())
+    Ok(AvmString::new_ucs2(activation.context.gc_context, html_text).into())
 }
 
 pub fn set_html_text<'gc>(
@@ -344,7 +348,7 @@ pub fn set_html_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let text = value.coerce_to_string(activation)?;
-    let _ = this.set_html_text(&text, &mut activation.context);
+    let _ = this.set_html_text(text.borrow(), &mut activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
     Ok(())
 }

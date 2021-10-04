@@ -20,7 +20,7 @@ use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
-use crate::string::{utils as string_utils, AvmString, BorrowWStr, WString};
+use crate::string::{utils as string_utils, AvmString, BorrowWStr, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
@@ -221,16 +221,16 @@ impl<'gc> EditText<'gc> {
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
 
-        let text = text.to_str_lossy(encoding);
+        let text = WString::from_utf8(&text.to_str_lossy(encoding));
         let mut text_spans = if is_html {
-            FormatSpans::from_html(&*text, default_format)
+            FormatSpans::from_html(text.borrow(), default_format)
         } else {
-            FormatSpans::from_text(&*text, default_format)
+            FormatSpans::from_text(text, default_format)
         };
 
         if !is_multiline {
-            let filtered = text_spans.text().replace("\n", "");
-            text_spans.replace_text(0, text_spans.text().len(), &filtered, None);
+            let filtered = text_spans.text().replace(b'\n', WStr::empty());
+            text_spans.replace_text(0, text_spans.text().len(), filtered.borrow(), None);
         }
 
         if is_password {
@@ -286,8 +286,12 @@ impl<'gc> EditText<'gc> {
                             color: swf_tag.color.clone(),
                             max_length: swf_tag.max_length,
                             layout: swf_tag.layout.clone(),
-                            variable_name: swf_tag.variable_name.to_string_lossy(encoding),
-                            initial_text: swf_tag.initial_text.map(|s| s.to_string_lossy(encoding)),
+                            variable_name: WString::from_utf8_owned(
+                                swf_tag.variable_name.to_string_lossy(encoding),
+                            ),
+                            initial_text: swf_tag
+                                .initial_text
+                                .map(|s| WString::from_utf8_owned(s.to_string_lossy(encoding))),
                             is_word_wrap: swf_tag.is_word_wrap,
                             is_multiline: swf_tag.is_multiline,
                             is_password: swf_tag.is_password,
@@ -396,18 +400,18 @@ impl<'gc> EditText<'gc> {
         text_field
     }
 
-    pub fn text(self) -> String {
-        self.0.read().text_spans.text().to_string()
+    pub fn text(self) -> WString {
+        self.0.read().text_spans.text().into()
     }
 
     pub fn set_text(
         self,
-        text: &str,
+        text: WStr<'_>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
         let default_format = edit_text.text_spans.default_format().clone();
-        edit_text.text_spans = FormatSpans::from_text(text, default_format);
+        edit_text.text_spans = FormatSpans::from_text(text.borrow().into(), default_format);
         drop(edit_text);
 
         self.relayout(context);
@@ -415,7 +419,7 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
-    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> String {
+    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> WString {
         if self.is_html() {
             let html_tree = self.html_tree(context).as_node();
             let html_string_result = html_tree.into_string(&mut |_node| true);
@@ -427,7 +431,7 @@ impl<'gc> EditText<'gc> {
                 );
             }
 
-            html_string_result.unwrap_or_default()
+            WString::from_utf8_owned(html_string_result.unwrap_or_default())
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
@@ -436,7 +440,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_html_text(
         self,
-        text: &str,
+        text: WStr<'_>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self.is_html() {
@@ -605,7 +609,7 @@ impl<'gc> EditText<'gc> {
         self,
         from: usize,
         to: usize,
-        text: &str,
+        text: WStr<'_>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         self.0
@@ -687,7 +691,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(&text, &mut activation.context);
+        let _ = self.set_text(text.borrow(), &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -1069,7 +1073,10 @@ impl<'gc> EditText<'gc> {
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
                                 let _ = self.set_html_text(
-                                    &value.coerce_to_string(activation).unwrap_or_default(),
+                                    value
+                                        .coerce_to_string(activation)
+                                        .unwrap_or_default()
+                                        .borrow(),
                                     &mut activation.context,
                                 );
                             } else {
@@ -1079,8 +1086,11 @@ impl<'gc> EditText<'gc> {
                                 if !text.is_empty() {
                                     let _ = object.set(
                                         property,
-                                        AvmString::new(activation.context.gc_context, self.text())
-                                            .into(),
+                                        AvmString::new_ucs2(
+                                            activation.context.gc_context,
+                                            self.text(),
+                                        )
+                                        .into(),
                                         activation,
                                     );
                                 }
@@ -1144,7 +1154,7 @@ impl<'gc> EditText<'gc> {
                                 AvmString::new_ucs2(activation.context.gc_context, property.into());
                             let _ = object.set(
                                 property,
-                                AvmString::new(activation.context.gc_context, html_text).into(),
+                                AvmString::new_ucs2(activation.context.gc_context, html_text).into(),
                                 activation,
                             );
                         },
@@ -1265,7 +1275,7 @@ impl<'gc> EditText<'gc> {
             match character as u8 {
                 8 | 127 if !selection.is_caret() => {
                     // Backspace or delete with multiple characters selected
-                    self.replace_text(selection.start(), selection.end(), "", context);
+                    self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                     self.set_selection(
                         Some(TextSelection::for_position(selection.start())),
                         context.gc_context,
@@ -1277,8 +1287,9 @@ impl<'gc> EditText<'gc> {
                     if selection.start() > 0 {
                         // Delete previous character
                         let text = self.text();
-                        let start = string_utils::prev_char_boundary(&text, selection.start());
-                        self.replace_text(start, selection.start(), "", context);
+                        let start =
+                            string_utils::prev_char_boundary(text.borrow(), selection.start());
+                        self.replace_text(start, selection.start(), WStr::empty(), context);
                         self.set_selection(
                             Some(TextSelection::for_position(start)),
                             context.gc_context,
@@ -1291,8 +1302,9 @@ impl<'gc> EditText<'gc> {
                     if selection.end() < self.text_length() {
                         // Delete next character
                         let text = self.text();
-                        let end = string_utils::next_char_boundary(&text, selection.start());
-                        self.replace_text(selection.start(), end, "", context);
+                        let end =
+                            string_utils::next_char_boundary(text.borrow(), selection.start());
+                        self.replace_text(selection.start(), end, WStr::empty(), context);
                         // No need to change selection
                         changed = true;
                     }
@@ -1301,7 +1313,7 @@ impl<'gc> EditText<'gc> {
                     self.replace_text(
                         selection.start(),
                         selection.end(),
-                        &character.to_string(),
+                        WString::from_char(character).borrow(),
                         context,
                     );
                     let new_start = selection.start() + character.len_utf8();
@@ -1883,8 +1895,8 @@ struct EditTextStaticData {
     color: Option<Color>,
     max_length: Option<u16>,
     layout: Option<swf::TextLayout>,
-    variable_name: String,
-    initial_text: Option<String>,
+    variable_name: WString,
+    initial_text: Option<WString>,
     is_word_wrap: bool,
     is_multiline: bool,
     is_password: bool,

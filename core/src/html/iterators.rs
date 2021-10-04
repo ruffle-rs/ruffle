@@ -1,6 +1,7 @@
 //! Layout box iterators
 
 use crate::html::text_format::{FormatSpans, TextSpan};
+use crate::string::WStr;
 use std::cmp::min;
 
 /// Iterator implementation for the `iter_spans` method of `FormatSpans`.
@@ -21,7 +22,7 @@ impl<'a> TextSpanIter<'a> {
 }
 
 impl<'a> Iterator for TextSpanIter<'a> {
-    type Item = (usize, usize, &'a str, &'a TextSpan);
+    type Item = (usize, usize, WStr<'a>, &'a TextSpan);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(span) = self.base.span(self.index) {
@@ -32,7 +33,7 @@ impl<'a> Iterator for TextSpanIter<'a> {
             let next = (
                 start_pos,
                 end_pos,
-                self.base.displayed_text().get(start_pos..end_pos)?,
+                self.base.displayed_text().try_slice(start_pos..end_pos)?,
                 span,
             );
 

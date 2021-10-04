@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
@@ -260,7 +260,7 @@ fn font<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font).into()
+        AvmString::new_ucs2(activation.context.gc_context, font.clone()).into()
     }))
 }
 
@@ -271,7 +271,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }
@@ -501,7 +501,7 @@ fn target<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target).into()
+        AvmString::new_ucs2(activation.context.gc_context, target.clone()).into()
     }))
 }
 
@@ -512,7 +512,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }
@@ -544,7 +544,7 @@ fn url<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url).into()
+        AvmString::new_ucs2(activation.context.gc_context, url.clone()).into()
     }))
 }
 
@@ -555,7 +555,7 @@ fn set_url<'gc>(
 ) -> Result<(), Error> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }
