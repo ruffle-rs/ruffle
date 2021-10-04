@@ -6,8 +6,9 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::{AvmString, Error};
+use crate::avm2::Error;
 use crate::character::Character;
+use crate::string::{AvmString, BorrowWStr};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.text.Font`'s instance constructor.
@@ -143,7 +144,7 @@ pub fn has_glyphs<'gc>(
             .library_for_movie_mut(movie)
             .character_by_id(character_id)
         {
-            return Ok(font.has_glyphs_for_str(&my_str).into());
+            return Ok(font.has_glyphs_for_str(my_str.borrow()).into());
         }
     }
 

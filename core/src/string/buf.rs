@@ -108,6 +108,14 @@ impl WString {
         buf
     }
 
+    /// Creates a `StrBuf` from a single unicode character.
+    #[inline]
+    pub fn from_char(c: char) -> Self {
+        let mut buf = Self::new();
+        buf.push_char(c);
+        buf
+    }
+
     /// Steals the internal buffer.
     ///
     /// # Safety

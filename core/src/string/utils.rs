@@ -1,27 +1,42 @@
 ///! Utilities for operating on strings in SWF files.
 use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
+use super::Units;
 
-/// Gets the position of the previous char
-/// `pos` must already lie on a char boundary
-pub fn prev_char_boundary(slice: &str, pos: usize) -> usize {
-    if pos == 0 {
-        return pos;
+fn is_surrogate_pair_at(us: &[u16], pos: usize) -> bool {
+    if let Some(pair) = us.get(pos..pos + 2) {
+        let has_high = (0xD800..=0xDBFF).contains(&pair[0]);
+        let has_low = (0xDC00..=0xDFFF).contains(&pair[1]);
+        has_high && has_low
+    } else {
+        false
     }
-
-    let mut idx = pos - 1;
-    while !slice.is_char_boundary(idx) {
-        idx -= 1;
-    }
-    idx
 }
 
-/// Gets the byte position of the next char
+/// Gets the position of the previous utf16 char;
 /// `pos` must already lie on a char boundary
-pub fn next_char_boundary(slice: &str, pos: usize) -> usize {
-    if let Some(c) = slice[pos..].chars().next() {
-        pos + c.len_utf8()
-    } else {
-        slice.len()
+pub fn prev_char_boundary(slice: super::WStr<'_>, pos: usize) -> usize {
+    if pos <= 1 {
+        return 0;
+    }
+
+    match slice.units() {
+        Units::Bytes(_) => pos - 1, // LATIN1 strings only contains 1-bytes chars
+        Units::Wide(us) if is_surrogate_pair_at(us, pos - 2) => pos - 2,
+        Units::Wide(_) => pos - 1,
+    }
+}
+
+/// Gets the byte position of the next utf16 char;
+/// `pos` must already lie on a char boundary
+pub fn next_char_boundary(slice: super::WStr<'_>, pos: usize) -> usize {
+    if pos >= slice.len() {
+        return slice.len();
+    }
+
+    match slice.units() {
+        Units::Bytes(_) => pos + 1, // LATIN1 strings only contains 1-bytes chars
+        Units::Wide(us) if is_surrogate_pair_at(us, pos) => pos + 2,
+        Units::Wide(_) => pos + 1,
     }
 }
 

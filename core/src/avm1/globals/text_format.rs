@@ -6,6 +6,7 @@ use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Va
 use crate::avm_warn;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
+use crate::string::BorrowWStr;
 use gc_arena::MutationContext;
 
 macro_rules! getter {
@@ -59,7 +60,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font).into()
+        AvmString::new_ucs2(activation.context.gc_context, font.clone()).into()
     })
 }
 
@@ -70,7 +71,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }
@@ -115,7 +116,7 @@ fn set_color<'gc>(
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url).into()
+        AvmString::new_ucs2(activation.context.gc_context, url.clone()).into()
     })
 }
 
@@ -126,14 +127,14 @@ fn set_url<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target).into()
+        AvmString::new_ucs2(activation.context.gc_context, target.clone()).into()
     })
 }
 
@@ -144,7 +145,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.borrow().into()),
     };
     Ok(())
 }

@@ -32,6 +32,30 @@ impl<'a> DoubleEndedIterator for Iter<'a> {
     }
 }
 
+pub type Chars<'a> = std::char::DecodeUtf16<Iter<'a>>;
+
+pub struct CharIndices<'a> {
+    chars: Chars<'a>,
+    start: usize,
+}
+
+impl<'a> Iterator for CharIndices<'a> {
+    type Item = (usize, Result<char, std::char::DecodeUtf16Error>);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let res = (self.start, self.chars.next()?);
+
+        let in_bmp = match &res.1 {
+            Ok(c) => u32::from(*c) <= u16::MAX.into(),
+            Err(_) => false,
+        };
+
+        self.start += if in_bmp { 1 } else { 2 };
+        Some(res)
+    }
+}
+
 #[inline]
 pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
     let inner = match s.units() {
@@ -41,10 +65,19 @@ pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
     Iter { inner }
 }
 
+#[inline]
+pub fn str_char_indices(s: WStr<'_>) -> CharIndices<'_> {
+    CharIndices {
+        chars: s.chars(),
+        start: 0,
+    }
+}
+
 pub fn str_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let utf8 = WStrToUtf8::new(s);
     f.write_str(utf8.head)?;
-    std::char::decode_utf16(utf8.tail.iter())
+    utf8.tail
+        .chars()
         .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
         .try_for_each(|c| f.write_char(c))
 }
@@ -114,6 +147,18 @@ pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {
     match s.units() {
         Units::Bytes(us) => us.iter().for_each(|u| state.write_u16(u16::from(*u))),
         Units::Wide(us) => us.iter().for_each(|u| state.write_u16(*u)),
+    }
+}
+
+pub fn str_offset_in(s: WStr<'_>, other: WStr<'_>) -> Option<usize> {
+    match (s.units(), other.units()) {
+        (Units::Bytes(a), Units::Bytes(b)) => {
+            (a.as_ptr() as usize).checked_sub(b.as_ptr() as usize)
+        }
+        (Units::Wide(a), Units::Wide(b)) => (a.as_ptr() as usize)
+            .checked_sub(b.as_ptr() as usize)
+            .map(|n| n / std::mem::size_of::<u16>()),
+        _ => None,
     }
 }
 
@@ -187,6 +232,46 @@ pub fn str_join<E: BorrowWStr>(elems: &[E], sep: WStr<'_>) -> WString {
         });
         WString::from_buf(buf)
     }
+}
+
+pub fn str_repeat(s: WStr<'_>, count: usize) -> WString {
+    if count == 0 || s.is_empty() {
+        return WString::new();
+    }
+
+    let len = s.len().saturating_mul(count);
+    if len > super::MAX_STRING_LEN {
+        super::panic_on_invalid_length(len);
+    }
+
+    match (s.units(), s.is_latin1()) {
+        (Units::Bytes(us), _) => WString::from_buf(us.repeat(count)),
+        (Units::Wide(us), false) => WString::from_buf(us.repeat(count)),
+        (Units::Wide(us), true) => {
+            let mut buf = Vec::with_capacity(len);
+            buf.extend(us.iter().map(|c| *c as u8));
+            while buf.len() <= len / 2 {
+                buf.extend_from_within(..);
+            }
+            buf.extend_from_within(..(len - buf.len()));
+            WString::from_buf(buf)
+        }
+    }
+}
+
+pub fn str_replace<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P, with: WStr<'_>) -> WString {
+    let mut result = WString::new();
+    let mut prev_end = 0;
+
+    let mut searcher = pattern.into_searcher(haystack);
+    while let Some((start, end)) = searcher.next_match() {
+        result.push_str(haystack.slice(prev_end..start));
+        result.push_str(with);
+        prev_end = end;
+    }
+    result.push_str(haystack.slice(prev_end..));
+
+    result
 }
 
 pub fn str_find<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {

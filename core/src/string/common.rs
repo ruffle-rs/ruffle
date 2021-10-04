@@ -139,6 +139,26 @@ macro_rules! impl_str_methods {
             crate::string::ops::str_iter($deref)
         }
 
+        /// Iterates over the unicode characters of `self`.
+        #[inline]
+        pub fn chars($self: $receiver) -> crate::string::ops::Chars<$lt> {
+            std::char::decode_utf16(crate::string::ops::str_iter($deref))
+        }
+
+        /// Iterates over the unicode characters of `self`, together with their indices.
+        #[inline]
+        pub fn char_indices($self: $receiver) -> crate::string::ops::CharIndices<$lt> {
+            crate::string::ops::str_char_indices($deref)
+        }
+
+        /// Returns the offset of `self` in `other`, if `self` is a substring of `other`.
+        ///
+        /// This is the value such that `self == other.slice(offset..offset + self.len())`.
+        #[inline]
+        pub fn offset_in($self: $receiver, other: WStr<'_>) -> Option<usize> {
+            crate::string::ops::str_offset_in($deref, other)
+        }
+
         #[inline]
         /// Tests if two strings are equal, ignoring case as done by the Flash Player.
         /// Note that the case mapping is different than Rust's case mapping.
@@ -178,6 +198,12 @@ macro_rules! impl_str_methods {
         #[inline]
         pub fn to_ascii_lowercase($self: $receiver) -> crate::string::WString {
             crate::string::ops::str_to_ascii_lowercase($deref)
+        }
+
+        /// Analogue of [`str::replace`].
+        #[inline]
+        pub fn replace<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P, with: WStr<'_>) -> crate::string::WString {
+            crate::string::ops::str_replace($deref, pattern, with)
         }
 
         /// Analogue of [`str::find`].
@@ -275,6 +301,12 @@ macro_rules! impl_str_methods {
         #[inline]
         pub fn strip_suffix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
             crate::string::ops::strip_suffix($deref, pattern)
+        }
+
+        /// Analogue of [`str::repeat`]
+        #[inline]
+        pub fn repeat($self: $receiver, count: usize) -> crate::string::WString {
+            crate::string::ops::str_repeat($deref, count)
         }
     }
 }

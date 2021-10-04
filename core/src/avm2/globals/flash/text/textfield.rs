@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
-use crate::string::AvmString;
+use crate::string::{AvmString, BorrowWStr};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
@@ -323,8 +323,11 @@ pub fn html_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let html_text = this.html_text(&mut activation.context);
-        return Ok(AvmString::new(activation.context.gc_context, html_text).into());
+        return Ok(AvmString::new_ucs2(
+            activation.context.gc_context,
+            this.html_text(&mut activation.context),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)
@@ -345,7 +348,7 @@ pub fn set_html_text<'gc>(
             .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, true);
-        this.set_html_text(&html_text, &mut activation.context)?;
+        this.set_html_text(html_text.borrow(), &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
@@ -447,7 +450,7 @@ pub fn text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
+        return Ok(AvmString::new_ucs2(activation.context.gc_context, this.text()).into());
     }
 
     Ok(Value::Undefined)
@@ -468,7 +471,7 @@ pub fn set_text<'gc>(
             .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, false);
-        this.set_text(&text, &mut activation.context)?;
+        this.set_text(text.borrow(), &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
@@ -656,7 +659,7 @@ pub fn append_text<'gc>(
         this.replace_text(
             existing_length,
             existing_length,
-            &new_text,
+            new_text.borrow(),
             &mut activation.context,
         );
     }
@@ -720,7 +723,7 @@ pub fn replace_selected_text<'gc>(
         this.replace_text(
             selection.start(),
             selection.end(),
-            &value,
+            value.borrow(),
             &mut activation.context,
         );
     }
@@ -756,7 +759,7 @@ pub fn replace_text<'gc>(
         this.replace_text(
             begin_index as usize,
             end_index as usize,
-            &value,
+            value.borrow(),
             &mut activation.context,
         );
     }
