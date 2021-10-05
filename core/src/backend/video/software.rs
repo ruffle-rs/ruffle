@@ -210,7 +210,7 @@ mod vp6 {
 
     use h263_rs_yuv::bt601::yuv420_to_rgba;
 
-    use nihav_codec_support::codecs::NAVideoInfo;
+    use nihav_codec_support::codecs::{NABufferRef, NAVideoBuffer, NAVideoInfo};
     use nihav_codec_support::codecs::{NABufferType::Video, YUV420_FORMAT};
     use nihav_core::codecs::NADecoderSupport;
     use nihav_duck::codecs::vp6::{VP56Decoder, VP56Parser, VP6BR};
@@ -224,6 +224,7 @@ mod vp6 {
         support: NADecoderSupport,
         bitreader: VP6BR,
         init_called: bool,
+        last_frame: Option<NABufferRef<NAVideoBuffer<u8>>>,
     }
 
     impl Vp6Decoder {
@@ -245,6 +246,7 @@ mod vp6 {
                 support: NADecoderSupport::new(),
                 bitreader: VP6BR::new(),
                 init_called: false,
+                last_frame: None,
             }
         }
     }
@@ -306,19 +308,38 @@ mod vp6 {
                 self.init_called = true;
             }
 
-            // Actually decoding the frame and extracting the buffer it is stored in.
+            let frame = if encoded_frame.data.is_empty()
+                || (self.with_alpha && encoded_frame.data.len() <= 3)
+            {
+                // This frame is empty, so it's a "skip frame"; reusing the last frame, if there is one.
 
-            let decoded = self
-                .decoder
-                .decode_frame(&mut self.support, encoded_frame.data, &mut self.bitreader)
-                .map_err(|error| Error::from(format!("VP6 decoder error: {:?}", error)))?;
+                match &self.last_frame {
+                    Some(frame) => frame.clone(),
+                    None => {
+                        return Err(Error::from(
+                            "No previous frame found when encountering a skip frame",
+                        ))
+                    }
+                }
+            } else {
+                // Actually decoding the frame and extracting the buffer it is stored in.
 
-            let frame = match decoded {
-                (Video(buffer), _) => Ok(buffer),
-                _ => Err(Error::from(
-                    "Unexpected buffer type after decoding a VP6 frame",
-                )),
-            }?;
+                let decoded = self
+                    .decoder
+                    .decode_frame(&mut self.support, encoded_frame.data, &mut self.bitreader)
+                    .map_err(|error| Error::from(format!("VP6 decoder error: {:?}", error)))?;
+
+                let frame = match decoded {
+                    (Video(buffer), _) => Ok(buffer),
+                    _ => Err(Error::from(
+                        "Unexpected buffer type after decoding a VP6 frame",
+                    )),
+                }?;
+
+                self.last_frame = Some(frame.clone());
+
+                frame
+            };
 
             // Converting it from YUV420 to RGBA.
 
