@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use crate::string::{AvmString, Units, WStrToUtf8};
+use crate::string::{AvmString, BorrowWStr, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
 
@@ -191,7 +191,7 @@ struct CachedText<'gc> {
 
 impl<'gc> CachedText<'gc> {
     fn new(text: AvmString<'gc>) -> Self {
-        let to_utf8 = WStrToUtf8::new(text.as_ucs2());
+        let to_utf8 = WStrToUtf8::new(text.borrow());
         let utf8 = to_utf8.to_utf8_lossy();
         let utf8_prefix_len = if utf8.len() == text.len() {
             // Identical len means the string is fully utf8,

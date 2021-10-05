@@ -11,7 +11,7 @@ use super::Units;
 ///  - `data` points to a slice of `u8`s or `u16`s, depending of the value of `Self::is_wide`;
 ///  - `len` is always less than `WIDE_MASK`;
 ///  - on 32-bits targets, the high bit of the `len` field is used to store the `is_wide` flag.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub(super) struct WStrPtr {
     data: NonNull<()>,
     #[cfg(target_pointer_width = "32")]
