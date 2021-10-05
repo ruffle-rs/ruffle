@@ -416,8 +416,8 @@ impl Player {
                 for (key, value) in context.swf.parameters().iter() {
                     object.define_value(
                         context.gc_context,
-                        AvmString::new(context.gc_context, key),
-                        AvmString::new(context.gc_context, value).into(),
+                        AvmString::new_utf8(context.gc_context, key),
+                        AvmString::new_utf8(context.gc_context, value).into(),
                         Attribute::empty(),
                     );
                 }
@@ -453,7 +453,7 @@ impl Player {
             object.define_value(
                 activation.context.gc_context,
                 "$version",
-                AvmString::new(activation.context.gc_context, version_string).into(),
+                AvmString::new_utf8(activation.context.gc_context, version_string).into(),
                 Attribute::empty(),
             );
 

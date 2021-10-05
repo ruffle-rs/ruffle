@@ -269,7 +269,7 @@ fn font<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new_ucs2(activation.context.gc_context, font.clone()).into()
+        AvmString::new(activation.context.gc_context, font.borrow()).into()
     }))
 }
 
@@ -491,7 +491,7 @@ fn set_tab_stops<'gc>(
                         object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, format!("{}", i)),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,
@@ -510,7 +510,7 @@ fn target<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new_ucs2(activation.context.gc_context, target.clone()).into()
+        AvmString::new(activation.context.gc_context, target.borrow()).into()
     }))
 }
 
@@ -553,7 +553,7 @@ fn url<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new_ucs2(activation.context.gc_context, url.clone()).into()
+        AvmString::new(activation.context.gc_context, url.borrow()).into()
     }))
 }
 

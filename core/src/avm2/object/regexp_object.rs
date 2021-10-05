@@ -115,7 +115,7 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
             s.push('x');
         }
 
-        Ok(AvmString::new(mc, s).into())
+        Ok(AvmString::new_utf8(mc, s).into())
     }
 
     fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {

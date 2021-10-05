@@ -443,7 +443,7 @@ fn to_string<'gc>(
     let tx = this.get("tx", activation)?;
     let ty = this.get("ty", activation)?;
 
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         format!(
             "(a={}, b={}, c={}, d={}, tx={}, ty={})",

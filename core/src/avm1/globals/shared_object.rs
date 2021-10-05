@@ -119,7 +119,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
         AmfValue::Null => Value::Null,
         AmfValue::Undefined => Value::Undefined,
         AmfValue::Number(f) => (*f).into(),
-        AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, associative, len) => {
             let array_constructor = activation.context.avm1.prototypes.array_constructor;
@@ -134,7 +134,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
                     } else {
                         obj.define_value(
                             activation.context.gc_context,
-                            AvmString::new(activation.context.gc_context, entry.name.clone()),
+                            AvmString::new_utf8(activation.context.gc_context, entry.name.clone()),
                             value,
                             Attribute::empty(),
                         );
@@ -154,7 +154,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
             );
             for entry in elements {
                 let value = deserialize_value(activation, entry.value());
-                let name = AvmString::new(activation.context.gc_context, entry.name.clone());
+                let name = AvmString::new_utf8(activation.context.gc_context, entry.name.clone());
                 obj.define_value(
                     activation.context.gc_context,
                     name,
@@ -178,7 +178,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
 
             if let Ok(Value::Object(obj)) = xml_proto.construct(
                 activation,
-                &[Value::String(AvmString::new(
+                &[Value::String(AvmString::new_utf8(
                     activation.context.gc_context,
                     content,
                 ))],
@@ -206,7 +206,7 @@ fn deserialize_lso<'gc>(
     for child in &lso.body {
         obj.define_value(
             activation.context.gc_context,
-            AvmString::new(activation.context.gc_context, child.name.clone()),
+            AvmString::new_utf8(activation.context.gc_context, child.name.clone()),
             deserialize_value(activation, child.value()),
             Attribute::empty(),
         );
@@ -222,10 +222,13 @@ fn recursive_deserialize_json<'gc>(
 ) -> Value<'gc> {
     match json_value {
         JsonValue::Null => Value::Null,
-        JsonValue::Short(s) => {
-            Value::String(AvmString::new(activation.context.gc_context, s.to_string()))
+        JsonValue::Short(s) => Value::String(AvmString::new_utf8(
+            activation.context.gc_context,
+            s.to_string(),
+        )),
+        JsonValue::String(s) => {
+            Value::String(AvmString::new_utf8(activation.context.gc_context, s))
         }
-        JsonValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
         JsonValue::Number(f) => Value::Number(f.into()),
         JsonValue::Boolean(b) => b.into(),
         JsonValue::Object(o) => {
@@ -251,7 +254,7 @@ fn deserialize_object_json<'gc>(
     );
     for entry in json_obj.iter() {
         let value = recursive_deserialize_json(entry.1.clone(), activation);
-        let name = AvmString::new(activation.context.gc_context, entry.0);
+        let name = AvmString::new_utf8(activation.context.gc_context, entry.0);
         obj.define_value(
             activation.context.gc_context,
             name,
@@ -282,7 +285,7 @@ fn deserialize_array_json<'gc>(
             if let Ok(i) = entry.0.parse::<i32>() {
                 obj.set_element(activation, i, value).unwrap();
             } else {
-                let name = AvmString::new(activation.context.gc_context, entry.0);
+                let name = AvmString::new_utf8(activation.context.gc_context, entry.0);
                 obj.define_value(
                     activation.context.gc_context,
                     name,

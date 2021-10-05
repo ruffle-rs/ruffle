@@ -225,7 +225,7 @@ pub fn mode<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_displacement_map_filter_object() {
         let mode: WStr<'_> = object.mode().into();
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, mode.into()).into());
+        return Ok(AvmString::new(activation.context.gc_context, mode).into());
     }
 
     Ok(Value::Undefined)

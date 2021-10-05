@@ -1220,7 +1220,7 @@ fn get_bounds<'gc>(
             let path = val.coerce_to_string(activation)?;
             activation.resolve_target_display_object(
                 movie_clip.into(),
-                AvmString::new(activation.context.gc_context, path.to_string()).into(),
+                AvmString::new_utf8(activation.context.gc_context, path.to_string()).into(),
                 false,
             )?
         }

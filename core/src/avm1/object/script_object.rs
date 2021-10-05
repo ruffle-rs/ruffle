@@ -511,12 +511,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.has_own_property(activation, index_str)
     }
 
     fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.get_data(index_str, activation)
     }
 
@@ -526,12 +526,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         index: i32,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.set_data(index_str, value, activation)
     }
 
     fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.delete(activation, index_str)
     }
 }

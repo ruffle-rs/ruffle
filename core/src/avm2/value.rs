@@ -495,7 +495,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => "false".into(),
             Value::Number(n) if n.is_nan() => "NaN".into(),
             Value::Number(n) if *n == 0.0 => "0".into(),
-            Value::Number(n) if *n < 0.0 => AvmString::new(
+            Value::Number(n) if *n < 0.0 => AvmString::new_utf8(
                 activation.context.gc_context,
                 format!("-{}", Value::Number(-n).coerce_to_string(activation)?),
             ),
@@ -509,7 +509,7 @@ impl<'gc> Value<'gc> {
                     / 10.0_f64.powf(Self::MAX_PRECISION - digits);
 
                 if digits < Self::MIN_DIGITS || digits >= Self::MAX_DIGITS {
-                    AvmString::new(
+                    AvmString::new_utf8(
                         activation.context.gc_context,
                         format!(
                             "{}e{}{}",
@@ -519,11 +519,11 @@ impl<'gc> Value<'gc> {
                         ),
                     )
                 } else {
-                    AvmString::new(activation.context.gc_context, format!("{}", n))
+                    AvmString::new_utf8(activation.context.gc_context, n.to_string())
                 }
             }
-            Value::Unsigned(u) => AvmString::new(activation.context.gc_context, format!("{}", u)),
-            Value::Integer(i) => AvmString::new(activation.context.gc_context, format!("{}", i)),
+            Value::Unsigned(u) => AvmString::new_utf8(activation.context.gc_context, u.to_string()),
+            Value::Integer(i) => AvmString::new_utf8(activation.context.gc_context, i.to_string()),
             Value::String(s) => *s,
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
@@ -542,7 +542,9 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error> {
         Ok(match self {
-            Value::String(s) => AvmString::new(activation.context.gc_context, format!("\"{}\"", s)),
+            Value::String(s) => {
+                AvmString::new_utf8(activation.context.gc_context, format!("\"{}\"", s))
+            }
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
                 .coerce_to_debug_string(activation)?,

@@ -205,7 +205,7 @@ pub fn exec<'gc>(
 
                     let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
                         None => Value::Undefined,
-                        Some(s) => AvmString::new_ucs2(activation.context.gc_context, s).into(),
+                        Some(s) => AvmString::new(activation.context.gc_context, s).into(),
                     }));
 
                     (storage, matched.start())

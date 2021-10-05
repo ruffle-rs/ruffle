@@ -109,7 +109,7 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
         let cancelable = read.event.is_cancelable();
         let phase = read.event.phase() as u32;
 
-        Ok(AvmString::new(
+        Ok(AvmString::new_utf8(
             mc,
             format!(
                 "[Event type=\"{}\" bubbles={} cancelable={} eventPhase={}]",

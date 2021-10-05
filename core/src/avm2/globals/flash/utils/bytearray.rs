@@ -26,7 +26,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Bool(b) => Value::Bool(*b),
         AmfValue::Integer(i) => Value::Integer(*i),
         AmfValue::Number(n) => Value::Number(*n),
-        AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
         AmfValue::ByteArray(bytes) => {
             let storage = ByteArrayStorage::from_vec(bytes.clone());
             let bytearray = ByteArrayObject::from_storage(activation, storage)?;
@@ -55,7 +55,7 @@ pub fn deserialize_value<'gc>(
                     array,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, element.name()),
+                        AvmString::new_utf8(activation.context.gc_context, element.name()),
                     )
                     .into(),
                     deserialize_value(activation, element.value())?,
@@ -72,7 +72,7 @@ pub fn deserialize_value<'gc>(
                     obj,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, property.name()),
+                        AvmString::new_utf8(activation.context.gc_context, property.name()),
                     )
                     .into(),
                     deserialize_value(activation, property.value())?,
@@ -281,7 +281,9 @@ pub fn read_utf<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(AvmString::new(activation.context.gc_context, bytearray.read_utf()?).into());
+            return Ok(
+                AvmString::new_utf8(activation.context.gc_context, bytearray.read_utf()?).into(),
+            );
         }
     }
 
@@ -295,7 +297,7 @@ pub fn to_string<'gc>(
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
             let (new_string, _, _) = UTF_8.decode(bytearray.bytes());
-            return Ok(AvmString::new(activation.context.gc_context, new_string).into());
+            return Ok(AvmString::new_utf8(activation.context.gc_context, new_string).into());
         }
     }
 
@@ -559,7 +561,7 @@ pub fn read_utf_bytes<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 String::from_utf8_lossy(bytearray.read_bytes(len as usize)?),
             )
@@ -734,7 +736,7 @@ pub fn read_multibyte<'gc>(
             let encoder =
                 Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
-            return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
+            return Ok(AvmString::new_utf8(activation.context.gc_context, decoded_str).into());
         }
     }
 

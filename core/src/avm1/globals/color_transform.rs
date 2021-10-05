@@ -228,7 +228,7 @@ fn to_string<'gc>(
             this.get("alphaOffset", activation)?.coerce_to_string(activation)?
     );
 
-    Ok(AvmString::new(activation.context.gc_context, formatted).into())
+    Ok(AvmString::new_utf8(activation.context.gc_context, formatted).into())
 }
 
 fn concat<'gc>(

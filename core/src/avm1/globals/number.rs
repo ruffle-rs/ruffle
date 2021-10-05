@@ -119,7 +119,7 @@ fn to_string<'gc>(
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(AvmString::new(
+        Ok(AvmString::new_utf8(
             activation.context.gc_context,
             Value::from(this).coerce_to_string(activation)?.to_string(),
         )
@@ -151,7 +151,7 @@ fn to_string<'gc>(
             i += 1;
         }
         let out: String = digits[..i].iter().rev().collect();
-        Ok(AvmString::new(activation.context.gc_context, out).into())
+        Ok(AvmString::new_utf8(activation.context.gc_context, out).into())
     } else {
         // NaN or large numbers.
         // Player version specific behavior:

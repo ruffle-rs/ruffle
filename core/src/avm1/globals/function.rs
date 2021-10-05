@@ -89,7 +89,7 @@ pub fn apply<'gc>(
         // TODO: why don't this use args_object.array_element?
         let next_arg = format!("{}", child_args.len());
         let next_arg = args.get(
-            AvmString::new(activation.context.gc_context, next_arg),
+            AvmString::new_utf8(activation.context.gc_context, next_arg),
             activation,
         )?;
 

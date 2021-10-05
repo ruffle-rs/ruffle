@@ -60,7 +60,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new_ucs2(activation.context.gc_context, font.clone()).into()
+        AvmString::new(activation.context.gc_context, font.clone()).into()
     })
 }
 
@@ -116,7 +116,7 @@ fn set_color<'gc>(
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new_ucs2(activation.context.gc_context, url.clone()).into()
+        AvmString::new(activation.context.gc_context, url.clone()).into()
     })
 }
 
@@ -134,7 +134,7 @@ fn set_url<'gc>(
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new_ucs2(activation.context.gc_context, target.clone()).into()
+        AvmString::new(activation.context.gc_context, target.clone()).into()
     })
 }
 

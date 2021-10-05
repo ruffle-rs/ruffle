@@ -298,10 +298,7 @@ pub fn as_set_prop_flags<'gc>(
                 for prop_name in props.split(b',') {
                     object.set_attributes(
                         activation.context.gc_context,
-                        Some(AvmString::new_ucs2(
-                            activation.context.gc_context,
-                            prop_name.into(),
-                        )),
+                        Some(AvmString::new(activation.context.gc_context, prop_name)),
                         set_attributes,
                         clear_attributes,
                     )

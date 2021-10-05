@@ -273,7 +273,7 @@ pub fn text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_ucs2(activation.context.gc_context, this.text()).into())
+    Ok(AvmString::new(activation.context.gc_context, this.text()).into())
 }
 
 pub fn set_text<'gc>(
@@ -339,7 +339,7 @@ pub fn html_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let html_text = this.html_text(&mut activation.context);
-    Ok(AvmString::new_ucs2(activation.context.gc_context, html_text).into())
+    Ok(AvmString::new(activation.context.gc_context, html_text).into())
 }
 
 pub fn set_html_text<'gc>(
@@ -500,7 +500,7 @@ fn variable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(variable) = this.variable() {
-        return Ok(AvmString::new(activation.context.gc_context, variable.to_string()).into());
+        return Ok(AvmString::new_utf8(activation.context.gc_context, variable.to_string()).into());
     }
 
     // Unset `variable` returns null, not undefined
@@ -574,7 +574,7 @@ pub fn get_type<'gc>(
         true => "input",
         false => "dynamic",
     };
-    Ok(AvmString::new(activation.context.gc_context, tf_type).into())
+    Ok(AvmString::new_utf8(activation.context.gc_context, tf_type).into())
 }
 
 pub fn set_type<'gc>(

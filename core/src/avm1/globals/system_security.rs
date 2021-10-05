@@ -64,7 +64,7 @@ fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.sandbox_type.to_string(),
     )

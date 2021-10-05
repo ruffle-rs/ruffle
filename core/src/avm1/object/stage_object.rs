@@ -782,7 +782,7 @@ fn set_rotation<'gc>(
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new_ucs2(activation.context.gc_context, this.slash_path()).into()
+    AvmString::new(activation.context.gc_context, this.slash_path()).into()
 }
 
 fn frames_loaded<'gc>(
@@ -817,7 +817,7 @@ fn drop_target<'gc>(
         .map_or_else(
             || "".into(),
             |drop_target| {
-                AvmString::new_ucs2(activation.context.gc_context, drop_target.slash_path()).into()
+                AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
             },
         )
 }
@@ -828,7 +828,7 @@ fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) 
         .and_then(|mov| mov.url().map(|url| url.to_string()))
         .map_or_else(
             || "".into(),
-            |s| AvmString::new(activation.context.gc_context, s).into(),
+            |s| AvmString::new_utf8(activation.context.gc_context, s).into(),
         )
 }
 

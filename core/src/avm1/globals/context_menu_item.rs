@@ -43,7 +43,7 @@ pub fn constructor<'gc>(
 
     this.set(
         "caption",
-        AvmString::new(activation.context.gc_context, caption).into(),
+        AvmString::new_utf8(activation.context.gc_context, caption).into(),
         activation,
     )?;
 
@@ -89,7 +89,7 @@ pub fn copy<'gc>(
     let copy = constructor.construct(
         activation,
         &[
-            AvmString::new(activation.context.gc_context, caption).into(),
+            AvmString::new_utf8(activation.context.gc_context, caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),

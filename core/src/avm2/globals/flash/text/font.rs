@@ -52,9 +52,11 @@ pub fn font_name<'gc>(
             .library_for_movie_mut(movie)
             .character_by_id(character_id)
         {
-            return Ok(
-                AvmString::new(activation.context.gc_context, font.descriptor().class()).into(),
-            );
+            return Ok(AvmString::new_utf8(
+                activation.context.gc_context,
+                font.descriptor().class(),
+            )
+            .into());
         }
     }
 

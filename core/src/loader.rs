@@ -646,8 +646,8 @@ impl<'gc> Loader<'gc> {
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
-                    let k = AvmString::new(activation.context.gc_context, k.into_owned());
-                    let v = AvmString::new(activation.context.gc_context, v.into_owned());
+                    let k = AvmString::new_utf8(activation.context.gc_context, k.into_owned());
+                    let v = AvmString::new_utf8(activation.context.gc_context, v.into_owned());
                     that.set(k, v.into(), &mut activation)?;
                 }
 
@@ -693,8 +693,10 @@ impl<'gc> Loader<'gc> {
                 match data {
                     Ok(data) => {
                         // Fire the onData method with the loaded string.
-                        let string_data =
-                            AvmString::new(activation.context.gc_context, UTF_8.decode(&data).0);
+                        let string_data = AvmString::new_utf8(
+                            activation.context.gc_context,
+                            UTF_8.decode(&data).0,
+                        );
                         let _ = that.call_method(
                             "onData".into(),
                             &[string_data.into()],
@@ -815,7 +817,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "onData".into(),
-                            &[AvmString::new(uc.gc_context, xmlstring).into()],
+                            &[AvmString::new_utf8(uc.gc_context, xmlstring).into()],
                         );
 
                         Ok(())

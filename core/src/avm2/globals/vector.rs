@@ -345,7 +345,7 @@ where
                 }
             }
 
-            return Ok(AvmString::new_ucs2(
+            return Ok(AvmString::new(
                 activation.context.gc_context,
                 crate::string::join(&accum, &string_separator),
             )

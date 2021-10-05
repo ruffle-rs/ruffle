@@ -786,7 +786,7 @@ pub fn to_string<'gc>(
             )?
             .coerce_to_string(activation)?;
 
-        return Ok(AvmString::new(
+        return Ok(AvmString::new_utf8(
             activation.context.gc_context,
             format!("(x={}, y={}, w={}, h={})", x, y, width, height),
         )

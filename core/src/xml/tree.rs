@@ -297,7 +297,7 @@ impl<'gc> XmlNode<'gc> {
         process_entity: bool,
     ) -> Result<Self, Error> {
         let tag_name = std::str::from_utf8(bs.name())?;
-        let tag_name = XmlName::from_str(AvmString::new(mc, tag_name));
+        let tag_name = XmlName::from_str(AvmString::new_utf8(mc, tag_name));
         let mut attributes = BTreeMap::new();
 
         for a in bs.attributes() {
@@ -309,11 +309,11 @@ impl<'gc> XmlNode<'gc> {
             };
 
             let value = match value_bytes {
-                Cow::Owned(v) => AvmString::new(mc, String::from_utf8(v)?),
-                Cow::Borrowed(v) => AvmString::new(mc, std::str::from_utf8(v)?),
+                Cow::Owned(v) => AvmString::new_utf8(mc, String::from_utf8(v)?),
+                Cow::Borrowed(v) => AvmString::new_utf8(mc, std::str::from_utf8(v)?),
             };
             let attr_key = std::str::from_utf8(attribute.key)?;
-            attributes.insert(XmlName::from_str(AvmString::new(mc, attr_key)), value);
+            attributes.insert(XmlName::from_str(AvmString::new_utf8(mc, attr_key)), value);
         }
 
         Ok(XmlNode(GcCell::allocate(
@@ -357,7 +357,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new(mc, contents),
+                contents: AvmString::new_utf8(mc, contents),
             },
         )))
     }
@@ -379,7 +379,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
+                contents: AvmString::new_utf8(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
             },
         )))
     }
@@ -401,7 +401,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
+                contents: AvmString::new_utf8(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
             },
         )))
     }

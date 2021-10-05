@@ -64,8 +64,8 @@ fn decode<'gc>(
     if let Some(data) = args.get(0) {
         let data = data.coerce_to_string(activation)?;
         for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
-            let k = AvmString::new(activation.context.gc_context, k.into_owned());
-            let v = AvmString::new(activation.context.gc_context, v.into_owned());
+            let k = AvmString::new_utf8(activation.context.gc_context, k.into_owned());
+            let v = AvmString::new_utf8(activation.context.gc_context, v.into_owned());
             this.set(k, v.into(), activation)?;
         }
     }
@@ -239,7 +239,7 @@ fn to_string<'gc>(
         .extend_pairs(form_values.iter())
         .finish();
 
-    Ok(crate::string::AvmString::new(activation.context.gc_context, query_string).into())
+    Ok(crate::string::AvmString::new_utf8(activation.context.gc_context, query_string).into())
 }
 
 fn spawn_load_var_fetch<'gc>(

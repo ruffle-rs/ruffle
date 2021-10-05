@@ -949,7 +949,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(AvmString::new(
+        Ok(AvmString::new_utf8(
             mc,
             format!("[class {}]", self.0.read().class.read().name().local_name()),
         )

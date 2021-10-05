@@ -16,7 +16,7 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub fn new<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+    pub fn new_utf8<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         let utf8 = string.into();
         let buf = WString::from_utf8(&utf8);
         Self {
@@ -24,9 +24,9 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn new_ucs2(gc_context: MutationContext<'gc, '_>, string: WString) -> Self {
+    pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, string)),
+            source: Source::Owned(Gc::allocate(gc_context, string.into())),
         }
     }
 
@@ -42,7 +42,7 @@ impl<'gc> AvmString<'gc> {
         } else {
             let mut out = WString::from(left.borrow());
             out.push_str(right.borrow());
-            Self::new_ucs2(gc_context, out)
+            Self::new(gc_context, out)
         }
     }
 

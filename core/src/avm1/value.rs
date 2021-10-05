@@ -417,7 +417,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
                 Cow::Borrowed(s) => s.into(),
-                Cow::Owned(s) => AvmString::new(activation.context.gc_context, s),
+                Cow::Owned(s) => AvmString::new_utf8(activation.context.gc_context, s),
             },
             Value::String(v) => v.to_owned(),
         })
@@ -617,11 +617,11 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(
+            let a = Value::String(AvmString::new_utf8(
                 activation.context.gc_context,
                 "a".to_owned(),
             ));
-            let b = Value::String(AvmString::new(
+            let b = Value::String(AvmString::new_utf8(
                 activation.context.gc_context,
                 "b".to_owned(),
             ));
@@ -635,11 +635,11 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(
+            let a = Value::String(AvmString::new_utf8(
                 activation.context.gc_context,
                 "a".to_owned(),
             ));
-            let b = Value::String(AvmString::new(
+            let b = Value::String(AvmString::new_utf8(
                 activation.context.gc_context,
                 "b".to_owned(),
             ));

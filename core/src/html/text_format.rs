@@ -1147,7 +1147,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("LEFTMARGIN"),
-                        AvmString::new(mc, span.left_margin.to_string()),
+                        AvmString::new_utf8(mc, span.left_margin.to_string()),
                     );
                 }
 
@@ -1155,7 +1155,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("RIGHTMARGIN"),
-                        AvmString::new(mc, span.right_margin.to_string()),
+                        AvmString::new_utf8(mc, span.right_margin.to_string()),
                     );
                 }
 
@@ -1163,7 +1163,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("INDENT"),
-                        AvmString::new(mc, span.indent.to_string()),
+                        AvmString::new_utf8(mc, span.indent.to_string()),
                     );
                 }
 
@@ -1171,7 +1171,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("BLOCKINDENT"),
-                        AvmString::new(mc, span.block_indent.to_string()),
+                        AvmString::new_utf8(mc, span.block_indent.to_string()),
                     );
                 }
 
@@ -1179,7 +1179,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("LEADING"),
-                        AvmString::new(mc, span.leading.to_string()),
+                        AvmString::new_utf8(mc, span.leading.to_string()),
                     );
                 }
 
@@ -1193,7 +1193,7 @@ impl FormatSpans {
                     new_tf.set_attribute_value(
                         mc,
                         XmlName::from_str("TABSTOPS"),
-                        AvmString::new(mc, tab_stops),
+                        AvmString::new_utf8(mc, tab_stops),
                     );
                 }
 
@@ -1267,7 +1267,7 @@ impl FormatSpans {
                         new_font.set_attribute_value(
                             mc,
                             XmlName::from_str("FACE"),
-                            AvmString::new_ucs2(mc, span.font.clone()),
+                            AvmString::new(mc, span.font.clone()),
                         );
                     }
 
@@ -1275,7 +1275,7 @@ impl FormatSpans {
                         new_font.set_attribute_value(
                             mc,
                             XmlName::from_str("SIZE"),
-                            AvmString::new(mc, span.size.to_string()),
+                            AvmString::new_utf8(mc, span.size.to_string()),
                         );
                     }
 
@@ -1287,7 +1287,7 @@ impl FormatSpans {
                         new_font.set_attribute_value(
                             mc,
                             XmlName::from_str("COLOR"),
-                            AvmString::new(mc, color),
+                            AvmString::new_utf8(mc, color),
                         );
                     }
 
@@ -1295,7 +1295,7 @@ impl FormatSpans {
                         new_font.set_attribute_value(
                             mc,
                             XmlName::from_str("LETTERSPACING"),
-                            AvmString::new(mc, span.letter_spacing.to_string()),
+                            AvmString::new_utf8(mc, span.letter_spacing.to_string()),
                         );
                     }
 
@@ -1328,14 +1328,14 @@ impl FormatSpans {
                     new_a.set_attribute_value(
                         mc,
                         XmlName::from_str("HREF"),
-                        AvmString::new_ucs2(mc, span.url.clone()),
+                        AvmString::new(mc, span.url.clone()),
                     );
 
                     if !span.target.is_empty() {
                         new_a.set_attribute_value(
                             mc,
                             XmlName::from_str("TARGET"),
-                            AvmString::new_ucs2(mc, span.target.clone()),
+                            AvmString::new(mc, span.target.clone()),
                         );
                     }
 
@@ -1418,7 +1418,7 @@ impl FormatSpans {
                 }
 
                 let span_text = if last_bullet.is_some() {
-                    XmlNode::new_text(mc, AvmString::new_ucs2(mc, line.into()), document)
+                    XmlNode::new_text(mc, AvmString::new(mc, line), document)
                 } else {
                     let line_start = line.offset_in(text).unwrap();
                     let line_with_newline = if line_start > 0 {
@@ -1428,11 +1428,7 @@ impl FormatSpans {
                         line
                     };
 
-                    XmlNode::new_text(
-                        mc,
-                        AvmString::new_ucs2(mc, line_with_newline.into()),
-                        document,
-                    )
+                    XmlNode::new_text(mc, AvmString::new(mc, line_with_newline), document)
                 };
 
                 last_u

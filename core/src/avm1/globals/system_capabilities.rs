@@ -103,7 +103,7 @@ pub fn get_player_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.player_type.to_string(),
     )
@@ -115,7 +115,7 @@ pub fn get_screen_color<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.screen_color.to_string(),
     )
@@ -127,7 +127,7 @@ pub fn get_language<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation
             .context
@@ -176,7 +176,7 @@ pub fn get_manufacturer<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation
             .context
@@ -192,7 +192,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.os.to_string(),
     )
@@ -204,7 +204,7 @@ pub fn get_version<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation
             .context
@@ -223,7 +223,7 @@ pub fn get_server_string<'gc>(
         .context
         .system
         .get_server_string(activation.context.avm1);
-    Ok(AvmString::new(activation.context.gc_context, server_string).into())
+    Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
@@ -231,7 +231,7 @@ pub fn get_cpu_architecture<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.cpu_architecture.to_string(),
     )
@@ -243,7 +243,7 @@ pub fn get_max_idc_level<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.system.idc_level.clone(),
     )

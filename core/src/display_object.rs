@@ -1193,7 +1193,10 @@ pub trait TDisplayObject<'gc>:
             if let Some(name) = &place_object.name {
                 let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
                 let name = name.to_str_lossy(encoding).to_owned();
-                self.set_name(context.gc_context, AvmString::new(context.gc_context, name));
+                self.set_name(
+                    context.gc_context,
+                    AvmString::new_utf8(context.gc_context, name),
+                );
             }
             if let Some(clip_depth) = place_object.clip_depth {
                 self.set_clip_depth(context.gc_context, clip_depth.into());
@@ -1430,7 +1433,10 @@ pub trait TDisplayObject<'gc>:
     fn set_default_instance_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.name().is_empty() {
             let name = format!("instance{}", *context.instance_counter);
-            self.set_name(context.gc_context, AvmString::new(context.gc_context, name));
+            self.set_name(
+                context.gc_context,
+                AvmString::new_utf8(context.gc_context, name),
+            );
             *context.instance_counter = context.instance_counter.wrapping_add(1);
         }
     }
@@ -1443,7 +1449,7 @@ pub trait TDisplayObject<'gc>:
         let vm_type = context.avm_type();
 
         if matches!(vm_type, AvmType::Avm2) {
-            let name = AvmString::new(context.gc_context, format!("root{}", self.depth() + 1));
+            let name = AvmString::new_utf8(context.gc_context, format!("root{}", self.depth() + 1));
             self.set_name(context.gc_context, name);
         } else if matches!(vm_type, AvmType::Avm1) {
             self.set_name(context.gc_context, Default::default());

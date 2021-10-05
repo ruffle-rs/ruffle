@@ -879,7 +879,7 @@ pub fn to_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %T GMT%z %-Y").to_string(),
             )
@@ -900,7 +900,7 @@ pub fn to_utc_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
         if let Some(date) = this.date_time() {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %T %-Y UTC").to_string(),
             )
@@ -924,7 +924,7 @@ pub fn to_locale_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %-Y %T %p").to_string(),
             )
@@ -948,7 +948,7 @@ pub fn to_time_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%T GMT%z").to_string(),
             )
@@ -972,7 +972,7 @@ pub fn to_locale_time_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%T %p").to_string(),
             )
@@ -996,7 +996,7 @@ pub fn to_date_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %-Y").to_string(),
             )
