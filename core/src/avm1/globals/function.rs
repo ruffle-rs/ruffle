@@ -1,7 +1,7 @@
 //! Function prototype
 
 use crate::avm1::error::Error;
-use crate::avm1::function::ExecutionReason;
+use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{activation::Activation, AvmString};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -55,7 +55,7 @@ pub fn call<'gc>(
 
     match func.as_executable() {
         Some(exec) => exec.exec(
-            "[Anonymous]",
+            ExecutionName::Static("[Anonymous]"),
             activation,
             this,
             1,
@@ -98,7 +98,7 @@ pub fn apply<'gc>(
 
     match func.as_executable() {
         Some(exec) => exec.exec(
-            "[Anonymous]",
+            ExecutionName::Static("[Anonymous]"),
             activation,
             this,
             1,

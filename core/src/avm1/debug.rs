@@ -54,27 +54,26 @@ impl<'a> VariableDumper<'a> {
         }
     }
 
-    pub fn print_string(&mut self, string: &str) {
+    pub fn print_string(&mut self, string: AvmString<'_>) {
         self.output.push('\"');
 
         for c in string.chars() {
-            if c == '"' {
-                self.output.push_str("\\\"");
-            } else if c == '\\' {
-                self.output.push_str("\\\\");
-            } else if c == '\n' {
-                self.output.push_str("\\n");
-            } else if c == '\r' {
-                self.output.push_str("\\r");
-            } else if c == '\t' {
-                self.output.push_str("\\t");
-            } else if c == '\u{0008}' {
-                self.output.push_str("\\b");
-            } else if c == '\u{000C}' {
-                self.output.push_str("\\f");
-            } else {
-                self.output.push(c);
-            }
+            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
+            let escape = match u8::try_from(c as u32) {
+                Ok(b'"') => "\\\"",
+                Ok(b'\\') => "\\\\",
+                Ok(b'\n') => "\\n",
+                Ok(b'\r') => "\\r",
+                Ok(b'\t') => "\\t",
+                Ok(0x08) => "\\b",
+                Ok(0x0C) => "\\f",
+                _ => {
+                    self.output.push(c);
+                    continue;
+                }
+            };
+
+            self.output.push_str(escape);
         }
 
         self.output.push('\"');
@@ -127,7 +126,7 @@ impl<'a> VariableDumper<'a> {
 
             for key in keys.into_iter() {
                 self.indent();
-                self.output.push_str(&key);
+                self.output.push_str(&key.to_utf8_lossy());
                 self.output.push_str(": ");
                 self.print_property(object, key, activation);
                 self.output.push('\n');
@@ -150,7 +149,7 @@ impl<'a> VariableDumper<'a> {
             Value::Bool(value) => self.output.push_str(&value.to_string()),
             Value::Number(value) => self.output.push_str(&value.to_string()),
             Value::String(value) => {
-                self.print_string(value);
+                self.print_string(*value);
             }
             Value::Object(object) => {
                 self.print_object(object, activation);

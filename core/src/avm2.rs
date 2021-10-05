@@ -197,7 +197,10 @@ impl<'gc> Avm2<'gc> {
         object: Object<'gc>,
         event_name: AvmString<'gc>,
     ) {
-        if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
+        if !BROADCAST_WHITELIST
+            .iter()
+            .any(|x| AvmString::from(*x) == event_name)
+        {
             return;
         }
 
@@ -225,7 +228,10 @@ impl<'gc> Avm2<'gc> {
         on_type: ClassObject<'gc>,
     ) -> Result<(), Error> {
         let event_name = event.event_type();
-        if !BROADCAST_WHITELIST.iter().any(|x| *x == event_name) {
+        if !BROADCAST_WHITELIST
+            .iter()
+            .any(|x| AvmString::from(*x) == event_name)
+        {
             return Ok(());
         }
 

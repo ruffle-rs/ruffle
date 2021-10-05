@@ -269,7 +269,7 @@ impl<'gc> Value<'gc> {
 
                 Ok(false)
             }
-            (Value::String(a), Value::String(b)) => Ok(**a == **b),
+            (Value::String(a), Value::String(b)) => Ok(*a == *b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
             (Value::Object(a), Value::Undefined | Value::Null) => Ok(Object::ptr_eq(

@@ -1290,9 +1290,9 @@ pub fn get_url<'gc>(
         } else {
             None
         };
+
         let method = match args.get(2) {
-            Some(Value::String(s)) if *s == "GET" => Some(NavigationMethod::Get),
-            Some(Value::String(s)) if *s == "POST" => Some(NavigationMethod::Post),
+            Some(Value::String(s)) => NavigationMethod::from_method_str(s.borrow()),
             _ => None,
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));

@@ -69,7 +69,7 @@ pub fn gradient_object_to_matrix<'gc>(
     if object
         .get("matrixType", activation)?
         .coerce_to_string(activation)?
-        == "box"
+        == b"box"
     {
         let width = object.get("w", activation)?.coerce_to_f64(activation)?;
         let height = object.get("h", activation)?.coerce_to_f64(activation)?;

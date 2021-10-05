@@ -361,7 +361,7 @@ impl<'gc> Avm1<'gc> {
                 .unwrap_or(false);
         drop(activation);
 
-        if broadcaster_name == "Mouse" {
+        if broadcaster_name == b"Mouse" {
             context.avm1.has_mouse_listener = has_listener;
         }
     }

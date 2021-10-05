@@ -9,7 +9,7 @@ use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::string::{AvmString, WString};
+use crate::string::{AvmString, BorrowWStr, WString};
 use gc_arena::{GcCell, MutationContext};
 use std::iter;
 
@@ -123,12 +123,12 @@ fn concat<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut ret = Value::from(this).coerce_to_string(activation)?.to_string();
+        let mut ret = WString::from(Value::from(this).coerce_to_string(activation)?.borrow());
         for arg in args {
             let s = arg.coerce_to_string(activation)?;
-            ret.push_str(&s)
+            ret.push_str(s.borrow())
         }
-        return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)

@@ -390,13 +390,19 @@ fn default_value_for_type<'gc>(type_name: &Multiname<'gc>) -> Value<'gc> {
     if type_name.is_any() {
         Value::Undefined
     } else if type_name.namespace_set().any(|ns| ns.is_public()) {
-        match type_name.local_name().unwrap_or_default().as_str() {
-            "Boolean" => false.into(),
-            "Number" => f64::NAN.into(),
-            "int" => 0.into(),
-            "String" => Value::Null,
-            "uint" => 0.into(),
-            _ => Value::Null, // Object type
+        let name = type_name.local_name().unwrap_or_default();
+        if name == b"Boolean" {
+            false.into()
+        } else if name == b"Number" {
+            f64::NAN.into()
+        } else if name == b"int" {
+            0.into()
+        } else if name == b"String" {
+            Value::Null
+        } else if name == b"uint" {
+            0.into()
+        } else {
+            Value::Null // Object type
         }
     } else {
         // Object type

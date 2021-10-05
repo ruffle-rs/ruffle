@@ -2855,11 +2855,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
-        if name == "this" {
+        if name == b"this" {
             return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
         }
 
-        if name == "arguments" && self.arguments.is_some() {
+        if name == b"arguments" && self.arguments.is_some() {
             return Ok(CallableValue::UnCallable(Value::Object(
                 self.arguments.unwrap(),
             )));
@@ -2872,11 +2872,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
-        if name == "this" {
+        if name == b"this" {
             return true;
         }
 
-        if name == "arguments" && self.arguments.is_some() {
+        if name == b"arguments" && self.arguments.is_some() {
             return true;
         }
 
