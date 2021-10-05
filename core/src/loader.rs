@@ -646,8 +646,8 @@ impl<'gc> Loader<'gc> {
                 );
 
                 for (k, v) in form_urlencoded::parse(&data) {
-                    let k = AvmString::new_utf8(activation.context.gc_context, k.into_owned());
-                    let v = AvmString::new_utf8(activation.context.gc_context, v.into_owned());
+                    let k = AvmString::new_utf8(activation.context.gc_context, k);
+                    let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
                 }
 

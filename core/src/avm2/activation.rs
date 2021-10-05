@@ -2652,10 +2652,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Value::String(_) => "string",
         };
 
-        self.context.avm2.push(Value::String(AvmString::new_utf8(
-            self.context.gc_context,
-            type_name,
-        )));
+        self.context.avm2.push(Value::String(type_name.into()));
 
         Ok(FrameControl::Continue)
     }

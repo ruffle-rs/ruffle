@@ -134,7 +134,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
                     } else {
                         obj.define_value(
                             activation.context.gc_context,
-                            AvmString::new_utf8(activation.context.gc_context, entry.name.clone()),
+                            AvmString::new_utf8(activation.context.gc_context, &entry.name),
                             value,
                             Attribute::empty(),
                         );
@@ -154,7 +154,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
             );
             for entry in elements {
                 let value = deserialize_value(activation, entry.value());
-                let name = AvmString::new_utf8(activation.context.gc_context, entry.name.clone());
+                let name = AvmString::new_utf8(activation.context.gc_context, &entry.name);
                 obj.define_value(
                     activation.context.gc_context,
                     name,
@@ -206,7 +206,7 @@ fn deserialize_lso<'gc>(
     for child in &lso.body {
         obj.define_value(
             activation.context.gc_context,
-            AvmString::new_utf8(activation.context.gc_context, child.name.clone()),
+            AvmString::new_utf8(activation.context.gc_context, &child.name),
             deserialize_value(activation, child.value()),
             Attribute::empty(),
         );

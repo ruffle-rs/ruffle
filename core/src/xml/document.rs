@@ -26,13 +26,13 @@ pub struct XmlDocumentData<'gc> {
     has_xmldecl: bool,
 
     /// The XML version string, if set.
-    version: String, // TODO(moulins)?
+    version: String,
 
     /// The XML document encoding, if set.
-    encoding: Option<String>, // TODO(moulins)?
+    encoding: Option<String>,
 
     /// The XML standalone flag, if set.
-    standalone: Option<String>, // TODO(moulins)?
+    standalone: Option<String>,
 
     /// The XML doctype, if set.
     doctype: Option<XmlNode<'gc>>,

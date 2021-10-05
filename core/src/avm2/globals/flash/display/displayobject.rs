@@ -8,7 +8,6 @@ use crate::avm2::object::{stage_allocator, LoaderInfoObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
-use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
@@ -348,14 +347,12 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(
-            AvmString::new_utf8(activation.context.gc_context, dobj.name().to_string()).into(),
-        );
+        return Ok(dobj.name().into());
     }
 
     Ok(Value::Undefined)

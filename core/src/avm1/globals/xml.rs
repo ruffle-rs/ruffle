@@ -288,23 +288,19 @@ pub fn xmlnode_local_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| {
-            AvmString::new_utf8(activation.context.gc_context, n.local_name().to_string()).into()
-        })
+        .map(|n| AvmString::new(activation.context.gc_context, n.local_name()).into())
         .unwrap_or_else(|| Value::Null))
 }
 
 pub fn xmlnode_node_name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| {
-            AvmString::new_utf8(activation.context.gc_context, n.node_name().to_string()).into()
-        })
+        .map(|n| Value::from(n.node_name()))
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -767,11 +763,7 @@ pub fn xml_on_data<'gc>(
         this.call_method("onLoad".into(), &[false.into()], activation)?;
     } else {
         let src = src.coerce_to_string(activation)?;
-        this.call_method(
-            "parseXML".into(),
-            &[AvmString::new_utf8(activation.context.gc_context, src.to_string()).into()],
-            activation,
-        )?;
+        this.call_method("parseXML".into(), &[src.into()], activation)?;
 
         this.set("loaded", true.into(), activation)?;
 

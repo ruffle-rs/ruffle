@@ -15,7 +15,7 @@ use crate::display_object::{
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::BorrowWStr;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use swf::{
@@ -1218,11 +1218,7 @@ fn get_bounds<'gc>(
         Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
         Some(val) => {
             let path = val.coerce_to_string(activation)?;
-            activation.resolve_target_display_object(
-                movie_clip.into(),
-                AvmString::new_utf8(activation.context.gc_context, path.to_string()).into(),
-                false,
-            )?
+            activation.resolve_target_display_object(movie_clip.into(), path.into(), false)?
         }
         None => Some(movie_clip.into()),
     };

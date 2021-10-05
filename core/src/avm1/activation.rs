@@ -880,7 +880,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool
                 .iter()
                 .map(|s| {
-                    AvmString::new_utf8(self.context.gc_context, s.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, s.to_str_lossy(self.encoding()))
                         .into()
                 })
                 .collect(),
@@ -1799,7 +1799,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => (*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new_utf8(self.context.gc_context, v.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, v.to_str_lossy(self.encoding()))
                         .into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
@@ -2203,9 +2203,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_to_string(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let string = val.coerce_to_string(self)?;
-        self.context
-            .avm1
-            .push(AvmString::new_utf8(self.context.gc_context, string.to_string()).into());
+        self.context.avm1.push(string.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2224,9 +2222,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let type_of = self.context.avm1.pop().type_of();
-        self.context
-            .avm1
-            .push(AvmString::new_utf8(self.context.gc_context, type_of.to_string()).into());
+        self.context.avm1.push(AvmString::from(type_of).into());
         Ok(FrameControl::Continue)
     }
 

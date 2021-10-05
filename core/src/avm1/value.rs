@@ -617,14 +617,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new_utf8(
-                activation.context.gc_context,
-                "a".to_owned(),
-            ));
-            let b = Value::String(AvmString::new_utf8(
-                activation.context.gc_context,
-                "b".to_owned(),
-            ));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
             assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
 
@@ -635,14 +629,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new_utf8(
-                activation.context.gc_context,
-                "a".to_owned(),
-            ));
-            let b = Value::String(AvmString::new_utf8(
-                activation.context.gc_context,
-                "b".to_owned(),
-            ));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
             assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
 

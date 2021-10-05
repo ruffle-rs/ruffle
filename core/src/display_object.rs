@@ -1192,7 +1192,7 @@ pub trait TDisplayObject<'gc>:
             }
             if let Some(name) = &place_object.name {
                 let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
-                let name = name.to_str_lossy(encoding).to_owned();
+                let name = name.to_str_lossy(encoding);
                 self.set_name(
                     context.gc_context,
                     AvmString::new_utf8(context.gc_context, name),

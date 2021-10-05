@@ -1,4 +1,5 @@
 use gc_arena::{Collect, Gc, MutationContext};
+use std::borrow::Cow;
 
 use super::{BorrowWStr, WStr, WString};
 
@@ -16,12 +17,28 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
-    pub fn new_utf8<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
-        let utf8 = string.into();
-        let buf = WString::from_utf8(&utf8);
+    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
+        gc_context: MutationContext<'gc, '_>,
+        string: S,
+    ) -> Self {
+        let buf = match string.into() {
+            Cow::Owned(utf8) => WString::from_utf8_owned(utf8),
+            Cow::Borrowed(utf8) => WString::from_utf8(utf8),
+        };
         Self {
             source: Source::Owned(Gc::allocate(gc_context, buf)),
         }
+    }
+
+    pub fn new_utf8_bytes<'b, B: Into<Cow<'b, [u8]>>>(
+        gc_context: MutationContext<'gc, '_>,
+        bytes: B,
+    ) -> Result<Self, std::str::Utf8Error> {
+        let utf8 = match bytes.into() {
+            Cow::Owned(b) => Cow::Owned(String::from_utf8(b).map_err(|e| e.utf8_error())?),
+            Cow::Borrowed(b) => Cow::Borrowed(std::str::from_utf8(b)?),
+        };
+        Ok(Self::new_utf8(gc_context, utf8))
     }
 
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {

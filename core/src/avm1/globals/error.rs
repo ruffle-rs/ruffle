@@ -4,7 +4,6 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -43,9 +42,5 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let message = this.get("message", activation)?;
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        message.coerce_to_string(activation)?.to_string(),
-    )
-    .into())
+    Ok(message.coerce_to_string(activation)?.into())
 }

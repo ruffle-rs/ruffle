@@ -247,7 +247,7 @@ pub fn url<'gc>(
                     return Err("Error: The stage's loader info does not have a URL".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let url = root.url().unwrap_or("").to_string();
+                    let url = root.url().unwrap_or("");
                     return Ok(AvmString::new_utf8(activation.context.gc_context, url).into());
                 }
             }
@@ -345,11 +345,7 @@ pub fn loader_url<'gc>(
                     return Err("Error: The stage's loader info does not have a loader URL".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let loader_url = root
-                        .loader_url()
-                        .or_else(|| root.url())
-                        .unwrap_or("")
-                        .to_string();
+                    let loader_url = root.loader_url().or_else(|| root.url()).unwrap_or("");
                     return Ok(
                         AvmString::new_utf8(activation.context.gc_context, loader_url).into(),
                     );
