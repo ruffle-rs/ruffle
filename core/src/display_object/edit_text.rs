@@ -1154,7 +1154,8 @@ impl<'gc> EditText<'gc> {
                                 AvmString::new_ucs2(activation.context.gc_context, property.into());
                             let _ = object.set(
                                 property,
-                                AvmString::new_ucs2(activation.context.gc_context, html_text).into(),
+                                AvmString::new_ucs2(activation.context.gc_context, html_text)
+                                    .into(),
                                 activation,
                             );
                         },

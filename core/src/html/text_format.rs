@@ -580,7 +580,10 @@ impl FormatSpans {
             Units::Bytes(units) => (Cow::Borrowed(units), true),
             // TODO: In principle, we should be able to encode (and later decode)
             // the utf16 units in the [u8] array without discarding losing surrogates.
-            Units::Wide(_) => (Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()), true),
+            Units::Wide(_) => (
+                Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
+                true,
+            ),
         };
 
         let decode_to_wstr = |raw: Cow<'_, [u8]>| -> WString {
@@ -636,7 +639,7 @@ impl FormatSpans {
                                     format.align = Some(swf::TextAlign::Right)
                                 }
                             }
-                        },
+                        }
                         b"a" => {
                             if let Some(href) = attribute(b"href") {
                                 format.url = Some(href);
@@ -657,15 +660,15 @@ impl FormatSpans {
 
                             if let Some(color) = attribute(b"color") {
                                 if color.starts_with(b'#') {
-                                    let rval = color.try_slice(1..3).and_then(|v| {
-                                        u8::from_wstr_radix(v, 16).ok()
-                                    });
-                                    let gval = color.try_slice(3..5).and_then(|v| {
-                                        u8::from_wstr_radix(v, 16).ok()
-                                    });
-                                    let bval = color.try_slice(5..7).and_then(|v| {
-                                        u8::from_wstr_radix(v, 16).ok()
-                                    });
+                                    let rval = color
+                                        .try_slice(1..3)
+                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
+                                    let gval = color
+                                        .try_slice(3..5)
+                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
+                                    let bval = color
+                                        .try_slice(5..7)
+                                        .and_then(|v| u8::from_wstr_radix(v, 16).ok());
 
                                     if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
                                         format.color = Some(swf::Color { r, g, b, a: 0 });
@@ -722,7 +725,7 @@ impl FormatSpans {
 
                             if let Some(tab_stops) = attribute(b"tabstops") {
                                 format.tab_stops = Some(
-                                        tab_stops
+                                    tab_stops
                                         .split(b',')
                                         .filter_map(|v| v.trim().parse().ok())
                                         .collect(),

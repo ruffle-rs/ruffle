@@ -6,7 +6,7 @@ use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Va
 use crate::avm_warn;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::BorrowWStr;
+use crate::string::{BorrowWStr, WStr};
 use gc_arena::MutationContext;
 
 macro_rules! getter {
@@ -227,16 +227,24 @@ fn set_align<'gc>(
     text_format: &mut TextFormat,
     value: &Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    text_format.align = match value {
-        Value::Undefined | Value::Null => None,
-        value => match value.coerce_to_string(activation)?.to_lowercase().as_str() {
-            "left" => Some(swf::TextAlign::Left),
-            "center" => Some(swf::TextAlign::Center),
-            "right" => Some(swf::TextAlign::Right),
-            "justify" => Some(swf::TextAlign::Justify),
-            _ => return Ok(()),
-        },
+    if matches!(value, Value::Undefined | Value::Null) {
+        text_format.align = None;
+        return Ok(());
+    }
+
+    let value = value.coerce_to_string(activation)?;
+    let align = if value.eq_ignore_case(WStr::from_units(b"left")) {
+        swf::TextAlign::Left
+    } else if value.eq_ignore_case(WStr::from_units(b"center")) {
+        swf::TextAlign::Center
+    } else if value.eq_ignore_case(WStr::from_units(b"right")) {
+        swf::TextAlign::Right
+    } else if value.eq_ignore_case(WStr::from_units(b"justify")) {
+        swf::TextAlign::Justify
+    } else {
+        return Ok(());
     };
+    text_format.align = Some(align);
     Ok(())
 }
 

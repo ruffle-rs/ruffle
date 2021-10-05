@@ -7,7 +7,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::StageDisplayState;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -138,12 +138,12 @@ fn set_display_state<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
 
-    if display_state.to_lowercase() == "fullscreen" {
+    if display_state.eq_ignore_case(WStr::from_units(b"fullscreen")) {
         activation
             .context
             .stage
             .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
-    } else if display_state.to_lowercase() == "normal" {
+    } else if display_state.eq_ignore_case(WStr::from_units(b"normal")) {
         activation
             .context
             .stage

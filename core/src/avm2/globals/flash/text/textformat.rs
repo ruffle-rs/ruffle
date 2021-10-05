@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::{AvmString, BorrowWStr, WStr};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
@@ -151,18 +151,27 @@ fn set_align<'gc>(
     text_format: &mut TextFormat,
     value: &Value<'gc>,
 ) -> Result<(), Error> {
-    text_format.align = match value {
-        Value::Undefined | Value::Null => None,
-        value => match value.coerce_to_string(activation)?.as_str() {
-            "left" => Some(swf::TextAlign::Left),
-            "center" => Some(swf::TextAlign::Center),
-            "right" => Some(swf::TextAlign::Right),
-            "justify" => Some(swf::TextAlign::Justify),
-            _ => return Err(
-                "ArgumentError: Error #2008: Parameter align must be one of the accepted values."
-                    .into(),
-            ),
-        },
+    let value = match value {
+        Value::Undefined | Value::Null => {
+            text_format.align = None;
+            return Ok(());
+        }
+        value => value.coerce_to_string(activation)?,
+    };
+
+    text_format.align = if value == WStr::from_units(b"left") {
+        Some(swf::TextAlign::Left)
+    } else if value == WStr::from_units(b"center") {
+        Some(swf::TextAlign::Center)
+    } else if value == WStr::from_units(b"right") {
+        Some(swf::TextAlign::Right)
+    } else if value == WStr::from_units(b"justify") {
+        Some(swf::TextAlign::Justify)
+    } else {
+        return Err(
+            "ArgumentError: Error #2008: Parameter align must be one of the accepted values."
+                .into(),
+        );
     };
     Ok(())
 }

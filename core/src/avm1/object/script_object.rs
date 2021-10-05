@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::ExecutionReason;
+use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
@@ -33,18 +33,10 @@ impl<'gc> Watcher<'gc> {
         new_value: Value<'gc>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let args = [
-            Value::String(AvmString::new(
-                activation.context.gc_context,
-                name.to_string(),
-            )),
-            old_value,
-            new_value,
-            self.user_data,
-        ];
+        let args = [Value::String(name), old_value, new_value, self.user_data];
         let exec = self.callback.as_executable().unwrap();
         exec.exec(
-            &name,
+            ExecutionName::Dynamic(name),
             activation,
             this,
             0,
@@ -202,7 +194,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         if let Some(setter) = setter {
             if let Some(exec) = setter.as_executable() {
                 if let Err(Error::ThrownValue(e)) = exec.exec(
-                    "[Setter]",
+                    ExecutionName::Static("[Setter]"),
                     activation,
                     this,
                     1,

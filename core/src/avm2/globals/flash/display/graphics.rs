@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::shape_utils::DrawCommand;
+use crate::string::{BorrowWStr, WStr};
 use gc_arena::{GcCell, MutationContext};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
@@ -151,15 +152,17 @@ fn caps_to_cap_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     caps: Value<'gc>,
 ) -> Result<LineCapStyle, Error> {
-    let caps_string = caps.coerce_to_string(activation);
-    let caps_str = caps_string.as_deref();
+    if let Value::Null = caps {
+        return Ok(LineCapStyle::None);
+    }
 
-    match (caps, caps_str) {
-        (Value::Null, _) | (_, Ok("none")) => Ok(LineCapStyle::None),
-        (_, Ok("round")) => Ok(LineCapStyle::Round),
-        (_, Ok("square")) => Ok(LineCapStyle::Square),
-        (_, Ok(_)) => Err("ArgumentError: caps is invalid".into()),
-        (_, Err(_)) => Err(caps_string.unwrap_err()),
+    let caps = caps.coerce_to_string(activation)?;
+    if caps == b"none" {
+        Ok(LineCapStyle::None)
+    } else if caps == b"square" {
+        Ok(LineCapStyle::Square)
+    } else {
+        Ok(LineCapStyle::Round)
     }
 }
 
@@ -168,25 +171,29 @@ fn joints_to_join_style<'gc>(
     joints: Value<'gc>,
     miter_limit: f64,
 ) -> Result<LineJoinStyle, Error> {
-    let joints_string = joints.coerce_to_string(activation);
-    let joints_str = joints_string.as_deref();
+    if let Value::Null = joints {
+        return Ok(LineJoinStyle::Round);
+    }
 
-    match (joints, joints_str) {
-        (Value::Null, _) | (_, Ok("round")) => Ok(LineJoinStyle::Round),
-        (_, Ok("miter")) => Ok(LineJoinStyle::Miter(Fixed8::from_f64(miter_limit))),
-        (_, Ok("bevel")) => Ok(LineJoinStyle::Bevel),
-        (_, Ok(_)) => Err("ArgumentError: joints is invalid".into()),
-        (_, Err(_)) => Err(joints_string.unwrap_err()),
+    let joints = joints.coerce_to_string(activation)?;
+    if joints == b"miter" {
+        Ok(LineJoinStyle::Miter(Fixed8::from_f64(miter_limit)))
+    } else if joints == b"bevel" {
+        Ok(LineJoinStyle::Bevel)
+    } else {
+        Ok(LineJoinStyle::Round)
     }
 }
 
-fn scale_mode_to_allow_scale_bits(scale_mode: &str) -> Result<(bool, bool), Error> {
-    match scale_mode {
-        "normal" => Ok((true, true)),
-        "none" => Ok((false, false)),
-        "horizontal" => Ok((true, false)),
-        "vertical" => Ok((false, true)),
-        _ => Err("ArgumentError: scaleMode parameter is invalid".into()),
+fn scale_mode_to_allow_scale_bits(scale_mode: WStr<'_>) -> Result<(bool, bool), Error> {
+    if scale_mode == b"none" {
+        Ok((false, false))
+    } else if scale_mode == b"horizontal" {
+        Ok((true, false))
+    } else if scale_mode == b"vertical" {
+        Ok((false, true))
+    } else {
+        Ok((true, true))
     }
 }
 
@@ -239,7 +246,8 @@ fn line_style<'gc>(
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let color = color_from_args(color, alpha);
             let join_style = joints_to_join_style(activation, joints, miter_limit)?;
-            let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
+            let (allow_scale_x, allow_scale_y) =
+                scale_mode_to_allow_scale_bits(scale_mode.borrow())?;
 
             let line_style = LineStyle {
                 width,

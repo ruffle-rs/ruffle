@@ -1,7 +1,7 @@
 //! Object trait to expose objects to AVM
 
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
+use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
 use crate::avm1::object::shared_object::SharedObject;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::value_object::ValueObject;
@@ -185,7 +185,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     if let Some(setter) = this_proto.setter(name, activation) {
                         if let Some(exec) = setter.as_executable() {
                             let _ = exec.exec(
-                                "[Setter]",
+                                ExecutionName::Static("[Setter]"),
                                 activation,
                                 this,
                                 1,
@@ -264,7 +264,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         match method.as_executable() {
             Some(exec) => exec.exec(
-                &name,
+                ExecutionName::Dynamic(name),
                 activation,
                 this,
                 depth,
@@ -697,7 +697,7 @@ pub fn search_prototype<'gc>(
         if let Some(getter) = p.getter(name, activation) {
             if let Some(exec) = getter.as_executable() {
                 let result = exec.exec(
-                    "[Getter]",
+                    ExecutionName::Static("[Getter]"),
                     activation,
                     this,
                     1,
