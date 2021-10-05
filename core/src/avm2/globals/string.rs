@@ -172,7 +172,7 @@ fn index_of<'gc>(
 
         return this
             .try_slice(start_index..)
-            .and_then(|s| s.find(pattern.as_ucs2()))
+            .and_then(|s| s.find(pattern.borrow()))
             .map(|i| Ok((i + start_index).into()))
             .unwrap_or_else(|| Ok((-1).into())); // Out of range or not found
     }
@@ -203,8 +203,8 @@ fn last_index_of<'gc>(
 
         return this
             .try_slice(..start_index)
-            .unwrap_or_else(|| this.as_ucs2())
-            .rfind(pattern.as_ucs2())
+            .unwrap_or_else(|| this.borrow())
+            .rfind(pattern.borrow())
             .map(|i| Ok(i.into()))
             .unwrap_or_else(|| Ok((-1).into())); // Not found
     }
@@ -363,7 +363,7 @@ fn split<'gc>(
                 })
                 .collect()
         } else {
-            this.split(delimiter.as_ucs2())
+            this.split(delimiter.borrow())
                 .take(limit)
                 .map(|c| Value::from(AvmString::new_ucs2(activation.context.gc_context, c.into())))
                 .collect()

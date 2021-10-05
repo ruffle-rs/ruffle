@@ -6,7 +6,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::string::{utils as string_utils, AvmString, WString};
+use crate::string::{utils as string_utils, AvmString, BorrowWStr, WString};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -147,11 +147,11 @@ fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut ret: WString = Value::from(this)
         .coerce_to_string(activation)?
-        .as_ucs2()
+        .borrow()
         .into();
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret.push_str(s.as_ucs2())
+        ret.push_str(s.borrow())
     }
     Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
 }
@@ -190,7 +190,7 @@ fn index_of<'gc>(
     };
 
     this.try_slice(start_index..)
-        .and_then(|s| s.find(pattern.as_ucs2()))
+        .and_then(|s| s.find(pattern.borrow()))
         .map(|i| Ok((i + start_index).into()))
         .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
@@ -215,8 +215,8 @@ fn last_index_of<'gc>(
     };
 
     this.try_slice(..start_index)
-        .unwrap_or_else(|| this.as_ucs2())
-        .rfind(pattern.as_ucs2())
+        .unwrap_or_else(|| this.borrow())
+        .rfind(pattern.borrow())
         .map(|i| Ok(i.into()))
         .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
@@ -281,7 +281,7 @@ fn split<'gc>(
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            this.split(delimiter.as_ucs2())
+            this.split(delimiter.borrow())
                 .take(limit)
                 .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
         )

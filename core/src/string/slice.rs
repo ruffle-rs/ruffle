@@ -27,6 +27,11 @@ impl<'a> WStr<'a> {
         }
     }
 
+    #[inline]
+    pub(super) fn to_ptr(self) -> WStrPtr {
+        self.ptr
+    }
+
     /// Creates a `WStr<'a>` from a buffer containing 1 or 2-bytes code units.
     pub fn from_units(units: impl Into<Units<&'a [u8], &'a [u16]>>) -> Self {
         let (data, len) = match units.into() {

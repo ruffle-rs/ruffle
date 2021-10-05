@@ -178,7 +178,7 @@ impl<'gc> Value<'gc> {
         // (as of nightly 4/13, Rust also accepts "infinity")
         // Check if the string starts with 'i' (ignoring any leading +/-).
         if v.strip_prefix(&b"+-"[..])
-            .unwrap_or_else(|| v.as_ucs2())
+            .unwrap_or_else(|| v.borrow())
             .starts_with(&b"iI"[..])
         {
             f64::NAN

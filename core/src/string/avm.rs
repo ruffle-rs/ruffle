@@ -1,17 +1,12 @@
 use gc_arena::{Collect, Gc, MutationContext};
-use std::ops::Deref;
 
 use super::{BorrowWStr, WStr, WString};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    // Store the string both in UTF8 and UCS2, to be able to have
-    // both `impl Deref<&str>` and O(1) UCS2 char access.
-    // TODO(moulins): remove the extra `String`
-    Owned(Gc<'gc, (String, WString)>),
-    // Should be an ASCII string, for zero-copy conversion into `WStr<'_>`.
-    Static(&'static str),
+    Owned(Gc<'gc, WString>),
+    Static(WStr<'static>),
 }
 
 #[derive(Clone, Copy, Collect)]
@@ -25,15 +20,13 @@ impl<'gc> AvmString<'gc> {
         let utf8 = string.into();
         let buf = WString::from_utf8(&utf8);
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, (utf8, buf))),
+            source: Source::Owned(Gc::allocate(gc_context, buf)),
         }
     }
 
     pub fn new_ucs2(gc_context: MutationContext<'gc, '_>, string: WString) -> Self {
-        // TODO(moulins): this loose unpaired surrogates
-        let utf8 = string.to_string();
         Self {
-            source: Source::Owned(Gc::allocate(gc_context, (utf8, string))),
+            source: Source::Owned(Gc::allocate(gc_context, string)),
         }
     }
 
@@ -57,28 +50,15 @@ impl<'gc> AvmString<'gc> {
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
         match (this.source, other.source) {
             (Source::Owned(this), Source::Owned(other)) => Gc::ptr_eq(this, other),
-            (Source::Static(this), Source::Static(other)) => std::ptr::eq(this, other),
+            (Source::Static(this), Source::Static(other)) => this.to_ptr() == other.to_ptr(),
             _ => false,
-        }
-    }
-
-    #[inline]
-    pub fn as_str(&self) -> &str {
-        self
-    }
-
-    pub fn as_ucs2(&self) -> WStr<'_> {
-        match &self.source {
-            Source::Owned(str) => str.1.borrow(),
-            // `str` is valid ASCII, per invariant.
-            Source::Static(str) => WStr::from_units(str.as_bytes()),
         }
     }
 
     impl_str_methods! {
         lifetime: '_;
         self: &Self;
-        deref: self.as_ucs2();
+        deref: self.borrow();
         pattern['a,]: 'a, &'a Self;
     }
 }
@@ -86,38 +66,26 @@ impl<'gc> AvmString<'gc> {
 impl Default for AvmString<'_> {
     fn default() -> Self {
         Self {
-            source: Source::Static(""),
+            source: Source::Static(WStr::empty()),
         }
     }
 }
 
 impl<'gc> From<&'static str> for AvmString<'gc> {
+    #[inline]
     fn from(str: &'static str) -> Self {
         // TODO(moulins): actually check that `str` is valid ASCII.
         Self {
+            source: Source::Static(WStr::from_units(str.as_bytes())),
+        }
+    }
+}
+
+impl<'gc> From<WStr<'static>> for AvmString<'gc> {
+    #[inline]
+    fn from(str: WStr<'static>) -> Self {
+        Self {
             source: Source::Static(str),
-        }
-    }
-}
-
-impl Deref for AvmString<'_> {
-    type Target = str;
-
-    #[inline]
-    fn deref(&self) -> &str {
-        match &self.source {
-            Source::Owned(str) => str.0.deref(),
-            Source::Static(str) => str,
-        }
-    }
-}
-
-impl AsRef<str> for AvmString<'_> {
-    #[inline]
-    fn as_ref(&self) -> &str {
-        match &self.source {
-            Source::Owned(str) => &str.0,
-            Source::Static(str) => str,
         }
     }
 }
@@ -125,30 +93,9 @@ impl AsRef<str> for AvmString<'_> {
 impl<'gc> BorrowWStr for AvmString<'gc> {
     #[inline]
     fn borrow(&self) -> WStr<'_> {
-        self.as_ucs2()
+        match &self.source {
+            Source::Owned(s) => s.borrow(),
+            Source::Static(s) => *s,
+        }
     }
 }
-
-macro_rules! impl_eq {
-    ($lhs:ty, $rhs: ty) => {
-        #[allow(unused_lifetimes, clippy::redundant_slicing)]
-        impl<'a, 'b> PartialEq<$rhs> for $lhs {
-            #[inline]
-            fn eq(&self, other: &$rhs) -> bool {
-                PartialEq::eq(&self[..], &other[..])
-            }
-        }
-
-        #[allow(unused_lifetimes, clippy::redundant_slicing)]
-        impl<'a, 'b> PartialEq<$lhs> for $rhs {
-            #[inline]
-            fn eq(&self, other: &$lhs) -> bool {
-                PartialEq::eq(&self[..], &other[..])
-            }
-        }
-    };
-}
-
-impl_eq! { AvmString<'_>, str }
-impl_eq! { AvmString<'_>, &'a str }
-impl_eq! { AvmString<'_>, String }
