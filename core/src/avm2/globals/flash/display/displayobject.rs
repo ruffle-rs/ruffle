@@ -353,7 +353,9 @@ pub fn name<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(AvmString::new(activation.context.gc_context, dobj.name().to_string()).into());
+        return Ok(
+            AvmString::new_utf8(activation.context.gc_context, dobj.name().to_string()).into(),
+        );
     }
 
     Ok(Value::Undefined)

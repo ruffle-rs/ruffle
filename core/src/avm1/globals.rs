@@ -442,7 +442,7 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new_ucs2(activation.context.gc_context, WString::from_buf(buffer)).into())
+    Ok(AvmString::new(activation.context.gc_context, WString::from_buf(buffer)).into())
 }
 
 pub fn unescape<'gc>(
@@ -493,7 +493,7 @@ pub fn unescape<'gc>(
             }
         }
     }
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         String::from_utf8_lossy(&out_bytes),
     )

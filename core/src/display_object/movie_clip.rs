@@ -586,7 +586,7 @@ impl<'gc> MovieClip<'gc> {
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
             let class_name = reader.read_str()?.to_string_lossy(reader.encoding());
-            let class_name = AvmString::new(activation.context.gc_context, class_name);
+            let class_name = AvmString::new_utf8(activation.context.gc_context, class_name);
 
             let name = Avm2QName::from_qualified_name(class_name, activation.context.gc_context);
             let library = activation
@@ -3084,7 +3084,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let exports = reader.read_export_assets()?;
         for export in exports {
             let name = export.name.to_str_lossy(reader.encoding());
-            let name = AvmString::new(context.gc_context, name);
+            let name = AvmString::new_utf8(context.gc_context, name);
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())

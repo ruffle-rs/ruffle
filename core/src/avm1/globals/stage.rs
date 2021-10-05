@@ -56,7 +56,7 @@ fn align<'gc>(
     if align.contains(StageAlign::BOTTOM) {
         s.push('B');
     }
-    let align = AvmString::new(activation.context.gc_context, s);
+    let align = AvmString::new_utf8(activation.context.gc_context, s);
     Ok(align.into())
 }
 
@@ -91,7 +91,7 @@ fn scale_mode<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let scale_mode = AvmString::new(
+    let scale_mode = AvmString::new_utf8(
         activation.context.gc_context,
         activation.context.stage.scale_mode().to_string(),
     );

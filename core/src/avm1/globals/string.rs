@@ -38,7 +38,7 @@ pub fn string<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::new(activation.context.gc_context, String::new()),
+        _ => AvmString::new_utf8(activation.context.gc_context, String::new()),
     };
 
     if let Some(mut vbox) = this.as_value_object() {
@@ -64,7 +64,7 @@ pub fn string_function<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::new(activation.context.gc_context, String::new()),
+        _ => AvmString::new_utf8(activation.context.gc_context, String::new()),
     };
 
     Ok(value.into())
@@ -115,7 +115,7 @@ fn char_at<'gc>(
         .ok()
         .and_then(|i| string.try_get(i))
         .map(WString::from_unit)
-        .map(|ret| AvmString::new_ucs2(activation.context.gc_context, ret))
+        .map(|ret| AvmString::new(activation.context.gc_context, ret))
         .unwrap_or_else(|| "".into());
 
     Ok(ret.into())
@@ -153,7 +153,7 @@ fn concat<'gc>(
         let s = arg.coerce_to_string(activation)?;
         ret.push_str(s.borrow())
     }
-    Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn from_char_code<'gc>(
@@ -170,7 +170,7 @@ fn from_char_code<'gc>(
         }
         out.push(i);
     }
-    Ok(AvmString::new_ucs2(activation.context.gc_context, out).into())
+    Ok(AvmString::new(activation.context.gc_context, out).into())
 }
 
 fn index_of<'gc>(
@@ -245,7 +245,7 @@ fn slice<'gc>(
     };
     if start_index < end_index {
         let ret = WString::from(this.slice(start_index..end_index));
-        Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+        Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
     }
@@ -273,7 +273,7 @@ fn split<'gc>(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
             this.iter().take(limit).map(|c| {
-                AvmString::new_ucs2(activation.context.gc_context, WString::from_unit(c)).into()
+                AvmString::new(activation.context.gc_context, WString::from_unit(c)).into()
             }),
         )
         .into())
@@ -283,7 +283,7 @@ fn split<'gc>(
             activation.context.avm1.prototypes().array,
             this.split(delimiter.borrow())
                 .take(limit)
-                .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
+                .map(|c| AvmString::new_utf8(activation.context.gc_context, c.to_string()).into()),
         )
         .into())
     }
@@ -315,7 +315,7 @@ fn substr<'gc>(
 
     if start_index < end_index {
         let ret = WString::from(this.slice(start_index..end_index));
-        Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+        Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
     }
@@ -344,7 +344,7 @@ fn substring<'gc>(
         std::mem::swap(&mut end_index, &mut start_index);
     }
     let ret = WString::from(this.slice(start_index..end_index));
-    Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+    Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 
 fn to_lower_case<'gc>(
@@ -354,7 +354,7 @@ fn to_lower_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    Ok(AvmString::new_ucs2(
+    Ok(AvmString::new(
         activation.context.gc_context,
         this.iter()
             .map(string_utils::swf_to_lowercase)
@@ -388,7 +388,7 @@ fn to_upper_case<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_val = Value::from(this);
     let this = this_val.coerce_to_string(activation)?;
-    Ok(AvmString::new_ucs2(
+    Ok(AvmString::new(
         activation.context.gc_context,
         this.iter()
             .map(string_utils::swf_to_uppercase)

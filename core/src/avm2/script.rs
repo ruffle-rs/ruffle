@@ -186,7 +186,7 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(None);
         }
 
-        let avm_string = AvmString::new(
+        let avm_string = AvmString::new_utf8(
             mc,
             write
                 .abc

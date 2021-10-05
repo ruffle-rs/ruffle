@@ -43,7 +43,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let message = this.get("message", activation)?;
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         message.coerce_to_string(activation)?.to_string(),
     )

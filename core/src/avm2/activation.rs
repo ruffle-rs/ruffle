@@ -2652,7 +2652,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Value::String(_) => "string",
         };
 
-        self.context.avm2.push(Value::String(AvmString::new(
+        self.context.avm2.push(Value::String(AvmString::new_utf8(
             self.context.gc_context,
             type_name,
         )));
@@ -2684,7 +2684,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
         self.context
             .avm2
-            .push(AvmString::new_ucs2(self.context.gc_context, r));
+            .push(AvmString::new(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }
@@ -2711,7 +2711,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
         self.context
             .avm2
-            .push(AvmString::new_ucs2(self.context.gc_context, r));
+            .push(AvmString::new(self.context.gc_context, r));
 
         Ok(FrameControl::Continue)
     }

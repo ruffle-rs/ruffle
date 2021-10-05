@@ -208,7 +208,7 @@ fn to_string<'gc>(
     let x = this.get("x", activation)?;
     let y = this.get("y", activation)?;
 
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         format!(
             "(x={}, y={})",

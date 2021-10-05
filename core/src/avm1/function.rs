@@ -101,7 +101,7 @@ impl<'gc> Avm1Function<'gc> {
         let name = if name.is_empty() {
             None
         } else {
-            Some(AvmString::new(gc_context, name))
+            Some(AvmString::new_utf8(gc_context, name))
         };
 
         Avm1Function {
@@ -113,7 +113,7 @@ impl<'gc> Avm1Function<'gc> {
                 .iter()
                 .map(|&s| {
                     let name = s.to_string_lossy(SwfStr::encoding_for_version(swf_version));
-                    (None, AvmString::new(gc_context, name))
+                    (None, AvmString::new_utf8(gc_context, name))
                 })
                 .collect(),
             scope,
@@ -139,7 +139,7 @@ impl<'gc> Avm1Function<'gc> {
             let name = swf_function
                 .name
                 .to_string_lossy(SwfStr::encoding_for_version(swf_version));
-            Some(AvmString::new(gc_context, name))
+            Some(AvmString::new_utf8(gc_context, name))
         };
 
         let params = swf_function
@@ -149,7 +149,7 @@ impl<'gc> Avm1Function<'gc> {
                 let name = p
                     .name
                     .to_string_lossy(SwfStr::encoding_for_version(swf_version));
-                (p.register_index, AvmString::new(gc_context, name))
+                (p.register_index, AvmString::new_utf8(gc_context, name))
             })
             .collect();
 

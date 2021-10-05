@@ -222,7 +222,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
         if let Some(prefix) = xmlnode.lookup_namespace_for_uri(uri_string?.borrow()) {
-            Ok(AvmString::new_ucs2(activation.context.gc_context, prefix).into())
+            Ok(AvmString::new(activation.context.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
         }
@@ -267,7 +267,7 @@ pub fn xmlnode_to_string<'gc>(
     if let Some(node) = this.as_xml_node() {
         let result = node.into_string(&mut is_as2_compatible);
 
-        return Ok(AvmString::new(
+        return Ok(AvmString::new_utf8(
             activation.context.gc_context,
             result.unwrap_or_else(|e| {
                 avm_warn!(activation, "XMLNode toString failed: {}", e);
@@ -288,7 +288,9 @@ pub fn xmlnode_local_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| AvmString::new(activation.context.gc_context, n.local_name().to_string()).into())
+        .map(|n| {
+            AvmString::new_utf8(activation.context.gc_context, n.local_name().to_string()).into()
+        })
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -300,7 +302,9 @@ pub fn xmlnode_node_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| AvmString::new(activation.context.gc_context, n.node_name().to_string()).into())
+        .map(|n| {
+            AvmString::new_utf8(activation.context.gc_context, n.node_name().to_string()).into()
+        })
         .unwrap_or_else(|| Value::Null))
 }
 
@@ -345,7 +349,7 @@ pub fn xmlnode_prefix<'gc>(
         .and_then(|n| n.tag_name())
         .map(|n| {
             n.prefix()
-                .map(|n| AvmString::new_ucs2(activation.context.gc_context, n.into()))
+                .map(|n| AvmString::new(activation.context.gc_context, n))
                 .unwrap_or_default()
                 .into()
         })
@@ -765,7 +769,7 @@ pub fn xml_on_data<'gc>(
         let src = src.coerce_to_string(activation)?;
         this.call_method(
             "parseXML".into(),
-            &[AvmString::new(activation.context.gc_context, src.to_string()).into()],
+            &[AvmString::new_utf8(activation.context.gc_context, src.to_string()).into()],
             activation,
         )?;
 
@@ -786,7 +790,7 @@ pub fn xml_doc_type_decl<'gc>(
         if let Some(doctype) = node.document().doctype() {
             let result = doctype.into_string(&mut |_| true);
 
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 result.unwrap_or_else(|e| {
                     avm_warn!(activation, "Error occurred when serializing DOCTYPE: {}", e);
@@ -815,7 +819,7 @@ pub fn xml_xml_decl<'gc>(
                 e
             );
         } else if let Ok(Some(result_str)) = result {
-            return Ok(AvmString::new(activation.context.gc_context, result_str).into());
+            return Ok(AvmString::new_utf8(activation.context.gc_context, result_str).into());
         }
     }
 

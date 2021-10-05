@@ -266,7 +266,7 @@ pub fn join<'gc>(
         .collect::<Result<Vec<_>, _>>()?;
 
     let joined = crate::string::join(&parts, &separator);
-    Ok(AvmString::new_ucs2(activation.context.gc_context, joined).into())
+    Ok(AvmString::new(activation.context.gc_context, joined).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).

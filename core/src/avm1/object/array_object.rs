@@ -46,7 +46,7 @@ impl<'gc> ArrayObject<'gc> {
         let base = ScriptObject::object(gc_context, proto);
         let mut length: i32 = 0;
         for value in elements.into_iter() {
-            let length_str = AvmString::new(gc_context, length.to_string());
+            let length_str = AvmString::new_utf8(gc_context, length.to_string());
             base.define_value(gc_context, length_str, value, Attribute::empty());
             length += 1;
         }

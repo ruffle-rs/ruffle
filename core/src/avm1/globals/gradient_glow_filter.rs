@@ -393,7 +393,7 @@ pub fn get_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_glow_filter_object() {
         let type_: WStr<'_> = filter.get_type().into();
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, type_.into()).into());
+        return Ok(AvmString::new(activation.context.gc_context, type_).into());
     }
 
     Ok(Value::Undefined)

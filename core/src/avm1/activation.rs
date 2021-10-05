@@ -657,7 +657,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
         self.context
             .avm1
-            .push(AvmString::new_ucs2(self.context.gc_context, result).into());
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -880,7 +880,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool
                 .iter()
                 .map(|s| {
-                    AvmString::new(self.context.gc_context, s.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, s.to_string_lossy(self.encoding()))
                         .into()
                 })
                 .collect(),
@@ -974,7 +974,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context.avm1.push(func_obj.into());
         } else {
             let name = action_func.name.to_str_lossy(self.encoding());
-            let name = AvmString::new(self.context.gc_context, name);
+            let name = AvmString::new_utf8(self.context.gc_context, name);
             self.define_local(name, func_obj.into())?;
         }
 
@@ -1584,7 +1584,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result).into());
+            .push(AvmString::new_utf8(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1628,7 +1628,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = s.slice(start.min(end)..end);
         self.context
             .avm1
-            .push(AvmString::new_ucs2(self.context.gc_context, result.into()).into());
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1799,7 +1799,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => (*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, v.to_string_lossy(self.encoding()))
                         .into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
@@ -2109,7 +2109,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = s.slice(start.min(end)..end);
         self.context
             .avm1
-            .push(AvmString::new_ucs2(self.context.gc_context, result.into()).into());
+            .push(AvmString::new(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2158,7 +2158,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let param = self.context.avm1.pop().coerce_to_object(self);
         let result = if let Some(display_object) = param.as_display_object() {
             let path = display_object.path();
-            AvmString::new_ucs2(self.context.gc_context, path).into()
+            AvmString::new(self.context.gc_context, path).into()
         } else {
             Value::Undefined
         };
@@ -2205,7 +2205,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let string = val.coerce_to_string(self)?;
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, string.to_string()).into());
+            .push(AvmString::new_utf8(self.context.gc_context, string.to_string()).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2226,7 +2226,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let type_of = self.context.avm1.pop().type_of();
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, type_of.to_string()).into());
+            .push(AvmString::new_utf8(self.context.gc_context, type_of.to_string()).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2329,7 +2329,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 match catch_vars {
                     CatchVar::Var(name) => {
                         let name = name.to_str_lossy(activation.encoding());
-                        let name = AvmString::new(activation.context.gc_context, name);
+                        let name = AvmString::new_utf8(activation.context.gc_context, name);
                         activation.set_variable(name, value.to_owned())?
                     }
                     CatchVar::Register(id) => {
@@ -2606,7 +2606,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     {
                         child.object()
                     } else {
-                        let name = AvmString::new_ucs2(self.context.gc_context, name.into());
+                        let name = AvmString::new(self.context.gc_context, name);
                         object.get(name, self).unwrap()
                     }
                 }
@@ -2703,7 +2703,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
-                    let var_name = AvmString::new_ucs2(self.context.gc_context, var_name.into());
+                    let var_name = AvmString::new(self.context.gc_context, var_name);
                     if object.has_property(self, var_name) {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
@@ -2786,7 +2786,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
-                    let var_name = AvmString::new_ucs2(self.context.gc_context, var_name.into());
+                    let var_name = AvmString::new(self.context.gc_context, var_name);
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }

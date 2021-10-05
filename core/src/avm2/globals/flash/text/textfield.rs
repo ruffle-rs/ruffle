@@ -323,7 +323,7 @@ pub fn html_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new_ucs2(
+        return Ok(AvmString::new(
             activation.context.gc_context,
             this.html_text(&mut activation.context),
         )
@@ -450,7 +450,7 @@ pub fn text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, this.text()).into());
+        return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
     }
 
     Ok(Value::Undefined)

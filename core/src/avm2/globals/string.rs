@@ -81,7 +81,7 @@ fn char_at<'gc>(
             let ret = s
                 .try_get(index)
                 .map(WString::from_unit)
-                .map(|s| AvmString::new_ucs2(activation.context.gc_context, s))
+                .map(|s| AvmString::new(activation.context.gc_context, s))
                 .unwrap_or_default();
             return Ok(ret.into());
         }
@@ -128,7 +128,7 @@ fn concat<'gc>(
             let s = arg.coerce_to_string(activation)?;
             ret.push_str(s.borrow())
         }
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)
@@ -149,7 +149,7 @@ fn from_char_code<'gc>(
         }
         out.push(i);
     }
-    Ok(AvmString::new_ucs2(activation.context.gc_context, out).into())
+    Ok(AvmString::new(activation.context.gc_context, out).into())
 }
 
 /// Implements `String.indexOf`
@@ -240,11 +240,8 @@ fn match_s<'gc>(
                         break;
                     }
                     storage.push(
-                        AvmString::new_ucs2(
-                            activation.context.gc_context,
-                            this.slice(result.range()).into(),
-                        )
-                        .into(),
+                        AvmString::new(activation.context.gc_context, this.slice(result.range()))
+                            .into(),
                     );
                     last = regexp.last_index();
                 }
@@ -265,10 +262,8 @@ fn match_s<'gc>(
 
                     let mut storage = ArrayStorage::new(0);
                     for substring in substrings {
-                        storage.push(
-                            AvmString::new_ucs2(activation.context.gc_context, substring.into())
-                                .into(),
-                        );
+                        storage
+                            .push(AvmString::new(activation.context.gc_context, substring).into());
                     }
                     regexp.set_last_index(old);
                     return Ok(ArrayObject::from_storage(activation, storage)
@@ -311,7 +306,7 @@ fn slice<'gc>(
         };
         return if start_index < end_index {
             let ret = WString::from(this.slice(start_index..end_index));
-            Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into())
+            Ok(AvmString::new(activation.context.gc_context, ret).into())
         } else {
             Ok("".into())
         };
@@ -356,7 +351,7 @@ fn split<'gc>(
             this.iter()
                 .take(limit)
                 .map(|c| {
-                    Value::from(AvmString::new_ucs2(
+                    Value::from(AvmString::new(
                         activation.context.gc_context,
                         WString::from_unit(c),
                     ))
@@ -365,7 +360,7 @@ fn split<'gc>(
         } else {
             this.split(delimiter.borrow())
                 .take(limit)
-                .map(|c| Value::from(AvmString::new_ucs2(activation.context.gc_context, c.into())))
+                .map(|c| Value::from(AvmString::new(activation.context.gc_context, c)))
                 .collect()
         };
 
@@ -409,7 +404,7 @@ fn substr<'gc>(
         };
 
         let ret = WString::from(this.slice(start_index..end_index));
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)
@@ -448,7 +443,7 @@ fn substring<'gc>(
         }
 
         let ret = WString::from(this.slice(start_index..end_index));
-        return Ok(AvmString::new_ucs2(activation.context.gc_context, ret).into());
+        return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
 
     Ok(Value::Undefined)

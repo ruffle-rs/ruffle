@@ -213,8 +213,8 @@ impl<'gc> QName<'gc> {
 
         if let Some((package_name, local_name)) = parts {
             Self {
-                ns: Namespace::Package(AvmString::new_ucs2(mc, package_name.into())),
-                name: AvmString::new_ucs2(mc, local_name.into()),
+                ns: Namespace::Package(AvmString::new(mc, package_name)),
+                name: AvmString::new(mc, local_name),
             }
         } else {
             Self {
@@ -232,7 +232,7 @@ impl<'gc> QName<'gc> {
             let mut buf = WString::from(uri.borrow());
             buf.push_str(WStr::from_units(b"::"));
             buf.push_str(name.borrow());
-            AvmString::new_ucs2(mc, buf)
+            AvmString::new(mc, buf)
         })
     }
 
@@ -264,7 +264,7 @@ impl<'gc> QName<'gc> {
         let mut uri = WString::from(ns);
         uri.push_str(WStr::from_units(b"::"));
         uri.push_str(self.name.borrow());
-        AvmString::new_ucs2(mc, uri)
+        AvmString::new(mc, uri)
     }
 }
 

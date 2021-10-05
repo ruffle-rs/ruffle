@@ -135,7 +135,7 @@ pub fn resolve_array_hole<'gc>(
                     p,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, i.to_string()),
+                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                     )
                     .into(),
                     activation,
@@ -174,7 +174,7 @@ where
                 }
             }
 
-            return Ok(AvmString::new_ucs2(
+            return Ok(AvmString::new(
                 activation.context.gc_context,
                 crate::string::join(&accum, &string_separator),
             )
@@ -303,7 +303,7 @@ impl<'gc> ArrayIter<'gc> {
                         self.array_object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, i.to_string()),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,
@@ -334,7 +334,7 @@ impl<'gc> ArrayIter<'gc> {
                         self.array_object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, i.to_string()),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,

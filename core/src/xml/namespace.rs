@@ -32,7 +32,7 @@ impl<'gc> XmlName<'gc> {
         full_name.push_str(name);
         Self {
             namespace_sep: Some(namespace.len()),
-            name: AvmString::new_ucs2(gc_context, full_name),
+            name: AvmString::new(gc_context, full_name),
         }
     }
 
