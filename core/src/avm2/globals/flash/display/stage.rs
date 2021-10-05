@@ -9,7 +9,7 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{StageDisplayState, TDisplayObject};
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
 use swf::Color;
 
@@ -267,25 +267,25 @@ pub fn align<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let align = activation.context.stage.align();
-    let mut s = String::with_capacity(4);
+    let mut s = WString::with_capacity(4, false);
     // Match string values returned by AS.
     // It's possible to have an oxymoronic "TBLR".
     // This acts the same as "TL" (top-left takes priority).
     // This order is different between AVM1 and AVM2!
     use crate::display_object::StageAlign;
     if align.contains(StageAlign::TOP) {
-        s.push('T');
+        s.push_byte(b'T');
     }
     if align.contains(StageAlign::BOTTOM) {
-        s.push('B');
+        s.push_byte(b'B');
     }
     if align.contains(StageAlign::LEFT) {
-        s.push('L');
+        s.push_byte(b'L');
     }
     if align.contains(StageAlign::RIGHT) {
-        s.push('R');
+        s.push_byte(b'R');
     }
-    let align = AvmString::new_utf8(activation.context.gc_context, s);
+    let align = AvmString::new(activation.context.gc_context, s);
     Ok(align.into())
 }
 
@@ -626,7 +626,7 @@ pub fn quality<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let quality = activation.context.stage.quality().into_avm_str();
-    Ok(AvmString::new_utf8(activation.context.gc_context, quality).into())
+    Ok(AvmString::from(quality).into())
 }
 
 /// Implement `quality`'s setter

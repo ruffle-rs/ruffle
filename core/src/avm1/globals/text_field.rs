@@ -500,7 +500,7 @@ fn variable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(variable) = this.variable() {
-        return Ok(AvmString::new_utf8(activation.context.gc_context, variable.to_string()).into());
+        return Ok(AvmString::new_utf8(activation.context.gc_context, &variable[..]).into());
     }
 
     // Unset `variable` returns null, not undefined
@@ -568,13 +568,13 @@ pub fn set_auto_size<'gc>(
 
 pub fn get_type<'gc>(
     this: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf_type = match this.is_editable() {
         true => "input",
         false => "dynamic",
     };
-    Ok(AvmString::new_utf8(activation.context.gc_context, tf_type).into())
+    Ok(AvmString::from(tf_type).into())
 }
 
 pub fn set_type<'gc>(

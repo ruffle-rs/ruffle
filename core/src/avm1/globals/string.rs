@@ -38,7 +38,7 @@ pub fn string<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::new_utf8(activation.context.gc_context, String::new()),
+        _ => AvmString::default(),
     };
 
     if let Some(mut vbox) = this.as_value_object() {
@@ -283,7 +283,7 @@ fn split<'gc>(
             activation.context.avm1.prototypes().array,
             this.split(delimiter.borrow())
                 .take(limit)
-                .map(|c| AvmString::new_utf8(activation.context.gc_context, c.to_string()).into()),
+                .map(|c| AvmString::new(activation.context.gc_context, c).into()),
         )
         .into())
     }

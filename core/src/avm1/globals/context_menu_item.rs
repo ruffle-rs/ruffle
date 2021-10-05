@@ -19,33 +19,22 @@ pub fn constructor<'gc>(
     let caption = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .to_owned()
-        .coerce_to_string(activation)?
-        .to_string();
-    let callback = args
-        .get(1)
-        .map(|v| v.to_owned().coerce_to_object(activation));
+        .coerce_to_string(activation)?;
+    let callback = args.get(1).map(|v| v.coerce_to_object(activation));
     let separator_before = args
         .get(2)
         .unwrap_or(&false.into())
-        .to_owned()
         .as_bool(activation.swf_version());
     let enabled = args
         .get(3)
         .unwrap_or(&true.into())
-        .to_owned()
         .as_bool(activation.swf_version());
     let visible = args
         .get(4)
         .unwrap_or(&true.into())
-        .to_owned()
         .as_bool(activation.swf_version());
 
-    this.set(
-        "caption",
-        AvmString::new_utf8(activation.context.gc_context, caption).into(),
-        activation,
-    )?;
+    this.set("caption", caption.into(), activation)?;
 
     if let Some(callback) = callback {
         this.set("onSelect", callback.into(), activation)?;

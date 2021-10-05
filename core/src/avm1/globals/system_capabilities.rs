@@ -133,8 +133,7 @@ pub fn get_language<'gc>(
             .context
             .system
             .language
-            .get_language_code(activation.context.avm1.player_version)
-            .to_string(),
+            .get_language_code(activation.context.avm1.player_version),
     )
     .into())
 }
@@ -245,7 +244,7 @@ pub fn get_max_idc_level<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        activation.context.system.idc_level.clone(),
+        &activation.context.system.idc_level,
     )
     .into())
 }

@@ -296,8 +296,7 @@ impl<'gc> XmlNode<'gc> {
         document: XmlDocument<'gc>,
         process_entity: bool,
     ) -> Result<Self, Error> {
-        let tag_name = std::str::from_utf8(bs.name())?;
-        let tag_name = XmlName::from_str(AvmString::new_utf8(mc, tag_name));
+        let tag_name = XmlName::from_str(AvmString::new_utf8_bytes(mc, bs.name())?);
         let mut attributes = BTreeMap::new();
 
         for a in bs.attributes() {
@@ -308,12 +307,9 @@ impl<'gc> XmlNode<'gc> {
                 attribute.value
             };
 
-            let value = match value_bytes {
-                Cow::Owned(v) => AvmString::new_utf8(mc, String::from_utf8(v)?),
-                Cow::Borrowed(v) => AvmString::new_utf8(mc, std::str::from_utf8(v)?),
-            };
-            let attr_key = std::str::from_utf8(attribute.key)?;
-            attributes.insert(XmlName::from_str(AvmString::new_utf8(mc, attr_key)), value);
+            let value = AvmString::new_utf8_bytes(mc, value_bytes)?;
+            let attr_key = AvmString::new_utf8_bytes(mc, attribute.key)?;
+            attributes.insert(XmlName::from_str(attr_key), value);
         }
 
         Ok(XmlNode(GcCell::allocate(
@@ -343,9 +339,9 @@ impl<'gc> XmlNode<'gc> {
         process_entity: bool,
     ) -> Result<Self, Error> {
         let contents = if process_entity {
-            String::from_utf8(bt.unescaped()?.into_owned())?
+            bt.unescaped()?
         } else {
-            String::from_utf8(bt.escaped().to_vec())?
+            Cow::Borrowed(bt.escaped())
         };
 
         Ok(XmlNode(GcCell::allocate(
@@ -357,7 +353,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new_utf8(mc, contents),
+                contents: AvmString::new_utf8_bytes(mc, contents)?,
             },
         )))
     }
@@ -379,7 +375,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new_utf8(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
+                contents: AvmString::new_utf8_bytes(mc, bt.unescaped()?)?,
             },
         )))
     }
@@ -401,7 +397,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new_utf8(mc, String::from_utf8(bt.unescaped()?.into_owned())?),
+                contents: AvmString::new_utf8_bytes(mc, bt.unescaped()?)?,
             },
         )))
     }
