@@ -20,6 +20,7 @@ use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
     EditText, MorphShape, MovieClip, Stage, StageAlign, StageQuality, StageScaleMode,
+    TInteractiveObject,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -891,7 +892,12 @@ impl Player {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
                 for (_depth, level) in levels {
                     if let Some(button_event) = button_event {
-                        let state = level.handle_clip_event(context, button_event);
+                        let state = if let Some(interactive) = level.as_interactive() {
+                            interactive.handle_clip_event(context, button_event)
+                        } else {
+                            ClipEventResult::NotHandled
+                        };
+
                         if state == ClipEventResult::Handled {
                             key_press_handled = true;
                             return;
@@ -954,7 +960,9 @@ impl Player {
             if let Some(clip_event) = clip_event {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
                 for (_depth, level) in levels {
-                    level.handle_clip_event(context, clip_event);
+                    if let Some(interactive) = level.as_interactive() {
+                        interactive.handle_clip_event(context, clip_event);
+                    }
                 }
             }
 
@@ -1162,7 +1170,9 @@ impl Player {
             } else {
                 for (object, event) in events {
                     if !object.removed() {
-                        object.handle_clip_event(context, event);
+                        if let Some(interactive) = object.as_interactive() {
+                            interactive.handle_clip_event(context, event);
+                        }
                     }
                 }
                 true

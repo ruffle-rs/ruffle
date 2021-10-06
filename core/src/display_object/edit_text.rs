@@ -1868,28 +1868,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // Even if this isn't selectable or editable, a script can focus on it manually
         true
     }
-
-    fn handle_clip_event(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
-        if event == ClipEvent::Press {
-            let tracker = context.focus_tracker;
-            tracker.set(Some((*self).into()), context);
-            if let Some(position) = self
-                .screen_position_to_index(*context.mouse_position)
-                .map(TextSelection::for_position)
-            {
-                self.0.write(context.gc_context).selection = Some(position);
-            } else {
-                self.0.write(context.gc_context).selection =
-                    Some(TextSelection::for_position(self.text_length()));
-            }
-            return ClipEventResult::Handled;
-        }
-        ClipEventResult::NotHandled
-    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
@@ -1899,6 +1877,38 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
         RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
+
+    fn as_displayobject(self) -> DisplayObject<'gc> {
+        self.into()
+    }
+
+    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
+        if event != ClipEvent::Press {
+            return ClipEventResult::NotHandled;
+        }
+
+        ClipEventResult::Handled
+    }
+
+    fn event_dispatch(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
+        let tracker = context.focus_tracker;
+        tracker.set(Some(self.into()), context);
+        if let Some(position) = self
+            .screen_position_to_index(*context.mouse_position)
+            .map(TextSelection::for_position)
+        {
+            self.0.write(context.gc_context).selection = Some(position);
+        } else {
+            self.0.write(context.gc_context).selection =
+                Some(TextSelection::for_position(self.text_length()));
+        }
+
+        ClipEventResult::Handled
     }
 }
 

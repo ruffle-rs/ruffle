@@ -711,60 +711,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    /// Executes and propagates the given clip event.
-    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
-    /// so forth.
-    fn handle_clip_event(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
-        if !self.visible() {
-            return ClipEventResult::NotHandled;
-        }
-
-        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
-            return ClipEventResult::NotHandled;
-        }
-
-        if event.propagates() {
-            let state = self.0.read().state;
-            let current_state = self.get_state_child(state.into());
-
-            if let Some(current_state) = current_state {
-                if current_state.handle_clip_event(context, event) == ClipEventResult::Handled {
-                    return ClipEventResult::Handled;
-                }
-            }
-        }
-
-        let handled = ClipEventResult::NotHandled;
-        let write = self.0.write(context.gc_context);
-
-        // Translate the clip event to a button event, based on how the button state changes.
-        let static_data = write.static_data;
-        let static_data = static_data.read();
-        let (new_state, sound) = match event {
-            ClipEvent::DragOut => (ButtonState::Over, None),
-            ClipEvent::DragOver => (ButtonState::Down, None),
-            ClipEvent::Press => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
-            ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
-            ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
-            ClipEvent::RollOut => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
-            ClipEvent::RollOver => (ButtonState::Over, static_data.up_to_over_sound.as_ref()),
-            _ => return ClipEventResult::NotHandled,
-        };
-
-        write.play_sound(context, sound);
-
-        if write.state != new_state {
-            drop(write);
-            self.set_state(context, new_state);
-        }
-
-        handled
-    }
-
     fn is_focusable(&self) -> bool {
         true
     }
@@ -795,6 +741,73 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
         RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
+
+    fn as_displayobject(self) -> DisplayObject<'gc> {
+        self.into()
+    }
+
+    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
+        if !self.visible() {
+            return ClipEventResult::NotHandled;
+        }
+
+        if !self.enabled() && !matches!(event, ClipEvent::KeyPress { .. }) {
+            return ClipEventResult::NotHandled;
+        }
+
+        ClipEventResult::Handled
+    }
+
+    fn propagate_to_children(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        if event.propagates() {
+            let state = self.0.read().state;
+            let current_state = self.get_state_child(state.into());
+
+            if let Some(current_state) = current_state.and_then(|s| s.as_interactive()) {
+                if current_state.handle_clip_event(context, event) == ClipEventResult::Handled {
+                    return ClipEventResult::Handled;
+                }
+            }
+        }
+
+        ClipEventResult::NotHandled
+    }
+
+    fn event_dispatch(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        let handled = ClipEventResult::NotHandled;
+        let write = self.0.write(context.gc_context);
+
+        // Translate the clip event to a button event, based on how the button state changes.
+        let static_data = write.static_data;
+        let static_data = static_data.read();
+        let (new_state, sound) = match event {
+            ClipEvent::DragOut => (ButtonState::Over, None),
+            ClipEvent::DragOver => (ButtonState::Down, None),
+            ClipEvent::Press => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
+            ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
+            ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
+            ClipEvent::RollOut => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
+            ClipEvent::RollOver => (ButtonState::Over, static_data.up_to_over_sound.as_ref()),
+            _ => return ClipEventResult::NotHandled,
+        };
+
+        write.play_sound(context, sound);
+
+        if write.state != new_state {
+            drop(write);
+            self.set_state(context, new_state);
+        }
+
+        handled
     }
 }
 

@@ -4,6 +4,9 @@ use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
     dispatch_added_event, dispatch_removed_event, ChildContainer,
 };
+use crate::display_object::interactive::{
+    InteractiveObject, InteractiveObjectBase, TInteractiveObject,
+};
 use crate::display_object::{DisplayObjectBase, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
@@ -11,6 +14,7 @@ use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
@@ -23,6 +27,7 @@ pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
 #[collect(no_drop)]
 pub struct Avm1ButtonData<'gc> {
     base: DisplayObjectBase<'gc>,
+    interactive_base: InteractiveObjectBase,
     static_data: GcCell<'gc, ButtonStatic>,
     state: ButtonState,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
@@ -76,6 +81,7 @@ impl<'gc> Avm1Button<'gc> {
             gc_context,
             Avm1ButtonData {
                 base: Default::default(),
+                interactive_base: Default::default(),
                 static_data: GcCell::allocate(gc_context, static_data),
                 container: ChildContainer::new(),
                 hit_area: BTreeMap::new(),
@@ -386,6 +392,10 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         Some(*self)
     }
 
+    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
+        Some(self.into())
+    }
+
     fn as_container(self) -> Option<DisplayObjectContainer<'gc>> {
         Some(self.into())
     }
@@ -394,14 +404,47 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         !self.is_empty()
     }
 
-    /// Executes and propagates the given clip event.
-    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
-    /// so forth.
-    fn handle_clip_event(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
+    fn is_focusable(&self) -> bool {
+        true
+    }
+
+    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
+        self.0.write(gc_context).has_focus = focused;
+    }
+
+    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let had_focus = self.0.read().has_focus;
+        if had_focus {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
+        if let Some(node) = self.maskee() {
+            node.set_masker(context.gc_context, None, true);
+        } else if let Some(node) = self.masker() {
+            node.set_maskee(context.gc_context, None, true);
+        }
+        self.set_removed(context.gc_context, true);
+    }
+}
+
+impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
+    impl_display_object_container!(container);
+}
+
+impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
+    fn base(&self) -> Ref<InteractiveObjectBase> {
+        Ref::map(self.0.read(), |r| &r.interactive_base)
+    }
+
+    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
+        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
+
+    fn as_displayobject(self) -> DisplayObject<'gc> {
+        self.into()
+    }
+
+    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
         if !self.visible() {
             return ClipEventResult::NotHandled;
         }
@@ -410,15 +453,15 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             return ClipEventResult::NotHandled;
         }
 
-        if event.propagates() {
-            for child in self.iter_render_list() {
-                if child.handle_clip_event(context, event) == ClipEventResult::Handled {
-                    return ClipEventResult::Handled;
-                }
-            }
-        }
+        ClipEventResult::Handled
+    }
 
-        let self_display_object = (*self).into();
+    fn event_dispatch(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        let self_display_object = self.into();
         let mut write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
@@ -496,32 +539,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
         ClipEventResult::NotHandled
     }
-
-    fn is_focusable(&self) -> bool {
-        true
-    }
-
-    fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
-        self.0.write(gc_context).has_focus = focused;
-    }
-
-    fn unload(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let had_focus = self.0.read().has_focus;
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
-        if let Some(node) = self.maskee() {
-            node.set_masker(context.gc_context, None, true);
-        } else if let Some(node) = self.masker() {
-            node.set_maskee(context.gc_context, None, true);
-        }
-        self.set_removed(context.gc_context, true);
-    }
-}
-
-impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
-    impl_display_object_container!(container);
 }
 
 impl<'gc> Avm1ButtonData<'gc> {
