@@ -41,7 +41,6 @@ use crate::backend::ui::MouseCursor;
 pub use crate::display_object::container::{
     DisplayObjectContainer, Lists, TDisplayObjectContainer,
 };
-use crate::events::{ClipEvent, ClipEventResult};
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
 pub use bitmap::Bitmap;
@@ -919,17 +918,6 @@ pub trait TDisplayObject<'gc>:
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
     fn set_instantiated_by_timeline(&self, gc_context: MutationContext<'gc, '_>, value: bool);
-
-    /// Executes and propagates the given clip event.
-    /// Events execute inside-out; the deepest child will react first, followed by its parent, and
-    /// so forth.
-    fn handle_clip_event(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        _event: ClipEvent,
-    ) -> ClipEventResult {
-        ClipEventResult::NotHandled
-    }
 
     /// Emit an `enterFrame` event on this DisplayObject and any children it
     /// may have.

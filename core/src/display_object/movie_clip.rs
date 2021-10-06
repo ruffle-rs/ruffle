@@ -1069,16 +1069,6 @@ impl<'gc> MovieClip<'gc> {
         actions.into_iter()
     }
 
-    pub fn run_clip_event(
-        self,
-        context: &mut crate::context::UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) {
-        self.0
-            .write(context.gc_context)
-            .run_clip_event(self.into(), context, event);
-    }
-
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
         if self.current_frame() < self.total_frames() {
@@ -1771,15 +1761,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Run my load/enterFrame clip event.
-        let mut mc = self.0.write(context.gc_context);
+        let mc = self.0.write(context.gc_context);
         let is_load_frame = !mc.initialized();
-        if is_load_frame {
-            mc.run_clip_event((*self).into(), context, ClipEvent::Load);
-            mc.set_initialized(true);
-        } else {
-            mc.run_clip_event((*self).into(), context, ClipEvent::EnterFrame);
-        }
         drop(mc);
+
+        if is_load_frame {
+            self.event_dispatch(context, ClipEvent::Load);
+            self.0.write(context.gc_context).set_initialized(true);
+        } else {
+            self.event_dispatch(context, ClipEvent::EnterFrame);
+        }
 
         // Run my SWF tags.
         if self.playing() {
@@ -1987,48 +1978,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn handle_clip_event(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
-        if event.is_button_event() && !self.visible() {
-            return ClipEventResult::NotHandled;
-        }
-
-        if !self.enabled()
-            && event.is_button_event()
-            && !matches!(event, ClipEvent::KeyPress { .. })
-        {
-            return ClipEventResult::NotHandled;
-        }
-
-        if event.propagates() {
-            for child in self.iter_render_list() {
-                if child.handle_clip_event(context, event) == ClipEventResult::Handled {
-                    return ClipEventResult::Handled;
-                }
-            }
-        }
-
-        let frame_name = match event {
-            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some("_up"),
-            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => Some("_over"),
-            ClipEvent::Press | ClipEvent::DragOver => Some("_down"),
-            _ => None,
-        };
-
-        if let Some(frame_name) = frame_name {
-            if let Some(frame_number) = self.frame_label_to_number(frame_name) {
-                if self.is_button_mode(context) {
-                    self.goto_frame(context, frame_number, true);
-                }
-            }
-        }
-
-        self.0.read().run_clip_event((*self).into(), context, event)
-    }
-
     fn as_movie_clip(&self) -> Option<MovieClip<'gc>> {
         Some(*self)
     }
@@ -2119,8 +2068,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         {
             let mut mc = self.0.write(context.gc_context);
             mc.stop_audio_stream(context);
-            mc.run_clip_event((*self).into(), context, ClipEvent::Unload);
         }
+        self.event_dispatch(context, ClipEvent::Unload);
         self.set_removed(context.gc_context, true);
     }
 
@@ -2148,6 +2097,97 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
         RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
+
+    fn as_displayobject(self) -> DisplayObject<'gc> {
+        self.into()
+    }
+
+    fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
+        if event.is_button_event() && !self.visible() {
+            return ClipEventResult::NotHandled;
+        }
+
+        if !self.enabled()
+            && event.is_button_event()
+            && !matches!(event, ClipEvent::KeyPress { .. })
+        {
+            return ClipEventResult::NotHandled;
+        }
+
+        ClipEventResult::Handled
+    }
+
+    fn event_dispatch(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
+        let frame_name = match event {
+            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some("_up"),
+            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => Some("_over"),
+            ClipEvent::Press | ClipEvent::DragOver => Some("_down"),
+            _ => None,
+        };
+
+        if let Some(frame_name) = frame_name {
+            if let Some(frame_number) = self.frame_label_to_number(frame_name) {
+                if self.is_button_mode(context) {
+                    self.goto_frame(context, frame_number, true);
+                }
+            }
+        }
+
+        let mut handled = ClipEventResult::NotHandled;
+        let read = self.0.read();
+        if let Some(AvmObject::Avm1(object)) = read.object {
+            // TODO: What's the behavior for loaded SWF files?
+            if context.swf.version() >= 5 {
+                for event_handler in read
+                    .clip_event_handlers
+                    .iter()
+                    .filter(|handler| handler.events.contains(event.flag()))
+                {
+                    // KeyPress event must have matching key code.
+                    if let ClipEvent::KeyPress { key_code } = event {
+                        if key_code == event_handler.key_code {
+                            // KeyPress events are consumed by a single instance.
+                            handled = ClipEventResult::Handled;
+                        } else {
+                            continue;
+                        }
+                    }
+                    context.action_queue.queue_actions(
+                        self.into(),
+                        ActionType::Normal {
+                            bytecode: event_handler.action_data.clone(),
+                        },
+                        event == ClipEvent::Unload,
+                    );
+                }
+
+                // Queue ActionScript-defined event handlers after the SWF defined ones.
+                // (e.g., clip.onEnterFrame = foo).
+                if context.swf.version() >= 6 {
+                    if let Some(name) = event.method_name() {
+                        // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
+                        if !event.is_key_event() || read.has_focus {
+                            context.action_queue.queue_actions(
+                                self.into(),
+                                ActionType::Method {
+                                    object,
+                                    name,
+                                    args: vec![],
+                                },
+                                event == ClipEvent::Unload,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        handled
     }
 }
 
@@ -2254,64 +2294,6 @@ impl<'gc> MovieClipData<'gc> {
         }
 
         Ok(())
-    }
-
-    /// Run all actions for the given clip event.
-    fn run_clip_event(
-        &self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) -> ClipEventResult {
-        let mut handled = ClipEventResult::NotHandled;
-        if let Some(AvmObject::Avm1(object)) = self.object {
-            // TODO: What's the behavior for loaded SWF files?
-            if context.swf.version() >= 5 {
-                for event_handler in self
-                    .clip_event_handlers
-                    .iter()
-                    .filter(|handler| handler.events.contains(event.flag()))
-                {
-                    // KeyPress event must have matching key code.
-                    if let ClipEvent::KeyPress { key_code } = event {
-                        if key_code == event_handler.key_code {
-                            // KeyPress events are consumed by a single instance.
-                            handled = ClipEventResult::Handled;
-                        } else {
-                            continue;
-                        }
-                    }
-                    context.action_queue.queue_actions(
-                        self_display_object,
-                        ActionType::Normal {
-                            bytecode: event_handler.action_data.clone(),
-                        },
-                        event == ClipEvent::Unload,
-                    );
-                }
-
-                // Queue ActionScript-defined event handlers after the SWF defined ones.
-                // (e.g., clip.onEnterFrame = foo).
-                if context.swf.version() >= 6 {
-                    if let Some(name) = event.method_name() {
-                        // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
-                        if !event.is_key_event() || self.has_focus {
-                            context.action_queue.queue_actions(
-                                self_display_object,
-                                ActionType::Method {
-                                    object,
-                                    name,
-                                    args: vec![],
-                                },
-                                event == ClipEvent::Unload,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        handled
     }
 
     /// Run clip actions that trigger after the clip's own actions.

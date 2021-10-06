@@ -15,6 +15,7 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{render_base, DisplayObject, DisplayObjectBase, TDisplayObject};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
@@ -607,6 +608,22 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
         RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    }
+
+    fn as_displayobject(self) -> DisplayObject<'gc> {
+        self.into()
+    }
+
+    fn filter_clip_event(self, _event: ClipEvent) -> ClipEventResult {
+        ClipEventResult::Handled
+    }
+
+    fn event_dispatch(
+        self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _event: ClipEvent,
+    ) -> ClipEventResult {
+        ClipEventResult::Handled
     }
 }
 
