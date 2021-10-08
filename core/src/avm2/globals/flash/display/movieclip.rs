@@ -10,7 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
 use crate::string::AvmString;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
 
@@ -28,12 +28,8 @@ pub fn instance_init<'gc>(
                 .instance_of()
                 .ok_or("Attempted to construct MovieClip on a bare object")?;
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let new_do = MovieClip::new_with_avm2(
-                SwfSlice::empty(movie),
-                this,
-                class_object,
-                activation.context.gc_context,
-            );
+            let new_do =
+                MovieClip::new_with_avm2(movie, this, class_object, activation.context.gc_context);
 
             this.init_display_object(activation.context.gc_context, new_do.into());
         }

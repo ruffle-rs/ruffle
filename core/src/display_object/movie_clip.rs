@@ -92,13 +92,12 @@ pub struct MovieClipData<'gc> {
 }
 
 impl<'gc> MovieClip<'gc> {
-    #[allow(dead_code)]
-    pub fn new(swf: SwfSlice, gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn new(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
         MovieClip(GcCell::allocate(
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -122,7 +121,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new_with_avm2(
-        swf: SwfSlice,
+        movie: Arc<SwfMovie>,
         this: Avm2Object<'gc>,
         class: Avm2ClassObject<'gc>,
         gc_context: MutationContext<'gc, '_>,
@@ -131,7 +130,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(swf)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -3366,8 +3365,8 @@ struct MovieClipStatic {
 }
 
 impl MovieClipStatic {
-    fn empty(swf: SwfSlice) -> Self {
-        Self::with_data(0, swf, 1)
+    fn empty(movie: Arc<SwfMovie>) -> Self {
+        Self::with_data(0, SwfSlice::empty(movie), 1)
     }
 
     fn with_data(id: CharacterId, swf: SwfSlice, total_frames: FrameNumber) -> Self {

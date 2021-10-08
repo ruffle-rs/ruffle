@@ -16,7 +16,6 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::string::AvmString;
-use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use std::borrow::Cow;
@@ -693,7 +692,7 @@ fn create_empty_movie_clip<'gc>(
         .movie()
         .or_else(|| activation.base_clip().movie())
         .unwrap();
-    let new_clip = MovieClip::new(SwfSlice::empty(swf_movie), activation.context.gc_context);
+    let new_clip = MovieClip::new(swf_movie, activation.context.gc_context);
 
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, new_instance_name);
