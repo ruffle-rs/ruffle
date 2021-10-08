@@ -242,7 +242,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
-        let (method, base_proto) = search_prototype(Value::Object(this), name, activation, this)?;
+        let (method, mut base_proto) =
+            search_prototype(Value::Object(this), name, activation, this)?;
+
+        // If the method was found on the object itself, change `base_proto` as-if
+        // the method was found on the object's prototype.
+        if let Some(base_proto) = base_proto.as_mut() {
+            if Object::ptr_eq(*base_proto, this) {
+                *base_proto = base_proto.proto(activation).coerce_to_object(activation);
+            }
+        }
 
         if method.is_primitive() {
             avm_warn!(activation, "Object method {} is not callable", name);
