@@ -582,18 +582,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 Attribute::DONT_ENUM,
             );
         }
+        let base_proto = this.proto(activation).coerce_to_object(activation);
         if let Some(exec) = &self.data.read().constructor {
             let _ = exec.exec(
                 "[ctor]",
                 activation,
                 this,
-                None,
+                Some(base_proto),
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
         } else {
-            let _ = self.call("[ctor]".into(), activation, this, None, args)?;
+            let _ = self.call("[ctor]".into(), activation, this, Some(base_proto), args)?;
         }
         Ok(())
     }
@@ -629,14 +630,14 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 "[ctor]",
                 activation,
                 this,
-                None,
+                Some(prototype),
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
             Ok(this)
         } else {
-            let _ = self.call("[ctor]".into(), activation, this, None, args)?;
+            let _ = self.call("[ctor]".into(), activation, this, Some(prototype), args)?;
             Ok(this.into())
         }
     }
