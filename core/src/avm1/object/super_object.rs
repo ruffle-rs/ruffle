@@ -74,15 +74,15 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Value::Object(proto) = self.proto(activation) {
-            let constructor = proto
-                .get("__constructor__", activation)?
-                .coerce_to_object(activation);
-            let this = self.0.read().this;
-            constructor.call(name, activation, this, Some(proto), args)
-        } else {
-            Ok(Value::Undefined)
-        }
+        let constructor = self
+            .0
+            .read()
+            .base_proto
+            .get("__constructor__", activation)?
+            .coerce_to_object(activation);
+        let this = self.0.read().this;
+        let base_proto = self.proto(activation).coerce_to_object(activation);
+        constructor.call(name, activation, this, Some(base_proto), args)
     }
 
     fn call_method(
