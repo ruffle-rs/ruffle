@@ -232,7 +232,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn movie(&self) -> Option<Arc<SwfMovie>> {
-        Some(self.0.read().static_data.read().swf.clone())
+        Some(self.0.read().movie())
     }
 
     fn post_instantiation(
@@ -285,7 +285,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                 if record.states.contains(swf::ButtonState::HIT_TEST) {
                     match context
                         .library
-                        .library_for_movie_mut(read.static_data.read().swf.clone())
+                        .library_for_movie_mut(read.movie())
                         .instantiate_by_id(record.id, context.gc_context)
                     {
                         Ok(child) => {
@@ -594,7 +594,7 @@ impl From<ButtonState> for swf::ButtonState {
 
 #[derive(Clone, Debug)]
 struct ButtonAction {
-    action_data: crate::tag_utils::SwfSlice,
+    action_data: SwfSlice,
     condition: swf::ButtonActionCondition,
     key_code: Option<ButtonKeyCode>,
 }

@@ -54,6 +54,7 @@ pub struct Avm1Function<'gc> {
 
     /// A reference to the underlying SWF data.
     data: SwfSlice,
+
     /// The name of the function, if not anonymous.
     name: Option<AvmString<'gc>>,
 

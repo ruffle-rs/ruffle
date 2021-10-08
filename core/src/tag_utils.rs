@@ -185,7 +185,7 @@ impl From<Arc<SwfMovie>> for SwfSlice {
 impl AsRef<[u8]> for SwfSlice {
     #[inline]
     fn as_ref(&self) -> &[u8] {
-        &self.movie.data()[self.start..self.end]
+        self.data()
     }
 }
 
