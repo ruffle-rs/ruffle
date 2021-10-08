@@ -854,6 +854,35 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
+    pub fn compare(&mut self, bitmap: &Self, other: &Self) {
+        // Should be replaced with i32::abs_diff once stabilized (https://github.com/rust-lang/rust/issues/89492)
+        fn abs_diff(a: i32, b: i32) -> i32 {
+            if a > b {
+                a.wrapping_sub(b)
+            } else {
+                b.wrapping_sub(a)
+            }
+        }
+
+        for i in 0..self.pixels().len() {
+            let bitmap_pixel = bitmap.pixels()[i];
+            let other_pixel = other.pixels()[i];
+            self.pixels[i] = Color(
+                if bitmap_pixel.with_alpha(0xffu8) != other_pixel.with_alpha(0xffu8) {
+                    (0xff << 24)
+                        + (abs_diff(bitmap_pixel.red() as i32, other_pixel.red() as i32) << 16)
+                        + (abs_diff(bitmap_pixel.green() as i32, other_pixel.green() as i32) << 8)
+                        + abs_diff(bitmap_pixel.blue() as i32, other_pixel.blue() as i32)
+                } else if bitmap_pixel.alpha() != other_pixel.alpha() {
+                    (abs_diff(bitmap_pixel.alpha() as i32, other_pixel.alpha() as i32) << 24)
+                        + 0xffffff
+                } else {
+                    0
+                },
+            )
+        }
+    }
+
     pub fn object2(&self) -> Avm2Value<'gc> {
         self.avm2_object
             .map(|o| o.into())
