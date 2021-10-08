@@ -2622,10 +2622,13 @@ pub mod tests {
         // Halfway parse the SWF file until we find the tag we're searching for.
         let mut reader = Reader::new(&swf_buf.data, swf_buf.header.version());
         loop {
-            let tag_start = &reader.get_ref();
+            let tag_start = reader.get_ref();
             let (swf_tag_code, tag_len) = reader.read_tag_code_and_length().unwrap();
-            let tag_data = &tag_start[..reader.pos(tag_start) + tag_len];
             let tag_end = &reader.get_ref()[tag_len..];
+
+            let full_tag_len = tag_end.as_ptr() as usize - tag_start.as_ptr() as usize;
+            let tag_data = &tag_start[..full_tag_len];
+
             // Skip tag data.
             *reader.get_mut() = tag_end;
 
