@@ -17,7 +17,7 @@ use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::prelude::*;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use gc_arena::{rootless_arena, MutationContext};
 use instant::Instant;
@@ -37,8 +37,7 @@ where
         let mut avm1 = Avm1::new(gc_context, swf_version);
         let mut avm2 = Avm2::new(gc_context);
         let swf = Arc::new(SwfMovie::empty(swf_version));
-        let root: DisplayObject<'gc> =
-            MovieClip::new(SwfSlice::empty(swf.clone()), gc_context).into();
+        let root: DisplayObject<'gc> = MovieClip::new(swf.clone(), gc_context).into();
         root.set_depth(gc_context, 0);
         let stage = Stage::empty(gc_context, 550, 400);
         let mut frame_rate = 12.0;

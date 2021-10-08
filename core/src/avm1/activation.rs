@@ -2850,11 +2850,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some(level) = self.context.stage.child_by_depth(level_id) {
             level
         } else {
-            let level: DisplayObject<'_> = MovieClip::new(
-                SwfSlice::empty(self.base_clip().movie().unwrap()),
-                self.context.gc_context,
-            )
-            .into();
+            let level: DisplayObject<'_> =
+                MovieClip::new(self.base_clip().movie().unwrap(), self.context.gc_context).into();
 
             level.set_depth(self.context.gc_context, level_id as i32);
             level.set_default_root_name(&mut self.context);
