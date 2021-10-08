@@ -40,6 +40,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "pixelDissolve" => method(pixel_dissolve);
     "scroll" => method(scroll);
     "threshold" => method(threshold);
+    "compare" => method(compare);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -1058,6 +1059,69 @@ pub fn threshold<'gc>(
             log::warn!("BitmapData.threshold - not yet implemented");
             return Ok(Value::Undefined);
         }
+    }
+
+    Ok((-1).into())
+}
+
+pub fn compare<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(bitmap_data) = this.as_bitmap_data_object() {
+        if bitmap_data.disposed() {
+            return Ok((-2).into());
+        }
+
+        let other_bitmap = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation);
+
+        if let Some(other_bitmap_data) = other_bitmap.as_bitmap_data_object() {
+            if other_bitmap_data.disposed() {
+                return Ok((-2).into());
+            }
+
+            if bitmap_data.bitmap_data().read().width()
+                != other_bitmap_data.bitmap_data().read().width()
+            {
+                return Ok((-3).into());
+            }
+            if bitmap_data.bitmap_data().read().height()
+                != other_bitmap_data.bitmap_data().read().height()
+            {
+                return Ok((-4).into());
+            }
+            if bitmap_data
+                .bitmap_data()
+                .read()
+                .pixels()
+                .eq(other_bitmap_data.bitmap_data().read().pixels())
+            {
+                return Ok((0).into());
+            }
+
+            let new_bitmap_data = BitmapDataObject::empty_object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes.bitmap_data),
+            );
+
+            new_bitmap_data
+                .as_bitmap_data_object()
+                .unwrap()
+                .bitmap_data()
+                .write(activation.context.gc_context)
+                .compare(
+                    &bitmap_data.bitmap_data().read(),
+                    &other_bitmap_data.bitmap_data().read(),
+                );
+
+            return Ok(new_bitmap_data.into());
+        }
+
+        return Ok(Value::Undefined);
     }
 
     Ok((-1).into())
