@@ -1,43 +1,85 @@
 // Base
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 // Base.test_method
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended.test_method
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther.test_method
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 // Base.test_property (get)
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended.test_property (get)
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther.test_property (get)
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 test property
 // Base.test_property (set)
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Base.test_property (get)
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended.test_property (get)
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther.test_property (get)
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 // Extended.test_property (set)
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // Base.test_property (get)
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended.test_property (get)
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther.test_property (get)
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 // ExtendedFurther.test_property (set)
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
 // Base.test_property (get)
 ExtendedFurther
+// super.__proto__ === undefined
+true
 // Extended.test_property (get)
 ExtendedFurther
+// super.__proto__ === Object.prototype
+true
 // ExtendedFurther.test_property (get)
 ExtendedFurther
+// super.__proto__ === Base.prototype
+true
