@@ -5,20 +5,32 @@ First frame
 // Extended.prototype = new Base();
 // Base
 undefined
+// super.__proto__ === Object.prototype
+true
 
 // ExtendedFurther.prototype = new Extended();
 // Base
 undefined
+// super.__proto__ === Object.prototype
+true
 // Extended
 undefined
+// super.__proto__ === MovieClip.prototype
+true
 
 // var ef = new ExtendedFurther();
 // Base
 undefined
+// super.__proto__ === Object.prototype
+true
 // Extended
 undefined
+// super.__proto__ === MovieClip.prototype
+true
 // ExtendedFurther
 undefined
+// super.__proto__ === Base.prototype
+true
 
 // ef.test_method();
 
