@@ -51,7 +51,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _name: impl Into<AvmString<'gc>>,
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        Some(Value::Undefined)
+        None
     }
 
     fn set_local(
