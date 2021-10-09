@@ -290,7 +290,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if self.avm_type() == AvmType::Avm1 {
+        if context.avm_type() == AvmType::Avm1 {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -381,7 +381,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let vm_type = self.avm_type();
+        let vm_type = context.avm_type();
         if vm_type == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
             let video_constr = context.avm2.classes().video;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());

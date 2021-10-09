@@ -493,7 +493,7 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> DecodeResult {
-        if self.avm_type() != AvmType::Avm1 {
+        if context.avm_type() != AvmType::Avm1 {
             log::warn!("DoInitAction tag in AVM2 movie");
             return Ok(());
         }
@@ -528,7 +528,7 @@ impl<'gc> MovieClip<'gc> {
         tag_len: usize,
     ) -> DecodeResult {
         let movie = self.movie().unwrap();
-        if self.avm_type() != AvmType::Avm2 {
+        if context.avm_type() != AvmType::Avm2 {
             log::warn!("DoABC tag in AVM1 movie");
             return Ok(());
         }
@@ -1084,7 +1084,7 @@ impl<'gc> MovieClip<'gc> {
         let mut has_stream_block = false;
         drop(mc);
 
-        let vm_type = self.avm_type();
+        let vm_type = context.avm_type();
 
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
@@ -1133,10 +1133,11 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
-        match context
+        let library = context
             .library
-            .library_for_movie_mut(self.movie().unwrap()) //TODO
-            .instantiate_by_id(id, context.gc_context)
+            .library_for_movie_mut(self.movie().unwrap()); //TODO
+        let avm_type = library.avm_type();
+        match library.instantiate_by_id(id, context.gc_context)
         {
             Ok(child) => {
                 // Remove previous child from children list,
@@ -1147,7 +1148,7 @@ impl<'gc> MovieClip<'gc> {
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
                     child.set_parent(context.gc_context, Some(self.into()));
-                    if child.avm_type() == AvmType::Avm2 {
+                    if avm_type == AvmType::Avm2 {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
                         child.set_place_frame(context.gc_context, self.current_frame() + 1);
@@ -1162,7 +1163,7 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
-                    if child.avm_type() == AvmType::Avm1 {
+                    if avm_type == AvmType::Avm1 {
                         child.run_frame(context);
                     }
                 }
@@ -1720,7 +1721,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
-        if self.avm_type() == AvmType::Avm2 {
+        if context.avm_type() == AvmType::Avm2 {
             let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
                 self.allocate_as_avm2_object(context, (*self).into());
 
@@ -2025,7 +2026,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if self.avm_type() == AvmType::Avm1 {
+        if context.avm_type() == AvmType::Avm1 {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -3141,7 +3142,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> DecodeResult {
-        if self.avm_type() != AvmType::Avm1 {
+        if context.avm_type() != AvmType::Avm1 {
             log::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
@@ -3188,7 +3189,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
                     child.apply_place_object(context, self.movie(), &place_object);
-                    if child.avm_type() == AvmType::Avm2 {
+                    if context.avm_type() == AvmType::Avm2 {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
                         child.set_place_frame(context.gc_context, self.current_frame() + 1);

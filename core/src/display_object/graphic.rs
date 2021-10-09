@@ -113,7 +113,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
+        if context.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
             let shape_constr = context.avm2.classes().shape;
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
@@ -194,7 +194,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if self.avm_type() == AvmType::Avm1 {
+        if context.avm_type() == AvmType::Avm1 {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());

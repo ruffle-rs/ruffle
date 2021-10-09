@@ -245,7 +245,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if self.avm_type() == AvmType::Avm1 {
+        if context.avm_type() == AvmType::Avm1 {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
