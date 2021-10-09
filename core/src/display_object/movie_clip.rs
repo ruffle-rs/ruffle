@@ -1133,12 +1133,9 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
-        let library = context
-            .library
-            .library_for_movie_mut(self.movie().unwrap()); //TODO
+        let library = context.library.library_for_movie_mut(self.movie().unwrap()); //TODO
         let avm_type = library.avm_type();
-        match library.instantiate_by_id(id, context.gc_context)
-        {
+        match library.instantiate_by_id(id, context.gc_context) {
             Ok(child) => {
                 // Remove previous child from children list,
                 // and add new child onto front of the list.
