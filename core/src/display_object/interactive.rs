@@ -143,6 +143,10 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
+        if !self.mouse_enabled() {
+            return ClipEventResult::NotHandled;
+        }
+
         if self.filter_clip_event(event) == ClipEventResult::NotHandled {
             return ClipEventResult::NotHandled;
         }
