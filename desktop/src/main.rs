@@ -128,7 +128,9 @@ fn load_movie_from_path(
             .map_err(|_| "Path must be absolute and cannot be a URL")?
     } else {
         Url::parse(path.to_str().unwrap_or_default())
-            .map_err(|_| "Input path is not a file and could not be parsed as a URL.")?
+            .ok()
+            .filter(|url| url.host().is_some())
+            .ok_or("Input path is not a file and could not be parsed as a URL.")?
     };
 
     let mut movie = if movie_url.scheme() == "file" {
