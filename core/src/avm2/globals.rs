@@ -445,13 +445,12 @@ pub fn load_player_globals<'gc>(
     let object_proto = ScriptObject::bare_object(mc);
 
     let fn_classdef = function::create_class(mc);
-    let fn_class =
-        ClassObject::from_class_partial(activation, fn_classdef, Some(object_class.into()))?;
+    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
     let fn_proto = ScriptObject::object(mc, object_proto);
 
     let class_classdef = class::create_class(mc);
     let class_class =
-        ClassObject::from_class_partial(activation, class_classdef, Some(object_class.into()))?;
+        ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
     let class_proto = ScriptObject::object(mc, object_proto);
 
     // Now to weave the Gordian knot...
