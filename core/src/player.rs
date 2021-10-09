@@ -803,6 +803,30 @@ impl Player {
         })
     }
 
+    /// Handle an event sent into the player from the external windowing system
+    /// or an HTML element.
+    ///
+    /// Event handling is a complicated affair, involving several different
+    /// concerns that need to resolve with specific priority.
+    ///
+    /// 1. (In `avm_debug` builds) If Ctrl-Alt-V is pressed, dump all AVM1
+    ///    variables in the player.
+    /// 2. (In `avm_debug` builds) If Ctrl-Alt-D is pressed, toggle debug
+    ///    output for AVM1 and AVM2.
+    /// 3. If the incoming event is text input or key input that could be
+    ///    related to text input (e.g. pressing a letter key), we dispatch a
+    ///    key press event onto the stage.
+    /// 4. If the event from step 3 was not handled, we check if an `EditText`
+    ///    object is in focus and dispatch a text-control event to said object.
+    /// 5. If the incoming event is text input, and neither step 3 nor step 4
+    ///    resulted in an event being handled, we dispatch a text input event
+    ///    to the currently focused `EditText` (if present).
+    /// 6. Regardless of all prior event handling, we dispatch the event
+    ///    through the stage normally.
+    /// 7. Then, we dispatch the event through AVM1 global listener objects.
+    /// 8. The AVM1 action queue is drained.
+    /// 9. Mouse state is updated. This triggers button rollovers, which are a
+    ///    second wave of event processing.
     pub fn handle_event(&mut self, event: PlayerEvent) {
         if cfg!(feature = "avm_debug") {
             if let PlayerEvent::KeyDown {
