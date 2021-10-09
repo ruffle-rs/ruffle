@@ -1213,14 +1213,6 @@ pub trait TDisplayObject<'gc>:
         self.parent().and_then(|p| p.movie())
     }
 
-    /// Return the VM that this object belongs to.
-    ///
-    /// This function panics if the display object has no defining movie.
-    fn avm_type(&self) -> AvmType {
-        let movie = self.movie().unwrap();
-        movie.avm_type()
-    }
-
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;
     fn as_ptr(&self) -> *const DisplayObjectPtr;
 
@@ -1350,7 +1342,7 @@ pub trait TDisplayObject<'gc>:
     /// The default root names change based on the AVM configuration of the
     /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
     fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let vm_type = self.avm_type();
+        let vm_type = context.avm_type();
 
         if matches!(vm_type, AvmType::Avm2) {
             let name = AvmString::new(context.gc_context, format!("root{}", self.depth() + 1));

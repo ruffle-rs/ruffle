@@ -210,11 +210,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if self.avm_type() == AvmType::Avm1 {
+        if context.avm_type() == AvmType::Avm1 {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
-        } else if self.avm_type() == AvmType::Avm2 {
+        } else if context.avm_type() == AvmType::Avm2 {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let bitmap = activation.avm2().classes().bitmap;
             match Avm2StageObject::for_display_object_childless(
