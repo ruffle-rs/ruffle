@@ -755,16 +755,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 default_value,
                 ..
             } => {
-                let value = default_value.clone().unwrap_or(Value::Undefined);
                 self.install_slot(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    value.clone(),
+                    default_value.clone(),
                     is_final,
                 );
 
-                Ok(value)
+                Ok(default_value.clone())
             }
             TraitKind::Method {
                 disp_id, method, ..
@@ -838,16 +837,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 default_value,
                 ..
             } => {
-                let value = default_value.clone().unwrap_or(Value::Undefined);
                 self.install_const(
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    value.clone(),
+                    default_value.clone(),
                     is_final,
                 );
 
-                Ok(value)
+                Ok(default_value.clone())
             }
         }
     }
