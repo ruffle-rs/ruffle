@@ -223,6 +223,21 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
+    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+        if self.0.read().vector.length() as u32 >= index {
+            index.checked_sub(1).map(|index| index.into())
+        } else {
+            None
+        }
+    }
+
+    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
+        name.local_name()
+            .parse::<u32>()
+            .map(|index| self.0.read().vector.length() as u32 >= index)
+            .unwrap_or(false)
+    }
+
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }
