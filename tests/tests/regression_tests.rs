@@ -525,6 +525,7 @@ swf_tests! {
     (as3_movieclip_constr, "avm2/movieclip_constr", 1),
     (as3_lazyinit, "avm2/lazyinit", 1),
     (as3_trace, "avm2/trace", 1),
+    (as3_default_values, "avm2/default_values", 1),
     (as3_displayobjectcontainer_getchildat, "avm2/displayobjectcontainer_getchildat", 1),
     (as3_displayobjectcontainer_getchildbyname, "avm2/displayobjectcontainer_getchildbyname", 1),
     (as3_displayobjectcontainer_addchild, "avm2/displayobjectcontainer_addchild", 1),

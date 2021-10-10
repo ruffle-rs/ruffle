@@ -1,0 +1,8 @@
+0
+0
+NaN
+null
+null
+undefined
+null
+
