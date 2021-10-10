@@ -509,6 +509,7 @@ swf_tests! {
     (stage_property_representation, "avm1/stage_property_representation", 1),
     (as3_timeline_scripts, "avm2/timeline_scripts", 3),
     (as3_movieclip_properties, "avm2/movieclip_properties", 4),
+    (as3_movieclip_goto_during_frame_script, "avm2/movieclip_goto_during_frame_script", 1),
     (as3_movieclip_gotoandplay, "avm2/movieclip_gotoandplay", 5),
     (as3_movieclip_gotoandstop, "avm2/movieclip_gotoandstop", 5),
     (as3_movieclip_stop, "avm2/movieclip_stop", 5),
