@@ -327,6 +327,7 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push web demo
+        if: github.repository == 'ruffle-rs/ruffle'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
@@ -360,6 +361,7 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push JS docs
+        if: github.repository == 'ruffle-rs/ruffle'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/js-docs
@@ -390,6 +392,7 @@ jobs:
         run: sed -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/" -i ./PKGBUILD
 
       - name: Publish AUR package
+        if: github.repository == 'ruffle-rs/ruffle'
         uses: KSXGitHub/github-actions-deploy-aur@v2.2.5
         with:
           pkgname: ruffle-nightly-bin
