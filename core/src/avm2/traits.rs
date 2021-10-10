@@ -9,7 +9,9 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell};
-use swf::avm2::types::{Trait as AbcTrait, TraitKind as AbcTraitKind};
+use swf::avm2::types::{
+    DefaultValue as AbcDefaultValue, Trait as AbcTrait, TraitKind as AbcTraitKind,
+};
 
 bitflags! {
     /// All attributes a trait can have.
@@ -67,7 +69,7 @@ pub enum TraitKind<'gc> {
     Slot {
         slot_id: u32,
         type_name: Multiname<'gc>,
-        default_value: Option<Value<'gc>>,
+        default_value: Value<'gc>,
     },
 
     /// A method on an object that can be called.
@@ -94,7 +96,7 @@ pub enum TraitKind<'gc> {
     Const {
         slot_id: u32,
         type_name: Multiname<'gc>,
-        default_value: Option<Value<'gc>>,
+        default_value: Value<'gc>,
     },
 }
 
@@ -154,8 +156,8 @@ impl<'gc> Trait<'gc> {
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Slot {
                 slot_id: 0,
+                default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
                 type_name,
-                default_value,
             },
         }
     }
@@ -170,8 +172,8 @@ impl<'gc> Trait<'gc> {
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Slot {
                 slot_id: 0,
+                default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
                 type_name,
-                default_value,
             },
         }
     }
@@ -190,23 +192,23 @@ impl<'gc> Trait<'gc> {
                 slot_id,
                 type_name,
                 value,
-            } => Trait {
-                name,
-                attributes: trait_attribs_from_abc_traits(abc_trait),
-                kind: TraitKind::Slot {
-                    slot_id: *slot_id,
-                    type_name: if type_name.0 == 0 {
-                        Multiname::any()
-                    } else {
-                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+            } => {
+                let type_name = if type_name.0 == 0 {
+                    Multiname::any()
+                } else {
+                    Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+                };
+                let default_value = slot_default_value(unit, value, &type_name, activation)?;
+                Trait {
+                    name,
+                    attributes: trait_attribs_from_abc_traits(abc_trait),
+                    kind: TraitKind::Slot {
+                        slot_id: *slot_id,
+                        type_name,
+                        default_value,
                     },
-                    default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, activation)?)
-                    } else {
-                        None
-                    },
-                },
-            },
+                }
+            }
             AbcTraitKind::Method { disp_id, method } => Trait {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
@@ -251,23 +253,23 @@ impl<'gc> Trait<'gc> {
                 slot_id,
                 type_name,
                 value,
-            } => Trait {
-                name,
-                attributes: trait_attribs_from_abc_traits(abc_trait),
-                kind: TraitKind::Const {
-                    slot_id: *slot_id,
-                    type_name: if type_name.0 == 0 {
-                        Multiname::any()
-                    } else {
-                        Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+            } => {
+                let type_name = if type_name.0 == 0 {
+                    Multiname::any()
+                } else {
+                    Multiname::from_abc_multiname_static(unit, type_name.clone(), mc)?
+                };
+                let default_value = slot_default_value(unit, value, &type_name, activation)?;
+                Trait {
+                    name,
+                    attributes: trait_attribs_from_abc_traits(abc_trait),
+                    kind: TraitKind::Const {
+                        slot_id: *slot_id,
+                        type_name,
+                        default_value,
                     },
-                    default_value: if let Some(dv) = value {
-                        Some(abc_default_value(unit, dv, activation)?)
-                    } else {
-                        None
-                    },
-                },
-            },
+                }
+            }
         })
     }
 
@@ -309,5 +311,45 @@ impl<'gc> Trait<'gc> {
             TraitKind::Function { slot_id, .. } => *slot_id = id,
             TraitKind::Const { slot_id, .. } => *slot_id = id,
         }
+    }
+}
+
+/// Returns the default value for a slot/const trait.
+///
+/// If no default value is supplied, the "null" value for the type's trait is returned.
+fn slot_default_value<'gc>(
+    translation_unit: TranslationUnit<'gc>,
+    value: &Option<AbcDefaultValue>,
+    type_name: &Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error> {
+    if let Some(value) = value {
+        // TODO: This should verify that the default value is compatible with the type.
+        abc_default_value(translation_unit, value, activation)
+    } else {
+        Ok(default_value_for_type(type_name))
+    }
+}
+
+/// Returns the default "null" value for the given type.
+/// (`0` for ints, `null` for objects, etc.)
+fn default_value_for_type<'gc>(type_name: &Multiname<'gc>) -> Value<'gc> {
+    // TODO: It's technically possible to have a multiname in here, so this should go through something
+    // like `Activation::resolve_type` to get an actual `Class` object, and then check something like `Class::built_in_type`.
+    // The Multiname is guaranteed to be static by `Multiname::from_abc_multiname_static` earlier.
+    if type_name.is_any() {
+        Value::Undefined
+    } else if type_name.namespace_set().any(|ns| ns.is_public()) {
+        match type_name.local_name().unwrap_or_default().as_str() {
+            "Boolean" => false.into(),
+            "Number" => f64::NAN.into(),
+            "int" => 0.into(),
+            "String" => Value::Null,
+            "uint" => 0.into(),
+            _ => Value::Null, // Object type
+        }
+    } else {
+        // Object type
+        Value::Null
     }
 }
