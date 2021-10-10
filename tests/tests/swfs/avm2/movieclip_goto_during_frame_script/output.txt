@@ -1,0 +1,16 @@
+root frame 1
+gotoAndStop(2)
+clip: null
+currentFrame: 1
+gotoAndStop(3)
+clip: null
+currentFrame: 1
+
+root frame 3
+child frame 1
+parent.currentFrame: 3
+parent.gotoAndStop(2)
+root frame 2
+parent.currentFrame: 2
+parent.clip: [object Symbol2_1]
+
