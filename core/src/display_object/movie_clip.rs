@@ -88,6 +88,7 @@ pub struct MovieClipData<'gc> {
     use_hand_cursor: bool,
     last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
+    queued_goto_frame: Option<FrameNumber>,
     drop_target: Option<DisplayObject<'gc>>,
 }
 
@@ -115,6 +116,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                queued_goto_frame: None,
                 drop_target: None,
             },
         ))
@@ -148,6 +150,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                queued_goto_frame: None,
                 drop_target: None,
             },
         ))
@@ -184,6 +187,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                queued_goto_frame: None,
                 drop_target: None,
             },
         ))
@@ -217,6 +221,7 @@ impl<'gc> MovieClip<'gc> {
                 use_hand_cursor: true,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
+                queued_goto_frame: None,
                 drop_target: None,
             },
         ));
@@ -758,7 +763,18 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.max(1);
 
         if frame != self.current_frame() {
-            self.run_goto(context, frame, false);
+            if self
+                .0
+                .read()
+                .flags
+                .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+            {
+                // AVM2 does not allow a clip to see while it is executing a frame script.
+                // The goto is instead queued and run once the frame script is completed.
+                self.0.write(context.gc_context).queued_goto_frame = Some(frame);
+            } else {
+                self.run_goto(context, frame, false);
+            }
         }
     }
 
@@ -1783,11 +1799,13 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         if let Some(avm2_object) = avm2_object {
             if let Some(frame_id) = write.queued_script_frame {
-                let is_fresh_frame = write.last_queued_script_frame.is_none()
-                    || write.queued_script_frame != write.last_queued_script_frame;
+                let is_fresh_frame = write.queued_script_frame != write.last_queued_script_frame;
 
                 write.last_queued_script_frame = Some(frame_id);
                 write.queued_script_frame = None;
+                write
+                    .flags
+                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
 
                 if is_fresh_frame {
                     while let Some(fs) = write.frame_scripts.get(index) {
@@ -1803,6 +1821,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 log::error!("Error occured when running AVM2 frame script: {}", e);
                             }
                             write = self.0.write(context.gc_context);
+                            write
+                                .flags
+                                .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                         }
 
                         index += 1;
@@ -1811,7 +1832,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
+        let goto_frame = write.queued_goto_frame.take();
         drop(write);
+        if let Some(frame) = goto_frame {
+            self.run_goto(context, frame, false);
+        }
 
         if let Some(container) = self.as_container() {
             for child in container.iter_render_list() {
@@ -3492,6 +3517,11 @@ bitflags! {
         /// The AS3 `isPlaying` property is broken and yields false until you first
         /// call `play` to unbreak it. This flag tracks that bug.
         const PROGRAMMATICALLY_PLAYED = 1 << 2;
+
+        /// Executing an AVM2 frame script.
+        ///
+        /// This causes any goto action to be queued and executed at the end of the script.
+        const EXECUTING_AVM2_FRAME_SCRIPT = 1 << 3;
     }
 }
 
