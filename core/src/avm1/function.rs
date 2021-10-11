@@ -305,7 +305,7 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let max_recursion_depth = activation.context.avm1.max_recursion_depth();
-                let base_clip = if effective_ver > 5 {
+                let base_clip = if effective_ver > 5 && !af.base_clip.removed() {
                     af.base_clip
                 } else {
                     this.as_display_object()
