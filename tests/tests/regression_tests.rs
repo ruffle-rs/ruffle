@@ -663,6 +663,7 @@ swf_tests! {
     (as3_vector_constr, "avm2/vector_constr", 1),
     (as3_vector_legacy, "avm2/vector_legacy", 1),
     (as3_sound_valueof, "avm2/sound_valueof", 1),
+    (as3_with, "avm2/with", 1),
     (as3_sound_embeddedprops, "avm2/sound_embeddedprops", 1),
     (as3_soundtransform, "avm2/soundtransform", 1),
     (as3_movieclip_soundtransform, "avm2/movieclip_soundtransform", 49),
