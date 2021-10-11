@@ -111,6 +111,7 @@ swf_tests! {
     (as2_bitand, "avm1/bitand", 1),
     (as2_bitxor, "avm1/bitxor", 1),
     (function_base_clip, "avm1/function_base_clip", 2),
+    (function_base_clip_removed, "avm1/function_base_clip_removed", 3),
     (call, "avm1/call", 2),
     (color, "avm1/color", 1, img = true),
     (clip_events, "avm1/clip_events", 4),
