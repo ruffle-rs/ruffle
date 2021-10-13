@@ -139,7 +139,7 @@ impl AudioMixer {
                 data,
                 format.is_stereo,
                 format.sample_rate,
-            )),
+            )?),
             #[cfg(feature = "minimp3")]
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new(
                 if format.is_stereo { 2 } else { 1 },

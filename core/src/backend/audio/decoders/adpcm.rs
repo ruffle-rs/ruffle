@@ -70,6 +70,8 @@ const SAMPLE_DELTA_CALCULATOR: [fn(u16, u32) -> u16; 4] = [
     },
 ];
 
+type Error = Box<dyn std::error::Error>;
+
 #[derive(Clone, Default)]
 struct Channel {
     sample: i16,
@@ -86,24 +88,20 @@ pub struct AdpcmDecoder<R: Read> {
 }
 
 impl<R: Read> AdpcmDecoder<R> {
-    pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Self {
+    pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Result<Self, Error> {
         let mut reader = BitReader::new(inner);
-        let bits_per_sample = reader.read::<u8>(2).unwrap_or_else(|e| {
-            log::warn!("Invalid ADPCM stream: {}", e);
-            0
-        }) as usize
-            + 2;
+        let bits_per_sample = reader.read::<u8>(2)? as usize + 2;
 
         let num_channels = if is_stereo { 2 } else { 1 };
 
-        Self {
+        Ok(Self {
             inner: reader,
             sample_rate,
             bits_per_sample,
             sample_num: 0,
             channels: vec![Default::default(); num_channels],
             decoder: SAMPLE_DELTA_CALCULATOR[bits_per_sample - 2],
-        }
+        })
     }
 }
 
@@ -169,6 +167,6 @@ impl<R: AsRef<[u8]> + Default> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
         let bit_stream = std::mem::replace(&mut self.inner, BitReader::new(Default::default()));
         let mut cursor = bit_stream.into_reader();
         cursor.set_position(0);
-        *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate());
+        *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate()).unwrap();
     }
 }

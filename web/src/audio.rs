@@ -449,7 +449,7 @@ impl WebAudioBackend {
                         std::io::Cursor::new(audio_data.to_vec()),
                         sound.format.is_stereo,
                         sound.format.sample_rate,
-                    )),
+                    )?),
                     AudioCompression::Nellymoser => Box::new(NellymoserDecoder::new(
                         std::io::Cursor::new(audio_data.to_vec()),
                         sound.format.sample_rate.into(),
@@ -622,7 +622,7 @@ impl WebAudioBackend {
                         &audio_data[start..end],
                         format.is_stereo,
                         format.sample_rate,
-                    );
+                    )?;
                     if format.is_stereo {
                         for frame in decoder {
                             let (l, r) = (frame[0], frame[1]);
