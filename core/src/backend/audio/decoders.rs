@@ -179,7 +179,8 @@ impl Iterator for AdpcmStreamDecoder {
                 Cursor::new(audio_data),
                 self.format.is_stereo,
                 self.format.sample_rate,
-            ).ok()?;
+            )
+            .ok()?;
             self.decoder.next()
         } else {
             // No more SoundStreamBlock tags.
