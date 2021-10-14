@@ -56,7 +56,7 @@ pub fn make_decoder<R: 'static + Send + Read>(
             data,
             format.is_stereo,
             format.sample_rate,
-        )),
+        )?),
         #[cfg(any(feature = "minimp3", feature = "symphonia"))]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
             if format.is_stereo { 2 } else { 1 },
@@ -136,7 +136,7 @@ pub struct AdpcmStreamDecoder {
 }
 
 impl AdpcmStreamDecoder {
-    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Self {
+    fn new(format: &SoundFormat, swf_data: SwfSlice) -> Result<Self, Error> {
         let movie = swf_data.movie.clone();
         let mut tag_reader = StreamTagReader::new(format.compression, swf_data);
         let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
@@ -144,12 +144,12 @@ impl AdpcmStreamDecoder {
             Cursor::new(audio_data),
             format.is_stereo,
             format.sample_rate,
-        );
-        Self {
+        )?;
+        Ok(Self {
             format: format.clone(),
             tag_reader,
             decoder,
-        }
+        })
     }
 }
 
@@ -179,7 +179,8 @@ impl Iterator for AdpcmStreamDecoder {
                 Cursor::new(audio_data),
                 self.format.is_stereo,
                 self.format.sample_rate,
-            );
+            )
+            .ok()?;
             self.decoder.next()
         } else {
             // No more SoundStreamBlock tags.
@@ -195,7 +196,7 @@ pub fn make_stream_decoder(
     swf_data: SwfSlice,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
     let decoder: Box<dyn Decoder + Send> = if format.compression == AudioCompression::Adpcm {
-        Box::new(AdpcmStreamDecoder::new(format, swf_data))
+        Box::new(AdpcmStreamDecoder::new(format, swf_data)?)
     } else {
         Box::new(StandardStreamDecoder::new(format, swf_data)?)
     };
