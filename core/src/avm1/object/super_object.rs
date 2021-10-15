@@ -25,8 +25,8 @@ pub struct SuperObjectData<'gc> {
     /// The object present as `this` throughout the superchain.
     this: Object<'gc>,
 
-    /// The `proto` that the currently-executing method was pulled from.
-    base_proto: Object<'gc>,
+    /// The prototype depth of the currently-executing method.
+    depth: u8,
 }
 
 impl<'gc> SuperObject<'gc> {
@@ -38,10 +38,30 @@ impl<'gc> SuperObject<'gc> {
         this: Object<'gc>,
         base_proto: Object<'gc>,
     ) -> Self {
+        // This is a temporary hack to calculate `depth` from `this` and `base_proto`.
+        // TODO: Pass `depth` alone (preferably in `Activation`),
+        // and remove all `base_proto` parameters.
+        let mut object = this;
+        let mut depth = 0;
+        while !Object::ptr_eq(object, base_proto) {
+            object = object.proto(activation).coerce_to_object(activation);
+            depth += 1;
+        }
+
         Self(GcCell::allocate(
             activation.context.gc_context,
-            SuperObjectData { this, base_proto },
+            SuperObjectData { this, depth },
         ))
+    }
+
+    fn base_proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+        let read = self.0.read();
+        let depth = read.depth;
+        let mut proto = read.this;
+        for _ in 0..depth {
+            proto = proto.proto(activation).coerce_to_object(activation);
+        }
+        proto
     }
 }
 
@@ -75,9 +95,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let constructor = self
-            .0
-            .read()
-            .base_proto
+            .base_proto(activation)
             .get("__constructor__", activation)?
             .coerce_to_object(activation);
         let this = self.0.read().this;
@@ -138,7 +156,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     }
 
     fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        self.0.read().base_proto.proto(activation)
+        self.base_proto(activation).proto(activation)
     }
 
     fn define_value(
