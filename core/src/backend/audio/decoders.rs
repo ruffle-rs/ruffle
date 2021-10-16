@@ -78,6 +78,18 @@ pub fn make_decoder<R: 'static + Send + Read>(
     Ok(decoder)
 }
 
+impl Decoder for Box<dyn Decoder + Send> {
+    #[inline]
+    fn num_channels(&self) -> u8 {
+        self.as_ref().num_channels()
+    }
+
+    /// The sample rate of this audio decoder.
+    fn sample_rate(&self) -> u16 {
+        self.as_ref().sample_rate()
+    }
+}
+
 /// A "stream" sound is a sound that has its data distributed across `SoundStreamBlock` tags,
 /// one per each frame of a MovieClip. The sound is synced to the MovieClip's timeline, and will
 /// stop/seek as the MovieClip stops/seeks.
