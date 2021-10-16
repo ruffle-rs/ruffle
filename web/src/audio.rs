@@ -16,6 +16,7 @@ pub struct WebAudioBackend {
     sounds: Arena<Sound>,
     left_samples: Vec<f32>,
     right_samples: Vec<f32>,
+    output_time: f64,
     frame_rate: f64,
     min_sample_rate: u16,
     preload_stream_data: FnvHashMap<PreloadStreamHandle, StreamData>,
@@ -93,6 +94,22 @@ struct SoundInstance {
     /// either decoded on the fly with Decoder, or pre-decoded
     /// and played with and AudioBufferSourceNode.
     instance_type: SoundInstanceType,
+
+    /// The time in seconds that this buffer started playing.
+    /// This time uses the same origin as `AudioContext.currentTime`.
+    start_time: f64,
+
+    /// The starting point of the sound data in seconds.
+    /// `0.0` means the beginning of the sound.
+    loop_start: f64,
+
+    /// The ending point of the sound data in seconds.
+    /// `f64::MAX` if no end point is specified.
+    loop_end: f64,
+
+    /// The number of times the sound data will loop.
+    /// `1` means the sound plays once.
+    num_loops: u16,
 }
 
 /// The Drop impl ensures that the sound is stopped and remove from the audio context,
@@ -324,6 +341,7 @@ impl WebAudioBackend {
             next_stream_id: 0,
             left_samples: vec![],
             right_samples: vec![],
+            output_time: 0.0,
             frame_rate: 1.0,
             min_sample_rate,
         })
@@ -350,6 +368,9 @@ impl WebAudioBackend {
 
                 let sound_sample_rate: f64 = sound.format.sample_rate.into();
                 let mut is_stereo = sound.format.is_stereo;
+                let mut loop_start = f64::from(sound.skip_sample_frames) / 44100.0;
+                let mut loop_end = std::f64::MAX;
+                let mut num_loops = 1;
                 let node: web_sys::AudioNode = match settings {
                     Some(settings)
                         if sound.skip_sample_frames > 0
@@ -360,12 +381,12 @@ impl WebAudioBackend {
                     {
                         // Event sound with non-default parameters.
                         // Note that start/end values are in 44.1kHZ samples regardless of the sound's sample rate.
-                        let start_sample_frame = f64::from(settings.in_sample.unwrap_or(0))
-                            / 44100.0
+                        loop_start = f64::from(settings.in_sample.unwrap_or(0)) / 44100.0
                             + f64::from(sound.skip_sample_frames) / sound_sample_rate;
-                        node.set_loop(settings.num_loops > 1);
-                        node.set_loop_start(start_sample_frame);
-                        node.start_with_when_and_grain_offset(0.0, start_sample_frame)
+                        num_loops = settings.num_loops;
+                        node.set_loop(num_loops > 1);
+                        node.set_loop_start(loop_start);
+                        node.start_with_when_and_grain_offset(0.0, loop_start)
                             .warn_on_error();
 
                         let current_time = self.context.current_time();
@@ -373,18 +394,18 @@ impl WebAudioBackend {
                         // The length of the sound in the swf, or by the script playing it, doesn't
                         // always line up with the actual length of the sound.
                         // Always set a custom end point to make sure we're correct.
-                        let end_sample_frame = if let Some(out_sample) = settings.out_sample {
+                        loop_end = if let Some(out_sample) = settings.out_sample {
                             f64::from(out_sample) / 44100.0
                         } else {
                             f64::from(sound.num_sample_frames + u32::from(sound.skip_sample_frames))
                                 / sound_sample_rate
                         };
+
                         // `AudioSourceBufferNode.loop` is a bool, so we have to stop the loop at the proper time.
                         // `start_with_when_and_grain_offset_and_grain_duration` unfortunately doesn't work
                         // as you might expect with loops, so we use `stop_with_when` to stop the loop.
-                        let total_len =
-                            (end_sample_frame - start_sample_frame) * f64::from(settings.num_loops);
-                        node.set_loop_end(end_sample_frame);
+                        let total_len = (loop_end - loop_start) * f64::from(settings.num_loops);
+                        node.set_loop_end(loop_end);
                         node.stop_with_when(current_time + total_len)
                             .warn_on_error();
 
@@ -416,6 +437,10 @@ impl WebAudioBackend {
                 let instance = SoundInstance {
                     handle: Some(handle),
                     format: sound.format.clone(),
+                    start_time: self.context.current_time(),
+                    loop_start,
+                    loop_end,
+                    num_loops,
                     instance_type: SoundInstanceType::AudioBuffer(AudioBufferInstance {
                         envelope_node: node.clone(),
                         envelope_is_stereo: is_stereo,
@@ -473,6 +498,10 @@ impl WebAudioBackend {
                 let instance = SoundInstance {
                     handle: Some(handle),
                     format: sound.format.clone(),
+                    start_time: self.context.current_time(),
+                    loop_start: 0.0,
+                    loop_end: std::f64::MAX,
+                    num_loops: 1,
                     instance_type: SoundInstanceType::Decoder(decoder),
                 };
                 SOUND_INSTANCES.with(|instances| {
@@ -1022,8 +1051,21 @@ impl AudioBackend for WebAudioBackend {
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
         SOUND_INSTANCES.with(|instances| {
             let instances = instances.borrow();
-            // TODO: Return actual position
-            instances.get(instance).map(|_| 0.0)
+            instances.get(instance).map(|instance| {
+                // Estimate the position of the sound based on the current AudioContext time.
+                let mut dt = self.output_time - instance.start_time;
+                dt = dt.max(0.0);
+                let loop_time = instance.loop_end - instance.loop_start;
+                let loop_index = (dt / loop_time) as u16;
+                // If the sound is looping, the position cycles between the start and end times,
+                // except on the final loop, where we clamp to the final position.
+                if loop_index < instance.num_loops {
+                    dt = dt.rem_euclid(loop_time);
+                }
+                dt += instance.loop_start;
+                dt = dt.min(instance.loop_end);
+                dt * 1000.0
+            })
         })
     }
 
@@ -1057,6 +1099,12 @@ impl AudioBackend for WebAudioBackend {
             }
         })
     }
+
+    fn tick(&mut self) {
+        // Update the output timestamp.
+        // We do this once per frame to avoid spamming it in `get_sound_position`.
+        self.output_time = get_audio_output_timestamp(&self.context);
+    }
 }
 
 #[wasm_bindgen(raw_module = "./ruffle-imports.js")]
@@ -1070,6 +1118,11 @@ extern "C" {
         left_data: Option<&[f32]>,
         right_data: Option<&[f32]>,
     );
+
+    /// Imported JS method to call `AudioContext.getOutputTimestamp` because
+    /// it is not yet available in `web_sys`.
+    #[wasm_bindgen(js_name = "getAudioOutputTimestamp")]
+    fn get_audio_output_timestamp(context: &web_sys::AudioContext) -> f64;
 }
 
 // Janky resmapling code.
