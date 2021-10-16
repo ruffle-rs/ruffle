@@ -1,4 +1,6 @@
-use super::decoders::{self, AdpcmDecoder, NellymoserDecoder, PcmDecoder, SeekableDecoder};
+use super::decoders::{
+    self, AdpcmDecoder, Decoder, NellymoserDecoder, PcmDecoder, SeekableDecoder,
+};
 use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::tag_utils::SwfSlice;
 use generational_arena::Arena;
@@ -27,10 +29,72 @@ pub struct AudioMixer {
     output_sample_rate: u32,
 }
 
-/// An iterator for sound decoders that returns stereo samples.
-type Signal = Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>;
-
 type Error = Box<dyn std::error::Error>;
+
+/// An audio stream.
+trait Stream: dasp::signal::Signal<Frame = [i16; 2]> + Send {
+    /// The position of this stream in sample frames.
+    ///
+    /// For infinite streams, this will be the number of sample frames since the start of the
+    /// stream, starting from 0.
+    /// For finite streams, this will be the sample position in the underlying audio data. This may
+    /// not start from 0 if this sound did not start playing from the beginning.
+    fn source_position(&self) -> u32;
+
+    /// The sample rate of the underlying audio source of this stream. For example, this will return
+    /// 22050 when playing a 22KHz audio file, even if the output rate is 44KHz.
+    fn source_sample_rate(&self) -> u16;
+}
+
+/// A stream that wraps a `Decoder`.
+struct DecoderStream<D> {
+    decoder: D,
+    position: u32,
+    is_exhausted: bool,
+}
+
+impl<D> DecoderStream<D> {
+    /// Creates a `DecoderStream` using the given decoder as a source.
+    fn new(decoder: D) -> Self {
+        Self {
+            decoder,
+            position: 0,
+            is_exhausted: false,
+        }
+    }
+}
+
+impl<D: Decoder + Send> Stream for DecoderStream<D> {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        self.decoder.sample_rate()
+    }
+}
+
+impl<D: Decoder + Send> dasp::signal::Signal for DecoderStream<D> {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> [i16; 2] {
+        if let Some(frame) = self.decoder.next() {
+            self.position += 1;
+            frame
+        } else {
+            self.is_exhausted = true;
+            Default::default()
+        }
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.is_exhausted
+    }
+}
 
 /// Contains the data and metadata for a sound in an SWF file.
 ///
@@ -68,7 +132,7 @@ struct SoundInstance {
     handle: Option<SoundHandle>,
 
     /// The audio stream. Call `next()` to yield sample frames.
-    signal: Signal,
+    stream: Box<dyn Stream>,
 
     /// Flag indicating whether this sound is still playing.
     /// If this flag is false, the sound will be cleaned up during the
@@ -167,93 +231,82 @@ impl AudioMixer {
         Ok(decoder)
     }
 
-    /// Transforms a `Signal` into a new `Signal` that matches the output sample rate.
-    fn make_resampler<S: Send + dasp::signal::Signal<Frame = [i16; 2]>>(
-        &self,
-        format: &swf::SoundFormat,
-        mut signal: S,
-    ) -> dasp::signal::interpolate::Converter<
-        S,
-        impl dasp::interpolate::Interpolator<Frame = [i16; 2]>,
-    > {
+    /// Transforms a `Stream` into a new `Stream` that matches the output sample rate.
+    fn make_resampler(&self, format: &swf::SoundFormat, mut stream: impl Stream) -> impl Stream {
         // TODO: Allow interpolator to be user-configurable?
-        let left = signal.next();
-        let right = signal.next();
+        let left = stream.next();
+        let right = stream.next();
         let interpolator = dasp::interpolate::linear::Linear::new(left, right);
-        dasp::signal::interpolate::Converter::from_hz_to_hz(
-            signal,
+        ConverterStream(dasp::signal::interpolate::Converter::from_hz_to_hz(
+            stream,
             interpolator,
             format.sample_rate.into(),
             self.output_sample_rate.into(),
-        )
+        ))
     }
 
-    /// Creates a `Signal` for an "event" that decodes and resamples the audio stream to the
+    /// Creates a `Stream` for an "event" that decodes and resamples the audio stream to the
     /// output format.
     ///
     /// This also applies the custom envelope, start/end, and looping parameters from `settings`.
-    fn make_signal_from_event_sound(
+    fn make_stream_from_event_sound(
         &self,
         sound: &Sound,
         settings: &swf::SoundInfo,
         data: Cursor<ArcAsRef>,
-    ) -> Result<Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn Stream>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = Self::make_seekable_decoder(&sound.format, data)?;
 
-        // Wrap the decoder in the event sound signal (controls looping/envelope)
-        let signal = EventSoundSignal::new_with_settings(
+        // Wrap the decoder into an event sound stream (controls looping/envelope)
+        let stream = EventSoundStream::new_with_settings(
             decoder,
             settings,
             sound.num_sample_frames,
             sound.skip_sample_frames,
         );
-        // Convert the `Decoder` to a `Signal`, and resample it the the output
-        // sample rate.
-        let signal = self.make_resampler(&sound.format, signal);
+        // Resample the stream to the output sample rate.
+        let stream = self.make_resampler(&sound.format, stream);
         if let Some(envelope) = &settings.envelope {
-            use dasp::Signal;
             let envelope_signal = EnvelopeSignal::new(&envelope[..], self.output_sample_rate);
-            Ok(Box::new(signal.mul_amp(envelope_signal)))
+            Ok(Box::new(MulAmpStream::new(stream, envelope_signal)) as Box<dyn Stream>)
         } else {
-            Ok(Box::new(signal))
+            Ok(Box::new(stream) as Box<dyn Stream>)
         }
     }
 
-    /// Creates a `Signal` for a simple "event" sound that decodes and resamples the audio stream
+    /// Creates a `Stream` for a simple "event" sound that decodes and resamples the audio stream
     /// to the output format.
     ///
     /// This is used for cases where there is no custom envelope or looping on the sound instance.
-    /// Otherwise, `AudioMixer::make_signal_from_event_sound` should be used.
-    fn make_signal_from_simple_event_sound<R: 'static + std::io::Read + Send>(
+    /// Otherwise, `AudioMixer::make_stream_from_event_sound` should be used.
+    fn make_stream_from_simple_event_sound<R: 'static + std::io::Read + Send>(
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
-    ) -> Result<Box<dyn Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn Stream>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = decoders::make_decoder(format, data_stream)?;
 
-        // Convert the `Decoder` to a `Signal`, and resample it the the output
-        // sample rate.
-        let signal = dasp::signal::from_iter(decoder);
-        let signal = self.make_resampler(format, signal);
-        Ok(Box::new(signal))
+        // Convert the `Decoder` to a `Stream`, and resample it to output sample rate.
+        let stream = DecoderStream::new(decoder);
+        let stream = self.make_resampler(format, stream);
+        Ok(Box::new(stream))
     }
 
-    /// Creates a `Signal` that decodes and resamples a timeline "stream" sound.
-    fn make_signal_from_stream<'a>(
+    /// Creates a `Stream` that decodes and resamples a timeline "stream" sound.
+    fn make_stream_from_swf_slice<'a>(
         &self,
         format: &swf::SoundFormat,
         data_stream: SwfSlice,
-    ) -> Result<Box<dyn 'a + Send + dasp::signal::Signal<Frame = [i16; 2]>>, Error> {
+    ) -> Result<Box<dyn 'a + Stream>, Error> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(format, data_stream)?;
 
-        // Convert the `Decoder` to a `Signal`, and resample it the the output
-        // sample rate.
-        let signal = dasp::signal::from_iter(clip_stream_decoder);
-        let signal = Box::new(self.make_resampler(format, signal));
-        Ok(signal)
+        // Convert the `Decoder` to a `Stream`, and resample it to the output sample rate.
+        let stream = DecoderStream::new(clip_stream_decoder);
+        let stream = Box::new(self.make_resampler(format, stream));
+        Ok(stream)
     }
 
     /// Callback to the audio thread.
@@ -281,8 +334,8 @@ impl AudioMixer {
         {
             let mut output_frame = Stereo::<T::Signed>::EQUILIBRIUM;
             for (_, sound) in sound_instances.iter_mut() {
-                if sound.active && !sound.signal.is_exhausted() {
-                    let sound_frame = sound.signal.next();
+                if sound.active && !sound.stream.is_exhausted() {
+                    let sound_frame = sound.stream.next();
                     let [left_0, left_1] = sound_frame.mul_amp(sound.left_transform);
                     let [right_0, right_1] = sound_frame.mul_amp(sound.right_transform);
                     let sound_frame: Stereo<T::Signed> = [
@@ -336,12 +389,12 @@ impl AudioMixer {
         // The audio data for stream sounds is distributed among the frames of a
         // movie clip. The stream tag reader will parse through the SWF and
         // feed the decoder audio data on the fly.
-        let signal = self.make_signal_from_stream(format, clip_data)?;
+        let stream = self.make_stream_from_swf_slice(format, clip_data)?;
 
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: None,
-            signal,
+            stream,
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
@@ -359,25 +412,25 @@ impl AudioMixer {
     ) -> Result<SoundInstanceHandle, Error> {
         let sound = &self.sounds[sound_handle];
         let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
-        // Create a signal that decodes and resamples the sound.
-        let signal = if sound.skip_sample_frames == 0
+        // Create a stream that decodes and resamples the sound.
+        let stream = if sound.skip_sample_frames == 0
             && settings.in_sample.is_none()
             && settings.out_sample.is_none()
             && settings.num_loops <= 1
             && settings.envelope.is_none()
         {
-            // For simple event sounds, just use the same signal as streams.
-            self.make_signal_from_simple_event_sound(&sound.format, data)?
+            // For simple event sounds, use a standard decoder stream.
+            self.make_stream_from_simple_event_sound(&sound.format, data)?
         } else {
-            // For event sounds with envelopes/other properties, wrap it in `EventSoundSignal`.
-            self.make_signal_from_event_sound(sound, settings, data)?
+            // For event sounds with envelopes/other properties, wrap it in `EventSoundStream`.
+            self.make_stream_from_event_sound(sound, settings, data)?
         };
 
         // Add sound instance to active list.
         let mut sound_instances = self.sound_instances.lock().unwrap();
         let handle = sound_instances.insert(SoundInstance {
             handle: Some(sound_handle),
-            signal,
+            stream,
             active: true,
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
@@ -408,8 +461,12 @@ impl AudioMixer {
     ////// Returns `None` if the sound is no longer playing.
     pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
         let sound_instances = self.sound_instances.lock().unwrap();
-        // TODO: Return actual position
-        sound_instances.get(instance).map(|_| 0.0)
+        sound_instances.get(instance).map(|instance| {
+            // Get the current sample position from the underlying audio source.
+            let num_sample_frames: f64 = instance.stream.source_position().into();
+            let sample_rate: f64 = instance.stream.source_sample_rate().into();
+            num_sample_frames * 1000.0 / sample_rate
+        })
     }
 
     /// Returns the duration of a registered sound in milliseconds.
@@ -498,17 +555,18 @@ impl Default for ArcAsRef {
     }
 }
 
-/// A signal for event sound instances with custom envelopes, start/end point, or loop settings.
-struct EventSoundSignal {
+/// A stream for event sound instances with custom envelopes, start/end point, or loop settings.
+struct EventSoundStream {
     decoder: Box<dyn SeekableDecoder + Send>,
     num_loops: u16,
     start_sample_frame: u32,
     end_sample_frame: Option<u32>,
     cur_sample_frame: u32,
+    skip_sample_frames: u32,
     is_exhausted: bool,
 }
 
-impl EventSoundSignal {
+impl EventSoundStream {
     fn new_with_settings(
         decoder: Box<dyn SeekableDecoder + Send>,
         settings: &swf::SoundInfo,
@@ -525,16 +583,17 @@ impl EventSoundSignal {
             .unwrap_or(num_sample_frames)
             + skip_sample_frames;
 
-        let mut signal = Self {
+        let mut stream = Self {
             decoder,
             num_loops: settings.num_loops,
             start_sample_frame,
             end_sample_frame: Some(end_sample_frame),
             cur_sample_frame: start_sample_frame,
+            skip_sample_frames,
             is_exhausted: false,
         };
-        signal.next_loop();
-        signal
+        stream.next_loop();
+        stream
     }
 
     /// Resets the decoder to the start point of the loop.
@@ -549,9 +608,10 @@ impl EventSoundSignal {
     }
 }
 
-impl dasp::signal::Signal for EventSoundSignal {
+impl dasp::signal::Signal for EventSoundStream {
     type Frame = [i16; 2];
 
+    #[inline]
     fn next(&mut self) -> Self::Frame {
         // Loop the sound if necessary, and get the next frame.
         if !self.is_exhausted {
@@ -572,15 +632,123 @@ impl dasp::signal::Signal for EventSoundSignal {
         }
     }
 
+    #[inline]
     fn is_exhausted(&self) -> bool {
         self.is_exhausted
     }
 }
 
+impl Stream for EventSoundStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.cur_sample_frame
+            .saturating_sub(self.skip_sample_frames)
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        self.decoder.sample_rate()
+    }
+}
+
+/// A stream that converts a source stream to a different sample rate.
+struct ConverterStream<S, I>(dasp::signal::interpolate::Converter<S, I>)
+where
+    S: Stream,
+    I: dasp::interpolate::Interpolator<Frame = [i16; 2]>;
+
+impl<S, I> Stream for ConverterStream<S, I>
+where
+    S: Stream,
+    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send,
+{
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.0.source().source_position()
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        self.0.source().source_sample_rate()
+    }
+}
+
+impl<S, I> dasp::signal::Signal for ConverterStream<S, I>
+where
+    S: Stream,
+    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send,
+{
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> [i16; 2] {
+        self.0.next()
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.0.is_exhausted()
+    }
+}
+
+/// A stream that multiples a source stream by an amplitude stream to produce an enveloped stream.
+struct MulAmpStream<S, E>
+where
+    S: Stream,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+{
+    stream: S,
+    envelope: E,
+}
+
+impl<S, E> MulAmpStream<S, E>
+where
+    S: Stream,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+{
+    fn new(stream: S, envelope: E) -> Self {
+        Self { stream, envelope }
+    }
+}
+
+impl<S, E> Stream for MulAmpStream<S, E>
+where
+    S: Stream,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+{
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.stream.source_position()
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        self.stream.source_sample_rate()
+    }
+}
+
+impl<S, E> dasp::signal::Signal for MulAmpStream<S, E>
+where
+    S: Stream,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+{
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> Self::Frame {
+        dasp::frame::Frame::mul_amp(self.stream.next(), self.envelope.next())
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        self.stream.is_exhausted() || self.envelope.is_exhausted()
+    }
+}
+
 /// A signal that represents the sound envelope for an event sound.
-/// The sound signal gets multiplied by the envelope for volume/panning effects.
+/// The sound stream gets multiplied by the envelope for volume/panning effects.
 struct EnvelopeSignal {
-    /// Iterator through the envelope points specified in the SWWF file.
+    /// Iterator through the envelope points specified in the SWF file.
     envelope: std::vec::IntoIter<swf::SoundEnvelopePoint>,
 
     /// The starting envelope point.
