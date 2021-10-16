@@ -53,10 +53,13 @@ pub fn right_peak<'gc>(
 /// Impl `SoundChannel.position`
 pub fn position<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Err("Sound.position is a stub.".into())
+    if let Some(instance) = this.and_then(|this| this.as_sound_channel()) {
+        return Ok(instance.position().into());
+    }
+    Ok(Value::Undefined)
 }
 
 /// Implements `soundTransform`'s getter
@@ -65,7 +68,10 @@ pub fn sound_transform<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+    if let Some(instance) = this
+        .and_then(|this| this.as_sound_channel())
+        .and_then(|channel| channel.instance())
+    {
         let dobj_st = activation.context.local_sound_transform(instance).cloned();
 
         if let Some(dobj_st) = dobj_st {
@@ -82,7 +88,10 @@ pub fn set_sound_transform<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+    if let Some(instance) = this
+        .and_then(|this| this.as_sound_channel())
+        .and_then(|channel| channel.instance())
+    {
         let as3_st = args
             .get(0)
             .cloned()
@@ -104,7 +113,10 @@ pub fn stop<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(instance) = this.and_then(|this| this.as_sound_instance()) {
+    if let Some(instance) = this
+        .and_then(|this| this.as_sound_channel())
+        .and_then(|channel| channel.instance())
+    {
         activation.context.stop_sound(instance);
     }
 

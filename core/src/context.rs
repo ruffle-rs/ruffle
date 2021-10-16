@@ -2,7 +2,9 @@
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
-use crate::avm2::{Avm2, Event as Avm2Event, Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::{
+    Avm2, Event as Avm2Event, Object as Avm2Object, SoundChannelObject, Value as Avm2Value,
+};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     locale::LocaleBackend,
@@ -212,7 +214,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     pub fn attach_avm2_sound_channel(
         &mut self,
         instance: SoundInstanceHandle,
-        avm2_object: Avm2Object<'gc>,
+        avm2_object: SoundChannelObject<'gc>,
     ) {
         self.audio_manager
             .attach_avm2_sound_channel(instance, avm2_object);

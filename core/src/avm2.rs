@@ -50,7 +50,7 @@ pub use crate::avm2::domain::Domain;
 pub use crate::avm2::events::Event;
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{
-    ArrayObject, ClassObject, Object, ScriptObject, StageObject, TObject,
+    ArrayObject, ClassObject, Object, ScriptObject, SoundChannelObject, StageObject, TObject,
 };
 pub use crate::avm2::value::Value;
 
