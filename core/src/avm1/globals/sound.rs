@@ -113,16 +113,15 @@ fn duration<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        if let Some(sound_object) = this.as_sound_object() {
-            return Ok(sound_object
-                .duration()
-                .map_or(Value::Undefined, |d| d.into()));
-        } else {
-            avm_warn!(activation, "Sound.duration: this is not a Sound");
-        }
+    // TODO: Sound.duration was only added in SWFv6, but it is not version gated.
+    // Return undefined for player <6 if we ever add player version emulation.
+    if let Some(sound_object) = this.as_sound_object() {
+        return Ok(sound_object
+            .duration()
+            .map_or(Value::Undefined, |d| d.into()));
+    } else {
+        avm_warn!(activation, "Sound.duration: this is not a Sound");
     }
-
     Ok(Value::Undefined)
 }
 
@@ -253,17 +252,14 @@ fn position<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        if let Some(sound_object) = this.as_sound_object() {
-            // TODO: The position is "sticky"; even if the sound is no longer playing, it should return
-            // the previous valid position.
-            // Needs some audio backend work for this.
-            if sound_object.sound().is_some() {
-                return Ok(sound_object.position().into());
-            }
-        } else {
-            avm_warn!(activation, "Sound.position: this is not a Sound");
+    // TODO: Sound.position was only added in SWFv6, but it is not version gated.
+    // Return undefined for player <6 if we ever add player version emulation.
+    if let Some(sound_object) = this.as_sound_object() {
+        if sound_object.sound().is_some() {
+            return Ok(sound_object.position().into());
         }
+    } else {
+        avm_warn!(activation, "Sound.position: this is not a Sound");
     }
     Ok(Value::Undefined)
 }
