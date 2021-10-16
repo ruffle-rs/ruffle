@@ -1019,11 +1019,11 @@ impl AudioBackend for WebAudioBackend {
         })
     }
 
-    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
+    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
         SOUND_INSTANCES.with(|instances| {
             let instances = instances.borrow();
             // TODO: Return actual position
-            instances.get(instance).map(|_| 0)
+            instances.get(instance).map(|_| 0.0)
         })
     }
 

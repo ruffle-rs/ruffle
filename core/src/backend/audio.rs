@@ -85,7 +85,7 @@ pub trait AudioBackend: Downcast {
 
     /// Get the position of a sound instance in milliseconds.
     /// Returns `None` if ther sound is not/no longer playing
-    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32>;
+    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64>;
 
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
@@ -191,8 +191,8 @@ impl AudioBackend for NullAudioBackend {
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
-    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<u32> {
-        Some(0)
+    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<f64> {
+        Some(0.0)
     }
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
         if let Some(sound) = self.sounds.get(sound) {
@@ -271,12 +271,20 @@ impl<'gc> AudioManager<'gc> {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position.
                 if let Some(avm1_object) = sound.avm1_object {
-                    avm1_object.set_position(gc_context, pos);
+                    avm1_object.set_position(gc_context, pos.round() as u32);
                 }
                 true
             } else {
-                // Sound ended; fire end event.
+                // Sound ended.
                 if let Some(object) = sound.avm1_object {
+                    // Set position to end of sound.
+                    if let Some(duration) = sound
+                        .sound
+                        .and_then(|sound| audio.get_sound_duration(sound))
+                    {
+                        object.set_position(gc_context, duration.round() as u32);
+                    }
+                    // Fire soundComplete event.
                     action_queue.queue_actions(
                         root,
                         crate::context::ActionType::Method {
