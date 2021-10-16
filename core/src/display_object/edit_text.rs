@@ -13,7 +13,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
@@ -23,7 +23,6 @@ use crate::shape_utils::DrawCommand;
 use crate::string::{utils as string_utils, AvmString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
-use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use crate::xml::XmlDocument;
 use chrono::Utc;
@@ -60,11 +59,8 @@ pub struct EditText<'gc>(GcCell<'gc, EditTextData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct EditTextData<'gc> {
-    /// DisplayObject common properties.
-    base: DisplayObjectBase<'gc>,
-
-    /// InteractiveObject common properties.
-    interactive_base: InteractiveObjectBase,
+    /// DisplayObject and InteractiveObject common properties.
+    base: InteractiveObjectBase<'gc>,
 
     /// Static data shared among all instances of this `EditText`.
     static_data: Gc<'gc, EditTextStatic>,
@@ -274,10 +270,10 @@ impl<'gc> EditText<'gc> {
         let border_color = 0; // Default is black
         let is_device_font = swf_tag.is_device_font;
 
-        let mut base = DisplayObjectBase::default();
+        let mut base = InteractiveObjectBase::default();
 
-        base.matrix_mut().tx = bounds.x_min;
-        base.matrix_mut().ty = bounds.y_min;
+        base.base.matrix_mut().tx = bounds.x_min;
+        base.base.matrix_mut().ty = bounds.y_min;
 
         let variable = if !swf_tag.variable_name.is_empty() {
             Some(swf_tag.variable_name)
@@ -289,7 +285,6 @@ impl<'gc> EditText<'gc> {
             context.gc_context,
             EditTextData {
                 base,
-                interactive_base: Default::default(),
                 document,
                 text_spans,
                 static_data: gc_arena::Gc::allocate(
@@ -407,10 +402,12 @@ impl<'gc> EditText<'gc> {
         let text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
 
         // Set position.
-        let mut matrix = text_field.matrix_mut(context.gc_context);
-        matrix.tx = Twips::from_pixels(x);
-        matrix.ty = Twips::from_pixels(y);
-        drop(matrix);
+        {
+            let mut base = text_field.base_mut(context.gc_context);
+            let mut matrix = base.matrix_mut();
+            matrix.tx = Twips::from_pixels(x);
+            matrix.ty = Twips::from_pixels(y);
+        }
 
         text_field
     }
@@ -848,7 +845,7 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.set_transformed_by_script(true);
+                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
@@ -862,7 +859,7 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.set_transformed_by_script(true);
+                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
@@ -874,7 +871,7 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.set_transformed_by_script(true);
+                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
@@ -1539,7 +1536,21 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
-    impl_display_object_sansbounds!(base);
+    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base.base)
+    }
+
+    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+    }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+    }
+
+    fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.text.id
@@ -1631,14 +1642,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn x(&self) -> f64 {
         let edit_text = self.0.read();
         let offset = edit_text.bounds.x_min;
-        (edit_text.base.transform.matrix.tx + offset).to_pixels()
+        (edit_text.base.base.transform.matrix.tx + offset).to_pixels()
     }
 
     fn set_x(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.x_min;
-        edit_text.base.transform.matrix.tx = Twips::from_pixels(value) - offset;
-        edit_text.base.set_transformed_by_script(true);
+        edit_text.base.base.transform.matrix.tx = Twips::from_pixels(value) - offset;
+        edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.redraw_border(gc_context);
     }
@@ -1646,14 +1657,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn y(&self) -> f64 {
         let edit_text = self.0.read();
         let offset = edit_text.bounds.y_min;
-        (edit_text.base.transform.matrix.ty + offset).to_pixels()
+        (edit_text.base.base.transform.matrix.ty + offset).to_pixels()
     }
 
     fn set_y(&self, gc_context: MutationContext<'gc, '_>, value: f64) {
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.y_min;
-        edit_text.base.transform.matrix.ty = Twips::from_pixels(value) - offset;
-        edit_text.base.set_transformed_by_script(true);
+        edit_text.base.base.transform.matrix.ty = Twips::from_pixels(value) - offset;
+        edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.redraw_border(gc_context);
     }
@@ -1662,7 +1673,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let edit_text = self.0.read();
         edit_text
             .bounds
-            .transform(&edit_text.base.transform.matrix)
+            .transform(&edit_text.base.base.transform.matrix)
             .width()
             .to_pixels()
     }
@@ -1671,7 +1682,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_width(Twips::from_pixels(value));
-        write.base.set_transformed_by_script(true);
+        write.base.base.set_transformed_by_script(true);
 
         drop(write);
         self.redraw_border(gc_context);
@@ -1681,7 +1692,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let edit_text = self.0.read();
         edit_text
             .bounds
-            .transform(&edit_text.base.transform.matrix)
+            .transform(&edit_text.base.base.transform.matrix)
             .height()
             .to_pixels()
     }
@@ -1690,14 +1701,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mut write = self.0.write(gc_context);
 
         write.bounds.set_height(Twips::from_pixels(value));
-        write.base.set_transformed_by_script(true);
+        write.base.base.set_transformed_by_script(true);
 
         drop(write);
         self.redraw_border(gc_context);
     }
 
     fn set_matrix(&self, gc_context: MutationContext<'gc, '_>, matrix: &Matrix) {
-        self.0.write(gc_context).base.set_matrix(matrix);
+        self.0.write(gc_context).base.base.set_matrix(matrix);
         self.redraw_border(gc_context);
     }
 
@@ -1871,12 +1882,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
-    fn base(&self) -> Ref<InteractiveObjectBase> {
-        Ref::map(self.0.read(), |r| &r.interactive_base)
+    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
-        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

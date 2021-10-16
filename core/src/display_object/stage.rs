@@ -14,10 +14,11 @@ use crate::display_object::container::{
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{render_base, DisplayObject, DisplayObjectBase, TDisplayObject};
+use crate::display_object::{
+    render_base, DisplayObject, DisplayObjectBase, DisplayObjectPtr, TDisplayObject,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
-use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -34,15 +35,12 @@ pub struct Stage<'gc>(GcCell<'gc, StageData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct StageData<'gc> {
-    /// Base properties for all display objects.
+    /// Base properties for interactive display objects.
     ///
     /// This particular base has additional constraints currently not
     /// expressable by the type system. Notably, this should never have a
     /// parent, as the stage does not respect it.
-    base: DisplayObjectBase<'gc>,
-
-    /// Base properties for interactive display objects.
-    interactive_base: InteractiveObjectBase,
+    base: InteractiveObjectBase<'gc>,
 
     /// The list of all children of the stage.
     ///
@@ -106,7 +104,6 @@ impl<'gc> Stage<'gc> {
             gc_context,
             StageData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 child: Default::default(),
                 background_color: None,
                 letterbox: Letterbox::Fullscreen,
@@ -136,7 +133,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn inverse_view_matrix(self) -> Matrix {
-        let mut inverse_view_matrix = *(self.matrix());
+        let mut inverse_view_matrix = *(self.base().matrix());
         inverse_view_matrix.invert();
 
         inverse_view_matrix
@@ -369,7 +366,7 @@ impl<'gc> Stage<'gc> {
         };
         drop(stage);
 
-        *self.matrix_mut(context.gc_context) = Matrix {
+        *self.base_mut(context.gc_context).matrix_mut() = Matrix {
             a: scale_x as f32,
             b: 0.0,
             c: 0.0,
@@ -415,7 +412,8 @@ impl<'gc> Stage<'gc> {
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 
-        let view_matrix = self.matrix();
+        let base = self.base();
+        let view_matrix = base.matrix();
 
         let (movie_width, movie_height) = self.0.read().movie_size;
         let movie_width = movie_width as f32 * view_matrix.a;
@@ -516,7 +514,21 @@ impl<'gc> Stage<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
-    impl_display_object!(base);
+    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base.base)
+    }
+
+    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+    }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+    }
+
+    fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
 
     fn post_instantiation(
         &self,
@@ -602,12 +614,12 @@ impl<'gc> TDisplayObjectContainer<'gc> for Stage<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
-    fn base(&self) -> Ref<InteractiveObjectBase> {
-        Ref::map(self.0.read(), |r| &r.interactive_base)
+    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
-        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {

@@ -7,11 +7,10 @@ use crate::display_object::container::{
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -26,8 +25,7 @@ pub struct Avm1Button<'gc>(GcCell<'gc, Avm1ButtonData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct Avm1ButtonData<'gc> {
-    base: DisplayObjectBase<'gc>,
-    interactive_base: InteractiveObjectBase,
+    base: InteractiveObjectBase<'gc>,
     static_data: GcCell<'gc, ButtonStatic>,
     state: ButtonState,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
@@ -81,7 +79,6 @@ impl<'gc> Avm1Button<'gc> {
             gc_context,
             Avm1ButtonData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 static_data: GcCell::allocate(gc_context, static_data),
                 container: ChildContainer::new(),
                 hit_area: BTreeMap::new(),
@@ -231,7 +228,21 @@ impl<'gc> Avm1Button<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
-    impl_display_object!(base);
+    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base.base)
+    }
+
+    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+    }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+    }
+
+    fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.read().id
@@ -432,12 +443,12 @@ impl<'gc> TDisplayObjectContainer<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
-    fn base(&self) -> Ref<InteractiveObjectBase> {
-        Ref::map(self.0.read(), |r| &r.interactive_base)
+    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
-        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -564,7 +575,7 @@ impl<'gc> Avm1ButtonData<'gc> {
         key_code: Option<ButtonKeyCode>,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
-        if let Some(parent) = self.base.parent {
+        if let Some(parent) = self.base.base.parent {
             for action in &self.static_data.read().actions {
                 if action.condition == condition
                     && (action.condition != swf::ButtonActionCondition::KEY_PRESS

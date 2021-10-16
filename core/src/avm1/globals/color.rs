@@ -70,7 +70,8 @@ fn get_rgb<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
-        let color_transform = target.color_transform();
+        let base = target.base();
+        let color_transform = base.color_transform();
         let r = ((color_transform.r_add) as i32) << 16;
         let g = ((color_transform.g_add) as i32) << 8;
         let b = (color_transform.b_add) as i32;
@@ -86,7 +87,8 @@ fn get_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(target) = target(activation, this)? {
-        let color_transform = target.color_transform();
+        let base = target.base();
+        let color_transform = base.color_transform();
         let out = ScriptObject::object(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.object),
@@ -135,7 +137,8 @@ fn set_rgb<'gc>(
             .coerce_to_i32(activation)? as i32;
         let [b, g, r, _] = rgb.to_le_bytes();
 
-        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
+        let mut base = target.base_mut(activation.context.gc_context);
+        let mut color_transform = base.color_transform_mut();
         color_transform.r_mult = Fixed8::ZERO;
         color_transform.g_mult = Fixed8::ZERO;
         color_transform.b_mult = Fixed8::ZERO;
@@ -186,7 +189,9 @@ fn set_transform<'gc>(
 
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(activation.context.gc_context, true);
-        let mut color_transform = target.color_transform_mut(activation.context.gc_context);
+
+        let mut base = target.base_mut(activation.context.gc_context);
+        let color_transform = base.color_transform_mut();
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)

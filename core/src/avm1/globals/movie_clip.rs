@@ -835,10 +835,10 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         parent.replace_at_depth(&mut activation.context, new_clip, depth);
 
         // Copy display properties from previous clip to new clip.
-        new_clip.set_matrix(activation.context.gc_context, &*movie_clip.matrix());
+        new_clip.set_matrix(activation.context.gc_context, &*movie_clip.base().matrix());
         new_clip.set_color_transform(
             activation.context.gc_context,
-            &*movie_clip.color_transform(),
+            &*movie_clip.base().color_transform(),
         );
         new_clip.as_movie_clip().unwrap().set_clip_event_handlers(
             activation.context.gc_context,

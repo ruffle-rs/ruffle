@@ -74,7 +74,7 @@ pub fn sound_transform<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|o| o.as_display_object()) {
-        let dobj_st = dobj.sound_transform().clone();
+        let dobj_st = dobj.base().sound_transform().clone();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
