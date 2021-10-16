@@ -24,8 +24,8 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm2Button, Bitmap, DisplayObjectBase, EditText, Graphic, MorphShapeStatic,
-    TDisplayObject, Text, Video,
+    Avm1Button, Avm2Button, Bitmap, DisplayObjectBase, DisplayObjectPtr, EditText, Graphic,
+    MorphShapeStatic, TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -33,7 +33,6 @@ use crate::font::Font;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
-use crate::types::{Degrees, Percent};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -70,8 +69,7 @@ pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
-    base: DisplayObjectBase<'gc>,
-    interactive_base: InteractiveObjectBase,
+    base: InteractiveObjectBase<'gc>,
     static_data: Gc<'gc, MovieClipStatic>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
@@ -102,7 +100,6 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -137,7 +134,6 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -172,7 +168,6 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
                     MovieClipStatic::with_data(id, swf, num_frames),
@@ -207,7 +202,6 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                interactive_base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
                     MovieClipStatic::with_data(0, movie.into(), num_frames),
@@ -1703,7 +1697,21 @@ impl<'gc> MovieClip<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
-    impl_display_object!(base);
+    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base.base)
+    }
+
+    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base.base)
+    }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+    }
+
+    fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
 
     fn id(&self) -> CharacterId {
         self.0.read().id()
@@ -2091,12 +2099,12 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
-    fn base(&self) -> Ref<InteractiveObjectBase> {
-        Ref::map(self.0.read(), |r| &r.interactive_base)
+    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base)
     }
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase> {
-        RefMut::map(self.0.write(mc), |w| &mut w.interactive_base)
+    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -2209,14 +2217,14 @@ impl<'gc> MovieClipData<'gc> {
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
         let total_frames = movie.num_frames();
 
-        self.base.reset_for_movie_load();
+        self.base.base.reset_for_movie_load();
         self.static_data = Gc::allocate(
             gc_context,
             MovieClipStatic::with_data(0, movie.into(), total_frames),
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::PLAYING;
-        self.base.set_is_root(is_swf);
+        self.base.base.set_is_root(is_swf);
         self.current_frame = 0;
         self.audio_stream = None;
         self.container = ChildContainer::new();

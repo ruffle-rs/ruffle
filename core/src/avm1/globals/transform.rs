@@ -79,10 +79,10 @@ fn concatenated_color_transform<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Walk through parents to get combined color transform.
-    let mut color_transform = *clip.color_transform();
+    let mut color_transform = *clip.base().color_transform();
     let mut node = clip.avm1_parent();
     while let Some(display_object) = node {
-        color_transform = *display_object.color_transform() * color_transform;
+        color_transform = *display_object.base().color_transform() * color_transform;
         node = display_object.parent();
     }
     let color_transform = color_transform::color_transform_to_object(color_transform, activation)?;
@@ -102,7 +102,7 @@ fn color_transform<'gc>(
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let color_transform =
-        color_transform::color_transform_to_object(*clip.color_transform(), activation)?;
+        color_transform::color_transform_to_object(*clip.base().color_transform(), activation)?;
     Ok(color_transform)
 }
 
@@ -127,7 +127,7 @@ fn matrix<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     clip: MovieClip<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = matrix::matrix_to_object(*clip.matrix(), activation)?;
+    let matrix = matrix::matrix_to_object(*clip.base().matrix(), activation)?;
     Ok(matrix)
 }
 
@@ -178,9 +178,9 @@ pub fn apply_to_display_object<'gc>(
 ) -> Result<(), Error<'gc>> {
     if let Some(transform) = transform.as_transform_object() {
         if let Some(clip) = transform.clip() {
-            let matrix = *clip.matrix();
+            let matrix = *clip.base().matrix();
             display_object.set_matrix(activation.context.gc_context, &matrix);
-            let color_transform = *clip.color_transform();
+            let color_transform = *clip.base().color_transform();
             display_object.set_color_transform(activation.context.gc_context, &color_transform);
             display_object.set_transformed_by_script(activation.context.gc_context, true);
         }

@@ -504,7 +504,7 @@ impl<'gc> AudioManager<'gc> {
         let mut transform = sound.transform.clone();
         let mut parent = sound.display_object;
         while let Some(display_object) = parent {
-            transform.concat(&display_object.sound_transform());
+            transform.concat(display_object.base().sound_transform());
             parent = display_object.parent();
         }
         transform.concat(&self.global_sound_transform);

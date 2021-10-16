@@ -1,11 +1,11 @@
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
-use crate::types::{Degrees, Percent};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
@@ -55,7 +55,21 @@ impl<'gc> Text<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Text<'gc> {
-    impl_display_object!(base);
+    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
+        Ref::map(self.0.read(), |r| &r.base)
+    }
+
+    fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>> {
+        RefMut::map(self.0.write(mc), |w| &mut w.base)
+    }
+
+    fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc> {
+        Self(GcCell::allocate(gc_context, self.0.read().clone())).into()
+    }
+
+    fn as_ptr(&self) -> *const DisplayObjectPtr {
+        self.0.as_ptr() as *const DisplayObjectPtr
+    }
 
     fn id(&self) -> CharacterId {
         self.0.read().static_data.id

@@ -167,7 +167,7 @@ fn get_pan<'gc>(
     let transform = this.as_sound_object().map(|sound| {
         sound
             .owner()
-            .map(|owner| owner.sound_transform().clone())
+            .map(|owner| owner.base().sound_transform().clone())
             .unwrap_or_else(|| activation.context.global_sound_transform().clone())
     });
 
@@ -186,7 +186,7 @@ fn get_transform<'gc>(
     let transform = this.as_sound_object().map(|sound| {
         sound
             .owner()
-            .map(|owner| owner.sound_transform().clone())
+            .map(|owner| owner.base().sound_transform().clone())
             .unwrap_or_else(|| activation.context.global_sound_transform().clone())
     });
 
@@ -214,7 +214,7 @@ fn get_volume<'gc>(
     let transform = this.as_sound_object().map(|sound| {
         sound
             .owner()
-            .map(|owner| owner.sound_transform().clone())
+            .map(|owner| owner.base().sound_transform().clone())
             .unwrap_or_else(|| activation.context.global_sound_transform().clone())
     });
 
@@ -274,7 +274,7 @@ fn set_pan<'gc>(
 
     if let Some(sound) = this.as_sound_object() {
         if let Some(owner) = sound.owner() {
-            let mut transform = owner.sound_transform().clone();
+            let mut transform = owner.base().sound_transform().clone();
             transform.set_pan(pan);
             owner.set_sound_transform(&mut activation.context, transform);
         } else {
@@ -299,7 +299,7 @@ fn set_transform<'gc>(
 
     if let Some(sound) = this.as_sound_object() {
         let mut transform = if let Some(owner) = sound.owner() {
-            owner.sound_transform().clone()
+            owner.base().sound_transform().clone()
         } else {
             activation.context.global_sound_transform().clone()
         };
@@ -339,7 +339,7 @@ fn set_volume<'gc>(
         if let Some(owner) = sound.owner() {
             let transform = SoundTransform {
                 volume,
-                ..*owner.sound_transform()
+                ..*owner.base().sound_transform()
             };
             owner.set_sound_transform(&mut activation.context, transform);
         } else {

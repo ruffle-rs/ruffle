@@ -6,7 +6,9 @@ use crate::display_object::avm2_button::Avm2Button;
 use crate::display_object::edit_text::EditText;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
-use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
@@ -30,13 +32,15 @@ bitflags! {
 
 #[derive(Collect, Clone, Debug)]
 #[collect(no_drop)]
-pub struct InteractiveObjectBase {
+pub struct InteractiveObjectBase<'gc> {
+    pub base: DisplayObjectBase<'gc>,
     flags: InteractiveObjectFlags,
 }
 
-impl Default for InteractiveObjectBase {
+impl<'gc> Default for InteractiveObjectBase<'gc> {
     fn default() -> Self {
         Self {
+            base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
         }
     }
@@ -56,36 +60,36 @@ impl Default for InteractiveObjectBase {
 pub trait TInteractiveObject<'gc>:
     'gc + Clone + Copy + Collect + Debug + Into<InteractiveObject<'gc>>
 {
-    fn base(&self) -> Ref<InteractiveObjectBase>;
+    fn ibase(&self) -> Ref<InteractiveObjectBase<'gc>>;
 
-    fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase>;
+    fn ibase_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<InteractiveObjectBase<'gc>>;
 
     fn as_displayobject(self) -> DisplayObject<'gc>;
 
     /// Check if the interactive object accepts user input.
     fn mouse_enabled(self) -> bool {
-        self.base()
+        self.ibase()
             .flags
             .contains(InteractiveObjectFlags::MOUSE_ENABLED)
     }
 
     /// Set if the interactive object accepts user input.
     fn set_mouse_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(mc)
+        self.ibase_mut(mc)
             .flags
             .set(InteractiveObjectFlags::MOUSE_ENABLED, value)
     }
 
     /// Check if the interactive object accepts double-click events.
     fn double_click_enabled(self) -> bool {
-        self.base()
+        self.ibase()
             .flags
             .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
     }
 
     // Set if the interactive object accepts double-click events.
     fn set_double_click_enabled(self, mc: MutationContext<'gc, '_>, value: bool) {
-        self.base_mut(mc)
+        self.ibase_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
