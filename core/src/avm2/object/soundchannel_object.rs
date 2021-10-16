@@ -20,7 +20,11 @@ pub fn soundchannel_allocator<'gc>(
 
     Ok(SoundChannelObject(GcCell::allocate(
         activation.context.gc_context,
-        SoundChannelObjectData { base, sound: None },
+        SoundChannelObjectData {
+            base,
+            sound: None,
+            position: 0.0,
+        },
     ))
     .into())
 }
@@ -38,6 +42,9 @@ pub struct SoundChannelObjectData<'gc> {
     /// The sound this object holds.
     #[collect(require_static)]
     sound: Option<SoundInstanceHandle>,
+
+    /// Position of the last playing sound in milliseconds.
+    position: f64,
 }
 
 impl<'gc> SoundChannelObject<'gc> {
@@ -45,7 +52,7 @@ impl<'gc> SoundChannelObject<'gc> {
     pub fn from_sound_instance(
         activation: &mut Activation<'_, 'gc, '_>,
         sound: SoundInstanceHandle,
-    ) -> Result<Object<'gc>, Error> {
+    ) -> Result<Self, Error> {
         let class = activation.avm2().classes().soundchannel;
         let proto = class
             .get_property(
@@ -56,19 +63,34 @@ impl<'gc> SoundChannelObject<'gc> {
             .coerce_to_object(activation)?;
         let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
-        let mut sound_object: Object<'gc> = SoundChannelObject(GcCell::allocate(
+        let mut sound_object = SoundChannelObject(GcCell::allocate(
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,
                 sound: Some(sound),
+                position: 0.0,
             },
-        ))
-        .into();
+        ));
         sound_object.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(sound_object), &[], activation, Some(class))?;
+        class.call_native_init(Some(sound_object.into()), &[], activation, Some(class))?;
 
         Ok(sound_object)
+    }
+
+    /// Return the backend handle to the currently playing sound instance.
+    pub fn instance(self) -> Option<SoundInstanceHandle> {
+        self.0.read().sound
+    }
+
+    /// Return the position of the playing sound in seconds.
+    pub fn position(self) -> f64 {
+        self.0.read().position
+    }
+
+    /// Set the position of the playing sound in seconds.
+    pub fn set_position(self, mc: MutationContext<'gc, '_>, value: f64) {
+        self.0.write(mc).position = value;
     }
 }
 
@@ -94,13 +116,17 @@ impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
 
         Ok(SoundChannelObject(GcCell::allocate(
             activation.context.gc_context,
-            SoundChannelObjectData { base, sound: None },
+            SoundChannelObjectData {
+                base,
+                sound: None,
+                position: 0.0,
+            },
         ))
         .into())
     }
 
-    fn as_sound_instance(self) -> Option<SoundInstanceHandle> {
-        self.0.read().sound
+    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
+        Some(self)
     }
 
     fn set_sound_instance(self, mc: MutationContext<'gc, '_>, sound: SoundInstanceHandle) {

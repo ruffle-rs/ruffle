@@ -1,7 +1,7 @@
 use crate::{
     avm1::SoundObject,
     avm2::Event as Avm2Event,
-    avm2::Object as Avm2Object,
+    avm2::SoundChannelObject,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
 use downcast_rs::Downcast;
@@ -272,18 +272,19 @@ impl<'gc> AudioManager<'gc> {
                 // Sounds still playing; update position.
                 if let Some(avm1_object) = sound.avm1_object {
                     avm1_object.set_position(gc_context, pos.round() as u32);
+                } else if let Some(avm2_object) = sound.avm2_object {
+                    avm2_object.set_position(gc_context, pos);
                 }
                 true
             } else {
                 // Sound ended.
+                let duration = sound
+                    .sound
+                    .and_then(|sound| audio.get_sound_duration(sound))
+                    .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    // Set position to end of sound.
-                    if let Some(duration) = sound
-                        .sound
-                        .and_then(|sound| audio.get_sound_duration(sound))
-                    {
-                        object.set_position(gc_context, duration.round() as u32);
-                    }
+                    object.set_position(gc_context, duration.round() as u32);
+
                     // Fire soundComplete event.
                     action_queue.queue_actions(
                         root,
@@ -297,13 +298,15 @@ impl<'gc> AudioManager<'gc> {
                 }
 
                 if let Some(object) = sound.avm2_object {
+                    object.set_position(gc_context, duration);
+
                     //TODO: AVM2 events are usually not queued, but we can't
                     //hold the update context in the audio manager yet.
                     action_queue.queue_actions(
                         root,
                         crate::context::ActionType::Event2 {
                             event: Avm2Event::new("soundComplete"),
-                            target: object,
+                            target: object.into(),
                         },
                         false,
                     )
@@ -346,7 +349,7 @@ impl<'gc> AudioManager<'gc> {
     pub fn attach_avm2_sound_channel(
         &mut self,
         instance: SoundInstanceHandle,
-        avm2_object: Avm2Object<'gc>,
+        avm2_object: SoundChannelObject<'gc>,
     ) {
         if let Some(i) = self
             .sounds
@@ -556,8 +559,8 @@ pub struct SoundInstance<'gc> {
     /// The AVM1 `Sound` object associated with this sound, if any.
     avm1_object: Option<SoundObject<'gc>>,
 
-    /// The AVM2 `Sound` object associated with this sound, if any.
-    avm2_object: Option<Avm2Object<'gc>>,
+    /// The AVM2 `SoundChannel` object associated with this sound, if any.
+    avm2_object: Option<SoundChannelObject<'gc>>,
 }
 
 /// A sound transform for a playing sound, for use by audio backends.

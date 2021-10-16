@@ -1197,7 +1197,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_sound(self, _mc: MutationContext<'gc, '_>, _sound: SoundHandle) {}
 
     /// Unwrap this object's sound instance handle.
-    fn as_sound_instance(self) -> Option<SoundInstanceHandle> {
+    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
         None
     }
 
