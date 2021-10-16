@@ -406,10 +406,10 @@ impl AudioMixer {
     /// Returns the position of a playing sound in milliseconds.
     ///
     ////// Returns `None` if the sound is no longer playing.
-    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
+    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
         let sound_instances = self.sound_instances.lock().unwrap();
         // TODO: Return actual position
-        sound_instances.get(instance).map(|_| 0)
+        sound_instances.get(instance).map(|_| 0.0)
     }
 
     /// Returns the duration of a registered sound in milliseconds.
@@ -714,7 +714,7 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<u32> {
+        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64> {
             self.$mixer.get_sound_position(instance)
         }
 
