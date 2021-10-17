@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject};
+use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
@@ -421,9 +422,19 @@ impl<'gc> Value<'gc> {
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) => {
-                match object.call_method("toString".into(), &[], activation)? {
-                    Value::String(s) => s,
-                    _ => "[type Object]".into(),
+                if let Some(object) = object.as_stage_object() {
+                    AvmString::new(
+                        activation.context.gc_context,
+                        object
+                            .as_display_object(activation)
+                            .map(|object| object.path())
+                            .unwrap_or_default(),
+                    )
+                } else {
+                    match object.call_method("toString".into(), &[], activation)? {
+                        Value::String(s) => s,
+                        _ => "[type Object]".into(),
+                    }
                 }
             }
             Value::Undefined => {
