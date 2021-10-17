@@ -141,6 +141,14 @@ impl<'gc> StageObjectData<'gc> {
                 .as_container()
                 .and_then(|container| container.child_by_name(name, true))?;
         }
+        if activation.swf_version() <= 5 {
+            // In SWFv5 and earlier, only movie clips are accessible from the AVM.
+            // If we try to resolve a path to a different object type (such as a button),
+            // we instead resolve to the parent.
+            while display_object.as_movie_clip().is_none() {
+                display_object = display_object.avm1_parent()?;
+            }
+        }
         Some(display_object)
     }
 }
