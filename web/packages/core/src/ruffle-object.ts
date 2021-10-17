@@ -5,6 +5,7 @@ import {
     FLASH_MOVIE_MIMETYPE,
     FLASH_ACTIVEX_CLASSID,
     isBuiltInContextMenuVisible,
+    isFallbackElement,
     isScriptAccessAllowed,
     isSwfFilename,
     RufflePlayer,
@@ -214,10 +215,15 @@ export class RuffleObject extends RufflePlayer {
      * @returns True if the element looks like a flash object.
      */
     static isInterdictable(elem: HTMLElement): boolean {
+        // Don't polyfill if the element is inside a specific node.
+        if (isFallbackElement(elem)) {
+            return false;
+        }
         // Don't polyfill if there's already a <ruffle-embed> inside the <object>.
         if (elem.getElementsByTagName("ruffle-embed").length > 0) {
             return false;
         }
+
         // Don't polyfill if no movie specified.
         const data = elem.attributes.getNamedItem("data")?.value.toLowerCase();
         const params = paramsOf(elem);

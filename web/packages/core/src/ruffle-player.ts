@@ -529,6 +529,11 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
+        if (isFallbackElement(this)) {
+            // Silently fail on attempt to play a Ruffle element inside a specific node.
+            return;
+        }
+
         try {
             const config: BaseLoadOptions = {
                 ...(window.RufflePlayer?.config ?? {}),
@@ -1326,6 +1331,27 @@ export function isSwfFilename(filename: string | null): boolean {
                 return true;
             }
         }
+    }
+    return false;
+}
+
+/**
+ * Determine if an element is a child of a node that was not supported
+ * in non-HTML5 compliant browsers. If so, the element was meant to be
+ * used as a fallback content.
+ *
+ * @param elem The element to test.
+ * @returns True if the element is inside an <audio> or <video> node.
+ */
+export function isFallbackElement(elem: HTMLElement): boolean {
+    let parent = elem.parentElement;
+    while (parent !== null) {
+        switch (parent.tagName) {
+            case "AUDIO":
+            case "VIDEO":
+                return true;
+        }
+        parent = parent.parentElement;
     }
     return false;
 }
