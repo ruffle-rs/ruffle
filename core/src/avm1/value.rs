@@ -472,14 +472,14 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn type_of(&self) -> &'static str {
+    pub fn type_of(&self, activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
         match self {
             Value::Undefined => "undefined",
             Value::Null => "null",
             Value::Number(_) => "number",
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
-            Value::Object(object) => object.type_of(),
+            Value::Object(object) => object.type_of(activation),
         }
     }
 

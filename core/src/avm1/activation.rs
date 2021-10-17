@@ -2225,7 +2225,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_of = self.context.avm1.pop().type_of();
+        let type_of = self.context.avm1.pop().type_of(self);
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, type_of.to_string()).into());

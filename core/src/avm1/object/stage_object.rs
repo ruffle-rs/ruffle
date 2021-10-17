@@ -14,6 +14,8 @@ use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
+use super::script_object::TYPE_OF_OBJECT;
+
 /// The type string for MovieClip objects.
 pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
 
@@ -44,17 +46,10 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         proto: Option<Object<'gc>>,
     ) -> Self {
-        let mut base = ScriptObject::object(gc_context, proto);
-
-        // MovieClips have a special typeof "movieclip", while others are the default "object".
-        if display_object.as_movie_clip().is_some() {
-            base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
-        }
-
         Self(GcCell::allocate(
             gc_context,
             StageObjectData {
-                base,
+                base: ScriptObject::object(gc_context, proto),
                 path: AvmString::new(gc_context, display_object.path()),
                 text_field_bindings: Vec::new(),
             },
@@ -575,9 +570,16 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .set_interfaces(gc_context, iface_list)
     }
 
-    fn type_of(&self) -> &'static str {
-        self.0.read().base.type_of()
+    fn type_of(&self, activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
+        // "movieclip" for clips, "object" for other display object types.
+        // Defaults to "movieclip" if the path does not resolve.
+        match self.as_display_object(activation) {
+            Some(mc) if mc.as_movie_clip().is_some() => TYPE_OF_MOVIE_CLIP,
+            Some(_) => TYPE_OF_OBJECT,
+            None => TYPE_OF_MOVIE_CLIP,
+        }
     }
+
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(self.0.read().base)
     }

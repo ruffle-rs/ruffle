@@ -201,8 +201,8 @@ macro_rules! impl_custom_object {
             self.0.read().$field.get_keys(activation)
         }
 
-        fn type_of(&self) -> &'static str {
-            self.0.read().$field.type_of()
+        fn type_of(&self, activation: &mut crate::avm1::Activation<'_, 'gc, '_>) -> &'static str {
+            self.0.read().$field.type_of(activation)
         }
 
         fn interfaces(&self) -> Vec<crate::avm1::Object<'gc>> {

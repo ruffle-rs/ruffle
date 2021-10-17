@@ -292,7 +292,7 @@ impl<'gc> Executable<'gc> {
 
                     result.push('(');
                     for i in 0..args.len() {
-                        result.push_str(args.get(i).unwrap().type_of());
+                        result.push_str(args.get(i).unwrap().type_of(activation));
                         if i < args.len() - 1 {
                             result.push_str(", ");
                         }
@@ -788,7 +788,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.base.get_keys(activation)
     }
 
-    fn type_of(&self) -> &'static str {
+    fn type_of(&self, _activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
         TYPE_OF_FUNCTION
     }
 

@@ -241,8 +241,8 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         keys
     }
 
-    fn type_of(&self) -> &'static str {
-        self.base().type_of()
+    fn type_of(&self, activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
+        self.base().type_of(activation)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {

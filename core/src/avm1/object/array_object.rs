@@ -273,8 +273,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().get_keys(activation)
     }
 
-    fn type_of(&self) -> &'static str {
-        self.0.read().type_of()
+    fn type_of(&self, activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
+        self.0.read().type_of(activation)
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {

@@ -261,7 +261,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         vec![]
     }
 
-    fn type_of(&self) -> &'static str {
+    fn type_of(&self, _activation: &mut Activation<'_, 'gc, '_>) -> &'static str {
         TYPE_OF_OBJECT
     }
 
