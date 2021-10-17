@@ -512,7 +512,8 @@ impl Player {
 
         if self.is_playing() {
             self.frame_accumulator += dt;
-            let frame_time = 1000.0 / self.frame_rate;
+            let frame_rate = self.frame_rate;
+            let frame_time = 1000.0 / frame_rate;
 
             let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
@@ -549,6 +550,15 @@ impl Player {
             if self.frame_accumulator >= frame_time {
                 self.frame_accumulator = 0.0;
             }
+
+            // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
+            let cur_frame_offset = self.frame_accumulator;
+            self.frame_accumulator += self.mutate_with_update_context(|context| {
+                context
+                    .audio_manager
+                    .audio_skew_time(context.audio, cur_frame_offset)
+                    * 1000.0
+            });
 
             self.update_timers(dt);
             self.audio.tick();

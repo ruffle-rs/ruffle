@@ -249,6 +249,14 @@ impl<'gc> AudioManager<'gc> {
     /// The default timeline stream buffer time in seconds.
     pub const DEFAULT_STREAM_BUFFER_TIME: i32 = 5;
 
+    /// The audio sycning threshold in seconds.
+    ///
+    /// The player will adjust animation speed to stay within this many seconds of the audio track.
+    pub const STREAM_SYNC_THRESHOLD: f64 = 1.0 / 60.0;
+
+    /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
+    pub const STREAM_RESTART_THRESHOLD: f64 = 1.00;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -337,6 +345,7 @@ impl<'gc> AudioManager<'gc> {
                 transform: display_object::SoundTransform::default(),
                 avm1_object,
                 avm2_object: None,
+                stream_start_frame: None,
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
@@ -405,6 +414,10 @@ impl<'gc> AudioManager<'gc> {
         audio.stop_all_sounds();
     }
 
+    pub fn is_sound_playing(&mut self, sound: SoundInstanceHandle) -> bool {
+        self.sounds.iter().any(|other| other.instance == sound)
+    }
+
     pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
         self.sounds.iter().any(|other| other.sound == Some(sound))
     }
@@ -429,12 +442,55 @@ impl<'gc> AudioManager<'gc> {
                 transform: display_object::SoundTransform::default(),
                 avm1_object: None,
                 avm2_object: None,
+                stream_start_frame: Some(clip_frame),
             };
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
             Some(handle)
         } else {
             None
+        }
+    }
+
+    /// Returns the difference in seconds between the primary audio stream's time and the player's time.
+    pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset_ms: f64) -> f64 {
+        // Consider the first playing "stream" sound to be the primary audio track.
+        // Needs research: It's not clear how Flash handles the case of multiple stream sounds.
+        let (i, skew) = self
+            .sounds
+            .iter()
+            .enumerate()
+            .filter_map(|(i, instance)| {
+                let start_frame = instance.stream_start_frame?;
+                let clip = instance
+                    .display_object
+                    .and_then(|clip| clip.as_movie_clip())?;
+                let stream_pos = audio.get_sound_position(instance.instance)?;
+                let frame_rate = clip.movie()?.frame_rate().to_f64();
+
+                // Calculate the difference in time between the owning movie clip and its audio track.
+                // If the difference is beyond some threshold, inform the player to adjust playback speed.
+                let timeline_pos = f64::from(clip.current_frame().saturating_sub(start_frame))
+                    / frame_rate
+                    + offset_ms / 1000.0;
+                Some((i, stream_pos / 1000.0 - timeline_pos))
+            })
+            .next()
+            .unwrap_or_default();
+
+        if skew.abs() >= Self::STREAM_RESTART_THRESHOLD {
+            // Way out of sync, let's stop the entire stream.
+            // The movie clip will probably restart it naturally on the next frame.
+            let instance = &self.sounds[i];
+            audio.stop_sound(instance.instance);
+            self.sounds.swap_remove(i);
+            0.0
+        } else if skew.abs() < Self::STREAM_RESTART_THRESHOLD {
+            // Out of sync, adjust player speed.
+            skew
+        } else {
+            // In sync, no adjustment.
+            0.0
         }
     }
 
@@ -561,6 +617,8 @@ pub struct SoundInstance<'gc> {
 
     /// The AVM2 `SoundChannel` object associated with this sound, if any.
     avm2_object: Option<SoundChannelObject<'gc>>,
+
+    stream_start_frame: Option<u16>,
 }
 
 /// A sound transform for a playing sound, for use by audio backends.
