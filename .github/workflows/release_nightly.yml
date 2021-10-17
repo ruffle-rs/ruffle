@@ -266,6 +266,17 @@ jobs:
           npm run build
           npm run docs
 
+      - name: Sign Firefox extension
+        id: sign-firefox
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: npm run sign-firefox
+
       - name: Package selfhosted
         run: |
           cd web/packages/selfhosted/dist/
@@ -291,7 +302,19 @@ jobs:
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
           asset_content_type: application/zip
 
+      - name: Upload Firefox extension (signed)
+        if: steps.sign-firefox.outcome == 'success'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
+          asset_path: ./web/packages/extension/dist/firefox.xpi
+          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox.xpi
+          asset_content_type: application/x-xpinstall
+
       - name: Upload Firefox extension (unsigned)
+        if: steps.sign-firefox.outcome == 'failure'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
