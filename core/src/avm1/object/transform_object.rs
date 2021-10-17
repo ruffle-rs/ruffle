@@ -68,7 +68,7 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
             .get(0)
             .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)
-            .as_display_object()
+            .as_display_object(activation)
             .and_then(|o| o.as_movie_clip());
 
         if clip.is_none() {

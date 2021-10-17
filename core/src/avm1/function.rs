@@ -279,7 +279,7 @@ impl<'gc> Executable<'gc> {
                 let effective_ver = if activation.swf_version() > 5 {
                     af.swf_version()
                 } else {
-                    this.as_display_object()
+                    this.as_display_object(activation)
                         .map(|dn| dn.swf_version())
                         .unwrap_or(activation.context.player_version)
                 };
@@ -308,7 +308,7 @@ impl<'gc> Executable<'gc> {
                 let base_clip = if effective_ver > 5 && !af.base_clip.removed() {
                     af.base_clip
                 } else {
-                    this.as_display_object()
+                    this.as_display_object(activation)
                         .unwrap_or_else(|| activation.base_clip())
                 };
                 let mut frame = Activation::from_action(

@@ -69,7 +69,7 @@ fn serialize_value<'gc>(
             // and which turn into undefined.
             if o.as_executable().is_some() {
                 None
-            } else if o.as_display_object().is_some() {
+            } else if o.as_display_object(activation).is_some() {
                 Some(AmfValue::Undefined)
             } else if o.as_array_object().is_some() {
                 let mut values = Vec::new();

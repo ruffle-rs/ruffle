@@ -251,16 +251,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
                 .add_to_exec_list(context.gc_context, (*self).into());
         }
 
-        let mut mc = self.0.write(context.gc_context);
-        if mc.object.is_none() {
+        if self.0.read().object.is_none() {
             let object = StageObject::for_display_object(
                 context.gc_context,
                 display_object,
                 Some(context.avm1.prototypes().button),
             );
-            mc.object = Some(object.into());
-
-            drop(mc);
+            self.0.write(context.gc_context).object = Some(object.into());
 
             if run_frame {
                 self.run_frame(context);

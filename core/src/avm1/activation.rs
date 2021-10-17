@@ -765,7 +765,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
             if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
+                if let Some(clip) = clip.as_display_object(self).and_then(|o| o.as_movie_clip()) {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
@@ -1278,7 +1278,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let window_target = target.coerce_to_string(self)?;
         let clip_target: Option<DisplayObject<'gc>> = if is_target_sprite {
             if let Value::Object(target) = target {
-                target.as_display_object()
+                target.as_display_object(self)
             } else {
                 let start = self.target_clip_or_root()?;
                 self.resolve_target_display_object(start, target, true)?
@@ -1929,7 +1929,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
             .resolve_target_path(root, start, target, false)?
-            .and_then(|o| o.as_display_object())
+            .and_then(|o| o.as_display_object(self))
         {
             new_target_clip = Some(clip);
         } else {
@@ -1973,7 +1973,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 self.set_target_clip(Some(base_clip));
             }
             Value::Object(o) => {
-                if let Some(clip) = o.as_display_object() {
+                if let Some(clip) = o.as_display_object(self) {
                     // MovieClips can be targeted directly.
                     self.set_target_clip(Some(clip));
                 } else {
@@ -2158,7 +2158,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Prints out the dot-path for the parameter.
         // Parameter must be a display object (not a string path).
         let param = self.context.avm1.pop().coerce_to_object(self);
-        let result = if let Some(display_object) = param.as_display_object() {
+        let result = if let Some(display_object) = param.as_display_object(self) {
             let path = display_object.path();
             AvmString::new(self.context.gc_context, path).into()
         } else {
@@ -2496,7 +2496,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
         if let Value::Object(o) = target {
-            if let Some(o) = o.as_display_object() {
+            if let Some(o) = o.as_display_object(self) {
                 return Ok(Some(o));
             }
         }
@@ -2514,7 +2514,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let start = start.object().coerce_to_object(self);
         Ok(self
             .resolve_target_path(root, start, &path, false)?
-            .and_then(|o| o.as_display_object()))
+            .and_then(|o| o.as_display_object(self)))
     }
 
     /// Resolves a target path string to an object.
@@ -2565,7 +2565,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     is_slash_path = true;
                 }
                 path = path.get(3..).unwrap_or(&[]);
-                if let Some(parent) = object.as_display_object().and_then(|o| o.avm1_parent()) {
+                if let Some(parent) = object.as_display_object(self).and_then(|o| o.avm1_parent()) {
                     parent.object()
                 } else {
                     // Tried to get parent of root, bail out.
@@ -2607,7 +2607,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     // Resolves display object instances first, then local variables.
                     // This is the opposite of general GetMember property access!
                     if let Some(child) = object
-                        .as_display_object()
+                        .as_display_object(self)
                         .and_then(|o| o.as_container())
                         .and_then(|o| o.child_by_name(name, case_sensitive))
                     {

@@ -13,7 +13,7 @@ use gc_arena::MutationContext;
 macro_rules! tf_method {
     ($fn:expr) => {
         |activation, this, args| {
-            if let Some(display_object) = this.as_display_object() {
+            if let Some(display_object) = this.as_display_object(activation) {
                 if let Some(text_field) = display_object.as_edit_text() {
                     return $fn(text_field, activation, args);
                 }
@@ -26,7 +26,7 @@ macro_rules! tf_method {
 macro_rules! tf_getter {
     ($get:expr) => {
         |activation, this, _args| {
-            if let Some(display_object) = this.as_display_object() {
+            if let Some(display_object) = this.as_display_object(activation) {
                 if let Some(edit_text) = display_object.as_edit_text() {
                     return $get(edit_text, activation);
                 }
@@ -39,7 +39,7 @@ macro_rules! tf_getter {
 macro_rules! tf_setter {
     ($set:expr) => {
         |activation, this, args| {
-            if let Some(display_object) = this.as_display_object() {
+            if let Some(display_object) = this.as_display_object(activation) {
                 if let Some(edit_text) = display_object.as_edit_text() {
                     let value = args.get(0).unwrap_or(&Value::Undefined).clone();
                     $set(edit_text, activation, value)?;

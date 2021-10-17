@@ -62,7 +62,7 @@ pub fn get_parent<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
-        .as_display_object()
+        .as_display_object(activation)
         .and_then(|mc| mc.avm1_parent())
         .map(|dn| dn.object().coerce_to_object(activation))
         .map(Value::Object)
@@ -74,7 +74,7 @@ pub fn get_depth<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
+    if let Some(display_object) = this.as_display_object(activation) {
         if activation.swf_version() >= 6 {
             let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
             return Ok(depth.into());
@@ -88,7 +88,7 @@ pub fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
+    if let Some(display_object) = this.as_display_object(activation) {
         Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
     } else {
         Ok(Value::Undefined)

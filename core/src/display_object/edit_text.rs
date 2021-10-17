@@ -1471,8 +1471,7 @@ impl<'gc> EditText<'gc> {
         display_object: DisplayObject<'gc>,
         run_frame: bool,
     ) {
-        let mut text = self.0.write(context.gc_context);
-        if text.object.is_none() {
+        if self.0.read().object.is_none() {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
                 context.gc_context,
                 display_object,
@@ -1480,9 +1479,8 @@ impl<'gc> EditText<'gc> {
             )
             .into();
 
-            text.object = Some(object.into());
+            self.0.write(context.gc_context).object = Some(object.into());
         }
-        drop(text);
 
         Avm1::run_with_stack_frame_for_display_object(
             (*self).into(),

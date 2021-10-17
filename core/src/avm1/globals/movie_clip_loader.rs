@@ -48,7 +48,7 @@ pub fn load_clip<'gc>(
 
     if let Value::Object(target) = target {
         if let Some(mc) = target
-            .as_display_object()
+            .as_display_object(activation)
             .and_then(|dobj| dobj.as_movie_clip())
         {
             let fetch = activation
@@ -82,7 +82,7 @@ pub fn unload_clip<'gc>(
 
     if let Value::Object(target) = target {
         if let Some(mut mc) = target
-            .as_display_object()
+            .as_display_object(activation)
             .and_then(|dobj| dobj.as_movie_clip())
         {
             mc.unload(&mut activation.context);
@@ -104,7 +104,7 @@ pub fn get_progress<'gc>(
 
     if let Value::Object(target) = target {
         if let Some(mc) = target
-            .as_display_object()
+            .as_display_object(activation)
             .and_then(|dobj| dobj.as_movie_clip())
         {
             let ret_obj = ScriptObject::object(activation.context.gc_context, None);

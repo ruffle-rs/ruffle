@@ -1236,47 +1236,25 @@ pub trait TDisplayObject<'gc>:
     /// version, see `avm2_root`.
     fn avm1_root(
         &self,
-        context: &UpdateContext<'_, 'gc, '_>,
+        _context: &UpdateContext<'_, 'gc, '_>,
     ) -> Result<DisplayObject<'gc>, Avm1Error<'gc>> {
-        let mut parent = if self.lock_root() {
-            None
-        } else {
-            self.avm1_parent()
-        };
-
-        while let Some(p) = parent {
-            if p.lock_root() {
-                break;
+        let mut display_object: Option<DisplayObject<'gc>> = Some((*self).into());
+        while let Some(obj) = display_object {
+            if obj.lock_root() {
+                return Ok(obj);
+            } else if let Some(parent) = obj.avm1_parent() {
+                display_object = Some(parent);
+            } else {
+                // No more `_parent`; actual parent must be the stage.
+                debug_assert!(
+                    self.parent().map(|o| o.as_stage()).is_some(),
+                    "Detached display object in AVM1"
+                );
+                return Ok(obj);
             }
-
-            let grandparent = p.avm1_parent();
-
-            if grandparent.is_none() {
-                break;
-            }
-
-            parent = grandparent;
         }
 
-        parent
-            .ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
-            .or_else(|_| {
-                if let Avm1Value::Object(object) = self.object() {
-                    object
-                        .as_display_object()
-                        .ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
-                } else if let Avm2Value::Object(object) = self.object2() {
-                    if self.is_on_stage(context) {
-                        object
-                            .as_display_object()
-                            .ok_or(Avm1Error::InvalidDisplayObjectHierarchy)
-                    } else {
-                        Err(Avm1Error::InvalidDisplayObjectHierarchy)
-                    }
-                } else {
-                    Err(Avm1Error::InvalidDisplayObjectHierarchy)
-                }
-            })
+        Err(Avm1Error::InvalidDisplayObjectHierarchy)
     }
 
     /// Obtain the top-most non-Stage parent of the display tree hierarchy, if

@@ -126,7 +126,7 @@ pub fn set_focus<'gc>(
             Ok(true.into())
         }
         Some(Value::Object(obj)) => {
-            if let Some(display_object) = obj.as_display_object() {
+            if let Some(display_object) = obj.as_display_object(activation) {
                 if display_object.is_focusable() {
                     tracker.set(Some(display_object), &mut activation.context);
                 }

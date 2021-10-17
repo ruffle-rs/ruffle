@@ -41,7 +41,7 @@ pub fn constructor<'gc>(
     let owner = args
         .get(0)
         .map(|o| o.coerce_to_object(activation))
-        .and_then(|o| o.as_display_object());
+        .and_then(|o| o.as_display_object(activation));
 
     if let Some(sound) = this.as_sound_object() {
         sound.set_owner(activation.context.gc_context, owner);

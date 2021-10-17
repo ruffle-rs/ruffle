@@ -315,9 +315,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         Some(*self)
     }
 
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+    fn as_display_object(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<DisplayObject<'gc>> {
         //`super` actually can be used to invoke MovieClip methods
-        self.0.read().this.as_display_object()
+        self.0.read().this.as_display_object(activation)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

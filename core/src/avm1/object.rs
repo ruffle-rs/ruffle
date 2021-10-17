@@ -506,7 +506,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the underlying display node for this object, if it exists.
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+    #[allow(unused_variables)]
+    fn as_display_object(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Option<DisplayObject<'gc>> {
         None
     }
 
