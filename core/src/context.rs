@@ -243,6 +243,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         self.audio_manager.stop_all_sounds(self.audio)
     }
 
+    pub fn is_sound_playing(&mut self, sound: SoundInstanceHandle) -> bool {
+        self.audio_manager.is_sound_playing(sound)
+    }
+
     pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
         self.audio_manager.is_sound_playing_with_handle(sound)
     }
