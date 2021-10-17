@@ -1535,7 +1535,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.context.avm2.push(
             self.global_scope()
                 .map(|gs| gs.into())
-                .unwrap_or(Value::Undefined),
+                .unwrap_or(Value::Null),
         );
 
         Ok(FrameControl::Continue)
