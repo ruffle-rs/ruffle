@@ -1,39 +1,42 @@
 #[cfg(feature = "minimp3")]
 pub mod minimp3 {
     use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
-    use std::io::{Cursor, Read};
+    use std::{
+        convert::TryInto,
+        io::{Cursor, Read},
+    };
+
+    type Error = Box<dyn std::error::Error>;
 
     pub struct Mp3Decoder<R: Read> {
         decoder: minimp3::Decoder<R>,
-        sample_rate: u32,
-        num_channels: u16,
-        cur_frame: minimp3::Frame,
+        frame: minimp3::Frame,
+        sample_rate: u16,
+        num_channels: u8,
         cur_sample: usize,
         num_samples: usize,
     }
 
     impl<R: Read> Mp3Decoder<R> {
-        pub fn new(num_channels: u16, sample_rate: u32, reader: R) -> Self {
-            Mp3Decoder {
-                decoder: minimp3::Decoder::new(reader),
-                num_channels,
+        pub fn new(reader: R) -> Result<Self, Error> {
+            let mut decoder = minimp3::Decoder::new(reader);
+            let frame = decoder.next_frame()?;
+            let sample_rate = frame.sample_rate.try_into()?;
+            let num_channels = frame.channels.try_into()?;
+            Ok(Mp3Decoder {
+                decoder,
+                frame,
                 sample_rate,
-                cur_frame: minimp3::Frame {
-                    data: vec![],
-                    sample_rate: sample_rate as i32,
-                    channels: num_channels.into(),
-                    layer: 3,
-                    bitrate: 128,
-                },
+                num_channels,
                 cur_sample: 0,
                 num_samples: 0,
-            }
+            })
         }
 
         fn next_frame(&mut self) {
             if let Ok(frame) = self.decoder.next_frame() {
                 self.num_samples = frame.data.len();
-                self.cur_frame = frame;
+                self.frame = frame;
             } else {
                 self.num_samples = 0;
             }
@@ -52,13 +55,13 @@ pub mod minimp3 {
             }
 
             if self.num_samples > 0 {
-                if self.num_channels == 2 {
-                    let left = self.cur_frame.data[self.cur_sample];
-                    let right = self.cur_frame.data[self.cur_sample + 1];
+                if self.num_channels() == 2 {
+                    let left = self.frame.data[self.cur_sample];
+                    let right = self.frame.data[self.cur_sample + 1];
                     self.cur_sample += 2;
                     Some([left, right])
                 } else {
-                    let sample = self.cur_frame.data[self.cur_sample];
+                    let sample = self.frame.data[self.cur_sample];
                     self.cur_sample += 1;
                     Some([sample, sample])
                 }
@@ -76,19 +79,21 @@ pub mod minimp3 {
             // but have to work around the borrowing rules of Rust.
             let mut cursor = std::mem::take(self.decoder.reader_mut());
             cursor.set_position(0);
-            *self = Mp3Decoder::new(self.num_channels, self.sample_rate, cursor);
+            if let Ok(decoder) = Mp3Decoder::new(cursor) {
+                *self = decoder;
+            }
         }
     }
 
     impl<R: Read> Decoder for Mp3Decoder<R> {
         #[inline]
         fn num_channels(&self) -> u8 {
-            self.num_channels as u8
+            self.num_channels
         }
 
         #[inline]
         fn sample_rate(&self) -> u16 {
-            self.sample_rate as u16
+            self.sample_rate
         }
     }
 }
@@ -97,7 +102,10 @@ pub mod minimp3 {
 #[allow(dead_code)]
 pub mod symphonia {
     use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
-    use std::io::{Cursor, Read};
+    use std::{
+        convert::TryInto,
+        io::{Cursor, Read},
+    };
     use symphonia::{
         core::{
             self, audio, codecs, errors,
@@ -107,10 +115,11 @@ pub mod symphonia {
         default::formats::Mp3Reader as SymphoniaMp3Reader,
     };
 
+    type Error = Box<dyn std::error::Error>;
+
     pub struct Mp3Decoder {
         reader: SymphoniaMp3Reader,
         decoder: Box<dyn codecs::Decoder>,
-        codec_params: codecs::CodecParameters,
         sample_buf: audio::SampleBuffer<i16>,
         cur_sample: usize,
         sample_rate: u16,
@@ -119,45 +128,35 @@ pub mod symphonia {
     }
 
     impl Mp3Decoder {
-        pub fn new<R: 'static + Read + Send>(
-            num_channels: u16,
-            sample_rate: u32,
-            reader: R,
-        ) -> Self {
+        const SAMPLE_BUFFER_DURATION: u64 = 4096;
+
+        pub fn new<R: 'static + Read + Send>(reader: R) -> Result<Self, Error> {
             let source = Box::new(io::ReadOnlySource::new(reader)) as Box<dyn io::MediaSource>;
             let source = io::MediaSourceStream::new(source, Default::default());
-            let reader = SymphoniaMp3Reader::try_new(source, &Default::default()).unwrap();
-            let track = reader.default_track().unwrap();
+            let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
+            let track = reader.default_track().ok_or("No default track")?;
             let codec_params = track.codec_params.clone();
-            let decoder = symphonia::default::get_codecs()
-                .make(&codec_params, &Default::default())
-                .unwrap();
-            let sample_rate = codec_params
-                .sample_rate
-                .map_or(sample_rate as u16, |n| n as u16);
-            let num_channels = codec_params
-                .channels
-                .map_or(num_channels as u8, |n| n.count() as u8);
-            Mp3Decoder {
+            let decoder =
+                symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
+            let sample_rate = codec_params.sample_rate.ok_or("Invalid sample rate")?;
+            let channels = codec_params.channels.ok_or("Invalid number of channels")?;
+            Ok(Mp3Decoder {
                 reader,
                 decoder,
-                codec_params,
                 sample_buf: audio::SampleBuffer::new(
-                    0,
-                    audio::SignalSpec::new(0, Default::default()),
+                    Self::SAMPLE_BUFFER_DURATION,
+                    audio::SignalSpec::new(sample_rate, channels),
                 ),
                 cur_sample: 0,
-                num_channels,
-                sample_rate,
+                num_channels: channels.count().try_into()?,
+                sample_rate: sample_rate.try_into()?,
                 stream_ended: false,
-            }
+            })
         }
 
         pub fn new_seekable<R: 'static + AsRef<[u8]> + Send>(
-            num_channels: u16,
-            sample_rate: u32,
             reader: Cursor<R>,
-        ) -> Self {
+        ) -> Result<Self, Error> {
             let source = Box::new(reader) as Box<dyn io::MediaSource>;
             let source = io::MediaSourceStream::new(source, Default::default());
             let reader = SymphoniaMp3Reader::try_new(source, &Default::default()).unwrap();
@@ -166,25 +165,20 @@ pub mod symphonia {
             let decoder = symphonia::default::get_codecs()
                 .make(&codec_params, &Default::default())
                 .unwrap();
-            let sample_rate = codec_params
-                .sample_rate
-                .map_or(sample_rate as u16, |n| n as u16);
-            let num_channels = codec_params
-                .channels
-                .map_or(num_channels as u8, |n| n.count() as u8);
-            Mp3Decoder {
+            let sample_rate = codec_params.sample_rate.ok_or("Invalid sample rate")?;
+            let channels = codec_params.channels.ok_or("Invalid number of channels")?;
+            Ok(Mp3Decoder {
                 reader,
                 decoder,
-                codec_params,
                 sample_buf: audio::SampleBuffer::new(
-                    0,
-                    audio::SignalSpec::new(0, Default::default()),
+                    Self::SAMPLE_BUFFER_DURATION,
+                    audio::SignalSpec::new(sample_rate, channels),
                 ),
                 cur_sample: 0,
-                num_channels,
-                sample_rate,
+                num_channels: channels.count() as u8,
+                sample_rate: sample_rate as u16,
                 stream_ended: false,
-            }
+            })
         }
 
         fn next_frame(&mut self) {
@@ -211,7 +205,6 @@ pub mod symphonia {
                 }
             }
             // EOF reached.
-            self.decoder.close();
             self.stream_ended = true;
         }
     }
