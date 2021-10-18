@@ -1,16 +1,16 @@
 //! CLI Options
 
-use clap::Clap;
+use clap::Parser;
 use std::path::PathBuf;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(version, about, author)]
 pub struct Opt {
     #[clap(subcommand)]
     pub mode: Mode,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum Mode {
     /// Scan an entire directory for SWF files
     Scan(ScanOpt),
@@ -22,7 +22,7 @@ pub enum Mode {
     ExecuteReport(ExecuteReportOpt),
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ScanOpt {
     /// The directory (containing SWF files) to scan
     #[clap(name = "directory", parse(from_os_str))]
@@ -37,14 +37,14 @@ pub struct ScanOpt {
     pub ignore: Vec<String>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct AnalyzeOpt {
     /// The CSV file to reanalyze
     #[clap(name = "input", parse(from_os_str))]
     pub input_path: PathBuf,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ExecuteReportOpt {
     /// The single SWF file to parse and run
     #[clap(name = "file", parse(from_os_str))]

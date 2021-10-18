@@ -16,7 +16,7 @@ mod ui;
 
 use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
-use clap::Clap;
+use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use ruffle_core::{
     backend::{
@@ -48,7 +48,7 @@ use winit::event::{
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(
     name = "Ruffle",
     author,

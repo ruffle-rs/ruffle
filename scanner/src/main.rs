@@ -2,7 +2,7 @@ use crate::analyze::analyze_main;
 use crate::cli_options::{Mode, Opt};
 use crate::execute::execute_report_main;
 use crate::scan::scan_main;
-use clap::Clap;
+use clap::Parser;
 
 mod analyze;
 mod cli_options;
