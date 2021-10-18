@@ -1,0 +1,8 @@
+[object global]
+[class Object]
+[class EventDispatcher]
+[class DisplayObject]
+[class InteractiveObject]
+[class DisplayObjectContainer]
+[class Sprite]
+[class MovieClip]

@@ -701,6 +701,7 @@ swf_tests! {
     (as3_qname_constr_namespace, "avm2/qname_constr_namespace", 1),
     (as3_qname_tostring, "avm2/qname_tostring", 1),
     (as3_qname_valueof, "avm2/qname_valueof", 1),
+    (as3_getouterscope, "avm2/getouterscope", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
