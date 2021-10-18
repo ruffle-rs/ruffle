@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 log = "0.4"
-lyon = "0.17.5"
+lyon = "0.17.10"
 
 [dependencies.ruffle_core]
 path = "../../core"
