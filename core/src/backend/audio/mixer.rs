@@ -232,15 +232,16 @@ impl AudioMixer {
     }
 
     /// Transforms a `Stream` into a new `Stream` that matches the output sample rate.
-    fn make_resampler(&self, format: &swf::SoundFormat, mut stream: impl Stream) -> impl Stream {
+    fn make_resampler(&self, mut stream: impl Stream) -> impl Stream {
         // TODO: Allow interpolator to be user-configurable?
         let left = stream.next();
         let right = stream.next();
         let interpolator = dasp::interpolate::linear::Linear::new(left, right);
+        let sample_rate = stream.source_sample_rate().into();
         ConverterStream(dasp::signal::interpolate::Converter::from_hz_to_hz(
             stream,
             interpolator,
-            format.sample_rate.into(),
+            sample_rate,
             self.output_sample_rate.into(),
         ))
     }
@@ -266,7 +267,7 @@ impl AudioMixer {
             sound.skip_sample_frames,
         );
         // Resample the stream to the output sample rate.
-        let stream = self.make_resampler(&sound.format, stream);
+        let stream = self.make_resampler(stream);
         if let Some(envelope) = &settings.envelope {
             let envelope_signal = EnvelopeSignal::new(&envelope[..], self.output_sample_rate);
             Ok(Box::new(MulAmpStream::new(stream, envelope_signal)) as Box<dyn Stream>)
@@ -290,7 +291,7 @@ impl AudioMixer {
 
         // Convert the `Decoder` to a `Stream`, and resample it to output sample rate.
         let stream = DecoderStream::new(decoder);
-        let stream = self.make_resampler(format, stream);
+        let stream = self.make_resampler(stream);
         Ok(Box::new(stream))
     }
 
@@ -305,7 +306,7 @@ impl AudioMixer {
 
         // Convert the `Decoder` to a `Stream`, and resample it to the output sample rate.
         let stream = DecoderStream::new(clip_stream_decoder);
-        let stream = Box::new(self.make_resampler(format, stream));
+        let stream = Box::new(self.make_resampler(stream));
         Ok(stream)
     }
 
