@@ -205,17 +205,9 @@ impl AudioMixer {
                 format.sample_rate,
             )?),
             #[cfg(feature = "minimp3")]
-            AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new(
-                if format.is_stereo { 2 } else { 1 },
-                format.sample_rate.into(),
-                data,
-            )),
+            AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new(data)?),
             #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
-            AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(
-                if format.is_stereo { 2 } else { 1 },
-                format.sample_rate.into(),
-                data,
-            )),
+            AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(data)?),
             AudioCompression::Nellymoser => {
                 Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
             }

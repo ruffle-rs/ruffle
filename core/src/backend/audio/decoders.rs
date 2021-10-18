@@ -58,11 +58,7 @@ pub fn make_decoder<R: 'static + Send + Read>(
             format.sample_rate,
         )?),
         #[cfg(any(feature = "minimp3", feature = "symphonia"))]
-        AudioCompression::Mp3 => Box::new(Mp3Decoder::new(
-            if format.is_stereo { 2 } else { 1 },
-            format.sample_rate.into(),
-            data,
-        )),
+        AudioCompression::Mp3 => Box::new(Mp3Decoder::new(data)?),
         AudioCompression::Nellymoser => {
             Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
         }
