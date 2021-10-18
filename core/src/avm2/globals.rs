@@ -122,6 +122,7 @@ pub struct SystemPrototypes<'gc> {
     pub bitmapdata: Object<'gc>,
     pub date: Object<'gc>,
     pub qname: Object<'gc>,
+    pub sharedobject: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -178,6 +179,7 @@ impl<'gc> SystemPrototypes<'gc> {
             bitmapdata: empty,
             date: empty,
             qname: empty,
+            sharedobject: empty,
         }
     }
 }
@@ -225,6 +227,7 @@ pub struct SystemClasses<'gc> {
     pub bitmapdata: ClassObject<'gc>,
     pub date: ClassObject<'gc>,
     pub qname: ClassObject<'gc>,
+    pub sharedobject: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -277,6 +280,7 @@ impl<'gc> SystemClasses<'gc> {
             bitmapdata: object,
             date: object,
             qname: object,
+            sharedobject: object,
         }
     }
 }
@@ -801,6 +805,14 @@ pub fn load_player_globals<'gc>(
         soundchannel,
         activation,
         flash::media::soundchannel::create_class(mc),
+        script
+    );
+
+    // package `flash.net`
+    avm2_system_class!(
+        sharedobject,
+        activation,
+        flash::net::sharedobject::create_class(mc),
         script
     );
 
