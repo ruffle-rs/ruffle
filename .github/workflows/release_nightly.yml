@@ -267,7 +267,7 @@ jobs:
           npm run docs
 
       - name: Sign Firefox extension
-        if: env.SKIP_SIGN_FIREFOX_EXTENSION != 1
+        if: secrets.SKIP_SIGN_FIREFOX_EXTENSION != ""
         id: sign-firefox
         continue-on-error: true
         env:
