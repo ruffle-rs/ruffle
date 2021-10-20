@@ -33,38 +33,27 @@ impl Pipelines {
         globals_layout: &wgpu::BindGroupLayout,
         dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     ) -> Result<Self, Error> {
-        // TODO: Naga validation errors when encountering push constants currently.
-        // Disable validation for now. Remove this when Naga can swallow it.
-        macro_rules! include_spirv {
-            ($($token:tt)*) => {
-                {
-                    wgpu::ShaderModuleDescriptor {
-                        label: Some($($token)*),
-                        source: wgpu::util::make_spirv(include_bytes!($($token)*)),
-                    }
-                }
-            };
-        }
-
-        let color_vs = device.create_shader_module(&include_spirv!("../shaders/color.vert.spv"));
-        let texture_vs =
-            device.create_shader_module(&include_spirv!("../shaders/texture.vert.spv"));
-        let color_fs;
-        let gradient_fs;
-        let bitmap_fs;
-        if surface_format.describe().srgb {
-            color_fs =
-                device.create_shader_module(&include_spirv!("../shaders/color_srgb.frag.spv"));
-            gradient_fs =
-                device.create_shader_module(&include_spirv!("../shaders/gradient_srgb.frag.spv"));
-            bitmap_fs =
-                device.create_shader_module(&include_spirv!("../shaders/bitmap_srgb.frag.spv"));
-        } else {
-            color_fs = device.create_shader_module(&include_spirv!("../shaders/color.frag.spv"));
-            gradient_fs =
-                device.create_shader_module(&include_spirv!("../shaders/gradient.frag.spv"));
-            bitmap_fs = device.create_shader_module(&include_spirv!("../shaders/bitmap.frag.spv"));
-        }
+        // If the surface is sRGB, the GPU will automatically convert colors from linear to sRGB,
+        // so our shader should output linear colors.
+        let output_srgb = !surface_format.describe().srgb;
+        let color_shader = create_shader(
+            device,
+            "color",
+            include_str!("../shaders/color.wgsl"),
+            output_srgb,
+        );
+        let bitmap_shader = create_shader(
+            device,
+            "bitmap",
+            include_str!("../shaders/bitmap.wgsl"),
+            output_srgb,
+        );
+        let gradient_shader = create_shader(
+            device,
+            "gradient",
+            include_str!("../shaders/gradient.wgsl"),
+            output_srgb,
+        );
 
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,
@@ -78,8 +67,7 @@ impl Pipelines {
         let color_pipelines = create_color_pipelines(
             device,
             surface_format,
-            &color_vs,
-            &color_fs,
+            &color_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             globals_layout,
@@ -117,8 +105,7 @@ impl Pipelines {
         let bitmap_pipelines = create_bitmap_pipeline(
             device,
             surface_format,
-            &texture_vs,
-            &bitmap_fs,
+            &bitmap_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             sampler_layout,
@@ -158,8 +145,7 @@ impl Pipelines {
         let gradient_pipelines = create_gradient_pipeline(
             device,
             surface_format,
-            &texture_vs,
-            &gradient_fs,
+            &gradient_shader,
             msaa_sample_count,
             &vertex_buffers_description,
             globals_layout,
@@ -175,6 +161,39 @@ impl Pipelines {
             gradient_layout: gradient_bind_layout,
         })
     }
+}
+
+/// Builds a `wgpu::ShaderModule` the given WGSL source in `src`.
+///
+/// The source is prepended with common code in `common.wgsl` and sRGB/linear conversions in
+/// `output_srgb.wgsl`/`output_linear.wgsl`, simulating a `#include` preprocessor. We could
+/// possibly does this as an offline build step instead.
+fn create_shader(
+    device: &wgpu::Device,
+    name: &'static str,
+    src: &'static str,
+    output_srgb: bool,
+) -> wgpu::ShaderModule {
+    const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
+    const OUTPUT_LINEAR_SRC: &str = include_str!("../shaders/output_linear.wgsl");
+    const OUTPUT_SRGB_SRC: &str = include_str!("../shaders/output_srgb.wgsl");
+
+    let src = if output_srgb {
+        [COMMON_SRC, OUTPUT_SRGB_SRC, src].concat()
+    } else {
+        [COMMON_SRC, OUTPUT_LINEAR_SRC, src].concat()
+    };
+    let label = create_debug_label!(
+        "Shader {} ({})",
+        name,
+        if output_srgb { "sRGB" } else { "linear" }
+    );
+    let desc = wgpu::ShaderModuleDescriptor {
+        label: label.as_deref(),
+        source: wgpu::ShaderSource::Wgsl(src.into()),
+    };
+
+    device.create_shader_module(&desc)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -223,8 +242,7 @@ fn create_pipeline_descriptor<'a>(
 fn create_color_pipelines(
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
+    shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_description: &[wgpu::VertexBufferLayout<'_>],
     globals_layout: &wgpu::BindGroupLayout,
@@ -242,8 +260,8 @@ fn create_color_pipelines(
             let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Color pipeline no mask").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -278,8 +296,8 @@ fn create_color_pipelines(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Color pipeline draw mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -313,8 +331,8 @@ fn create_color_pipelines(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Color pipeline draw masked content").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -348,8 +366,8 @@ fn create_color_pipelines(
             let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Color pipeline clear mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -387,8 +405,7 @@ fn create_color_pipelines(
 fn create_bitmap_pipeline(
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
+    shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     sampler_layout: &wgpu::BindGroupLayout,
@@ -413,8 +430,8 @@ fn create_bitmap_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Bitmap pipeline no mask").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -448,8 +465,8 @@ fn create_bitmap_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Bitmap pipeline draw mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -483,8 +500,8 @@ fn create_bitmap_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Bitmap pipeline draw masked content").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -518,8 +535,8 @@ fn create_bitmap_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Bitmap pipeline clear mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -557,8 +574,7 @@ fn create_bitmap_pipeline(
 fn create_gradient_pipeline(
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
-    vertex_shader: &wgpu::ShaderModule,
-    fragment_shader: &wgpu::ShaderModule,
+    shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     globals_layout: &wgpu::BindGroupLayout,
@@ -581,8 +597,8 @@ fn create_gradient_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Gradient pipeline no mask").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -616,8 +632,8 @@ fn create_gradient_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Gradient pipeline draw mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -652,8 +668,8 @@ fn create_gradient_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Gradient pipeline draw masked content").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
@@ -687,8 +703,8 @@ fn create_gradient_pipeline(
             let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
                 create_debug_label!("Gradient pipeline clear mask stencil").as_deref(),
-                vertex_shader,
-                fragment_shader,
+                shader,
+                shader,
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
