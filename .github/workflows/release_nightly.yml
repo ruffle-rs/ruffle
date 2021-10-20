@@ -267,6 +267,7 @@ jobs:
           npm run docs
 
       - name: Sign Firefox extension
+        if: secrets.FIREFOX_EXTENSION_ID != ""
         id: sign-firefox
         continue-on-error: true
         env:
@@ -314,7 +315,7 @@ jobs:
           asset_content_type: application/x-xpinstall
 
       - name: Upload Firefox extension (unsigned)
-        if: steps.sign-firefox.outcome == 'failure'
+        if: steps.sign-firefox.outcome != 'success'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
