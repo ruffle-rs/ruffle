@@ -857,7 +857,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-
+        // TODO: Could be optimized to a single put_image_data call
+        // in case it is already stored as a canvas+context.
         self.bitmaps[handle.0] = BitmapData {
             image: BitmapDataStorage::from_image_data(
                 ImageData::new_with_u8_clamped_array(Clamped(&rgba), width).unwrap(),
@@ -1421,10 +1422,13 @@ fn swf_shape_to_canvas_commands(
                             .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
                         {
                             if !*is_smoothed {
+                                // TODO
                                 //image = image.set("image-rendering", pixelated_property_value);
                             }
 
                             let repeat = if !*is_repeating {
+                                // NOTE: The WebGL backend does clamping in this case, just like
+                                // Flash Player, but CanvasPattern has no such option...
                                 "no-repeat"
                             } else {
                                 "repeat"
