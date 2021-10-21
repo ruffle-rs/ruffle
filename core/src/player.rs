@@ -1439,52 +1439,6 @@ impl Player {
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc, '_>) -> R,
     {
-        // We have to do this piecewise borrowing of fields before the closure to avoid
-        // completely borrowing `self`.
-        let (
-            player_version,
-            swf,
-            renderer,
-            audio,
-            navigator,
-            ui,
-            rng,
-            mouse_position,
-            player,
-            system_properties,
-            instance_counter,
-            storage,
-            locale,
-            logging,
-            video,
-            needs_render,
-            max_execution_duration,
-            current_frame,
-            time_offset,
-            frame_rate,
-        ) = (
-            self.player_version,
-            &self.swf,
-            self.renderer.deref_mut(),
-            self.audio.deref_mut(),
-            self.navigator.deref_mut(),
-            self.ui.deref_mut(),
-            &mut self.rng,
-            &self.mouse_pos,
-            self.self_reference.clone(),
-            &mut self.system,
-            &mut self.instance_counter,
-            self.storage.deref_mut(),
-            self.locale.deref_mut(),
-            self.log.deref_mut(),
-            self.video.deref_mut(),
-            &mut self.needs_render,
-            self.max_execution_duration,
-            &mut self.current_frame,
-            &mut self.time_offset,
-            &mut self.frame_rate,
-        );
-
         self.gc_arena.mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.0.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
@@ -1507,44 +1461,44 @@ impl Player {
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
-                player_version,
-                swf,
+                player_version: self.player_version,
+                swf: &self.swf,
                 library,
-                rng,
-                renderer,
-                audio,
-                navigator,
-                ui,
+                rng: &mut self.rng,
+                renderer: self.renderer.deref_mut(),
+                audio: self.audio.deref_mut(),
+                navigator: self.navigator.deref_mut(),
+                ui: self.ui.deref_mut(),
                 action_queue,
                 gc_context,
                 stage,
                 mouse_over_object: mouse_hovered_object,
                 mouse_down_object: mouse_pressed_object,
-                mouse_position,
+                mouse_position: &self.mouse_pos,
                 drag_object,
-                player,
+                player: self.self_reference.clone(),
                 load_manager,
-                system: system_properties,
-                instance_counter,
-                storage,
-                locale,
-                log: logging,
-                video,
+                system: &mut self.system,
+                instance_counter: &mut self.instance_counter,
+                storage: self.storage.deref_mut(),
+                locale: self.locale.deref_mut(),
+                log: self.log.deref_mut(),
+                video: self.video.deref_mut(),
                 shared_objects,
                 unbound_text_fields,
                 timers,
                 current_context_menu,
-                needs_render,
+                needs_render: &mut self.needs_render,
                 avm1,
                 avm2,
                 external_interface,
                 update_start: Instant::now(),
-                max_execution_duration,
+                max_execution_duration: self.max_execution_duration,
                 focus_tracker,
                 times_get_time_called: 0,
-                time_offset,
+                time_offset: &mut self.time_offset,
                 audio_manager,
-                frame_rate,
+                frame_rate: &mut self.frame_rate,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -1559,7 +1513,7 @@ impl Player {
                 update_context.audio.set_frame_rate(new_frame_rate);
             }
 
-            *current_frame = update_context
+            self.current_frame = update_context
                 .stage
                 .root_clip()
                 .as_movie_clip()
