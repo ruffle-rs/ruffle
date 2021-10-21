@@ -20,7 +20,6 @@ use gc_arena::{Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
-use std::convert::{TryFrom, TryInto};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,

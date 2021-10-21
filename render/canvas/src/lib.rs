@@ -7,7 +7,6 @@ use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::matrix::Matrix;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
 use ruffle_web_common::JsResult;
-use std::convert::TryInto;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, Element, HtmlCanvasElement,

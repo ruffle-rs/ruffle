@@ -3,7 +3,6 @@ use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, SoundHandle, SoundInstanceHandle, SoundTransform,
 };
 use ruffle_core::impl_audio_mixer_backend;
-use std::convert::TryInto;
 
 pub struct CpalAudioBackend {
     #[allow(dead_code)]
