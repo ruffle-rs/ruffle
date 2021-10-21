@@ -1,7 +1,7 @@
 [package]
 name = "swf"
 version = "0.1.2"
-edition = "2018"
+edition = "2021"
 authors = ["Mike Welsh"]
 repository = "https://github.com/ruffle-rs/ruffle"
 homepage = "https://github.com/ruffle-rs/ruffle"
