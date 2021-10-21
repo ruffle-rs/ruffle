@@ -14,7 +14,6 @@ pub mod minimp3 {
         sample_rate: u16,
         num_channels: u8,
         cur_sample: usize,
-        num_samples: usize,
     }
 
     impl<R: Read> Mp3Decoder<R> {
@@ -29,16 +28,14 @@ pub mod minimp3 {
                 sample_rate,
                 num_channels,
                 cur_sample: 0,
-                num_samples: 0,
             })
         }
 
         fn next_frame(&mut self) {
             if let Ok(frame) = self.decoder.next_frame() {
-                self.num_samples = frame.data.len();
                 self.frame = frame;
             } else {
-                self.num_samples = 0;
+                self.frame.data.clear();
             }
             self.cur_sample = 0;
         }
@@ -50,11 +47,11 @@ pub mod minimp3 {
         #[inline]
         #[allow(unknown_lints, clippy::branches_sharing_code)]
         fn next(&mut self) -> Option<Self::Item> {
-            if self.cur_sample >= self.num_samples {
+            if self.cur_sample >= self.frame.data.len() {
                 self.next_frame();
             }
 
-            if self.num_samples > 0 {
+            if !self.frame.data.is_empty() {
                 if self.num_channels() == 2 {
                     let left = self.frame.data[self.cur_sample];
                     let right = self.frame.data[self.cur_sample + 1];
