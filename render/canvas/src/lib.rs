@@ -666,6 +666,8 @@ impl RenderBackend for WebCanvasRenderBackend {
             return;
         }
 
+        self.context.set_image_smoothing_enabled(smoothing);
+
         self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
         if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
