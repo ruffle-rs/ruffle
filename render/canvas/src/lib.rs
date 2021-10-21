@@ -1443,12 +1443,14 @@ fn swf_shape_to_canvas_commands(
 
                             let matrix = matrix_factory.create_svg_matrix();
 
-                            matrix.set_a(a.a.to_f32());
-                            matrix.set_b(a.b.to_f32());
-                            matrix.set_c(a.c.to_f32());
-                            matrix.set_d(a.d.to_f32());
-                            matrix.set_e(a.tx.get() as f32);
-                            matrix.set_f(a.ty.get() as f32);
+                            // The `1.0 / 20.0` in `bounds_viewbox_matrix` does not
+                            // affect this, so we have to do it manually here.
+                            matrix.set_a(a.a.to_f32() / 20.0);
+                            matrix.set_b(a.b.to_f32() / 20.0);
+                            matrix.set_c(a.c.to_f32() / 20.0);
+                            matrix.set_d(a.d.to_f32() / 20.0);
+                            matrix.set_e(a.tx.get() as f32 / 20.0);
+                            matrix.set_f(a.ty.get() as f32 / 20.0);
 
                             bitmap_pattern.set_transform(&matrix);
 
