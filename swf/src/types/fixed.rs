@@ -10,7 +10,6 @@
 //! Use `from_f32`/`from_f64` methods to convert from float to fixed-point.
 //! Extra precision will be truncated, and out-of-range values are saturated.
 
-use std::convert::TryFrom;
 use std::ops::*;
 
 macro_rules! define_fixed {

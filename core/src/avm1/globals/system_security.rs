@@ -6,7 +6,6 @@ use crate::avm1::{ScriptObject, Value};
 use crate::avm_warn;
 use crate::string::AvmString;
 use gc_arena::MutationContext;
-use std::convert::Into;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "PolicyFileResolver" => method(policy_file_resolver);

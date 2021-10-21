@@ -9,7 +9,6 @@ use gc_arena::MutationContext;
 
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::color_transform::ColorTransform;
-use std::convert::Into;
 use swf::Fixed8;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

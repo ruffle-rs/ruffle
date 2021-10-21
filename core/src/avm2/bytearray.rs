@@ -4,7 +4,6 @@ use flate2::Compression;
 use gc_arena::Collect;
 use std::cell::Cell;
 use std::cmp;
-use std::convert::{TryFrom, TryInto};
 use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
 use std::io::{self, Read, SeekFrom};

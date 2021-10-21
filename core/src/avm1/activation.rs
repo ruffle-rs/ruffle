@@ -21,7 +21,6 @@ use rand::Rng;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
-use std::convert::TryFrom;
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::{Action, CatchVar, Function, TryBlock};

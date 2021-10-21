@@ -5,7 +5,6 @@ use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use gc_arena::MutationContext;
-use std::convert::Into;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALPHANUMERIC_FULL" => string("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
