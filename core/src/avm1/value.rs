@@ -475,21 +475,6 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
         ValueObject::boxed(activation, self.to_owned())
     }
-
-    // TODO: Inline
-    pub fn call(
-        &self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Value::Object(object) = self {
-            object.call(name, activation, this, args)
-        } else {
-            Ok(Value::Undefined)
-        }
-    }
 }
 
 #[cfg(test)]
