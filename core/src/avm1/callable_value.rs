@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{AvmString, Object, Value};
+use crate::avm1::{AvmString, Object, TObject, Value};
 use gc_arena::Collect;
 
 #[derive(Clone, Collect, Debug)]
@@ -28,8 +28,13 @@ impl<'gc> CallableValue<'gc> {
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
-            CallableValue::Callable(this, val) => val.call(name, activation, this, args),
-            CallableValue::UnCallable(val) => val.call(name, activation, default_this, args),
+            CallableValue::Callable(this, Value::Object(val)) => {
+                val.call(name, activation, this, args)
+            }
+            CallableValue::UnCallable(Value::Object(val)) => {
+                val.call(name, activation, default_this, args)
+            }
+            _ => Ok(Value::Undefined),
         }
     }
 }
