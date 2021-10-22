@@ -80,7 +80,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         _value: Value<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
         Ok(())

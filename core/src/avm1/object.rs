@@ -145,7 +145,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>>;
 
     /// Set a named property on this object, or its prototype.
@@ -190,7 +189,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        let result = self.set_local(name, value, activation, this, Some(this));
+        let result = self.set_local(name, value, activation, this);
         watcher_result.and(result)
     }
 
