@@ -25,16 +25,11 @@ impl<'gc> CallableValue<'gc> {
         default_this: Object<'gc>,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
-            CallableValue::Callable(this, val) => {
-                val.call(name, activation, this, base_proto, args)
-            }
-            CallableValue::UnCallable(val) => {
-                val.call(name, activation, default_this, base_proto, args)
-            }
+            CallableValue::Callable(this, val) => val.call(name, activation, this, args),
+            CallableValue::UnCallable(val) => val.call(name, activation, default_this, args),
         }
     }
 }

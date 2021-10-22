@@ -126,10 +126,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.0.read().call(name, activation, this, base_proto, args)
+        self.0.read().call(name, activation, this, args)
     }
 
     fn getter(

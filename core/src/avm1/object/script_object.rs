@@ -32,7 +32,6 @@ impl<'gc> Watcher<'gc> {
         old_value: Value<'gc>,
         new_value: Value<'gc>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [
             Value::String(AvmString::new(
@@ -43,19 +42,16 @@ impl<'gc> Watcher<'gc> {
             new_value,
             self.user_data,
         ];
-        if let Some(executable) = self.callback.as_executable() {
-            executable.exec(
-                &name,
-                activation,
-                this,
-                base_proto,
-                &args,
-                ExecutionReason::Special,
-                self.callback,
-            )
-        } else {
-            Ok(Value::Undefined)
-        }
+        let exec = self.callback.as_executable().unwrap();
+        exec.exec(
+            &name,
+            activation,
+            this,
+            0,
+            &args,
+            ExecutionReason::Special,
+            self.callback,
+        )
     }
 }
 
@@ -201,12 +197,11 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
         if let Some(setter) = setter {
             if let Some(exec) = setter.as_executable() {
-                let base_proto = this.proto(activation).coerce_to_object(activation);
                 if let Err(Error::ThrownValue(e)) = exec.exec(
                     "[Setter]",
                     activation,
                     this,
-                    Some(base_proto),
+                    1,
                     &[value],
                     ExecutionReason::Special,
                     setter,
@@ -229,7 +224,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         _name: AvmString<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _base_proto: Option<Object<'gc>>,
         _args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
@@ -334,7 +328,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .cloned();
         if let Some(watcher) = watcher {
             let old_value = self.get_stored(name, activation)?;
-            match watcher.call(activation, name, old_value, *value, this, Some(this)) {
+            match watcher.call(activation, name, old_value, *value, this) {
                 Ok(v) => *value = v,
                 Err(Error::ThrownValue(e)) => {
                     *value = Value::Undefined;

@@ -676,7 +676,6 @@ impl Player {
             "[Context Menu Callback]".into(),
             &mut activation,
             undefined,
-            None,
             &params,
         );
     }
