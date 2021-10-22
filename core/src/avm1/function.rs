@@ -533,10 +533,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        self.base
-            .set_local(name, value, activation, this, base_proto)
+        self.base.set_local(name, value, activation, this)
     }
 
     fn call(

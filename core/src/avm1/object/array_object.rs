@@ -107,7 +107,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if name == "length" {
             let new_length = value.coerce_to_i32(activation)?;
@@ -119,9 +118,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0
-            .read()
-            .set_local(name, value, activation, this, base_proto)
+        self.0.read().set_local(name, value, activation, this)
     }
 
     fn call(

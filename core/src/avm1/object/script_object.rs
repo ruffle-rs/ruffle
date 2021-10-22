@@ -175,17 +175,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     /// Set a named property on the object.
-    ///
-    /// This function takes a redundant `this` parameter which should be
-    /// the object's own `GcCell`, so that it can pass it to user-defined
-    /// overrides that may need to interact with the underlying object.
     fn set_local(
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let setter = match self
             .0
@@ -206,11 +201,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 
         if let Some(setter) = setter {
             if let Some(exec) = setter.as_executable() {
+                let base_proto = this.proto(activation).coerce_to_object(activation);
                 if let Err(Error::ThrownValue(e)) = exec.exec(
                     "[Setter]",
                     activation,
                     this,
-                    base_proto,
+                    Some(base_proto),
                     &[value],
                     ExecutionReason::Special,
                     setter,
