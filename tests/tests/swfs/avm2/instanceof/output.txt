@@ -22,3 +22,27 @@ true
 false
 //y instanceof Test4
 true
+//Test3.prototype instanceof Object
+true
+//Test3.prototype instanceof Test2
+true
+//Test3.prototype instanceof ITest2
+false
+//Test3.prototype instanceof Test3
+false
+//Test3.prototype instanceof ITest3
+false
+//Test3.prototype instanceof Test4
+false
+//Test4.prototype instanceof Object
+true
+//Test4.prototype instanceof Test2
+true
+//Test4.prototype instanceof ITest2
+false
+//Test4.prototype instanceof Test3
+true
+//Test4.prototype instanceof ITest3
+false
+//Test4.prototype instanceof Test4
+false
