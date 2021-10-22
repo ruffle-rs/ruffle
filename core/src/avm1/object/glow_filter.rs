@@ -74,7 +74,6 @@ impl<'gc> GlowFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for GlowFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: glow_filter);
         bare_object(as_glow_filter_object -> GlowFilterObject::empty_object);
     });
 }

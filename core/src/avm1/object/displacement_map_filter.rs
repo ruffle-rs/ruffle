@@ -116,7 +116,6 @@ impl<'gc> DisplacementMapFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for DisplacementMapFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: displacement_map_filter);
         bare_object(as_displacement_map_filter_object -> DisplacementMapFilterObject::empty_object);
     });
 }

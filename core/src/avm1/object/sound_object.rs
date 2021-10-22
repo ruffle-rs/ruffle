@@ -119,7 +119,6 @@ impl<'gc> SoundObject<'gc> {
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
     impl_custom_object!(base {
-        set(proto: self);
         bare_object(as_sound_object -> SoundObject::empty_sound);
     });
 }

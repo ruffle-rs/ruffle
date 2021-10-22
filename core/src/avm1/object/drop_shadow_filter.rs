@@ -86,7 +86,6 @@ impl<'gc> DropShadowFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for DropShadowFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: drop_shadow_filter);
         bare_object(as_drop_shadow_filter_object -> DropShadowFilterObject::empty_object);
     });
 }

@@ -54,7 +54,6 @@ impl<'gc> BlurFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for BlurFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: blur_filter);
         bare_object(as_blur_filter_object -> BlurFilterObject::empty_object);
     });
 }

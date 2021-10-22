@@ -47,7 +47,6 @@ impl<'gc> ColorMatrixFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for ColorMatrixFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: color_matrix_filter);
         bare_object(as_color_matrix_filter_object -> ColorMatrixFilterObject::empty_object);
     });
 }
