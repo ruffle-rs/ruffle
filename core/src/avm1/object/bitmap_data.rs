@@ -54,7 +54,6 @@ impl<'gc> BitmapDataObject<'gc> {
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     impl_custom_object!(base {
-        set(proto: bitmap_data);
         bare_object(as_bitmap_data_object -> BitmapDataObject::empty_object);
     });
 }

@@ -65,7 +65,6 @@ impl<'gc> DateObject<'gc> {
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
     impl_custom_object!(base {
-        set(proto: self);
         bare_object(as_date_object -> DateObject::empty);
     });
 }

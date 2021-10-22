@@ -100,7 +100,6 @@ impl<'gc> ConvolutionFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for ConvolutionFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: convolution_filter);
         bare_object(as_convolution_filter_object -> ConvolutionFilterObject::empty_object);
     });
 }

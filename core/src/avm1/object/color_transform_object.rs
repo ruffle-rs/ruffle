@@ -92,7 +92,6 @@ impl<'gc> ColorTransformObject<'gc> {
 
 impl<'gc> TObject<'gc> for ColorTransformObject<'gc> {
     impl_custom_object!(base {
-        set(proto: color_transform);
         bare_object(as_color_transform_object -> ColorTransformObject::empty_color_transform_object);
     });
 }

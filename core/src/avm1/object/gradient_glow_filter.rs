@@ -99,7 +99,6 @@ impl<'gc> GradientGlowFilterObject<'gc> {
 
 impl<'gc> TObject<'gc> for GradientGlowFilterObject<'gc> {
     impl_custom_object!(base {
-        set(proto: gradient_glow_filter);
         bare_object(as_gradient_glow_filter_object -> GradientGlowFilterObject::empty_object);
     });
 }

@@ -1,33 +1,7 @@
 #[macro_export]
 macro_rules! impl_custom_object {
     ($field:ident) => {
-        crate::impl_custom_object!($field { set(proto: self); });
-    };
-
-    (@extra $field:ident set(proto: self)) => {
-        fn set_local(
-            &self,
-            name: crate::avm1::AvmString<'gc>,
-            value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
-            base_proto: Option<crate::avm1::Object<'gc>>,
-        ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.set_local(name, value, activation, this, base_proto)
-        }
-    };
-
-    (@extra $field:ident set(proto: $proto:ident)) => {
-        fn set_local(
-            &self,
-            name: crate::avm1::AvmString<'gc>,
-            value: crate::avm1::Value<'gc>,
-            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
-            _base_proto: Option<crate::avm1::Object<'gc>>,
-        ) -> Result<(), crate::avm1::Error<'gc>> {
-            self.0.read().$field.set_local(name, value, activation, this, Some(activation.context.avm1.prototypes.$proto))
-        }
+        crate::impl_custom_object!($field {});
     };
 
     (@extra $field:ident bare_object($as_obj:ident -> $obj_type:ident :: $new:ident)) => {
@@ -59,6 +33,17 @@ macro_rules! impl_custom_object {
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
         ) -> Option<crate::avm1::Value<'gc>> {
             self.0.read().$field.get_local_stored(name, activation)
+        }
+
+        fn set_local(
+            &self,
+            name: crate::avm1::AvmString<'gc>,
+            value: crate::avm1::Value<'gc>,
+            activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
+            this: crate::avm1::Object<'gc>,
+            base_proto: Option<crate::avm1::Object<'gc>>,
+        ) -> Result<(), crate::avm1::Error<'gc>> {
+            self.0.read().$field.set_local(name, value, activation, this, base_proto)
         }
 
         fn call(
