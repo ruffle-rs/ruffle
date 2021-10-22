@@ -22,3 +22,27 @@ true
 true
 //y is Test4
 true
+//Test3.prototype is Object
+true
+//Test3.prototype is Test2
+false
+//Test3.prototype is ITest2
+false
+//Test3.prototype is Test3
+false
+//Test3.prototype is ITest3
+false
+//Test3.prototype is Test4
+false
+//Test4.prototype is Object
+true
+//Test4.prototype is Test2
+false
+//Test4.prototype is ITest2
+false
+//Test4.prototype is Test3
+false
+//Test4.prototype is ITest3
+false
+//Test4.prototype is Test4
+false

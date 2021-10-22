@@ -76,6 +76,39 @@ pub struct ClassObjectData<'gc> {
 }
 
 impl<'gc> ClassObject<'gc> {
+    /// Allocate the prototype for this class.
+    ///
+    /// This function is not used during the initialization of "early classes",
+    /// i.e. `Object`, `Function`, and `Class`. Those classes and their
+    /// prototypes are weaved together separately.
+    ///
+    /// The returned prototype will be an instance of `Object` (and thus not
+    /// have this class's instance traits), but will be allocated by this
+    /// class's instance allocator.
+    fn allocate_prototype(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Result<Object<'gc>, Error> {
+        let instance_allocator = self.0.read().instance_allocator.clone();
+
+        if let Some(superclass_object) = superclass_object {
+            let base_proto = superclass_object
+                .get_property(
+                    superclass_object.into(),
+                    &QName::new(Namespace::public(), "prototype").into(),
+                    activation,
+                )?
+                .coerce_to_object(activation)?;
+
+            //NOTE: If we do not use `instance_allocator` here, then Vector
+            //enumeration will break.
+            (instance_allocator.0)(activation.avm2().classes().object, base_proto, activation)
+        } else {
+            Ok(ScriptObject::bare_object(activation.context.gc_context))
+        }
+    }
+
     /// Construct a class.
     ///
     /// This function returns the class constructor object, which should be
@@ -91,22 +124,7 @@ impl<'gc> ClassObject<'gc> {
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error> {
         let class_object = Self::from_class_partial(activation, class, superclass_object)?;
-
-        //TODO: Class prototypes are *not* instances of their class and should
-        //not be allocated by the class allocator, but instead should be
-        //regular objects
-        let class_proto = if let Some(superclass_object) = superclass_object {
-            let base_proto = superclass_object
-                .get_property(
-                    superclass_object.into(),
-                    &QName::new(Namespace::public(), "prototype").into(),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
-            ScriptObject::object(activation.context.gc_context, base_proto)
-        } else {
-            ScriptObject::bare_object(activation.context.gc_context)
-        };
+        let class_proto = class_object.allocate_prototype(activation, superclass_object)?;
 
         class_object.link_prototype(activation, class_proto)?;
 
@@ -873,21 +891,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let instance_allocator = self.0.read().instance_allocator.clone();
         let superclass_object = self.0.read().superclass_object;
 
-        //TODO: Class prototypes are *not* instances of their class and should
-        //not be allocated by the class allocator, but instead should be
-        //regular objects
-        let class_proto = if let Some(superclass_object) = superclass_object {
-            let base_proto = superclass_object
-                .get_property(
-                    superclass_object.into(),
-                    &QName::new(Namespace::public(), "prototype").into(),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
-            (instance_allocator.0)(superclass_object, base_proto, activation)?
-        } else {
-            ScriptObject::bare_object(activation.context.gc_context)
-        };
+        let class_proto = self.allocate_prototype(activation, superclass_object)?;
 
         let class_class = activation.avm2().classes().class;
         let class_class_proto = activation.avm2().prototypes().class;
