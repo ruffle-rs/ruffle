@@ -94,7 +94,7 @@ enum CanvasFillStyle {
     Color(CanvasColor),
     #[allow(dead_code)]
     Gradient(CanvasGradient),
-    Pattern(CanvasPattern),
+    Pattern(CanvasPattern, bool),
 }
 
 impl CanvasFillStyle {
@@ -708,7 +708,10 @@ impl RenderBackend for WebCanvasRenderBackend {
                                 self.context.set_fill_style(&JsValue::from_str(color))
                             }
                             CanvasFillStyle::Gradient(grad) => self.context.set_fill_style(grad),
-                            CanvasFillStyle::Pattern(patt) => self.context.set_fill_style(patt),
+                            CanvasFillStyle::Pattern(patt, smoothed) => {
+                                self.context.set_image_smoothing_enabled(*smoothed);
+                                self.context.set_fill_style(patt);
+                            }
                         };
 
                         self.context
@@ -1421,11 +1424,6 @@ fn swf_shape_to_canvas_commands(
                             .bitmap(*id)
                             .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
                         {
-                            if !*is_smoothed {
-                                // TODO
-                                //image = image.set("image-rendering", pixelated_property_value);
-                            }
-
                             let repeat = if !*is_repeating {
                                 // NOTE: The WebGL backend does clamping in this case, just like
                                 // Flash Player, but CanvasPattern has no such option...
@@ -1458,7 +1456,7 @@ fn swf_shape_to_canvas_commands(
 
                             bitmap_pattern.set_transform(&matrix);
 
-                            CanvasFillStyle::Pattern(bitmap_pattern)
+                            CanvasFillStyle::Pattern(bitmap_pattern, *is_smoothed)
                         } else {
                             log::error!("Couldn't fill shape with unknown bitmap {}", id);
                             CanvasFillStyle::Color(CanvasColor(
