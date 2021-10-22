@@ -330,9 +330,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        if obj.has_property(&mut activation, name) {
-            let _ = obj.call_method(name, args, &mut activation);
-        }
+        let _ = obj.call_method(name, args, &mut activation);
     }
 
     pub fn notify_system_listeners(
