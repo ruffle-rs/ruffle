@@ -86,10 +86,9 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.base().call(name, activation, this, base_proto, args)
+        self.base().call(name, activation, this, args)
     }
 
     fn getter(

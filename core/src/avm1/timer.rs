@@ -88,13 +88,8 @@ impl<'gc> Timers<'gc> {
                     // TODO: `this` is undefined for non-method timer callbacks, but our VM
                     // currently doesn't allow `this` to be a Value (#843).
                     let this = Value::Undefined.coerce_to_object(&mut activation);
-                    let _ = function.call(
-                        "[Timer Callback]".into(),
-                        &mut activation,
-                        this,
-                        None,
-                        &params,
-                    );
+                    let _ =
+                        function.call("[Timer Callback]".into(), &mut activation, this, &params);
                 }
                 TimerCallback::Method { this, method_name } => {
                     let _ = this.call_method(method_name, &params, &mut activation);

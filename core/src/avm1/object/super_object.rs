@@ -2,11 +2,11 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
 use crate::avm1::object::search_prototype;
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TObject, Value};
-use crate::avm_warn;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 
@@ -31,27 +31,15 @@ pub struct SuperObjectData<'gc> {
 
 impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
-    ///
-    /// `this` and `base_proto` must be the values provided to `Executable::exec`.
-    pub fn new(
-        activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
-        base_proto: Object<'gc>,
-    ) -> Self {
-        // This is a temporary hack to calculate `depth` from `this` and `base_proto`.
-        // TODO: Pass `depth` alone (preferably in `Activation`),
-        // and remove all `base_proto` parameters.
-        let mut object = this;
-        let mut depth = 0;
-        while !Object::ptr_eq(object, base_proto) {
-            object = object.proto(activation).coerce_to_object(activation);
-            depth += 1;
-        }
-
+    pub fn new(activation: &mut Activation<'_, 'gc, '_>, this: Object<'gc>, depth: u8) -> Self {
         Self(GcCell::allocate(
             activation.context.gc_context,
             SuperObjectData { this, depth },
         ))
+    }
+
+    pub fn this(&self) -> Object<'gc> {
+        self.0.read().this
     }
 
     fn base_proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
@@ -90,16 +78,24 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         _this: Object<'gc>,
-        _base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let constructor = self
             .base_proto(activation)
             .get("__constructor__", activation)?
             .coerce_to_object(activation);
-        let this = self.0.read().this;
-        let base_proto = self.proto(activation).coerce_to_object(activation);
-        constructor.call(name, activation, this, Some(base_proto), args)
+        match constructor.as_executable() {
+            Some(exec) => exec.exec(
+                &name,
+                activation,
+                self.0.read().this,
+                self.0.read().depth + 1,
+                args,
+                ExecutionReason::FunctionCall,
+                constructor,
+            ),
+            None => Ok(Value::Undefined),
+        }
     }
 
     fn call_method(
@@ -109,14 +105,24 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.0.read().this;
-        let (method, base_proto) =
-            search_prototype(self.proto(activation), name, activation, this)?;
+        let (method, depth) =
+            match search_prototype(self.proto(activation), name, activation, this)? {
+                Some((Value::Object(method), depth)) => (method, depth),
+                _ => return Ok(Value::Undefined),
+            };
 
-        if method.is_primitive() {
-            avm_warn!(activation, "Super method {} is not callable", name);
+        match method.as_executable() {
+            Some(exec) => exec.exec(
+                &name,
+                activation,
+                this,
+                self.0.read().depth + depth + 1,
+                args,
+                ExecutionReason::FunctionCall,
+                method,
+            ),
+            None => method.call(name, activation, this, args),
         }
-
-        method.call(name, activation, this, base_proto, args)
     }
 
     fn getter(

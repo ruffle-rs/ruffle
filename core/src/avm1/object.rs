@@ -26,7 +26,6 @@ use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
-use crate::avm_warn;
 use crate::display_object::DisplayObject;
 use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
@@ -108,8 +107,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = (*self).into();
-        Ok(search_prototype(Value::Object(this), name.into(), activation, this)?.0)
+        // TODO: Extract logic to a `lookup` function.
+        let (this, proto) = if let Some(super_object) = self.as_super_object() {
+            (super_object.this(), super_object.proto(activation))
+        } else {
+            ((*self).into(), Value::Object((*self).into()))
+        };
+        match search_prototype(proto, name.into(), activation, this)? {
+            Some((value, _depth)) => Ok(value),
+            None => Ok(Value::Undefined),
+        }
     }
 
     /// Retrieve a non-virtual property from the object, or its prototype.
@@ -160,13 +167,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let mut value = value;
-        let this = (*self).into();
+        let (this, mut proto) = if let Some(super_object) = self.as_super_object() {
+            (super_object.this(), super_object.proto(activation))
+        } else {
+            ((*self).into(), Value::Object((*self).into()))
+        };
         let watcher_result = self.call_watcher(activation, name, &mut value, this);
 
         if !self.has_own_property(activation, name) {
             // Before actually inserting a new property, we need to crawl the
             // prototype chain for virtual setters.
-            let mut proto = Value::Object(this);
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
                     if let Some(setter) = this_proto.setter(name, activation) {
@@ -175,7 +185,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                                 "[Setter]",
                                 activation,
                                 this,
-                                Some(this_proto),
+                                1,
                                 &[value],
                                 ExecutionReason::Special,
                                 setter,
@@ -203,7 +213,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -241,22 +250,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
-        let (method, mut base_proto) =
-            search_prototype(Value::Object(this), name, activation, this)?;
+        let (method, depth) = match search_prototype(Value::Object(this), name, activation, this)? {
+            Some((Value::Object(method), depth)) => (method, depth),
+            _ => return Ok(Value::Undefined),
+        };
 
-        // If the method was found on the object itself, change `base_proto` as-if
+        // If the method was found on the object itself, change `depth` as-if
         // the method was found on the object's prototype.
-        if let Some(base_proto) = base_proto.as_mut() {
-            if Object::ptr_eq(*base_proto, this) {
-                *base_proto = base_proto.proto(activation).coerce_to_object(activation);
-            }
-        }
+        let depth = depth.max(1);
 
-        if method.is_primitive() {
-            avm_warn!(activation, "Object method {} is not callable", name);
+        match method.as_executable() {
+            Some(exec) => exec.exec(
+                &name,
+                activation,
+                this,
+                depth,
+                args,
+                ExecutionReason::FunctionCall,
+                method,
+            ),
+            None => method.call(name, activation, this, args),
         }
-
-        method.call(name, activation, this, base_proto, args)
     }
 
     /// Retrive a getter defined on this object.
@@ -653,18 +667,18 @@ impl<'gc> Object<'gc> {
 
 /// Perform a prototype lookup of a given object.
 ///
-/// This function returns both the `ReturnValue` and the prototype that
-/// generated the value. If the property did not resolve, then it returns
-/// `undefined` and `None` for the prototype.
+/// This function returns both the `Value` and the prototype depth from which
+/// it was grabbed from. If the property did not resolve, then it returns
+/// `Ok(None)`.
 ///
-/// The second return value can and should be used to populate the `base_proto`
-/// property necessary to make `super` work.
+/// The prototype depth can and should be used to populate the `depth`
+/// parameter necessary to make `super` work.
 pub fn search_prototype<'gc>(
     mut proto: Value<'gc>,
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-) -> Result<(Value<'gc>, Option<Object<'gc>>), Error<'gc>> {
+) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
     let mut depth = 0;
 
     while let Value::Object(p) = proto {
@@ -678,7 +692,7 @@ pub fn search_prototype<'gc>(
                     "[Getter]",
                     activation,
                     this,
-                    Some(p),
+                    1,
                     &[],
                     ExecutionReason::Special,
                     getter,
@@ -688,17 +702,17 @@ pub fn search_prototype<'gc>(
                     Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
                     Err(_) => Value::Undefined,
                 };
-                return Ok((value, Some(p)));
+                return Ok(Some((value, depth)));
             }
         }
 
         if let Some(value) = p.get_local_stored(name, activation) {
-            return Ok((value, Some(p)));
+            return Ok(Some((value, depth)));
         }
 
         proto = p.proto(activation);
         depth += 1;
     }
 
-    Ok((Value::Undefined, None))
+    Ok(None)
 }

@@ -233,7 +233,7 @@ impl<'gc> Executable<'gc> {
         name: &str,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
+        depth: u8,
         args: &[Value<'gc>],
         reason: ExecutionReason,
         callee: Object<'gc>,
@@ -271,7 +271,7 @@ impl<'gc> Executable<'gc> {
 
                 let super_object: Option<Object<'gc>> =
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
-                        Some(SuperObject::new(activation, this, base_proto.unwrap_or(this)).into())
+                        Some(SuperObject::new(activation, this, depth).into())
                     } else {
                         None
                     };
@@ -542,21 +542,19 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
-        base_proto: Option<Object<'gc>>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(exec) = self.as_executable() {
-            exec.exec(
+        match self.as_executable() {
+            Some(exec) => exec.exec(
                 &name,
                 activation,
                 this,
-                base_proto,
+                0,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
-            )
-        } else {
-            Ok(Value::Undefined)
+            ),
+            None => Ok(Value::Undefined),
         }
     }
 
@@ -580,19 +578,27 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 Attribute::DONT_ENUM,
             );
         }
-        let base_proto = this.proto(activation).coerce_to_object(activation);
+        // TODO: de-duplicate code.
         if let Some(exec) = &self.data.read().constructor {
             let _ = exec.exec(
                 "[ctor]",
                 activation,
                 this,
-                Some(base_proto),
+                1,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
-        } else {
-            let _ = self.call("[ctor]".into(), activation, this, Some(base_proto), args)?;
+        } else if let Some(exec) = &self.data.read().function {
+            let _ = exec.exec(
+                "[ctor]",
+                activation,
+                this,
+                1,
+                args,
+                ExecutionReason::FunctionCall,
+                (*self).into(),
+            )?;
         }
         Ok(())
     }
@@ -621,6 +627,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 Attribute::DONT_ENUM,
             );
         }
+        // TODO: de-duplicate code.
         if let Some(exec) = &self.data.read().constructor {
             // Native constructors will return the constructed `this`.
             // This allows for `new Object` etc. returning different types.
@@ -628,15 +635,25 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 "[ctor]",
                 activation,
                 this,
-                Some(prototype),
+                1,
                 args,
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
             Ok(this)
-        } else {
-            let _ = self.call("[ctor]".into(), activation, this, Some(prototype), args)?;
+        } else if let Some(exec) = &self.data.read().function {
+            let _ = exec.exec(
+                "[ctor]",
+                activation,
+                this,
+                1,
+                args,
+                ExecutionReason::FunctionCall,
+                (*self).into(),
+            )?;
             Ok(this.into())
+        } else {
+            Ok(Value::Undefined)
         }
     }
 
