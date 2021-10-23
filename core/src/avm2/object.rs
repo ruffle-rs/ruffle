@@ -411,32 +411,46 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 TraitKind::Method { method, .. } => Some(method.clone()),
                 _ => None,
             }) {
-                let scope = superclass_object.instance_scope();
+                if !method.needs_arguments_object() {
+                    let scope = superclass_object.instance_scope();
 
-                return Executable::from_method(method, scope, None, activation.context.gc_context)
+                    return Executable::from_method(
+                        method,
+                        scope,
+                        None,
+                        activation.context.gc_context,
+                    )
                     .exec(
                         Some(self.into()),
                         arguments,
                         activation,
                         Some(superclass_object),
-                        superclass_object.into(),
+                        superclass_object.into(), //Deliberately invalid.
                     );
+                }
             }
         }
 
         if let Some(class) = self.as_class_object() {
             if let Some(method_trait) = class.class_method(&name)? {
                 let method = method_trait.as_method().unwrap();
-                let scope = class.class_scope();
+                if !method.needs_arguments_object() {
+                    let scope = class.class_scope();
 
-                return Executable::from_method(method, scope, None, activation.context.gc_context)
+                    return Executable::from_method(
+                        method,
+                        scope,
+                        None,
+                        activation.context.gc_context,
+                    )
                     .exec(
                         Some(self.into()),
                         arguments,
                         activation,
                         Some(class),
-                        class.into(),
+                        class.into(), //Deliberately invalid.
                     );
+                }
             }
         }
 
