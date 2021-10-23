@@ -134,3 +134,18 @@ trace(Test4.prototype instanceof ITest3);
 
 trace("//Test4.prototype instanceof Test4");
 trace(Test4.prototype instanceof Test4);
+
+trace("//Object.prototype instanceof Object");
+trace(Object.prototype instanceof Object);
+
+trace("//Function.prototype instanceof Object");
+trace(Function.prototype instanceof Object);
+
+trace("//Function.prototype instanceof Function");
+trace(Function.prototype instanceof Function);
+
+trace("//Class.prototype instanceof Object");
+trace(Class.prototype instanceof Object);
+
+trace("//Class.prototype instanceof Class");
+trace(Class.prototype instanceof Class);

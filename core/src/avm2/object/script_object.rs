@@ -100,7 +100,7 @@ impl<'gc> ScriptObject<'gc> {
         .into()
     }
 
-    /// Construct an instance with a class and scope stack.
+    /// Construct an instance with a class and proto chain.
     pub fn instance(
         mc: MutationContext<'gc, '_>,
         class: ClassObject<'gc>,
@@ -109,6 +109,15 @@ impl<'gc> ScriptObject<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
             ScriptObjectData::base_new(Some(proto), Some(class)),
+        ))
+        .into()
+    }
+
+    /// Construct an instance with a class chain, but no prototype.
+    pub fn bare_instance(mc: MutationContext<'gc, '_>, class: ClassObject<'gc>) -> Object<'gc> {
+        ScriptObject(GcCell::allocate(
+            mc,
+            ScriptObjectData::base_new(None, Some(class)),
         ))
         .into()
     }

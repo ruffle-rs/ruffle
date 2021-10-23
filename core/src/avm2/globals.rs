@@ -446,16 +446,16 @@ pub fn load_player_globals<'gc>(
     // and partial initialization.
     let object_classdef = object::create_class(mc);
     let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
-    let object_proto = ScriptObject::bare_object(mc);
+    let object_proto = ScriptObject::bare_instance(mc, object_class);
 
     let fn_classdef = function::create_class(mc);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
-    let fn_proto = ScriptObject::object(mc, object_proto);
+    let fn_proto = ScriptObject::instance(mc, fn_class, object_proto);
 
     let class_classdef = class::create_class(mc);
     let class_class =
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
-    let class_proto = ScriptObject::object(mc, object_proto);
+    let class_proto = ScriptObject::instance(mc, object_class, object_proto);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
