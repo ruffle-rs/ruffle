@@ -9,7 +9,7 @@ use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
-use crate::avm2::traits::TraitKind;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -680,6 +680,112 @@ impl<'gc> ClassObject<'gc> {
             Ok(())
         } else {
             reciever.set_property(reciever, multiname, value, activation)
+        }
+    }
+
+    /// Retrieve an instance method and it's defining class by name.
+    ///
+    /// If a trait is returned, it is guaranteed to have a method.
+    pub fn instance_method(
+        self,
+        name: &QName<'gc>,
+    ) -> Result<Option<(ClassObject<'gc>, Trait<'gc>)>, Error> {
+        if let Some(superclass) = self.find_class_for_trait(name)? {
+            let superclassdef = superclass.inner_class_definition();
+            let mut traits = Vec::new();
+            superclassdef
+                .read()
+                .lookup_instance_traits(name, &mut traits)?;
+
+            Ok(traits
+                .into_iter()
+                .find_map(|t| match t.kind() {
+                    TraitKind::Method { .. } => Some(t),
+                    _ => None,
+                })
+                .map(|t| (superclass, t)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Retrieve a bound instance method suitable for use as a value.
+    ///
+    /// This returns the bound method object itself, as well as it's dispatch
+    /// ID and if it's a final method. You will need the additional properties
+    /// in order to install the method into your object.
+    ///
+    /// You should only call this method once per reciever/name pair, and cache
+    /// the result. Otherwise, code that relies on bound methods having stable
+    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
+    /// fail.
+    pub fn bound_instance_method(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        receiver: Object<'gc>,
+        name: &QName<'gc>,
+    ) -> Result<Option<(Object<'gc>, u32, bool)>, Error> {
+        if let Some((_superclass, method_trait)) = self.instance_method(name)? {
+            let method = method_trait.as_method().unwrap();
+            let disp_id = method_trait.slot_id();
+            let is_final = method_trait.is_final();
+            let scope = self.instance_scope();
+
+            Ok(Some((
+                FunctionObject::from_method(activation, method, scope, Some(receiver)),
+                disp_id,
+                is_final,
+            )))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Retrieve a class method by name.
+    ///
+    /// This does not return a defining class as class methods are not
+    /// inherited by subclasses.
+    ///
+    /// If a trait is returned, it is guaranteed to have a method.
+    pub fn class_method(self, name: &QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
+        let classdef = self.inner_class_definition();
+        let mut traits = Vec::new();
+        classdef.read().lookup_class_traits(name, &mut traits)?;
+
+        Ok(traits.into_iter().find_map(|t| match t.kind() {
+            TraitKind::Method { .. } => Some(t),
+            _ => None,
+        }))
+    }
+
+    /// Retrieve a bound class method suitable for use as a value.
+    ///
+    /// This returns the bound method object itself, as well as it's dispatch
+    /// ID and if it's a final method. You will need the additional properties
+    /// in order to install the method into your object.
+    ///
+    /// You should only call this method once per reciever/name pair, and cache
+    /// the result. Otherwise, code that relies on bound methods having stable
+    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
+    /// fail.
+    pub fn bound_class_method(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &QName<'gc>,
+    ) -> Result<Option<(Object<'gc>, u32, bool)>, Error> {
+        if let Some(method_trait) = self.class_method(name)? {
+            let method = method_trait.as_method().unwrap();
+            let disp_id = method_trait.slot_id();
+            let is_final = method_trait.is_final();
+            let scope = self.class_scope();
+
+            Ok(Some((
+                FunctionObject::from_method(activation, method, scope, Some(self.into())),
+                disp_id,
+                is_final,
+            )))
+        } else {
+            Ok(None)
         }
     }
 

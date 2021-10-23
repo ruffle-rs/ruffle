@@ -300,6 +300,19 @@ impl<'gc> Trait<'gc> {
         self
     }
 
+    /// Get the slot or dispatch ID of this trait.
+    pub fn slot_id(&self) -> u32 {
+        match self.kind {
+            TraitKind::Slot { slot_id, .. } => slot_id,
+            TraitKind::Method { disp_id, .. } => disp_id,
+            TraitKind::Getter { disp_id, .. } => disp_id,
+            TraitKind::Setter { disp_id, .. } => disp_id,
+            TraitKind::Class { slot_id, .. } => slot_id,
+            TraitKind::Function { slot_id, .. } => slot_id,
+            TraitKind::Const { slot_id, .. } => slot_id,
+        }
+    }
+
     /// Set the slot or dispatch ID of this trait.
     pub fn set_slot_id(&mut self, id: u32) {
         match &mut self.kind {
@@ -310,6 +323,17 @@ impl<'gc> Trait<'gc> {
             TraitKind::Class { slot_id, .. } => *slot_id = id,
             TraitKind::Function { slot_id, .. } => *slot_id = id,
             TraitKind::Const { slot_id, .. } => *slot_id = id,
+        }
+    }
+
+    /// Get the method contained within this trait, if it has one.
+    pub fn as_method(&self) -> Option<Method<'gc>> {
+        match &self.kind {
+            TraitKind::Method { method, .. } => Some(method.clone()),
+            TraitKind::Getter { method, .. } => Some(method.clone()),
+            TraitKind::Setter { method, .. } => Some(method.clone()),
+            TraitKind::Function { function, .. } => Some(function.clone()),
+            _ => None,
         }
     }
 }
