@@ -372,7 +372,11 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {
-        Ok(self.values.get(name).is_some() || self.has_trait(name)?)
+        Ok(self.has_own_instantiated_property(name) || self.has_trait(name)?)
+    }
+
+    pub fn has_own_instantiated_property(&self, name: &QName<'gc>) -> bool {
+        self.values.get(name).is_some()
     }
 
     pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {
