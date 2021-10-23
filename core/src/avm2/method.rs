@@ -367,4 +367,12 @@ impl<'gc> Method<'gc> {
             Method::Bytecode(bm) => Ok(bm),
         }
     }
+
+    /// Check if this method needs `arguments`.
+    pub fn needs_arguments_object(&self) -> bool {
+        match self {
+            Method::Native { .. } => false,
+            Method::Bytecode(bm) => bm.method().needs_arguments_object,
+        }
+    }
 }
