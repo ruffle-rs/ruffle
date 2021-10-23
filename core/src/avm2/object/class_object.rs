@@ -787,26 +787,44 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     }
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
-        Ok(self.0.read().class.read().has_class_trait(name))
+        let read = self.0.read();
+        let class = read.class.read();
+
+        Ok(class.has_class_trait(name) || read.base.has_trait(name)?)
+    }
+
+    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+        let read = self.0.read();
+        let class = read.class.read();
+
+        Ok(read.base.has_own_instantiated_property(name)
+            || class.has_class_trait(name)
+            || read.base.has_trait(name)?)
+    }
+
+    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+        let read = self.0.read();
+        let class = read.class.read();
+
+        if let Some(ns) = class.resolve_any_class_trait(local_name) {
+            return Ok(Some(ns));
+        }
+
+        read.base.resolve_any(local_name)
     }
 
     fn resolve_any_trait(
         self,
         local_name: AvmString<'gc>,
     ) -> Result<Option<Namespace<'gc>>, Error> {
-        if let Some(proto) = self.proto() {
-            let proto_trait_name = proto.resolve_any_trait(local_name)?;
-            if let Some(ns) = proto_trait_name {
-                return Ok(Some(ns));
-            }
+        let read = self.0.read();
+        let class = read.class.read();
+
+        if let Some(ns) = class.resolve_any_class_trait(local_name) {
+            return Ok(Some(ns));
         }
 
-        Ok(self
-            .0
-            .read()
-            .class
-            .read()
-            .resolve_any_class_trait(local_name))
+        read.base.resolve_any_trait(local_name)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
