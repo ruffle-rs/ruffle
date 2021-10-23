@@ -487,11 +487,56 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.init_slot(id, value, mc)
     }
 
-    /// Retrieve a method by its index.
-    fn get_method(self, id: u32) -> Option<Object<'gc>> {
-        let base = self.base();
+    /// Call a method by its index.
+    ///
+    /// This directly corresponds with the AVM2 operation `callmethod`.
+    #[allow(unused_mut)] //Not unused.
+    fn call_method(
+        mut self,
+        id: u32,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        if self.base().get_method(id).is_none() {
+            if let Some(class) = self.instance_of() {
+                if let Some((bound_method, name, is_final)) =
+                    class.bound_instance_method_by_id(activation, self.into(), id)?
+                {
+                    self.install_method(
+                        activation.context.gc_context,
+                        name.clone(),
+                        id,
+                        bound_method,
+                        is_final,
+                    );
+                }
+            }
 
-        base.get_method(id)
+            if let Some(class) = self.as_class_object() {
+                if let Some((bound_method, name, is_final)) =
+                    class.bound_class_method_by_id(activation, id)?
+                {
+                    self.install_method(
+                        activation.context.gc_context,
+                        name.clone(),
+                        id,
+                        bound_method,
+                        is_final,
+                    );
+                }
+            }
+        }
+
+        if let Some(method_object) = self.base().get_method(id) {
+            return method_object.call(
+                Some(self.into()),
+                arguments,
+                activation,
+                self.instance_of(),
+            );
+        }
+
+        Err(format!("Cannot call unknown method id {}", id).into())
     }
 
     /// Resolve a multiname into a single QName, if any of the namespaces

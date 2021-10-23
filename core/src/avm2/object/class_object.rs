@@ -365,6 +365,27 @@ impl<'gc> ClassObject<'gc> {
         Ok(None)
     }
 
+    /// Retrieve the class object that a particular QName trait is defined in.
+    ///
+    /// Must be called on a class object; will error out if called on
+    /// anything else.
+    ///
+    /// This function returns `None` for non-trait properties, such as actually
+    /// defined prototype methods for ES3-style classes.
+    pub fn find_class_for_trait_by_id(self, id: u32) -> Result<Option<ClassObject<'gc>>, Error> {
+        let class_definition = self.inner_class_definition();
+
+        if class_definition.read().has_instance_trait_by_id(id) {
+            return Ok(Some(self));
+        }
+
+        if let Some(base) = self.superclass_object() {
+            return base.find_class_for_trait_by_id(id);
+        }
+
+        Ok(None)
+    }
+
     /// Determine if this class has a given type in its superclass chain.
     ///
     /// The given object `test_class` should be either a superclass or
@@ -741,6 +762,51 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
+    /// Retrieve a bound instance method by slot ID.
+    ///
+    /// This returns the bound method object itself, as well as it's name,
+    /// and if it's a final method. You will need the additional properties in
+    /// order to install the method into your object.
+    ///
+    /// You should only call this method once per reciever/name pair, and cache
+    /// the result. Otherwise, code that relies on bound methods having stable
+    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
+    /// fail.
+    pub fn bound_instance_method_by_id(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        receiver: Object<'gc>,
+        id: u32,
+    ) -> Result<Option<(Object<'gc>, QName<'gc>, bool)>, Error> {
+        if let Some(superclass) = self.find_class_for_trait_by_id(id)? {
+            let superclassdef = superclass.inner_class_definition();
+            let traits = superclassdef.read().lookup_instance_traits_by_slot(id)?;
+
+            if let Some((_superclass, method_trait)) = traits
+                .and_then(|t| match t.kind() {
+                    TraitKind::Method { .. } => Some(t),
+                    _ => None,
+                })
+                .map(|t| (superclass, t))
+            {
+                let name = method_trait.name().clone();
+                let method = method_trait.as_method().unwrap();
+                let is_final = method_trait.is_final();
+                let scope = self.instance_scope();
+
+                Ok(Some((
+                    FunctionObject::from_method(activation, method, scope, Some(receiver)),
+                    name,
+                    is_final,
+                )))
+            } else {
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Retrieve a class method by name.
     ///
     /// This does not return a defining class as class methods are not
@@ -782,6 +848,43 @@ impl<'gc> ClassObject<'gc> {
             Ok(Some((
                 FunctionObject::from_method(activation, method, scope, Some(self.into())),
                 disp_id,
+                is_final,
+            )))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Retrieve a bound class method by id.
+    ///
+    /// This returns the bound method object itself, as well as it's name,
+    /// and if it's a final method. You will need the additional properties in
+    /// order to install the method into your object.
+    ///
+    /// You should only call this method once per reciever/name pair, and cache
+    /// the result. Otherwise, code that relies on bound methods having stable
+    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
+    /// fail.
+    pub fn bound_class_method_by_id(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        id: u32,
+    ) -> Result<Option<(Object<'gc>, QName<'gc>, bool)>, Error> {
+        let classdef = self.inner_class_definition();
+        let traits = classdef.read().lookup_class_traits_by_slot(id)?;
+
+        if let Some(method_trait) = traits.and_then(|t| match t.kind() {
+            TraitKind::Method { .. } => Some(t),
+            _ => None,
+        }) {
+            let method = method_trait.as_method().unwrap();
+            let name = method_trait.name().clone();
+            let is_final = method_trait.is_final();
+            let scope = self.class_scope();
+
+            Ok(Some((
+                FunctionObject::from_method(activation, method, scope, Some(self.into())),
+                name,
                 is_final,
             )))
         } else {
