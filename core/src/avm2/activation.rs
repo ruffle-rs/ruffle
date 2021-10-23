@@ -1126,11 +1126,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
-        let function: Result<Object<'gc>, Error> = receiver
-            .get_method(index.0)
-            .ok_or_else(|| format!("Object method {} does not exist", index.0).into());
-        let superclass_object = receiver.instance_of();
-        let value = function?.call(Some(receiver), &args, self, superclass_object)?;
+
+        let value = receiver.call_method(index.0, &args, self)?;
 
         self.context.avm2.push(value);
 

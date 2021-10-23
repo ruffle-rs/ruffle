@@ -765,6 +765,17 @@ impl<'gc> Class<'gc> {
         false
     }
 
+    /// Determines if this class provides a given trait on its instances.
+    pub fn has_instance_trait_by_id(&self, id: u32) -> bool {
+        for trait_entry in self.instance_traits.iter() {
+            if id == trait_entry.slot_id() {
+                return true;
+            }
+        }
+
+        false
+    }
+
     /// Return instance traits provided by this class.
     pub fn instance_traits(&self) -> &[Trait<'gc>] {
         &self.instance_traits[..]
