@@ -46,3 +46,13 @@ false
 false
 //Test4.prototype is Test4
 false
+//Object.prototype is Object
+true
+//Function.prototype is Object
+true
+//Function.prototype is Function
+true
+//Class.prototype is Object
+true
+//Class.prototype is Class
+false

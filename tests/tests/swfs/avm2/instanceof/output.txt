@@ -46,3 +46,13 @@ true
 false
 //Test4.prototype instanceof Test4
 false
+//Object.prototype instanceof Object
+false
+//Function.prototype instanceof Object
+true
+//Function.prototype instanceof Function
+false
+//Class.prototype instanceof Object
+true
+//Class.prototype instanceof Class
+false
