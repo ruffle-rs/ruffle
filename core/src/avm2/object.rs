@@ -130,8 +130,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This corresponds directly to the AVM2 operation `getproperty`, with the
     /// exception that it does not special-case object lookups on dictionary
     /// structured objects.
+    #[allow(unused_mut)] //Not unused.
     fn get_property(
-        self,
+        mut self,
         receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -157,6 +158,42 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         // At this point, the name must be a valid QName.
         let name = name.unwrap();
+        if !self.base().has_own_instantiated_property(&name) {
+            // Initialize lazy-bound methods at this point in time.
+            if let Some(class) = self.instance_of() {
+                if let Some((bound_method, disp_id, is_final)) =
+                    class.bound_instance_method(activation, receiver, &name)?
+                {
+                    self.install_method(
+                        activation.context.gc_context,
+                        name.clone(),
+                        disp_id,
+                        bound_method,
+                        is_final,
+                    );
+
+                    return Ok(bound_method.into());
+                }
+            }
+
+            // Class methods are also lazy-bound.
+            if let Some(class) = self.as_class_object() {
+                if let Some((bound_method, disp_id, is_final)) =
+                    class.bound_class_method(activation, &name)?
+                {
+                    self.install_method(
+                        activation.context.gc_context,
+                        name.clone(),
+                        disp_id,
+                        bound_method,
+                        is_final,
+                    );
+
+                    return Ok(bound_method.into());
+                }
+            }
+        }
+
         let has_no_getter =
             self.has_own_virtual_setter(&name) && !self.has_own_virtual_getter(&name);
 
@@ -206,7 +243,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let name = self.resolve_multiname(multiname)?;
+        let mut name = self.resolve_multiname(multiname)?;
 
         // Special case: Unresolvable properties on dynamic classes are treated
         // as initializing a new dynamic property on namespace Public("").
@@ -219,16 +256,40 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let local_name: Result<AvmString<'gc>, Error> = multiname
                     .local_name()
                     .ok_or_else(|| "Cannot set undefined property using any name".into());
-                let name = QName::dynamic_name(local_name?);
-                return self.set_property_local(receiver, &name, value, activation);
+                name = Some(QName::dynamic_name(local_name?));
+            } else {
+                return Err(
+                    format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
+                );
             }
-
-            return Err(
-                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
-            );
         }
 
-        self.set_property_local(receiver, &name.unwrap(), value, activation)
+        // At this point, name resolution should have completed.
+        let name = name.unwrap();
+
+        // Reject attempts to overwrite lazy-bound methods before they have
+        // been bound.
+        if let Some(class) = self.instance_of() {
+            if class.instance_method(&name)?.is_some() {
+                return Err(format!(
+                    "Cannot overwrite read-only property {:?}",
+                    name.local_name()
+                )
+                .into());
+            }
+        }
+
+        if let Some(class) = self.as_class_object() {
+            if class.class_method(&name)?.is_some() {
+                return Err(format!(
+                    "Cannot overwrite read-only property {:?}",
+                    name.local_name()
+                )
+                .into());
+            }
+        }
+
+        self.set_property_local(receiver, &name, value, activation)
     }
 
     /// Initialize a property by QName, after multiname resolution and all
@@ -263,7 +324,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let name = self.resolve_multiname(multiname)?;
+        let mut name = self.resolve_multiname(multiname)?;
 
         // Special case: Unresolvable properties on dynamic classes are treated
         // as initializing a new dynamic property on namespace Public("").
@@ -275,17 +336,43 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             {
                 let local_name: Result<AvmString<'gc>, Error> = multiname
                     .local_name()
-                    .ok_or_else(|| "Cannot set undefined property using any name".into());
-                let name = QName::dynamic_name(local_name?);
-                return self.init_property_local(receiver, &name, value, activation);
+                    .ok_or_else(|| "Cannot init undefined property using any name".into());
+                name = Some(QName::dynamic_name(local_name?));
+            } else {
+                return Err(format!(
+                    "Cannot init undefined property {:?}",
+                    multiname.local_name()
+                )
+                .into());
             }
-
-            return Err(
-                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
-            );
         }
 
-        self.init_property_local(receiver, &name.unwrap(), value, activation)
+        // At this point, name resolution should have completed.
+        let name = name.unwrap();
+
+        // Reject attempts to overwrite lazy-bound methods before they have
+        // been bound.
+        if let Some(class) = self.instance_of() {
+            if class.instance_method(&name)?.is_some() {
+                return Err(format!(
+                    "Cannot overwrite read-only property {:?}",
+                    name.local_name()
+                )
+                .into());
+            }
+        }
+
+        if let Some(class) = self.as_class_object() {
+            if class.class_method(&name)?.is_some() {
+                return Err(format!(
+                    "Cannot overwrite read-only property {:?}",
+                    name.local_name()
+                )
+                .into());
+            }
+        }
+
+        self.init_property_local(receiver, &name, value, activation)
     }
 
     /// Call a named property on the object.
@@ -528,6 +615,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Returns false if the property cannot be deleted.
     fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
         let mut base = self.base_mut(gc_context);
+
+        // Reject attempts to delete lazy-bound methods before they have
+        // been bound.
+        if !base.has_own_instantiated_property(name) {
+            if let Some(class) = self.instance_of() {
+                if class
+                    .instance_method(name)
+                    .map(|t| t.is_some())
+                    .unwrap_or(false)
+                {
+                    return false;
+                }
+            }
+
+            if let Some(class) = self.as_class_object() {
+                if class
+                    .class_method(name)
+                    .map(|t| t.is_some())
+                    .unwrap_or(false)
+                {
+                    return false;
+                }
+            }
+        }
 
         base.delete_property(name)
     }
