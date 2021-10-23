@@ -337,6 +337,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
+        if let Some(class) = self.as_class_object() {
+            if let Some(method_trait) = class.class_method(&name)? {
+                let method = method_trait.as_method().unwrap();
+                let scope = class.class_scope();
+
+                return Executable::from_method(method, scope, None, activation.context.gc_context)
+                    .exec(
+                        Some(self.into()),
+                        arguments,
+                        activation,
+                        Some(class),
+                        class.into(),
+                    );
+            }
+        }
+
         let function = self
             .get_property(self.into(), multiname, activation)?
             .coerce_to_object(activation);
