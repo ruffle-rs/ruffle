@@ -909,21 +909,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 Ok(default_value.clone())
             }
-            TraitKind::Method {
-                disp_id, method, ..
-            } => {
-                let function =
-                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
-                self.install_method(
-                    activation.context.gc_context,
-                    trait_name,
-                    *disp_id,
-                    function,
-                    is_final,
-                );
-
-                Ok(function.into())
-            }
+            TraitKind::Method { .. } => Ok(Value::Undefined),
             TraitKind::Getter {
                 disp_id, method, ..
             } => {
