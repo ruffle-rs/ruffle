@@ -313,6 +313,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             None
         };
 
+        if let Some(superclass_object) = superclass_object {
+            let mut traits = Vec::new();
+            superclass_object
+                .inner_class_definition()
+                .read()
+                .lookup_instance_traits(&name, &mut traits)?;
+
+            if let Some(method) = traits.into_iter().find_map(|t| match t.kind() {
+                TraitKind::Method { method, .. } => Some(method.clone()),
+                _ => None,
+            }) {
+                let scope = superclass_object.instance_scope();
+
+                return Executable::from_method(method, scope, None, activation.context.gc_context)
+                    .exec(
+                        Some(self.into()),
+                        arguments,
+                        activation,
+                        Some(superclass_object),
+                        superclass_object.into(),
+                    );
+            }
+        }
+
         let function = self
             .get_property(self.into(), multiname, activation)?
             .coerce_to_object(activation);
