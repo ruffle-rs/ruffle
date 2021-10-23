@@ -275,7 +275,7 @@ pub fn concat<'gc>(
             .ok_or("TypeError: Tried to concat into a bare object")?;
         let val_class = new_vector_storage.value_type();
 
-        for arg in args.iter().map(|a| a.clone()) {
+        for arg in args.iter().cloned() {
             let arg_obj = arg.coerce_to_object(activation)?;
             let arg_class = arg_obj
                 .instance_of_class_definition()
