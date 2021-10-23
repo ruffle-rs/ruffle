@@ -22,7 +22,7 @@
             "run_at": "document_start",
         }
     ],
-    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src *;",
+    "content_security_policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src *; img-src data:;",
     "icons": {
         "16": "images/icon16.png",
         "32": "images/icon32.png",
