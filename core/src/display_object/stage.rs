@@ -774,7 +774,7 @@ impl FromStr for StageQuality {
     type Err = ParseEnumError;
 
     // clippy: False positive pending https://github.com/rust-lang/rust-clippy/pull/7865
-    #[allow(clippy::match_str_case_mismatch)]
+    #[allow(unknown_lints, clippy::match_str_case_mismatch)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let quality = match s.to_ascii_lowercase().as_str() {
             "low" => StageQuality::Low,
