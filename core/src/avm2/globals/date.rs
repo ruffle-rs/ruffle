@@ -1107,6 +1107,8 @@ fn parse_hms(item: &str) -> Option<(u32, u32, u32)> {
 }
 
 /// Implements the `parse` class method.
+// False
+#[allow(clippy::question_mark)]
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,

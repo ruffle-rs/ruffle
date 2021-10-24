@@ -96,7 +96,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     let data = match std::fs::read(&file_path) {
         Ok(data) => data,
         Err(e) => {
-            file_result.error = Some(format!("File error: {}", e.to_string()));
+            file_result.error = Some(format!("File error: {}", e));
             checkpoint(&mut file_result, &start, &mut writer)?;
 
             return Ok(());
@@ -148,13 +148,13 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
                 });
             }
             Err(e) => {
-                file_result.error = Some(format!("Parse error: {}", e.to_string()));
+                file_result.error = Some(format!("Parse error: {}", e));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
         },
         Err(e) => match e.downcast::<String>() {
             Ok(e) => {
-                file_result.error = Some(format!("PANIC: {}", e.to_string()));
+                file_result.error = Some(format!("PANIC: {}", e));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
             Err(_) => {
@@ -171,7 +171,7 @@ pub fn execute_report_main(execute_report_opt: ExecuteReportOpt) -> Result<(), s
     if let Err(e) = catch_unwind(|| execute_swf(&file_path)) {
         match e.downcast::<String>() {
             Ok(e) => {
-                file_result.error = Some(format!("PANIC: {}", e.to_string()));
+                file_result.error = Some(format!("PANIC: {}", e));
                 checkpoint(&mut file_result, &start, &mut writer)?;
             }
             Err(_) => {
