@@ -994,7 +994,7 @@ export class RufflePlayer extends HTMLElement {
         const issueTitle = `Error on ${pageUrl}`;
         let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
             issueTitle
-        )}&body=`;
+        )}&labels=error-report&body=`;
         let issueBody = encodeURIComponent(errorText);
         if (
             errorArray.stackIndex > -1 &&
