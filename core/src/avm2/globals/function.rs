@@ -34,6 +34,8 @@ pub fn class_init<'gc>(
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
+        let this_class = this.as_class_object().unwrap();
+
         function_proto.install_dynamic_property(
             activation.context.gc_context,
             QName::new(Namespace::public(), "call"),
@@ -42,6 +44,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(call, "call", activation.context.gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -53,6 +56,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(apply, "apply", activation.context.gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -65,6 +69,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(call, "call", activation.context.gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -76,6 +81,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(apply, "apply", activation.context.gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -92,13 +98,12 @@ fn call<'gc>(
     let this = args
         .get(0)
         .and_then(|v| v.coerce_to_object(activation).ok());
-    let base_proto = this.and_then(|that| that.instance_of());
 
     if let Some(func) = func {
         if args.len() > 1 {
-            Ok(func.call(this, &args[1..], activation, base_proto)?)
+            Ok(func.call(this, &args[1..], activation)?)
         } else {
-            Ok(func.call(this, &[], activation, base_proto)?)
+            Ok(func.call(this, &[], activation)?)
         }
     } else {
         Err("Not a callable function".into())
@@ -114,7 +119,6 @@ fn apply<'gc>(
     let this = args
         .get(0)
         .and_then(|v| v.coerce_to_object(activation).ok());
-    let base_proto = this.and_then(|that| that.instance_of());
 
     if let Some(func) = func {
         let arg_array = args
@@ -140,7 +144,7 @@ fn apply<'gc>(
             Vec::new()
         };
 
-        Ok(func.call(this, &resolved_args, activation, base_proto)?)
+        Ok(func.call(this, &resolved_args, activation)?)
     } else {
         Err("Not a callable function".into())
     }

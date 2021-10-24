@@ -383,6 +383,7 @@ impl<'gc> Script<'gc> {
                 &mut null_activation,
                 &self.traits()?,
                 ScopeChain::new(domain),
+                None,
             )?;
 
             Avm2::run_script_initializer(*self, context)?;

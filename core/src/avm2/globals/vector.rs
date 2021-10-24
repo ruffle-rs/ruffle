@@ -425,12 +425,7 @@ pub fn every<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(
-                    receiver,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if !result {
@@ -468,12 +463,7 @@ pub fn some<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(
-                    receiver,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if result {
@@ -519,12 +509,7 @@ pub fn filter<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(
-                    receiver,
-                    &[item.clone(), i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item.clone(), i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if result {
@@ -561,12 +546,7 @@ pub fn for_each<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            callback.call(
-                receiver,
-                &[item, i.into(), this.into()],
-                activation,
-                receiver.and_then(|r| r.instance_of()),
-            )?;
+            callback.call(receiver, &[item, i.into(), this.into()], activation)?;
         }
     }
 
@@ -686,12 +666,8 @@ pub fn map<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            let new_item = callback.call(
-                receiver,
-                &[item.clone(), i.into(), this.into()],
-                activation,
-                receiver.and_then(|r| r.instance_of()),
-            )?;
+            let new_item =
+                callback.call(receiver, &[item.clone(), i.into(), this.into()], activation)?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
             new_storage.push(coerced_item)?;
@@ -914,7 +890,7 @@ pub fn sort<'gc>(
             let compare = move |activation: &mut Activation<'_, 'gc, '_>, a, b| {
                 if let Some(compare_fnc) = compare_fnc {
                     let order = compare_fnc
-                        .call(Some(this), &[a, b], activation, None)?
+                        .call(Some(this), &[a, b], activation)?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

@@ -73,7 +73,7 @@ impl<'gc> SoundChannelObject<'gc> {
         ));
         sound_object.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(sound_object.into()), &[], activation, Some(class))?;
+        class.call_native_init(Some(sound_object.into()), &[], activation)?;
 
         Ok(sound_object)
     }

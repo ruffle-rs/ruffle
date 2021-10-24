@@ -68,7 +68,7 @@ impl<'gc> ArrayObject<'gc> {
         .into();
         instance.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(instance), &[], activation, Some(class))?;
+        class.call_native_init(Some(instance), &[], activation)?;
 
         Ok(instance)
     }

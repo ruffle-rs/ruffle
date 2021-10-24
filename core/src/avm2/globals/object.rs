@@ -31,6 +31,7 @@ pub fn class_init<'gc>(
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
 
         object_proto.install_dynamic_property(
             gc_context,
@@ -40,6 +41,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -51,6 +53,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -66,6 +69,7 @@ pub fn class_init<'gc>(
                 ),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -77,6 +81,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -88,6 +93,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(to_string, "toString", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -99,6 +105,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;
@@ -110,6 +117,7 @@ pub fn class_init<'gc>(
                 Method::from_builtin(value_of, "valueOf", gc_context),
                 scope,
                 None,
+                Some(this_class),
             )
             .into(),
         )?;

@@ -298,7 +298,7 @@ fn function<'gc>(
     let scope = activation.create_scopechain();
     let qname = QName::new(Namespace::package(package), name);
     let method = Method::from_builtin(nf, name, mc);
-    let as3fn = FunctionObject::from_method(activation, method, scope, None).into();
+    let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
     domain.export_definition(qname.clone(), script, mc)?;
     script
         .init()
