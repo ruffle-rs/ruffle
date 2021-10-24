@@ -374,12 +374,7 @@ pub fn for_each<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            callback.call(
-                receiver,
-                &[item, i.into(), this.into()],
-                activation,
-                receiver.and_then(|r| r.instance_of()),
-            )?;
+            callback.call(receiver, &[item, i.into(), this.into()], activation)?;
         }
     }
 
@@ -409,12 +404,7 @@ pub fn map<'gc>(
 
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
-            let new_item = callback.call(
-                receiver,
-                &[item, i.into(), this.into()],
-                activation,
-                receiver.and_then(|r| r.instance_of()),
-            )?;
+            let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
 
             new_array.push(new_item);
         }
@@ -449,12 +439,7 @@ pub fn filter<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
             let is_allowed = callback
-                .call(
-                    receiver,
-                    &[item.clone(), i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item.clone(), i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if is_allowed {
@@ -492,12 +477,7 @@ pub fn every<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(
-                    receiver,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if !result {
@@ -535,12 +515,7 @@ pub fn some<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(
-                    receiver,
-                    &[item, i.into(), this.into()],
-                    activation,
-                    receiver.and_then(|r| r.instance_of()),
-                )?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if result {
@@ -1078,7 +1053,7 @@ pub fn sort<'gc>(
                 options,
                 constrain(|activation, a, b| {
                     let order = v
-                        .call(None, &[a, b], activation, None)?
+                        .call(None, &[a, b], activation)?
                         .coerce_to_number(activation)?;
 
                     if order > 0.0 {

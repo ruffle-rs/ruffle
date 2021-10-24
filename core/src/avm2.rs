@@ -252,12 +252,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut evt_activation = Activation::from_nothing(context.reborrow());
-        callable.call(
-            reciever,
-            args,
-            &mut evt_activation,
-            reciever.and_then(|r| r.instance_of()),
-        )?;
+        callable.call(reciever, args, &mut evt_activation)?;
 
         Ok(())
     }

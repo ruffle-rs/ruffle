@@ -57,7 +57,7 @@ impl<'gc> RegExpObject<'gc> {
         .into();
         this.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(this), &[], activation, Some(class))?;
+        class.call_native_init(Some(this), &[], activation)?;
 
         Ok(this)
     }

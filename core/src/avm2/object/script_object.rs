@@ -139,18 +139,12 @@ impl<'gc> ScriptObjectData<'gc> {
         &self,
         receiver: Object<'gc>,
         name: &QName<'gc>,
-        activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
 
         if let Some(prop) = prop {
-            prop.get(
-                receiver,
-                // TODO: This used to also .unwrap_or(receiver),
-                // but this no longer can be done as it's not a ClassObject.
-                // Despite this, somehow, no tests fail.
-                activation.subclass_object().or_else(|| self.instance_of()),
-            )
+            prop.get(receiver)
         } else {
             Ok(Value::Undefined.into())
         }
@@ -163,7 +157,6 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let class = self.instance_of();
         let slot_id = if let Some(prop) = self.values.get(name) {
             if let Some(slot_id) = prop.slot_id() {
                 Some(slot_id)
@@ -179,14 +172,7 @@ impl<'gc> ScriptObjectData<'gc> {
             Ok(Value::Undefined.into())
         } else if self.values.contains_key(name) {
             let prop = self.values.get_mut(name).unwrap();
-            prop.set(
-                receiver,
-                // TODO: This used to also .unwrap_or(receiver),
-                // but this no longer can be done as it's not a ClassObject.
-                // Despite this, somehow, no tests fail.
-                activation.subclass_object().or(class),
-                value,
-            )
+            prop.set(receiver, value)
         } else {
             //TODO: Not all classes are dynamic like this
             self.enumerants.push(name.clone());
@@ -204,20 +190,12 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
-        let class = self.instance_of();
         if let Some(prop) = self.values.get_mut(name) {
             if let Some(slot_id) = prop.slot_id() {
                 self.init_slot(slot_id, value, activation.context.gc_context)?;
                 Ok(Value::Undefined.into())
             } else {
-                prop.init(
-                    receiver,
-                    // TODO: This used to also .unwrap_or(receiver),
-                    // but this no longer can be done as it's not a ClassObject.
-                    // Despite this, somehow, no tests fail.
-                    activation.subclass_object().or(class),
-                    value,
-                )
+                prop.init(receiver, value)
             }
         } else {
             //TODO: Not all classes are dynamic like this

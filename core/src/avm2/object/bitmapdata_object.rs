@@ -67,7 +67,7 @@ impl<'gc> BitmapDataObject<'gc> {
             .write(activation.context.gc_context)
             .init_object2(instance.into());
         instance.install_instance_traits(activation, class)?;
-        class.call_native_init(Some(instance.into()), &[], activation, Some(class))?;
+        class.call_native_init(Some(instance.into()), &[], activation)?;
 
         Ok(instance.into())
     }

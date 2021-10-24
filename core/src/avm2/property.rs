@@ -1,6 +1,6 @@
 //! Property data structures
 
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::return_value::ReturnValue;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -164,18 +164,11 @@ impl<'gc> Property<'gc> {
     ///
     /// This function yields `ReturnValue` because some properties may be
     /// user-defined.
-    pub fn get(
-        &self,
-        this: Object<'gc>,
-        subclass_object: Option<ClassObject<'gc>>,
-    ) -> Result<ReturnValue<'gc>, Error> {
+    pub fn get(&self, this: Object<'gc>) -> Result<ReturnValue<'gc>, Error> {
         match self {
-            Property::Virtual { get: Some(get), .. } => Ok(ReturnValue::defer_execution(
-                *get,
-                Some(this),
-                vec![],
-                subclass_object,
-            )),
+            Property::Virtual { get: Some(get), .. } => {
+                Ok(ReturnValue::defer_execution(*get, Some(this), vec![]))
+            }
             Property::Virtual { get: None, .. } => Ok(Value::Undefined.into()),
             Property::Stored { value, .. } => Ok(value.to_owned().into()),
 
@@ -195,7 +188,6 @@ impl<'gc> Property<'gc> {
     pub fn set(
         &mut self,
         this: Object<'gc>,
-        subclass_object: Option<ClassObject<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -205,7 +197,6 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        subclass_object,
                     ));
                 }
 
@@ -239,7 +230,6 @@ impl<'gc> Property<'gc> {
     pub fn init(
         &mut self,
         this: Object<'gc>,
-        subclass_object: Option<ClassObject<'gc>>,
         new_value: impl Into<Value<'gc>>,
     ) -> Result<ReturnValue<'gc>, Error> {
         match self {
@@ -249,7 +239,6 @@ impl<'gc> Property<'gc> {
                         *function,
                         Some(this),
                         vec![new_value.into()],
-                        subclass_object,
                     ));
                 }
 

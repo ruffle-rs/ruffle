@@ -74,6 +74,7 @@ pub fn class_init<'gc>(
     let mut qname_proto = this
         .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
         .coerce_to_object(activation)?;
+    let this_class = this.as_class_object().unwrap();
 
     qname_proto.set_property(
         qname_proto,
@@ -83,6 +84,7 @@ pub fn class_init<'gc>(
             Method::from_builtin(to_string, "toString", activation.context.gc_context),
             scope,
             None,
+            Some(this_class),
         )
         .into(),
         activation,
@@ -96,6 +98,7 @@ pub fn class_init<'gc>(
             Method::from_builtin(value_of, "valueOf", activation.context.gc_context),
             scope,
             None,
+            Some(this_class),
         )
         .into(),
         activation,

@@ -37,7 +37,7 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let mut this = Self::from_method(activation, method, scope, None);
+        let mut this = Self::from_method(activation, method, scope, None, None);
         let es3_proto = ScriptObject::object(
             activation.context.gc_context,
             activation.avm2().prototypes().object,
@@ -63,12 +63,14 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
+        subclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
         let fn_proto = activation.avm2().prototypes().function;
         let exec = Some(Executable::from_method(
             method,
             scope,
             receiver,
+            subclass_object,
             activation.context.gc_context,
         ));
 
@@ -117,16 +119,9 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        subclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         if let Some(exec) = &self.0.read().exec {
-            exec.exec(
-                receiver,
-                arguments,
-                activation,
-                subclass_object,
-                self.into(),
-            )
+            exec.exec(receiver, arguments, activation, self.into())
         } else {
             Err("Not a callable function!".into())
         }
@@ -148,7 +143,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
         let instance = prototype.derive(activation)?;
 
-        self.call(Some(instance), arguments, activation, None)?;
+        self.call(Some(instance), arguments, activation)?;
 
         Ok(instance)
     }

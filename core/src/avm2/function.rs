@@ -25,6 +25,13 @@ pub struct BytecodeExecutable<'gc> {
     /// If `None`, then the receiver provided by the caller is used. A
     /// `Some` value indicates a bound executable.
     receiver: Option<Object<'gc>>,
+
+    /// The bound superclass for this method.
+    ///
+    /// The `superclass` is the class that defined this method. If `None`,
+    /// then there is no defining superclass and `super` operations should fall
+    /// back to the `receiver`.
+    bound_superclass: Option<ClassObject<'gc>>,
 }
 
 #[derive(Clone, Collect)]
@@ -38,6 +45,13 @@ pub struct NativeExecutable<'gc> {
 
     /// The bound reciever for this method.
     bound_receiver: Option<Object<'gc>>,
+
+    /// The bound superclass for this method.
+    ///
+    /// The `superclass` is the class that defined this method. If `None`,
+    /// then there is no defining superclass and `super` operations should fall
+    /// back to the `receiver`.
+    bound_superclass: Option<ClassObject<'gc>>,
 }
 
 /// Represents code that can be executed by some means.
@@ -57,6 +71,7 @@ impl<'gc> Executable<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
+        superclass: Option<ClassObject<'gc>>,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
@@ -66,6 +81,7 @@ impl<'gc> Executable<'gc> {
                     method,
                     scope,
                     bound_receiver: receiver,
+                    bound_superclass: superclass,
                 },
             )),
             Method::Bytecode(method) => Self::Action(Gc::allocate(
@@ -74,6 +90,7 @@ impl<'gc> Executable<'gc> {
                     method,
                     scope,
                     receiver,
+                    bound_superclass: superclass,
                 },
             )),
         }
@@ -95,7 +112,6 @@ impl<'gc> Executable<'gc> {
         unbound_receiver: Option<Object<'gc>>,
         mut arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
         match self {
@@ -103,6 +119,7 @@ impl<'gc> Executable<'gc> {
                 let method = bm.method.method;
                 let receiver = bm.bound_receiver.or(unbound_receiver);
                 let caller_domain = activation.caller_domain();
+                let subclass_object = bm.bound_superclass;
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     receiver,
@@ -138,6 +155,8 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let receiver = bm.receiver.or(unbound_receiver);
+                let subclass_object = bm.bound_superclass;
+
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
                     bm.method,

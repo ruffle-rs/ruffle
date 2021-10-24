@@ -231,7 +231,12 @@ impl<'gc> ClassObject<'gc> {
         )?;
 
         self.link_interfaces(activation)?;
-        self.install_traits(activation, class.read().class_traits(), self.class_scope())?;
+        self.install_traits(
+            activation,
+            class.read().class_traits(),
+            self.class_scope(),
+            Some(self),
+        )?;
         self.install_instance_traits(activation, class_class)?;
         self.run_class_initializer(activation)?;
 
@@ -327,15 +332,20 @@ impl<'gc> ClassObject<'gc> {
 
         if !class_read.is_class_initialized() {
             let class_initializer = class_read.class_init();
-            let class_init_fn =
-                FunctionObject::from_method(activation, class_initializer, scope, Some(object));
+            let class_init_fn = FunctionObject::from_method(
+                activation,
+                class_initializer,
+                scope,
+                Some(object),
+                Some(self),
+            );
 
             drop(class_read);
             class
                 .write(activation.context.gc_context)
                 .mark_class_initialized();
 
-            class_init_fn.call(Some(object), &[], activation, None)?;
+            class_init_fn.call(Some(object), &[], activation)?;
         }
 
         Ok(())
@@ -440,23 +450,17 @@ impl<'gc> ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         let scope = self.0.read().instance_scope;
         let constructor = Executable::from_method(
             self.0.read().constructor.clone(),
             scope,
             None,
+            Some(self),
             activation.context.gc_context,
         );
 
-        constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-        )
+        constructor.exec(receiver, arguments, activation, self.into())
     }
 
     /// Call the instance's native initializer.
@@ -469,23 +473,17 @@ impl<'gc> ClassObject<'gc> {
         receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         let scope = self.0.read().instance_scope;
         let constructor = Executable::from_method(
             self.0.read().native_constructor.clone(),
             scope,
             None,
+            Some(self),
             activation.context.gc_context,
         );
 
-        constructor.exec(
-            receiver,
-            arguments,
-            activation,
-            superclass_object,
-            self.into(),
-        )
+        constructor.exec(receiver, arguments, activation, self.into())
     }
 
     /// Supercall a method defined in this class.
@@ -547,15 +545,15 @@ impl<'gc> ClassObject<'gc> {
         let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee =
-                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
-
-            callee.call(
-                Some(reciever),
-                arguments,
+            let callee = FunctionObject::from_method(
                 activation,
+                method.clone(),
+                scope,
+                Some(reciever),
                 Some(superclass_object),
-            )
+            );
+
+            callee.call(Some(reciever), arguments, activation)
         } else {
             reciever.call_property(multiname, arguments, activation)
         }
@@ -619,10 +617,15 @@ impl<'gc> ClassObject<'gc> {
         let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee =
-                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
+            let callee = FunctionObject::from_method(
+                activation,
+                method.clone(),
+                scope,
+                Some(reciever),
+                Some(superclass_object),
+            );
 
-            callee.call(Some(reciever), &[], activation, Some(superclass_object))
+            callee.call(Some(reciever), &[], activation)
         } else {
             reciever.get_property(reciever, multiname, activation)
         }
@@ -688,15 +691,15 @@ impl<'gc> ClassObject<'gc> {
         let scope = superclass_object.class_scope();
 
         if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
-            let callee =
-                FunctionObject::from_method(activation, method.clone(), scope, Some(reciever));
-
-            callee.call(
-                Some(reciever),
-                &[value],
+            let callee = FunctionObject::from_method(
                 activation,
+                method.clone(),
+                scope,
+                Some(reciever),
                 Some(superclass_object),
-            )?;
+            );
+
+            callee.call(Some(reciever), &[value], activation)?;
 
             Ok(())
         } else {
@@ -746,14 +749,20 @@ impl<'gc> ClassObject<'gc> {
         receiver: Object<'gc>,
         name: &QName<'gc>,
     ) -> Result<Option<(Object<'gc>, u32, bool)>, Error> {
-        if let Some((_superclass, method_trait)) = self.instance_method(name)? {
+        if let Some((superclass, method_trait)) = self.instance_method(name)? {
             let method = method_trait.as_method().unwrap();
             let disp_id = method_trait.slot_id();
             let is_final = method_trait.is_final();
             let scope = self.instance_scope();
 
             Ok(Some((
-                FunctionObject::from_method(activation, method, scope, Some(receiver)),
+                FunctionObject::from_method(
+                    activation,
+                    method,
+                    scope,
+                    Some(receiver),
+                    Some(superclass),
+                ),
                 disp_id,
                 is_final,
             )))
@@ -782,20 +791,23 @@ impl<'gc> ClassObject<'gc> {
             let superclassdef = superclass.inner_class_definition();
             let traits = superclassdef.read().lookup_instance_traits_by_slot(id)?;
 
-            if let Some((_superclass, method_trait)) = traits
-                .and_then(|t| match t.kind() {
-                    TraitKind::Method { .. } => Some(t),
-                    _ => None,
-                })
-                .map(|t| (superclass, t))
-            {
+            if let Some(method_trait) = traits.and_then(|t| match t.kind() {
+                TraitKind::Method { .. } => Some(t),
+                _ => None,
+            }) {
                 let name = method_trait.name().clone();
                 let method = method_trait.as_method().unwrap();
                 let is_final = method_trait.is_final();
                 let scope = self.instance_scope();
 
                 Ok(Some((
-                    FunctionObject::from_method(activation, method, scope, Some(receiver)),
+                    FunctionObject::from_method(
+                        activation,
+                        method,
+                        scope,
+                        Some(receiver),
+                        Some(superclass),
+                    ),
                     name,
                     is_final,
                 )))
@@ -846,7 +858,13 @@ impl<'gc> ClassObject<'gc> {
             let scope = self.class_scope();
 
             Ok(Some((
-                FunctionObject::from_method(activation, method, scope, Some(self.into())),
+                FunctionObject::from_method(
+                    activation,
+                    method,
+                    scope,
+                    Some(self.into()),
+                    Some(self),
+                ),
                 disp_id,
                 is_final,
             )))
@@ -883,7 +901,13 @@ impl<'gc> ClassObject<'gc> {
             let scope = self.class_scope();
 
             Ok(Some((
-                FunctionObject::from_method(activation, method, scope, Some(self.into())),
+                FunctionObject::from_method(
+                    activation,
+                    method,
+                    scope,
+                    Some(self.into()),
+                    Some(self),
+                ),
                 name,
                 is_final,
             )))
@@ -955,7 +979,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         _receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
-        _superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         arguments
             .get(0)
@@ -982,7 +1005,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         instance.install_instance_traits(activation, self)?;
 
-        self.call_init(Some(instance), arguments, activation, Some(self))?;
+        self.call_init(Some(instance), arguments, activation)?;
 
         Ok(instance)
     }
@@ -1149,6 +1172,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             activation,
             parameterized_class.read().class_traits(),
             class_scope,
+            Some(class_object),
         )?;
         class_object.install_instance_traits(activation, class_class)?;
         class_object.run_class_initializer(activation)?;

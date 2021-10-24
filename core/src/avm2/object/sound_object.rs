@@ -70,7 +70,7 @@ impl<'gc> SoundObject<'gc> {
         .into();
         sound_object.install_instance_traits(activation, class)?;
 
-        class.call_native_init(Some(sound_object), &[], activation, Some(class))?;
+        class.call_native_init(Some(sound_object), &[], activation)?;
 
         Ok(sound_object)
     }

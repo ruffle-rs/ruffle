@@ -1,7 +1,7 @@
 //! Return value enum
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Error, Value};
 use std::fmt;
 
@@ -40,7 +40,6 @@ pub enum ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        subclass_object: Option<ClassObject<'gc>>,
     },
 }
 
@@ -52,13 +51,11 @@ impl fmt::Debug for ReturnValue<'_> {
                 callee,
                 unbound_reciever,
                 arguments,
-                subclass_object,
             } => f
                 .debug_struct("ReturnValue")
                 .field("callee", callee)
                 .field("unbound_reciever", unbound_reciever)
                 .field("arguments", arguments)
-                .field("subclass_object", subclass_object)
                 .finish(),
         }
     }
@@ -70,13 +67,11 @@ impl<'gc> ReturnValue<'gc> {
         callee: Object<'gc>,
         unbound_reciever: Option<Object<'gc>>,
         arguments: Vec<Value<'gc>>,
-        subclass_object: Option<ClassObject<'gc>>,
     ) -> Self {
         Self::ResultOf {
             callee,
             unbound_reciever,
             arguments,
-            subclass_object,
         }
     }
 
@@ -91,12 +86,10 @@ impl<'gc> ReturnValue<'gc> {
                 callee,
                 unbound_reciever,
                 arguments,
-                subclass_object,
             } => callee.as_executable().unwrap().exec(
                 unbound_reciever,
                 &arguments,
                 activation,
-                subclass_object,
                 callee,
             ),
         }

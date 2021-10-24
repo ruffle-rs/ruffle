@@ -394,38 +394,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         let name = name.unwrap();
-        let superclass_object = if let Some(c) = self.instance_of() {
-            c.find_class_for_trait(&name)?
-        } else {
-            None
-        };
 
-        if let Some(superclass_object) = superclass_object {
-            let mut traits = Vec::new();
-            superclass_object
-                .inner_class_definition()
-                .read()
-                .lookup_instance_traits(&name, &mut traits)?;
-
-            if let Some(method) = traits.into_iter().find_map(|t| match t.kind() {
-                TraitKind::Method { method, .. } => Some(method.clone()),
-                _ => None,
-            }) {
+        if let Some(class) = self.instance_of() {
+            if let Some((superclass, method_trait)) = class.instance_method(&name)? {
+                let method = method_trait.as_method().unwrap();
                 if !method.needs_arguments_object() {
-                    let scope = superclass_object.instance_scope();
+                    let scope = class.instance_scope();
 
                     return Executable::from_method(
                         method,
                         scope,
                         None,
+                        Some(superclass),
                         activation.context.gc_context,
                     )
                     .exec(
                         Some(self.into()),
                         arguments,
                         activation,
-                        Some(superclass_object),
-                        superclass_object.into(), //Deliberately invalid.
+                        superclass.into(), //Deliberately invalid.
                     );
                 }
             }
@@ -441,13 +428,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         method,
                         scope,
                         None,
+                        Some(class),
                         activation.context.gc_context,
                     )
                     .exec(
                         Some(self.into()),
                         arguments,
                         activation,
-                        Some(class),
                         class.into(), //Deliberately invalid.
                     );
                 }
@@ -467,7 +454,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         function
             .unwrap()
-            .call(Some(self.into()), arguments, activation, superclass_object)
+            .call(Some(self.into()), arguments, activation)
     }
 
     /// Retrieve a slot by its index.
@@ -542,12 +529,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(method_object) = self.base().get_method(id) {
-            return method_object.call(
-                Some(self.into()),
-                arguments,
-                activation,
-                self.instance_of(),
-            );
+            return method_object.call(Some(self.into()), arguments, activation);
         }
 
         Err(format!("Cannot call unknown method id {}", id).into())
@@ -864,6 +846,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             activation,
             class.read().instance_traits(),
             from_class_object.instance_scope(),
+            Some(from_class_object),
         )?;
 
         Ok(())
@@ -881,9 +864,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         traits: &[Trait<'gc>],
         scope: ScopeChain<'gc>,
+        defining_class: Option<ClassObject<'gc>>,
     ) -> Result<(), Error> {
         for trait_entry in traits {
-            self.install_trait(activation, trait_entry, scope)?;
+            self.install_trait(activation, trait_entry, scope, defining_class)?;
         }
 
         Ok(())
@@ -911,6 +895,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         trait_entry: &Trait<'gc>,
         scope: ScopeChain<'gc>,
+        defining_class: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         let receiver = (*self).into();
         let trait_name = trait_entry.name().clone();
@@ -972,8 +957,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Getter {
                 disp_id, method, ..
             } => {
-                let function =
-                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
+                let function = FunctionObject::from_method(
+                    activation,
+                    method.clone(),
+                    scope,
+                    Some(receiver),
+                    defining_class,
+                );
                 self.install_getter(
                     activation.context.gc_context,
                     trait_name,
@@ -987,8 +977,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             TraitKind::Setter {
                 disp_id, method, ..
             } => {
-                let function =
-                    FunctionObject::from_method(activation, method.clone(), scope, Some(receiver));
+                let function = FunctionObject::from_method(
+                    activation,
+                    method.clone(),
+                    scope,
+                    Some(receiver),
+                    defining_class,
+                );
                 self.install_setter(
                     activation.context.gc_context,
                     trait_name,
@@ -1045,7 +1040,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         _reciever: Option<Object<'gc>>,
         _arguments: &[Value<'gc>],
         _activation: &mut Activation<'_, 'gc, '_>,
-        _subclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         Err("Object is not callable".into())
     }

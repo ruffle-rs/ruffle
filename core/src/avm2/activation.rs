@@ -530,7 +530,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             });
         let superclass_object = superclass_object?;
 
-        superclass_object.call_native_init(Some(receiver), args, self, Some(superclass_object))
+        superclass_object.call_native_init(Some(receiver), args, self)
     }
 
     /// Attempts to lock the activation frame for execution.
@@ -621,8 +621,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.return_value = Some(value);
     }
 
-    /// Get the base prototype of the object that the currently executing
-    /// method was retrieved from, if one exists.
+    /// Get the class that defined the currently-executing method, if it
+    /// exists.
+    ///
+    /// If the currently-executing method is not part of an ES4 class, then
+    /// this yields `None`.
     pub fn subclass_object(&self) -> Option<ClassObject<'gc>> {
         self.subclass_object
     }
@@ -1111,8 +1114,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let args = self.context.avm2.pop_args(arg_count);
         let receiver = self.context.avm2.pop().coerce_to_object(self).ok();
         let function = self.context.avm2.pop().coerce_to_object(self)?;
-        let superclass_object = receiver.and_then(|r| r.instance_of());
-        let value = function.call(receiver, &args, self, superclass_object)?;
+        let value = function.call(receiver, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1163,7 +1165,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let function = receiver
             .get_property(receiver, &multiname, self)?
             .coerce_to_object(self)?;
-        let value = function.call(None, &args, self, None)?;
+        let value = function.call(None, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1196,8 +1198,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method = self.table_method(method, index, false)?;
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
-        let function = FunctionObject::from_method(self, method.into(), scope, None);
-        let value = function.call(Some(receiver), &args, self, receiver.instance_of())?;
+        let function = FunctionObject::from_method(self, method.into(), scope, None, None);
+        let value = function.call(Some(receiver), &args, self)?;
 
         self.context.avm2.push(value);
 
