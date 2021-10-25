@@ -865,10 +865,7 @@ pub fn object_encoding<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(match bytearray.object_encoding() {
-                ObjectEncoding::Amf0 => 0.into(),
-                ObjectEncoding::Amf3 => 3.into(),
-            });
+            return Ok((bytearray.object_encoding() as u8).into());
         }
     }
 
