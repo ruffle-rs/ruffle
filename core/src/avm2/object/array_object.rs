@@ -196,10 +196,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     }
 
     fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
-        if self.0.read().array.length() as u32 >= index {
+        let arr_len = self.0.read().array.length() as u32;
+        if arr_len >= index {
             index.checked_sub(1).map(|index| index.into())
         } else {
-            None
+            self.base().get_enumerant_name(index - arr_len)
         }
     }
 
@@ -208,6 +209,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .parse::<u32>()
             .map(|index| self.0.read().array.length() as u32 >= index)
             .unwrap_or(false)
+            || self.base().property_is_enumerable(name)
     }
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
