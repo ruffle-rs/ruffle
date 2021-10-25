@@ -9,7 +9,7 @@ use std::io::prelude::*;
 use std::io::{self, Read, SeekFrom};
 use std::str::FromStr;
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum Endian {
     Big,
@@ -47,7 +47,7 @@ impl FromStr for CompressionAlgorithm {
     }
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum ObjectEncoding {
     Amf0,
