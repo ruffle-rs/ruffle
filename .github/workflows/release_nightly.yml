@@ -217,10 +217,13 @@ jobs:
           asset_content_type: application/gzip
 
   build-web:
-    name: Build web
+    name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.activity_check == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        demo: [false, true]
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v2
@@ -259,6 +262,8 @@ jobs:
       - name: Build web
         env:
           BUILD_ID: ${{ github.run_number }}
+          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
+          CARGO_FEATURES: ${{ matrix.demo && 'wgpu' || '' }}
         working-directory: web
         shell: bash -l {0}
         run: |
@@ -267,7 +272,7 @@ jobs:
           npm run docs
 
       - name: Sign Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != ''
+        if: env.FIREFOX_EXTENSION_ID != '' && !matrix.demo
         id: sign-firefox
         continue-on-error: true
         env:
@@ -279,11 +284,13 @@ jobs:
         run: npm run sign-firefox
 
       - name: Package selfhosted
+        if: ${{ !matrix.demo }}
         run: |
           cd web/packages/selfhosted/dist/
           zip -r release.zip .
 
       - name: Upload selfhosted
+        if: ${{ !matrix.demo }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -294,6 +301,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload generic extension
+        if: ${{ !matrix.demo }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -304,7 +312,7 @@ jobs:
           asset_content_type: application/zip
 
       - name: Upload Firefox extension (signed)
-        if: steps.sign-firefox.outcome == 'success'
+        if: steps.sign-firefox.outcome == 'success' && !matrix.demo
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -315,7 +323,7 @@ jobs:
           asset_content_type: application/x-xpinstall
 
       - name: Upload Firefox extension (unsigned)
-        if: steps.sign-firefox.outcome != 'success'
+        if: steps.sign-firefox.outcome != 'success' && !matrix.demo
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -326,6 +334,7 @@ jobs:
           asset_content_type: application/x-xpinstall
 
       - name: Clone web demo
+        if: matrix.demo
         uses: actions/checkout@v2
         with:
           repository: ruffle-rs/demo
@@ -335,6 +344,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
+        if: matrix.demo
         run: |
           cd demo/
 
@@ -351,7 +361,7 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push web demo
-        if: github.repository == 'ruffle-rs/ruffle'
+        if: github.repository == 'ruffle-rs/ruffle' && matrix.demo
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
@@ -360,6 +370,7 @@ jobs:
           force: true
 
       - name: Clone JS docs
+        if: ${{ !matrix.demo }}
         uses: actions/checkout@v2
         with:
           repository: ruffle-rs/js-docs
@@ -369,6 +380,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update JS docs
+        if: ${{ !matrix.demo }}
         run: |
           cd js-docs/
 
@@ -385,7 +397,7 @@ jobs:
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
 
       - name: Push JS docs
-        if: github.repository == 'ruffle-rs/ruffle'
+        if: github.repository == 'ruffle-rs/ruffle' && !matrix.demo
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/js-docs
