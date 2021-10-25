@@ -132,32 +132,21 @@ impl ByteArrayStorage {
         if self.len() < new_len {
             self.set_length(new_len);
         }
-        // SAFETY:
-        // 1. The amount of bytes from the start of the underyling buffer + offset is guarunteed to be able to fit the buffer we are writing because we just resized it.
-        // 2. The borrow checker will guaruntee that `buf` is not a slice of `self.bytes`, because we have mutable (exclusive) access to `self`.
-        unsafe {
-            self.bytes
-                .as_mut_ptr()
-                .add(offset)
-                .copy_from_nonoverlapping(buf.as_ptr(), buf.len())
-        }
+        self.bytes
+            .get_mut(offset..new_len)
+            .expect("ByteArray write out of bounds")
+            .copy_from_slice(buf);
         Ok(())
     }
 
     /// Write bytes at any offset in the ByteArray
     /// Will return an error if the new buffer does not fit the ByteArray
     pub fn write_at_nongrowing(&mut self, buf: &[u8], offset: usize) -> Result<(), Error> {
-        unsafe {
-            self.bytes
-                .get_mut(offset..)
-                .and_then(|bytes| bytes.get_mut(..buf.len()))
-                .ok_or("RangeError: The specified range is invalid")?
-                .as_mut_ptr()
-                // SAFETY:
-                // 1. `buf` is garunteed to be the same length as the slice we are writing to.
-                // 2. The borrow checker will guaruntee that `buf` is not a slice of `self.bytes`, because we have mutable (exclusive) access to `self`.
-                .copy_from_nonoverlapping(buf.as_ptr(), buf.len());
-        }
+        self.bytes
+            .get_mut(offset..)
+            .and_then(|bytes| bytes.get_mut(..buf.len()))
+            .ok_or("RangeError: The specified range is invalid")?
+            .copy_from_slice(buf);
         Ok(())
     }
 
@@ -170,7 +159,7 @@ impl ByteArrayStorage {
         offset: usize,
     ) -> Result<(), Error> {
         // First verify that reading from `start` to `amnt` is valid
-        start
+        let end = start
             .checked_add(amnt)
             .filter(|result| *result <= self.len())
             .ok_or("RangeError: Reached EOF")?;
@@ -183,15 +172,7 @@ impl ByteArrayStorage {
             self.set_length(new_len);
         }
 
-        unsafe {
-            let ptr = self.bytes.as_mut_ptr();
-            let src_ptr = ptr.add(start);
-            let dest_ptr = ptr.add(offset);
-            // SAFETY:
-            // 1. We validated that `start` is within the range of our underlying buffer up until `amnt`, so it is safe to read from `start` to `amnt`.
-            // 2. We are garunteed to have enough room in our underlying buffer for `amnt`, because we just resized it.
-            std::ptr::copy(src_ptr, dest_ptr, amnt);
-        }
+        self.bytes.copy_within(start..end, offset);
         Ok(())
     }
 
