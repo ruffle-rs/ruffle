@@ -50,8 +50,8 @@ impl FromStr for CompressionAlgorithm {
 #[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum ObjectEncoding {
-    Amf0,
-    Amf3,
+    Amf0 = 0,
+    Amf3 = 3,
 }
 
 #[derive(Clone, Collect, Debug)]
