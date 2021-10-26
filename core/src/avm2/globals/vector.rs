@@ -873,8 +873,8 @@ pub fn sort<'gc>(
             let (compare_fnc, options) = if fn_or_options
                 .coerce_to_object(activation)
                 .ok()
-                .and_then(|o| o.as_executable())
-                .is_some()
+                .map(|o| o.as_executable().is_some())
+                .unwrap_or(false)
             {
                 (
                     Some(fn_or_options.coerce_to_object(activation)?),

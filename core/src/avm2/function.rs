@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc};
 use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
@@ -59,10 +59,10 @@ pub struct NativeExecutable<'gc> {
 #[collect(no_drop)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
-    Native(Gc<'gc, NativeExecutable<'gc>>),
+    Native(NativeExecutable<'gc>),
 
     /// Code defined in a loaded ABC file.
-    Action(Gc<'gc, BytecodeExecutable<'gc>>),
+    Action(BytecodeExecutable<'gc>),
 }
 
 impl<'gc> Executable<'gc> {
@@ -72,27 +72,20 @@ impl<'gc> Executable<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
         superclass: Option<ClassObject<'gc>>,
-        mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
-            Method::Native(method) => Self::Native(Gc::allocate(
-                mc,
-                NativeExecutable {
-                    method,
-                    scope,
-                    bound_receiver: receiver,
-                    bound_superclass: superclass,
-                },
-            )),
-            Method::Bytecode(method) => Self::Action(Gc::allocate(
-                mc,
-                BytecodeExecutable {
-                    method,
-                    scope,
-                    receiver,
-                    bound_superclass: superclass,
-                },
-            )),
+            Method::Native(method) => Self::Native(NativeExecutable {
+                method,
+                scope,
+                bound_receiver: receiver,
+                bound_superclass: superclass,
+            }),
+            Method::Bytecode(method) => Self::Action(BytecodeExecutable {
+                method,
+                scope,
+                receiver,
+                bound_superclass: superclass,
+            }),
         }
     }
 

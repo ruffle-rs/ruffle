@@ -452,13 +452,8 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let scope = self.0.read().instance_scope;
-        let constructor = Executable::from_method(
-            self.0.read().constructor.clone(),
-            scope,
-            None,
-            Some(self),
-            activation.context.gc_context,
-        );
+        let constructor =
+            Executable::from_method(self.0.read().constructor.clone(), scope, None, Some(self));
 
         constructor.exec(receiver, arguments, activation, self.into())
     }
@@ -480,7 +475,6 @@ impl<'gc> ClassObject<'gc> {
             scope,
             None,
             Some(self),
-            activation.context.gc_context,
         );
 
         constructor.exec(receiver, arguments, activation, self.into())

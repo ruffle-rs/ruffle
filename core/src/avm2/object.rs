@@ -401,14 +401,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if !method.needs_arguments_object() {
                     let scope = class.instance_scope();
 
-                    return Executable::from_method(
-                        method,
-                        scope,
-                        None,
-                        Some(superclass),
-                        activation.context.gc_context,
-                    )
-                    .exec(
+                    return Executable::from_method(method, scope, None, Some(superclass)).exec(
                         Some(self.into()),
                         arguments,
                         activation,
@@ -424,14 +417,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if !method.needs_arguments_object() {
                     let scope = class.class_scope();
 
-                    return Executable::from_method(
-                        method,
-                        scope,
-                        None,
-                        Some(class),
-                        activation.context.gc_context,
-                    )
-                    .exec(
+                    return Executable::from_method(method, scope, None, Some(class)).exec(
                         Some(self.into()),
                         arguments,
                         activation,
@@ -1257,7 +1243,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get this object's `Executable`, if it has one.
-    fn as_executable(&self) -> Option<Executable<'gc>> {
+    fn as_executable(&self) -> Option<Ref<Executable<'gc>>> {
         None
     }
 
