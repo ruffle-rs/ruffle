@@ -50,7 +50,7 @@ For the compiler to be able to output WebAssembly, an additional target has to b
 
 Follow the instructions [to install node.js](https://nodejs.org/en/) on your machine.
 
-We recommend using the currently active LTS 14, but we do also run tests with maintenance LTS 12.
+We recommend using the currently active LTS 16, but we do also run tests with maintenance LTS 14.
 
 #### wasm-bindgen
 
