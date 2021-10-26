@@ -238,7 +238,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: "14"
+          node-version: "16"
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
