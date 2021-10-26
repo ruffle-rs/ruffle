@@ -24,7 +24,7 @@ pub struct FunctionObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Executable code
-    exec: Option<Executable<'gc>>,
+    exec: Executable<'gc>,
 }
 
 impl<'gc> FunctionObject<'gc> {
@@ -66,13 +66,7 @@ impl<'gc> FunctionObject<'gc> {
         subclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
         let fn_proto = activation.avm2().prototypes().function;
-        let exec = Some(Executable::from_method(
-            method,
-            scope,
-            receiver,
-            subclass_object,
-            activation.context.gc_context,
-        ));
+        let exec = Executable::from_method(method, scope, receiver, subclass_object);
 
         FunctionObject(GcCell::allocate(
             activation.context.gc_context,
@@ -110,8 +104,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.0.read().exec.clone()
+    fn as_executable(&self) -> Option<Ref<Executable<'gc>>> {
+        Some(Ref::map(self.0.read(), |r| &r.exec))
     }
 
     fn call(
@@ -120,11 +114,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        if let Some(exec) = &self.0.read().exec {
-            exec.exec(receiver, arguments, activation, self.into())
-        } else {
-            Err("Not a callable function!".into())
-        }
+        self.0
+            .read()
+            .exec
+            .exec(receiver, arguments, activation, self.into())
     }
 
     fn construct(
@@ -151,10 +144,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let this: Object<'gc> = Object::FunctionObject(*self);
         let base = ScriptObjectData::base_new(Some(this), None);
+        let exec = self.0.read().exec.clone();
 
         Ok(FunctionObject(GcCell::allocate(
             activation.context.gc_context,
-            FunctionObjectData { base, exec: None },
+            FunctionObjectData { base, exec },
         ))
         .into())
     }
