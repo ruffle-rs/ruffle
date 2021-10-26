@@ -10,10 +10,10 @@ var<uniform> textureTransforms: TextureTransforms;
 [[group(2), binding(1)]]
 var texture: texture_2d<f32>;
 [[group(3), binding(0)]]
-var sampler: sampler;
+var texture_sampler: sampler;
 
 [[stage(vertex)]]
-fn main(in: VertexInput) -> VertexOutput {
+fn main_vertex(in: VertexInput) -> VertexOutput {
     let matrix = textureTransforms.matrix;
     let uv = (mat3x3<f32>(matrix[0].xyz, matrix[1].xyz, matrix[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
@@ -21,8 +21,8 @@ fn main(in: VertexInput) -> VertexOutput {
 }
 
 [[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    var color: vec4<f32> = textureSample(texture, sampler, in.uv);
+fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+    var color: vec4<f32> = textureSample(texture, texture_sampler, in.uv);
     // Texture is premultiplied by alpha.
     // Unmultiply alpha, apply color transform, remultiply alpha.
     if( color.a > 0.0 ) {

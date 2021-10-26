@@ -22,7 +22,7 @@ var<uniform> textureTransforms: TextureTransforms;
 var<storage> gradient: Gradient;
 
 [[stage(vertex)]]
-fn main(in: VertexInput) -> VertexOutput {
+fn main_vertex(in: VertexInput) -> VertexOutput {
     let matrix = textureTransforms.matrix;
     let uv = (mat3x3<f32>(matrix[0].xyz, matrix[1].xyz, matrix[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
@@ -30,7 +30,7 @@ fn main(in: VertexInput) -> VertexOutput {
 }
 
 [[stage(fragment)]]
-fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let last = gradient.num_colors - 1u;
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
@@ -90,11 +90,11 @@ fn main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     t = clamp(t, gradient.ratios[0], gradient.ratios[last]);
 
     // Find the two gradient colors bordering our position.
-    var j: u32 = 1u;
-    for( var j: u32 = 1u; t > gradient.ratios[j]; j = j + 1u) {
+    var j: u32;
+    for( j = 1u; t > gradient.ratios[j]; j = j + 1u) {
         // Noop
     }
-    var i: u32 = j - 1u;
+    let i = j - 1u;
 
     // Lerp between the two colors.
     let a = (t - gradient.ratios[i]) / (gradient.ratios[j] - gradient.ratios[i]);
