@@ -24,6 +24,8 @@ export const FLASH_ACTIVEX_CLASSID =
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
+let isAudioContextUnmuted = false;
+
 const enum PanicError {
     Unknown,
     CSPConflict,
@@ -431,6 +433,8 @@ export class RufflePlayer extends HTMLElement {
             this.container.style.visibility = "";
         }
 
+        this.unmuteAudioContext();
+
         // Treat unspecified and invalid values as `AutoPlay.Auto`.
         if (
             config.autoplay === AutoPlay.On ||
@@ -819,6 +823,61 @@ export class RufflePlayer extends HTMLElement {
                 this.unmuteOverlay.style.display = "none";
             }
         }
+    }
+
+    /**
+     * Plays a silent sound based on the AudioContext's sample rate.
+     *
+     * This is used to unmute audio on iOS and iPadOS when silent mode is enabled on the device (issue 1552).
+     */
+    private unmuteAudioContext(): void {
+        // No need to play the dummy sound again once audio is unmuted.
+        if (isAudioContextUnmuted) return;
+
+        // TODO: Use `navigator.userAgentData` to detect the platform when support improves?
+        if (navigator.maxTouchPoints < 1) {
+            isAudioContextUnmuted = true;
+            return;
+        }
+
+        this.container.addEventListener(
+            "click",
+            () => {
+                if (isAudioContextUnmuted) return;
+
+                const audioContext = this.instance?.audio_context();
+                if (!audioContext) return;
+
+                const audio = new Audio();
+                audio.src = (() => {
+                    // Returns a seven samples long 8 bit mono WAVE file.
+                    // This is required to prevent the AudioContext from desyncing and crashing.
+                    const arrayBuffer = new ArrayBuffer(10);
+                    const dataView = new DataView(arrayBuffer);
+                    const sampleRate = audioContext.sampleRate;
+                    dataView.setUint32(0, sampleRate, true);
+                    dataView.setUint32(4, sampleRate, true);
+                    dataView.setUint16(8, 1, true);
+                    const missingCharacters = window
+                        .btoa(
+                            String.fromCharCode(...new Uint8Array(arrayBuffer))
+                        )
+                        .slice(0, 13);
+                    return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missingCharacters}AgAZGF0YQcAAACAgICAgICAAAA=`;
+                })();
+
+                audio.load();
+                audio
+                    .play()
+                    .then(() => {
+                        isAudioContextUnmuted = true;
+                    })
+                    .catch((err) => {
+                        console.warn(`Failed to play dummy sound: ${err}`);
+                    });
+            },
+            { once: true }
+        );
     }
 
     /**
