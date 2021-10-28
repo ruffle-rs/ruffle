@@ -152,6 +152,7 @@ swf_tests! {
     (greaterthan_swf8, "avm1/greaterthan_swf8", 1),
     (strictly_equals, "avm1/strictly_equals", 1),
     (tell_target, "avm1/tell_target", 3),
+    (tell_target_invalid, "avm1/tell_target_invalid", 1),
     (typeofs, "avm1/typeof", 1),
     (typeof_globals, "avm1/typeof_globals", 1),
     (closure_scope, "avm1/closure_scope", 1),
