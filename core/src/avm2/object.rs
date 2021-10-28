@@ -866,16 +866,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// called once per name and/or slot ID, as reinstalling a trait may unset
     /// already set properties.
     ///
-    /// Class and function traits are *not* instantiated at installation time.
-    /// Instead, installing such traits is treated as installing a const with
-    /// `undefined` as its value.
+    /// Class, function, and method traits are *not* instantiated at
+    /// installation time. Instead, installing such traits merely installs a
+    /// placeholder (such as an `undefined` const slot) until the trait is
+    /// properly initialized.
     ///
     /// All traits that are instantiated at install time will be instantiated
     /// with this object's current scope stack and this object as a bound
     /// receiver.
     ///
     /// The value of the trait at the time of installation will be returned
-    /// here, or `undefined` for classes and functions.
+    /// here, or `undefined` for classes, functions, and methods.
+    ///
+    /// No verification happens in `install_trait`. Instead, you must make sure
+    /// to only install traits from validated classes.
     fn install_trait(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -886,35 +890,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let receiver = (*self).into();
         let trait_name = trait_entry.name().clone();
 
-        if trait_entry.is_override() && !self.has_own_property(&trait_name)? {
-            return Err(format!(
-                "Attempted to override property {:?}, which is not already defined",
-                trait_name
-            )
-            .into());
-        }
-
-        //AS3 considers the setter and getter half of a final property to be
-        //separate from one another and *not* overriding each other, which can
-        //cause false verify errors if we don't exempt this particular case.
-        //
-        //TODO: We should actually check to see *what* this trait is overriding.
-        //TODO: We should also tighten the override check above using the same
-        //rationale.
         let is_final = trait_entry.is_final();
-        let is_second_half_of_property = (self.has_own_virtual_getter(&trait_name)
-            && !self.has_own_virtual_setter(&trait_name))
-            || (!self.has_own_virtual_getter(&trait_name)
-                && self.has_own_virtual_setter(&trait_name));
-        let is_overriding_final =
-            self.has_own_property(&trait_name)? && self.is_property_final(&trait_name);
-        if is_overriding_final && !is_second_half_of_property {
-            return Err(format!(
-                "Attempted to override property {:?}, which is final",
-                trait_name
-            )
-            .into());
-        }
 
         avm_debug!(
             activation.avm2(),
