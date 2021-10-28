@@ -221,6 +221,9 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// Make sure to call them before calling this function, or it may yield an
     /// error.
+    ///
+    /// This function is also when class trait validation happens. Verify
+    /// errors will be raised at this time.
     pub fn into_finished_class(
         mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -239,6 +242,9 @@ impl<'gc> ClassObject<'gc> {
         )?;
         self.install_instance_traits(activation, class_class)?;
         self.run_class_initializer(activation)?;
+        self.inner_class_definition()
+            .read()
+            .validate_class(self.superclass_object())?;
 
         Ok(self)
     }

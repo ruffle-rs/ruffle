@@ -413,6 +413,60 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
+    /// Completely validate a class against it's resolved superclass.
+    ///
+    /// This should be called at class creation time once the superclass name
+    /// has been resolved. It will return Ok for a valid class, and a
+    /// VerifyError for any invalid class.
+    pub fn validate_class(&self, superclass: Option<ClassObject<'gc>>) -> Result<(), Error> {
+        if let Some(superclass) = superclass {
+            for instance_trait in self.instance_traits.iter() {
+                let mut current_superclass = Some(superclass);
+                let mut did_override = false;
+
+                while let Some(superclass) = current_superclass {
+                    let superclass_def = superclass.inner_class_definition();
+                    let read = superclass_def.read();
+
+                    for supertrait in read.instance_traits.iter() {
+                        if supertrait.name() == instance_trait.name() {
+                            match (supertrait.kind(), instance_trait.kind()) {
+                                //Getter/setter pairs do NOT override one another
+                                (TraitKind::Getter { .. }, TraitKind::Setter { .. }) => continue,
+                                (TraitKind::Setter { .. }, TraitKind::Getter { .. }) => continue,
+                                (_, _) => did_override = true,
+                            }
+
+                            if supertrait.is_final() {
+                                return Err(format!("VerifyError: Trait {} in class {} overrides final trait {} in class {}", instance_trait.name().local_name(), self.name().local_name(), supertrait.name().local_name(), read.name().local_name()).into());
+                            }
+
+                            if !instance_trait.is_override() {
+                                return Err(format!("VerifyError: Trait {} in class {} has same name as trait {} in class {}, but does not override it", instance_trait.name().local_name(), self.name().local_name(), supertrait.name().local_name(), read.name().local_name()).into());
+                            }
+
+                            break;
+                        }
+                    }
+
+                    // The superclass is already validated so we don't need to
+                    // check further.
+                    if did_override {
+                        break;
+                    }
+
+                    current_superclass = superclass.superclass_object();
+                }
+
+                if instance_trait.is_override() && !did_override {
+                    return Err(format!("VerifyError: Trait {} in class {} marked as override, does not override any other trait", instance_trait.name().local_name(), self.name().local_name()).into());
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn for_activation(
         activation: &mut Activation<'_, 'gc, '_>,
         translation_unit: TranslationUnit<'gc>,
