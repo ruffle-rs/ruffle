@@ -1,0 +1,3 @@
+Target not found: Target="dummy" Base="_level0.mc"
+/tellTarget('dummy') { gotoAndStop(n); }
+pass
