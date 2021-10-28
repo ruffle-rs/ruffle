@@ -1395,21 +1395,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Version 4+ gotoAndPlay/gotoAndStop
         // Param can either be a frame number or a frame label.
-        if let Some(clip) = self.target_clip() {
-            if let Some(clip) = clip.as_movie_clip() {
-                let frame = self.context.avm1.pop();
-                let _ = globals::movie_clip::goto_frame(
-                    clip,
-                    self,
-                    &[frame],
-                    !set_playing,
-                    scene_offset,
-                );
-            } else {
-                avm_warn!(self, "GotoFrame2: Target is not a MovieClip");
-            }
+        if let Some(clip) = self.target_clip_or_root()?.as_movie_clip() {
+            let frame = self.context.avm1.pop();
+            let _ =
+                globals::movie_clip::goto_frame(clip, self, &[frame], !set_playing, scene_offset);
         } else {
-            avm_warn!(self, "GotoFrame2: Invalid target");
+            avm_warn!(self, "GotoFrame2: Target is not a MovieClip");
         }
         Ok(FrameControl::Continue)
     }
