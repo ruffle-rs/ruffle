@@ -144,6 +144,12 @@ pub struct Class<'gc> {
 
     /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
+
+    /// Whether or not this is a system-defined class.
+    ///
+    /// System defined classes are allowed to have illegal trait configurations
+    /// without throwing a VerifyError.
+    is_system: bool,
 }
 
 /// Find traits in a list of traits matching a name.
@@ -244,6 +250,7 @@ impl<'gc> Class<'gc> {
                     mc,
                 ),
                 traits_loaded: true,
+                is_system: true,
             },
         )
     }
@@ -365,6 +372,7 @@ impl<'gc> Class<'gc> {
                     activation.context.gc_context,
                 ),
                 traits_loaded: false,
+                is_system: false,
             },
         ))
     }
@@ -419,6 +427,11 @@ impl<'gc> Class<'gc> {
     /// has been resolved. It will return Ok for a valid class, and a
     /// VerifyError for any invalid class.
     pub fn validate_class(&self, superclass: Option<ClassObject<'gc>>) -> Result<(), Error> {
+        // System classes do not throw verify errors.
+        if self.is_system {
+            return Ok(());
+        }
+
         if let Some(superclass) = superclass {
             for instance_trait in self.instance_traits.iter() {
                 let mut current_superclass = Some(superclass);
@@ -519,6 +532,7 @@ impl<'gc> Class<'gc> {
                 class_initializer_called: false,
                 class_traits: Vec::new(),
                 traits_loaded: true,
+                is_system: false,
             },
         ))
     }
