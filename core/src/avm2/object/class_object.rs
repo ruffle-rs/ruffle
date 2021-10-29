@@ -260,14 +260,12 @@ impl<'gc> ClassObject<'gc> {
             QName::new(Namespace::public(), "prototype"),
             0,
             class_proto.into(),
-            false,
         );
         class_proto.install_slot(
             activation.context.gc_context,
             QName::new(Namespace::public(), "constructor"),
             0,
             self.into(),
-            false,
         );
 
         Ok(())
@@ -736,8 +734,8 @@ impl<'gc> ClassObject<'gc> {
     /// Retrieve a bound instance method suitable for use as a value.
     ///
     /// This returns the bound method object itself, as well as it's dispatch
-    /// ID and if it's a final method. You will need the additional properties
-    /// in order to install the method into your object.
+    /// ID. You will need the additional properties in order to install the
+    /// method into your object.
     ///
     /// You should only call this method once per reciever/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
@@ -748,11 +746,10 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         receiver: Object<'gc>,
         name: &QName<'gc>,
-    ) -> Result<Option<(Object<'gc>, u32, bool)>, Error> {
+    ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some((superclass, method_trait)) = self.instance_method(name)? {
             let method = method_trait.as_method().unwrap();
             let disp_id = method_trait.slot_id();
-            let is_final = method_trait.is_final();
             let scope = self.instance_scope();
 
             Ok(Some((
@@ -764,7 +761,6 @@ impl<'gc> ClassObject<'gc> {
                     Some(superclass),
                 ),
                 disp_id,
-                is_final,
             )))
         } else {
             Ok(None)
@@ -773,9 +769,9 @@ impl<'gc> ClassObject<'gc> {
 
     /// Retrieve a bound instance method by slot ID.
     ///
-    /// This returns the bound method object itself, as well as it's name,
-    /// and if it's a final method. You will need the additional properties in
-    /// order to install the method into your object.
+    /// This returns the bound method object itself, as well as it's name. You
+    /// will need the additional properties in order to install the method into
+    /// your object.
     ///
     /// You should only call this method once per reciever/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
@@ -786,7 +782,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         receiver: Object<'gc>,
         id: u32,
-    ) -> Result<Option<(Object<'gc>, QName<'gc>, bool)>, Error> {
+    ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
         if let Some(superclass) = self.find_class_for_trait_by_id(id)? {
             let superclassdef = superclass.inner_class_definition();
             let traits = superclassdef.read().lookup_instance_traits_by_slot(id)?;
@@ -797,7 +793,6 @@ impl<'gc> ClassObject<'gc> {
             }) {
                 let name = method_trait.name().clone();
                 let method = method_trait.as_method().unwrap();
-                let is_final = method_trait.is_final();
                 let scope = self.instance_scope();
 
                 Ok(Some((
@@ -809,7 +804,6 @@ impl<'gc> ClassObject<'gc> {
                         Some(superclass),
                     ),
                     name,
-                    is_final,
                 )))
             } else {
                 Ok(None)
@@ -839,8 +833,8 @@ impl<'gc> ClassObject<'gc> {
     /// Retrieve a bound class method suitable for use as a value.
     ///
     /// This returns the bound method object itself, as well as it's dispatch
-    /// ID and if it's a final method. You will need the additional properties
-    /// in order to install the method into your object.
+    /// ID. You will need the additional properties in order to install the
+    /// method into your object.
     ///
     /// You should only call this method once per reciever/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
@@ -850,11 +844,10 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         name: &QName<'gc>,
-    ) -> Result<Option<(Object<'gc>, u32, bool)>, Error> {
+    ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some(method_trait) = self.class_method(name)? {
             let method = method_trait.as_method().unwrap();
             let disp_id = method_trait.slot_id();
-            let is_final = method_trait.is_final();
             let scope = self.class_scope();
 
             Ok(Some((
@@ -866,7 +859,6 @@ impl<'gc> ClassObject<'gc> {
                     Some(self),
                 ),
                 disp_id,
-                is_final,
             )))
         } else {
             Ok(None)
@@ -875,9 +867,9 @@ impl<'gc> ClassObject<'gc> {
 
     /// Retrieve a bound class method by id.
     ///
-    /// This returns the bound method object itself, as well as it's name,
-    /// and if it's a final method. You will need the additional properties in
-    /// order to install the method into your object.
+    /// This returns the bound method object itself, as well as it's name. You
+    /// will need the additional properties in order to install the method into
+    /// your object.
     ///
     /// You should only call this method once per reciever/name pair, and cache
     /// the result. Otherwise, code that relies on bound methods having stable
@@ -887,7 +879,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         id: u32,
-    ) -> Result<Option<(Object<'gc>, QName<'gc>, bool)>, Error> {
+    ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
         let classdef = self.inner_class_definition();
         let traits = classdef.read().lookup_class_traits_by_slot(id)?;
 
@@ -897,7 +889,6 @@ impl<'gc> ClassObject<'gc> {
         }) {
             let method = method_trait.as_method().unwrap();
             let name = method_trait.name().clone();
-            let is_final = method_trait.is_final();
             let scope = self.class_scope();
 
             Ok(Some((
@@ -909,7 +900,6 @@ impl<'gc> ClassObject<'gc> {
                     Some(self),
                 ),
                 name,
-                is_final,
             )))
         } else {
             Ok(None)

@@ -161,7 +161,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if !self.base().has_own_instantiated_property(&name) {
             // Initialize lazy-bound methods at this point in time.
             if let Some(class) = self.instance_of() {
-                if let Some((bound_method, disp_id, is_final)) =
+                if let Some((bound_method, disp_id)) =
                     class.bound_instance_method(activation, receiver, &name)?
                 {
                     self.install_method(
@@ -169,7 +169,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         name.clone(),
                         disp_id,
                         bound_method,
-                        is_final,
                     );
 
                     return Ok(bound_method.into());
@@ -178,7 +177,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             // Class methods are also lazy-bound.
             if let Some(class) = self.as_class_object() {
-                if let Some((bound_method, disp_id, is_final)) =
+                if let Some((bound_method, disp_id)) =
                     class.bound_class_method(activation, &name)?
                 {
                     self.install_method(
@@ -186,7 +185,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         name.clone(),
                         disp_id,
                         bound_method,
-                        is_final,
                     );
 
                     return Ok(bound_method.into());
@@ -486,7 +484,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         if self.base().get_method(id).is_none() {
             if let Some(class) = self.instance_of() {
-                if let Some((bound_method, name, is_final)) =
+                if let Some((bound_method, name)) =
                     class.bound_instance_method_by_id(activation, self.into(), id)?
                 {
                     self.install_method(
@@ -494,13 +492,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         name.clone(),
                         id,
                         bound_method,
-                        is_final,
                     );
                 }
             }
 
             if let Some(class) = self.as_class_object() {
-                if let Some((bound_method, name, is_final)) =
+                if let Some((bound_method, name)) =
                     class.bound_class_method_by_id(activation, id)?
                 {
                     self.install_method(
@@ -508,7 +505,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         name.clone(),
                         id,
                         bound_method,
-                        is_final,
                     );
                 }
             }
@@ -630,13 +626,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.is_property_overwritable(name)
     }
 
-    /// Indicates whether or not a property is final.
-    fn is_property_final(self, name: &QName<'gc>) -> bool {
-        let base = self.base();
-
-        base.is_property_final(name)
-    }
-
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
@@ -735,11 +724,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
-        is_final: bool,
     ) {
         let mut base = self.base_mut(mc);
 
-        base.install_method(name, disp_id, function, is_final)
+        base.install_method(name, disp_id, function)
     }
 
     /// Install a getter method on an object property.
@@ -749,11 +737,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
-        is_final: bool,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(mc);
 
-        base.install_getter(name, disp_id, function, is_final)
+        base.install_getter(name, disp_id, function)
     }
 
     /// Install a setter method on an object property.
@@ -763,11 +750,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
-        is_final: bool,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(mc);
 
-        base.install_setter(name, disp_id, function, is_final)
+        base.install_setter(name, disp_id, function)
     }
 
     /// Install a dynamic or built-in value property on an object.
@@ -789,11 +775,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
-        is_final: bool,
     ) {
         let mut base = self.base_mut(mc);
 
-        base.install_slot(name, id, value, is_final)
+        base.install_slot(name, id, value)
     }
 
     /// Install a const on an object property.
@@ -803,11 +788,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         id: u32,
         value: Value<'gc>,
-        is_final: bool,
     ) {
         let mut base = self.base_mut(mc);
 
-        base.install_const(name, id, value, is_final)
+        base.install_const(name, id, value)
     }
 
     /// Install all instance traits provided by a class.
@@ -890,8 +874,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let receiver = (*self).into();
         let trait_name = trait_entry.name().clone();
 
-        let is_final = trait_entry.is_final();
-
         avm_debug!(
             activation.avm2(),
             "Installing trait {:?} of kind {:?}",
@@ -910,7 +892,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     default_value.clone(),
-                    is_final,
                 );
 
                 Ok(default_value.clone())
@@ -931,7 +912,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *disp_id,
                     function,
-                    is_final,
                 )?;
 
                 Ok(function.into())
@@ -951,7 +931,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *disp_id,
                     function,
-                    is_final,
                 )?;
 
                 Ok(function.into())
@@ -962,7 +941,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     Value::Undefined,
-                    is_final,
                 );
 
                 Ok(Value::Undefined)
@@ -973,7 +951,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     Value::Undefined,
-                    is_final,
                 );
 
                 Ok(Value::Undefined)
@@ -988,7 +965,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     trait_name,
                     *slot_id,
                     default_value.clone(),
-                    is_final,
                 );
 
                 Ok(default_value.clone())
