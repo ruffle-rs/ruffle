@@ -322,7 +322,7 @@ fn dynamic_class<'gc>(
     let class = class_object.inner_class_definition();
     let name = class.read().name().clone();
 
-    global.install_const(mc, name.clone(), 0, class_object.into(), false);
+    global.install_const(mc, name.clone(), 0, class_object.into());
     domain.export_definition(name, script, mc)
 }
 
@@ -368,7 +368,6 @@ fn class<'gc>(
         class_name.clone(),
         0,
         class_object.into(),
-        false,
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
@@ -394,7 +393,7 @@ fn constant<'gc>(
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name.clone(), script, mc)?;
-    global.install_const(mc, name, 0, value, false);
+    global.install_const(mc, name, 0, value);
 
     Ok(())
 }

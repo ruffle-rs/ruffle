@@ -76,7 +76,6 @@ pub fn class_init<'gc>(
             int_vector_name.clone(),
             0,
             int_vector_class.into(),
-            false,
         );
         domain.export_definition(int_vector_name, script, activation.context.gc_context)?;
 
@@ -93,7 +92,6 @@ pub fn class_init<'gc>(
             uint_vector_name.clone(),
             0,
             uint_vector_class.into(),
-            false,
         );
         domain.export_definition(uint_vector_name, script, activation.context.gc_context)?;
 
@@ -110,7 +108,6 @@ pub fn class_init<'gc>(
             number_vector_name.clone(),
             0,
             number_vector_class.into(),
-            false,
         );
         domain.export_definition(number_vector_name, script, activation.context.gc_context)?;
 
@@ -126,7 +123,6 @@ pub fn class_init<'gc>(
             object_vector_name.clone(),
             0,
             object_vector_class.into(),
-            false,
         );
         domain.export_definition(object_vector_name, script, activation.context.gc_context)?;
     }

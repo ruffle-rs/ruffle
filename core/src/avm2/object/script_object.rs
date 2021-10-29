@@ -213,10 +213,6 @@ impl<'gc> ScriptObjectData<'gc> {
             .unwrap_or(true)
     }
 
-    pub fn is_property_final(&self, name: &QName<'gc>) -> bool {
-        self.values.get(name).map(|p| p.is_final()).unwrap_or(false)
-    }
-
     pub fn delete_property(&mut self, name: &QName<'gc>) -> bool {
         let can_delete = if let Some(prop) = self.values.get(name) {
             prop.can_delete()
@@ -435,13 +431,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Install a method into the object.
-    pub fn install_method(
-        &mut self,
-        name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-        is_final: bool,
-    ) {
+    pub fn install_method(&mut self, name: QName<'gc>, disp_id: u32, function: Object<'gc>) {
         if disp_id > 0 {
             if self.methods.len() <= disp_id as usize {
                 self.methods
@@ -451,8 +441,7 @@ impl<'gc> ScriptObjectData<'gc> {
             *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
         }
 
-        self.values
-            .insert(name, Property::new_method(function, is_final));
+        self.values.insert(name, Property::new_method(function));
     }
 
     /// Install a getter into the object.
@@ -465,7 +454,6 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
-        is_final: bool,
     ) -> Result<(), Error> {
         function
             .as_executable()
@@ -481,8 +469,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !self.values.contains_key(&name) {
-            self.values
-                .insert(name.clone(), Property::new_virtual(is_final));
+            self.values.insert(name.clone(), Property::new_virtual());
         }
 
         self.values
@@ -501,7 +488,6 @@ impl<'gc> ScriptObjectData<'gc> {
         name: QName<'gc>,
         disp_id: u32,
         function: Object<'gc>,
-        is_final: bool,
     ) -> Result<(), Error> {
         function
             .as_executable()
@@ -517,8 +503,7 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !self.values.contains_key(&name) {
-            self.values
-                .insert(name.clone(), Property::new_virtual(is_final));
+            self.values.insert(name.clone(), Property::new_virtual());
         }
 
         self.values
@@ -554,12 +539,11 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_slot(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>, is_final: bool) {
+    pub fn install_slot(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
         if id == 0 {
-            self.values
-                .insert(name, Property::new_stored(value, is_final));
+            self.values.insert(name, Property::new_stored(value));
         } else {
-            self.values.insert(name, Property::new_slot(id, is_final));
+            self.values.insert(name, Property::new_slot(id));
             if self.slots.len() < id as usize + 1 {
                 self.slots.resize_with(id as usize + 1, Default::default);
             }
@@ -575,12 +559,11 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Slot number zero indicates a slot ID that is unknown and should be
     /// allocated by the VM - as far as I know, there is no way to discover
     /// slot IDs, so we don't allocate a slot for them at all.
-    pub fn install_const(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>, is_final: bool) {
+    pub fn install_const(&mut self, name: QName<'gc>, id: u32, value: Value<'gc>) {
         if id == 0 {
-            self.values
-                .insert(name, Property::new_const(value, is_final));
+            self.values.insert(name, Property::new_const(value));
         } else {
-            self.values.insert(name, Property::new_slot(id, is_final));
+            self.values.insert(name, Property::new_slot(id));
             if self.slots.len() < id as usize + 1 {
                 self.slots.resize_with(id as usize + 1, Default::default);
             }
