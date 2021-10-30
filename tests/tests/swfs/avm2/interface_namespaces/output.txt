@@ -1,0 +1,78 @@
+///var x = new Test3();
+///var x_as_iface2: ITest2 = x;
+///var x_as_iface3: ITest3 = x;
+///x_as_iface2.method();
+Child instance method pre-super
+Instance method
+Child instance method post-super
+undefined
+///x_as_iface2.method2();
+Instance method 2
+undefined
+///x_as_iface2.ruffle::method();
+Ruffle-NS instance method
+undefined
+///x_as_iface3.method();
+Child instance method pre-super
+Instance method
+Child instance method post-super
+undefined
+///x_as_iface3.method2();
+Instance method 2
+undefined
+///x_as_iface3.ruffle::method();
+Ruffle-NS instance method
+undefined
+///x_as_iface3.method3();
+Child instance method3 pre-super
+Instance method
+Child instance method3 post-super
+undefined
+///var y = new Test4();
+///var y_as_iface2: ITest2 = y;
+///var y_as_iface3: ITest3 = y;
+///y_as_iface2.method();
+Child instance method pre-super
+Instance method
+Child instance method post-super
+undefined
+///y_as_iface2.method2();
+Grandchild instance method2 pre-super
+Instance method 2
+Grandchild instance method2 post-super
+undefined
+///y_as_iface2.ruffle::method();
+Ruffle-NS instance method
+undefined
+///y_as_iface3.method();
+Child instance method pre-super
+Instance method
+Child instance method post-super
+undefined
+///y_as_iface3.method2();
+Grandchild instance method2 pre-super
+Instance method 2
+Grandchild instance method2 post-super
+undefined
+///y_as_iface3.method3();
+Grandchild instance method3 pre-super
+Child instance method3 pre-super
+Instance method
+Child instance method3 post-super
+Grandchild instance method3 post-super
+undefined
+///y_as_iface3.ruffle::method();
+Ruffle-NS instance method
+undefined
+///var z = new ConflictTest();
+///var z_as_iface2: ITest2 = z;
+///var z_as_conflict: IConflictTest2 = z;
+///z_as_iface2.method();
+Conflicting instance method
+undefined
+///z_as_iface2.method2();
+Nonconflicting instance method 2
+undefined
+///z_as_conflict.method();
+Conflicting instance method
+undefined
