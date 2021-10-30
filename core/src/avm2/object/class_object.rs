@@ -386,15 +386,18 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This function returns `None` for non-trait properties, such as actually
     /// defined prototype methods for ES3-style classes.
-    pub fn find_class_for_trait_by_id(self, id: u32) -> Result<Option<ClassObject<'gc>>, Error> {
+    pub fn find_class_for_trait_by_disp_id(
+        self,
+        id: u32,
+    ) -> Result<Option<ClassObject<'gc>>, Error> {
         let class_definition = self.inner_class_definition();
 
-        if class_definition.read().has_instance_trait_by_id(id) {
+        if class_definition.read().has_instance_trait_by_disp_id(id) {
             return Ok(Some(self));
         }
 
         if let Some(base) = self.superclass_object() {
-            return base.find_class_for_trait_by_id(id);
+            return base.find_class_for_trait_by_disp_id(id);
         }
 
         Ok(None)
@@ -749,7 +752,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some((superclass, method_trait)) = self.instance_method(name)? {
             let method = method_trait.as_method().unwrap();
-            let disp_id = method_trait.slot_id();
+            let disp_id = method_trait.disp_id().unwrap();
             let scope = self.instance_scope();
 
             Ok(Some((
@@ -783,7 +786,7 @@ impl<'gc> ClassObject<'gc> {
         receiver: Object<'gc>,
         id: u32,
     ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
-        if let Some(superclass) = self.find_class_for_trait_by_id(id)? {
+        if let Some(superclass) = self.find_class_for_trait_by_disp_id(id)? {
             let superclassdef = superclass.inner_class_definition();
             let traits = superclassdef.read().lookup_instance_traits_by_slot(id)?;
 
@@ -847,7 +850,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some(method_trait) = self.class_method(name)? {
             let method = method_trait.as_method().unwrap();
-            let disp_id = method_trait.slot_id();
+            let disp_id = method_trait.disp_id().unwrap();
             let scope = self.class_scope();
 
             Ok(Some((
