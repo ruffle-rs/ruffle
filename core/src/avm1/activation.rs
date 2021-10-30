@@ -1451,8 +1451,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Value::Undefined
         } else {
             ArrayObject::new(
-                self.context.gc_context,
-                self.context.avm1.prototypes().array,
+                self,
                 (0..num_elements as i32).map(|_| self.context.avm1.pop()),
             )
             .into()

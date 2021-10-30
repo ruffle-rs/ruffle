@@ -684,12 +684,7 @@ impl TextFormat {
             .tab_stops
             .as_ref()
             .map_or(Avm1Value::Null, |tab_stops| {
-                Avm1ArrayObject::new(
-                    activation.context.gc_context,
-                    activation.context.avm1.prototypes().array,
-                    tab_stops.iter().map(|&x| x.into()),
-                )
-                .into()
+                Avm1ArrayObject::new(activation, tab_stops.iter().map(|&x| x.into())).into()
             });
         object.set("tabStops", tab_stops, activation)?;
         Ok(object.into())

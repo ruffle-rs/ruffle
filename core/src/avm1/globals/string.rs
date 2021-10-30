@@ -318,8 +318,7 @@ fn split<'gc>(
         // e.g., split("foo", "") returns ["", "f", "o", "o", ""] in Rust but ["f, "o", "o"] in Flash.
         // Special case this to match Flash's behavior.
         Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
+            activation,
             this.chars()
                 .take(limit)
                 .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),
@@ -327,8 +326,7 @@ fn split<'gc>(
         .into())
     } else {
         Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
+            activation,
             this.split(delimiter.as_ref())
                 .take(limit)
                 .map(|c| AvmString::new(activation.context.gc_context, c.to_string()).into()),

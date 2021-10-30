@@ -249,11 +249,7 @@ impl<'gc> Executable<'gc> {
                 let arguments = if af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
                     ArrayObject::empty(activation)
                 } else {
-                    ArrayObject::new(
-                        activation.context.gc_context,
-                        activation.context.avm1.prototypes().array,
-                        args.iter().cloned(),
-                    )
+                    ArrayObject::new(activation, args.iter().cloned())
                 };
                 arguments.define_value(
                     activation.context.gc_context,

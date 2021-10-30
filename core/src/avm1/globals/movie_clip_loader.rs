@@ -23,11 +23,7 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        [this.into()],
-    );
+    let listeners = ArrayObject::new(activation, [this.into()]);
     this.define_value(
         activation.context.gc_context,
         "_listeners",

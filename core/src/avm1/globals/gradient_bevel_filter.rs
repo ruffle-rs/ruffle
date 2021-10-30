@@ -110,12 +110,7 @@ pub fn colors<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_bevel_filter_object() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            filter.colors().iter().map(|&x| x.into()),
-        )
-        .into());
+        return Ok(ArrayObject::new(activation, filter.colors().iter().map(|&x| x.into())).into());
     }
 
     Ok(Value::Undefined)
@@ -170,12 +165,7 @@ pub fn alphas<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_bevel_filter_object() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            filter.alphas().iter().map(|&x| x.into()),
-        )
-        .into());
+        return Ok(ArrayObject::new(activation, filter.alphas().iter().map(|&x| x.into())).into());
     }
 
     Ok(Value::Undefined)
@@ -221,12 +211,7 @@ pub fn ratios<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_bevel_filter_object() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            filter.ratios().iter().map(|&x| x.into()),
-        )
-        .into());
+        return Ok(ArrayObject::new(activation, filter.ratios().iter().map(|&x| x.into())).into());
     }
 
     Ok(Value::Undefined)

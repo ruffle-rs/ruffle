@@ -91,12 +91,7 @@ pub fn constructor<'gc>(
         array.set_length(activation, length)?;
         Ok(array.into())
     } else {
-        Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            args.iter().cloned(),
-        )
-        .into())
+        Ok(ArrayObject::new(activation, args.iter().cloned()).into())
     }
 }
 
@@ -300,8 +295,7 @@ pub fn slice<'gc>(
     };
 
     Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
+        activation,
         (start..end).map(|i| this.get_element(activation, i)),
     )
     .into())
@@ -359,12 +353,7 @@ pub fn splice<'gc>(
     }
     this.set_length(activation, length - delete_count + items.len() as i32)?;
 
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        result_elements,
-    )
-    .into())
+    Ok(ArrayObject::new(activation, result_elements).into())
 }
 
 pub fn concat<'gc>(
@@ -394,12 +383,7 @@ pub fn concat<'gc>(
             elements.push(value);
         }
     }
-    Ok(ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        elements,
-    )
-    .into())
+    Ok(ArrayObject::new(activation, elements).into())
 }
 
 pub fn to_string<'gc>(
@@ -577,8 +561,7 @@ fn sort_with_function<'gc>(
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
         Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
+            activation,
             values.into_iter().map(|(index, _)| index.into()),
         )
         .into())

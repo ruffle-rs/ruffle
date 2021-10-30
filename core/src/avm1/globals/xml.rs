@@ -360,8 +360,7 @@ pub fn xmlnode_child_nodes<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
+            activation,
             node.children().filter(is_as2_compatible).map(|mut child| {
                 child
                     .script_object(

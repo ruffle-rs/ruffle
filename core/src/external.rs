@@ -168,8 +168,7 @@ impl Value {
                 object.into()
             }
             Value::List(values) => Avm1ArrayObject::new(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().array,
+                activation,
                 values
                     .iter()
                     .map(|value| value.to_owned().into_avm1(activation)),

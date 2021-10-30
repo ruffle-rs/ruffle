@@ -183,12 +183,7 @@ pub fn matrix<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_convolution_filter_object() {
-        return Ok(ArrayObject::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            filter.matrix().iter().map(|&x| x.into()),
-        )
-        .into());
+        return Ok(ArrayObject::new(activation, filter.matrix().iter().map(|&x| x.into())).into());
     }
 
     Ok(Value::Undefined)

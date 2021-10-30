@@ -16,11 +16,7 @@ impl fmt::Debug for ArrayObject<'_> {
 
 impl<'gc> ArrayObject<'gc> {
     pub fn empty(activation: &Activation<'_, 'gc, '_>) -> Self {
-        Self::new(
-            activation.context.gc_context,
-            activation.context.avm1.prototypes().array,
-            [],
-        )
+        Self::new(activation, [])
     }
 
     pub fn empty_with_proto(
@@ -31,11 +27,14 @@ impl<'gc> ArrayObject<'gc> {
     }
 
     pub fn new(
-        gc_context: MutationContext<'gc, '_>,
-        array_proto: Object<'gc>,
+        activation: &Activation<'_, 'gc, '_>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
-        Self::new_internal(gc_context, Some(array_proto), elements)
+        Self::new_internal(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes().array),
+            elements,
+        )
     }
 
     fn new_internal(
