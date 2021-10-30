@@ -300,29 +300,55 @@ impl<'gc> Trait<'gc> {
         self
     }
 
-    /// Get the slot or dispatch ID of this trait.
-    pub fn slot_id(&self) -> u32 {
+    /// Get the slot ID of this trait.
+    pub fn slot_id(&self) -> Option<u32> {
         match self.kind {
-            TraitKind::Slot { slot_id, .. } => slot_id,
-            TraitKind::Method { disp_id, .. } => disp_id,
-            TraitKind::Getter { disp_id, .. } => disp_id,
-            TraitKind::Setter { disp_id, .. } => disp_id,
-            TraitKind::Class { slot_id, .. } => slot_id,
-            TraitKind::Function { slot_id, .. } => slot_id,
-            TraitKind::Const { slot_id, .. } => slot_id,
+            TraitKind::Slot { slot_id, .. } => Some(slot_id),
+            TraitKind::Method { .. } => None,
+            TraitKind::Getter { .. } => None,
+            TraitKind::Setter { .. } => None,
+            TraitKind::Class { slot_id, .. } => Some(slot_id),
+            TraitKind::Function { slot_id, .. } => Some(slot_id),
+            TraitKind::Const { slot_id, .. } => Some(slot_id),
         }
     }
 
-    /// Set the slot or dispatch ID of this trait.
+    /// Set the slot ID of this trait.
     pub fn set_slot_id(&mut self, id: u32) {
         match &mut self.kind {
             TraitKind::Slot { slot_id, .. } => *slot_id = id,
-            TraitKind::Method { disp_id, .. } => *disp_id = id,
-            TraitKind::Getter { disp_id, .. } => *disp_id = id,
-            TraitKind::Setter { disp_id, .. } => *disp_id = id,
+            TraitKind::Method { .. } => {}
+            TraitKind::Getter { .. } => {}
+            TraitKind::Setter { .. } => {}
             TraitKind::Class { slot_id, .. } => *slot_id = id,
             TraitKind::Function { slot_id, .. } => *slot_id = id,
             TraitKind::Const { slot_id, .. } => *slot_id = id,
+        }
+    }
+
+    /// Get the dispatch ID of this trait.
+    pub fn disp_id(&self) -> Option<u32> {
+        match self.kind {
+            TraitKind::Slot { .. } => None,
+            TraitKind::Method { disp_id, .. } => Some(disp_id),
+            TraitKind::Getter { disp_id, .. } => Some(disp_id),
+            TraitKind::Setter { disp_id, .. } => Some(disp_id),
+            TraitKind::Class { .. } => None,
+            TraitKind::Function { .. } => None,
+            TraitKind::Const { .. } => None,
+        }
+    }
+
+    /// Set the dispatch ID of this trait.
+    pub fn set_disp_id(&mut self, id: u32) {
+        match &mut self.kind {
+            TraitKind::Slot { .. } => {}
+            TraitKind::Method { disp_id, .. } => *disp_id = id,
+            TraitKind::Getter { disp_id, .. } => *disp_id = id,
+            TraitKind::Setter { disp_id, .. } => *disp_id = id,
+            TraitKind::Class { .. } => {}
+            TraitKind::Function { .. } => {}
+            TraitKind::Const { .. } => {}
         }
     }
 

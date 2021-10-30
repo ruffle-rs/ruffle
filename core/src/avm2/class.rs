@@ -833,10 +833,11 @@ impl<'gc> Class<'gc> {
         false
     }
 
-    /// Determines if this class provides a given trait on its instances.
-    pub fn has_instance_trait_by_id(&self, id: u32) -> bool {
+    /// Determines if this class provides a given trait with a particular
+    /// dispatch ID on its instances.
+    pub fn has_instance_trait_by_disp_id(&self, id: u32) -> bool {
         for trait_entry in self.instance_traits.iter() {
-            if id == trait_entry.slot_id() {
+            if Some(id) == trait_entry.disp_id() {
                 return true;
             }
         }
