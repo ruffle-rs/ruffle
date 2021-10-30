@@ -21,6 +21,7 @@ use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
+use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
@@ -51,6 +52,7 @@ pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
+pub mod text_format_object;
 pub mod transform_object;
 pub mod value_object;
 pub mod xml_attributes_object;
@@ -88,6 +90,7 @@ pub mod xml_object;
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
+        TextFormatObject(TextFormatObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -605,6 +608,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BitmapDataObject`, if it exists
     fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
+        None
+    }
+
+    /// Get the underlying `TextFormatObject`, if it exists
+    fn as_text_format_object(&self) -> Option<TextFormatObject<'gc>> {
         None
     }
 

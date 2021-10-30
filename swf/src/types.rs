@@ -424,6 +424,24 @@ impl Color {
         Self { r, g, b, a: alpha }
     }
 
+    /// Creates a `Color` from a 32-bit `rgba` value.
+    ///
+    /// The byte-ordering of the 32-bit `rgba` value is AARRGGBB.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use swf::Color;
+    ///
+    /// let red = Color::from_rgba(0xFFFF0000);
+    /// let green = Color::from_rgba(0xFF00FF00);
+    /// let blue = Color::from_rgba(0xFF0000FF);
+    /// ```
+    pub const fn from_rgba(rgba: u32) -> Self {
+        let [b, g, r, a] = rgba.to_le_bytes();
+        Self { r, g, b, a }
+    }
+
     /// Converts the color to a 32-bit RGB value.
     ///
     /// The alpha value does not get stored.
