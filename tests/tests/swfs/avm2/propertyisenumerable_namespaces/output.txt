@@ -1,0 +1,6 @@
+///new ES4Class.propertyIsEnumerable("as3_prop");
+false
+///new ES4Class.setPropertyIsEnumerable("as3_prop", true);
+undefined
+///new ES4Class.propertyIsEnumerable("as3_prop");
+false
