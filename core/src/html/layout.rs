@@ -806,14 +806,20 @@ impl<'gc> LayoutBox<'gc> {
                 text_format,
                 *font,
                 *params,
-                color.clone(),
+                swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
             LayoutContent::Bullet {
                 text_format,
                 font,
                 params,
                 color,
-            } => Some(("\u{2022}", text_format, *font, *params, color.clone())),
+            } => Some((
+                "\u{2022}",
+                text_format,
+                *font,
+                *params,
+                swf::Color::from_rgb(color.to_rgb(), 0xFF),
+            )),
             LayoutContent::Drawing(..) => None,
         }
     }

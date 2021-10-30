@@ -256,7 +256,9 @@ impl TextFormat {
         Self {
             font: Some(font_class),
             size: et.height.map(|h| h.to_pixels()),
-            color: et.color,
+            color: et
+                .color
+                .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
             align,
             bold: Some(font.map(|font| font.descriptor().bold()).unwrap_or(false)),
             italic: Some(font.map(|font| font.descriptor().italic()).unwrap_or(false)),
@@ -372,7 +374,7 @@ impl TextFormat {
                         let bval = color.get(5..7).and_then(|v| u8::from_str_radix(v, 16).ok());
 
                         if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
-                            tf.color = Some(swf::Color { r, g, b, a: 255 });
+                            tf.color = Some(swf::Color { r, g, b, a: 0 });
                         }
                     }
                 }
