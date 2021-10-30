@@ -159,14 +159,8 @@ pub fn has_own_property<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    if let Some(ns) = this.resolve_any(name)? {
-        if !ns.is_private() {
-            let qname = QName::new(ns, name);
-            return Ok(this.has_own_property(&qname)?.into());
-        }
-    }
-
-    Ok(false.into())
+    let qname = QName::dynamic_name(name);
+    Ok(this.has_own_property(&qname)?.into())
 }
 
 /// `Object.prototype.isPrototypeOf`
@@ -202,14 +196,8 @@ pub fn property_is_enumerable<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    if let Some(ns) = this.resolve_any(name)? {
-        if !ns.is_private() {
-            let qname = QName::new(ns, name);
-            return Ok(this.property_is_enumerable(&qname).into());
-        }
-    }
-
-    Ok(false.into())
+    let qname = QName::dynamic_name(name);
+    Ok(this.property_is_enumerable(&qname).into())
 }
 
 /// `Object.prototype.setPropertyIsEnumerable`
@@ -224,16 +212,8 @@ pub fn set_property_is_enumerable<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
-        if let Some(ns) = this.resolve_any(name)? {
-            if !ns.is_private() {
-                let qname = QName::new(ns, name);
-                this.set_local_property_is_enumerable(
-                    activation.context.gc_context,
-                    &qname,
-                    *is_enum,
-                )?;
-            }
-        }
+        let qname = QName::dynamic_name(name);
+        this.set_local_property_is_enumerable(activation.context.gc_context, &qname, *is_enum)?;
     }
 
     Ok(Value::Undefined)
