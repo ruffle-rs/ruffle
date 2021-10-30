@@ -322,7 +322,7 @@ pub fn set_text_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let tf = TextFormat {
-        color: Some(swf::Color::from_rgb(rgb, 0xFF)),
+        color: Some(swf::Color::from_rgb(rgb, 0)),
         ..TextFormat::default()
     };
     this.set_text_format(0, this.text_length(), tf.clone(), &mut activation.context);
