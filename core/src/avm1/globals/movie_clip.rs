@@ -844,6 +844,10 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
             activation.context.gc_context,
             movie_clip.clip_actions().to_vec(),
         );
+        *new_clip.as_drawing(activation.context.gc_context).unwrap() = movie_clip
+            .as_drawing(activation.context.gc_context)
+            .unwrap()
+            .clone();
         // TODO: Any other properties we should copy...?
         // Definitely not ScriptObject properties.
 
