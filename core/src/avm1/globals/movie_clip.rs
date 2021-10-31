@@ -811,13 +811,25 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Ok(new_clip) = activation
-        .context
-        .library
-        .library_for_movie(movie_clip.movie().unwrap())
-        .ok_or_else(|| "Movie is missing!".into())
-        .and_then(|l| l.instantiate_by_id(movie_clip.id(), activation.context.gc_context))
-    {
+    let id = movie_clip.id();
+    let movie = parent
+        .movie()
+        .or_else(|| activation.base_clip().movie())
+        .unwrap_or_else(|| activation.context.swf.clone());
+    let new_clip = if movie_clip.id() != 0 {
+        // Clip from SWF; instantiate a new copy.
+        activation
+            .context
+            .library
+            .library_for_movie(movie)
+            .ok_or_else(|| "Movie is missing!".into())
+            .and_then(|l| l.instantiate_by_id(id, activation.context.gc_context))
+    } else {
+        // Dynamically created clip; create a new empty movie clip.
+        Ok(MovieClip::new(movie, activation.context.gc_context).into())
+    };
+
+    if let Ok(new_clip) = new_clip {
         // Set name and attach to parent.
         new_clip.set_name(activation.context.gc_context, new_instance_name);
         parent.replace_at_depth(&mut activation.context, new_clip, depth);
