@@ -856,33 +856,33 @@ pub fn shape_hit_test(
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
-pub fn draw_command_fill_hit_test(
-    commands: &[DrawCommand],
-    (point_x, point_y): (Twips, Twips),
-) -> bool {
-    let mut x = Twips::ZERO;
-    let mut y = Twips::ZERO;
+pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, Twips)) -> bool {
+    let mut cursor = (Twips::ZERO, Twips::ZERO);
+    let mut fill_start = (Twips::ZERO, Twips::ZERO);
     let mut winding = 0;
 
     // Draw command only contains a single fill, so don't have to worry about fill styles.
     for command in commands {
         match *command {
             DrawCommand::MoveTo { x: x1, y: y1 } => {
-                x = x1;
-                y = y1;
+                cursor = (x1, y1);
+                fill_start = (x1, y1);
             }
             DrawCommand::LineTo { x: x1, y: y1 } => {
-                winding += winding_number_line((point_x, point_y), (x, y), (x1, y1));
-                x = x1;
-                y = y1;
+                winding += winding_number_line(test_point, cursor, (x1, y1));
+                cursor = (x1, y1);
             }
             DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                winding += winding_number_curve((point_x, point_y), (x, y), (x1, y1), (x2, y2));
-                x = x2;
-                y = y2;
+                winding += winding_number_curve(test_point, cursor, (x1, y1), (x2, y2));
+                cursor = (x2, y2);
             }
         }
     }
+    if cursor != fill_start {
+        // Close fill.
+        winding += winding_number_line(test_point, cursor, fill_start);
+    }
+
     winding & 0b1 != 0
 }
 
