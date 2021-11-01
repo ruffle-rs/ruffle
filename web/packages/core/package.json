@@ -23,7 +23,7 @@
         "@typescript-eslint/eslint-plugin": "^4.32.0",
         "@typescript-eslint/parser": "^4.32.0",
         "eslint": "^7.32.0",
-        "eslint-plugin-jsdoc": "^36.1.0",
+        "eslint-plugin-jsdoc": "^37.0.3",
         "mocha": "^9.1.2",
         "replace-in-file": "^6.2.0",
         "ts-node": "^10.2.1",
