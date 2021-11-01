@@ -1,0 +1,59 @@
+///p.flash_proxy::deleteProperty("via direct call")
+///attempted to delete property: via direct call
+///type of name is String
+true
+///delete p.via_getproperty
+///attempted to delete property: via_getproperty
+///type of name is QName
+///name.localName
+via_getproperty
+///name.uri
+
+true
+///delete p.my_ns::via_namespace
+///attempted to delete property: my_ns::via_namespace
+///type of name is QName
+///name.localName
+via_namespace
+///name.uri
+my_ns
+true
+///delete p.normal_var
+false
+///p.normal_var
+This is a normal var
+///delete p.flash_proxy::proxy_var
+///attempted to delete property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+http://www.adobe.com/2006/actionscript/flash/proxy
+true
+///delete (p.normal_fn)()
+///called normal_fn
+true
+///delete p.flash_proxy::proxy_fn
+///attempted to delete property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+http://www.adobe.com/2006/actionscript/flash/proxy
+true
+///delete p.proxy_var
+///attempted to delete property: proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+
+true
+///delete p.proxy_fn
+///attempted to delete property: proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+
+true

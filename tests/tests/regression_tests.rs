@@ -715,6 +715,12 @@ swf_tests! {
     (as3_stage_mouseenabled, "avm2/stage_mouseenabled", 1),
     (as3_simplebutton_mouseenabled, "avm2/simplebutton_mouseenabled", 1),
     (as3_edittext_mouseenabled, "avm2/edittext_mouseenabled", 1),
+    (as3_proxy_getproperty, "avm2/proxy_getproperty", 1),
+    (as3_proxy_setproperty, "avm2/proxy_setproperty", 1),
+    (as3_proxy_deleteproperty, "avm2/proxy_deleteproperty", 1),
+    (as3_proxy_callproperty, "avm2/proxy_callproperty", 1),
+    (as3_proxy_hasproperty, "avm2/proxy_hasproperty", 1),
+    (as3_proxy_enumerate, "avm2/proxy_enumerate", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

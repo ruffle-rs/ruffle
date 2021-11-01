@@ -1,0 +1,34 @@
+///for (var k in p)...
+///attempted to get next name index for index: 0
+///attempted to get name for index: 1
+proxy key 1
+///attempted to get next name index for index: 1
+///attempted to get name for index: 2
+proxy key 2
+///attempted to get next name index for index: 2
+///attempted to get name for index: 3
+proxy key 3
+///attempted to get next name index for index: 3
+///attempted to get name for index: 4
+proxy key 4
+///attempted to get next name index for index: 4
+///attempted to get name for index: 5
+proxy key 5
+///attempted to get next name index for index: 5
+///for each (var k in p)...
+///attempted to get next name index for index: 0
+///attempted to get value for index: 1
+proxy value 1
+///attempted to get next name index for index: 1
+///attempted to get value for index: 2
+proxy value 2
+///attempted to get next name index for index: 2
+///attempted to get value for index: 3
+proxy value 3
+///attempted to get next name index for index: 3
+///attempted to get value for index: 4
+proxy value 4
+///attempted to get next name index for index: 4
+///attempted to get value for index: 5
+proxy value 5
+///attempted to get next name index for index: 5

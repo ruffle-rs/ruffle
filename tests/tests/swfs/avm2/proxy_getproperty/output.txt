@@ -1,0 +1,57 @@
+///p.flash_proxy::getProperty("via direct call")
+///attempted to get property: via direct call
+///type of name is String
+This is a proxy var
+///p.via_getproperty
+///attempted to get property: via_getproperty
+///type of name is QName
+///name.localName
+via_getproperty
+///name.uri
+
+This is a proxy var
+///p.my_ns::via_namespace
+///attempted to get property: my_ns::via_namespace
+///type of name is QName
+///name.localName
+via_namespace
+///name.uri
+my_ns
+This is a proxy var
+///p.normal_var
+This is a normal var
+///p.flash_proxy::proxy_var
+///attempted to get property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+http://www.adobe.com/2006/actionscript/flash/proxy
+This is a proxy var
+///(p.normal_fn)()
+///called normal_fn
+undefined
+///p.flash_proxy::proxy_fn
+///attempted to get property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+http://www.adobe.com/2006/actionscript/flash/proxy
+This is a proxy var
+///p.proxy_var
+///attempted to get property: proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+
+This is a proxy var
+///p.proxy_fn
+///attempted to get property: proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+
+This is a proxy var
