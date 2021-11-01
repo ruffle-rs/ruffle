@@ -129,6 +129,10 @@ false
 false
 // _level0.clip.hitTest(60, 635, true)
 false
+// _level0.clip.hitTest(725, 520, true)
+true
+// _level0.clip.hitTest(750, 553, true)
+true
 
 // bg art
 // _level0.clip.hitTest(500, 500, true)
