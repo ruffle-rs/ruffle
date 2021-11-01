@@ -1,0 +1,32 @@
+///p.flash_proxy::hasProperty("via direct call")
+///attempted to check if has property: via direct call
+///type of name is String
+true
+///Object.prototype.hasOwnProperty.call(p, "via_getproperty")
+false
+///"via_getproperty" in p
+///attempted to check if has property: via_getproperty
+///type of name is String
+true
+///new QName(my_ns, "via_namespace") in p
+///attempted to check if has property: my_ns::via_namespace
+///type of name is String
+true
+///Object.prototype.hasOwnProperty.call(p, "normal_var")
+false
+///"normal_var" in p
+///attempted to check if has property: normal_var
+///type of name is String
+true
+///Object.prototype.hasOwnProperty.call(p, new QName(flash_proxy, "proxy_var"))
+false
+///new QName(flash_proxy, "proxy_var") in p
+///attempted to check if has property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var
+///type of name is String
+true
+///Object.prototype.hasOwnProperty.call(p, "proxy_var")
+false
+///"proxy_var" in p
+///attempted to check if has property: proxy_var
+///type of name is String
+true

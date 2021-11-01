@@ -1,0 +1,25 @@
+///attempted to call property:  callProperty
+///type of name is QName
+///name.localName
+callProperty
+///name.uri
+
+///attempted to call property:  via_callproperty
+///type of name is QName
+///name.localName
+via_callproperty
+///name.uri
+
+///attempted to call property:  my_ns::via_namespace
+///type of name is QName
+///name.localName
+via_namespace
+///name.uri
+my_ns
+///called normal_fn
+///attempted to call property:  proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+

@@ -1,0 +1,40 @@
+///p.flash_proxy::setProperty("via direct call", "and value")
+///attempted to set property: via direct call to value: and value
+///type of name is String
+undefined
+///p.via_setproperty = "test"
+///attempted to set property: via_setproperty to value: test
+///type of name is QName
+///name.localName
+via_setproperty
+///name.uri
+
+test
+///p.my_ns::via_namespace = 123
+///attempted to set property: my_ns::via_namespace to value: 123
+///type of name is QName
+///name.localName
+via_namespace
+///name.uri
+my_ns
+123
+///p.normal_var = "Another var value"
+Another var value
+///p.normal_var
+Another var value
+///p.flash_proxy::proxy_var = false
+///attempted to set property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var to value: false
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+http://www.adobe.com/2006/actionscript/flash/proxy
+false
+///p.proxy_var = "Another var value in the proxy ns"
+///attempted to set property: proxy_var to value: Another var value in the proxy ns
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+
+Another var value in the proxy ns
