@@ -30,6 +30,7 @@ const enum PanicError {
     Unknown,
     CSPConflict,
     FileProtocol,
+    NoWasmBulkMemory,
     InvalidWasm,
     JavascriptConfiguration,
     JavascriptConflict,
@@ -398,6 +399,13 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmCors;
                 } else if (message.includes("disallowed by embedder")) {
                     e.ruffleIndexError = PanicError.CSPConflict;
+                } else if (
+                    message.includes("doesn't parse") &&
+                    message.includes("references are not enabled")
+                ) {
+                    // The "reference-types" extension is now based on the "bulk-memory" one,
+                    // hence the misleading error message from Safari.
+                    e.ruffleIndexError = PanicError.NoWasmBulkMemory;
                 } else if (e.name === "CompileError") {
                     e.ruffleIndexError = PanicError.InvalidWasm;
                 } else if (
@@ -1152,6 +1160,18 @@ export class RufflePlayer extends HTMLElement {
                 `;
                 errorFooter = `
                     <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#web">View Ruffle Wiki</a></li>
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case PanicError.NoWasmBulkMemory:
+                // The browser does not support WebAssembly bulk memory, most likely Safari <15
+                errorBody = `
+                    <p>It seems like your browser has no support for the "Bulk Memory Operations" WebAssembly extension.</p>
+                    <p>This is required for Ruffle to work efficiently, so please update your browser.</p>
+                    <p>See the Ruffle wiki for the list of supported browsers and their minimum versions.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki#web">View Ruffle Wiki</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;

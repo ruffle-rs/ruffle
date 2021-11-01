@@ -8,7 +8,7 @@ It automatically negotiates with websites that do have Ruffle installed, to ensu
 
 ## Using ruffle-extension
 
-The browser extension works in Chrome, Firefox, and Safari 14+.
+The browser extension works in Chrome, Firefox, and Safari 15+.
 
 Before you can install the extension, you must either download the [latest release](https://github.com/ruffle-rs/ruffle/releases) or [build it yourself](../../README.md).
 
