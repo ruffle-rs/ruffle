@@ -281,6 +281,16 @@ impl<'gc> ScriptObjectData<'gc> {
                         return Ok(true);
                     }
 
+                    for interfaces in class.interfaces() {
+                        if interfaces
+                            .inner_class_definition()
+                            .read()
+                            .has_instance_trait(name)
+                        {
+                            return Ok(true);
+                        }
+                    }
+
                     cur_class = class.superclass_object();
                 }
 

@@ -355,7 +355,12 @@ impl<'gc> ClassObject<'gc> {
         Ok(())
     }
 
-    /// Retrieve the class object that a particular QName trait is defined in.
+    /// Retrieve the class object that a particular instance trait is defined
+    /// in.
+    ///
+    /// This will also check interfaces for a trait of the given name. If the
+    /// given name matches an interface's instance trait, then the interface
+    /// will be returned rather than a class.
     ///
     /// Must be called on a class object; will error out if called on
     /// anything else.
@@ -370,6 +375,13 @@ impl<'gc> ClassObject<'gc> {
 
         if class_definition.read().has_instance_trait(name) {
             return Ok(Some(self));
+        }
+
+        for interface in &self.0.read().interfaces {
+            let interface_definition = interface.inner_class_definition();
+            if interface_definition.read().has_instance_trait(name) {
+                return Ok(Some(*interface));
+            }
         }
 
         if let Some(base) = self.superclass_object() {
@@ -717,6 +729,12 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Option<(ClassObject<'gc>, Trait<'gc>)>, Error> {
         if let Some(superclass) = self.find_class_for_trait(name)? {
             let superclassdef = superclass.inner_class_definition();
+
+            //Traits on interfaces trigger a public namespace lookup instead
+            if superclassdef.read().is_interface() && !name.namespace().is_public() {
+                return self.instance_method(&QName::dynamic_name(name.local_name()));
+            }
+
             let mut traits = Vec::new();
             superclassdef
                 .read()
