@@ -249,6 +249,41 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(())
     }
 
+    /// Qualify the name of a property that does not exist, in the context of
+    /// setting a property.
+    ///
+    /// By default, this returns an error for sealed classes, and a name in the
+    /// public namespace for dynamic ones. Objects that have particular
+    /// alternative behavior for undefined values may substitute their own
+    /// implementation here without disturbing the rest of `setproperty`'s
+    /// implementation.
+    ///
+    /// This function typically returns a `QName` or an error. Returning `None`
+    /// indicates that the object handled the `setproperty` without needing to
+    /// store anything.
+    fn set_property_undef(
+        &mut self,
+        _receiver: Object<'gc>,
+        multiname: &Multiname<'gc>,
+        _value: Value<'gc>,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Option<QName<'gc>>, Error> {
+        // Special case: Unresolvable properties on dynamic classes are treated
+        // as initializing a new dynamic property on namespace Public("").
+        if !self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false)
+        {
+            let local_name: Result<AvmString<'gc>, Error> = multiname
+                .local_name()
+                .ok_or_else(|| "Cannot set undefined property using any name".into());
+            Ok(Some(QName::dynamic_name(local_name?)))
+        } else {
+            Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
+        }
+    }
+
     /// Set a property by Multiname lookup.
     ///
     /// This corresponds directly with the AVM2 operation `setproperty`, with
@@ -263,23 +298,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         let mut name = self.resolve_multiname(multiname)?;
 
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as initializing a new dynamic property on namespace Public("").
         if name.is_none() {
-            if !self
-                .instance_of_class_definition()
-                .map(|c| c.read().is_sealed())
-                .unwrap_or(false)
-            {
-                let local_name: Result<AvmString<'gc>, Error> = multiname
-                    .local_name()
-                    .ok_or_else(|| "Cannot set undefined property using any name".into());
-                name = Some(QName::dynamic_name(local_name?));
-            } else {
-                return Err(
-                    format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
-                );
-            }
+            name = self.set_property_undef(receiver, multiname, value.clone(), activation)?;
+        }
+
+        if name.is_none() {
+            return Ok(());
         }
 
         // At this point, name resolution should have completed.
@@ -344,25 +368,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         let mut name = self.resolve_multiname(multiname)?;
 
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as initializing a new dynamic property on namespace Public("").
         if name.is_none() {
-            if !self
-                .instance_of_class_definition()
-                .map(|c| c.read().is_sealed())
-                .unwrap_or(false)
-            {
-                let local_name: Result<AvmString<'gc>, Error> = multiname
-                    .local_name()
-                    .ok_or_else(|| "Cannot init undefined property using any name".into());
-                name = Some(QName::dynamic_name(local_name?));
-            } else {
-                return Err(format!(
-                    "Cannot init undefined property {:?}",
-                    multiname.local_name()
-                )
-                .into());
-            }
+            name = self.set_property_undef(receiver, multiname, value.clone(), activation)?;
+        }
+
+        if name.is_none() {
+            return Ok(());
         }
 
         // At this point, name resolution should have completed.
