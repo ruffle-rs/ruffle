@@ -38,6 +38,8 @@ mod xml_list;
 const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
 const NS_VECTOR: &str = "__AS3__.vec";
 
+pub use flash::utils::NS_FLASH_PROXY;
+
 fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,

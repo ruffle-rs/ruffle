@@ -132,6 +132,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         rv.resolve(activation)
     }
 
+    /// Retrieve a property that does not exist.
+    ///
+    /// By default, this returns an error for sealed classes, and `undefined`
+    /// for dynamic ones. Objects that have particular alternative behavior for
+    /// undefined values may substitute their own implementation here without
+    /// disturbing the rest of `getproperty`'s implementation.
+    fn get_property_undef(
+        self,
+        _receiver: Object<'gc>,
+        multiname: &Multiname<'gc>,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        // Special case: Unresolvable properties on dynamic classes are treated
+        // as dynamic properties that have not yet been set, and yield
+        // `undefined`
+        if !self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false)
+        {
+            return Ok(Value::Undefined);
+        }
+
+        return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
+    }
+
     /// Retrieve a property by Multiname lookup.
     ///
     /// This corresponds directly to the AVM2 operation `getproperty`, with the
@@ -146,21 +172,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         let name = self.resolve_multiname(multiname)?;
 
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as dynamic properties that have not yet been set, and yield
-        // `undefined`
         if name.is_none() {
-            if !self
-                .instance_of_class_definition()
-                .map(|c| c.read().is_sealed())
-                .unwrap_or(false)
-            {
-                return Ok(Value::Undefined);
-            }
-
-            return Err(
-                format!("Cannot get undefined property {:?}", multiname.local_name()).into(),
-            );
+            return self.get_property_undef(receiver, multiname, activation);
         }
 
         // At this point, the name must be a valid QName.
