@@ -138,4 +138,38 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
         }
     }
+
+    fn call_property_undef(
+        self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        for namespace in multiname.namespace_set() {
+            if let Some(local_name) = multiname.local_name() {
+                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
+                    let qname = QNameObject::from_qname(
+                        activation,
+                        QName::new(namespace.clone(), local_name),
+                    )?;
+
+                    let mut args = vec![qname.into()];
+                    args.extend_from_slice(arguments);
+
+                    return self.call_property(
+                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "callProperty")
+                            .into(),
+                        &args[..],
+                        activation,
+                    );
+                }
+            }
+        }
+
+        Err(format!(
+            "Attempted to call undefined property {:?}",
+            multiname.local_name()
+        )
+        .into())
+    }
 }

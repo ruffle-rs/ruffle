@@ -404,6 +404,25 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.init_property_local(receiver, &name, value, activation)
     }
 
+    /// Call a named property that does not exist.
+    ///
+    /// By default, this returns an error. Objects that have particular
+    /// alternative behavior for calling undefined properties may substitute
+    /// their own implementation here without disturbing the rest of
+    /// `callproperty`'s implementation.
+    fn call_property_undef(
+        self,
+        multiname: &Multiname<'gc>,
+        _arguments: &[Value<'gc>],
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        Err(format!(
+            "Attempted to call undefined property {:?}",
+            multiname.local_name()
+        )
+        .into())
+    }
+
     /// Call a named property on the object.
     ///
     /// This corresponds directly to the `callproperty` operation in AVM2.
@@ -415,11 +434,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         let name = self.resolve_multiname(multiname)?;
         if name.is_none() {
-            return Err(format!(
-                "Attempted to call undefined property {:?}",
-                multiname.local_name()
-            )
-            .into());
+            return self.call_property_undef(multiname, arguments, activation);
         }
 
         let name = name.unwrap();
