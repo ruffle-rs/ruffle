@@ -6,7 +6,7 @@ use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{AvmString, Error};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -96,5 +96,46 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         }
 
         return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
+    }
+
+    fn set_property_undef(
+        &mut self,
+        receiver: Object<'gc>,
+        multiname: &Multiname<'gc>,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Option<QName<'gc>>, Error> {
+        for namespace in multiname.namespace_set() {
+            if let Some(local_name) = multiname.local_name() {
+                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
+                    let qname = QNameObject::from_qname(
+                        activation,
+                        QName::new(namespace.clone(), local_name),
+                    )?;
+
+                    receiver.call_property(
+                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty")
+                            .into(),
+                        &[qname.into(), value],
+                        activation,
+                    )?;
+
+                    return Ok(None);
+                }
+            }
+        }
+
+        if !self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false)
+        {
+            let local_name: Result<AvmString<'gc>, Error> = multiname
+                .local_name()
+                .ok_or_else(|| "Cannot set undefined property using any name".into());
+            Ok(Some(QName::dynamic_name(local_name?)))
+        } else {
+            Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
+        }
     }
 }
