@@ -377,8 +377,8 @@ impl<'gc> Multiname<'gc> {
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
-                let ns = activation.avm2().pop().as_namespace()?.clone();
                 let name = activation.avm2().pop().coerce_to_string(activation)?;
+                let ns = activation.avm2().pop().as_namespace()?.clone();
                 Self {
                     ns: vec![ns],
                     name: Some(name),
