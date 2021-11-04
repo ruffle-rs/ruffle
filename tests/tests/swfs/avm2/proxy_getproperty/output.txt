@@ -20,14 +20,24 @@ my_ns
 This is a proxy var
 ///p.normal_var
 This is a normal var
-///p.flash_proxy::proxy_var
-///attempted to get property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var
+///p.proxy_var
+///attempted to get property: proxy_var
 ///type of name is QName
 ///name.localName
 proxy_var
 ///name.uri
-http://www.adobe.com/2006/actionscript/flash/proxy
+
 This is a proxy var
+///p.flash_proxy::proxy_var (QName)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (RTQName)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (RTQNameL)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (Multiname)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (MultinameL)
+This is a normal var in the proxy ns
 ///(p.normal_fn)()
 ///called normal_fn
 undefined
