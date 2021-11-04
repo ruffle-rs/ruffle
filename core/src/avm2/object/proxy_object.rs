@@ -1,8 +1,10 @@
 //! Object representation for `Proxy`.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::NS_FLASH_PROXY;
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -59,5 +61,40 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             ProxyObjectData { base },
         ))
         .into())
+    }
+
+    fn get_property_undef(
+        self,
+        receiver: Object<'gc>,
+        multiname: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        for namespace in multiname.namespace_set() {
+            if let Some(local_name) = multiname.local_name() {
+                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
+                    let qname = QNameObject::from_qname(
+                        activation,
+                        QName::new(namespace.clone(), local_name),
+                    )?;
+
+                    return receiver.call_property(
+                        &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty")
+                            .into(),
+                        &[qname.into()],
+                        activation,
+                    );
+                }
+            }
+        }
+
+        if !self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false)
+        {
+            return Ok(Value::Undefined);
+        }
+
+        return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
     }
 }

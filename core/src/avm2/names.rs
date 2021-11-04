@@ -109,6 +109,10 @@ impl<'gc> Namespace<'gc> {
         false
     }
 
+    pub fn is_namespace(&self) -> bool {
+        matches!(self, Self::Namespace(_))
+    }
+
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
