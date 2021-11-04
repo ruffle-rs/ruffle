@@ -26,7 +26,7 @@ dynamic class TestProxy extends Proxy {
 		return "This is a proxy var";
 	}
 
-	function normal_fn() {
+	public function normal_fn() {
 		trace("///called normal_fn");
 	}
 
@@ -54,6 +54,9 @@ trace(p.my_ns::via_namespace);
 
 trace("///p.normal_var");
 trace(p.normal_var);
+
+trace("///p.proxy_var");
+trace(p.proxy_var);
 
 trace("///p.flash_proxy::proxy_var");
 trace(p.flash_proxy::proxy_var);
