@@ -17,6 +17,7 @@ use crate::avm2::Error;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
+use crate::html::TextFormat;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -43,6 +44,7 @@ mod script_object;
 mod sound_object;
 mod soundchannel_object;
 mod stage_object;
+mod textformat_object;
 mod vector_object;
 mod xml_object;
 
@@ -67,6 +69,7 @@ pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 pub use crate::avm2::object::sound_object::{sound_allocator, SoundObject};
 pub use crate::avm2::object::soundchannel_object::{soundchannel_allocator, SoundChannelObject};
 pub use crate::avm2::object::stage_object::{stage_allocator, StageObject};
+pub use crate::avm2::object::textformat_object::{textformat_allocator, TextFormatObject};
 pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject};
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
 
@@ -98,6 +101,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         DateObject(DateObject<'gc>),
         DictionaryObject(DictionaryObject<'gc>),
         QNameObject(QNameObject<'gc>),
+        TextFormatObject(TextFormatObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1358,6 +1362,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object as a `DictionaryObject`, if it is one.
     fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
+        None
+    }
+
+    /// Unwrap this object as a text format.
+    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
+        None
+    }
+
+    /// Unwrap this object as a mutable text format.
+    fn as_text_format_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<TextFormat>> {
         None
     }
 }
