@@ -1405,9 +1405,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             (multiname, object)
         };
 
-        self.context
-            .avm2
-            .push(object.delete_property(self.context.gc_context, &multiname)?);
+        let did_delete = object.delete_property(self, &multiname)?;
+
+        self.context.avm2.push(did_delete);
 
         Ok(FrameControl::Continue)
     }

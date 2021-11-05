@@ -17,6 +17,11 @@ dynamic class TestProxy extends Proxy {
 			
 			trace("///name.uri");
 			trace(name.uri);
+			
+			if (name.localName === "crazy_return") {
+				trace("///returning non-bool value");
+				return "This isn't a bool at all";
+			}
 		} else if (name is String) {
 			trace("///type of name is String");
 		} else {
@@ -72,3 +77,6 @@ trace(delete p.proxy_var);
 
 trace("///delete p.proxy_fn");
 trace(delete p.proxy_fn);
+
+trace("///delete p.crazy_return");
+trace(delete p.crazy_return);
