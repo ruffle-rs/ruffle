@@ -12,7 +12,6 @@ mod tests;
 pub use document::XmlDocument;
 pub use error::Error;
 pub use error::ParseError;
-pub use iterators::Step;
 pub use namespace::XmlName;
 pub use tree::XmlNode;
 

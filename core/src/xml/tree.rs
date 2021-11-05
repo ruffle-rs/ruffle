@@ -4,7 +4,7 @@ use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{Object, TObject};
 use crate::xml;
-use crate::xml::{Error, Step, XmlDocument, XmlName};
+use crate::xml::{Error, XmlDocument, XmlName};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -804,15 +804,6 @@ impl<'gc> XmlNode<'gc> {
     /// Returns an iterator that yields child nodes.
     pub fn children(self) -> impl DoubleEndedIterator<Item = XmlNode<'gc>> {
         xml::iterators::ChildIter::for_node(self)
-    }
-
-    /// Returns an iterator that walks the XML tree.
-    ///
-    /// Walking is similar to using `descendents`, but the ends of parent nodes
-    /// are explicitly marked with `Step::Out`, while nodes that may have
-    /// children are marked with `Step::In`.
-    pub fn walk(self) -> impl Iterator<Item = Step<'gc>> {
-        xml::iterators::WalkIter::for_node(self)
     }
 
     /// Returns an iterator that yields ancestor nodes (including itself).
