@@ -9,7 +9,7 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
-use crate::string::{AvmString, BorrowWStr, WString};
+use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
@@ -364,7 +364,7 @@ pub fn goto_frame<'gc>(
     let scene = match args.get(1).cloned().unwrap_or(Value::Null) {
         Value::Null => None,
         v => mc
-            .scene_label_to_number(v.coerce_to_string(activation)?.borrow())
+            .scene_label_to_number(&v.coerce_to_string(activation)?)
             .map(|v| v.saturating_sub(1)),
     }
     .unwrap_or(0) as u32;
@@ -380,7 +380,7 @@ pub fn goto_frame<'gc>(
                     //If the user specified a scene, we need to validate that
                     //the requested frame exists within that scene.
                     let scene = scene.coerce_to_string(activation)?;
-                    if !mc.frame_exists_within_scene(frame_or_label.borrow(), scene.borrow()) {
+                    if !mc.frame_exists_within_scene(&frame_or_label, &scene) {
                         return Err(format!(
                             "ArgumentError: Frame label {} not found in scene {}",
                             frame_or_label, scene
@@ -389,13 +389,12 @@ pub fn goto_frame<'gc>(
                     }
                 }
 
-                mc.frame_label_to_number(frame_or_label.borrow())
-                    .ok_or_else(|| {
-                        format!(
-                            "ArgumentError: {} is not a valid frame label.",
-                            frame_or_label
-                        )
-                    })? as u32
+                mc.frame_label_to_number(&frame_or_label).ok_or_else(|| {
+                    format!(
+                        "ArgumentError: {} is not a valid frame label.",
+                        frame_or_label
+                    )
+                })? as u32
             }
         }
     };

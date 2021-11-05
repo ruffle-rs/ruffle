@@ -1,13 +1,16 @@
+use std::borrow::Borrow;
+use std::ops::Deref;
+
 use gc_arena::{Collect, Gc, MutationContext};
 use std::borrow::Cow;
 
-use super::{BorrowWStr, WStr, WString};
+use super::{WStr, WString};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
     Owned(Gc<'gc, WString>),
-    Static(WStr<'static>),
+    Static(&'static WStr),
 }
 
 #[derive(Clone, Copy, Collect)]
@@ -47,6 +50,13 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    pub fn as_wstr(&self) -> &WStr {
+        match &self.source {
+            Source::Owned(s) => s,
+            Source::Static(s) => s,
+        }
+    }
+
     pub fn concat(
         gc_context: MutationContext<'gc, '_>,
         left: AvmString<'gc>,
@@ -57,8 +67,8 @@ impl<'gc> AvmString<'gc> {
         } else if right.is_empty() {
             left
         } else {
-            let mut out = WString::from(left.borrow());
-            out.push_str(right.borrow());
+            let mut out = WString::from(left.as_wstr());
+            out.push_str(&right);
             Self::new(gc_context, out)
         }
     }
@@ -67,16 +77,9 @@ impl<'gc> AvmString<'gc> {
     pub fn ptr_eq(this: &Self, other: &Self) -> bool {
         match (this.source, other.source) {
             (Source::Owned(this), Source::Owned(other)) => Gc::ptr_eq(this, other),
-            (Source::Static(this), Source::Static(other)) => this.to_ptr() == other.to_ptr(),
+            (Source::Static(this), Source::Static(other)) => std::ptr::eq(this, other),
             _ => false,
         }
-    }
-
-    impl_str_methods! {
-        lifetime: '_;
-        self: &Self;
-        deref: self.borrow();
-        pattern['a,]: 'a, &'a Self;
     }
 }
 
@@ -98,21 +101,33 @@ impl<'gc> From<&'static str> for AvmString<'gc> {
     }
 }
 
-impl<'gc> From<WStr<'static>> for AvmString<'gc> {
+impl<'gc> From<&'static WStr> for AvmString<'gc> {
     #[inline]
-    fn from(str: WStr<'static>) -> Self {
+    fn from(str: &'static WStr) -> Self {
         Self {
             source: Source::Static(str),
         }
     }
 }
 
-impl<'gc> BorrowWStr for AvmString<'gc> {
+impl<'gc> Deref for AvmString<'gc> {
+    type Target = WStr;
     #[inline]
-    fn borrow(&self) -> WStr<'_> {
-        match &self.source {
-            Source::Owned(s) => s.borrow(),
-            Source::Static(s) => *s,
-        }
+    fn deref(&self) -> &Self::Target {
+        self.as_wstr()
+    }
+}
+
+impl<'gc> AsRef<WStr> for AvmString<'gc> {
+    #[inline]
+    fn as_ref(&self) -> &WStr {
+        self.as_wstr()
+    }
+}
+
+impl<'gc> Borrow<WStr> for AvmString<'gc> {
+    #[inline]
+    fn borrow(&self) -> &WStr {
+        self.as_wstr()
     }
 }

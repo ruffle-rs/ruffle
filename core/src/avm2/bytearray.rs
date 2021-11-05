@@ -37,7 +37,7 @@ impl Display for CompressionAlgorithm {
 impl FromWStr for CompressionAlgorithm {
     type Err = Error;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"zlib" {
             Ok(CompressionAlgorithm::Zlib)
         } else if s == b"deflate" {

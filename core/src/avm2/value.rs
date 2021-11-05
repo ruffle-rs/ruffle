@@ -395,7 +395,7 @@ impl<'gc> Value<'gc> {
                     || strim.starts_with(WStr::from_units(b"0X"))
                 {
                     let mut n: f64 = 0.0;
-                    for c in strim.slice(2..).iter() {
+                    for c in &strim[2..] {
                         let digit = u8::try_from(c).ok().and_then(|c| (c as char).to_digit(16));
                         if let Some(digit) = digit {
                             n = 16.0 * n + f64::from(digit);

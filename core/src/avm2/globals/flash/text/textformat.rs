@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{AvmString, BorrowWStr, WStr};
+use crate::string::{AvmString, WStr};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
@@ -269,7 +269,7 @@ fn font<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font.borrow()).into()
+        AvmString::new(activation.context.gc_context, font.as_wstr()).into()
     }))
 }
 
@@ -280,7 +280,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -510,7 +510,7 @@ fn target<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target.borrow()).into()
+        AvmString::new(activation.context.gc_context, target.as_wstr()).into()
     }))
 }
 
@@ -521,7 +521,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -553,7 +553,7 @@ fn url<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url.borrow()).into()
+        AvmString::new(activation.context.gc_context, url.as_wstr()).into()
     }))
 }
 
@@ -564,7 +564,7 @@ fn set_url<'gc>(
 ) -> Result<(), Error> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }

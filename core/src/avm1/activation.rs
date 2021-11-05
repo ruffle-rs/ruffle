@@ -11,7 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::string::{AvmString, BorrowWStr, WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -558,7 +558,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::SetProperty => self.action_set_property(),
                 Action::SetTarget(target) => {
                     let target = WString::from_utf8_owned(target.to_string_lossy(self.encoding()));
-                    self.action_set_target(target.borrow())
+                    self.action_set_target(&target)
                 }
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
@@ -667,7 +667,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // In SWF5 and below, this operates on bytes, regardless of the locale.
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let char_code = s.try_get(0).unwrap_or(0);
+        let char_code = s.get(0).unwrap_or(0);
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
         // TODO: Should this happen in SWF5 and below?
@@ -760,7 +760,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(target, frame_path.borrow())? {
+            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
@@ -1239,9 +1239,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(WString::from_utf8(&url).borrow()) {
+        if let Some(fscommand) = fscommand::parse(&WString::from_utf8(&url)) {
             let fsargs = WString::from_utf8(&target);
-            fscommand::handle(fscommand, fsargs.borrow(), self)?;
+            fscommand::handle(fscommand, &fsargs, self)?;
         } else {
             self.context
                 .navigator
@@ -1263,9 +1263,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let url_val = self.context.avm1.pop();
         let url = url_val.coerce_to_string(self)?;
 
-        if let Some(fscommand) = fscommand::parse(url.borrow()) {
+        if let Some(fscommand) = fscommand::parse(&url) {
             let fsargs = target.coerce_to_string(self)?;
-            fscommand::handle(fscommand, fsargs.borrow(), self)?;
+            fscommand::handle(fscommand, &fsargs, self)?;
             return Ok(FrameControl::Continue);
         }
 
@@ -1289,7 +1289,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .object()
                     .coerce_to_object(self);
                 let (url, opts) = self.locals_into_request_options(
-                    url.borrow(),
+                    &url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = self.context.navigator.fetch(&url, opts);
@@ -1306,7 +1306,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
-                    url.borrow(),
+                    &url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
 
@@ -1332,7 +1332,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if window_target.starts_with(WStr::from_units(b"_level")) && window_target.len() > 6
         {
             // target of `_level#` indicates a `loadMovieNum` call.
-            match window_target.slice(6..).parse::<i32>() {
+            match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
                     let fetch = self
                         .context
@@ -1409,7 +1409,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 let label = WString::from_utf8(&label.to_str_lossy(self.encoding()));
-                if let Some(frame) = clip.frame_label_to_number(label.borrow()) {
+                if let Some(frame) = clip.frame_label_to_number(&label) {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
@@ -1594,7 +1594,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // In SWF5 and below, this operates on locale-dependent characters.
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let char_code = s.try_get(0).unwrap_or(0);
+        let char_code = s.get(0).unwrap_or(0);
         let c = if self.swf_version() < 6 {
             char::from(char_code as u8)
         } else {
@@ -1625,7 +1625,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .filter(|l| *l <= s.len())
             .unwrap_or_else(|| s.len());
 
-        let result = s.slice(start.min(end)..end);
+        let result = &s[start.min(end)..end];
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result).into());
@@ -1911,7 +1911,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_target(&mut self, target: WStr<'_>) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_set_target(&mut self, target: &WStr) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.avm1_root(&self.context)?;
@@ -1937,7 +1937,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
                 match &path {
-                    Some(p) => p.borrow(),
+                    Some(p) => &*p,
                     None => WStr::from_units(b"?"),
                 }
             );
@@ -1973,7 +1973,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         match target {
             Value::String(target) => {
-                return self.action_set_target(target.borrow());
+                return self.action_set_target(&target);
             }
             Value::Undefined => {
                 // Reset.
@@ -1987,12 +1987,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 } else {
                     // Other objects get coerced to string.
                     let target = target.coerce_to_string(self)?;
-                    return self.action_set_target(target.borrow());
+                    return self.action_set_target(&target);
                 }
             }
             _ => {
                 let target = target.coerce_to_string(self)?;
-                return self.action_set_target(target.borrow());
+                return self.action_set_target(&target);
             }
         };
 
@@ -2106,7 +2106,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .filter(|l| *l <= s.len())
             .unwrap_or_else(|| s.len());
 
-        let result = s.slice(start.min(end)..end);
+        let result = &s[start.min(end)..end];
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result).into());
@@ -2412,7 +2412,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn object_into_request_options<'c>(
         &mut self,
         object: Object<'gc>,
-        url: WStr<'c>,
+        url: &'c WStr,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         match method {
@@ -2460,7 +2460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// form data in the request body or URL.
     pub fn locals_into_request_options<'c>(
         &mut self,
-        url: WStr<'c>,
+        url: &'c WStr,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         let scope = self.scope_cell();
@@ -2507,7 +2507,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let root = start.avm1_root(&self.context)?;
         let start = start.object().coerce_to_object(self);
         Ok(self
-            .resolve_target_path(root, start, path.borrow(), false)?
+            .resolve_target_path(root, start, &path, false)?
             .and_then(|o| o.as_display_object()))
     }
 
@@ -2524,7 +2524,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         root: DisplayObject<'gc>,
         start: Object<'gc>,
-        mut path: WStr<'_>,
+        mut path: &WStr,
         mut first_element: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
@@ -2535,7 +2535,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
-            path = path.slice(1..);
+            path = &path[1..];
             (root.object().coerce_to_object(self), true)
         } else {
             (start, false)
@@ -2549,14 +2549,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // `foo`, `:foo`, and `:::foo` are all the same
             path = path.trim_start_matches(b':');
 
-            let prefix = path.slice(..path.len().min(3));
+            let prefix = &path[..path.len().min(3)];
             let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
                 // Check for ..
                 // SWF-4 style _parent
-                if path.try_get(2) == Some(u16::from(b'/')) {
+                if path.get(2) == Some(u16::from(b'/')) {
                     is_slash_path = true;
                 }
-                path = path.try_slice(3..).unwrap_or_default();
+                path = path.slice(3..).unwrap_or_default();
                 if let Some(parent) = object.as_display_object().and_then(|o| o.avm1_parent()) {
                     parent.object()
                 } else {
@@ -2571,7 +2571,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
-                    match u8::try_from(path.get(pos)) {
+                    match u8::try_from(path.at(pos)) {
                         Ok(b':') => break,
                         Ok(b'.') if !is_slash_path => break,
                         Ok(b'/') => {
@@ -2584,8 +2584,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
 
                 // Slice out the identifier and step the cursor past the delimiter.
-                let name = path.slice(..pos);
-                path = path.try_slice(pos + 1..).unwrap_or_default();
+                let name = &path[..pos];
+                path = path.slice(pos + 1..).unwrap_or_default();
 
                 if first_element && name == b"this" {
                     self.this_cell().into()
@@ -2629,14 +2629,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn resolve_variable_path<'s>(
         &mut self,
         start: DisplayObject<'gc>,
-        path: WStr<'s>,
-    ) -> Result<Option<(Object<'gc>, WStr<'s>)>, Error<'gc>> {
+        path: &'s WStr,
+    ) -> Result<Option<(Object<'gc>, &'s WStr)>, Error<'gc>> {
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
         if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let (path, var_name) = (path.slice(..separator), path.slice(separator + 1..));
+            let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2691,7 +2691,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let (path, var_name) = (path.slice(..separator), path.slice(separator + 1..));
+            let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2715,12 +2715,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root(&self.context)?;
-                if let Some(object) = self.resolve_target_path(
-                    avm1_root,
-                    *scope.read().locals(),
-                    path.borrow(),
-                    false,
-                )? {
+                if let Some(object) =
+                    self.resolve_target_path(avm1_root, *scope.read().locals(), &path, false)?
+                {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
                 current_scope = scope.read().parent_cell();
@@ -2774,7 +2771,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some(sep) = separator {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let (path, var_name) = (path.slice(..sep), path.slice(sep + 1..));
+            let (path, var_name) = (&path[..sep], &path[sep + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2851,11 +2848,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
-        if name == b"this" {
+        if &name == b"this" {
             return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
         }
 
-        if name == b"arguments" && self.arguments.is_some() {
+        if &name == b"arguments" && self.arguments.is_some() {
             return Ok(CallableValue::UnCallable(Value::Object(
                 self.arguments.unwrap(),
             )));
@@ -2868,11 +2865,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
-        if name == b"this" {
+        if &name == b"this" {
             return true;
         }
 
-        if name == b"arguments" && self.arguments.is_some() {
+        if &name == b"arguments" && self.arguments.is_some() {
             return true;
         }
 

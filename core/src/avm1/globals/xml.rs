@@ -7,7 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
-use crate::string::{AvmString, BorrowWStr, WStr};
+use crate::string::{AvmString, WStr};
 use crate::xml;
 use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::MutationContext;
@@ -201,7 +201,7 @@ pub fn xmlnode_get_namespace_for_prefix<'gc>(
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
         if let Some(uri) =
-            xmlnode.lookup_uri_for_namespace(activation.context.gc_context, prefix_string?.borrow())
+            xmlnode.lookup_uri_for_namespace(activation.context.gc_context, &prefix_string?)
         {
             Ok(uri.into())
         } else {
@@ -221,7 +221,7 @@ pub fn xmlnode_get_prefix_for_namespace<'gc>(
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
-        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(uri_string?.borrow()) {
+        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
             Ok(AvmString::new(activation.context.gc_context, prefix).into())
         } else {
             Ok(Value::Null)
@@ -587,7 +587,7 @@ pub fn xml_constructor<'gc>(
 
             if let Err(e) = this_node.replace_with_str(
                 activation.context.gc_context,
-                string.borrow(),
+                string,
                 true,
                 ignore_whitespace,
             ) {
@@ -696,7 +696,7 @@ pub fn xml_parse_xml<'gc>(
 
         let result = node.replace_with_str(
             activation.context.gc_context,
-            xmlstring.borrow(),
+            &xmlstring,
             true,
             ignore_whitespace,
         );
@@ -726,7 +726,7 @@ pub fn xml_send_and_load<'gc>(
 
     if let Some(node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, url.borrow(), Some(node))?;
+        spawn_xml_fetch(activation, this, target, &url, Some(node))?;
     }
     Ok(Value::Undefined)
 }
@@ -744,7 +744,7 @@ pub fn xml_load<'gc>(
 
     if let Some(_node) = this.as_xml_node() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, this, url.borrow(), None)?;
+        spawn_xml_fetch(activation, this, this, &url, None)?;
 
         Ok(true.into())
     } else {
@@ -867,7 +867,7 @@ fn spawn_xml_fetch<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     loader_object: Object<'gc>,
-    url: WStr<'_>,
+    url: &WStr,
     send_object: Option<XmlNode<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request_options = if let Some(node) = send_object {

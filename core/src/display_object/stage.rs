@@ -783,7 +783,7 @@ impl FromStr for StageScaleMode {
 impl FromWStr for StageScaleMode {
     type Err = ParseEnumError;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s.eq_ignore_case(WStr::from_units(b"exactfit")) {
             Ok(StageScaleMode::ExactFit)
         } else if s.eq_ignore_case(WStr::from_units(b"noborder")) {
@@ -850,7 +850,7 @@ impl FromStr for StageDisplayState {
 impl FromWStr for StageDisplayState {
     type Err = ParseEnumError;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s.eq_ignore_case(WStr::from_units(b"fullscreen")) {
             Ok(StageDisplayState::FullScreen)
         } else if s.eq_ignore_case(WStr::from_units(b"fullscreeninteractive")) {
@@ -910,7 +910,7 @@ impl FromStr for StageAlign {
 impl FromWStr for StageAlign {
     type Err = std::convert::Infallible;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         // Chars get converted into flags.
         // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
         let mut align = StageAlign::default();
@@ -1032,7 +1032,7 @@ impl FromStr for StageQuality {
 impl FromWStr for StageQuality {
     type Err = ParseEnumError;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s.eq_ignore_case(WStr::from_units(b"low")) {
             Ok(StageQuality::Low)
         } else if s.eq_ignore_case(WStr::from_units(b"medium")) {

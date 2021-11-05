@@ -1011,7 +1011,7 @@ pub fn to_date_string<'gc>(
 
 /// Parse a date, in any of the three formats: YYYY/MM/DD, MM/DD/YYYY, Mon/DD/YYYY.
 /// The output will always be: (year, month, day), or None if format is invalid.
-fn parse_date(item: WStr<'_>) -> Option<(u32, u32, u32)> {
+fn parse_date(item: &WStr) -> Option<(u32, u32, u32)> {
     let mut iter = item.split(b'/');
     let first = iter.next()?;
     let parsed = if first.len() == 4 {
@@ -1073,16 +1073,16 @@ fn parse_date(item: WStr<'_>) -> Option<(u32, u32, u32)> {
 }
 
 /// Convert a month abbrevation to a number.
-fn parse_mon(item: WStr<'_>) -> Option<usize> {
+fn parse_mon(item: &WStr) -> Option<usize> {
     const MONTHS: [&[u8]; 12] = [
         b"Jan", b"Feb", b"Mar", b"Apr", b"May", b"Jun", b"Jul", b"Aug", b"Sep", b"Oct", b"Nov",
         b"Dec",
     ];
-    MONTHS.iter().position(|&x| WStr::from_units(x) == item)
+    MONTHS.iter().position(|&x| x == item)
 }
 
 /// Parses HH:MM:SS. The output is always (hours, minutes, seconds), or None if format was invalid.
-fn parse_hms(item: WStr<'_>) -> Option<(u32, u32, u32)> {
+fn parse_hms(item: &WStr) -> Option<(u32, u32, u32)> {
     let mut iter = item.split(b':');
     let hours = iter.next()?;
     if hours.len() != 2 {
@@ -1153,12 +1153,11 @@ pub fn parse<'gc>(
             final_time.hour = Some(Some(hours as f64));
             final_time.minute = Some(Some(minutes as f64));
             final_time.second = Some(Some(seconds as f64));
-        } else if DAYS.iter().any(|d| WStr::from_units(*d) == item) {
+        } else if DAYS.iter().any(|&d| d == item) {
             // Parse abbreviated weekname (Sun, Mon, etc...)
             // DO NOTHING
         } else if let Some(month) = parse_mon(item) {
             // Parse abbreviated month name (Jan, Feb, etc...)
-
             final_time.month = Some(Some(month as f64));
         } else if item.starts_with(WStr::from_units(b"GMT"))
             || item.starts_with(WStr::from_units(b"UTC"))
@@ -1183,7 +1182,7 @@ pub fn parse<'gc>(
             } else {
                 return Ok(f64::NAN.into());
             };
-            let sign = other.get(3);
+            let sign = other.at(3);
             // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
             // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
             new_timezone = Some(if sign == b'-' as u16 {

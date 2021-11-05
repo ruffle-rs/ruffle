@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, BorrowWStr, WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,
@@ -229,9 +229,9 @@ impl<'gc> QName<'gc> {
         let uri = self.namespace().as_uri();
         let name = self.local_name();
         uri.is_empty().then(|| name).unwrap_or_else(|| {
-            let mut buf = WString::from(uri.borrow());
+            let mut buf = WString::from(uri.as_wstr());
             buf.push_str(WStr::from_units(b"::"));
-            buf.push_str(name.borrow());
+            buf.push_str(&name);
             AvmString::new(mc, buf)
         })
     }
@@ -247,13 +247,13 @@ impl<'gc> QName<'gc> {
     /// Get the string value of this QName, including the namespace URI.
     pub fn as_uri(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let ns = match &self.ns {
-            Namespace::Namespace(s) => s.borrow(),
-            Namespace::Package(s) => s.borrow(),
-            Namespace::PackageInternal(s) => s.borrow(),
-            Namespace::Protected(s) => s.borrow(),
-            Namespace::Explicit(s) => s.borrow(),
-            Namespace::StaticProtected(s) => s.borrow(),
-            Namespace::Private(s) => s.borrow(),
+            Namespace::Namespace(s) => s,
+            Namespace::Package(s) => s,
+            Namespace::PackageInternal(s) => s,
+            Namespace::Protected(s) => s,
+            Namespace::Explicit(s) => s,
+            Namespace::StaticProtected(s) => s,
+            Namespace::Private(s) => s,
             Namespace::Any => WStr::from_units(b"*"),
         };
 
@@ -263,7 +263,7 @@ impl<'gc> QName<'gc> {
 
         let mut uri = WString::from(ns);
         uri.push_str(WStr::from_units(b"::"));
-        uri.push_str(self.name.borrow());
+        uri.push_str(&self.name);
         AvmString::new(mc, uri)
     }
 }

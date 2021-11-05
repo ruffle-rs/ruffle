@@ -15,8 +15,8 @@ pub enum DisplacementMapFilterMode {
     Color,
 }
 
-impl From<WStr<'_>> for DisplacementMapFilterMode {
-    fn from(v: WStr<'_>) -> DisplacementMapFilterMode {
+impl<'a> From<&'a WStr> for DisplacementMapFilterMode {
+    fn from(v: &'a WStr) -> DisplacementMapFilterMode {
         if v == b"clamp" {
             DisplacementMapFilterMode::Clamp
         } else if v == b"ignore" {
@@ -29,7 +29,7 @@ impl From<WStr<'_>> for DisplacementMapFilterMode {
     }
 }
 
-impl From<DisplacementMapFilterMode> for WStr<'static> {
+impl From<DisplacementMapFilterMode> for &'static WStr {
     fn from(v: DisplacementMapFilterMode) -> Self {
         let s: &[u8] = match v {
             DisplacementMapFilterMode::Wrap => b"wrap",

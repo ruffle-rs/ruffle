@@ -1,7 +1,8 @@
-use super::{ops, AvmString, WStr, WStrMut, WString};
+use super::{ops, ptr, AvmString, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
 use std::cmp;
 use std::fmt;
 use std::hash;
+use std::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 #[cold]
 pub(super) fn panic_on_invalid_length(len: usize) -> ! {
@@ -77,373 +78,525 @@ units_from! {
     impl[] Units<Vec<u8>, Vec<u16>>;
 }
 
-// TODO: Once GATs are here, this should become an actual trait.
-macro_rules! impl_str_methods {
-    (
-        lifetime: $lt:lifetime;
-        $self:ident: $receiver:ty;
-        deref: $deref:expr;
-        pattern[$($pat_gen:tt)*]: $pat_lt:lifetime, $pat_self:ty;
-    ) => {
-        /// Provides access to the underlying buffer.
-        #[inline]
-        pub fn units($self: $receiver) -> crate::string::Units<&$lt [u8], &$lt [u16]> {
-            crate::string::slice::units($deref)
+impl WStr {
+    /// Creates a `&WStr` from a buffer containing 1 or 2-bytes code units.
+    pub fn from_units<'a>(units: impl Into<Units<&'a [u8], &'a [u16]>>) -> &'a Self {
+        let (ptr, len) = match units.into() {
+            Units::Bytes(us) => (Units::Bytes(ptr::ptr_mut(us)), us.len()),
+            Units::Wide(us) => (Units::Wide(ptr::ptr_mut(us)), us.len()),
+        };
+
+        if len > MAX_STRING_LEN {
+            super::panic_on_invalid_length(len);
         }
 
-        /// Returns `true` if `self` is a wide string.
-        #[inline]
-        pub fn is_wide($self: $receiver) -> bool {
-            crate::string::slice::raw_str($deref).is_wide()
+        // SAFETY: we validated the slice length above, and the shared borrow is valid for 'a.
+        unsafe { &*ptr::from_units(ptr) }
+    }
+
+    /// Creates a `&mut WStr` from a mutable buffer containing 1 or 2-bytes code units.
+    pub fn from_units_mut<'a>(
+        units: impl Into<Units<&'a mut [u8], &'a mut [u16]>>,
+    ) -> &'a mut Self {
+        let (ptr, len) = match units.into() {
+            Units::Bytes(us) => (Units::Bytes(us as *mut _), us.len()),
+            Units::Wide(us) => (Units::Wide(us as *mut _), us.len()),
+        };
+
+        if len > MAX_STRING_LEN {
+            super::panic_on_invalid_length(len);
         }
 
-        /// Returns the number of code units.
-        #[inline]
-        pub fn len($self: $receiver) -> usize {
-            crate::string::slice::raw_str($deref).len()
-        }
+        // SAFETY: we validated the slice length above, and the mutable borrow is valid for 'a.
+        unsafe { &mut *ptr::from_units(ptr) }
+    }
 
-        /// Returns `true` if `self` contains no code units.
-        #[inline]
-        pub fn is_empty($self: $receiver) -> bool {
-            $self.len() == 0
-        }
+    /// Creates an empty string.
+    #[inline]
+    pub fn empty<'a>() -> &'a WStr {
+        WStr::from_units(Units::<&'a [u8], _>::Bytes(&[]))
+    }
 
-        /// Returns the `i`th code unit of `self`; panics if the index is out of range.
-        #[inline]
-        pub fn get($self: $receiver, i: usize) -> u16 {
-            $self.try_get(i).expect("string index out of bounds")
-        }
+    /// Creates an empty mutable string.
+    #[inline]
+    pub fn empty_mut<'a>() -> &'a mut WStr {
+        WStr::from_units_mut(Units::<&'a mut [u8], _>::Bytes(&mut []))
+    }
 
-        /// Returns the `i`th code unit of `self`, or `None` if the index is out of range.
-        #[inline]
-        pub fn try_get($self: $receiver, i: usize) -> Option<u16> {
-            crate::string::slice::try_index($deref, i)
+    /// Provides access to the underlying buffer.
+    #[inline]
+    pub fn units(&self) -> Units<&[u8], &[u16]> {
+        // SAFETY: `self` is a valid `WStr` borrowed immutably, so we can deref. the buffers.
+        unsafe {
+            match ptr::units(ptr::ptr_mut(self)) {
+                Units::Bytes(us) => Units::Bytes(&*us),
+                Units::Wide(us) => Units::Wide(&*us),
+            }
         }
+    }
 
-        /// Returns a subslice of `self`; panics if the slice indices are out of range.
-        #[inline]
-        pub fn slice<R: std::ops::RangeBounds<usize>>($self: $receiver, range: R) -> crate::string::WStr<$lt> {
-            $self.try_slice(range).expect("string indices out of bounds")
+    /// Provides mutable access to the underlying buffer.
+    #[inline]
+    pub fn units_mut(&mut self) -> super::Units<&mut [u8], &mut [u16]> {
+        // SAFETY: `self` is a valid `WStr` borrowed mutably, so we can mut. deref. the buffers.
+        unsafe {
+            match ptr::units(self) {
+                Units::Bytes(us) => Units::Bytes(&mut *us),
+                Units::Wide(us) => Units::Wide(&mut *us),
+            }
         }
+    }
 
-        /// Returns a subslice of `self`, or `None` if the slice indices are out of range.
-        #[inline]
-        pub fn try_slice<R: std::ops::RangeBounds<usize>>($self: $receiver, range: R) -> Option<crate::string::WStr<$lt>> {
-            crate::string::slice::try_slice($deref, range)
-        }
+    /// Returns `true` if `self` is a wide string.
+    #[inline]
+    pub fn is_wide(&self) -> bool {
+        // SAFETY: `self` is a valid `WStr`.
+        unsafe { ptr::is_wide(ptr::ptr_mut(self)) }
+    }
 
-        /// Iterates over the code units of `self`.
-        #[inline]
-        pub fn iter($self: $receiver) -> crate::string::ops::Iter<$lt> {
-            crate::string::ops::str_iter($deref)
-        }
+    /// Returns the number of code units.
+    #[inline]
+    pub fn len(&self) -> usize {
+        // SAFETY: `self` is a valid `WStr`.
+        unsafe { ptr::len(ptr::ptr_mut(self)) }
+    }
 
-        /// Iterates over the unicode characters of `self`.
-        #[inline]
-        pub fn chars($self: $receiver) -> crate::string::ops::Chars<$lt> {
-            std::char::decode_utf16(crate::string::ops::str_iter($deref))
-        }
+    /// Returns `true` if `self` contains no code units.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
-        /// Iterates over the unicode characters of `self`, together with their indices.
-        #[inline]
-        pub fn char_indices($self: $receiver) -> crate::string::ops::CharIndices<$lt> {
-            crate::string::ops::str_char_indices($deref)
-        }
+    /// Returns the `i`th code unit of `self`; panics if the index is out of range.
+    #[inline]
+    pub fn at(&self, i: usize) -> u16 {
+        self.get(i).expect("string index out of bounds")
+    }
 
-        /// Returns the offset of `self` in `other`, if `self` is a substring of `other`.
-        ///
-        /// This is the value such that `self == other.slice(offset..offset + self.len())`.
-        #[inline]
-        pub fn offset_in($self: $receiver, other: WStr<'_>) -> Option<usize> {
-            crate::string::ops::str_offset_in($deref, other)
+    /// Returns the `i`th code unit of `self`, or `None` if the index is out of range.
+    #[inline]
+    pub fn get(&self, i: usize) -> Option<u16> {
+        if i < self.len() {
+            // SAFETY: `self` is a valid `WStr` and `i` is a valid index.
+            Some(unsafe { ptr::read_at(ptr::ptr_mut(self), i) })
+        } else {
+            None
         }
+    }
 
-        #[inline]
-        /// Tests if two strings are equal, ignoring case as done by the Flash Player.
-        /// Note that the case mapping is different than Rust's case mapping.
-        pub fn eq_ignore_case($self: $receiver, other: WStr<'_>) -> bool {
-            crate::string::ops::str_eq_ignore_case($deref, other)
-        }
+    /// Returns the `i`th code unit of `self` without doing bound checks.
+    ///
+    /// # Safety
+    /// `i` must be less than `self.len()`.
+    #[inline]
+    pub unsafe fn get_unchecked(&self, i: usize) -> u16 {
+        ptr::read_at(ptr::ptr_mut(self), i)
+    }
 
-        #[inline]
-        /// Compares two strings, ignoring case as done by the Flash Player.
-        /// Note that the case mapping is different than Rust's case mapping.
-        pub fn cmp_ignore_case($self: $receiver, other: WStr<'_>) -> std::cmp::Ordering {
-            crate::string::ops::str_cmp_ignore_case($deref, other)
-        }
+    #[inline(always)]
+    fn check_range<R: RangeBounds<usize>>(&self, range: R) -> Option<Range<usize>> {
+        let len = self.len();
+        let min = match range.start_bound() {
+            Bound::Included(n) => *n,
+            Bound::Excluded(n) => n.checked_add(1)?,
+            Bound::Unbounded => 0,
+        };
 
-        #[inline]
-        pub fn parse<T: crate::string::FromWStr>($self: $receiver) -> Result<T, T::Err> {
-            T::from_wstr($deref)
-        }
+        let max = match range.end_bound() {
+            Bound::Included(n) => n.checked_add(1)?,
+            Bound::Excluded(n) => *n,
+            Bound::Unbounded => len,
+        };
 
-        /// Returns `true` is the string contains only LATIN1 characters.
-        ///
-        /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.
-        #[inline]
-        pub fn is_latin1($self: $receiver) -> bool {
-            crate::string::ops::str_is_latin1($deref)
+        if min <= max && max <= len {
+            Some(min..max)
+        } else {
+            None
         }
+    }
 
-        /// Converts this string to an UTF8 `String`.
-        ///
-        /// Unpaired surrogates are replaced by the replacement character.
-        #[inline]
-        pub fn to_utf8_lossy($self: $receiver) -> std::borrow::Cow<$lt, str> {
-            crate::string::ops::WStrToUtf8::new($deref).to_utf8_lossy()
-        }
+    /// Returns a subslice of `self`, or `None` if the slice indices are out of range.
+    ///
+    /// Use indexing for a panicking version.
+    #[inline]
+    pub fn slice<R: RangeBounds<usize>>(&self, range: R) -> Option<&Self> {
+        self.check_range(range).map(|r| {
+            // SAFETY: `self` is a valid `WStr` and `r` is a valid slice range.
+            unsafe { &*ptr::slice(ptr::ptr_mut(self), r) }
+        })
+    }
 
-        /// Returns a new string with all ASCII characters mapped to their lowercase equivalent.
-        #[inline]
-        pub fn to_ascii_lowercase($self: $receiver) -> crate::string::WString {
-            crate::string::ops::str_to_ascii_lowercase($deref)
-        }
+    /// Returns a mutable subslice of `self`, or `None` if the slice indices are out of range.
+    ///
+    /// Use indexing for a panicking version.
+    #[inline]
+    pub fn slice_mut<R: RangeBounds<usize>>(&mut self, range: R) -> Option<&mut Self> {
+        self.check_range(range).map(|r| {
+            // SAFETY: `self` is a valid `WStr` and `r` is a valid slice range.
+            unsafe { &mut *ptr::slice(self, r) }
+        })
+    }
 
-        /// Analogue of [`str::replace`].
-        #[inline]
-        pub fn replace<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P, with: WStr<'_>) -> crate::string::WString {
-            crate::string::ops::str_replace($deref, pattern, with)
-        }
+    /// Returns a subslice of `self` without doing bound checks.
+    ///
+    /// # Safety
+    /// The range indices must be less than or equal to `self.len()`.
+    #[inline]
+    pub unsafe fn slice_unchecked<R: RangeBounds<usize>>(&self, range: R) -> &Self {
+        self.slice(range)
+            .unwrap_or_else(|| std::hint::unreachable_unchecked())
+    }
 
-        /// Analogue of [`str::find`].
-        #[inline]
-        pub fn find<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {
-            crate::string::ops::str_find($deref, pattern)
-        }
+    /// Returns a mutable subslice of `self` without doing bound checks.
+    ///
+    /// # Safety
+    /// The range indices must be less than or equal to `self.len()`.
+    #[inline]
+    pub unsafe fn slice_unchecked_mut<R: RangeBounds<usize>>(&mut self, range: R) -> &Self {
+        self.slice_mut(range)
+            .unwrap_or_else(|| std::hint::unreachable_unchecked())
+    }
 
-        /// Analogue of [`str::rfind`].
-        #[inline]
-        pub fn rfind<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<usize> {
-            crate::string::ops::str_rfind($deref, pattern)
-        }
+    /// Iterates over the code units of `self`.
+    #[inline]
+    pub fn iter(&self) -> super::ops::Iter<'_> {
+        super::ops::str_iter(self)
+    }
 
-        /// Analogue of [`str::contains`].
-        #[inline]
-        pub fn contains<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
-            $self.find(pattern).is_some()
-        }
+    /// Iterates over the unicode characters of `self`.
+    #[inline]
+    pub fn chars(&self) -> super::ops::Chars<'_> {
+        std::char::decode_utf16(super::ops::str_iter(self))
+    }
 
-        /// Analogue of [`str::split`].
-        #[inline]
-        pub fn split<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, separator: P) -> crate::string::ops::Split<$pat_lt, P> {
-            crate::string::ops::str_split($deref, separator)
-        }
+    /// Iterates over the unicode characters of `self`, together with their indices.
+    #[inline]
+    pub fn char_indices(&self) -> crate::string::ops::CharIndices<'_> {
+        super::ops::str_char_indices(self)
+    }
 
-        /// Analogue of [`str::split_at`].
-        #[inline]
-        pub fn split_at($self: $receiver, index: usize) -> (crate::string::WStr<$lt>, crate::string::WStr<$lt>) {
-            let s = $deref;
-            (s.slice(..index), s.slice(index..))
-        }
+    /// Returns the offset of `self` in `other`, if `self` is a substring of `other`.
+    ///
+    /// This is the value such that `self == other.slice(offset..offset + self.len())`.
+    #[inline]
+    pub fn offset_in(&self, other: &WStr) -> Option<usize> {
+        super::ops::str_offset_in(self, other)
+    }
 
-        /// Analogue of [`str::rsplit_once`].
-        #[inline]
-        pub fn rsplit_once<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<(WStr<$pat_lt>, WStr<$pat_lt>)> {
-            crate::string::ops::str_rsplit_once($deref, pattern)
-        }
+    #[inline]
+    /// Compares two strings for equality, ignoring case as done by the Flash Player.
+    /// Note that the case mapping is different than Rust's case mapping.
+    pub fn eq_ignore_case(&self, other: &WStr) -> bool {
+        super::ops::str_eq_ignore_case(self, other)
+    }
 
-        /// Analogue of [`str::trim_matches`].
-        #[inline]
-        pub fn trim_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
-            crate::string::ops::str_trim_matches($deref, pattern)
-        }
+    #[inline]
+    /// Compares two strings, ignoring case as done by the Flash Player.
+    /// Note that the case mapping is different than Rust's case mapping.
+    pub fn cmp_ignore_case(&self, other: &WStr) -> std::cmp::Ordering {
+        super::ops::str_cmp_ignore_case(self, other)
+    }
 
-        /// Analogue of [`str::trim_start_matches`].
-        #[inline]
-        pub fn trim_start_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
-            crate::string::ops::str_trim_start_matches($deref, pattern)
-        }
+    /// Parses the given string into another type.
+    #[inline]
+    pub fn parse<T: FromWStr>(&self) -> Result<T, T::Err> {
+        T::from_wstr(self)
+    }
 
-        /// Analogue of [`str::trim_end_matches`].
-        #[inline]
-        pub fn trim_end_matches<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> WStr<$pat_lt> {
-            crate::string::ops::str_trim_end_matches($deref, pattern)
-        }
+    /// Returns `true` is the string contains only LATIN1 characters.
+    ///
+    /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.
+    #[inline]
+    pub fn is_latin1(&self) -> bool {
+        super::ops::str_is_latin1(self)
+    }
 
-        /// Analogue of [`str::trim`], but uses Flash's definition of whitespace.
-        #[inline]
-        pub fn trim<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
-            $self.trim_matches(crate::string::utils::swf_is_whitespace)
-        }
+    /// Converts this string to an UTF8 `String`.
+    ///
+    /// Unpaired surrogates are replaced by the replacement character.
+    #[inline]
+    pub fn to_utf8_lossy(&self) -> std::borrow::Cow<'_, str> {
+        super::ops::WStrToUtf8::new(self).to_utf8_lossy()
+    }
 
-        /// Analogue of [`str::trim_start`], but uses Flash's definition of whitespace.
-        #[inline]
-        pub fn trim_start<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
-            $self.trim_start_matches(crate::string::utils::swf_is_whitespace)
-        }
+    /// Returns a new string with all ASCII characters mapped to their lowercase equivalent.
+    #[inline]
+    pub fn to_ascii_lowercase(&self) -> WString {
+        super::ops::str_to_ascii_lowercase(self)
+    }
 
-        /// Analogue of [`str::trim_end`], but uses Flash's definition of whitespace.
-        #[inline]
-        pub fn trim_end<$($pat_gen)*>($self: $pat_self) -> WStr<$pat_lt> {
-            $self.trim_end_matches(crate::string::utils::swf_is_whitespace)
-        }
+    /// Analogue of [`str::replace`].
+    #[inline]
+    pub fn replace<'a, P: Pattern<'a>>(&'a self, pattern: P, with: &WStr) -> WString {
+        super::ops::str_replace(self, pattern, with)
+    }
 
-        /// Analogue of [`str::starts_with`]
-        #[inline]
-        pub fn starts_with<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
-            crate::string::ops::starts_with($deref, pattern)
-        }
+    /// Analogue of [`str::find`].
+    #[inline]
+    pub fn find<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<usize> {
+        super::ops::str_find(self, pattern)
+    }
 
-        /// Analogue of [`str::ends_with`]
-        #[inline]
-        pub fn ends_with<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> bool {
-            crate::string::ops::ends_with($deref, pattern)
-        }
+    /// Analogue of [`str::rfind`].
+    #[inline]
+    pub fn rfind<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<usize> {
+        super::ops::str_rfind(self, pattern)
+    }
 
-        /// Analogue of [`str::strip_prefix`]
-        #[inline]
-        pub fn strip_prefix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
-            crate::string::ops::strip_prefix($deref, pattern)
-        }
+    /// Analogue of [`str::contains`].
+    #[inline]
+    pub fn contains<'a, P: Pattern<'a>>(&'a self, pattern: P) -> bool {
+        self.find(pattern).is_some()
+    }
 
-        /// Analogue of [`str::strip_suffix`]
-        #[inline]
-        pub fn strip_suffix<$($pat_gen)* P: crate::string::Pattern<$pat_lt>>($self: $pat_self, pattern: P) -> Option<WStr<$pat_lt>> {
-            crate::string::ops::strip_suffix($deref, pattern)
-        }
+    /// Analogue of [`str::split`].
+    #[inline]
+    pub fn split<'a, P: Pattern<'a>>(&'a self, separator: P) -> super::ops::Split<'a, P> {
+        super::ops::str_split(self, separator)
+    }
 
-        /// Analogue of [`str::repeat`]
-        #[inline]
-        pub fn repeat($self: $receiver, count: usize) -> crate::string::WString {
-            crate::string::ops::str_repeat($deref, count)
-        }
+    /// Analogue of [`str::split_at`].
+    #[inline]
+    pub fn split_at(&self, index: usize) -> (&WStr, &WStr) {
+        (&self[..index], &self[index..])
+    }
+
+    /// Analogue of [`str::rsplit_once`].
+    #[inline]
+    pub fn rsplit_once<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<(&'a WStr, &'a WStr)> {
+        super::ops::str_rsplit_once(self, pattern)
+    }
+
+    /// Analogue of [`str::trim_matches`].
+    #[inline]
+    pub fn trim_matches<'a, P: Pattern<'a>>(&'a self, pattern: P) -> &'a WStr {
+        super::ops::str_trim_matches(self, pattern)
+    }
+
+    /// Analogue of [`str::trim_start_matches`].
+    #[inline]
+    pub fn trim_start_matches<'a, P: Pattern<'a>>(&'a self, pattern: P) -> &'a WStr {
+        super::ops::str_trim_start_matches(self, pattern)
+    }
+
+    /// Analogue of [`str::trim_end_matches`].
+    #[inline]
+    pub fn trim_end_matches<'a, P: Pattern<'a>>(&'a self, pattern: P) -> &'a WStr {
+        super::ops::str_trim_end_matches(self, pattern)
+    }
+
+    /// Analogue of [`str::trim`], but uses Flash's definition of whitespace.
+    #[inline]
+    pub fn trim(&self) -> &WStr {
+        self.trim_matches(super::utils::swf_is_whitespace)
+    }
+
+    /// Analogue of [`str::trim_start`], but uses Flash's definition of whitespace.
+    #[inline]
+    pub fn trim_start(&self) -> &WStr {
+        self.trim_start_matches(super::utils::swf_is_whitespace)
+    }
+
+    /// Analogue of [`str::trim_end`], but uses Flash's definition of whitespace.
+    #[inline]
+    pub fn trim_end(&self) -> &WStr {
+        self.trim_end_matches(super::utils::swf_is_whitespace)
+    }
+
+    /// Analogue of [`str::starts_with`].
+    #[inline]
+    pub fn starts_with<'a, P: Pattern<'a>>(&'a self, pattern: P) -> bool {
+        super::ops::starts_with(self, pattern)
+    }
+
+    /// Analogue of [`str::ends_with`].
+    #[inline]
+    pub fn ends_with<'a, P: Pattern<'a>>(&'a self, pattern: P) -> bool {
+        super::ops::ends_with(self, pattern)
+    }
+
+    /// Analogue of [`str::strip_prefix`].
+    #[inline]
+    pub fn strip_prefix<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<&'a WStr> {
+        super::ops::strip_prefix(self, pattern)
+    }
+
+    /// Analogue of [`str::strip_suffix`].
+    #[inline]
+    pub fn strip_suffix<'a, P: Pattern<'a>>(&'a self, pattern: P) -> Option<&'a WStr> {
+        super::ops::strip_suffix(self, pattern)
+    }
+
+    /// Analogue of [`str::repeat`]
+    #[inline]
+    pub fn repeat(&self, count: usize) -> WString {
+        super::ops::str_repeat(self, count)
     }
 }
 
-macro_rules! impl_str_mut_methods {
-    (
-        lifetime: $lt:lifetime;
-        $self:ident: $receiver:ty;
-        deref_mut: $deref:expr;
-    ) => {
-        /// Provides mutable access to the underlying buffer.
-        #[inline]
-        pub fn units_mut($self: $receiver) -> crate::string::Units<&$lt mut [u8], &$lt mut [u16]> {
-            crate::string::slice::units_mut($deref)
-        }
-
-        /// Returns a mutable subslice of `self`; panics if the slice indices are out of range.
-        #[inline]
-        pub fn slice_mut<R: std::ops::RangeBounds<usize>>($self: $receiver, range: R) -> crate::string::WStrMut<$lt> {
-            $deref.try_slice_mut(range)
-                .expect("string indices out of bounds")
-        }
-
-        /// Returns a mutable subslice of `self`, or `None` if the slice indices are out of range.
-        #[inline]
-        pub fn try_slice_mut<R: std::ops::RangeBounds<usize>>($self: $receiver, range: R) -> Option<crate::string::WStrMut<$lt>> {
-            crate::string::slice::try_slice_mut($deref, range)
-        }
+impl<'a> Default for &'a WStr {
+    #[inline]
+    fn default() -> Self {
+        WStr::empty()
     }
 }
-pub trait BorrowWStr {
-    fn borrow(&self) -> WStr<'_>;
+
+impl<'a> Default for &'a mut WStr {
+    #[inline]
+    fn default() -> Self {
+        WStr::empty_mut()
+    }
 }
 
-pub trait BorrowWStrMut {
-    fn borrow_mut(&mut self) -> WStrMut<'_>;
+impl<R: RangeBounds<usize>> Index<R> for WStr {
+    type Output = WStr;
+
+    #[inline]
+    fn index(&self, idx: R) -> &Self::Output {
+        self.slice(idx).expect("string indices out of bounds")
+    }
 }
 
-macro_rules! impl_str_traits {
-    (@eq_ord impl[$($generics:tt)*] for $ty:ty, $ty2:ty) => {
-        impl<'_0, $($generics)*> cmp::PartialEq<&'_0 $ty2> for $ty {
+impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
+    #[inline]
+    fn index_mut(&mut self, idx: R) -> &mut Self::Output {
+        self.slice_mut(idx).expect("string indices out of bounds")
+    }
+}
+
+macro_rules! impl_str_eq_ord_units {
+    (impl[$($generics:tt)*] for $lhs:ty, $rhs:ty) => {
+        impl<$($generics)*> cmp::PartialEq<$rhs> for $lhs {
             #[inline]
-            fn eq(&self, other: &&'_0 $ty2) -> bool {
-                ops::str_eq(BorrowWStr::borrow(self), WStr::from_units(*other))
+            fn eq(&self, other: &$rhs) -> bool {
+                ops::str_eq(&self[..], WStr::from_units(other))
             }
         }
 
-        impl<'_0, $($generics)*> cmp::PartialOrd<&'_0 $ty2> for $ty {
+        impl<$($generics)*> cmp::PartialOrd<$rhs> for $lhs {
             #[inline]
-            fn partial_cmp(&self, other: &&'_0 $ty2) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(BorrowWStr::borrow(self), WStr::from_units(*other)))
+            fn partial_cmp(&self, other: &$rhs) -> Option<cmp::Ordering> {
+                Some(ops::str_cmp(&self[..], WStr::from_units(other)))
             }
         }
 
-        impl<'_0, $($generics)*> cmp::PartialEq<$ty> for &'_0 $ty2 {
+        impl<$($generics)*> cmp::PartialEq<$lhs> for $rhs {
             #[inline]
-            fn eq(&self, other: &$ty) -> bool {
-                ops::str_eq(WStr::from_units(*self), BorrowWStr::borrow(other))
+            fn eq(&self, other: &$lhs) -> bool {
+                ops::str_eq(WStr::from_units(self), &other[..])
             }
         }
 
-        impl<'_0, $($generics)*> cmp::PartialOrd<$ty> for &'_0 $ty2 {
+        impl<$($generics)*> cmp::PartialOrd<$lhs> for $rhs {
             #[inline]
-            fn partial_cmp(&self, other: &$ty) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(WStr::from_units(*self), BorrowWStr::borrow(other)))
+            fn partial_cmp(&self, other: &$lhs) -> Option<cmp::Ordering> {
+                Some(ops::str_cmp(WStr::from_units(self), &other[..]))
             }
         }
     };
-    (impl[$($generics:tt)*] for $ty:ty; $($rest:tt)*) => {
+}
+
+macro_rules! impl_str_eq_ord {
+    (@single [$($generics:tt)*] for $lhs:ty, $rhs:ty;) => {
+        impl<$($generics)*> cmp::PartialEq<$lhs> for $rhs {
+            #[inline]
+            fn eq(&self, other: &$lhs) -> bool {
+                ops::str_eq(&self[..], &other[..])
+            }
+        }
+
+        impl<$($generics)*> cmp::PartialOrd<$lhs> for $rhs {
+            #[inline]
+            fn partial_cmp(&self, other: &$lhs) -> Option<cmp::Ordering> {
+                Some(ops::str_cmp(&self[..], &other[..]))
+            }
+        }
+    };
+    ($(impl[$($generics:tt)*] for $lhs:ty, $rhs:ty;)*) => {
+        $(
+            impl_str_eq_ord!{ @single [$($generics)*] for $lhs, $rhs; }
+            impl_str_eq_ord!{ @single [$($generics)*] for $rhs, $lhs; }
+        )*
+    };
+}
+
+macro_rules! impl_str_traits {
+    (@single [$($generics:tt)*] for $ty:ty;) => {
         impl<$($generics)*> fmt::Display for $ty {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                ops::str_fmt(BorrowWStr::borrow(self), f)
+                ops::str_fmt(&self[..], f)
             }
         }
 
         impl<$($generics)*> fmt::Debug for $ty {
             #[inline]
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                ops::str_debug_fmt(BorrowWStr::borrow(self), f)
+                ops::str_debug_fmt(&self[..], f)
             }
         }
 
         impl<$($generics)*> cmp::Eq for $ty {}
 
-        impl<$($generics)* Other: BorrowWStr> cmp::PartialEq<Other> for $ty {
+        impl<$($generics)*> cmp::PartialEq<$ty> for $ty {
             #[inline]
-            fn eq(&self, other: &Other) -> bool {
-                ops::str_eq(BorrowWStr::borrow(self), BorrowWStr::borrow(other))
+            fn eq(&self, other: &$ty) -> bool {
+                ops::str_eq(&self[..], &other[..])
             }
         }
 
         impl<$($generics)*> cmp::Ord for $ty {
             #[inline]
             fn cmp(&self, other: &Self) -> cmp::Ordering {
-                ops::str_cmp(BorrowWStr::borrow(self), BorrowWStr::borrow(other))
+                ops::str_cmp(&self[..], &other[..])
             }
         }
 
-        impl<$($generics)* Other: BorrowWStr> cmp::PartialOrd<Other> for $ty {
+        impl<$($generics)*> cmp::PartialOrd<$ty> for $ty {
             #[inline]
-            fn partial_cmp(&self, other: &Other) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(BorrowWStr::borrow(self), BorrowWStr::borrow(other)))
+            fn partial_cmp(&self, other: &$ty) -> Option<cmp::Ordering> {
+                Some(ops::str_cmp(&self[..], &other[..]))
             }
         }
 
-        impl_str_traits! { @eq_ord impl[$($generics)* const N: usize] for $ty, [u8; N] }
-        impl_str_traits! { @eq_ord impl[$($generics)* const N: usize] for $ty, [u16; N] }
-        impl_str_traits! { @eq_ord impl[$($generics)*] for $ty, [u8] }
-        impl_str_traits! { @eq_ord impl[$($generics)*] for $ty, [u16] }
+        impl_str_eq_ord_units! { impl[$($generics)* const N: usize] for $ty, [u8; N] }
+        impl_str_eq_ord_units! { impl[$($generics)* const N: usize] for $ty, [u16; N] }
+        impl_str_eq_ord_units! { impl[$($generics)*] for $ty, [u8] }
+        impl_str_eq_ord_units! { impl[$($generics)*] for $ty, [u16] }
 
         impl<$($generics)*> hash::Hash for $ty {
             #[inline]
             fn hash<H: hash::Hasher>(&self, state: &mut H) {
-                ops::str_hash(BorrowWStr::borrow(self), state)
+                ops::str_hash(&self[..], state)
             }
         }
 
         impl<'_0, $($generics)*> IntoIterator for &'_0 $ty {
             type Item = u16;
-            type IntoIter = crate::string::Iter<'_0>;
+            type IntoIter = super::Iter<'_0>;
 
             #[inline]
             fn into_iter(self) -> Self::IntoIter {
-                ops::str_iter(BorrowWStr::borrow(self))
+                ops::str_iter(&self[..])
             }
         }
 
-        impl_str_traits! { $($rest)* }
     };
 
-    () => {};
+    ($(impl[$($generics:tt)*] for $ty:ty;)*) => {
+        $(impl_str_traits!{ @single [$($generics)*] for $ty;})*
+    }
 }
 
 impl_str_traits! {
-    impl['a,] for WStr<'a>;
-    impl['a,] for WStrMut<'a>;
+    impl[] for WStr;
     impl[] for WString;
     impl['gc,] for AvmString<'gc>;
+}
+
+impl_str_eq_ord! {
+    impl[] for WString, WStr;
+    impl['a,] for WString, &'a WStr;
+    impl['gc,] for AvmString<'gc>, WStr;
+    impl['gc, 'a,] for AvmString<'gc>, &'a WStr;
 }

@@ -4,7 +4,7 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string::{utils as string_utils, AvmString, BorrowWStr, WStr};
+use crate::string::{utils as string_utils, AvmString, WStr};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
@@ -21,17 +21,17 @@ impl<'gc, V> PropertyMap<'gc, V> {
         Self(FnvIndexMap::default())
     }
 
-    pub fn contains_key<T: BorrowWStr>(&self, key: T, case_sensitive: bool) -> bool {
+    pub fn contains_key<T: AsRef<WStr>>(&self, key: T, case_sensitive: bool) -> bool {
         if case_sensitive {
-            self.0.contains_key(&CaseSensitive(key.borrow()))
+            self.0.contains_key(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.contains_key(&CaseInsentitive(key.borrow()))
+            self.0.contains_key(&CaseInsentitive(key.as_ref()))
         }
     }
 
     pub fn entry<'a>(&'a mut self, key: AvmString<'gc>, case_sensitive: bool) -> Entry<'gc, 'a, V> {
         if case_sensitive {
-            match self.0.get_index_of(&CaseSensitive(key.borrow())) {
+            match self.0.get_index_of(&CaseSensitive(key.as_ref())) {
                 Some(index) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
@@ -42,7 +42,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
                 }),
             }
         } else {
-            match self.0.get_index_of(&CaseInsentitive(key.borrow())) {
+            match self.0.get_index_of(&CaseInsentitive(key.as_ref())) {
                 Some(index) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
@@ -56,20 +56,20 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     /// Gets the value for the specified property.
-    pub fn get<T: BorrowWStr>(&self, key: T, case_sensitive: bool) -> Option<&V> {
+    pub fn get<T: AsRef<WStr>>(&self, key: T, case_sensitive: bool) -> Option<&V> {
         if case_sensitive {
-            self.0.get(&CaseSensitive(key.borrow()))
+            self.0.get(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.get(&CaseInsentitive(key.borrow()))
+            self.0.get(&CaseInsentitive(key.as_ref()))
         }
     }
 
     /// Gets a mutable reference to the value for the specified property.
-    pub fn get_mut<T: BorrowWStr>(&mut self, key: T, case_sensitive: bool) -> Option<&mut V> {
+    pub fn get_mut<T: AsRef<WStr>>(&mut self, key: T, case_sensitive: bool) -> Option<&mut V> {
         if case_sensitive {
-            self.0.get_mut(&CaseSensitive(key.borrow()))
+            self.0.get_mut(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.get_mut(&CaseInsentitive(key.borrow()))
+            self.0.get_mut(&CaseInsentitive(key.as_ref()))
         }
     }
 
@@ -98,12 +98,12 @@ impl<'gc, V> PropertyMap<'gc, V> {
         self.0.iter_mut().rev().map(|(k, v)| (k.0, v))
     }
 
-    pub fn remove<T: BorrowWStr>(&mut self, key: T, case_sensitive: bool) -> Option<V> {
+    pub fn remove<T: AsRef<WStr>>(&mut self, key: T, case_sensitive: bool) -> Option<V> {
         // Note that we must use shift_remove to maintain order in case this object is enumerated.
         if case_sensitive {
-            self.0.shift_remove(&CaseSensitive(key.borrow()))
+            self.0.shift_remove(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.shift_remove(&CaseInsentitive(key.borrow()))
+            self.0.shift_remove(&CaseInsentitive(key.as_ref()))
         }
     }
 }
@@ -160,13 +160,13 @@ impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
 /// Wraps a str-like type, causing the hash map to use a case insensitive hash and equality.
 struct CaseInsentitive<T>(T);
 
-impl<'a> Hash for CaseInsentitive<WStr<'a>> {
+impl<'a> Hash for CaseInsentitive<&'a WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsentitive<WStr<'a>> {
+impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsentitive<&'a WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0.eq_ignore_case(self.0)
     }
@@ -176,13 +176,13 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsentitive<WStr<'a>> {
 /// but case sensitive equality.
 struct CaseSensitive<T>(T);
 
-impl<'a> Hash for CaseSensitive<WStr<'a>> {
+impl<'a> Hash for CaseSensitive<&'a WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<WStr<'a>> {
+impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0 == self.0
     }
@@ -200,11 +200,11 @@ struct PropertyName<'gc>(AvmString<'gc>);
 #[allow(clippy::derive_hash_xor_eq)]
 impl<'gc> Hash for PropertyName<'gc> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        swf_hash_string_ignore_case(self.0.borrow(), state);
+        swf_hash_string_ignore_case(self.0.as_ref(), state);
     }
 }
 
-fn swf_hash_string_ignore_case<H: Hasher>(s: WStr<'_>, state: &mut H) {
+fn swf_hash_string_ignore_case<H: Hasher>(s: &WStr, state: &mut H) {
     s.iter()
         .for_each(|c| string_utils::swf_to_lowercase(c).hash(state));
     state.write_u8(0xff);

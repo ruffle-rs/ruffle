@@ -201,7 +201,7 @@ pub fn exec<'gc>(
                 Some(matched) => {
                     let substrings = matched
                         .groups()
-                        .map(|range| range.map(|r| WString::from(text.slice(r))));
+                        .map(|range| range.map(|r| WString::from(&text[r])));
 
                     let storage = ArrayStorage::from_iter(substrings.map(|s| match s {
                         None => Value::Undefined,

@@ -8,7 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Valu
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string::{AvmString, BorrowWStr, WStr};
+use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -118,7 +118,7 @@ impl<'gc> StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
     ) -> Option<Value<'gc>> {
-        if let Some(slice) = name.try_slice(0..6) {
+        if let Some(slice) = name.slice(..6) {
             let level_prefix = WStr::from_units(b"_level");
             let is_level = if case_sensitive {
                 slice == level_prefix
@@ -126,7 +126,7 @@ impl<'gc> StageObject<'gc> {
                 slice.eq_ignore_case(level_prefix)
             };
             if is_level {
-                if let Some(level_id) = name.try_slice(6..).and_then(|v| v.parse::<i32>().ok()) {
+                if let Some(level_id) = name.slice(6..).and_then(|v| v.parse::<i32>().ok()) {
                     let level = context
                         .stage
                         .child_by_depth(level_id)
@@ -181,7 +181,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         } else if let Some(child) = obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(name.borrow(), case_sensitive))
+            .and_then(|o| o.child_by_name(&name, case_sensitive))
         {
             // 3) Child display objects with the given instance name
             Some(child.object())
@@ -209,11 +209,11 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             if case_sensitive {
                 binding.variable_name == name
             } else {
-                binding.variable_name.eq_ignore_case(name.borrow())
+                binding.variable_name.eq_ignore_case(&name)
             }
         }) {
             let _ = binding.text_field.set_html_text(
-                value.coerce_to_string(activation)?.borrow(),
+                &value.coerce_to_string(activation)?,
                 &mut activation.context,
             );
         }
@@ -385,7 +385,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         if obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(name.borrow(), case_sensitive))
+            .and_then(|o| o.child_by_name(&name, case_sensitive))
             .is_some()
         {
             return true;

@@ -6,7 +6,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::string::{utils as string_utils, AvmString, BorrowWStr, WString};
+use crate::string::{utils as string_utils, AvmString, WString};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -113,7 +113,7 @@ fn char_at<'gc>(
 
     let ret = usize::try_from(i)
         .ok()
-        .and_then(|i| string.try_get(i))
+        .and_then(|i| string.get(i))
         .map(WString::from_unit)
         .map(|ret| AvmString::new(activation.context.gc_context, ret))
         .unwrap_or_else(|| "".into());
@@ -133,7 +133,7 @@ fn char_code_at<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
     let ret = if i >= 0 {
-        this.try_get(i as usize).map(f64::from).unwrap_or(f64::NAN)
+        this.get(i as usize).map(f64::from).unwrap_or(f64::NAN)
     } else {
         f64::NAN
     };
@@ -147,11 +147,11 @@ fn concat<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut ret: WString = Value::from(this)
         .coerce_to_string(activation)?
-        .borrow()
+        .as_wstr()
         .into();
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret.push_str(s.borrow())
+        ret.push_str(&s);
     }
     Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
@@ -189,8 +189,8 @@ fn index_of<'gc>(
         Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
     };
 
-    this.try_slice(start_index..)
-        .and_then(|s| s.find(pattern.borrow()))
+    this.slice(start_index..)
+        .and_then(|s| s.find(&pattern))
         .map(|i| Ok((i + start_index).into()))
         .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
@@ -214,9 +214,9 @@ fn last_index_of<'gc>(
         },
     };
 
-    this.try_slice(..start_index)
-        .unwrap_or_else(|| this.borrow())
-        .rfind(pattern.borrow())
+    this.slice(..start_index)
+        .unwrap_or(&this)
+        .rfind(&pattern)
         .map(|i| Ok(i.into()))
         .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
@@ -244,7 +244,7 @@ fn slice<'gc>(
         Some(n) => string_wrapping_index(n.coerce_to_i32(activation)?, this.len()),
     };
     if start_index < end_index {
-        let ret = WString::from(this.slice(start_index..end_index));
+        let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
@@ -281,7 +281,7 @@ fn split<'gc>(
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            this.split(delimiter.borrow())
+            this.split(&delimiter)
                 .take(limit)
                 .map(|c| AvmString::new(activation.context.gc_context, c).into()),
         )
@@ -314,7 +314,7 @@ fn substr<'gc>(
     let end_index = string_wrapping_index((start_index as i32) + len, this.len());
 
     if start_index < end_index {
-        let ret = WString::from(this.slice(start_index..end_index));
+        let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
         Ok("".into())
@@ -343,7 +343,7 @@ fn substring<'gc>(
     if end_index < start_index {
         std::mem::swap(&mut end_index, &mut start_index);
     }
-    let ret = WString::from(this.slice(start_index..end_index));
+    let ret = WString::from(&this[start_index..end_index]);
     Ok(AvmString::new(activation.context.gc_context, ret).into())
 }
 

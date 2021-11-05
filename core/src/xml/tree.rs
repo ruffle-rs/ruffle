@@ -226,7 +226,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn replace_with_str(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        data: WStr<'_>,
+        data: &WStr,
         process_entity: bool,
         ignore_white: bool,
     ) -> Result<(), Error> {
@@ -1076,7 +1076,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn lookup_uri_for_namespace(
         self,
         gc_context: MutationContext<'gc, '_>,
-        namespace: WStr<'_>,
+        namespace: &WStr,
     ) -> Option<AvmString<'gc>> {
         if namespace.is_empty() {
             let xmlns_default = XmlName::in_default_namespace("xmlns".into());
@@ -1108,17 +1108,17 @@ impl<'gc> XmlNode<'gc> {
     /// the default namespace will be searched.
     pub fn value_attribute(
         self,
-        value: WStr<'_>,
-        within_namespace: Option<WStr<'_>>,
+        value: &WStr,
+        within_namespace: Option<&WStr>,
     ) -> Option<XmlName<'gc>> {
         match &*self.0.read() {
             XmlNodeData::Element { attributes, .. } => {
                 for (attr, attr_value) in attributes.iter() {
                     if let Some(namespace) = within_namespace {
-                        if attr.prefix().unwrap_or_default() == namespace && &value == attr_value {
+                        if attr.prefix().unwrap_or_default() == namespace && value == attr_value {
                             return Some(*attr);
                         }
-                    } else if &value == attr_value {
+                    } else if value == attr_value {
                         return Some(*attr);
                     }
                 }
@@ -1136,7 +1136,7 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// If there are multiple namespaces that match the URI, the first
     /// mentioned on the closest node will be returned.
-    pub fn lookup_namespace_for_uri(self, uri: WStr<'_>) -> Option<WString> {
+    pub fn lookup_namespace_for_uri(self, uri: &WStr) -> Option<WString> {
         if let Some(xname) = self.value_attribute(uri, Some(WStr::from_units(b"xmlns"))) {
             Some(xname.local_name().into())
         } else if let Some(parent) = self.parent() {
