@@ -1468,7 +1468,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let name = name_value.coerce_to_string(self)?;
         let qname = QName::new(Namespace::public(), name);
-        let has_prop = obj.has_property(&qname)?;
+        let has_prop = obj.has_property_via_in(self, &qname)?;
 
         self.context.avm2.push(has_prop);
 
