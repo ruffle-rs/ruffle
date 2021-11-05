@@ -687,22 +687,36 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(base.delete_property(name))
     }
 
+    /// Delete a property that does not exist.
+    ///
+    /// By default, undefined property deletion succeeds for dynamic classes,
+    /// and fails for sealed ones. Objects that have particular alternative
+    /// behavior for undefined values may substitute their own implementation
+    /// here without disturbing the rest of `deleteproperty`'s implementation.
+    fn delete_property_undef(
+        &self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        _multiname: &Multiname<'gc>,
+    ) -> Result<bool, Error> {
+        // Unknown properties on a dynamic class delete successfully.
+        return Ok(!self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false));
+    }
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
     fn delete_property(
         &self,
-        gc_context: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error> {
         let name = self.resolve_multiname(multiname)?;
 
         if name.is_none() {
-            // Unknown properties on a dynamic class delete successfully.
-            return Ok(!self
-                .instance_of_class_definition()
-                .map(|c| c.read().is_sealed())
-                .unwrap_or(false));
+            return self.delete_property_undef(activation, multiname);
         }
 
         //At this point, the name should be known.
@@ -732,7 +746,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        self.delete_property_local(gc_context, &name)
+        self.delete_property_local(activation.context.gc_context, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.

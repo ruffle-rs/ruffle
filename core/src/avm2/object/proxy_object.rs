@@ -172,4 +172,39 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         )
         .into())
     }
+
+    fn delete_property_undef(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        multiname: &Multiname<'gc>,
+    ) -> Result<bool, Error> {
+        for namespace in multiname.namespace_set() {
+            if let Some(local_name) = multiname.local_name() {
+                if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
+                    let qname = QNameObject::from_qname(
+                        activation,
+                        QName::new(namespace.clone(), local_name),
+                    )?;
+
+                    return Ok(self
+                        .call_property(
+                            &QName::new(
+                                Namespace::Namespace(NS_FLASH_PROXY.into()),
+                                "deleteProperty",
+                            )
+                            .into(),
+                            &[qname.into()],
+                            activation,
+                        )?
+                        .coerce_to_boolean());
+                }
+            }
+        }
+
+        // Unknown properties on a dynamic class delete successfully.
+        return Ok(!self
+            .instance_of_class_definition()
+            .map(|c| c.read().is_sealed())
+            .unwrap_or(false));
+    }
 }

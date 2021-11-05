@@ -57,3 +57,12 @@ proxy_fn
 ///name.uri
 
 true
+///delete p.crazy_return
+///attempted to delete property: crazy_return
+///type of name is QName
+///name.localName
+crazy_return
+///name.uri
+
+///returning non-bool value
+true
