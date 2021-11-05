@@ -18,11 +18,6 @@ impl<'gc> ChildIter<'gc> {
             back_index: base.children_len(),
         }
     }
-
-    /// Yield the base element whose children are being read out of.
-    pub fn base(&self) -> XmlNode<'gc> {
-        self.base
-    }
 }
 
 impl<'gc> Iterator for ChildIter<'gc> {
@@ -50,86 +45,6 @@ impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
         }
 
         None
-    }
-}
-
-/// Indicates the current action being taken by `WalkIter` as it walks
-/// throughout the tree.
-#[derive(Copy, Clone)]
-pub enum Step<'gc> {
-    /// `WalkIter` has discovered a new element and will begin to yield its
-    /// children's steps.
-    In(XmlNode<'gc>),
-
-    /// `WalkIter` has discovered a non-element node that cannot have children.
-    ///
-    /// Note that elements will never be stepped around, even if they are
-    /// empty. They will be stepped in and out.
-    Around(XmlNode<'gc>),
-
-    /// `WalkIter` has exhausted the children of an element, stepping out of
-    /// it.
-    Out(XmlNode<'gc>),
-}
-
-impl<'gc> Step<'gc> {
-    /// Discard the information regarding how we approached a given node, and
-    /// just return the underlying `XMLNode`.
-    pub fn unwrap(self) -> XmlNode<'gc> {
-        match self {
-            Self::In(node) | Self::Around(node) | Self::Out(node) => node,
-        }
-    }
-
-    /// Yields true if this step entered an element.
-    pub fn stepped_in(self) -> bool {
-        matches!(self, Self::In(_))
-    }
-
-    /// Yields true if this step encountered a non-element node.
-    pub fn stepped_around(self) -> bool {
-        matches!(self, Self::Around(_))
-    }
-
-    /// Yields true if this step exited an element.
-    pub fn stepped_out(self) -> bool {
-        matches!(self, Self::Out(_))
-    }
-}
-
-/// Iterator that yields each step needed to visit all indirect descendents of
-/// an XML node.
-pub struct WalkIter<'gc> {
-    stack: Vec<ChildIter<'gc>>,
-}
-
-impl<'gc> WalkIter<'gc> {
-    /// Construct a new `WalkIter` that lists a tree out in `Step`s.
-    pub fn for_node(base: XmlNode<'gc>) -> Self {
-        Self {
-            stack: vec![ChildIter::for_node(base)],
-        }
-    }
-}
-
-impl<'gc> Iterator for WalkIter<'gc> {
-    type Item = Step<'gc>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let last_stack_next = self.stack.last_mut().and_then(|i| i.next());
-
-        if last_stack_next.is_none() && self.stack.len() > 1 {
-            let last = self.stack.pop().unwrap();
-            return Some(Step::Out(last.base()));
-        }
-
-        let next_node = last_stack_next?;
-        if next_node.has_children() {
-            self.stack.push(ChildIter::for_node(next_node));
-            Some(Step::In(next_node))
-        } else {
-            Some(Step::Around(next_node))
-        }
     }
 }
 
