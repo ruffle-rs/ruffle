@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject, TextFormatObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
@@ -212,7 +212,7 @@ pub fn default_text_format<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.new_text_format().as_avm2_object(activation)?.into());
+        return Ok(TextFormatObject::from_text_format(activation, this.new_text_format())?.into());
     }
 
     Ok(Value::Undefined)
@@ -229,12 +229,11 @@ pub fn set_default_text_format<'gc>(
     {
         let new_text_format = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
-        let new_text_format = TextFormat::from_avm2_object(new_text_format, activation)?;
-
-        this.set_new_text_format(new_text_format, &mut activation.context);
+        if let Some(new_text_format) = new_text_format.as_text_format() {
+            this.set_new_text_format(new_text_format.clone(), &mut activation.context);
+        };
     }
 
     Ok(Value::Undefined)
@@ -695,7 +694,7 @@ pub fn get_text_format<'gc>(
         }
 
         let tf = this.text_format(begin_index as usize, end_index as usize);
-        return Ok(tf.as_avm2_object(activation)?.into());
+        return Ok(TextFormatObject::from_text_format(activation, tf)?.into());
     }
 
     Ok(Value::Undefined)
@@ -809,43 +808,41 @@ pub fn set_text_format<'gc>(
     {
         let tf = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(&Value::Undefined)
             .coerce_to_object(activation)?;
-        let tf = TextFormat::from_avm2_object(tf, activation)?;
-        let mut begin_index = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
-        let mut end_index = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_i32(activation)?;
+        if let Some(tf) = tf.as_text_format() {
+            let mut begin_index = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)?;
+            let mut end_index = args
+                .get(2)
+                .unwrap_or(&Value::Undefined)
+                .coerce_to_i32(activation)?;
 
-        if begin_index < 0 {
-            begin_index = 0;
-        }
+            if begin_index < 0 {
+                begin_index = 0;
+            }
 
-        if begin_index as usize > this.text_length() {
-            return Err("RangeError: The supplied index is out of bounds.".into());
-        }
+            if begin_index as usize > this.text_length() {
+                return Err("RangeError: The supplied index is out of bounds.".into());
+            }
 
-        if end_index < 0 {
-            end_index = this.text_length() as i32;
-        }
+            if end_index < 0 {
+                end_index = this.text_length() as i32;
+            }
 
-        if end_index as usize > this.text_length() {
-            return Err("RangeError: The supplied index is out of bounds.".into());
-        }
+            if end_index as usize > this.text_length() {
+                return Err("RangeError: The supplied index is out of bounds.".into());
+            }
 
-        this.set_text_format(
-            begin_index as usize,
-            end_index as usize,
-            tf,
-            &mut activation.context,
-        );
+            this.set_text_format(
+                begin_index as usize,
+                end_index as usize,
+                tf.clone(),
+                &mut activation.context,
+            );
+        };
     }
 
     Ok(Value::Undefined)
