@@ -163,15 +163,19 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         Ok(())
     }
 
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
+    fn delete_property_local(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> Result<bool, Error> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 self.0.write(gc_context).storage.delete(index);
-                return true;
+                return Ok(true);
             }
         }
 
-        self.0.write(gc_context).base.delete_property(name)
+        Ok(self.0.write(gc_context).base.delete_property(name))
     }
 
     fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {

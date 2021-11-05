@@ -672,37 +672,67 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.is_property_overwritable(name)
     }
 
+    /// Delete a property by QName, after multiname resolution and all other
+    /// considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
+    fn delete_property_local(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        name: &QName<'gc>,
+    ) -> Result<bool, Error> {
+        let mut base = self.base_mut(gc_context);
+
+        Ok(base.delete_property(name))
+    }
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete_property(&self, gc_context: MutationContext<'gc, '_>, name: &QName<'gc>) -> bool {
-        let mut base = self.base_mut(gc_context);
+    fn delete_property(
+        &self,
+        gc_context: MutationContext<'gc, '_>,
+        multiname: &Multiname<'gc>,
+    ) -> Result<bool, Error> {
+        let name = self.resolve_multiname(multiname)?;
+
+        if name.is_none() {
+            // Unknown properties on a dynamic class delete successfully.
+            return Ok(!self
+                .instance_of_class_definition()
+                .map(|c| c.read().is_sealed())
+                .unwrap_or(false));
+        }
+
+        //At this point, the name should be known.
+        let name = name.unwrap();
 
         // Reject attempts to delete lazy-bound methods before they have
         // been bound.
-        if !base.has_own_instantiated_property(name) {
+        if !self.base().has_own_instantiated_property(&name) {
             if let Some(class) = self.instance_of() {
                 if class
-                    .instance_method(name)
+                    .instance_method(&name)
                     .map(|t| t.is_some())
                     .unwrap_or(false)
                 {
-                    return false;
+                    return Ok(false);
                 }
             }
 
             if let Some(class) = self.as_class_object() {
                 if class
-                    .class_method(name)
+                    .class_method(&name)
                     .map(|t| t.is_some())
                     .unwrap_or(false)
                 {
-                    return false;
+                    return Ok(false);
                 }
             }
         }
 
-        base.delete_property(name)
+        self.delete_property_local(gc_context, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
