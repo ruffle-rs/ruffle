@@ -14,7 +14,7 @@ fn is_surrogate_pair_at(us: &[u16], pos: usize) -> bool {
 
 /// Gets the position of the previous utf16 char;
 /// `pos` must already lie on a char boundary
-pub fn prev_char_boundary(slice: super::WStr<'_>, pos: usize) -> usize {
+pub fn prev_char_boundary(slice: &super::WStr, pos: usize) -> usize {
     if pos <= 1 {
         return 0;
     }
@@ -28,7 +28,7 @@ pub fn prev_char_boundary(slice: super::WStr<'_>, pos: usize) -> usize {
 
 /// Gets the byte position of the next utf16 char;
 /// `pos` must already lie on a char boundary
-pub fn next_char_boundary(slice: super::WStr<'_>, pos: usize) -> usize {
+pub fn next_char_boundary(slice: &super::WStr, pos: usize) -> usize {
     if pos >= slice.len() {
         return slice.len();
     }

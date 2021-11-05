@@ -14,8 +14,8 @@ pub enum BevelFilterType {
     Full,
 }
 
-impl From<WStr<'_>> for BevelFilterType {
-    fn from(value: WStr<'_>) -> Self {
+impl<'a> From<&'a WStr> for BevelFilterType {
+    fn from(value: &'a WStr) -> Self {
         if value == b"inner" {
             BevelFilterType::Inner
         } else if value == b"outer" {
@@ -26,8 +26,8 @@ impl From<WStr<'_>> for BevelFilterType {
     }
 }
 
-impl From<BevelFilterType> for WStr<'static> {
-    fn from(v: BevelFilterType) -> WStr<'static> {
+impl From<BevelFilterType> for &'static WStr {
+    fn from(v: BevelFilterType) -> &'static WStr {
         let s: &[u8] = match v {
             BevelFilterType::Inner => b"inner",
             BevelFilterType::Outer => b"outer",

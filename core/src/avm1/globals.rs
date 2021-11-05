@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, BorrowWStr, WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
 use gc_arena::MutationContext;
 use rand::Rng;
@@ -138,10 +138,10 @@ pub fn parse_int<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let string = string.borrow();
+    let string = string.as_wstr();
 
-    fn parse_sign(string: WStr<'_>) -> Option<f64> {
-        string.try_get(0).and_then(|c| match u8::try_from(c) {
+    fn parse_sign(string: &WStr) -> Option<f64> {
+        string.get(0).and_then(|c| match u8::try_from(c) {
             Ok(b'+') => Some(1.),
             Ok(b'-') => Some(-1.),
             _ => None,
@@ -152,9 +152,9 @@ pub fn parse_int<'gc>(
         let has_sign = parse_sign(string).is_some();
 
         let off = if has_sign { 1 } else { 0 };
-        let zero = string.try_get(off) == Some(b'0' as u16);
+        let zero = string.get(off) == Some(b'0' as u16);
         let hex = if zero {
-            let hex = string.try_get(off + 1);
+            let hex = string.get(off + 1);
             hex == Some(b'x' as u16) || hex == Some(b'X' as u16)
         } else {
             false
@@ -177,12 +177,11 @@ pub fn parse_int<'gc>(
                 // Emulate bug: the prefix is expected before the sign or spaces.
                 //   parseInt("0x  -10") == -16 // not NaN
                 //   parseInt("  -0x10") == NaN // not -16
-                (radix.unwrap_or(16), false, string.slice(2..))
+                (radix.unwrap_or(16), false, &string[2..])
             }
         } else if zero
             && radix.is_none()
-            && string
-                .slice(1..)
+            && string[1..]
                 .iter()
                 .all(|c| c >= b'0' as u16 && c <= b'7' as u16)
         {
@@ -199,14 +198,14 @@ pub fn parse_int<'gc>(
 
     let (sign, string) = if let Some(sign) = parse_sign(string) {
         let sign = if ignore_sign { 1. } else { sign };
-        (sign, string.slice(1..))
+        (sign, &string[1..])
     } else {
         (1., string)
     };
 
     let mut empty = true;
     let mut result = 0.0f64;
-    for chr in string.iter() {
+    for chr in string {
         let digit = u8::try_from(chr)
             .ok()
             .and_then(|c| (c as char).to_digit(radix));

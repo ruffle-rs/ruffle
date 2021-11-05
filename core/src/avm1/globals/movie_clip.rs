@@ -15,7 +15,6 @@ use crate::display_object::{
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
-use crate::string::BorrowWStr;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use swf::{
@@ -261,8 +260,7 @@ fn line_style<'gc>(
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_ref()
-            .map(|v| v.borrow())
+            .as_deref()
         {
             Some(v) if v == b"normal" => (true, true),
             Some(v) if v == b"vertical" => (true, false),
@@ -272,8 +270,7 @@ fn line_style<'gc>(
         let cap_style = match args
             .get(5)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_ref()
-            .map(|v| v.borrow())
+            .as_deref()
         {
             Some(v) if v == b"square" => LineCapStyle::Square,
             Some(v) if v == b"none" => LineCapStyle::None,
@@ -282,8 +279,7 @@ fn line_style<'gc>(
         let join_style = match args
             .get(6)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_ref()
-            .map(|v| v.borrow())
+            .as_deref()
         {
             Some(v) if v == b"miter" => {
                 if let Some(limit) = args.get(7) {
@@ -470,8 +466,7 @@ fn begin_gradient_fill<'gc>(
         let spread = match args
             .get(5)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_ref()
-            .map(|v| v.borrow())
+            .as_deref()
         {
             Some(v) if v == b"reflect" => GradientSpread::Reflect,
             Some(v) if v == b"repeat" => GradientSpread::Repeat,
@@ -480,8 +475,7 @@ fn begin_gradient_fill<'gc>(
         let interpolation = match args
             .get(6)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_ref()
-            .map(|v| v.borrow())
+            .as_deref()
         {
             Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
             _ => GradientInterpolation::Rgb,
@@ -493,9 +487,9 @@ fn begin_gradient_fill<'gc>(
             interpolation,
             records,
         };
-        let style = if method == b"linear" {
+        let style = if &method == b"linear" {
             FillStyle::LinearGradient(gradient)
-        } else if method == b"radial" {
+        } else if &method == b"radial" {
             if let Some(focal_point) = args.get(7) {
                 FillStyle::FocalGradient {
                     gradient,
@@ -1003,7 +997,7 @@ pub fn goto_frame<'gc>(
             // This can direct other clips than the one this method was called on!
             let frame_path = val.coerce_to_string(activation)?;
             if let Some((clip, frame)) =
-                activation.resolve_variable_path(movie_clip.into(), frame_path.borrow())?
+                activation.resolve_variable_path(movie_clip.into(), &frame_path)?
             {
                 if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
@@ -1274,10 +1268,10 @@ pub fn get_url<'gc>(
     //TODO: Error behavior if no arguments are present
     if let Some(url_val) = args.get(0) {
         let url = url_val.coerce_to_string(activation)?;
-        if let Some(fscommand) = fscommand::parse(url.borrow()) {
+        if let Some(fscommand) = fscommand::parse(&url) {
             let fsargs_val = args.get(1).cloned().unwrap_or(Value::Undefined);
             let fsargs = fsargs_val.coerce_to_string(activation)?;
-            fscommand::handle(fscommand, fsargs.borrow(), activation);
+            fscommand::handle(fscommand, &fsargs, activation);
             return Ok(Value::Undefined);
         }
 
@@ -1288,7 +1282,7 @@ pub fn get_url<'gc>(
         };
 
         let method = match args.get(2) {
-            Some(Value::String(s)) => NavigationMethod::from_method_str(s.borrow()),
+            Some(Value::String(s)) => NavigationMethod::from_method_str(s),
             _ => None,
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
@@ -1347,8 +1341,8 @@ fn load_movie<'gc>(
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
-    let method = NavigationMethod::from_method_str(method.coerce_to_string(activation)?.borrow());
-    let (url, opts) = activation.locals_into_request_options(url.borrow(), method);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
+    let (url, opts) = activation.locals_into_request_options(&url, method);
     let fetch = activation.context.navigator.fetch(&url, opts);
     let process = activation.context.load_manager.load_movie_into_clip(
         activation.context.player.clone().unwrap(),
@@ -1372,8 +1366,8 @@ fn load_variables<'gc>(
     let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
-    let method = NavigationMethod::from_method_str(method.coerce_to_string(activation)?.borrow());
-    let (url, opts) = activation.locals_into_request_options(url.borrow(), method);
+    let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
+    let (url, opts) = activation.locals_into_request_options(&url, method);
     let fetch = activation.context.navigator.fetch(&url, opts);
     let target = target.object().coerce_to_object(activation);
     let process = activation.context.load_manager.load_form_into_object(

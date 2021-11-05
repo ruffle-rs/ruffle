@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{AvmString, BorrowWStr, Integer, Units, WStr, WString};
+use crate::string::{AvmString, Integer, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::xml::{XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
@@ -15,8 +15,7 @@ use std::sync::Arc;
 /// Replace HTML entities with their equivalent characters.
 ///
 /// Unknown entities will be ignored.
-
-fn process_html_entity(src: WStr<'_>) -> Option<WString> {
+fn process_html_entity(src: &WStr) -> Option<WString> {
     let amp_index = match src.find(b'&') {
         Some(i) => i,
         None => return None, // No entities.
@@ -34,7 +33,7 @@ fn process_html_entity(src: WStr<'_>) -> Option<WString> {
     while let Some((i, ch)) = unit_indices.next() {
         if let Some(start) = entity_start {
             if ch == b';' as u16 {
-                let s = src.slice(start + 1..i);
+                let s = &src[start + 1..i];
                 if s.eq_ignore_case(WStr::from_units(b"amp")) {
                     result_str.push_byte(b'&');
                 } else if s.eq_ignore_case(WStr::from_units(b"lt")) {
@@ -47,16 +46,16 @@ fn process_html_entity(src: WStr<'_>) -> Option<WString> {
                     result_str.push_byte(b'\'');
                 } else if s.eq_ignore_case(WStr::from_units(b"nbsp")) {
                     result_str.push_byte(b'\xA0');
-                } else if s.len() >= 2 && s.get(0) == b'#' as u16 {
+                } else if s.len() >= 2 && s.at(0) == b'#' as u16 {
                     // Number entity: &#nnnn; or &#xhhhh;
-                    let (digits, radix) = if src.get(1) == b'x' as u16 {
+                    let (digits, radix) = if src.at(1) == b'x' as u16 {
                         // Only trailing 4 hex digits are used.
                         let start = usize::max(s.len(), 6) - 4;
-                        (s.slice(start..), 16)
+                        (&s[start..], 16)
                     } else {
                         // Only trailing 16 digits are used.
                         let start = usize::max(s.len(), 17) - 16;
-                        (s.slice(start..), 10)
+                        (&s[start..], 10)
                     };
                     if let Ok(n) = u32::from_wstr_radix(digits, radix) {
                         if let Some(c) = std::char::from_u32(n) {
@@ -65,23 +64,23 @@ fn process_html_entity(src: WStr<'_>) -> Option<WString> {
                     } else {
                         // Invalid entity; output text as is.
                         if let Some((next_idx, _)) = unit_indices.peek() {
-                            result_str.push_str(src.slice(start..*next_idx));
+                            result_str.push_str(&src[start..*next_idx]);
                         } else {
-                            result_str.push_str(src.slice(start..));
+                            result_str.push_str(&src[start..]);
                         }
                     }
                 } else {
                     // Invalid entity; output text as is.
                     if let Some((next_idx, _)) = unit_indices.peek() {
-                        result_str.push_str(src.slice(start..*next_idx));
+                        result_str.push_str(&src[start..*next_idx]);
                     } else {
-                        result_str.push_str(src.slice(start..));
+                        result_str.push_str(&src[start..]);
                     }
                 }
 
                 entity_start = None;
             } else if ch == b'&' as u16 {
-                result_str.push_str(src.slice(start..i));
+                result_str.push_str(&src[start..i]);
                 entity_start = Some(i);
             }
         } else if ch == b'&' as u16 {
@@ -93,7 +92,7 @@ fn process_html_entity(src: WStr<'_>) -> Option<WString> {
 
     // Output remaining text if we were in the middle of parsing an entity.
     if let Some(start) = entity_start {
-        result_str.push_str(src.slice(start..));
+        result_str.push_str(&src[start..]);
     }
 
     Some(result_str)
@@ -544,7 +543,7 @@ impl FormatSpans {
 
     /// Construct a format span from its raw parts.
     #[allow(dead_code)]
-    pub fn from_str_and_spans(text: WStr<'_>, spans: &[TextSpan]) -> Self {
+    pub fn from_str_and_spans(text: &WStr, spans: &[TextSpan]) -> Self {
         FormatSpans {
             text: text.into(),
             displayed_text: WString::new(),
@@ -569,7 +568,7 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
-    pub fn from_html(html: WStr<'_>, default_format: TextFormat) -> Self {
+    pub fn from_html(html: &WStr, default_format: TextFormat) -> Self {
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
@@ -661,13 +660,13 @@ impl FormatSpans {
                             if let Some(color) = attribute(b"color") {
                                 if color.starts_with(b'#') {
                                     let rval = color
-                                        .try_slice(1..3)
+                                        .slice(1..3)
                                         .and_then(|v| u8::from_wstr_radix(v, 16).ok());
                                     let gval = color
-                                        .try_slice(3..5)
+                                        .slice(3..5)
                                         .and_then(|v| u8::from_wstr_radix(v, 16).ok());
                                     let bval = color
-                                        .try_slice(5..7)
+                                        .slice(5..7)
                                         .and_then(|v| u8::from_wstr_radix(v, 16).ok());
 
                                     if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
@@ -738,9 +737,9 @@ impl FormatSpans {
                 }
                 Ok(Event::Text(e)) => {
                     let e = decode_to_wstr(Cow::Borrowed(&e[..]));
-                    let e = process_html_entity(e.borrow()).unwrap_or(e);
+                    let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
-                    text.push_str(e.borrow());
+                    text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), format));
                 }
                 Ok(Event::End(e)) => {
@@ -799,15 +798,15 @@ impl FormatSpans {
     }
 
     /// Retrieve the text backing the format spans.
-    pub fn text(&self) -> WStr<'_> {
-        self.text.borrow()
+    pub fn text(&self) -> &WStr {
+        &self.text
     }
 
-    pub fn displayed_text(&self) -> WStr<'_> {
+    pub fn displayed_text(&self) -> &WStr {
         if self.has_displayed_text() {
-            self.displayed_text.borrow()
+            &self.displayed_text
         } else {
-            self.text.borrow()
+            &self.text
         }
     }
 
@@ -1046,7 +1045,7 @@ impl FormatSpans {
         &mut self,
         from: usize,
         to: usize,
-        with: WStr<'_>,
+        with: &WStr,
         new_tf: Option<&TextFormat>,
     ) {
         if to < from {
@@ -1078,17 +1077,17 @@ impl FormatSpans {
         }
 
         let mut new_string = WString::new();
-        if let Some(text) = self.text.try_slice(0..from) {
+        if let Some(text) = self.text.slice(0..from) {
             new_string.push_str(text);
         } else {
             // `get` will fail if `from` exceeds the bounds of the text, rather
             // than just giving all of it to us. In that case, we append the
             // entire string.
-            new_string.push_str(self.text.borrow());
+            new_string.push_str(&self.text);
         }
         new_string.push_str(with);
 
-        if let Some(text) = self.text.try_slice(to..) {
+        if let Some(text) = self.text.slice(to..) {
             new_string.push_str(text);
         }
 
@@ -1107,7 +1106,7 @@ impl FormatSpans {
     ///    character covered by the span, plus one)
     /// 3. The string contents of the text span
     /// 4. The formatting applied to the text span.
-    pub fn iter_spans(&self) -> impl Iterator<Item = (usize, usize, WStr<'_>, &TextSpan)> {
+    pub fn iter_spans(&self) -> impl Iterator<Item = (usize, usize, &WStr, &TextSpan)> {
         TextSpanIter::for_format_spans(self)
     }
 
@@ -1422,8 +1421,7 @@ impl FormatSpans {
                 } else {
                     let line_start = line.offset_in(text).unwrap();
                     let line_with_newline = if line_start > 0 {
-                        text.try_slice(line_start - 1..line.len() + 1)
-                            .unwrap_or(line)
+                        text.slice(line_start - 1..line.len() + 1).unwrap_or(line)
                     } else {
                         line
                     };

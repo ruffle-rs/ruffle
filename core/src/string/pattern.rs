@@ -5,7 +5,7 @@
 //  - remove implicit bound checks?
 //  - use memchr crate?
 
-use super::{Units, WStr};
+use super::{AvmString, Units, WStr, WString};
 
 /// A pattern that can be searched in a [`WStr`].
 ///
@@ -18,7 +18,7 @@ use super::{Units, WStr};
 pub trait Pattern<'a> {
     type Searcher: Searcher<'a>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher;
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher;
 }
 
 pub enum SearchStep {
@@ -76,7 +76,7 @@ pub trait Searcher<'a> {
 impl<'a> Pattern<'a> for u8 {
     type Searcher = Either<PredSearcher<'a, u8, u8>, PredSearcher<'a, u16, u16>>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         match haystack.units() {
             Units::Bytes(h) => Either::Left(PredSearcher::new(true, h, self)),
             Units::Wide(h) => Either::Right(PredSearcher::new(true, h, self.into())),
@@ -87,7 +87,7 @@ impl<'a> Pattern<'a> for u8 {
 impl<'a> Pattern<'a> for u16 {
     type Searcher = Either<PredSearcher<'a, u8, u8>, PredSearcher<'a, u16, u16>>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         let is_latin1 = self <= u8::MAX as u16;
         match haystack.units() {
             Units::Bytes(h) => Either::Left(PredSearcher::new(is_latin1, h, self as u8)),
@@ -100,7 +100,7 @@ impl<'a> Pattern<'a> for &'a [u8] {
     type Searcher =
         Either<PredSearcher<'a, u8, AnyOf<'a, u8>>, PredSearcher<'a, u16, AnyOf<'a, u8>>>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         let can_match = !self.is_empty();
         match haystack.units() {
             Units::Bytes(h) => Either::Left(PredSearcher::new(can_match, h, AnyOf(self))),
@@ -113,7 +113,7 @@ impl<'a> Pattern<'a> for &'a [u16] {
     type Searcher =
         Either<PredSearcher<'a, u8, AnyOf<'a, u16>>, PredSearcher<'a, u16, AnyOf<'a, u16>>>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         let can_match =
             !self.is_empty() && (haystack.is_wide() || self.iter().any(|c| *c <= u8::MAX as u16));
         match haystack.units() {
@@ -126,7 +126,7 @@ impl<'a> Pattern<'a> for &'a [u16] {
 impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
     type Searcher = Either<PredSearcher<'a, u8, FnPred<F>>, PredSearcher<'a, u16, FnPred<F>>>;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         match haystack.units() {
             Units::Bytes(h) => Either::Left(PredSearcher::new(true, h, FnPred(self))),
             Units::Wide(h) => Either::Right(PredSearcher::new(true, h, FnPred(self))),
@@ -134,14 +134,14 @@ impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
     }
 }
 
-impl<'a> Pattern<'a> for WStr<'a> {
+impl<'a> Pattern<'a> for &'a WStr {
     #[allow(clippy::type_complexity)]
     type Searcher = Either<
         Either<Either<SliceSearcher<'a, u8>, SliceSearcher<'a, u16>>, StrSearcher<'a>>,
         EmptySearcher,
     >;
 
-    fn into_searcher(self, haystack: WStr<'a>) -> Self::Searcher {
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
         if self.is_empty() {
             return Either::Right(EmptySearcher::new(haystack.len()));
         }
@@ -156,6 +156,24 @@ impl<'a> Pattern<'a> for WStr<'a> {
         };
 
         Either::Left(Either::Left(s))
+    }
+}
+
+impl<'a> Pattern<'a> for &'a WString {
+    type Searcher = <&'a WStr as Pattern<'a>>::Searcher;
+
+    #[inline]
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
+        self.as_wstr().into_searcher(haystack)
+    }
+}
+
+impl<'a> Pattern<'a> for &'a AvmString<'_> {
+    type Searcher = <&'a WStr as Pattern<'a>>::Searcher;
+
+    #[inline]
+    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
+        self.as_wstr().into_searcher(haystack)
     }
 }
 
@@ -378,14 +396,14 @@ impl<'a, T: Eq> Searcher<'a> for SliceSearcher<'a, T> {
 }
 
 pub struct StrSearcher<'a> {
-    haystack: WStr<'a>,
-    needle: WStr<'a>,
+    haystack: &'a WStr,
+    needle: &'a WStr,
     front: usize,
     back: usize,
 }
 
 impl<'a> StrSearcher<'a> {
-    fn new(haystack: WStr<'a>, needle: WStr<'a>) -> Self {
+    fn new(haystack: &'a WStr, needle: &'a WStr) -> Self {
         debug_assert!(!needle.is_empty());
         let (front, back) = match haystack.len().checked_sub(needle.len()) {
             Some(i) => (0, i),
@@ -408,7 +426,7 @@ impl<'a> Searcher<'a> for StrSearcher<'a> {
 
         let start = self.front;
         let end = self.front + self.needle.len();
-        if self.haystack.slice(start..end) == self.needle {
+        if &self.haystack[start..end] == self.needle {
             self.front = end;
             SearchStep::Match(start, end)
         } else {
@@ -424,7 +442,7 @@ impl<'a> Searcher<'a> for StrSearcher<'a> {
 
         let start = self.back;
         let end = start + self.needle.len();
-        if self.haystack.slice(start..end) == self.needle {
+        if &self.haystack[start..end] == self.needle {
             if let Some(back) = start.checked_sub(self.needle.len()) {
                 self.back = back;
             } else {
@@ -440,94 +458,5 @@ impl<'a> Searcher<'a> for StrSearcher<'a> {
             }
             SearchStep::Reject(end - 1, end)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fmt::Debug;
-
-    macro_rules! bstr {
-        ($str:literal) => {
-            WStr::from_units($str)
-        };
-    }
-
-    macro_rules! wstr {
-        ($($char:literal)*) => {
-            WStr::from_units(&[$($char as u16),*])
-        }
-    }
-
-    fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
-        haystack: WStr<'a>,
-        pattern: P,
-        forwards: &[(usize, usize)],
-        backwards: Option<&[(usize, usize)]>,
-    ) {
-        let mut searcher = pattern.clone().into_searcher(haystack);
-        let mut actual: Vec<_> = std::iter::from_fn(|| searcher.next_match()).collect();
-        assert_eq!(
-            actual, forwards,
-            "incorrect forwards matching: haystack={:?}; pattern={:?}",
-            haystack, pattern
-        );
-
-        searcher = pattern.clone().into_searcher(haystack);
-        actual = std::iter::from_fn(|| searcher.next_match_back()).collect();
-        actual.reverse();
-        assert_eq!(
-            actual,
-            backwards.unwrap_or(forwards),
-            "incorrect backwards matching: haystack={:?}; pattern={:?}",
-            haystack,
-            pattern
-        );
-    }
-
-    #[test]
-    fn char_patterns() {
-        test_pattern(bstr!(b"a"), b'a', &[(0, 1)], None);
-
-        let bytes = bstr!(b"abaabbcab");
-        test_pattern(bytes, b'b', &[(1, 2), (4, 5), (5, 6), (8, 9)], None);
-        test_pattern(bytes, b'd', &[], None);
-        test_pattern(bytes, 'c' as u16, &[(6, 7)], None);
-        test_pattern(bytes, '↓' as u16, &[], None);
-
-        let wide = wstr!('↓''a''a''↓''a');
-        test_pattern(wide, b'c', &[], None);
-        test_pattern(wide, '↓' as u16, &[(0, 1), (3, 4)], None);
-    }
-
-    #[test]
-    fn multi_char_patterns() {
-        let bytes = bstr!(b"abcdabcd");
-        let matches = &[(0, 1), (2, 3), (4, 5), (6, 7)];
-        test_pattern(bytes, &[b'a', b'c'][..], matches, None);
-        test_pattern(bytes, &['a' as u16, 'c' as u16][..], matches, None);
-
-        let wide = wstr!('↓''a''b''↓''b''c');
-        test_pattern(wide, &[b'a', b'b'][..], &[(1, 2), (2, 3), (4, 5)], None);
-        test_pattern(wide, &['↓' as u16, '−' as u16][..], &[(0, 1), (3, 4)], None);
-
-        // Don't test `FnMut(u16) -> bool` because it isn't `Debug`
-    }
-
-    #[test]
-    fn str_patterns() {
-        test_pattern(bstr!(b"aa"), bstr!(b""), &[(0, 0), (1, 1), (2, 2)], None);
-        test_pattern(bstr!(b"abcde"), bstr!(b"abcde"), &[(0, 5)], None);
-
-        let bytes = bstr!(b"bbabbbabbbba");
-        let matches = &[(0, 2), (3, 5), (7, 9), (9, 11)];
-        let matches_rev = &[(0, 2), (4, 6), (7, 9), (9, 11)];
-        test_pattern(bytes, bstr!(b"bb"), matches, Some(matches_rev));
-        test_pattern(bytes, wstr!('b''b'), matches, Some(matches_rev));
-
-        let wide = wstr!('↓''↓''a''a''↓''↓''a''a''↓''↓');
-        test_pattern(wide, bstr!(b"aa"), &[(2, 4), (6, 8)], None);
-        test_pattern(wide, wstr!('↓''a'), &[(1, 3), (5, 7)], None);
     }
 }

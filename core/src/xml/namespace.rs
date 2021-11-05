@@ -1,6 +1,6 @@
 //! XML namespacing support
 
-use crate::string::{AvmString, BorrowWStr, WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
 use std::fmt;
 
@@ -24,8 +24,8 @@ pub struct XmlName<'gc> {
 impl<'gc> XmlName<'gc> {
     pub fn in_namespace(
         gc_context: MutationContext<'gc, '_>,
-        namespace: WStr<'_>,
-        name: WStr<'_>,
+        namespace: &WStr,
+        name: &WStr,
     ) -> Self {
         let mut full_name = WString::from(namespace);
         full_name.push_byte(b':');
@@ -52,16 +52,16 @@ impl<'gc> XmlName<'gc> {
     }
 
     /// Retrieve the local part of this name.
-    pub fn local_name(&self) -> WStr<'_> {
+    pub fn local_name(&self) -> &WStr {
         match self.namespace_sep {
-            Some(sep) => self.name.slice(sep + 1..),
-            None => self.name.borrow(),
+            Some(sep) => &self.name[sep + 1..],
+            None => &self.name,
         }
     }
 
     /// Retrieve the prefix part of this name, if available.
-    pub fn prefix(&self) -> Option<WStr<'_>> {
-        self.namespace_sep.map(|sep| self.name.slice(..sep))
+    pub fn prefix(&self) -> Option<&WStr> {
+        self.namespace_sep.map(|sep| &self.name[..sep])
     }
 
     /// Return the fully qualified part of the name.
@@ -74,7 +74,7 @@ impl<'gc> XmlName<'gc> {
     /// Compares both names as case-insensitve (for use in HTML parsing).
     /// TODO: We shouldn't need this when we have a proper HTML parser.
     pub fn eq_ignore_case(&self, other: XmlName<'gc>) -> bool {
-        self.name.eq_ignore_case(other.name.borrow())
+        self.name.eq_ignore_case(&other.name)
     }
 }
 

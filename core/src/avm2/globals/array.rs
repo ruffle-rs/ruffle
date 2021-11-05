@@ -8,7 +8,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::{min, Ordering};
@@ -902,7 +902,7 @@ pub fn compare_string_case_insensitive<'gc>(
     let string_a = a.coerce_to_string(activation)?;
     let string_b = b.coerce_to_string(activation)?;
 
-    Ok(string_a.cmp_ignore_case(string_b.borrow()))
+    Ok(string_a.cmp_ignore_case(&string_b))
 }
 
 pub fn compare_numeric<'gc>(

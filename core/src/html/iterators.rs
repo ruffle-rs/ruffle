@@ -22,7 +22,7 @@ impl<'a> TextSpanIter<'a> {
 }
 
 impl<'a> Iterator for TextSpanIter<'a> {
-    type Item = (usize, usize, WStr<'a>, &'a TextSpan);
+    type Item = (usize, usize, &'a WStr, &'a TextSpan);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(span) = self.base.span(self.index) {
@@ -33,7 +33,7 @@ impl<'a> Iterator for TextSpanIter<'a> {
             let next = (
                 start_pos,
                 end_pos,
-                self.base.displayed_text().try_slice(start_pos..end_pos)?,
+                self.base.displayed_text().slice(start_pos..end_pos)?,
                 span,
             );
 

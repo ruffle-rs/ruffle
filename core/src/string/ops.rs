@@ -1,10 +1,10 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::fmt::{self, Write};
 use std::hash::Hasher;
 use std::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
-use super::{utils, BorrowWStr, Pattern, Units, WStr, WString};
+use super::{utils, Pattern, Units, WStr, WString};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -57,7 +57,7 @@ impl<'a> Iterator for CharIndices<'a> {
 }
 
 #[inline]
-pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
+pub fn str_iter(s: &WStr) -> Iter<'_> {
     let inner = match s.units() {
         Units::Bytes(us) => Units::Bytes(us.iter()),
         Units::Wide(us) => Units::Wide(us.iter()),
@@ -66,14 +66,14 @@ pub fn str_iter(s: WStr<'_>) -> Iter<'_> {
 }
 
 #[inline]
-pub fn str_char_indices(s: WStr<'_>) -> CharIndices<'_> {
+pub fn str_char_indices(s: &WStr) -> CharIndices<'_> {
     CharIndices {
         chars: s.chars(),
         start: 0,
     }
 }
 
-pub fn str_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+pub fn str_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let utf8 = WStrToUtf8::new(s);
     f.write_str(utf8.head)?;
     utf8.tail
@@ -82,7 +82,7 @@ pub fn str_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         .try_for_each(|c| f.write_char(c))
 }
 
-pub fn str_debug_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+pub fn str_debug_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_char('"')?;
 
     for c in std::char::decode_utf16(s.iter()) {
@@ -95,7 +95,7 @@ pub fn str_debug_fmt(s: WStr<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_char('"')
 }
 
-pub fn str_eq(left: WStr<'_>, right: WStr<'_>) -> bool {
+pub fn str_eq(left: &WStr, right: &WStr) -> bool {
     let (bytes, wide) = match (left.units(), right.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => return a == b,
         (Units::Wide(a), Units::Wide(b)) => return a == b,
@@ -113,13 +113,13 @@ pub fn str_eq(left: WStr<'_>, right: WStr<'_>) -> bool {
     })
 }
 
-pub fn str_eq_ignore_case(left: WStr<'_>, right: WStr<'_>) -> bool {
+pub fn str_eq_ignore_case(left: &WStr, right: &WStr) -> bool {
     let left = left.iter().map(utils::swf_to_lowercase);
     let right = right.iter().map(utils::swf_to_lowercase);
     left.eq(right)
 }
 
-pub fn str_cmp(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
+pub fn str_cmp(left: &WStr, right: &WStr) -> std::cmp::Ordering {
     let (bytes, wide, rev) = match (left.units(), right.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => return a.cmp(b),
         (Units::Wide(a), Units::Wide(b)) => return a.cmp(b),
@@ -137,20 +137,21 @@ pub fn str_cmp(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
     }
 }
 
-pub fn str_cmp_ignore_case(left: WStr<'_>, right: WStr<'_>) -> std::cmp::Ordering {
+pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> std::cmp::Ordering {
     let left = left.iter().map(utils::swf_to_lowercase);
     let right = right.iter().map(utils::swf_to_lowercase);
     left.cmp(right)
 }
 
-pub fn str_hash<H: Hasher>(s: WStr<'_>, state: &mut H) {
+pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
     match s.units() {
         Units::Bytes(us) => us.iter().for_each(|u| state.write_u16(u16::from(*u))),
         Units::Wide(us) => us.iter().for_each(|u| state.write_u16(*u)),
     }
+    state.write_u8(0xff);
 }
 
-pub fn str_offset_in(s: WStr<'_>, other: WStr<'_>) -> Option<usize> {
+pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
     match (s.units(), other.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => {
             (a.as_ptr() as usize).checked_sub(b.as_ptr() as usize)
@@ -162,7 +163,7 @@ pub fn str_offset_in(s: WStr<'_>, other: WStr<'_>) -> Option<usize> {
     }
 }
 
-fn map_latin1_chars(s: WStr<'_>, mut map: impl FnMut(u8) -> u8) -> WString {
+fn map_latin1_chars(s: &WStr, mut map: impl FnMut(u8) -> u8) -> WString {
     match s.units() {
         Units::Bytes(us) => {
             let us: Vec<u8> = us.iter().map(|c| map(*c)).collect();
@@ -181,22 +182,22 @@ fn map_latin1_chars(s: WStr<'_>, mut map: impl FnMut(u8) -> u8) -> WString {
     }
 }
 
-pub fn str_to_ascii_lowercase(s: WStr<'_>) -> WString {
+pub fn str_to_ascii_lowercase(s: &WStr) -> WString {
     map_latin1_chars(s, |c| c.to_ascii_lowercase())
 }
 
-pub fn str_is_latin1(s: WStr<'_>) -> bool {
+pub fn str_is_latin1(s: &WStr) -> bool {
     match s.units() {
         Units::Bytes(_) => true,
         Units::Wide(us) => us.iter().all(|c| *c <= u16::from(u8::MAX)),
     }
 }
 
-pub fn str_join<E: BorrowWStr>(elems: &[E], sep: WStr<'_>) -> WString {
-    fn join_inner<T, E, F>(total_len: usize, elems: &[E], sep: WStr<'_>, mut extend: F) -> Vec<T>
+pub fn str_join<E: Borrow<WStr>>(elems: &[E], sep: &WStr) -> WString {
+    fn join_inner<T, E, F>(total_len: usize, elems: &[E], sep: &WStr, mut extend: F) -> Vec<T>
     where
-        E: BorrowWStr,
-        F: FnMut(&mut Vec<T>, WStr<'_>),
+        E: Borrow<WStr>,
+        F: FnMut(&mut Vec<T>, &WStr),
     {
         let mut buf = Vec::with_capacity(total_len);
         extend(&mut buf, elems[0].borrow());
@@ -234,7 +235,7 @@ pub fn str_join<E: BorrowWStr>(elems: &[E], sep: WStr<'_>) -> WString {
     }
 }
 
-pub fn str_repeat(s: WStr<'_>, count: usize) -> WString {
+pub fn str_repeat(s: &WStr, count: usize) -> WString {
     if count == 0 || s.is_empty() {
         return WString::new();
     }
@@ -259,29 +260,29 @@ pub fn str_repeat(s: WStr<'_>, count: usize) -> WString {
     }
 }
 
-pub fn str_replace<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P, with: WStr<'_>) -> WString {
+pub fn str_replace<'a, P: Pattern<'a>>(haystack: &'a WStr, pattern: P, with: &WStr) -> WString {
     let mut result = WString::new();
     let mut prev_end = 0;
 
     let mut searcher = pattern.into_searcher(haystack);
     while let Some((start, end)) = searcher.next_match() {
-        result.push_str(haystack.slice(prev_end..start));
+        result.push_str(&haystack[prev_end..start]);
         result.push_str(with);
         prev_end = end;
     }
-    result.push_str(haystack.slice(prev_end..));
+    result.push_str(&haystack[prev_end..]);
 
     result
 }
 
-pub fn str_find<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
+pub fn str_find<'a, P: Pattern<'a>>(haystack: &'a WStr, pattern: P) -> Option<usize> {
     pattern
         .into_searcher(haystack)
         .next_match()
         .map(|(start, _)| start)
 }
 
-pub fn str_rfind<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<usize> {
+pub fn str_rfind<'a, P: Pattern<'a>>(haystack: &'a WStr, pattern: P) -> Option<usize> {
     pattern
         .into_searcher(haystack)
         .next_match_back()
@@ -289,7 +290,7 @@ pub fn str_rfind<'a, P: Pattern<'a>>(haystack: WStr<'a>, pattern: P) -> Option<u
 }
 
 #[inline]
-pub fn str_split<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Split<'a, P> {
+pub fn str_split<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> Split<'a, P> {
     Split {
         string: Some(string),
         searcher: pattern.into_searcher(string),
@@ -298,42 +299,42 @@ pub fn str_split<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Split<'a, 
 }
 
 pub fn str_rsplit_once<'a, P: Pattern<'a>>(
-    string: WStr<'a>,
+    string: &'a WStr,
     pattern: P,
-) -> Option<(WStr<'a>, WStr<'a>)> {
+) -> Option<(&'a WStr, &'a WStr)> {
     let (start, end) = pattern.into_searcher(string).next_match_back()?;
-    Some((string.slice(..start), string.slice(end..)))
+    Some((&string[..start], &string[end..]))
 }
 
-pub fn starts_with<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> bool {
+pub fn starts_with<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> bool {
     matches!(
         pattern.into_searcher(string).next(),
         SearchStep::Match(_, _)
     )
 }
 
-pub fn ends_with<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> bool {
+pub fn ends_with<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> bool {
     matches!(
         pattern.into_searcher(string).next_back(),
         SearchStep::Match(_, _)
     )
 }
 
-pub fn strip_prefix<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Option<WStr<'a>> {
+pub fn strip_prefix<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> Option<&'a WStr> {
     match pattern.into_searcher(string).next() {
-        SearchStep::Match(_, end) => Some(string.slice(end..)),
+        SearchStep::Match(_, end) => Some(&string[end..]),
         _ => None,
     }
 }
 
-pub fn strip_suffix<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> Option<WStr<'a>> {
+pub fn strip_suffix<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> Option<&'a WStr> {
     match pattern.into_searcher(string).next_back() {
-        SearchStep::Match(start, _) => Some(string.slice(..start)),
+        SearchStep::Match(start, _) => Some(&string[..start]),
         _ => None,
     }
 }
 
-pub fn str_trim_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+pub fn str_trim_matches<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> &'a WStr {
     let mut i = 0;
     let mut j = 0;
     let mut searcher = pattern.into_searcher(string);
@@ -346,37 +347,37 @@ pub fn str_trim_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WSt
         j = end;
     }
 
-    string.slice(i..j)
+    &string[i..j]
 }
 
-pub fn str_trim_start_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+pub fn str_trim_start_matches<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> &'a WStr {
     let mut i = string.len();
     let mut searcher = pattern.into_searcher(string);
     if let Some((start, _)) = searcher.next_reject() {
         i = start;
     }
 
-    string.slice(i..)
+    &string[i..]
 }
 
-pub fn str_trim_end_matches<'a, P: Pattern<'a>>(string: WStr<'a>, pattern: P) -> WStr<'a> {
+pub fn str_trim_end_matches<'a, P: Pattern<'a>>(string: &'a WStr, pattern: P) -> &'a WStr {
     let mut i = 0;
     let mut searcher = pattern.into_searcher(string);
     if let Some((_, end)) = searcher.next_reject_back() {
         i = end;
     }
 
-    string.slice(..i)
+    &string[..i]
 }
 
 pub struct Split<'a, P: Pattern<'a>> {
-    string: Option<WStr<'a>>,
+    string: Option<&'a WStr>,
     searcher: P::Searcher,
     prev_end: usize,
 }
 
 impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
-    type Item = WStr<'a>;
+    type Item = &'a WStr;
 
     fn next(&mut self) -> Option<Self::Item> {
         let string = self.string?;
@@ -384,24 +385,24 @@ impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
         match self.searcher.next_match() {
             Some((start, end)) => {
                 let end = std::mem::replace(&mut self.prev_end, end);
-                Some(string.slice(end..start))
+                Some(&string[end..start])
             }
             None => {
                 self.string = None;
-                Some(string.slice(self.prev_end..))
+                Some(&string[self.prev_end..])
             }
         }
     }
 }
 
-/// A struct for converting a `WStr<'_>` to an UTF8 `String`.
+/// A struct for converting a `WStr` to an UTF8 `String`.
 pub struct WStrToUtf8<'a> {
     head: &'a str,
-    tail: WStr<'a>,
+    tail: &'a WStr,
 }
 
 impl<'a> WStrToUtf8<'a> {
-    pub fn new(s: WStr<'a>) -> Self {
+    pub fn new(s: &'a WStr) -> Self {
         let (head, tail) = match s.units() {
             Units::Bytes(b) => {
                 let (head, tail) = utils::split_ascii_prefix_bytes(b);

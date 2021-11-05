@@ -66,7 +66,7 @@ pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
-    if object
+    if &object
         .get("matrixType", activation)?
         .coerce_to_string(activation)?
         == b"box"

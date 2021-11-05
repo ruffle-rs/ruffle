@@ -2,11 +2,11 @@ use std::num::Wrapping;
 
 use super::WStr;
 
-/// Analog of [`std::str::FromStr`], but for Ruffle's [`WStr<'_>`].
+/// Analog of [`std::str::FromStr`], but for Ruffle's [`&WStr`].
 pub trait FromWStr: Sized {
     type Err;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err>;
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err>;
 }
 
 /// Error returned by [`Integer::from_str_radix`].
@@ -14,19 +14,19 @@ pub trait FromWStr: Sized {
 #[error("failed to parse integer")]
 pub struct ParseNumError(());
 
-/// Trait implemented for all integer types that can be parsed from a [`WStr<'_>`].
+/// Trait implemented for all integer types that can be parsed from a [`WStr`].
 pub trait Integer: FromWStr<Err = ParseNumError> {
-    fn from_wstr_radix(s: WStr<'_>, radix: u32) -> Result<Self, Self::Err>;
+    fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, Self::Err>;
 }
 
-fn parse_special_floats(s: WStr<'_>) -> Option<f64> {
+fn parse_special_floats(s: &WStr) -> Option<f64> {
     let nan = WStr::from_units(b"NaN");
     let inf = WStr::from_units(b"inf");
 
     let slice = match s.len() {
         3 if s == nan => return Some(f64::NAN),
         3 if s == inf => return Some(f64::INFINITY),
-        4 => s.slice(1..),
+        4 => &s[1..],
         _ => return None,
     };
 
@@ -37,7 +37,7 @@ fn parse_special_floats(s: WStr<'_>) -> Option<f64> {
     } else {
         return None;
     };
-    let is_neg = match u8::try_from(s.get(0)) {
+    let is_neg = match u8::try_from(s.at(0)) {
         Ok(b'+') => false,
         Ok(b'-') => true,
         _ => return None,
@@ -53,7 +53,7 @@ fn parse_special_floats(s: WStr<'_>) -> Option<f64> {
 impl FromWStr for f64 {
     type Err = ParseNumError;
 
-    fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if let Some(f) = parse_special_floats(s) {
             return Ok(f);
         }
@@ -87,16 +87,16 @@ mod int_parse {
         fn checked_mul(self, n: u32) -> Option<Self>;
     }
 
-    pub fn from_wstr_radix<T: IntParse>(s: WStr<'_>, radix: u32) -> Option<T> {
+    pub fn from_wstr_radix<T: IntParse>(s: &WStr, radix: u32) -> Option<T> {
         assert!(
             radix >= 2 && radix <= 36,
             "from_str_radix: radix must be between 2 and 36, got {}",
             radix
         );
 
-        let (is_neg, digits) = match s.try_get(0).map(u8::try_from) {
-            Some(Ok(b'-')) => (true, s.slice(1..)),
-            Some(Ok(b'+')) => (false, s.slice(1..)),
+        let (is_neg, digits) = match s.get(0).map(u8::try_from) {
+            Some(Ok(b'-')) => (true, &s[1..]),
+            Some(Ok(b'+')) => (false, &s[1..]),
             Some(_) => (false, s),
             None => return None,
         };
@@ -184,14 +184,14 @@ macro_rules! impl_from_str_int {
     ($($ty:ty)*) => { $(
         impl Integer for $ty {
             #[inline]
-            fn from_wstr_radix(s: WStr<'_>, radix: u32) -> Result<Self, ParseNumError> {
+            fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
                 int_parse::from_wstr_radix(s, radix).ok_or(ParseNumError(()))
             }
         }
 
         impl Integer for Wrapping<$ty> {
             #[inline]
-            fn from_wstr_radix(s: WStr<'_>, radix: u32) -> Result<Self, ParseNumError> {
+            fn from_wstr_radix(s: &WStr, radix: u32) -> Result<Self, ParseNumError> {
                 int_parse::from_wstr_radix(s, radix).ok_or(ParseNumError(()))
             }
         }
@@ -199,7 +199,7 @@ macro_rules! impl_from_str_int {
         impl FromWStr for $ty {
             type Err = ParseNumError;
             #[inline]
-            fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+            fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
                 int_parse::from_wstr_radix(s, 10).ok_or(ParseNumError(()))
             }
         }
@@ -207,7 +207,7 @@ macro_rules! impl_from_str_int {
         impl FromWStr for Wrapping<$ty> {
             type Err = ParseNumError;
             #[inline]
-            fn from_wstr(s: WStr<'_>) -> Result<Self, Self::Err> {
+            fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
                 int_parse::from_wstr_radix(s, 10).ok_or(ParseNumError(()))
             }
         }

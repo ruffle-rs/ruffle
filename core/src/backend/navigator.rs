@@ -89,7 +89,7 @@ impl NavigationMethod {
         }
     }
 
-    pub fn from_method_str(method: WStr<'_>) -> Option<Self> {
+    pub fn from_method_str(method: &WStr) -> Option<Self> {
         if method == b"GET" {
             Some(Self::Get)
         } else if method == b"POST" {

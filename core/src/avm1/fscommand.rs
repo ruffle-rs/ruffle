@@ -6,7 +6,7 @@ use crate::avm_warn;
 use crate::string::WStr;
 
 /// Parse an FSCommand URL.
-pub fn parse(url: WStr<'_>) -> Option<WStr<'_>> {
+pub fn parse(url: &WStr) -> Option<&WStr> {
     let prefix = WStr::from_units(b"fscommand:");
     if url.len() < prefix.len() {
         return None;
@@ -21,8 +21,8 @@ pub fn parse(url: WStr<'_>) -> Option<WStr<'_>> {
 }
 
 pub fn handle<'gc>(
-    command: WStr<'_>,
-    args: WStr<'_>,
+    command: &WStr,
+    args: &WStr,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<(), Error<'gc>> {
     let command = command.to_utf8_lossy();

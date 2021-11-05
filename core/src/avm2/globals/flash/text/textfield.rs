@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
@@ -85,11 +85,11 @@ pub fn set_autosize<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
         this.set_autosize(
-            if value == b"left" {
+            if &value == b"left" {
                 AutoSizeMode::Left
-            } else if value == b"center" {
+            } else if &value == b"center" {
                 AutoSizeMode::Center
-            } else if value == b"right" {
+            } else if &value == b"right" {
                 AutoSizeMode::Right
             } else {
                 AutoSizeMode::None
@@ -348,7 +348,7 @@ pub fn set_html_text<'gc>(
             .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, true);
-        this.set_html_text(html_text.borrow(), &mut activation.context)?;
+        this.set_html_text(&html_text, &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
@@ -471,7 +471,7 @@ pub fn set_text<'gc>(
             .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, false);
-        this.set_text(text.borrow(), &mut activation.context)?;
+        this.set_text(&text, &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
@@ -592,9 +592,9 @@ pub fn set_type<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
-        if is_editable == b"input" {
+        if &is_editable == b"input" {
             this.set_editable(true, &mut activation.context);
-        } else if is_editable == b"dynamic" {
+        } else if &is_editable == b"dynamic" {
             this.set_editable(false, &mut activation.context);
         } else {
             return Err(format!("Invalid TextField.type: {}", is_editable).into());
@@ -659,7 +659,7 @@ pub fn append_text<'gc>(
         this.replace_text(
             existing_length,
             existing_length,
-            new_text.borrow(),
+            &new_text,
             &mut activation.context,
         );
     }
@@ -723,7 +723,7 @@ pub fn replace_selected_text<'gc>(
         this.replace_text(
             selection.start(),
             selection.end(),
-            value.borrow(),
+            &value,
             &mut activation.context,
         );
     }
@@ -759,7 +759,7 @@ pub fn replace_text<'gc>(
         this.replace_text(
             begin_index as usize,
             end_index as usize,
-            value.borrow(),
+            &value,
             &mut activation.context,
         );
     }

@@ -85,7 +85,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name == b"length" {
+        if &name == b"length" {
             let new_length = value.coerce_to_i32(activation)?;
             self.set_length(activation, new_length)?;
         } else if let Some(index) = Self::parse_index(name) {

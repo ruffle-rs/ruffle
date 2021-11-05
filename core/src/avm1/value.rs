@@ -6,7 +6,7 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
-use crate::string::{AvmString, BorrowWStr, Integer, WStr};
+use crate::string::{AvmString, Integer, WStr};
 use gc_arena::Collect;
 use std::borrow::Cow;
 use std::num::Wrapping;
@@ -168,7 +168,7 @@ impl<'gc> Value<'gc> {
                 || v.starts_with(WStr::from_units(b"-0"))
             {
                 // Flash allows the '-' sign here.
-                if let Ok(n) = Wrapping::<i32>::from_wstr_radix(v.borrow(), 8) {
+                if let Ok(n) = Wrapping::<i32>::from_wstr_radix(v, 8) {
                     return f64::from(n.0);
                 }
             }
@@ -178,7 +178,7 @@ impl<'gc> Value<'gc> {
         // (as of nightly 4/13, Rust also accepts "infinity")
         // Check if the string starts with 'i' (ignoring any leading +/-).
         if v.strip_prefix(&b"+-"[..])
-            .unwrap_or_else(|| v.borrow())
+            .unwrap_or(v)
             .starts_with(&b"iI"[..])
         {
             f64::NAN

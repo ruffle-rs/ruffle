@@ -10,7 +10,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
-use crate::string::{AvmString, BorrowWStr, WString};
+use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::types::{Degrees, Percent};
@@ -793,7 +793,7 @@ pub trait TDisplayObject<'gc>:
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push_byte(b'.');
-            path.push_str(self.name().borrow());
+            path.push_str(&self.name());
             path
         } else {
             WString::from_utf8_owned(format!("_level{}", self.depth()))
@@ -807,7 +807,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(parent) = object.avm1_parent() {
                 let mut path = build_slash_path(parent);
                 path.push_byte(b'/');
-                path.push_str(object.name().borrow());
+                path.push_str(&object.name());
                 path
             } else {
                 let level = object.depth();

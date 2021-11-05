@@ -14,26 +14,28 @@ mod buf;
 mod ops;
 mod parse;
 mod pattern;
-mod raw;
-mod slice;
+mod ptr;
 mod tables;
 pub mod utils;
 
-/// The maximum string length, equals to 2³¹-1.
-pub const MAX_STRING_LEN: usize = raw::MAX_STRING_LEN;
+#[cfg(test)]
+mod tests;
+
+pub use ptr::{WStr, MAX_STRING_LEN};
 
 pub use avm::AvmString;
 pub use buf::WString;
-pub use common::{BorrowWStr, BorrowWStrMut, Units};
+pub use common::Units;
 pub use ops::{CharIndices, Chars, Iter, Split, WStrToUtf8};
 pub use parse::{FromWStr, Integer};
 pub use pattern::Pattern;
-pub use slice::{WStr, WStrMut};
+
+use std::borrow::Borrow;
 
 use common::panic_on_invalid_length;
 
 /// Flattens a slice of strings, placing `sep` as a separator between each.
 #[inline]
-pub fn join<E: BorrowWStr, S: BorrowWStr>(elems: &[E], sep: &S) -> WString {
+pub fn join<E: Borrow<WStr>, S: Borrow<WStr>>(elems: &[E], sep: &S) -> WString {
     crate::string::ops::str_join(elems, sep.borrow())
 }

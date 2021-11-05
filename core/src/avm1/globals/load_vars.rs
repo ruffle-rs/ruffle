@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, RequestOptions};
-use crate::string::{AvmString, BorrowWStr};
+use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -155,8 +155,7 @@ fn send<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method =
-        NavigationMethod::from_method_str(method_name.borrow()).unwrap_or(NavigationMethod::Post);
+    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
 
     use indexmap::IndexMap;
 
@@ -203,8 +202,7 @@ fn send_and_load<'gc>(
         .get(2)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let method =
-        NavigationMethod::from_method_str(method_name.borrow()).unwrap_or(NavigationMethod::Post);
+    let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);
 
     spawn_load_var_fetch(activation, target, &url, Some((this, method)))?;
 
@@ -250,7 +248,7 @@ fn spawn_load_var_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (url, request_options) = if let Some((send_object, method)) = send_object {
         // Send properties from `send_object`.
-        activation.object_into_request_options(send_object, url.borrow(), Some(method))
+        activation.object_into_request_options(send_object, url, Some(method))
     } else {
         // Not sending any parameters.
         (url.to_utf8_lossy(), RequestOptions::get())

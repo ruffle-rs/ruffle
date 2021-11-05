@@ -49,7 +49,7 @@ pub struct LayoutContext<'a, 'gc> {
     font: Option<Font<'gc>>,
 
     /// The underlying bundle of text being formatted.
-    text: WStr<'a>,
+    text: &'a WStr,
 
     /// The highest font size observed within the current line.
     max_font_size: Twips,
@@ -90,7 +90,7 @@ pub struct LayoutContext<'a, 'gc> {
 }
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
-    fn new(movie: Arc<SwfMovie>, max_bounds: Twips, text: WStr<'a>) -> Self {
+    fn new(movie: Arc<SwfMovie>, max_bounds: Twips, text: &'a WStr) -> Self {
         Self {
             movie,
             cursor: Default::default(),
@@ -416,14 +416,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// The text given may or may not be separated into fragments, depending on
     /// what the layout calls for.
-    fn append_text(&mut self, text: WStr<'a>, start: usize, end: usize, span: &TextSpan) {
+    fn append_text(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         if self.effective_alignment() == swf::TextAlign::Justify {
             for word in text.split(b' ') {
                 let word_start = word.offset_in(text).unwrap();
                 let word_end = min(word_start + word.len() + 1, text.len());
 
                 self.append_text_fragment(
-                    text.slice(word_start..word_end),
+                    &text[word_start..word_end],
                     start + word_start,
                     start + word_end,
                     span,
@@ -438,7 +438,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function bypasses the text fragmentation necessary for justify to
     /// work and it should only be called internally.
-    fn append_text_fragment(&mut self, text: WStr<'a>, start: usize, end: usize, span: &TextSpan) {
+    fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let params = EvalParameters::from_span(span);
         let text_size = Size::from(self.font.unwrap().measure(text, params, false));
         let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
@@ -687,7 +687,7 @@ impl<'gc> LayoutBox<'gc> {
                     let slice_start = text.offset_in(span_text).unwrap();
                     let delimiter = if slice_start > 0 {
                         span_text
-                            .try_get(slice_start - 1)
+                            .get(slice_start - 1)
                             .and_then(|c| u8::try_from(c).ok())
                     } else {
                         None
@@ -707,7 +707,7 @@ impl<'gc> LayoutBox<'gc> {
                         let (mut width, mut offset) = layout_context.wrap_dimensions(span);
 
                         while let Some(breakpoint) = font.wrap_line(
-                            text.slice(last_breakpoint..),
+                            &text[last_breakpoint..],
                             params,
                             width,
                             offset,
@@ -743,7 +743,7 @@ impl<'gc> LayoutBox<'gc> {
                             );
 
                             layout_context.append_text(
-                                text.slice(last_breakpoint..next_breakpoint),
+                                &text[last_breakpoint..next_breakpoint],
                                 start + last_breakpoint,
                                 start + next_breakpoint,
                                 span,
@@ -766,7 +766,7 @@ impl<'gc> LayoutBox<'gc> {
 
                     if last_breakpoint < span_end {
                         layout_context.append_text(
-                            text.slice(last_breakpoint..span_end),
+                            &text[last_breakpoint..span_end],
                             start + last_breakpoint,
                             start + span_end,
                             span,
@@ -791,8 +791,8 @@ impl<'gc> LayoutBox<'gc> {
     /// rendering parameters, if the layout box has any.
     pub fn as_renderable_text<'a>(
         &self,
-        text: WStr<'a>,
-    ) -> Option<(WStr<'a>, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
+        text: &'a WStr,
+    ) -> Option<(&'a WStr, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
         match &self.content {
             LayoutContent::Text {
                 start,
@@ -802,7 +802,7 @@ impl<'gc> LayoutBox<'gc> {
                 params,
                 color,
             } => Some((
-                text.try_slice(*start..*end)?,
+                text.slice(*start..*end)?,
                 text_format,
                 *font,
                 *params,

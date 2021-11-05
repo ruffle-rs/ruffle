@@ -425,9 +425,9 @@ pub fn set_endian<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            if endian == b"bigEndian" {
+            if &endian == b"bigEndian" {
                 bytearray.set_endian(Endian::Big);
-            } else if endian == b"littleEndian" {
+            } else if &endian == b"littleEndian" {
                 bytearray.set_endian(Endian::Little);
             } else {
                 return Err("Parameter type must be one of the accepted values.".into());

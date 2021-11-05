@@ -963,14 +963,14 @@ impl<'gc> MovieClip<'gc> {
         write.avm2_class = constr;
     }
 
-    pub fn frame_label_to_number(self, frame_label: WStr<'_>) -> Option<FrameNumber> {
+    pub fn frame_label_to_number(self, frame_label: &WStr) -> Option<FrameNumber> {
         // Frame labels are case insensitive (ASCII).
         // TODO: Should be case sensitive in AVM2.
         let label = frame_label.to_ascii_lowercase();
         self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
-    pub fn scene_label_to_number(self, scene_label: WStr<'_>) -> Option<FrameNumber> {
+    pub fn scene_label_to_number(self, scene_label: &WStr) -> Option<FrameNumber> {
         // Never used in AVM1, so always be case sensitive.
         self.0
             .read()
@@ -981,7 +981,7 @@ impl<'gc> MovieClip<'gc> {
             .copied()
     }
 
-    pub fn frame_exists_within_scene(self, frame_label: WStr<'_>, scene_label: WStr<'_>) -> bool {
+    pub fn frame_exists_within_scene(self, frame_label: &WStr, scene_label: &WStr) -> bool {
         let scene = self.scene_label_to_number(scene_label);
         let frame = self.frame_label_to_number(frame_label);
 

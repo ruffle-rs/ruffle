@@ -9,7 +9,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
-use crate::string::BorrowWStr;
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::min;
 
@@ -169,7 +168,7 @@ pub fn get_child_by_name<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
-        let child = dobj.child_by_name(name.borrow(), false).ok_or_else(|| {
+        let child = dobj.child_by_name(&name, false).ok_or_else(|| {
             format!(
                 "RangeError: Display object container has no child with name {}",
                 name

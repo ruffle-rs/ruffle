@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, BorrowWStr, WString};
+use crate::string::{AvmString, WString};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -97,7 +97,7 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         let read = self.0.read();
         let mut s = WString::new();
         s.push_byte(b'/');
-        s.push_str(read.regexp.source().borrow());
+        s.push_str(&read.regexp.source());
         s.push_byte(b'/');
 
         let flags = read.regexp.flags();

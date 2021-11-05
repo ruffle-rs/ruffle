@@ -9,7 +9,7 @@ use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::string::{AvmString, BorrowWStr, WString};
+use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
 use std::iter;
 
@@ -79,7 +79,7 @@ fn char_at<'gc>(
 
             let index = if !n.is_nan() { n as usize } else { 0 };
             let ret = s
-                .try_get(index)
+                .get(index)
                 .map(WString::from_unit)
                 .map(|s| AvmString::new(activation.context.gc_context, s))
                 .unwrap_or_default();
@@ -108,7 +108,7 @@ fn char_code_at<'gc>(
             }
 
             let index = if !n.is_nan() { n as usize } else { 0 };
-            let ret = s.try_get(index).map(f64::from).unwrap_or(f64::NAN);
+            let ret = s.get(index).map(f64::from).unwrap_or(f64::NAN);
             return Ok(ret.into());
         }
     }
@@ -123,10 +123,10 @@ fn concat<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut ret = WString::from(Value::from(this).coerce_to_string(activation)?.borrow());
+        let mut ret = WString::from(Value::from(this).coerce_to_string(activation)?.as_wstr());
         for arg in args {
             let s = arg.coerce_to_string(activation)?;
-            ret.push_str(s.borrow())
+            ret.push_str(&s);
         }
         return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
@@ -171,8 +171,8 @@ fn index_of<'gc>(
         };
 
         return this
-            .try_slice(start_index..)
-            .and_then(|s| s.find(pattern.borrow()))
+            .slice(start_index..)
+            .and_then(|s| s.find(&pattern))
             .map(|i| Ok((i + start_index).into()))
             .unwrap_or_else(|| Ok((-1).into())); // Out of range or not found
     }
@@ -202,9 +202,9 @@ fn last_index_of<'gc>(
         };
 
         return this
-            .try_slice(..start_index)
-            .unwrap_or_else(|| this.borrow())
-            .rfind(pattern.borrow())
+            .slice(..start_index)
+            .unwrap_or(&this)
+            .rfind(&pattern)
             .map(|i| Ok(i.into()))
             .unwrap_or_else(|| Ok((-1).into())); // Not found
     }
@@ -240,8 +240,7 @@ fn match_s<'gc>(
                         break;
                     }
                     storage.push(
-                        AvmString::new(activation.context.gc_context, this.slice(result.range()))
-                            .into(),
+                        AvmString::new(activation.context.gc_context, &this[result.range()]).into(),
                     );
                     last = regexp.last_index();
                 }
@@ -256,9 +255,7 @@ fn match_s<'gc>(
                 let old = regexp.last_index();
                 regexp.set_last_index(0);
                 if let Some(result) = regexp.exec(this) {
-                    let substrings = result
-                        .groups()
-                        .map(|range| this.slice(range.unwrap_or(0..0)));
+                    let substrings = result.groups().map(|range| &this[range.unwrap_or(0..0)]);
 
                     let mut storage = ArrayStorage::new(0);
                     for substring in substrings {
@@ -305,7 +302,7 @@ fn slice<'gc>(
             }
         };
         return if start_index < end_index {
-            let ret = WString::from(this.slice(start_index..end_index));
+            let ret = WString::from(&this[start_index..end_index]);
             Ok(AvmString::new(activation.context.gc_context, ret).into())
         } else {
             Ok("".into())
@@ -358,7 +355,7 @@ fn split<'gc>(
                 })
                 .collect()
         } else {
-            this.split(delimiter.borrow())
+            this.split(&delimiter)
                 .take(limit)
                 .map(|c| Value::from(AvmString::new(activation.context.gc_context, c)))
                 .collect()
@@ -403,7 +400,7 @@ fn substr<'gc>(
             this.len().min(start_index + len as usize)
         };
 
-        let ret = WString::from(this.slice(start_index..end_index));
+        let ret = WString::from(&this[start_index..end_index]);
         return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
 
@@ -442,7 +439,7 @@ fn substring<'gc>(
             std::mem::swap(&mut end_index, &mut start_index);
         }
 
-        let ret = WString::from(this.slice(start_index..end_index));
+        let ret = WString::from(&this[start_index..end_index]);
         return Ok(AvmString::new(activation.context.gc_context, ret).into());
     }
 

@@ -175,7 +175,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
-    fn child_by_name(self, name: WStr<'_>, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
+    fn child_by_name(self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>>;
 
     /// Returns the number of children on the render list.
     fn num_children(self) -> usize;
@@ -360,7 +360,7 @@ macro_rules! impl_display_object_container {
 
         fn child_by_name(
             self,
-            name: crate::string::WStr<'_>,
+            name: &crate::string::WStr,
             case_sensitive: bool,
         ) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.get_name(name, case_sensitive)
@@ -731,7 +731,7 @@ impl<'gc> ChildContainer<'gc> {
     /// If multiple children with the same name exist, the one with the lowest
     /// depth wins. Children not on the depth list will not be accessible via
     /// this mechanism.
-    pub fn get_name(&self, name: WStr<'_>, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
+    pub fn get_name(&self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
         // But need to handle conflicting names (lowest in depth order takes priority).
         if case_sensitive {

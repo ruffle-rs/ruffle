@@ -1,8 +1,12 @@
+use std::borrow::Borrow;
+use std::mem::ManuallyDrop;
+use std::ops::{Deref, DerefMut};
+use std::ptr::NonNull;
+
 use gc_arena::Collect;
 
-use super::raw::WStrPtr;
 use super::utils::split_ascii_prefix;
-use super::{BorrowWStr, BorrowWStrMut, Units, WStr, WStrMut, MAX_STRING_LEN};
+use super::{Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
 #[derive(Collect)]
@@ -10,11 +14,10 @@ use super::{BorrowWStr, BorrowWStrMut, Units, WStr, WStrMut, MAX_STRING_LEN};
 pub struct WString {
     // TODO: better packing on 64bit targets
     //
-    // On 64bit targets, this struct is 24 bytes, but we could do better:
-    // if `WStrPtr` packed its is_wide flag in the length, we could stuff the
-    // capacity inside the unused 4 bytes of padding and make `WString` only
+    // On 64bit targets, this struct is 24 bytes, but we could do better by stuffing
+    // capacity inside the unused bits in `NonNull<WStr>` and make `WString` only
     // 16 bytes.
-    slice: WStrPtr,
+    ptr: NonNull<WStr>,
     capacity: usize,
 }
 
@@ -46,15 +49,15 @@ impl WString {
     /// The length cannot be greater than `MAX_STRING_LEN`.
     #[inline]
     pub unsafe fn from_buf_unchecked(buf: Units<Vec<u8>, Vec<u16>>) -> Self {
-        let (ptr, len, capacity) = match &buf {
-            Units::Bytes(buf) => (Units::Bytes(buf.as_ptr()), buf.len(), buf.capacity()),
-            Units::Wide(buf) => (Units::Wide(buf.as_ptr()), buf.len(), buf.capacity()),
+        // SAFETY: we take ownership of the buffer; avoid double frees
+        let mut buf = ManuallyDrop::new(buf);
+        let (capacity, ptr) = match buf.deref_mut() {
+            Units::Bytes(buf) => (buf.capacity(), Units::Bytes(&mut buf[..] as *mut _)),
+            Units::Wide(buf) => (buf.capacity(), Units::Wide(&mut buf[..] as *mut _)),
         };
 
-        // SAFETY: forget the buffer to avoid a double free
-        std::mem::forget(buf);
-        let slice = WStrPtr::new(ptr, len);
-        Self { slice, capacity }
+        let ptr = NonNull::new_unchecked(super::ptr::from_units(ptr));
+        Self { ptr, capacity }
     }
 
     /// Creates a `WString` from an owned buffer containing 1 or 2-bytes code units.
@@ -116,42 +119,46 @@ impl WString {
         buf
     }
 
+    /// Converts this `WString` into a string slice.
+    pub fn as_wstr(&self) -> &WStr {
+        // SAFETY: `self` is immutably borrowed.
+        unsafe { self.ptr.as_ref() }
+    }
+
+    /// Converts this `WString` into a mutable string slice.
+    pub fn as_wstr_mut(&mut self) -> &mut WStr {
+        // SAFETY: `self` is mutably borrowed.
+        unsafe { self.ptr.as_mut() }
+    }
+
     /// Steals the internal buffer.
     ///
     /// # Safety
     ///
-    /// You must make sure that the returned buffer isn't dropped twice.
+    /// - any future access to `self` (including drop) will invalidate the returned buffer.
+    /// - the returned buffer shouldn't be dropped, unless self is dropped.
     #[inline]
-    unsafe fn steal_buf(&mut self) -> Units<Vec<u8>, Vec<u16>> {
-        let (len, capacity) = (self.slice.len(), self.capacity);
+    unsafe fn steal_buf(&mut self) -> ManuallyDrop<Units<Vec<u8>, Vec<u16>>> {
+        let ptr = self.ptr.as_ptr();
+        let data = super::ptr::data(ptr);
+        let len = super::ptr::len(ptr);
+        let cap = self.capacity;
 
         // SAFETY: we reconstruct the Vec<T> deconstructed in `Self::from_buf`.
-        match self.slice.data() {
-            Units::Bytes(ptr) => Units::Bytes(Vec::from_raw_parts(ptr.as_ptr(), len, capacity)),
-            Units::Wide(ptr) => Units::Wide(Vec::from_raw_parts(ptr.as_ptr(), len, capacity)),
-        }
+        let buffer = if super::ptr::is_wide(ptr) {
+            Units::Wide(Vec::from_raw_parts(data as *mut u16, len, cap))
+        } else {
+            Units::Bytes(Vec::from_raw_parts(data as *mut u8, len, cap))
+        };
+        ManuallyDrop::new(buffer)
     }
 
     /// Cheaply converts the `WString` into its internal buffer.
     #[inline]
-    pub fn into_buf(mut self) -> Units<Vec<u8>, Vec<u16>> {
-        // SAFETY: `self` won't be dropped because it is forgotten.
-        let buf = unsafe { self.steal_buf() };
-        std::mem::forget(self);
-        buf
-    }
-
-    impl_str_methods! {
-        lifetime: '_;
-        self: &Self;
-        deref: self.borrow();
-        pattern['a,]: 'a, &'a Self;
-    }
-
-    impl_str_mut_methods! {
-        lifetime: '_;
-        self: &mut Self;
-        deref_mut: self.borrow_mut();
+    pub fn into_buf(self) -> Units<Vec<u8>, Vec<u16>> {
+        let mut this = ManuallyDrop::new(self);
+        // SAFETY: `this` is never dropped, so we can take "true" ownership of the buffer.
+        unsafe { ManuallyDrop::into_inner(this.steal_buf()) }
     }
 
     // Modify the raw internal buffer.
@@ -161,29 +168,41 @@ impl WString {
     where
         F: FnOnce(&mut Units<Vec<u8>, Vec<u16>>) -> R,
     {
-        struct Guard<'a>(&'a mut WString);
+        struct Guard<'a> {
+            source: &'a mut WString,
+            buffer: ManuallyDrop<Units<Vec<u8>, Vec<u16>>>,
+        }
 
-        impl<'a> Drop for Guard<'a> {
-            fn drop(&mut self) {
-                // SAFETY: something has gone wrong, replace the buffer with an empty one.
+        impl<'a> Guard<'a> {
+            fn init(source: &'a mut WString) -> Self {
+                let buffer = unsafe { source.steal_buf() };
+                Self { source, buffer }
+            }
+
+            fn commit(mut self) {
+                // SAFETY: we disable the Drop impl, so we can put the ManuallyDrop'd buffer back
                 unsafe {
-                    std::ptr::write(self.0, WString::new());
+                    let buffer = ManuallyDrop::take(&mut self.buffer);
+                    std::ptr::write(self.source, WString::from_buf(buffer));
+                    std::mem::forget(self);
                 }
             }
         }
 
-        // SAFETY:
-        // - if `f` or `Self::from_buf` panics, we avoid the double free
-        //   because `Guard` will replace `self` with an empty buffer;
-        // - otherwise, we deactivate the guard by forgetting it.
-        unsafe {
-            let guard = Guard(self);
-            let mut buf = guard.0.steal_buf();
-            let result = f(&mut buf);
-            std::ptr::write(guard.0, Self::from_buf(buf));
-            std::mem::forget(guard);
-            result
+        impl<'a> Drop for Guard<'a> {
+            fn drop(&mut self) {
+                // SAFETY: something has gone wrong, replace the buffer with an empty one and drop it.
+                unsafe {
+                    std::ptr::write(self.source, WString::new());
+                    ManuallyDrop::drop(&mut self.buffer);
+                }
+            }
         }
+
+        let mut guard = Guard::init(self);
+        let result = f(&mut guard.buffer);
+        guard.commit();
+        result
     }
 
     fn with_wide_buf_if<W, F, R>(&mut self, wide: W, f: F) -> R
@@ -268,7 +287,7 @@ impl WString {
     /// Appends another `WStr` to `self`.
     ///
     /// This will convert this `WString` into its wide form if necessary.
-    pub fn push_str(&mut self, s: WStr<'_>) {
+    pub fn push_str(&mut self, s: &WStr) {
         let other = s.units();
         let is_wide = || matches!(other, Units::Wide(_));
         self.with_wide_buf_if(is_wide, |units| match (units, other) {
@@ -308,7 +327,7 @@ impl Clone for WString {
     }
 
     fn clone_from(&mut self, other: &Self) {
-        if self.slice.is_wide() != other.slice.is_wide() {
+        if self.is_wide() != other.is_wide() {
             *self = other.clone();
             return;
         }
@@ -326,27 +345,40 @@ impl Clone for WString {
     }
 }
 
-impl BorrowWStr for WString {
+impl Deref for WString {
+    type Target = WStr;
     #[inline]
-    fn borrow(&self) -> WStr<'_> {
-        // SAFETY: `self` is immutably borrowed.
-        unsafe { WStr::from_ptr(self.slice) }
+    fn deref(&self) -> &WStr {
+        self.as_wstr()
     }
 }
 
-impl BorrowWStrMut for WString {
+impl DerefMut for WString {
     #[inline]
-    fn borrow_mut(&mut self) -> WStrMut<'_> {
-        // SAFETY: `self` is immutably borrowed.
-        unsafe { WStrMut::from_ptr(self.slice) }
+    fn deref_mut(&mut self) -> &mut WStr {
+        self.as_wstr_mut()
     }
 }
 
-impl<'a> From<WStr<'a>> for WString {
+impl AsRef<WStr> for WString {
     #[inline]
-    fn from(s: WStr<'a>) -> Self {
+    fn as_ref(&self) -> &WStr {
+        self.deref()
+    }
+}
+
+impl Borrow<WStr> for WString {
+    #[inline]
+    fn borrow(&self) -> &WStr {
+        self.deref()
+    }
+}
+
+impl<'a> From<&'a WStr> for WString {
+    #[inline]
+    fn from(s: &'a WStr) -> Self {
         let mut buf = Self::new();
-        buf.push_str(s.borrow());
+        buf.push_str(s);
         buf
     }
 }
@@ -361,47 +393,9 @@ impl std::iter::FromIterator<u16> for WString {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn concat_bytes() {
-        let mut s = WString::new();
-        assert_eq!(s, WStr::from_units(b""));
-        s.push_byte(b'a');
-        assert_eq!(s, WStr::from_units(b"a"));
-        s.push(b'b'.into());
-        assert_eq!(s, WStr::from_units(b"ab"));
-        s.push_utf8("cd");
-        assert_eq!(s, WStr::from_units(b"abcd"));
-        s.push_str(WStr::from_units(b"ef"));
-        assert_eq!(s, WStr::from_units(b"abcdef"));
-        s.push_char('g');
-        assert_eq!(s, WStr::from_units(b"abcdefg"));
-        assert!(matches!(s.units(), Units::Bytes(_)));
-    }
-
-    #[test]
-    fn concat_wide() {
-        macro_rules! wstr {
-            ($($lit:literal),*) => {
-                WStr::from_units(&[$($lit as u16),*])
-            }
-        }
-
-        let mut s = WString::new();
-        assert_eq!(s, WStr::from_units(b""));
-        s.push_byte(b'a');
-        assert_eq!(s, WStr::from_units(b"a"));
-        s.push('€' as u16);
-        assert_eq!(s, wstr!['a', '€']);
-        s.push_utf8("😀");
-        assert_eq!(s, wstr!['a', '€', 0xd83d, 0xde00]);
-        s.push_str(WStr::from_units(b"!"));
-        assert_eq!(s, wstr!['a', '€', 0xd83d, 0xde00, '!']);
-        s.push_char('😀');
-        assert_eq!(s, wstr!['a', '€', 0xd83d, 0xde00, '!', 0xd83d, 0xde00]);
-        assert!(matches!(s.units(), Units::Wide(_)));
+impl AsMut<WStr> for WString {
+    #[inline]
+    fn as_mut(&mut self) -> &mut WStr {
+        self.deref_mut()
     }
 }

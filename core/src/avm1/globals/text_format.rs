@@ -6,7 +6,7 @@ use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Va
 use crate::avm_warn;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{BorrowWStr, WStr};
+use crate::string::WStr;
 use gc_arena::MutationContext;
 
 macro_rules! getter {
@@ -71,7 +71,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -127,7 +127,7 @@ fn set_url<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -145,7 +145,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.borrow().into()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
