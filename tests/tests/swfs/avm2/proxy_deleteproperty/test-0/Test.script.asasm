@@ -11,7 +11,7 @@ script
     getlocal0
     pushscope
 
-    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_getproperty;;Test.as"
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
     debugline           2
     findpropstrict      Multiname("Test", [PackageNamespace("")])
     getlex              QName(PackageNamespace(""), "Object")
@@ -22,7 +22,7 @@ script
     popscope
     initproperty        QName(PackageNamespace(""), "Test")
 
-    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_getproperty;;Test.as"
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
     debugline           8
     findpropstrict      Multiname("TestProxy", [PrivateNamespace("Test.as$38")])
     getlex              QName(PackageNamespace(""), "Object")
@@ -37,19 +37,19 @@ script
     popscope
     initproperty        QName(PrivateNamespace("Test.as$38"), "TestProxy")
 
-    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_getproperty;;Test.as"
-    debugline           44
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
+    debugline           49
     findpropstrict      Multiname("p", [PrivateNamespace("Test.as$38")])
     findpropstrict      QName(PrivateNamespace("Test.as$38"), "TestProxy")
     constructprop       QName(PrivateNamespace("Test.as$38"), "TestProxy"), 0
     setproperty         QName(PrivateNamespace("Test.as$38"), "p")
 
-    debugline           46
+    debugline           51
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::getProperty(\"via direct call\")"
+    pushstring          "///p.flash_proxy::deleteProperty(\"via direct call\")"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           47
+    debugline           52
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
     dup
@@ -57,161 +57,174 @@ script
 
     getlex              QName(PackageNamespace("flash.utils"), "flash_proxy")
     coerce              QName(PackageNamespace(""), "Namespace")
-    getproperty         RTQName("getProperty")
+    getproperty         RTQName("deleteProperty")
     getlocal2
     pushstring          "via direct call"
     call                1
     kill                2
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           49
+    debugline           54
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.via_getproperty"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           50
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("via_getproperty", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           52
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.my_ns::via_namespace"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           53
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         QName(Namespace("my_ns"), "via_namespace")
+    pushstring          "///delete p.via_getproperty"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
     debugline           55
     findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      Multiname("via_getproperty", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           57
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.my_ns::via_namespace"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           58
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      QName(Namespace("my_ns"), "via_namespace")
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           60
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.normal_var"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           61
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      Multiname("normal_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           63
+    findpropstrict      QName(PackageNamespace(""), "trace")
     pushstring          "///p.normal_var"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           56
+    debugline           64
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
     getproperty         Multiname("normal_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           58
+    debugline           66
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.proxy_var"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           59
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("proxy_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           61
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_var (QName)"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           62
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "proxy_var")
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           61
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_var (RTQName)"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           62
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
-    getproperty         RTQName("proxy_var")
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           61
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_var (RTQNameL)"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           62
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
-    pushstring          "proxy_var"
-    getproperty         RTQNameL()
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           61
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_var (Multiname)"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           62
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("proxy_var", [Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           61
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_var (MultinameL)"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           62
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    pushstring          "proxy_var"
-    getproperty         MultinameL([Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           64
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///(p.normal_fn)()"
-    callpropvoid        QName(PackageNamespace(""), "trace"), 1
-
-    debugline           65
-    findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("normal_fn", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
-    getglobalscope
-    call                0
+    pushstring          "///delete p.flash_proxy::proxy_var (QName)"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
     debugline           67
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.flash_proxy::proxy_fn"
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "proxy_var")
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           68
+    debugline           66
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.flash_proxy::proxy_var (RTQName)"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           67
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
     pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
-    getproperty         RTQName("proxy_fn")
+    deleteproperty      RTQName("proxy_var")
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           66
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.flash_proxy::proxy_var (RTQNameL)"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           67
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
+    pushstring          "proxy_var"
+    deleteproperty      RTQNameL()
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           66
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.flash_proxy::proxy_var (Multiname)"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           67
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      Multiname("proxy_var", [Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           66
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.flash_proxy::proxy_var (MultinameL)"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           67
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    pushstring          "proxy_var"
+    deleteproperty      MultinameL([Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           69
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete (p.normal_fn)()"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
     debugline           70
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.proxy_var"
+    getglobalscope
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    getproperty         Multiname("normal_fn", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getglobalscope
+    call                0
+    deleteproperty      MultinameL([PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           71
+    debugline           72
     findpropstrict      QName(PackageNamespace(""), "trace")
-    getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("proxy_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///delete p.flash_proxy::proxy_fn"
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
     debugline           73
     findpropstrict      QName(PackageNamespace(""), "trace")
-    pushstring          "///p.proxy_fn"
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
+    deleteproperty      RTQName("proxy_fn")
     callpropvoid        QName(PackageNamespace(""), "trace"), 1
 
-    debugline           74
+    debugline           75
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.proxy_var"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           76
     findpropstrict      QName(PackageNamespace(""), "trace")
     getlex              QName(PrivateNamespace("Test.as$38"), "p")
-    getproperty         Multiname("proxy_fn", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    deleteproperty      Multiname("proxy_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           78
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.proxy_fn"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           79
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      Multiname("proxy_fn", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           81
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    pushstring          "///delete p.crazy_return"
+    callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+    debugline           82
+    findpropstrict      QName(PackageNamespace(""), "trace")
+    getlex              QName(PrivateNamespace("Test.as$38"), "p")
+    deleteproperty      Multiname("crazy_return", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
     callproperty        QName(PackageNamespace(""), "trace"), 1
     coerce_a
     setlocal1
