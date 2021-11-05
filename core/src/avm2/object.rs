@@ -619,6 +619,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.resolve_any_trait(local_name)
     }
 
+    /// Implements the `in` opcode and AS3 operator.
+    ///
+    /// By default, this just calls `has_property`, but may be overridden by
+    /// other object types to change the behavior of the `in` operator only.
+    fn has_property_via_in(
+        self,
+        _activation: &mut Activation<'_, 'gc, '_>,
+        name: &QName<'gc>,
+    ) -> Result<bool, Error> {
+        self.has_property(name)
+    }
+
     /// Indicates whether or not a property exists on an object.
     fn has_property(self, name: &QName<'gc>) -> Result<bool, Error> {
         if self.has_own_property(name)? {

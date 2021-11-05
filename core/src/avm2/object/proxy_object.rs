@@ -207,4 +207,18 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             .map(|c| c.read().is_sealed())
             .unwrap_or(false));
     }
+
+    fn has_property_via_in(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &QName<'gc>,
+    ) -> Result<bool, Error> {
+        Ok(self
+            .call_property(
+                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty").into(),
+                &[name.local_name().into()],
+                activation,
+            )?
+            .coerce_to_boolean())
+    }
 }
