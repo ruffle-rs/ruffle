@@ -1405,19 +1405,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             (multiname, object)
         };
 
-        if let Some(name) = object.resolve_multiname(&multiname)? {
-            self.context
-                .avm2
-                .push(object.delete_property(self.context.gc_context, &name))
-        } else {
-            // Unknown properties on a dynamic class delete successfully.
-            self.context.avm2.push(
-                !object
-                    .instance_of_class_definition()
-                    .map(|c| c.read().is_sealed())
-                    .unwrap_or(false),
-            )
-        }
+        self.context
+            .avm2
+            .push(object.delete_property(self.context.gc_context, &multiname)?);
 
         Ok(FrameControl::Continue)
     }
