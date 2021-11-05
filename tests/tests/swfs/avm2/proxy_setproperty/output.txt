@@ -22,13 +22,15 @@ my_ns
 Another var value
 ///p.normal_var
 Another var value
-///p.flash_proxy::proxy_var = false
-///attempted to set property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var to value: false
-///type of name is QName
-///name.localName
-proxy_var
-///name.uri
-http://www.adobe.com/2006/actionscript/flash/proxy
+///p.flash_proxy::proxy_var = false (QName)
+false
+///p.flash_proxy::proxy_var = false (RTQName)
+false
+///p.flash_proxy::proxy_var = false (RTQNameL)
+false
+///p.flash_proxy::proxy_var = false (Multiname)
+false
+///p.flash_proxy::proxy_var = false (MultinameL)
 false
 ///p.proxy_var = "Another var value in the proxy ns"
 ///attempted to set property: proxy_var to value: Another var value in the proxy ns

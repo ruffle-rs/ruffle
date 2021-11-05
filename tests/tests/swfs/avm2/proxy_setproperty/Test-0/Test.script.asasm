@@ -1,0 +1,260 @@
+script
+ sinit
+  name ""
+  refid "Test/init"
+  body
+   maxstack 6
+   localcount 3
+   initscopedepth 1
+   maxscopedepth 4
+   code
+    getlocal0
+    pushscope
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_setproperty;;Test.as"
+    debugline           2
+    findpropstrict      Multiname("Test", [PackageNamespace("")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              Multiname("Object", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageInternalNs("")])
+    newclass            "Test"
+    popscope
+    initproperty        QName(PackageNamespace(""), "Test")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_setproperty;;Test.as"
+    debugline           8
+    findpropstrict      Multiname("TestProxy", [PrivateNamespace("Test.as$38")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace("flash.utils"), "Proxy")
+    pushscope
+
+    getlex              Multiname("Proxy", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("flash.utils")])
+    newclass            "Test/init/TestProxy"
+    popscope
+    popscope
+    initproperty        QName(PrivateNamespace("Test.as$38"), "TestProxy")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_setproperty;;Test.as"
+    debugline           34
+    findpropstrict      Multiname("p", [PrivateNamespace("Test.as$38")])
+    findpropstrict      Multiname("TestProxy", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    constructprop       Multiname("TestProxy", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 0
+    setproperty         QName(PrivateNamespace("Test.as$38"), "p")
+
+    debugline           36
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::setProperty(\"via direct call\", \"and value\")"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           37
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    dup
+    setlocal2
+
+    getlex              Multiname("flash_proxy", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), PackageNamespace("flash.utils")])
+    coerce              QName(PackageNamespace(""), "Namespace")
+    getproperty         RTQName("setProperty")
+    getlocal2
+    pushstring          "via direct call"
+    pushstring          "and value"
+    call                2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           39
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.via_setproperty = \"test\""
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           40
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "test"
+    dup
+    setlocal2
+
+    setproperty         Multiname("via_setproperty", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           42
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.my_ns::via_namespace = 123"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           43
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushbyte            123
+    dup
+    setlocal2
+
+    setproperty         QName(Namespace("my_ns"), "via_namespace")
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           45
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.normal_var = \"Another var value\""
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           46
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "Another var value"
+    dup
+    setlocal2
+
+    setproperty         Multiname("normal_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           48
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.normal_var"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           49
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getproperty         Multiname("normal_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+    
+    debugline           51
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::proxy_var = false (QName)"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           52
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushfalse
+    dup
+    setlocal2
+
+    setproperty         QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "proxy_var")
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           51
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::proxy_var = false (RTQName)"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           52
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
+    pushfalse
+    dup
+    setlocal2
+
+    setproperty         RTQName("proxy_var")
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           51
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::proxy_var = false (RTQNameL)"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           52
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushnamespace       Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")
+    pushstring          "proxy_var"
+    pushfalse
+    dup
+    setlocal2
+
+    setproperty         RTQNameL()
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           51
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::proxy_var = false (Multiname)"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           52
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushfalse
+    dup
+    setlocal2
+
+    setproperty         Multiname("proxy_var", [Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           51
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.flash_proxy::proxy_var = false (MultinameL)"
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           52
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "proxy_var"
+    pushfalse
+    dup
+    setlocal2
+
+    setproperty         MultinameL([Namespace("http://www.adobe.com/2006/actionscript/flash/proxy")])
+
+    getlocal2
+    kill                2
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           54
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "///p.proxy_var = \"Another var value in the proxy ns\""
+    callpropvoid        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+
+    debugline           55
+    findpropstrict      Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    getlex              Multiname("p", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+    pushstring          "Another var value in the proxy ns"
+    dup
+    setlocal2
+
+    setproperty         Multiname("proxy_var", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")])
+
+    getlocal2
+    kill                2
+    callproperty        Multiname("trace", [PackageNamespace(""), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin")]), 1
+    coerce_a
+    setlocal1
+
+    getlocal1
+    returnvalue
+   end ; code
+  end ; body
+ end ; method
+ trait const QName(PrivateNamespace("Test.as$38"), "my_ns") value Namespace(Namespace("my_ns")) end
+ trait class QName(PackageNamespace(""), "Test")
+  #include "Test.class.asasm"
+ end ; trait
+ trait class QName(PrivateNamespace("Test.as$38"), "TestProxy")
+  #include "Test.init/TestProxy.class.asasm"
+ end ; trait
+ trait slot QName(PrivateNamespace("Test.as$38"), "p") end
+end ; script

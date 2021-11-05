@@ -1,0 +1,204 @@
+class
+ refid "Test/init/TestProxy"
+ instance QName(PrivateNamespace("Test.as$38"), "TestProxy")
+  extends QName(PackageNamespace("flash.utils"), "Proxy")
+  flag PROTECTEDNS
+  protectedns ProtectedNamespace("Test.as$38:TestProxy")
+  iinit
+   name "Test.as$38:TestProxy/TestProxy"
+   refid "Test/init/TestProxy/instance/init"
+   body
+    maxstack 1
+    localcount 1
+    initscopedepth 5
+    maxscopedepth 6
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
+     debugline           83
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+  trait method QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "deleteProperty") flag OVERRIDE
+   method
+    name "Test.as$38:TestProxy/flash_proxy:deleteProperty"
+    refid "Test/init/TestProxy/instance/http://www.adobe.com/2006/actionscript/flash/proxy:deleteProperty"
+    param null
+    returns QName(PackageNamespace(""), "Boolean")
+    flag HAS_PARAM_NAMES
+    paramname "trace"
+    body
+     maxstack 3
+     localcount 2
+     initscopedepth 5
+     maxscopedepth 6
+     code
+      debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
+      debugline           9
+      getlocal0
+      pushscope
+
+      debug               1, "name", 0, 9
+      debugline           10
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///attempted to delete property:"
+      getlocal1
+      callpropvoid        QName(PackageNamespace(""), "trace"), 2
+
+      debugline           12
+      getlocal1
+      getlex              QName(PackageNamespace(""), "QName")
+      istypelate
+      iffalse             L50
+
+      debugline           13
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///type of name is QName"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           15
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///name.localName"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           16
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      getlocal1
+      getproperty         Multiname("localName", [PackageNamespace(""), PrivateNamespace("Test.as$38:TestProxy"), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), ProtectedNamespace("Test.as$38:TestProxy"), StaticProtectedNs("Test.as$38:TestProxy"), StaticProtectedNs("flash.utils:Proxy")])
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           18
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///name.uri"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           19
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      getlocal1
+      getproperty         Multiname("uri", [PackageNamespace(""), PrivateNamespace("Test.as$38:TestProxy"), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), ProtectedNamespace("Test.as$38:TestProxy"), StaticProtectedNs("Test.as$38:TestProxy"), StaticProtectedNs("flash.utils:Proxy")])
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           21
+      getlocal1
+      getproperty         Multiname("localName", [PackageNamespace(""), PrivateNamespace("Test.as$38:TestProxy"), PrivateNamespace("Test.as$38"), Namespace("http://adobe.com/AS3/2006/builtin"), ProtectedNamespace("Test.as$38:TestProxy"), StaticProtectedNs("Test.as$38:TestProxy"), StaticProtectedNs("flash.utils:Proxy")])
+      pushstring          "crazy_return"
+      ifstrictne          L49
+
+      debugline           22
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///returning non-bool value"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      pushstring          "This isn't a bool at all"
+      debugline           23
+      returnvalue
+
+L49:
+      jump                L64
+
+L50:
+      debugline           25
+      getlocal1
+      getlex              QName(PackageNamespace(""), "String")
+      istypelate
+      iffalse             L60
+
+      debugline           26
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///type of name is String"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      jump                L64
+
+L60:
+      debugline           28
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///invalid name type"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+L64:
+      debugline           31
+      pushtrue
+      returnvalue
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+  trait method QName(PrivateNamespace("Test.as$38"), "normal_fn")
+   method
+    name "Test.as$38:TestProxy/Test.as$38:normal_fn"
+    refid "Test/init/TestProxy/instance/Test/init/normal_fn"
+    body
+     maxstack 2
+     localcount 1
+     initscopedepth 5
+     maxscopedepth 6
+     code
+      debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
+      debugline           34
+      getlocal0
+      pushscope
+
+      debugline           35
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///called normal_fn"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           36
+      returnvoid
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+  trait slot QName(PrivateNamespace("Test.as$38"), "normal_var") value Utf8("This is a normal var") end
+  trait method QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "proxy_fn")
+   method
+    name "Test.as$38:TestProxy/flash_proxy:proxy_fn"
+    refid "Test/init/TestProxy/instance/http://www.adobe.com/2006/actionscript/flash/proxy:proxy_fn"
+    body
+     maxstack 2
+     localcount 1
+     initscopedepth 5
+     maxscopedepth 6
+     code
+      debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\proxy_deleteproperty;;Test.as"
+      debugline           40
+      getlocal0
+      pushscope
+
+      debugline           41
+      findpropstrict      QName(PackageNamespace(""), "trace")
+      pushstring          "///called proxy_fn"
+      callpropvoid        QName(PackageNamespace(""), "trace"), 1
+
+      debugline           42
+      returnvoid
+     end ; code
+    end ; body
+   end ; method
+  end ; trait
+  trait slot QName(Namespace("http://www.adobe.com/2006/actionscript/flash/proxy"), "proxy_var") value Utf8("This is a normal var in the proxy ns") end
+ end ; instance
+ cinit
+  name ""
+  refid "Test/init/TestProxy/class/init"
+  body
+   maxstack 1
+   localcount 1
+   initscopedepth 4
+   maxscopedepth 5
+   code
+    getlocal0
+    pushscope
+
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

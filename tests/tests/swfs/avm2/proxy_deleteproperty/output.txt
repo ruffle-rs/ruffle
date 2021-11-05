@@ -22,25 +22,21 @@ true
 false
 ///p.normal_var
 This is a normal var
-///delete p.flash_proxy::proxy_var
-///attempted to delete property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_var
-///type of name is QName
-///name.localName
-proxy_var
-///name.uri
-http://www.adobe.com/2006/actionscript/flash/proxy
-true
+///delete p.flash_proxy::proxy_var (QName)
+false
+///delete p.flash_proxy::proxy_var (RTQName)
+false
+///delete p.flash_proxy::proxy_var (RTQNameL)
+false
+///delete p.flash_proxy::proxy_var (Multiname)
+false
+///delete p.flash_proxy::proxy_var (MultinameL)
+false
 ///delete (p.normal_fn)()
 ///called normal_fn
 true
 ///delete p.flash_proxy::proxy_fn
-///attempted to delete property: http://www.adobe.com/2006/actionscript/flash/proxy::proxy_fn
-///type of name is QName
-///name.localName
-proxy_fn
-///name.uri
-http://www.adobe.com/2006/actionscript/flash/proxy
-true
+false
 ///delete p.proxy_var
 ///attempted to delete property: proxy_var
 ///type of name is QName
