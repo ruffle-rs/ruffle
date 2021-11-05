@@ -65,14 +65,6 @@ pub struct EditTextData<'gc> {
     /// Static data shared among all instances of this `EditText`.
     static_data: Gc<'gc, EditTextStatic>,
 
-    /// The current HTML document displayed by this `EditText`.
-    ///
-    /// The HTML representation of this `EditText` is lowered into an
-    /// appropriate set of format spans, which is used for actual rendering.
-    /// The HTML is only retained if there is also a stylesheet already defined
-    /// on the `EditText`, else it is discarded during the lowering process.
-    document: XmlDocument<'gc>,
-
     /// The underlying text format spans of the `EditText`.
     ///
     /// This is generated from HTML (with optional CSS) or set directly, and
@@ -285,7 +277,6 @@ impl<'gc> EditText<'gc> {
             context.gc_context,
             EditTextData {
                 base,
-                document,
                 text_spans,
                 static_data: gc_arena::Gc::allocate(
                     context.gc_context,
@@ -494,7 +485,6 @@ impl<'gc> EditText<'gc> {
     pub fn set_html_tree(self, doc: XmlDocument<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut write = self.0.write(context.gc_context);
 
-        write.document = doc;
         write.text_spans.lower_from_html(doc);
 
         drop(write);
@@ -1591,14 +1581,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
         }
-
-        let mut text = self.0.write(context.gc_context);
-        text.document = text
-            .document
-            .as_node()
-            .duplicate(context.gc_context, true)
-            .document();
-        drop(text);
 
         let movie = self.movie().unwrap();
         let library = context.library.library_for_movie_mut(movie);
