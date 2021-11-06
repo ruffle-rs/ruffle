@@ -278,7 +278,7 @@ pub fn set_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Err(err) = this.set_text(
-        value.coerce_to_string(activation)?.to_string(),
+        &value.coerce_to_string(activation)?,
         &mut activation.context,
     ) {
         avm_error!(activation, "Error when setting TextField.text: {}", err);

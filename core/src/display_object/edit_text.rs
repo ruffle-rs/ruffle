@@ -418,14 +418,14 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_text(
         self,
-        text: String,
+        text: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
         let len = edit_text.text_spans.text().len();
         let tf = edit_text.text_spans.default_format().clone();
 
-        edit_text.text_spans.replace_text(0, len, &text, Some(&tf));
+        edit_text.text_spans.replace_text(0, len, text, Some(&tf));
 
         drop(edit_text);
 
@@ -471,7 +471,7 @@ impl<'gc> EditText<'gc> {
             }
 
             self.set_html_tree(document, context);
-        } else if let Err(err) = self.set_text(text, context) {
+        } else if let Err(err) = self.set_text(&text, context) {
             log::error!("Error when setting TextField.htmlText: {}", err);
         }
         Ok(())
@@ -732,7 +732,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(text, &mut activation.context);
+        let _ = self.set_text(&text, &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);

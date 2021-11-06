@@ -466,12 +466,11 @@ pub fn set_text<'gc>(
     {
         let text = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
+            .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, false);
-        this.set_text(text.to_string(), &mut activation.context)?;
+        this.set_text(&text, &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
