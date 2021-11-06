@@ -347,7 +347,7 @@ pub fn set_html_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let text = value.coerce_to_string(activation)?;
-    let _ = this.set_html_text(text.to_string(), &mut activation.context);
+    let _ = this.set_html_text(&text, &mut activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
     Ok(())
 }

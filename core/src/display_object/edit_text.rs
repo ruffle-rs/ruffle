@@ -455,7 +455,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_html_text(
         self,
-        text: String,
+        text: &str,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self.is_html() {
@@ -471,7 +471,7 @@ impl<'gc> EditText<'gc> {
             }
 
             self.set_html_tree(document, context);
-        } else if let Err(err) = self.set_text(&text, context) {
+        } else if let Err(err) = self.set_text(text, context) {
             log::error!("Error when setting TextField.htmlText: {}", err);
         }
         Ok(())
@@ -1113,10 +1113,7 @@ impl<'gc> EditText<'gc> {
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
                                 let _ = self.set_html_text(
-                                    value
-                                        .coerce_to_string(activation)
-                                        .unwrap_or_default()
-                                        .to_string(),
+                                    &value.coerce_to_string(activation).unwrap_or_default(),
                                     &mut activation.context,
                                 );
                             } else {

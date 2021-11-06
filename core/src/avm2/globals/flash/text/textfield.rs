@@ -341,13 +341,11 @@ pub fn set_html_text<'gc>(
     {
         let html_text = args
             .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_string(activation)?
-            .to_string();
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?;
 
         this.set_is_html(&mut activation.context, true);
-        this.set_html_text(html_text, &mut activation.context)?;
+        this.set_html_text(&html_text, &mut activation.context)?;
     }
 
     Ok(Value::Undefined)
