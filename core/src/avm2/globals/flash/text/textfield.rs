@@ -320,11 +320,8 @@ pub fn html_text<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(AvmString::new(
-            activation.context.gc_context,
-            this.html_text(&mut activation.context)?,
-        )
-        .into());
+        let html_text = this.html_text(&mut activation.context);
+        return Ok(AvmString::new(activation.context.gc_context, html_text).into());
     }
 
     Ok(Value::Undefined)

@@ -415,7 +415,7 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
-    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> Result<String, Error> {
+    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> String {
         if self.is_html() {
             let html_tree = self.html_tree(context).as_node();
             let html_string_result = html_tree.into_string(&mut |_node| true);
@@ -427,10 +427,10 @@ impl<'gc> EditText<'gc> {
                 );
             }
 
-            Ok(html_string_result.unwrap_or_else(|_| "".to_string()))
+            html_string_result.unwrap_or_default()
         } else {
             // Non-HTML text fields always return plain text.
-            Ok(self.text())
+            self.text()
         }
     }
 
