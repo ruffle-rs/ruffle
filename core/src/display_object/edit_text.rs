@@ -1130,13 +1130,7 @@ impl<'gc> EditText<'gc> {
                 if let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
                 {
-                    let text = if self.0.read().is_html {
-                        let html_tree = self.html_tree(&mut activation.context).as_node();
-                        let html_string_result = html_tree.into_string(&mut |_node| true);
-                        html_string_result.unwrap_or_default()
-                    } else {
-                        self.text()
-                    };
+                    let html_text = self.html_text(&mut activation.context);
 
                     // Note that this can call virtual setters, even though the opposite direction won't work
                     // (virtual property changes do not affect the text field)
@@ -1148,7 +1142,7 @@ impl<'gc> EditText<'gc> {
                             let property = AvmString::new(activation.context.gc_context, property);
                             let _ = object.set(
                                 property,
-                                AvmString::new(activation.context.gc_context, text).into(),
+                                AvmString::new(activation.context.gc_context, html_text).into(),
                                 activation,
                             );
                         },
