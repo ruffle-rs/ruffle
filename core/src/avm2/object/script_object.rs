@@ -385,6 +385,14 @@ impl<'gc> ScriptObjectData<'gc> {
         self.proto = Some(proto)
     }
 
+    pub fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+        if last_index < self.enumerants.len() as u32 {
+            Some(last_index.saturating_add(1))
+        } else {
+            None
+        }
+    }
+
     pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
         // NOTE: AVM2 object enumeration is one of the weakest parts of an
         // otherwise well-designed VM. Notably, because of the way they
@@ -437,7 +445,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Intended for objects that need to extend enumerant space. The index
     /// returned is guaranteed to be unused by the base enumerant list.
     pub fn get_last_enumerant(&self) -> u32 {
-        (self.enumerants.len() as u32).saturating_add(1)
+        self.enumerants.len() as u32
     }
 
     /// Install a method into the object.

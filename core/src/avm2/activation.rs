@@ -2442,9 +2442,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let cur_index = self.context.avm2.pop().coerce_to_u32(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let next_index = cur_index + 1;
-
-        if object.get_enumerant_name(next_index).is_some() {
+        if let Some(next_index) = object.get_next_enumerant(cur_index) {
             self.context.avm2.push(next_index);
         } else {
             self.context.avm2.push(0.0);
@@ -2458,29 +2456,28 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         object_register: u32,
         index_register: u32,
     ) -> Result<FrameControl<'gc>, Error> {
-        let cur_index = self.local_register(index_register)?.coerce_to_u32(self)?;
+        let mut cur_index = self.local_register(index_register)?.coerce_to_u32(self)?;
         let mut object = Some(
             self.local_register(object_register)?
                 .coerce_to_object(self)?,
         );
 
-        let mut next_index = cur_index + 1;
-
         while let Some(cur_object) = object {
-            if cur_object.get_enumerant_name(next_index).is_none() {
-                next_index = 1;
-                object = cur_object.proto();
-            } else {
+            if let Some(index) = cur_object.get_next_enumerant(cur_index) {
+                cur_index = index;
                 break;
+            } else {
+                cur_index = 0;
+                object = cur_object.proto();
             }
         }
 
         if object.is_none() {
-            next_index = 0;
+            cur_index = 0;
         }
 
-        self.context.avm2.push(next_index != 0);
-        self.set_local_register(index_register, next_index, self.context.gc_context)?;
+        self.context.avm2.push(cur_index != 0);
+        self.set_local_register(index_register, cur_index, self.context.gc_context)?;
         self.set_local_register(
             object_register,
             object.map(|v| v.into()).unwrap_or(Value::Null),
