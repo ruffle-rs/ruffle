@@ -217,27 +217,20 @@ impl<'gc> EditText<'gc> {
         let is_password = swf_tag.is_password;
         let is_editable = !swf_tag.is_read_only;
         let is_html = swf_tag.is_html;
-        let document = XmlDocument::new(context.gc_context);
         let text = swf_tag.initial_text.unwrap_or_default();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
 
-        let mut text_spans = FormatSpans::new();
-        text_spans.set_default_format(default_format.clone());
-
         let text = text.to_str_lossy(encoding);
-        if is_html {
-            let _ = document
-                .as_node()
-                .replace_with_str(context.gc_context, &text, false, false);
-            text_spans.lower_from_html(document);
+        let mut text_spans = if is_html {
+            FormatSpans::from_html(&*text, default_format)
         } else {
-            text_spans.replace_text(0, text_spans.text().len(), &text, Some(&default_format));
-        }
+            FormatSpans::from_text(&*text, default_format)
+        };
 
         if !is_multiline {
             let filtered = text_spans.text().replace("\n", "");
-            text_spans.replace_text(0, text_spans.text().len(), &filtered, Some(&default_format));
+            text_spans.replace_text(0, text_spans.text().len(), &filtered, None);
         }
 
         if is_password {
@@ -450,46 +443,21 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self.is_html() {
-            let html_string = text.replace("<sbr>", "\n").replace("<br>", "\n");
-            let document = XmlDocument::new(context.gc_context);
+            let mut write = self.0.write(context.gc_context);
+            let default_format = write.text_spans.default_format().clone();
+            write.text_spans = FormatSpans::from_html(text, default_format);
+            drop(write);
 
-            if let Err(err) =
-                document
-                    .as_node()
-                    .replace_with_str(context.gc_context, &html_string, false, false)
-            {
-                log::warn!("Parsing error when setting TextField.htmlText: {}", err);
-            }
+            self.relayout(context);
 
-            self.set_html_tree(document, context);
-        } else if let Err(err) = self.set_text(text, context) {
-            log::error!("Error when setting TextField.htmlText: {}", err);
+            Ok(())
+        } else {
+            self.set_text(text, context)
         }
-        Ok(())
     }
 
     pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XmlDocument<'gc> {
         self.0.read().text_spans.raise_to_html(context.gc_context)
-    }
-
-    /// Set the HTML tree for the given display object.
-    ///
-    /// The document is not rendered directly: instead, it is lowered to text
-    /// spans which drive the actual layout process. User code is capable of
-    /// altering text spans directly, thus the HTML tree will be discarded and
-    /// regenerated.
-    ///
-    /// In stylesheet mode, the opposite is true: text spans are an
-    /// intermediate, user-facing text span APIs don't work, and the document
-    /// is retained.
-    pub fn set_html_tree(self, doc: XmlDocument<'gc>, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut write = self.0.write(context.gc_context);
-
-        write.text_spans.lower_from_html(doc);
-
-        drop(write);
-
-        self.relayout(context);
     }
 
     pub fn text_length(self) -> usize {
