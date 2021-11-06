@@ -211,7 +211,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .filter(|binding| swf_string_eq(&binding.variable_name, &name, case_sensitive))
         {
             let _ = binding.text_field.set_html_text(
-                value.coerce_to_string(activation)?.to_string(),
+                &value.coerce_to_string(activation)?,
                 &mut activation.context,
             );
         }
