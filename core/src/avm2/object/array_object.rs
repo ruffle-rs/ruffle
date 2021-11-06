@@ -199,7 +199,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
         let array_length = read.array.length() as u32;
@@ -211,7 +211,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         }
     }
 
-    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         let arr_len = self.0.read().array.length() as u32;
         if arr_len >= index {
             index.checked_sub(1).map(|index| index.into())

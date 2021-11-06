@@ -227,7 +227,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
         if last_index < self.0.read().vector.length() as u32 {
             Some(last_index.saturating_add(1))
         } else {
@@ -235,7 +235,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         if self.0.read().vector.length() as u32 >= index {
             index.checked_sub(1).map(|index| index.into())
         } else {
