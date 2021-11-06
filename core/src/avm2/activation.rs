@@ -2502,13 +2502,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name = object.get_enumerant_name(cur_index as u32);
-        let value = if let Some(name) = name {
-            let name = name.coerce_to_string(self)?;
-            object.get_property(object, &QName::dynamic_name(name).into(), self)?
-        } else {
-            Value::Undefined
-        };
+        let value = object.get_enumerant_value(cur_index as u32, self)?;
 
         self.context.avm2.push(value);
 

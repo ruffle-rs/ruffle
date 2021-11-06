@@ -111,7 +111,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Some(self)
     }
 
-    fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
         let object_space_length = read.object_space.keys().len() as u32;
@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         }
     }
 
-    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
 

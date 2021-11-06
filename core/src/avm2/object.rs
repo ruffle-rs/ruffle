@@ -794,7 +794,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Repeated calls to this function with prior return values must
     /// eventually return `None`. Furthermore, returning `0`, while valid, is
     /// treated by AVM2 code as signalling `None`.
-    fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
         let base = self.base();
 
         base.get_next_enumerant(last_index)
@@ -802,17 +802,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a given enumerable name by index.
     ///
-    /// Enumerants are listed by index, starting from zero. A value of `None`
-    /// indicates that no enumerant with that index, or any greater index,
-    /// exists. (In other words, it means stop.)
-    ///
-    /// Objects are responsible for maintaining a consistently ordered and
-    /// indexed list of enumerable names which can be queried by this
-    /// mechanism.
-    fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    /// Enumerants are listed by index, starting from zero and iterated via
+    /// `get_next_enumerant`. Only enumerants returned by that function are
+    /// valid here. A value of `None` indicates that no enumerant with that
+    /// index exists.
+    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         let base = self.base();
 
         base.get_enumerant_name(index)
+    }
+
+    /// Retrieve a given enumerable value by index.
+    ///
+    /// This default implementation of value retrieval assumes that the names
+    /// of enumerants are also valid local names in the public namespace.
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        let name = self.get_enumerant_name(index);
+        if let Some(name) = name {
+            let name = name.coerce_to_string(activation)?;
+            Ok(self.get_property(self.into(), &QName::dynamic_name(name).into(), activation)?)
+        } else {
+            Ok(Value::Undefined)
+        }
     }
 
     /// Determine if a property is currently enumerable.
