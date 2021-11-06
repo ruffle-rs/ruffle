@@ -406,11 +406,8 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut edit_text = self.0.write(context.gc_context);
-        let len = edit_text.text_spans.text().len();
-        let tf = edit_text.text_spans.default_format().clone();
-
-        edit_text.text_spans.replace_text(0, len, text, Some(&tf));
-
+        let default_format = edit_text.text_spans.default_format().clone();
+        edit_text.text_spans = FormatSpans::from_text(text, default_format);
         drop(edit_text);
 
         self.relayout(context);
