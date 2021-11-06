@@ -783,6 +783,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_proto(proto)
     }
 
+    /// Get the next enumerant index in enumerant space.
+    ///
+    /// Every object maintains a list of enumerants - key/value pairs indexed
+    /// by arbitrary integers. This function allows clients to iterate through
+    /// those indexing integers. Indexing starts with zero, and then the caller
+    /// repeatedly hands prior results back into this function until it returns
+    /// None.
+    ///
+    /// Repeated calls to this function with prior return values must
+    /// eventually return `None`. Furthermore, returning `0`, while valid, is
+    /// treated by AVM2 code as signalling `None`.
+    fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+        let base = self.base();
+
+        base.get_next_enumerant(last_index)
+    }
+
     /// Retrieve a given enumerable name by index.
     ///
     /// Enumerants are listed by index, starting from zero. A value of `None`
