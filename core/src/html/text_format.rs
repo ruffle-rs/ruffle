@@ -3,8 +3,10 @@
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::tag_utils::SwfMovie;
-use crate::xml::{Step, XmlDocument, XmlName, XmlNode};
+use crate::xml::{XmlDocument, XmlName, XmlNode};
 use gc_arena::{Collect, MutationContext};
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
@@ -177,146 +179,6 @@ impl TextFormat {
         }
     }
 
-    /// Extract text format parameters from presentational markup.
-    ///
-    /// This assumes the "legacy" HTML path that only supports a handful of
-    /// elements. The "stylesheet" HTML path will also require CSS style
-    /// calculation for each node, followed by style conversion.
-    ///
-    /// This function accepts a `TextFormat`, which should be a text format
-    /// loaded with all of the *currently existing* styles at this point in the
-    /// lowering process. Any property not implied by markup will be retained
-    /// in this format.
-    pub fn from_presentational_markup(node: XmlNode<'_>, mut tf: TextFormat) -> Self {
-        match node.tag_name() {
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("p")) => {
-                match node
-                    .attribute_value_ignore_ascii_case(&XmlName::from_str("align"))
-                    .as_deref()
-                {
-                    Some("left") => tf.align = Some(swf::TextAlign::Left),
-                    Some("center") => tf.align = Some(swf::TextAlign::Center),
-                    Some("right") => tf.align = Some(swf::TextAlign::Right),
-                    _ => {}
-                }
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("a")) => {
-                if let Some(href) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("href"))
-                {
-                    tf.url = Some(href);
-                }
-
-                if let Some(target) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("target"))
-                {
-                    tf.target = Some(target);
-                }
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("font")) => {
-                if let Some(face) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("face"))
-                {
-                    tf.font = Some(face);
-                }
-
-                if let Some(size) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("size"))
-                {
-                    tf.size = size.parse().ok();
-                }
-
-                if let Some(color) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("color"))
-                {
-                    if color.starts_with('#') {
-                        let rval = color.get(1..3).and_then(|v| u8::from_str_radix(v, 16).ok());
-                        let gval = color.get(3..5).and_then(|v| u8::from_str_radix(v, 16).ok());
-                        let bval = color.get(5..7).and_then(|v| u8::from_str_radix(v, 16).ok());
-
-                        if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
-                            tf.color = Some(swf::Color { r, g, b, a: 0 });
-                        }
-                    }
-                }
-
-                if let Some(letter_spacing) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("letterSpacing"))
-                {
-                    tf.letter_spacing = letter_spacing.parse().ok();
-                }
-
-                tf.kerning = match node
-                    .attribute_value_ignore_ascii_case(&XmlName::from_str("kerning"))
-                    .as_deref()
-                {
-                    Some("1") => Some(true),
-                    Some("0") => Some(false),
-                    _ => tf.kerning,
-                }
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("b")) => {
-                tf.bold = Some(true);
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("i")) => {
-                tf.italic = Some(true);
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("u")) => {
-                tf.underline = Some(true);
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("li")) => {
-                tf.bullet = Some(true);
-            }
-            Some(name) if name.eq_ignore_ascii_case(&XmlName::from_str("textformat")) => {
-                //TODO: Spec says these are all in twips. That doesn't seem to
-                //match Flash 8.
-                if let Some(left_margin) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("leftmargin"))
-                {
-                    tf.left_margin = left_margin.parse().ok();
-                }
-
-                if let Some(right_margin) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("rightmargin"))
-                {
-                    tf.right_margin = right_margin.parse().ok();
-                }
-
-                if let Some(indent) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("indent"))
-                {
-                    tf.indent = indent.parse().ok();
-                }
-
-                if let Some(blockindent) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("blockindent"))
-                {
-                    tf.block_indent = blockindent.parse().ok();
-                }
-
-                if let Some(leading) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("leading"))
-                {
-                    tf.leading = leading.parse().ok();
-                }
-
-                if let Some(tabstops) =
-                    node.attribute_value_ignore_ascii_case(&XmlName::from_str("tabstops"))
-                {
-                    tf.tab_stops = Some(
-                        tabstops
-                            .split(',')
-                            .filter_map(|v| v.trim().parse().ok())
-                            .collect(),
-                    );
-                }
-            }
-            _ => {}
-        }
-
-        tf
-    }
-
     /// Given two text formats, construct a new `TextFormat` where only
     /// matching properties between the two formats are defined.
     pub fn merge_matching_properties(self, rhs: TextFormat) -> Self {
@@ -454,7 +316,7 @@ pub struct TextSpan {
     ///
     /// This value must not cause the resulting set of text spans to exceed the
     /// length of the underlying source string.
-    span_length: usize,
+    pub span_length: usize,
 
     pub font: String,
     pub size: f64,
@@ -647,11 +509,6 @@ impl TextSpan {
             target: Some(self.target.clone()),
         }
     }
-
-    /// Return the length of the span.
-    pub fn span_length(&self) -> usize {
-        self.span_length
-    }
 }
 
 /// Struct which contains text formatted by `TextSpan`s.
@@ -672,22 +529,214 @@ impl Default for FormatSpans {
 
 impl FormatSpans {
     pub fn new() -> Self {
-        FormatSpans {
+        Self {
             text: "".to_string(),
             displayed_text: "".to_string(),
-            spans: vec![TextSpan::default()],
-            default_format: TextFormat::default(),
+            spans: vec![Default::default()],
+            default_format: Default::default(),
         }
     }
 
     /// Construct a format span from its raw parts.
     #[allow(dead_code)]
     pub fn from_str_and_spans(text: &str, spans: &[TextSpan]) -> Self {
-        FormatSpans {
+        Self {
             text: text.to_string(),
             displayed_text: "".to_string(),
             spans: spans.to_vec(),
             default_format: Default::default(),
+        }
+    }
+
+    pub fn from_text(text: &str, format: TextFormat) -> Self {
+        Self {
+            text: text.to_string(),
+            displayed_text: "".to_string(),
+            spans: vec![TextSpan::with_length_and_format(text.len(), format.clone())],
+            default_format: format,
+        }
+    }
+
+    /// Lower an HTML tree into text-span representation.
+    ///
+    /// This is the "legacy" implementation of this process: it only looks for
+    /// a handful of presentational attributes in the HTML tree to generate
+    /// styling. There's also a `lower_from_css` that respects both
+    /// presentational markup and CSS stylesheets.
+    pub fn from_html(html: &str, default_format: TextFormat) -> Self {
+        let mut format_stack = vec![default_format.clone()];
+        let mut text = String::new();
+        let mut spans: Vec<TextSpan> = Vec::new();
+
+        let mut reader = Reader::from_str(html);
+        reader.trim_text(true);
+        let mut buf = Vec::new();
+        loop {
+            match reader.read_event(&mut buf) {
+                Ok(Event::Start(ref e)) => {
+                    let attribute = move |name| {
+                        e.attributes().with_checks(false).find_map(|attribute| {
+                            let attribute = attribute.unwrap();
+                            attribute
+                                .key
+                                .eq_ignore_ascii_case(name)
+                                .then(|| attribute.value)
+                        })
+                    };
+                    let mut format = format_stack.last().unwrap().clone();
+                    match &e.name().to_ascii_lowercase()[..] {
+                        b"br" | b"sbr" => {
+                            text.push('\n');
+                            if let Some(span) = spans.last_mut() {
+                                span.span_length += 1;
+                            }
+
+                            // Skip push to `format_stack`.
+                            continue;
+                        }
+                        b"p" => match attribute(b"align").as_deref() {
+                            Some(b"left") => format.align = Some(swf::TextAlign::Left),
+                            Some(b"center") => format.align = Some(swf::TextAlign::Center),
+                            Some(b"right") => format.align = Some(swf::TextAlign::Right),
+                            _ => {}
+                        },
+                        b"a" => {
+                            if let Some(href) = attribute(b"href") {
+                                format.url = Some(String::from_utf8_lossy(&href).to_string());
+                            }
+
+                            if let Some(target) = attribute(b"target") {
+                                format.target = Some(String::from_utf8_lossy(&target).to_string());
+                            }
+                        }
+                        b"font" => {
+                            if let Some(face) = attribute(b"face") {
+                                format.font = Some(String::from_utf8_lossy(&face).to_string());
+                            }
+
+                            if let Some(size) = attribute(b"size") {
+                                format.size = String::from_utf8_lossy(&size).parse().ok();
+                            }
+
+                            if let Some(color) = attribute(b"color") {
+                                if color.starts_with(b"#") {
+                                    let rval = color.get(1..3).and_then(|v| {
+                                        u8::from_str_radix(&String::from_utf8_lossy(v), 16).ok()
+                                    });
+                                    let gval = color.get(3..5).and_then(|v| {
+                                        u8::from_str_radix(&String::from_utf8_lossy(v), 16).ok()
+                                    });
+                                    let bval = color.get(5..7).and_then(|v| {
+                                        u8::from_str_radix(&String::from_utf8_lossy(v), 16).ok()
+                                    });
+
+                                    if let (Some(r), Some(g), Some(b)) = (rval, gval, bval) {
+                                        format.color = Some(swf::Color { r, g, b, a: 0 });
+                                    }
+                                }
+                            }
+
+                            if let Some(letter_spacing) = attribute(b"letterSpacing") {
+                                format.letter_spacing =
+                                    String::from_utf8_lossy(&letter_spacing).parse().ok();
+                            }
+
+                            match attribute(b"kerning").as_deref() {
+                                Some(b"1") => format.kerning = Some(true),
+                                Some(b"0") => format.kerning = Some(false),
+                                _ => {}
+                            }
+                        }
+                        b"b" => {
+                            format.bold = Some(true);
+                        }
+                        b"i" => {
+                            format.italic = Some(true);
+                        }
+                        b"u" => {
+                            format.underline = Some(true);
+                        }
+                        b"li" => {
+                            format.bullet = Some(true);
+                        }
+                        b"texformatormat" => {
+                            //TODO: Spec says these are all in twips. That doesn't seem to
+                            //match Flash 8.
+                            if let Some(left_margin) = attribute(b"leftmargin") {
+                                format.left_margin =
+                                    String::from_utf8_lossy(&left_margin).parse().ok();
+                            }
+
+                            if let Some(right_margin) = attribute(b"rightmargin") {
+                                format.right_margin =
+                                    String::from_utf8_lossy(&right_margin).parse().ok();
+                            }
+
+                            if let Some(indent) = attribute(b"indent") {
+                                format.indent = String::from_utf8_lossy(&indent).parse().ok();
+                            }
+
+                            if let Some(block_indent) = attribute(b"blockindent") {
+                                format.block_indent =
+                                    String::from_utf8_lossy(&block_indent).parse().ok();
+                            }
+
+                            if let Some(leading) = attribute(b"leading") {
+                                format.leading = String::from_utf8_lossy(&leading).parse().ok();
+                            }
+
+                            if let Some(tab_stops) = attribute(b"tabstops") {
+                                format.tab_stops = Some(
+                                    String::from_utf8_lossy(&tab_stops)
+                                        .split(',')
+                                        .filter_map(|v| v.trim().parse().ok())
+                                        .collect(),
+                                );
+                            }
+                        }
+                        _ => {}
+                    }
+                    format_stack.push(format);
+                }
+                Ok(Event::Text(e)) => {
+                    let e = String::from_utf8_lossy(&e);
+                    let e = process_html_entity(&e);
+                    let format = format_stack.last().unwrap().clone();
+                    text.push_str(&e);
+                    spans.push(TextSpan::with_length_and_format(e.len(), format));
+                }
+                Ok(Event::End(e)) => {
+                    match &e.name().to_ascii_lowercase()[..] {
+                        b"br" | b"sbr" => {
+                            // Skip pop from `format_stack`.
+                            continue;
+                        }
+                        b"p" | b"li" => {
+                            text.push('\n');
+                            if let Some(span) = spans.last_mut() {
+                                span.span_length += 1;
+                            }
+                        }
+                        _ => {}
+                    }
+                    format_stack.pop();
+                }
+                Ok(Event::Eof) => break,
+                Err(e) => {
+                    log::warn!("Error while parsing HTML: {}", e);
+                    break;
+                }
+                _ => {}
+            }
+
+            buf.clear();
+        }
+
+        Self {
+            text,
+            displayed_text: "".to_string(),
+            spans,
+            default_format,
         }
     }
 
@@ -1022,92 +1071,6 @@ impl FormatSpans {
     /// 4. The formatting applied to the text span.
     pub fn iter_spans(&self) -> impl Iterator<Item = (usize, usize, &str, &TextSpan)> {
         TextSpanIter::for_format_spans(self)
-    }
-
-    /// Lower an HTML tree into text-span representation.
-    ///
-    /// This is the "legacy" implementation of this process: it only looks for
-    /// a handful of presentational attributes in the HTML tree to generate
-    /// styling. There's also a `lower_from_css` that respects both
-    /// presentational markup and CSS stylesheets.
-    pub fn lower_from_html(&mut self, tree: XmlDocument<'_>) {
-        let mut format_stack = vec![self.default_format.clone()];
-        let mut last_successful_format = None;
-
-        self.text = "".to_string();
-        self.spans = vec![];
-
-        for step in tree.as_node().walk() {
-            match step {
-                Step::In(node)
-                    if node
-                        .tag_name()
-                        .unwrap()
-                        .node_name()
-                        .eq_ignore_ascii_case("sbr")
-                        || node
-                            .tag_name()
-                            .unwrap()
-                            .node_name()
-                            .eq_ignore_ascii_case("br") =>
-                {
-                    self.replace_text(
-                        self.text().len(),
-                        self.text().len(),
-                        "\n",
-                        format_stack.last(),
-                    );
-                }
-                Step::Out(node)
-                    if node
-                        .tag_name()
-                        .unwrap()
-                        .node_name()
-                        .eq_ignore_ascii_case("sbr")
-                        || node
-                            .tag_name()
-                            .unwrap()
-                            .node_name()
-                            .eq_ignore_ascii_case("br") => {}
-                Step::In(node) => format_stack.push(TextFormat::from_presentational_markup(
-                    node,
-                    format_stack.last().cloned().unwrap_or_default(),
-                )),
-                Step::Around(node) if node.is_text() => {
-                    self.replace_text(
-                        self.text.len(),
-                        self.text.len(),
-                        &process_html_entity(&node.node_value().unwrap()),
-                        format_stack.last(),
-                    );
-                    last_successful_format = format_stack.last().cloned();
-                }
-                Step::Out(node)
-                    if node
-                        .tag_name()
-                        .unwrap()
-                        .node_name()
-                        .eq_ignore_ascii_case("p")
-                        || node
-                            .tag_name()
-                            .unwrap()
-                            .node_name()
-                            .eq_ignore_ascii_case("li") =>
-                {
-                    self.replace_text(
-                        self.text.len(),
-                        self.text.len(),
-                        "\n",
-                        last_successful_format.as_ref(),
-                    );
-                    format_stack.pop();
-                }
-                Step::Out(_) => {
-                    format_stack.pop();
-                }
-                _ => {}
-            };
-        }
     }
 
     #[allow(clippy::float_cmp)]

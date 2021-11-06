@@ -28,7 +28,7 @@ impl<'a> Iterator for TextSpanIter<'a> {
             self.index = self.index.saturating_add(1);
 
             let start_pos = min(self.start_pos, self.base.text().len());
-            let end_pos = min(self.start_pos + span.span_length(), self.base.text().len());
+            let end_pos = min(self.start_pos + span.span_length, self.base.text().len());
             let next = (
                 start_pos,
                 end_pos,
