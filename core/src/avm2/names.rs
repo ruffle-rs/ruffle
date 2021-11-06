@@ -12,6 +12,7 @@ use swf::avm2::types::{
 };
 
 /// Represents the name of a namespace.
+#[allow(clippy::enum_variant_names)]
 #[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[collect(no_drop)]
 pub enum Namespace<'gc> {
