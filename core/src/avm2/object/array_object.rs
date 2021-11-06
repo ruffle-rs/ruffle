@@ -199,24 +199,38 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.resolve_any(local_name)
     }
 
-    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Option<u32>, Error> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
         let array_length = read.array.length() as u32;
 
         if last_index < last_enumerant + array_length {
-            Some(last_index.saturating_add(1))
+            Ok(Some(last_index.saturating_add(1)))
         } else {
-            None
+            Ok(None)
         }
     }
 
-    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
         let arr_len = self.0.read().array.length() as u32;
         if arr_len >= index {
-            index.checked_sub(1).map(|index| index.into())
+            Ok(index
+                .checked_sub(1)
+                .map(|index| index.into())
+                .unwrap_or(Value::Undefined))
         } else {
-            self.base().get_enumerant_name(index - arr_len)
+            Ok(self
+                .base()
+                .get_enumerant_name(index - arr_len)
+                .unwrap_or(Value::Undefined))
         }
     }
 
