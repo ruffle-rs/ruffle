@@ -221,4 +221,43 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             )?
             .coerce_to_boolean())
     }
+
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Option<u32>, Error> {
+        Ok(Some(
+            self.call_property(
+                &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex").into(),
+                &[last_index.into()],
+                activation,
+            )?
+            .coerce_to_u32(activation)?,
+        ))
+    }
+
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        self.call_property(
+            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName").into(),
+            &[index.into()],
+            activation,
+        )
+    }
+
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        self.call_property(
+            &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue").into(),
+            &[index.into()],
+            activation,
+        )
+    }
 }

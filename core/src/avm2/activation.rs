@@ -2442,7 +2442,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let cur_index = self.context.avm2.pop().coerce_to_u32(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        if let Some(next_index) = object.get_next_enumerant(cur_index) {
+        if let Some(next_index) = object.get_next_enumerant(cur_index, self)? {
             self.context.avm2.push(next_index);
         } else {
             self.context.avm2.push(0.0);
@@ -2463,7 +2463,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         );
 
         while let Some(cur_object) = object {
-            if let Some(index) = cur_object.get_next_enumerant(cur_index) {
+            if let Some(index) = cur_object.get_next_enumerant(cur_index, self)? {
                 cur_index = index;
                 break;
             } else {
@@ -2491,9 +2491,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let cur_index = self.context.avm2.pop().coerce_to_number(self)?;
         let object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let name = object.get_enumerant_name(cur_index as u32);
+        let name = object.get_enumerant_name(cur_index as u32, self)?;
 
-        self.context.avm2.push(name.unwrap_or(Value::Undefined));
+        self.context.avm2.push(name);
 
         Ok(FrameControl::Continue)
     }

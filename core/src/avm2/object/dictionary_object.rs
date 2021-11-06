@@ -111,32 +111,45 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Some(self)
     }
 
-    fn get_next_enumerant(self, last_index: u32) -> Option<u32> {
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Option<u32>, Error> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
         let object_space_length = read.object_space.keys().len() as u32;
 
         if last_index < last_enumerant + object_space_length {
-            Some(last_index.saturating_add(1))
+            Ok(Some(last_index.saturating_add(1)))
         } else {
-            None
+            Ok(None)
         }
     }
 
-    fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
         let last_enumerant = read.base.get_last_enumerant();
 
         if index < last_enumerant {
-            read.base.get_enumerant_name(index)
+            Ok(read
+                .base
+                .get_enumerant_name(index)
+                .unwrap_or(Value::Undefined))
         } else {
             let object_space_index = index.saturating_sub(last_enumerant);
 
-            read.object_space
+            Ok(read
+                .object_space
                 .keys()
                 .nth(object_space_index as usize)
                 .cloned()
                 .map(|v| v.into())
+                .unwrap_or(Value::Undefined))
         }
     }
 }
