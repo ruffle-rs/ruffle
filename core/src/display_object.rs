@@ -499,16 +499,6 @@ pub trait TDisplayObject<'gc>:
 {
     fn base<'a>(&'a self) -> Ref<'a, DisplayObjectBase<'gc>>;
     fn base_mut<'a>(&'a self, mc: MutationContext<'gc, '_>) -> RefMut<'a, DisplayObjectBase<'gc>>;
-    /*
-    fn transform(&self) -> Ref<Transform>;
-    fn matrix(&self) -> Ref<Matrix>;
-    fn matrix_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<Matrix>;
-
-    fn color_transform(&self) -> Ref<ColorTransform>;
-    fn color_transform_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<ColorTransform>;
-
-    /// The sound transform for sounds played inside this display object.
-    fn sound_transform<'a>(&'a self) -> Ref<'a, SoundTransform>; */
 
     fn id(&self) -> CharacterId;
     fn depth(&self) -> Depth {
