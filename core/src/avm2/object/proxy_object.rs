@@ -69,8 +69,12 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        for namespace in multiname.namespace_set() {
-            if let Some(local_name) = multiname.local_name() {
+        // NOTE: This is incorrect behavior.
+        // `QName` should instead store the whole multiname's namespace set,
+        // so that it can be used to index other objects using the same
+        // namespace set.
+        if let Some(local_name) = multiname.local_name() {
+            for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
                     let qname = QNameObject::from_qname(
                         activation,
@@ -105,8 +109,12 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<QName<'gc>>, Error> {
-        for namespace in multiname.namespace_set() {
-            if let Some(local_name) = multiname.local_name() {
+        // NOTE: This is incorrect behavior.
+        // `QName` should instead store the whole multiname's namespace set,
+        // so that it can be used to index other objects using the same
+        // namespace set.
+        if let Some(local_name) = multiname.local_name() {
+            for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
                     let qname = QNameObject::from_qname(
                         activation,
@@ -145,8 +153,12 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        for namespace in multiname.namespace_set() {
-            if let Some(local_name) = multiname.local_name() {
+        // NOTE: This is incorrect behavior.
+        // `QName` should instead store the whole multiname's namespace set,
+        // so that it can be used to index other objects using the same
+        // namespace set.
+        if let Some(local_name) = multiname.local_name() {
+            for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
                     let qname = QNameObject::from_qname(
                         activation,
@@ -178,8 +190,12 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error> {
-        for namespace in multiname.namespace_set() {
-            if let Some(local_name) = multiname.local_name() {
+        // NOTE: This is incorrect behavior.
+        // `QName` should instead store the whole multiname's namespace set,
+        // so that it can be used to index other objects using the same
+        // namespace set.
+        if let Some(local_name) = multiname.local_name() {
+            for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
                     let qname = QNameObject::from_qname(
                         activation,
