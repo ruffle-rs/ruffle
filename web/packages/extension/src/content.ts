@@ -172,6 +172,7 @@ function isXMLDocument(): boolean {
         config: {
             warnOnUnsupportedContent: options.warnOnUnsupportedContent,
             logLevel: options.logLevel,
+            showSwfDownload: options.showSwfDownload,
         },
     });
 })();

@@ -161,6 +161,14 @@ export interface BaseLoadOptions {
     logLevel?: LogLevel;
 
     /**
+     * If set to true, the context menu has an option to download
+     * the SWF.
+     *
+     * @default false
+     */
+    showSwfDownload?: boolean;
+
+    /**
      * Whether or not to show a context menu when right-clicking
      * a Ruffle instance.
      *

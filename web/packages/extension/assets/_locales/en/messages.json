@@ -8,6 +8,9 @@
     "settings_ignore_optout": {
         "message": "Ignore website compatibility warnings"
     },
+    "settings_show_swf_download": {
+        "message": "Show SWF download in context menu"
+    },
     "status_init": {
         "message": "Reading current tab…"
     },

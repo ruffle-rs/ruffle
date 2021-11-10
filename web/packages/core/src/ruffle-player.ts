@@ -136,6 +136,7 @@ export class RufflePlayer extends HTMLElement {
     private options: BaseLoadOptions | null;
     private lastActivePlayingState: boolean;
 
+    private showSwfDownload = false;
     private _metadata: MovieMetadata | null;
     private _readyState: ReadyState;
 
@@ -551,6 +552,7 @@ export class RufflePlayer extends HTMLElement {
             // `allowScriptAccess` can only be set in `options`.
             config.allowScriptAccess = options.allowScriptAccess;
 
+            this.showSwfDownload = config.showSwfDownload === true;
             this.options = options;
             this.hasContextMenu = config.contextMenu !== false;
 
@@ -683,6 +685,38 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    /**
+     * Fetches the loaded SWF and downloads it.
+     */
+    async downloadSwf(): Promise<void> {
+        try {
+            if (this.swfUrl) {
+                console.log("Downloading SWF: " + this.swfUrl);
+                const response = await fetch(this.swfUrl);
+                if (!response.ok) {
+                    console.error("SWF download failed");
+                    return;
+                }
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const swfDownloadA = document.createElement("a");
+                swfDownloadA.style.display = "none";
+                swfDownloadA.href = blobUrl;
+                swfDownloadA.download = this.swfUrl.substring(
+                    this.swfUrl.lastIndexOf("/") + 1
+                );
+                document.body.appendChild(swfDownloadA);
+                swfDownloadA.click();
+                document.body.removeChild(swfDownloadA);
+                URL.revokeObjectURL(blobUrl);
+            } else {
+                console.error("SWF download failed");
+            }
+        } catch (err) {
+            console.error("SWF download failed");
+        }
+    }
+
     private contextMenuItems(): Array<ContextMenuItem | null> {
         const CHECKMARK = String.fromCharCode(0x2713);
         const items = [];
@@ -717,6 +751,15 @@ export class RufflePlayer extends HTMLElement {
                 });
             }
         }
+
+        if (this.instance && this.swfUrl && this.showSwfDownload) {
+            items.push(null);
+            items.push({
+                text: `Download .swf`,
+                onClick: this.downloadSwf.bind(this),
+            });
+        }
+
         items.push(null);
 
         const extensionString = this.isExtension ? "extension" : "";
