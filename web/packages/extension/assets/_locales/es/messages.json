@@ -8,6 +8,9 @@
     "settings_ignore_optout": {
         "message": "Ignorar avisos de compatibilidad en páginas de internet"
     },
+    "settings_show_swf_download": {
+        "message": "Mostrar descarga de SWF en el menú contextual"
+    },
     "status_init": {
         "message": "Leyendo la pestaña actual…"
     },
