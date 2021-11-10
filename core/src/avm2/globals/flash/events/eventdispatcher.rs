@@ -237,6 +237,26 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `EventDispatcher.toString`.
+///
+/// This is an undocumented function, but MX will VerifyError if this isn't
+/// present.
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let object_proto = activation.avm2().prototypes().object;
+    object_proto
+        .get_property(
+            object_proto,
+            &QName::dynamic_name("toString").into(),
+            activation,
+        )?
+        .coerce_to_object(activation)?
+        .call(this, args, activation)
+}
+
 /// Construct `EventDispatcher`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -259,6 +279,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("hasEventListener", has_event_listener),
         ("willTrigger", will_trigger),
         ("dispatchEvent", dispatch_event),
+        ("toString", to_string),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
