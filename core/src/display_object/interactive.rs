@@ -1,5 +1,6 @@
 //! Interactive object enumtrait
 
+use crate::avm2::Value;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
@@ -35,6 +36,7 @@ bitflags! {
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
     flags: InteractiveObjectFlags,
+    context_menu: Value<'gc>,
 }
 
 impl<'gc> Default for InteractiveObjectBase<'gc> {
@@ -42,6 +44,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
         Self {
             base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
+            context_menu: Value::Null,
         }
     }
 }
@@ -92,6 +95,14 @@ pub trait TInteractiveObject<'gc>:
         self.ibase_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+    }
+
+    fn context_menu(self) -> Value<'gc> {
+        self.ibase().context_menu
+    }
+
+    fn set_context_menu(self, mc: MutationContext<'gc, '_>, value: Value<'gc>) {
+        self.ibase_mut(mc).context_menu = value;
     }
 
     /// Filter the incoming clip event.
