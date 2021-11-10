@@ -133,6 +133,8 @@ pub struct SystemPrototypes<'gc> {
     pub date: Object<'gc>,
     pub qname: Object<'gc>,
     pub sharedobject: Object<'gc>,
+    pub nativemenu: Object<'gc>,
+    pub contextmenu: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -192,6 +194,8 @@ impl<'gc> SystemPrototypes<'gc> {
             date: empty,
             qname: empty,
             sharedobject: empty,
+            nativemenu: empty,
+            contextmenu: empty,
         }
     }
 }
@@ -241,6 +245,8 @@ pub struct SystemClasses<'gc> {
     pub date: ClassObject<'gc>,
     pub qname: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
+    pub nativemenu: ClassObject<'gc>,
+    pub contextmenu: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -300,6 +306,8 @@ impl<'gc> SystemClasses<'gc> {
             date: object,
             qname: object,
             sharedobject: object,
+            nativemenu: object,
+            contextmenu: object,
         }
     }
 }
@@ -829,6 +837,12 @@ pub fn load_player_globals<'gc>(
         flash::display::pixelsnapping::create_class(mc),
         script,
     )?;
+    avm2_system_class!(
+        nativemenu,
+        activation,
+        flash::display::nativemenu::create_class(mc),
+        script
+    );
 
     // package `flash.geom`
     avm2_system_class!(
@@ -867,6 +881,14 @@ pub fn load_player_globals<'gc>(
         soundchannel,
         activation,
         flash::media::soundchannel::create_class(mc),
+        script
+    );
+
+    // package `flash.ui`
+    avm2_system_class!(
+        contextmenu,
+        activation,
+        flash::ui::contextmenu::create_class(mc),
         script
     );
 

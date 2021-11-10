@@ -115,6 +115,44 @@ pub fn set_double_click_enabled<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `InteractiveObject.contextMenu`'s getter.
+fn context_menu<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        return Ok(int.context_menu());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `InteractiveObject.contextMenu`'s setter.
+fn set_context_menu<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(int) = this
+        .and_then(|t| t.as_display_object())
+        .and_then(|dobj| dobj.as_interactive())
+    {
+        let cls = activation.avm2().classes().nativemenu;
+        let value = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_type(activation, cls)?;
+        int.set_context_menu(activation.context.gc_context, value);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `InteractiveObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -148,6 +186,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(double_click_enabled),
             Some(set_double_click_enabled),
         ),
+        ("contextMenu", Some(context_menu), Some(set_context_menu)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
