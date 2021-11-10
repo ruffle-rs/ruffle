@@ -28,11 +28,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     player.setIsExtension(true);
     document.getElementById("main")!.append(player);
 
-    const { warnOnUnsupportedContent, logLevel } = await utils.getOptions();
+    const options = await utils.getOptions();
     const config = {
         letterbox: Letterbox.On,
-        warnOnUnsupportedContent,
-        logLevel,
+        ...options,
     };
     player.load({ url: swfUrl, base: swfUrl, ...config });
 });

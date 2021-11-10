@@ -6,6 +6,7 @@ export interface Options {
     ignoreOptout: boolean;
     warnOnUnsupportedContent: boolean;
     logLevel: LogLevel;
+    showSwfDownload: boolean;
 }
 
 interface OptionElement<T> {

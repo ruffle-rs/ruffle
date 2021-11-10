@@ -6,6 +6,7 @@ const DEFAULT_OPTIONS: Options = {
     ignoreOptout: false,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
+    showSwfDownload: false,
 };
 
 export let i18n: {
