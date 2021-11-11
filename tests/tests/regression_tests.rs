@@ -725,6 +725,10 @@ swf_tests! {
     (as3_proxy_enumeration, "avm2/proxy_enumeration", 1),
     (as3_nonconflicting_declarations, "avm2/nonconflicting_declarations", 1),
     (as3_eventdispatcher_tostring, "avm2/eventdispatcher_tostring", 1),
+    (as3_boolean_constr, "avm2/boolean_constr", 1),
+    (as3_int_constr, "avm2/int_constr", 1),
+    (as3_uint_constr, "avm2/uint_constr", 1),
+    (as3_number_constr, "avm2/number_constr", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.
