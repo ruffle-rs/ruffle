@@ -65,12 +65,13 @@ impl<'gc> FunctionObject<'gc> {
         subclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
         let fn_proto = activation.avm2().prototypes().function;
+        let fn_class = activation.avm2().classes().function;
         let exec = Executable::from_method(method, scope, receiver, subclass_object);
 
         FunctionObject(GcCell::allocate(
             activation.context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::base_new(Some(fn_proto), None),
+                base: ScriptObjectData::base_new(Some(fn_proto), Some(fn_class)),
                 exec,
             },
         ))
