@@ -1,0 +1,10 @@
+///Object.prototype.toString = function() { /* ... */ };
+///var ed = new EventDispatcher();
+///ed.toString();
+///(Object.prototype.toString called)
+[object EventDispatcher]
+///var cust = new CustomDispatch();
+///cust.toString();
+///(CustomDispatch.prototype.toString called);
+///(Object.prototype.toString called)
+[object CustomDispatch]
