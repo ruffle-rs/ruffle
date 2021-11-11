@@ -11,11 +11,24 @@ use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Number`'s instance initializer.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Err("Number constructor is a stub.".into())
+    if let Some(this) = this {
+        if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
+            if matches!(*prim, Value::Undefined | Value::Null) {
+                *prim = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Number(0.0))
+                    .coerce_to_number(activation)?
+                    .into();
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `Number`'s native instance initializer.

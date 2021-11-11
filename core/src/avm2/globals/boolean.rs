@@ -4,18 +4,31 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{primitive_allocator, Object};
+use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Boolean`'s instance initializer.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Err("Boolean constructor is a stub.".into())
+    if let Some(this) = this {
+        if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
+            if matches!(*prim, Value::Undefined | Value::Null) {
+                *prim = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Bool(false))
+                    .coerce_to_boolean()
+                    .into();
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `Boolean`'s native instance initializer.
