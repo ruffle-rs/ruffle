@@ -721,6 +721,7 @@ swf_tests! {
     (as3_proxy_callproperty, "avm2/proxy_callproperty", 1),
     (as3_proxy_hasproperty, "avm2/proxy_hasproperty", 1),
     (as3_proxy_enumeration, "avm2/proxy_enumeration", 1),
+    (as3_nonconflicting_declarations, "avm2/nonconflicting_declarations", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

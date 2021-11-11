@@ -344,11 +344,13 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            write.domain.export_definition(
-                newtrait.name().clone(),
-                *self,
-                activation.context.gc_context,
-            )?;
+            if !newtrait.name().namespace().is_private() {
+                write.domain.export_definition(
+                    newtrait.name().clone(),
+                    *self,
+                    activation.context.gc_context,
+                )?;
+            }
             write.traits.push(newtrait);
         }
 
