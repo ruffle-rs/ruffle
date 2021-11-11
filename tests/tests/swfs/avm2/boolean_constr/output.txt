@@ -1,0 +1,32 @@
+//new Boolean()
+false
+//new Boolean(true)
+true
+//new Boolean(false)
+false
+//new Boolean(null)
+false
+//new Boolean(undefined)
+false
+//new Boolean("")
+false
+//new Boolean("str")
+true
+//new Boolean("true")
+true
+//new Boolean("false")
+true
+//new Boolean(0.0)
+false
+//new Boolean(NaN)
+false
+//new Boolean(-0.0)
+false
+//new Boolean(Infinity)
+true
+//new Boolean(1.0)
+true
+//new Boolean(-1.0)
+true
+//new Boolean({})
+true
