@@ -729,6 +729,7 @@ swf_tests! {
     (as3_int_constr, "avm2/int_constr", 1),
     (as3_uint_constr, "avm2/uint_constr", 1),
     (as3_number_constr, "avm2/number_constr", 1),
+    (as3_function_type, "avm2/function_type", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

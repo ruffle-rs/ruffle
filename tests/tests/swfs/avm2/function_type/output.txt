@@ -1,0 +1,6 @@
+///fn is Function
+true
+///new Cls().method is Function
+true
+///Cls.static_method is Function
+true
