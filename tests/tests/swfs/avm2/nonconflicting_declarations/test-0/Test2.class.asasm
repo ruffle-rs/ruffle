@@ -1,0 +1,46 @@
+class
+ refid "Test2"
+ instance QName(PackageNamespace(""), "Test2")
+  extends QName(PackageNamespace(""), "Object")
+  flag SEALED
+  flag PROTECTEDNS
+  protectedns ProtectedNamespace("Test2")
+  iinit
+   name "Test2/Test2"
+   refid "Test2/instance/init"
+   body
+    maxstack 1
+    localcount 1
+    initscopedepth 4
+    maxscopedepth 5
+    code
+     getlocal0
+     pushscope
+
+     getlocal0
+     constructsuper      0
+
+     debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\nonconflicting_declarations;;Test2.as"
+     debugline           8
+     returnvoid
+    end ; code
+   end ; body
+  end ; method
+ end ; instance
+ cinit
+  name ""
+  refid "Test2/class/init"
+  body
+   maxstack 1
+   localcount 1
+   initscopedepth 3
+   maxscopedepth 4
+   code
+    getlocal0
+    pushscope
+
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+end ; class

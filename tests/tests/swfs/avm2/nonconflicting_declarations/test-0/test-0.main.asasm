@@ -1,0 +1,10 @@
+#version 4
+program
+ minorversion 16
+ majorversion 46
+
+ #include "Test.script.asasm"
+ #include "Test2.script.asasm"
+ #include "test_fla/MainTimeline.script.asasm"
+
+end ; program

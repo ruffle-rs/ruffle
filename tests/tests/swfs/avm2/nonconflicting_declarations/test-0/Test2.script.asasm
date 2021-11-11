@@ -1,0 +1,46 @@
+script
+ sinit
+  name ""
+  refid "Test2/init"
+  body
+   maxstack 2
+   localcount 1
+   initscopedepth 1
+   maxscopedepth 3
+   code
+    getlocal0
+    pushscope
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\nonconflicting_declarations;;Test2.as"
+    debugline           2
+    findpropstrict      Multiname("Test2", [PackageNamespace("")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace(""), "Object")
+    newclass            "Test2"
+    popscope
+    initproperty        QName(PackageNamespace(""), "Test2")
+
+    debugfile           "I:\\Code\\ruffle\\tests\\tests\\swfs\\avm2\\nonconflicting_declarations;;Test2.as"
+    debugline           5
+    findpropstrict      Multiname("PrivateTest", [PrivateNamespace(null, "Test2.as$39")])
+    getlex              QName(PackageNamespace(""), "Object")
+    pushscope
+
+    getlex              QName(PackageNamespace(""), "Object")
+    newclass            "Test2/init/PrivateTest"
+    popscope
+    initproperty        QName(PrivateNamespace(null, "Test2.as$39"), "PrivateTest")
+
+    returnvoid
+   end ; code
+  end ; body
+ end ; method
+ trait class QName(PackageNamespace(""), "Test2")
+  #include "Test2.class.asasm"
+ end ; trait
+ trait class QName(PrivateNamespace(null, "Test2.as$39"), "PrivateTest")
+  #include "Test2.init/PrivateTest.class.asasm"
+ end ; trait
+end ; script
