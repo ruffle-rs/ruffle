@@ -24,7 +24,6 @@ use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
-use crate::xml::XmlDocument;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::{cell::Ref, cell::RefMut, sync::Arc};
@@ -414,19 +413,9 @@ impl<'gc> EditText<'gc> {
         Ok(())
     }
 
-    pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> WString {
+    pub fn html_text(self) -> WString {
         if self.is_html() {
-            let html_tree = self.html_tree(context).as_node();
-            let html_string_result = html_tree.into_string(&|_node| true);
-
-            if let Err(err) = &html_string_result {
-                log::warn!(
-                    "Serialization error when reading TextField.htmlText: {}",
-                    err
-                );
-            }
-
-            WString::from_utf8_owned(html_string_result.unwrap_or_default())
+            self.0.read().text_spans.to_html()
         } else {
             // Non-HTML text fields always return plain text.
             self.text()
@@ -450,10 +439,6 @@ impl<'gc> EditText<'gc> {
         } else {
             self.set_text(text, context)
         }
-    }
-
-    pub fn html_tree(self, context: &mut UpdateContext<'_, 'gc, '_>) -> XmlDocument<'gc> {
-        self.0.read().text_spans.raise_to_html(context.gc_context)
     }
 
     pub fn text_length(self) -> usize {
@@ -1129,8 +1114,6 @@ impl<'gc> EditText<'gc> {
                 if let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
                 {
-                    let html_text = self.html_text(&mut activation.context);
-
                     // Note that this can call virtual setters, even though the opposite direction won't work
                     // (virtual property changes do not affect the text field)
                     activation.run_with_child_frame_for_display_object(
@@ -1141,7 +1124,8 @@ impl<'gc> EditText<'gc> {
                             let property = AvmString::new(activation.context.gc_context, property);
                             let _ = object.set(
                                 property,
-                                AvmString::new(activation.context.gc_context, html_text).into(),
+                                AvmString::new(activation.context.gc_context, self.html_text())
+                                    .into(),
                                 activation,
                             );
                         },

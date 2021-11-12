@@ -333,8 +333,7 @@ pub fn html_text<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let html_text = this.html_text(&mut activation.context);
-    Ok(AvmString::new(activation.context.gc_context, html_text).into())
+    Ok(AvmString::new(activation.context.gc_context, this.html_text()).into())
 }
 
 pub fn set_html_text<'gc>(
