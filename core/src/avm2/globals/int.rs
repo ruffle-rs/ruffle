@@ -71,5 +71,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     ));
 
+    const CLASS_CONSTANTS: &[(&str, i32)] = &[("MAX_VALUE", i32::MAX), ("MIN_VALUE", i32::MIN)];
+    write.define_public_constant_int_class_traits(CLASS_CONSTANTS);
+
     class
 }

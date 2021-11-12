@@ -86,6 +86,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         mc,
     ));
 
+    const CLASS_CONSTANTS: &[(&str, f64)] = &[
+        ("MAX_VALUE", f64::MAX),
+        ("MIN_VALUE", f64::MIN),
+        ("NaN", f64::NAN),
+        ("NEGATIVE_INFINITY", f64::NEG_INFINITY),
+        ("POSITIVE_INFINITY", f64::INFINITY),
+    ];
+    write.define_public_constant_number_class_traits(CLASS_CONSTANTS);
+
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("toLocaleString", to_locale_string)];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
