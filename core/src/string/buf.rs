@@ -399,3 +399,17 @@ impl AsMut<WStr> for WString {
         self.deref_mut()
     }
 }
+
+impl std::fmt::Write for WString {
+    #[inline]
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.push_utf8(s);
+        Ok(())
+    }
+
+    #[inline]
+    fn write_char(&mut self, c: char) -> std::fmt::Result {
+        self.push_char(c);
+        Ok(())
+    }
+}
