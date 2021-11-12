@@ -561,6 +561,16 @@ impl<'gc> Class<'gc> {
         }
     }
     #[inline(never)]
+    pub fn define_public_constant_int_class_traits(&mut self, items: &[(&'static str, i32)]) {
+        for &(name, value) in items {
+            self.define_class_trait(Trait::from_const(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::public(), "int").into(),
+                Some(value.into()),
+            ));
+        }
+    }
+    #[inline(never)]
     pub fn define_public_builtin_class_properties(
         &mut self,
         mc: MutationContext<'gc, '_>,
