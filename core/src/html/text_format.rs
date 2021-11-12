@@ -659,7 +659,7 @@ impl FormatSpans {
                         b"li" => {
                             format.bullet = Some(true);
                         }
-                        b"texformatormat" => {
+                        b"textformat" => {
                             //TODO: Spec says these are all in twips. That doesn't seem to
                             //match Flash 8.
                             if let Some(left_margin) = attribute(b"leftmargin") {
