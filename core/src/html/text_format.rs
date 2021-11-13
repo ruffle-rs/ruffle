@@ -585,6 +585,15 @@ impl FormatSpans {
                     };
                     let mut format = format_stack.last().unwrap().clone();
                     match &e.name().to_ascii_lowercase()[..] {
+                        b"sbr" => {
+                            text.push('\n');
+                            if let Some(span) = spans.last_mut() {
+                                span.span_length += 1;
+                            }
+
+                            // Skip push to `format_stack`.
+                            continue;
+                        }
                         b"p" => match attribute(b"align").as_deref() {
                             Some(b"left") => format.align = Some(swf::TextAlign::Left),
                             Some(b"center") => format.align = Some(swf::TextAlign::Center),
@@ -698,6 +707,10 @@ impl FormatSpans {
                 }
                 Ok(Event::End(e)) => {
                     match &e.name().to_ascii_lowercase()[..] {
+                        b"sbr" => {
+                            // Skip pop from `format_stack`.
+                            continue;
+                        }
                         b"p" | b"li" => {
                             text.push('\n');
                             if let Some(span) = spans.last_mut() {
