@@ -1015,7 +1015,7 @@ impl<'a> Reader<'a> {
             Glyph {
                 shape_records: vec![],
                 code: 0,
-                advance: None,
+                advance: 0,
                 bounds: None,
             };
             num_glyphs
@@ -1114,7 +1114,7 @@ impl<'a> Reader<'a> {
             let leading = self.read_i16()?;
 
             for glyph in &mut glyphs {
-                glyph.advance = Some(self.read_i16()?);
+                glyph.advance = self.read_i16()?;
             }
 
             // Some older SWFs end the tag here, as this data isn't used until v7.

@@ -129,7 +129,7 @@ impl<'gc> Font<'gc> {
             let glyph_code = swf_glyph.code;
             let glyph = Glyph {
                 shape_handle: Cell::new(handle),
-                advance: swf_glyph.advance.unwrap_or(0),
+                advance: swf_glyph.advance,
                 shape: RefCell::new(None),
                 swf_glyph,
             };

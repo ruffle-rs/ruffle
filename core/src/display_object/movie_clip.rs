@@ -2816,7 +2816,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .map(|g| swf::Glyph {
                 shape_records: g,
                 code: 0,
-                advance: None,
+                advance: 0,
                 bounds: None,
             })
             .collect::<Vec<_>>();
