@@ -1554,11 +1554,17 @@ impl SoundTransform {
 
     /// Applies another SoundTransform on top of this SoundTransform.
     pub fn concat(&mut self, other: &SoundTransform) {
+        const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
+
+        // It seems like Flash masks the results below to 30-bit integers:
+        // * Negative values are equivalent to their absolute value (their sign bit is unset).
+        // * Specifically, 0x40000000, -0x40000000 and -0x80000000 are equivalent to zero.
+        const MASK: i32 = (1 << 30) - 1;
+
+        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32 & MASK;
+
         // This is a 2x2 matrix multiply between the transforms.
         // Done with integer math to match Flash behavior.
-        const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
-        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32;
-
         let ll0: i64 = self.left_to_left.into();
         let lr0: i64 = self.left_to_right.into();
         let rl0: i64 = self.right_to_left.into();
@@ -1567,10 +1573,10 @@ impl SoundTransform {
         let lr1: i64 = other.left_to_right.into();
         let rl1: i64 = other.right_to_left.into();
         let rr1: i64 = other.right_to_right.into();
-        self.left_to_left = ((ll0 * ll1 + rl0 * lr1) / MAX_VOLUME) as i32;
-        self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32;
-        self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32;
-        self.right_to_right = ((lr0 * rl1 + rr0 * rr1) / MAX_VOLUME) as i32;
+        self.left_to_left = ((ll0 * ll1 + rl0 * lr1) / MAX_VOLUME) as i32 & MASK;
+        self.left_to_right = ((lr0 * ll1 + rr0 * lr1) / MAX_VOLUME) as i32 & MASK;
+        self.right_to_left = ((ll0 * rl1 + rl0 * rr1) / MAX_VOLUME) as i32 & MASK;
+        self.right_to_right = ((lr0 * rl1 + rr0 * rr1) / MAX_VOLUME) as i32 & MASK;
     }
 
     /// Returns the pan of this transform.
