@@ -9,6 +9,12 @@ right-to-right: 100
 sound.duration: undefined
 sound.getDuration(): undefined
 
+sound1.duration: 1452
+sound1.getDuration(): 1452
+
+sound2.duration: 907
+sound2.getDuration(): 907
+
 Sound.setVolume(50.5)
 volume:         50
 pan:            0
