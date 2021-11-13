@@ -2194,11 +2194,7 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(
-                        glyph
-                            .advance
-                            .ok_or_else(|| Error::invalid_data("glyph.advance cannot be None"))?,
-                    )?;
+                    writer.write_i16(glyph.advance)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(

@@ -1299,7 +1299,7 @@ pub struct Font4<'a> {
 pub struct Glyph {
     pub shape_records: Vec<ShapeRecord>,
     pub code: u16,
-    pub advance: Option<i16>,
+    pub advance: i16,
     pub bounds: Option<Rectangle>,
 }
 
