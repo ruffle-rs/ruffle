@@ -6,7 +6,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{AvmString, Error};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Number`'s instance initializer.
@@ -68,6 +68,37 @@ pub fn to_locale_string<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn to_exponential<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            let number = this.coerce_to_number(activation)?;
+            let digits = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Unsigned(0))
+                .coerce_to_u32(activation)? as usize;
+
+            if digits > 20 {
+                return Err("toExponential can only print with 0 through 20 digits.".into());
+            }
+
+            return Ok(AvmString::new_utf8(
+                activation.context.gc_context,
+                format!("{0:.1$e}", number, digits)
+                    .replace("e", "e+")
+                    .replace("e+-", "e-"),
+            )
+            .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Number`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -95,8 +126,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_constant_number_class_traits(CLASS_CONSTANTS);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("toLocaleString", to_locale_string)];
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("toLocaleString", to_locale_string),
+        ("toExponential", to_exponential),
+    ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
