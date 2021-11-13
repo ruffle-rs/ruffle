@@ -767,7 +767,9 @@ swf_tests_approx! {
     (as3_edittext_underline, "avm2/edittext_underline", 1, epsilon = 4.0),
     (as3_edittext_leading, "avm2/edittext_leading", 1, epsilon = 0.3),
     (as3_edittext_font_size, "avm2/edittext_font_size", 1, epsilon = 0.1),
-    (as3_number_toexponential, "avm2/number_toexponential", 1, max_relative = 0.0000001),
+    (as3_number_toexponential, "avm2/number_toexponential", 1, max_relative = 0.001),
+    (as3_number_tofixed, "avm2/number_tofixed", 1, max_relative = 0.001),
+    (as3_number_toprecision, "avm2/number_toprecision", 1, max_relative = 0.001),
 }
 
 #[test]
