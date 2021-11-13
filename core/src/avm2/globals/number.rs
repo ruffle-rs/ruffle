@@ -68,6 +68,7 @@ pub fn to_locale_string<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Number.toExponential`
 pub fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -93,6 +94,82 @@ pub fn to_exponential<'gc>(
                     .replace("e+-", "e-"),
             )
             .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Number.toFixed`
+pub fn to_fixed<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            let number = this.coerce_to_number(activation)?;
+            let digits = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Unsigned(0))
+                .coerce_to_u32(activation)? as usize;
+
+            if digits > 20 {
+                return Err("toFixed can only print with 0 through 20 digits.".into());
+            }
+
+            return Ok(AvmString::new_utf8(
+                activation.context.gc_context,
+                format!("{0:.1$}", number, digits),
+            )
+            .into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Number.toPrecision`
+pub fn to_precision<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            let number = this.coerce_to_number(activation)?;
+            let wanted_digits = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Unsigned(0))
+                .coerce_to_u32(activation)? as usize;
+
+            if wanted_digits < 1 || wanted_digits > 21 {
+                return Err("toPrecision can only print with 1 through 21 digits.".into());
+            }
+
+            let available_digits = number.log10().floor();
+            let precision = (number * 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0))
+                .floor()
+                / 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0);
+
+            if (wanted_digits as f64) <= available_digits {
+                return Ok(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    format!(
+                        "{}e{}{}",
+                        precision / 10.0_f64.powf(available_digits),
+                        if available_digits < 0.0 { "-" } else { "+" },
+                        available_digits.abs()
+                    ),
+                )
+                .into());
+            } else {
+                return Ok(
+                    AvmString::new_utf8(activation.context.gc_context, format!("{}", precision)).into(),
+                );
+            }
         }
     }
 
@@ -129,6 +206,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toLocaleString", to_locale_string),
         ("toExponential", to_exponential),
+        ("toFixed", to_fixed),
+        ("toPrecision", to_precision),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
