@@ -269,8 +269,8 @@ fn set_pan<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get(0).copied().unwrap_or(Value::Undefined);
-    let pan = clamp_sound_transform_value(activation, value)?;
+    let value = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let pan = clamp_sound_transform_value(value);
 
     if let Some(sound) = this.as_sound_object() {
         if let Some(owner) = sound.owner() {
@@ -332,8 +332,8 @@ fn set_volume<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args.get(0).copied().unwrap_or(Value::Undefined);
-    let volume = clamp_sound_transform_value(activation, value)?;
+    let value = args.get(0).unwrap_or(&0.into()).coerce_to_f64(activation)?;
+    let volume = clamp_sound_transform_value(value);
 
     if let Some(sound) = this.as_sound_object() {
         if let Some(owner) = sound.owner() {
@@ -447,16 +447,11 @@ fn stop<'gc>(
 }
 
 /// Used by methods like `Sound.setVolume` to clamp the parameter to i32 range.
-fn clamp_sound_transform_value<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    value: Value<'gc>,
-) -> Result<i32, Error<'gc>> {
-    value.coerce_to_f64(activation).map(|n| {
-        // Values outside of i32 range get clamped to i32::MIN.
-        if n.is_finite() && n >= f64::from(i32::MIN) && n <= f64::from(i32::MAX) {
-            n as i32
-        } else {
-            i32::MIN
-        }
-    })
+fn clamp_sound_transform_value(n: f64) -> i32 {
+    // Values outside of i32 range get clamped to i32::MIN.
+    if n.is_finite() && n >= i32::MIN.into() && n <= i32::MAX.into() {
+        n as i32
+    } else {
+        i32::MIN
+    }
 }
