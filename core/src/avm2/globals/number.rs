@@ -91,7 +91,8 @@ pub fn to_exponential<'gc>(
                 activation.context.gc_context,
                 format!("{0:.1$e}", number, digits)
                     .replace("e", "e+")
-                    .replace("e+-", "e-"),
+                    .replace("e+-", "e-")
+                    .replace("e+0", ""),
             )
             .into());
         }
@@ -130,6 +131,37 @@ pub fn to_fixed<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn print_with_precision<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    number: f64,
+    wanted_digits: usize,
+) -> Result<AvmString<'gc>, Error> {
+    let mut available_digits = number.abs().log10().floor();
+    if available_digits.is_nan() || available_digits.is_infinite() {
+        available_digits = 1.0;
+    }
+
+    let precision = (number * 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0)).floor()
+        / 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0);
+
+    if (wanted_digits as f64) <= available_digits {
+        Ok(AvmString::new_utf8(
+            activation.context.gc_context,
+            format!(
+                "{}e{}{}",
+                precision / 10.0_f64.powf(available_digits),
+                if available_digits < 0.0 { "-" } else { "+" },
+                available_digits.abs()
+            ),
+        ))
+    } else {
+        Ok(AvmString::new_utf8(
+            activation.context.gc_context,
+            format!("{}", precision),
+        ))
+    }
+}
+
 /// Implements `Number.toPrecision`
 pub fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -149,31 +181,53 @@ pub fn to_precision<'gc>(
                 return Err("toPrecision can only print with 1 through 21 digits.".into());
             }
 
-            let available_digits = number.log10().floor();
-            let precision = (number * 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0))
-                .floor()
-                / 10.0_f64.powf(wanted_digits as f64 - available_digits - 1.0);
-
-            if (wanted_digits as f64) <= available_digits {
-                return Ok(AvmString::new_utf8(
-                    activation.context.gc_context,
-                    format!(
-                        "{}e{}{}",
-                        precision / 10.0_f64.powf(available_digits),
-                        if available_digits < 0.0 { "-" } else { "+" },
-                        available_digits.abs()
-                    ),
-                )
-                .into());
-            } else {
-                return Ok(
-                    AvmString::new_utf8(activation.context.gc_context, format!("{}", precision)).into(),
-                );
-            }
+            return Ok(print_with_precision(activation, number, wanted_digits)?.into());
         }
     }
 
     Ok(Value::Undefined)
+}
+
+pub fn print_with_radix<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut number: f64,
+    radix: usize,
+) -> Result<AvmString<'gc>, Error> {
+    if radix == 10 {
+        return Value::from(number).coerce_to_string(activation);
+    }
+
+    let mut digits = vec![];
+    let sign = number.signum();
+    number = number.abs();
+
+    loop {
+        let digit = number % radix as f64;
+        number /= radix as f64;
+
+        const DIGIT_CHARS: [char; 36] = [
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+            'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+            'y', 'z',
+        ];
+
+        digits.push(*DIGIT_CHARS.get(digit as usize).unwrap());
+
+        if number < 1.0 {
+            break;
+        }
+    }
+
+    if sign < 0.0 {
+        digits.push('-');
+    }
+
+    let formatted: String = digits.into_iter().rev().collect();
+
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        formatted,
+    ))
 }
 
 /// Implements `Number.toString`
@@ -184,7 +238,7 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            let mut number = this.coerce_to_number(activation)?;
+            let number = this.coerce_to_number(activation)?;
             let radix = args
                 .get(0)
                 .cloned()
@@ -195,32 +249,7 @@ pub fn to_string<'gc>(
                 return Err("toString can only print in bases 2 thru 36.".into());
             }
 
-            if radix == 10 {
-                return Ok(Value::from(number).coerce_to_string(activation)?.into());
-            }
-
-            let mut digits = vec![];
-
-            loop {
-                let digit = number % radix as f64;
-                number /= radix as f64;
-
-                const DIGIT_CHARS: [char; 36] = [
-                    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-                    'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-                    'w', 'x', 'y', 'z',
-                ];
-
-                digits.push(DIGIT_CHARS.get(digit as usize).unwrap());
-
-                if number < 1.0 {
-                    break;
-                }
-            }
-
-            let string: String = digits.into_iter().rev().collect();
-
-            return Ok(AvmString::new_utf8(activation.context.gc_context, string).into());
+            return Ok(print_with_radix(activation, number, radix)?.into());
         }
     }
 
