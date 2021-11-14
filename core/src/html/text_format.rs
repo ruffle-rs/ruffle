@@ -585,7 +585,7 @@ impl FormatSpans {
                     };
                     let mut format = format_stack.last().unwrap().clone();
                     match &e.name().to_ascii_lowercase()[..] {
-                        b"sbr" => {
+                        b"br" | b"sbr" => {
                             text.push('\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;
@@ -707,7 +707,7 @@ impl FormatSpans {
                 }
                 Ok(Event::End(e)) => {
                     match &e.name().to_ascii_lowercase()[..] {
-                        b"sbr" => {
+                        b"br" | b"sbr" => {
                             // Skip pop from `format_stack`.
                             continue;
                         }
