@@ -269,16 +269,17 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_constant_number_class_traits(CLASS_CONSTANTS);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("toLocaleString", to_locale_string),
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("toLocaleString", to_locale_string)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toExponential", to_exponential),
         ("toFixed", to_fixed),
         ("toPrecision", to_precision),
+        ("toString", to_string),
+        ("valueOf", value_of),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
-
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
-        &[("toString", to_string), ("valueOf", value_of)];
     write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
