@@ -573,6 +573,15 @@ impl FormatSpans {
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
+                Ok(Event::Empty(ref e)) => match &e.name().to_ascii_lowercase()[..] {
+                    b"br" | b"sbr" => {
+                        text.push('\n');
+                        if let Some(span) = spans.last_mut() {
+                            span.span_length += 1;
+                        }
+                    }
+                    _ => {}
+                },
                 Ok(Event::Start(ref e)) => {
                     let attribute = move |name| {
                         e.attributes().with_checks(false).find_map(|attribute| {
