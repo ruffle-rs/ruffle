@@ -176,6 +176,72 @@ pub fn to_precision<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Number.toString`
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            let mut number = this.coerce_to_number(activation)?;
+            let radix = args
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Unsigned(10))
+                .coerce_to_u32(activation)? as usize;
+
+            if radix < 2 || radix > 36 {
+                return Err("toString can only print in bases 2 thru 36.".into());
+            }
+
+            if radix == 10 {
+                return Ok(Value::from(number).coerce_to_string(activation)?.into());
+            }
+
+            let mut digits = vec![];
+
+            loop {
+                let digit = number % radix as f64;
+                number /= radix as f64;
+
+                const DIGIT_CHARS: [char; 36] = [
+                    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+                    'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+                    'w', 'x', 'y', 'z',
+                ];
+
+                digits.push(DIGIT_CHARS.get(digit as usize).unwrap());
+
+                if number < 1.0 {
+                    break;
+                }
+            }
+
+            let string: String = digits.into_iter().rev().collect();
+
+            return Ok(AvmString::new_utf8(activation.context.gc_context, string).into());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Number.valueOf`
+pub fn value_of<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            return Ok(this.clone());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Number`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -210,6 +276,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("toPrecision", to_precision),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("toString", to_string), ("valueOf", value_of)];
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
 }
