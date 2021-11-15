@@ -148,10 +148,10 @@ impl TextFormat {
             .map(|s| WString::from_utf8(&s.to_string_lossy(encoding)))
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().class())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
-        let align = et.layout.clone().map(|l| l.align);
-        let left_margin = et.layout.clone().map(|l| l.left_margin.to_pixels());
-        let right_margin = et.layout.clone().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout.clone().map(|l| l.indent.to_pixels());
+        let align = et.layout.as_ref().map(|l| l.align);
+        let left_margin = et.layout.as_ref().map(|l| l.left_margin.to_pixels());
+        let right_margin = et.layout.as_ref().map(|l| l.right_margin.to_pixels());
+        let indent = et.layout.as_ref().map(|l| l.indent.to_pixels());
         let leading = et.layout.map(|l| l.leading.to_pixels());
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
