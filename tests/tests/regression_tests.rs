@@ -324,6 +324,7 @@ swf_tests! {
     (textfield_background_color, "avm1/textfield_background_color", 1),
     (textfield_border_color, "avm1/textfield_border_color", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
+    (text_format, "avm1/text_format", 1),
     (error, "avm1/error", 1),
     (color_transform, "avm1/color_transform", 1),
     (with, "avm1/with", 1),
