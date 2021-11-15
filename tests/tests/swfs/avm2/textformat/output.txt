@@ -1,0 +1,1135 @@
+// format.font = [object]
+// format.font
+null
+// typeof format.font
+object
+
+// format.font = undefined
+// format.font
+null
+// typeof format.font
+object
+
+// format.font = test
+// format.font
+test
+// typeof format.font
+string
+
+// format.font = [object]
+in callback
+// format.font
+from callback
+// typeof format.font
+string
+
+// format.size = [object]
+// format.size
+null
+// typeof format.size
+object
+
+// format.size = undefined
+// format.size
+null
+// typeof format.size
+object
+
+// format.size = -3.5
+// format.size
+-4
+// typeof format.size
+number
+
+// format.size = -3
+// format.size
+-3
+// typeof format.size
+number
+
+// format.size = -2.5
+// format.size
+-2
+// typeof format.size
+number
+
+// format.size = 0
+// format.size
+0
+// typeof format.size
+number
+
+// format.size = 2.5
+// format.size
+2
+// typeof format.size
+number
+
+// format.size = 3
+// format.size
+3
+// typeof format.size
+number
+
+// format.size = 3.5
+// format.size
+4
+// typeof format.size
+number
+
+// format.size = 305419896
+// format.size
+305419896
+// typeof format.size
+number
+
+// format.size = 4294967295
+// format.size
+-2147483648
+// typeof format.size
+number
+
+// format.size = NaN
+// format.size
+-2147483648
+// typeof format.size
+number
+
+// format.size = Infinity
+// format.size
+-2147483648
+// typeof format.size
+number
+
+// format.size = -Infinity
+// format.size
+-2147483648
+// typeof format.size
+number
+
+// format.size = [object]
+in callback
+// format.size
+3
+// typeof format.size
+number
+
+// format.color = [object]
+// format.color
+null
+// typeof format.color
+object
+
+// format.color = undefined
+// format.color
+null
+// typeof format.color
+object
+
+// format.color = -3.5
+// format.color
+-3
+// typeof format.color
+number
+
+// format.color = -3
+// format.color
+-3
+// typeof format.color
+number
+
+// format.color = -2.5
+// format.color
+-2
+// typeof format.color
+number
+
+// format.color = 0
+// format.color
+0
+// typeof format.color
+number
+
+// format.color = 2.5
+// format.color
+2
+// typeof format.color
+number
+
+// format.color = 3
+// format.color
+3
+// typeof format.color
+number
+
+// format.color = 3.5
+// format.color
+3
+// typeof format.color
+number
+
+// format.color = 305419896
+// format.color
+305419896
+// typeof format.color
+number
+
+// format.color = 4294967295
+// format.color
+-1
+// typeof format.color
+number
+
+// format.color = NaN
+// format.color
+0
+// typeof format.color
+number
+
+// format.color = Infinity
+// format.color
+0
+// typeof format.color
+number
+
+// format.color = -Infinity
+// format.color
+0
+// typeof format.color
+number
+
+// format.color = [object]
+in callback
+// format.color
+3
+// typeof format.color
+number
+
+// format.url = [object]
+// format.url
+null
+// typeof format.url
+object
+
+// format.url = undefined
+// format.url
+null
+// typeof format.url
+object
+
+// format.url = test
+// format.url
+test
+// typeof format.url
+string
+
+// format.url = [object]
+in callback
+// format.url
+from callback
+// typeof format.url
+string
+
+// format.target = [object]
+// format.target
+null
+// typeof format.target
+object
+
+// format.target = undefined
+// format.target
+null
+// typeof format.target
+object
+
+// format.target = test
+// format.target
+test
+// typeof format.target
+string
+
+// format.target = [object]
+in callback
+// format.target
+from callback
+// typeof format.target
+string
+
+// format.bold = [object]
+// format.bold
+null
+// typeof format.bold
+object
+
+// format.bold = undefined
+// format.bold
+null
+// typeof format.bold
+object
+
+// format.bold = false
+// format.bold
+false
+// typeof format.bold
+boolean
+
+// format.bold = 0
+// format.bold
+false
+// typeof format.bold
+boolean
+
+// format.bold = 
+// format.bold
+false
+// typeof format.bold
+boolean
+
+// format.bold = true
+// format.bold
+true
+// typeof format.bold
+boolean
+
+// format.bold = 0.5
+// format.bold
+true
+// typeof format.bold
+boolean
+
+// format.bold = test
+// format.bold
+true
+// typeof format.bold
+boolean
+
+// format.bold = [object]
+// format.bold
+true
+// typeof format.bold
+boolean
+
+// format.italic = [object]
+// format.italic
+null
+// typeof format.italic
+object
+
+// format.italic = undefined
+// format.italic
+null
+// typeof format.italic
+object
+
+// format.italic = false
+// format.italic
+false
+// typeof format.italic
+boolean
+
+// format.italic = 0
+// format.italic
+false
+// typeof format.italic
+boolean
+
+// format.italic = 
+// format.italic
+false
+// typeof format.italic
+boolean
+
+// format.italic = true
+// format.italic
+true
+// typeof format.italic
+boolean
+
+// format.italic = 0.5
+// format.italic
+true
+// typeof format.italic
+boolean
+
+// format.italic = test
+// format.italic
+true
+// typeof format.italic
+boolean
+
+// format.italic = [object]
+// format.italic
+true
+// typeof format.italic
+boolean
+
+// format.underline = [object]
+// format.underline
+null
+// typeof format.underline
+object
+
+// format.underline = undefined
+// format.underline
+null
+// typeof format.underline
+object
+
+// format.underline = false
+// format.underline
+false
+// typeof format.underline
+boolean
+
+// format.underline = 0
+// format.underline
+false
+// typeof format.underline
+boolean
+
+// format.underline = 
+// format.underline
+false
+// typeof format.underline
+boolean
+
+// format.underline = true
+// format.underline
+true
+// typeof format.underline
+boolean
+
+// format.underline = 0.5
+// format.underline
+true
+// typeof format.underline
+boolean
+
+// format.underline = test
+// format.underline
+true
+// typeof format.underline
+boolean
+
+// format.underline = [object]
+// format.underline
+true
+// typeof format.underline
+boolean
+
+// format.align = [object]
+// format.align
+null
+// typeof format.align
+object
+
+// format.align = undefined
+// format.align
+null
+// typeof format.align
+object
+
+// format.align = left
+// format.align
+left
+// typeof format.align
+string
+
+// format.align = center
+// format.align
+center
+// typeof format.align
+string
+
+// format.align = right
+// format.align
+right
+// typeof format.align
+string
+
+// format.align = justify
+// format.align
+justify
+// typeof format.align
+string
+
+// format.align = [object]
+in callback
+// format.align
+left
+// typeof format.align
+string
+
+// format.leftMargin = [object]
+// format.leftMargin
+null
+// typeof format.leftMargin
+object
+
+// format.leftMargin = undefined
+// format.leftMargin
+null
+// typeof format.leftMargin
+object
+
+// format.leftMargin = -3.5
+// format.leftMargin
+-4
+// typeof format.leftMargin
+number
+
+// format.leftMargin = -3
+// format.leftMargin
+-3
+// typeof format.leftMargin
+number
+
+// format.leftMargin = -2.5
+// format.leftMargin
+-2
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 0
+// format.leftMargin
+0
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 2.5
+// format.leftMargin
+2
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 3
+// format.leftMargin
+3
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 3.5
+// format.leftMargin
+4
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 305419896
+// format.leftMargin
+305419896
+// typeof format.leftMargin
+number
+
+// format.leftMargin = 4294967295
+// format.leftMargin
+-2147483648
+// typeof format.leftMargin
+number
+
+// format.leftMargin = NaN
+// format.leftMargin
+-2147483648
+// typeof format.leftMargin
+number
+
+// format.leftMargin = Infinity
+// format.leftMargin
+-2147483648
+// typeof format.leftMargin
+number
+
+// format.leftMargin = -Infinity
+// format.leftMargin
+-2147483648
+// typeof format.leftMargin
+number
+
+// format.leftMargin = [object]
+in callback
+// format.leftMargin
+3
+// typeof format.leftMargin
+number
+
+// format.rightMargin = [object]
+// format.rightMargin
+null
+// typeof format.rightMargin
+object
+
+// format.rightMargin = undefined
+// format.rightMargin
+null
+// typeof format.rightMargin
+object
+
+// format.rightMargin = -3.5
+// format.rightMargin
+-4
+// typeof format.rightMargin
+number
+
+// format.rightMargin = -3
+// format.rightMargin
+-3
+// typeof format.rightMargin
+number
+
+// format.rightMargin = -2.5
+// format.rightMargin
+-2
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 0
+// format.rightMargin
+0
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 2.5
+// format.rightMargin
+2
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 3
+// format.rightMargin
+3
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 3.5
+// format.rightMargin
+4
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 305419896
+// format.rightMargin
+305419896
+// typeof format.rightMargin
+number
+
+// format.rightMargin = 4294967295
+// format.rightMargin
+-2147483648
+// typeof format.rightMargin
+number
+
+// format.rightMargin = NaN
+// format.rightMargin
+-2147483648
+// typeof format.rightMargin
+number
+
+// format.rightMargin = Infinity
+// format.rightMargin
+-2147483648
+// typeof format.rightMargin
+number
+
+// format.rightMargin = -Infinity
+// format.rightMargin
+-2147483648
+// typeof format.rightMargin
+number
+
+// format.rightMargin = [object]
+in callback
+// format.rightMargin
+3
+// typeof format.rightMargin
+number
+
+// format.indent = [object]
+// format.indent
+null
+// typeof format.indent
+object
+
+// format.indent = undefined
+// format.indent
+null
+// typeof format.indent
+object
+
+// format.indent = -3.5
+// format.indent
+-4
+// typeof format.indent
+number
+
+// format.indent = -3
+// format.indent
+-3
+// typeof format.indent
+number
+
+// format.indent = -2.5
+// format.indent
+-2
+// typeof format.indent
+number
+
+// format.indent = 0
+// format.indent
+0
+// typeof format.indent
+number
+
+// format.indent = 2.5
+// format.indent
+2
+// typeof format.indent
+number
+
+// format.indent = 3
+// format.indent
+3
+// typeof format.indent
+number
+
+// format.indent = 3.5
+// format.indent
+4
+// typeof format.indent
+number
+
+// format.indent = 305419896
+// format.indent
+305419896
+// typeof format.indent
+number
+
+// format.indent = 4294967295
+// format.indent
+-2147483648
+// typeof format.indent
+number
+
+// format.indent = NaN
+// format.indent
+-2147483648
+// typeof format.indent
+number
+
+// format.indent = Infinity
+// format.indent
+-2147483648
+// typeof format.indent
+number
+
+// format.indent = -Infinity
+// format.indent
+-2147483648
+// typeof format.indent
+number
+
+// format.indent = [object]
+in callback
+// format.indent
+3
+// typeof format.indent
+number
+
+// format.leading = [object]
+// format.leading
+null
+// typeof format.leading
+object
+
+// format.leading = undefined
+// format.leading
+null
+// typeof format.leading
+object
+
+// format.leading = -3.5
+// format.leading
+-4
+// typeof format.leading
+number
+
+// format.leading = -3
+// format.leading
+-3
+// typeof format.leading
+number
+
+// format.leading = -2.5
+// format.leading
+-2
+// typeof format.leading
+number
+
+// format.leading = 0
+// format.leading
+0
+// typeof format.leading
+number
+
+// format.leading = 2.5
+// format.leading
+2
+// typeof format.leading
+number
+
+// format.leading = 3
+// format.leading
+3
+// typeof format.leading
+number
+
+// format.leading = 3.5
+// format.leading
+4
+// typeof format.leading
+number
+
+// format.leading = 305419896
+// format.leading
+305419896
+// typeof format.leading
+number
+
+// format.leading = 4294967295
+// format.leading
+-2147483648
+// typeof format.leading
+number
+
+// format.leading = NaN
+// format.leading
+-2147483648
+// typeof format.leading
+number
+
+// format.leading = Infinity
+// format.leading
+-2147483648
+// typeof format.leading
+number
+
+// format.leading = -Infinity
+// format.leading
+-2147483648
+// typeof format.leading
+number
+
+// format.leading = [object]
+in callback
+// format.leading
+3
+// typeof format.leading
+number
+
+// format.blockIndent = [object]
+// format.blockIndent
+null
+// typeof format.blockIndent
+object
+
+// format.blockIndent = undefined
+// format.blockIndent
+null
+// typeof format.blockIndent
+object
+
+// format.blockIndent = -3.5
+// format.blockIndent
+-4
+// typeof format.blockIndent
+number
+
+// format.blockIndent = -3
+// format.blockIndent
+-3
+// typeof format.blockIndent
+number
+
+// format.blockIndent = -2.5
+// format.blockIndent
+-2
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 0
+// format.blockIndent
+0
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 2.5
+// format.blockIndent
+2
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 3
+// format.blockIndent
+3
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 3.5
+// format.blockIndent
+4
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 305419896
+// format.blockIndent
+305419896
+// typeof format.blockIndent
+number
+
+// format.blockIndent = 4294967295
+// format.blockIndent
+-2147483648
+// typeof format.blockIndent
+number
+
+// format.blockIndent = NaN
+// format.blockIndent
+-2147483648
+// typeof format.blockIndent
+number
+
+// format.blockIndent = Infinity
+// format.blockIndent
+-2147483648
+// typeof format.blockIndent
+number
+
+// format.blockIndent = -Infinity
+// format.blockIndent
+-2147483648
+// typeof format.blockIndent
+number
+
+// format.blockIndent = [object]
+in callback
+// format.blockIndent
+3
+// typeof format.blockIndent
+number
+
+// format.tabStops = [object]
+// format.tabStops
+null
+// typeof format.tabStops
+object
+
+// format.tabStops = undefined
+// format.tabStops
+null
+// typeof format.tabStops
+object
+
+// format.tabStops = [object]
+in callback
+// format.tabStops
+-4,-3,-2,0,2,3,4,5
+// typeof format.tabStops
+object
+
+// format.bullet = [object]
+// format.bullet
+null
+// typeof format.bullet
+object
+
+// format.bullet = undefined
+// format.bullet
+null
+// typeof format.bullet
+object
+
+// format.bullet = false
+// format.bullet
+false
+// typeof format.bullet
+boolean
+
+// format.bullet = 0
+// format.bullet
+false
+// typeof format.bullet
+boolean
+
+// format.bullet = 
+// format.bullet
+false
+// typeof format.bullet
+boolean
+
+// format.bullet = true
+// format.bullet
+true
+// typeof format.bullet
+boolean
+
+// format.bullet = 0.5
+// format.bullet
+true
+// typeof format.bullet
+boolean
+
+// format.bullet = test
+// format.bullet
+true
+// typeof format.bullet
+boolean
+
+// format.bullet = [object]
+// format.bullet
+true
+// typeof format.bullet
+boolean
+
+// format.kerning = [object]
+// format.kerning
+null
+// typeof format.kerning
+object
+
+// format.kerning = undefined
+// format.kerning
+null
+// typeof format.kerning
+object
+
+// format.kerning = false
+// format.kerning
+false
+// typeof format.kerning
+boolean
+
+// format.kerning = 0
+// format.kerning
+false
+// typeof format.kerning
+boolean
+
+// format.kerning = 
+// format.kerning
+false
+// typeof format.kerning
+boolean
+
+// format.kerning = true
+// format.kerning
+true
+// typeof format.kerning
+boolean
+
+// format.kerning = 0.5
+// format.kerning
+true
+// typeof format.kerning
+boolean
+
+// format.kerning = test
+// format.kerning
+true
+// typeof format.kerning
+boolean
+
+// format.kerning = [object]
+// format.kerning
+true
+// typeof format.kerning
+boolean
+
+// format.letterSpacing = [object]
+// format.letterSpacing
+null
+// typeof format.letterSpacing
+object
+
+// format.letterSpacing = undefined
+// format.letterSpacing
+null
+// typeof format.letterSpacing
+object
+
+// format.letterSpacing = -3.5
+// format.letterSpacing
+-3.5
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = -3
+// format.letterSpacing
+-3
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = -2.5
+// format.letterSpacing
+-2.5
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 0
+// format.letterSpacing
+0
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 2.5
+// format.letterSpacing
+2.5
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 3
+// format.letterSpacing
+3
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 3.5
+// format.letterSpacing
+3.5
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 305419896
+// format.letterSpacing
+305419896
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = 4294967295
+// format.letterSpacing
+4294967295
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = NaN
+// format.letterSpacing
+NaN
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = Infinity
+// format.letterSpacing
+Infinity
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = -Infinity
+// format.letterSpacing
+-Infinity
+// typeof format.letterSpacing
+number
+
+// format.letterSpacing = [object]
+in callback
+// format.letterSpacing
+3
+// typeof format.letterSpacing
+number
+
