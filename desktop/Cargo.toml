@@ -19,7 +19,7 @@ webbrowser = "0.5.5"
 url = "2.2.2"
 clipboard = "0.5.0"
 dirs = "4.0"
-isahc = "1.5.1"
+isahc = "1.6.0"
 tinyfiledialogs = "3.8.3"
 
 [target.'cfg(windows)'.dependencies]
