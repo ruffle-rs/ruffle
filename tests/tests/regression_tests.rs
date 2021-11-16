@@ -742,6 +742,7 @@ swf_tests! {
     (as3_uint_tostring, "avm2/uint_tostring", 1),
     #[ignore] (as3_uint_toexponential, "avm2/uint_toexponential", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
     #[ignore] (as3_uint_toprecision, "avm2/uint_toprecision", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
+    (as3_boolean_tostring, "avm2/boolean_tostring", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

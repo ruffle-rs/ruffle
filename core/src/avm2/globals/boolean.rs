@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{primitive_allocator, Object, TObject};
 use crate::avm2::value::Value;
@@ -53,6 +53,39 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Boolean.toString`
+pub fn to_string<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            match this.coerce_to_boolean() {
+                true => return Ok("true".into()),
+                false => return Ok("false".into()),
+            };
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `Boolean.valueOf`
+pub fn value_of<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(this) = this.as_primitive() {
+            return Ok(this.clone());
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Boolean`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -70,6 +103,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<Boolean native instance initializer>",
         mc,
     ));
+
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("toString", to_string), ("valueOf", value_of)];
+    write.define_as3_builtin_instance_methods(mc, AS3_INSTANCE_METHODS);
 
     class
 }
