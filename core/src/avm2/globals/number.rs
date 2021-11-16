@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{primitive_allocator, Object, TObject};
+use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use gc_arena::{GcCell, MutationContext};
@@ -46,10 +46,80 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `Number`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let mut number_proto = this
+            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+            .coerce_to_object(activation)?;
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+
+        number_proto.install_dynamic_property(
+            gc_context,
+            QName::new(Namespace::public(), "toExponential"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(to_exponential, "toExponential", gc_context),
+                scope,
+                None,
+                Some(this_class),
+            )
+            .into(),
+        )?;
+        number_proto.install_dynamic_property(
+            gc_context,
+            QName::new(Namespace::public(), "toFixed"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(to_fixed, "toFixed", gc_context),
+                scope,
+                None,
+                Some(this_class),
+            )
+            .into(),
+        )?;
+        number_proto.install_dynamic_property(
+            gc_context,
+            QName::new(Namespace::public(), "toPrecision"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(to_precision, "toPrecision", gc_context),
+                scope,
+                None,
+                Some(this_class),
+            )
+            .into(),
+        )?;
+        number_proto.install_dynamic_property(
+            gc_context,
+            QName::new(Namespace::public(), "toString"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(to_string, "toString", gc_context),
+                scope,
+                None,
+                Some(this_class),
+            )
+            .into(),
+        )?;
+        number_proto.install_dynamic_property(
+            gc_context,
+            QName::new(Namespace::public(), "valueOf"),
+            FunctionObject::from_method(
+                activation,
+                Method::from_builtin(value_of, "valueOf", gc_context),
+                scope,
+                None,
+                Some(this_class),
+            )
+            .into(),
+        )?;
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -76,29 +146,30 @@ pub fn to_exponential<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            let number = this.coerce_to_number(activation)?;
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Unsigned(0))
-                .coerce_to_u32(activation)? as usize;
+            if let Value::Number(number) = this.clone() {
+                let digits = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Unsigned(0))
+                    .coerce_to_u32(activation)? as usize;
 
-            if digits > 20 {
-                return Err("toExponential can only print with 0 through 20 digits.".into());
+                if digits > 20 {
+                    return Err("toExponential can only print with 0 through 20 digits.".into());
+                }
+
+                return Ok(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    format!("{0:.1$e}", number, digits)
+                        .replace("e", "e+")
+                        .replace("e+-", "e-")
+                        .replace("e+0", ""),
+                )
+                .into());
             }
-
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{0:.1$e}", number, digits)
-                    .replace("e", "e+")
-                    .replace("e+-", "e-")
-                    .replace("e+0", ""),
-            )
-            .into());
         }
     }
 
-    Ok(Value::Undefined)
+    Err("Number.prototype.toExponential has been called on an incompatible object".into())
 }
 
 /// Implements `Number.toFixed`
@@ -109,26 +180,27 @@ pub fn to_fixed<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            let number = this.coerce_to_number(activation)?;
-            let digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Unsigned(0))
-                .coerce_to_u32(activation)? as usize;
+            if let Value::Number(number) = this.clone() {
+                let digits = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Unsigned(0))
+                    .coerce_to_u32(activation)? as usize;
 
-            if digits > 20 {
-                return Err("toFixed can only print with 0 through 20 digits.".into());
+                if digits > 20 {
+                    return Err("toFixed can only print with 0 through 20 digits.".into());
+                }
+
+                return Ok(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    format!("{0:.1$}", number, digits),
+                )
+                .into());
             }
-
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                format!("{0:.1$}", number, digits),
-            )
-            .into());
         }
     }
 
-    Ok(Value::Undefined)
+    Err("Number.prototype.toFixed has been called on an incompatible object".into())
 }
 
 pub fn print_with_precision<'gc>(
@@ -170,22 +242,23 @@ pub fn to_precision<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            let number = this.coerce_to_number(activation)?;
-            let wanted_digits = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Unsigned(0))
-                .coerce_to_u32(activation)? as usize;
+            if let Value::Number(number) = this.clone() {
+                let wanted_digits = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Unsigned(0))
+                    .coerce_to_u32(activation)? as usize;
 
-            if wanted_digits < 1 || wanted_digits > 21 {
-                return Err("toPrecision can only print with 1 through 21 digits.".into());
+                if wanted_digits < 1 || wanted_digits > 21 {
+                    return Err("toPrecision can only print with 1 through 21 digits.".into());
+                }
+
+                return Ok(print_with_precision(activation, number, wanted_digits)?.into());
             }
-
-            return Ok(print_with_precision(activation, number, wanted_digits)?.into());
         }
     }
 
-    Ok(Value::Undefined)
+    Err("Number.prototype.toPrecision has been called on an incompatible object".into())
 }
 
 pub fn print_with_radix<'gc>(
@@ -238,22 +311,23 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            let number = this.coerce_to_number(activation)?;
-            let radix = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Unsigned(10))
-                .coerce_to_u32(activation)? as usize;
+            if let Value::Number(number) = this.clone() {
+                let radix = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Unsigned(10))
+                    .coerce_to_u32(activation)? as usize;
 
-            if radix < 2 || radix > 36 {
-                return Err("toString can only print in bases 2 thru 36.".into());
+                if radix < 2 || radix > 36 {
+                    return Err("toString can only print in bases 2 thru 36.".into());
+                }
+
+                return Ok(print_with_radix(activation, number, radix)?.into());
             }
-
-            return Ok(print_with_radix(activation, number, radix)?.into());
         }
     }
 
-    Ok(Value::Undefined)
+    Err("Number.prototype.toString has been called on an incompatible object".into())
 }
 
 /// Implements `Number.valueOf`
