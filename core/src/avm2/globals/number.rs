@@ -291,7 +291,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     const CLASS_CONSTANTS: &[(&str, f64)] = &[
         ("MAX_VALUE", f64::MAX),
-        ("MIN_VALUE", f64::MIN),
+        ("MIN_VALUE", f64::MIN_POSITIVE),
         ("NaN", f64::NAN),
         ("NEGATIVE_INFINITY", f64::NEG_INFINITY),
         ("POSITIVE_INFINITY", f64::INFINITY),
