@@ -282,8 +282,12 @@ impl<'gc> Executable<'gc> {
                         None
                     };
 
-                let effective_ver = if activation.swf_version() > 5 {
-                    af.swf_version()
+                let effective_version = if activation.swf_version() > 5 {
+                    if !af.base_clip.removed() {
+                        af.base_clip.swf_version()
+                    } else {
+                        af.swf_version()
+                    }
                 } else {
                     this.as_display_object()
                         .map(|dn| dn.swf_version())
@@ -311,7 +315,7 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let max_recursion_depth = activation.context.avm1.max_recursion_depth();
-                let base_clip = if effective_ver > 5 && !af.base_clip.removed() {
+                let base_clip = if effective_version > 5 && !af.base_clip.removed() {
                     af.base_clip
                 } else {
                     this.as_display_object()
@@ -320,7 +324,7 @@ impl<'gc> Executable<'gc> {
                 let mut frame = Activation::from_action(
                     activation.context.reborrow(),
                     activation.id.function(name, reason, max_recursion_depth)?,
-                    effective_ver,
+                    effective_version,
                     child_scope,
                     af.constant_pool,
                     base_clip,

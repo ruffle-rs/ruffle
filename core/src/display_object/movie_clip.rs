@@ -2156,8 +2156,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         let mut handled = ClipEventResult::NotHandled;
         let read = self.0.read();
         if let Some(AvmObject::Avm1(object)) = read.object {
-            // TODO: What's the behavior for loaded SWF files?
-            if context.swf.version() >= 5 {
+            let swf_version = read.movie().version();
+            if swf_version >= 5 {
                 for event_handler in read
                     .clip_event_handlers
                     .iter()
@@ -2183,7 +2183,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
                 // (e.g., clip.onEnterFrame = foo).
-                if context.swf.version() >= 6 {
+                if swf_version >= 6 {
                     if let Some(name) = event.method_name() {
                         // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
                         if !event.is_key_event() || read.has_focus {
