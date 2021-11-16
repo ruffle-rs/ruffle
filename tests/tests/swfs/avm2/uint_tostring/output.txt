@@ -1,0 +1,3375 @@
+//true
+///(radix unspecified)
+1
+///(radix = 2)
+1
+///(radix = 3)
+1
+///(radix = 4)
+1
+///(radix = 5)
+1
+///(radix = 6)
+1
+///(radix = 7)
+1
+///(radix = 8)
+1
+///(radix = 9)
+1
+///(radix = 10)
+1
+///(radix = 11)
+1
+///(radix = 12)
+1
+///(radix = 13)
+1
+///(radix = 14)
+1
+///(radix = 15)
+1
+///(radix = 16)
+1
+///(radix = 17)
+1
+///(radix = 18)
+1
+///(radix = 19)
+1
+///(radix = 20)
+1
+///(radix = 21)
+1
+///(radix = 22)
+1
+///(radix = 23)
+1
+///(radix = 24)
+1
+///(radix = 25)
+1
+///(radix = 26)
+1
+///(radix = 27)
+1
+///(radix = 28)
+1
+///(radix = 29)
+1
+///(radix = 30)
+1
+///(radix = 31)
+1
+///(radix = 32)
+1
+///(radix = 33)
+1
+///(radix = 34)
+1
+///(radix = 35)
+1
+///(radix = 36)
+1
+///(valueOf)
+1
+//false
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//null
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//undefined
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//""
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"str"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"true"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"false"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//0.0
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//NaN
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//-0.0
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//Infinity
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//1.0
+///(radix unspecified)
+1
+///(radix = 2)
+1
+///(radix = 3)
+1
+///(radix = 4)
+1
+///(radix = 5)
+1
+///(radix = 6)
+1
+///(radix = 7)
+1
+///(radix = 8)
+1
+///(radix = 9)
+1
+///(radix = 10)
+1
+///(radix = 11)
+1
+///(radix = 12)
+1
+///(radix = 13)
+1
+///(radix = 14)
+1
+///(radix = 15)
+1
+///(radix = 16)
+1
+///(radix = 17)
+1
+///(radix = 18)
+1
+///(radix = 19)
+1
+///(radix = 20)
+1
+///(radix = 21)
+1
+///(radix = 22)
+1
+///(radix = 23)
+1
+///(radix = 24)
+1
+///(radix = 25)
+1
+///(radix = 26)
+1
+///(radix = 27)
+1
+///(radix = 28)
+1
+///(radix = 29)
+1
+///(radix = 30)
+1
+///(radix = 31)
+1
+///(radix = 32)
+1
+///(radix = 33)
+1
+///(radix = 34)
+1
+///(radix = 35)
+1
+///(radix = 36)
+1
+///(valueOf)
+1
+//-1.0
+///(radix unspecified)
+4294967295
+///(radix = 2)
+11111111111111111111111111111111
+///(radix = 3)
+102002022201221111210
+///(radix = 4)
+3333333333333333
+///(radix = 5)
+32244002423140
+///(radix = 6)
+1550104015503
+///(radix = 7)
+211301422353
+///(radix = 8)
+37777777777
+///(radix = 9)
+12068657453
+///(radix = 10)
+4294967295
+///(radix = 11)
+1904440553
+///(radix = 12)
+9ba461593
+///(radix = 13)
+535a79888
+///(radix = 14)
+2ca5b7463
+///(radix = 15)
+1a20dcd80
+///(radix = 16)
+ffffffff
+///(radix = 17)
+a7ffda90
+///(radix = 18)
+704he7g3
+///(radix = 19)
+4f5aff65
+///(radix = 20)
+3723ai4f
+///(radix = 21)
+281d55i3
+///(radix = 22)
+1fj8b183
+///(radix = 23)
+1606k7ib
+///(radix = 24)
+mb994af
+///(radix = 25)
+hek2mgk
+///(radix = 26)
+dnchbnl
+///(radix = 27)
+b28jpdl
+///(radix = 28)
+8pfgih3
+///(radix = 29)
+76beigf
+///(radix = 30)
+5qmcpqf
+///(radix = 31)
+4q0jto3
+///(radix = 32)
+3vvvvvv
+///(radix = 33)
+3aokq93
+///(radix = 34)
+2qhxjlh
+///(radix = 35)
+2br45qa
+///(radix = 36)
+1z141z3
+///(valueOf)
+4294967295
+//0xFF1306
+///(radix unspecified)
+16716550
+///(radix = 2)
+111111110001001100000110
+///(radix = 3)
+1011110021210111
+///(radix = 4)
+333301030012
+///(radix = 5)
+13234412200
+///(radix = 6)
+1354143234
+///(radix = 7)
+262042204
+///(radix = 8)
+77611406
+///(radix = 9)
+34407714
+///(radix = 10)
+16716550
+///(radix = 11)
+9488434
+///(radix = 12)
+5721b1a
+///(radix = 13)
+3603a66
+///(radix = 14)
+2312074
+///(radix = 15)
+17030ba
+///(radix = 16)
+ff1306
+///(radix = 17)
+bd28c8
+///(radix = 18)
+8f4654
+///(radix = 19)
+6e5348
+///(radix = 20)
+549b7a
+///(radix = 21)
+41k104
+///(radix = 22)
+357k74
+///(radix = 23)
+2dgl6c
+///(radix = 24)
+2295im
+///(radix = 25)
+1hjlc0
+///(radix = 26)
+1af2g6
+///(radix = 27)
+14c7ld
+///(radix = 28)
+r5e3i
+///(radix = 29)
+nibsm
+///(radix = 30)
+kj3sa
+///(radix = 31)
+i33th
+///(radix = 32)
+fu4o6
+///(radix = 33)
+e35c4
+///(radix = 34)
+chan8
+///(radix = 35)
+b4v5p
+///(radix = 36)
+9yakm
+///(valueOf)
+16716550
+//1.2315e2
+///(radix unspecified)
+123
+///(radix = 2)
+1111011
+///(radix = 3)
+11120
+///(radix = 4)
+1323
+///(radix = 5)
+443
+///(radix = 6)
+323
+///(radix = 7)
+234
+///(radix = 8)
+173
+///(radix = 9)
+146
+///(radix = 10)
+123
+///(radix = 11)
+102
+///(radix = 12)
+a3
+///(radix = 13)
+96
+///(radix = 14)
+8b
+///(radix = 15)
+83
+///(radix = 16)
+7b
+///(radix = 17)
+74
+///(radix = 18)
+6f
+///(radix = 19)
+69
+///(radix = 20)
+63
+///(radix = 21)
+5i
+///(radix = 22)
+5d
+///(radix = 23)
+58
+///(radix = 24)
+53
+///(radix = 25)
+4n
+///(radix = 26)
+4j
+///(radix = 27)
+4f
+///(radix = 28)
+4b
+///(radix = 29)
+47
+///(radix = 30)
+43
+///(radix = 31)
+3u
+///(radix = 32)
+3r
+///(radix = 33)
+3o
+///(radix = 34)
+3l
+///(radix = 35)
+3i
+///(radix = 36)
+3f
+///(valueOf)
+123
+//0x7FFFFFFF
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//0x80000000
+///(radix unspecified)
+2147483648
+///(radix = 2)
+10000000000000000000000000000000
+///(radix = 3)
+12112122212110202102
+///(radix = 4)
+2000000000000000
+///(radix = 5)
+13344223434043
+///(radix = 6)
+553032005532
+///(radix = 7)
+104134211162
+///(radix = 8)
+20000000000
+///(radix = 9)
+5478773672
+///(radix = 10)
+2147483648
+///(radix = 11)
+a02220282
+///(radix = 12)
+4bb2308a8
+///(radix = 13)
+282ba4aab
+///(radix = 14)
+1652ca932
+///(radix = 15)
+c87e66b8
+///(radix = 16)
+80000000
+///(radix = 17)
+53g7f549
+///(radix = 18)
+3928g3h2
+///(radix = 19)
+27c57h33
+///(radix = 20)
+1db1f928
+///(radix = 21)
+140h2d92
+///(radix = 22)
+ikf5bf2
+///(radix = 23)
+ebelf96
+///(radix = 24)
+b5gge58
+///(radix = 25)
+8jmdnkn
+///(radix = 26)
+6oj8ioo
+///(radix = 27)
+5ehnckb
+///(radix = 28)
+4clm98g
+///(radix = 29)
+3hk7988
+///(radix = 30)
+2sb6cs8
+///(radix = 31)
+2d09uc2
+///(radix = 32)
+2000000
+///(radix = 33)
+1lsqtl2
+///(radix = 34)
+1d8xqrq
+///(radix = 35)
+15v22un
+///(radix = 36)
+zik0zk
+///(valueOf)
+2147483648
+//0x80000001
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//0x180000001
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//0x100000001
+///(radix unspecified)
+1
+///(radix = 2)
+1
+///(radix = 3)
+1
+///(radix = 4)
+1
+///(radix = 5)
+1
+///(radix = 6)
+1
+///(radix = 7)
+1
+///(radix = 8)
+1
+///(radix = 9)
+1
+///(radix = 10)
+1
+///(radix = 11)
+1
+///(radix = 12)
+1
+///(radix = 13)
+1
+///(radix = 14)
+1
+///(radix = 15)
+1
+///(radix = 16)
+1
+///(radix = 17)
+1
+///(radix = 18)
+1
+///(radix = 19)
+1
+///(radix = 20)
+1
+///(radix = 21)
+1
+///(radix = 22)
+1
+///(radix = 23)
+1
+///(radix = 24)
+1
+///(radix = 25)
+1
+///(radix = 26)
+1
+///(radix = 27)
+1
+///(radix = 28)
+1
+///(radix = 29)
+1
+///(radix = 30)
+1
+///(radix = 31)
+1
+///(radix = 32)
+1
+///(radix = 33)
+1
+///(radix = 34)
+1
+///(radix = 35)
+1
+///(radix = 36)
+1
+///(valueOf)
+1
+//-0x7FFFFFFF
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//-0x80000000
+///(radix unspecified)
+2147483648
+///(radix = 2)
+10000000000000000000000000000000
+///(radix = 3)
+12112122212110202102
+///(radix = 4)
+2000000000000000
+///(radix = 5)
+13344223434043
+///(radix = 6)
+553032005532
+///(radix = 7)
+104134211162
+///(radix = 8)
+20000000000
+///(radix = 9)
+5478773672
+///(radix = 10)
+2147483648
+///(radix = 11)
+a02220282
+///(radix = 12)
+4bb2308a8
+///(radix = 13)
+282ba4aab
+///(radix = 14)
+1652ca932
+///(radix = 15)
+c87e66b8
+///(radix = 16)
+80000000
+///(radix = 17)
+53g7f549
+///(radix = 18)
+3928g3h2
+///(radix = 19)
+27c57h33
+///(radix = 20)
+1db1f928
+///(radix = 21)
+140h2d92
+///(radix = 22)
+ikf5bf2
+///(radix = 23)
+ebelf96
+///(radix = 24)
+b5gge58
+///(radix = 25)
+8jmdnkn
+///(radix = 26)
+6oj8ioo
+///(radix = 27)
+5ehnckb
+///(radix = 28)
+4clm98g
+///(radix = 29)
+3hk7988
+///(radix = 30)
+2sb6cs8
+///(radix = 31)
+2d09uc2
+///(radix = 32)
+2000000
+///(radix = 33)
+1lsqtl2
+///(radix = 34)
+1d8xqrq
+///(radix = 35)
+15v22un
+///(radix = 36)
+zik0zk
+///(valueOf)
+2147483648
+//-0x80000001
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//-0x180000001
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//-0x100000001
+///(radix unspecified)
+4294967295
+///(radix = 2)
+11111111111111111111111111111111
+///(radix = 3)
+102002022201221111210
+///(radix = 4)
+3333333333333333
+///(radix = 5)
+32244002423140
+///(radix = 6)
+1550104015503
+///(radix = 7)
+211301422353
+///(radix = 8)
+37777777777
+///(radix = 9)
+12068657453
+///(radix = 10)
+4294967295
+///(radix = 11)
+1904440553
+///(radix = 12)
+9ba461593
+///(radix = 13)
+535a79888
+///(radix = 14)
+2ca5b7463
+///(radix = 15)
+1a20dcd80
+///(radix = 16)
+ffffffff
+///(radix = 17)
+a7ffda90
+///(radix = 18)
+704he7g3
+///(radix = 19)
+4f5aff65
+///(radix = 20)
+3723ai4f
+///(radix = 21)
+281d55i3
+///(radix = 22)
+1fj8b183
+///(radix = 23)
+1606k7ib
+///(radix = 24)
+mb994af
+///(radix = 25)
+hek2mgk
+///(radix = 26)
+dnchbnl
+///(radix = 27)
+b28jpdl
+///(radix = 28)
+8pfgih3
+///(radix = 29)
+76beigf
+///(radix = 30)
+5qmcpqf
+///(radix = 31)
+4q0jto3
+///(radix = 32)
+3vvvvvv
+///(radix = 33)
+3aokq93
+///(radix = 34)
+2qhxjlh
+///(radix = 35)
+2br45qa
+///(radix = 36)
+1z141z3
+///(valueOf)
+4294967295
+//new Object()
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"0.0"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"NaN"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"-0.0"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"Infinity"
+///(radix unspecified)
+0
+///(radix = 2)
+0
+///(radix = 3)
+0
+///(radix = 4)
+0
+///(radix = 5)
+0
+///(radix = 6)
+0
+///(radix = 7)
+0
+///(radix = 8)
+0
+///(radix = 9)
+0
+///(radix = 10)
+0
+///(radix = 11)
+0
+///(radix = 12)
+0
+///(radix = 13)
+0
+///(radix = 14)
+0
+///(radix = 15)
+0
+///(radix = 16)
+0
+///(radix = 17)
+0
+///(radix = 18)
+0
+///(radix = 19)
+0
+///(radix = 20)
+0
+///(radix = 21)
+0
+///(radix = 22)
+0
+///(radix = 23)
+0
+///(radix = 24)
+0
+///(radix = 25)
+0
+///(radix = 26)
+0
+///(radix = 27)
+0
+///(radix = 28)
+0
+///(radix = 29)
+0
+///(radix = 30)
+0
+///(radix = 31)
+0
+///(radix = 32)
+0
+///(radix = 33)
+0
+///(radix = 34)
+0
+///(radix = 35)
+0
+///(radix = 36)
+0
+///(valueOf)
+0
+//"1.0"
+///(radix unspecified)
+1
+///(radix = 2)
+1
+///(radix = 3)
+1
+///(radix = 4)
+1
+///(radix = 5)
+1
+///(radix = 6)
+1
+///(radix = 7)
+1
+///(radix = 8)
+1
+///(radix = 9)
+1
+///(radix = 10)
+1
+///(radix = 11)
+1
+///(radix = 12)
+1
+///(radix = 13)
+1
+///(radix = 14)
+1
+///(radix = 15)
+1
+///(radix = 16)
+1
+///(radix = 17)
+1
+///(radix = 18)
+1
+///(radix = 19)
+1
+///(radix = 20)
+1
+///(radix = 21)
+1
+///(radix = 22)
+1
+///(radix = 23)
+1
+///(radix = 24)
+1
+///(radix = 25)
+1
+///(radix = 26)
+1
+///(radix = 27)
+1
+///(radix = 28)
+1
+///(radix = 29)
+1
+///(radix = 30)
+1
+///(radix = 31)
+1
+///(radix = 32)
+1
+///(radix = 33)
+1
+///(radix = 34)
+1
+///(radix = 35)
+1
+///(radix = 36)
+1
+///(valueOf)
+1
+//"-1.0"
+///(radix unspecified)
+4294967295
+///(radix = 2)
+11111111111111111111111111111111
+///(radix = 3)
+102002022201221111210
+///(radix = 4)
+3333333333333333
+///(radix = 5)
+32244002423140
+///(radix = 6)
+1550104015503
+///(radix = 7)
+211301422353
+///(radix = 8)
+37777777777
+///(radix = 9)
+12068657453
+///(radix = 10)
+4294967295
+///(radix = 11)
+1904440553
+///(radix = 12)
+9ba461593
+///(radix = 13)
+535a79888
+///(radix = 14)
+2ca5b7463
+///(radix = 15)
+1a20dcd80
+///(radix = 16)
+ffffffff
+///(radix = 17)
+a7ffda90
+///(radix = 18)
+704he7g3
+///(radix = 19)
+4f5aff65
+///(radix = 20)
+3723ai4f
+///(radix = 21)
+281d55i3
+///(radix = 22)
+1fj8b183
+///(radix = 23)
+1606k7ib
+///(radix = 24)
+mb994af
+///(radix = 25)
+hek2mgk
+///(radix = 26)
+dnchbnl
+///(radix = 27)
+b28jpdl
+///(radix = 28)
+8pfgih3
+///(radix = 29)
+76beigf
+///(radix = 30)
+5qmcpqf
+///(radix = 31)
+4q0jto3
+///(radix = 32)
+3vvvvvv
+///(radix = 33)
+3aokq93
+///(radix = 34)
+2qhxjlh
+///(radix = 35)
+2br45qa
+///(radix = 36)
+1z141z3
+///(valueOf)
+4294967295
+//"0xFF1306"
+///(radix unspecified)
+16716550
+///(radix = 2)
+111111110001001100000110
+///(radix = 3)
+1011110021210111
+///(radix = 4)
+333301030012
+///(radix = 5)
+13234412200
+///(radix = 6)
+1354143234
+///(radix = 7)
+262042204
+///(radix = 8)
+77611406
+///(radix = 9)
+34407714
+///(radix = 10)
+16716550
+///(radix = 11)
+9488434
+///(radix = 12)
+5721b1a
+///(radix = 13)
+3603a66
+///(radix = 14)
+2312074
+///(radix = 15)
+17030ba
+///(radix = 16)
+ff1306
+///(radix = 17)
+bd28c8
+///(radix = 18)
+8f4654
+///(radix = 19)
+6e5348
+///(radix = 20)
+549b7a
+///(radix = 21)
+41k104
+///(radix = 22)
+357k74
+///(radix = 23)
+2dgl6c
+///(radix = 24)
+2295im
+///(radix = 25)
+1hjlc0
+///(radix = 26)
+1af2g6
+///(radix = 27)
+14c7ld
+///(radix = 28)
+r5e3i
+///(radix = 29)
+nibsm
+///(radix = 30)
+kj3sa
+///(radix = 31)
+i33th
+///(radix = 32)
+fu4o6
+///(radix = 33)
+e35c4
+///(radix = 34)
+chan8
+///(radix = 35)
+b4v5p
+///(radix = 36)
+9yakm
+///(valueOf)
+16716550
+//"1.2315e2"
+///(radix unspecified)
+123
+///(radix = 2)
+1111011
+///(radix = 3)
+11120
+///(radix = 4)
+1323
+///(radix = 5)
+443
+///(radix = 6)
+323
+///(radix = 7)
+234
+///(radix = 8)
+173
+///(radix = 9)
+146
+///(radix = 10)
+123
+///(radix = 11)
+102
+///(radix = 12)
+a3
+///(radix = 13)
+96
+///(radix = 14)
+8b
+///(radix = 15)
+83
+///(radix = 16)
+7b
+///(radix = 17)
+74
+///(radix = 18)
+6f
+///(radix = 19)
+69
+///(radix = 20)
+63
+///(radix = 21)
+5i
+///(radix = 22)
+5d
+///(radix = 23)
+58
+///(radix = 24)
+53
+///(radix = 25)
+4n
+///(radix = 26)
+4j
+///(radix = 27)
+4f
+///(radix = 28)
+4b
+///(radix = 29)
+47
+///(radix = 30)
+43
+///(radix = 31)
+3u
+///(radix = 32)
+3r
+///(radix = 33)
+3o
+///(radix = 34)
+3l
+///(radix = 35)
+3i
+///(radix = 36)
+3f
+///(valueOf)
+123
+//"0x7FFFFFFF"
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//"0x80000000"
+///(radix unspecified)
+2147483648
+///(radix = 2)
+10000000000000000000000000000000
+///(radix = 3)
+12112122212110202102
+///(radix = 4)
+2000000000000000
+///(radix = 5)
+13344223434043
+///(radix = 6)
+553032005532
+///(radix = 7)
+104134211162
+///(radix = 8)
+20000000000
+///(radix = 9)
+5478773672
+///(radix = 10)
+2147483648
+///(radix = 11)
+a02220282
+///(radix = 12)
+4bb2308a8
+///(radix = 13)
+282ba4aab
+///(radix = 14)
+1652ca932
+///(radix = 15)
+c87e66b8
+///(radix = 16)
+80000000
+///(radix = 17)
+53g7f549
+///(radix = 18)
+3928g3h2
+///(radix = 19)
+27c57h33
+///(radix = 20)
+1db1f928
+///(radix = 21)
+140h2d92
+///(radix = 22)
+ikf5bf2
+///(radix = 23)
+ebelf96
+///(radix = 24)
+b5gge58
+///(radix = 25)
+8jmdnkn
+///(radix = 26)
+6oj8ioo
+///(radix = 27)
+5ehnckb
+///(radix = 28)
+4clm98g
+///(radix = 29)
+3hk7988
+///(radix = 30)
+2sb6cs8
+///(radix = 31)
+2d09uc2
+///(radix = 32)
+2000000
+///(radix = 33)
+1lsqtl2
+///(radix = 34)
+1d8xqrq
+///(radix = 35)
+15v22un
+///(radix = 36)
+zik0zk
+///(valueOf)
+2147483648
+//"0x80000001"
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//"0x180000001"
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//"0x100000001"
+///(radix unspecified)
+1
+///(radix = 2)
+1
+///(radix = 3)
+1
+///(radix = 4)
+1
+///(radix = 5)
+1
+///(radix = 6)
+1
+///(radix = 7)
+1
+///(radix = 8)
+1
+///(radix = 9)
+1
+///(radix = 10)
+1
+///(radix = 11)
+1
+///(radix = 12)
+1
+///(radix = 13)
+1
+///(radix = 14)
+1
+///(radix = 15)
+1
+///(radix = 16)
+1
+///(radix = 17)
+1
+///(radix = 18)
+1
+///(radix = 19)
+1
+///(radix = 20)
+1
+///(radix = 21)
+1
+///(radix = 22)
+1
+///(radix = 23)
+1
+///(radix = 24)
+1
+///(radix = 25)
+1
+///(radix = 26)
+1
+///(radix = 27)
+1
+///(radix = 28)
+1
+///(radix = 29)
+1
+///(radix = 30)
+1
+///(radix = 31)
+1
+///(radix = 32)
+1
+///(radix = 33)
+1
+///(radix = 34)
+1
+///(radix = 35)
+1
+///(radix = 36)
+1
+///(valueOf)
+1
+//"-0x7FFFFFFF"
+///(radix unspecified)
+2147483649
+///(radix = 2)
+10000000000000000000000000000001
+///(radix = 3)
+12112122212110202110
+///(radix = 4)
+2000000000000001
+///(radix = 5)
+13344223434044
+///(radix = 6)
+553032005533
+///(radix = 7)
+104134211163
+///(radix = 8)
+20000000001
+///(radix = 9)
+5478773673
+///(radix = 10)
+2147483649
+///(radix = 11)
+a02220283
+///(radix = 12)
+4bb2308a9
+///(radix = 13)
+282ba4aac
+///(radix = 14)
+1652ca933
+///(radix = 15)
+c87e66b9
+///(radix = 16)
+80000001
+///(radix = 17)
+53g7f54a
+///(radix = 18)
+3928g3h3
+///(radix = 19)
+27c57h34
+///(radix = 20)
+1db1f929
+///(radix = 21)
+140h2d93
+///(radix = 22)
+ikf5bf3
+///(radix = 23)
+ebelf97
+///(radix = 24)
+b5gge59
+///(radix = 25)
+8jmdnko
+///(radix = 26)
+6oj8iop
+///(radix = 27)
+5ehnckc
+///(radix = 28)
+4clm98h
+///(radix = 29)
+3hk7989
+///(radix = 30)
+2sb6cs9
+///(radix = 31)
+2d09uc3
+///(radix = 32)
+2000001
+///(radix = 33)
+1lsqtl3
+///(radix = 34)
+1d8xqrr
+///(radix = 35)
+15v22uo
+///(radix = 36)
+zik0zl
+///(valueOf)
+2147483649
+//"-0x80000000"
+///(radix unspecified)
+2147483648
+///(radix = 2)
+10000000000000000000000000000000
+///(radix = 3)
+12112122212110202102
+///(radix = 4)
+2000000000000000
+///(radix = 5)
+13344223434043
+///(radix = 6)
+553032005532
+///(radix = 7)
+104134211162
+///(radix = 8)
+20000000000
+///(radix = 9)
+5478773672
+///(radix = 10)
+2147483648
+///(radix = 11)
+a02220282
+///(radix = 12)
+4bb2308a8
+///(radix = 13)
+282ba4aab
+///(radix = 14)
+1652ca932
+///(radix = 15)
+c87e66b8
+///(radix = 16)
+80000000
+///(radix = 17)
+53g7f549
+///(radix = 18)
+3928g3h2
+///(radix = 19)
+27c57h33
+///(radix = 20)
+1db1f928
+///(radix = 21)
+140h2d92
+///(radix = 22)
+ikf5bf2
+///(radix = 23)
+ebelf96
+///(radix = 24)
+b5gge58
+///(radix = 25)
+8jmdnkn
+///(radix = 26)
+6oj8ioo
+///(radix = 27)
+5ehnckb
+///(radix = 28)
+4clm98g
+///(radix = 29)
+3hk7988
+///(radix = 30)
+2sb6cs8
+///(radix = 31)
+2d09uc2
+///(radix = 32)
+2000000
+///(radix = 33)
+1lsqtl2
+///(radix = 34)
+1d8xqrq
+///(radix = 35)
+15v22un
+///(radix = 36)
+zik0zk
+///(valueOf)
+2147483648
+//"-0x80000001"
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//"-0x180000001"
+///(radix unspecified)
+2147483647
+///(radix = 2)
+1111111111111111111111111111111
+///(radix = 3)
+12112122212110202101
+///(radix = 4)
+1333333333333333
+///(radix = 5)
+13344223434042
+///(radix = 6)
+553032005531
+///(radix = 7)
+104134211161
+///(radix = 8)
+17777777777
+///(radix = 9)
+5478773671
+///(radix = 10)
+2147483647
+///(radix = 11)
+a02220281
+///(radix = 12)
+4bb2308a7
+///(radix = 13)
+282ba4aaa
+///(radix = 14)
+1652ca931
+///(radix = 15)
+c87e66b7
+///(radix = 16)
+7fffffff
+///(radix = 17)
+53g7f548
+///(radix = 18)
+3928g3h1
+///(radix = 19)
+27c57h32
+///(radix = 20)
+1db1f927
+///(radix = 21)
+140h2d91
+///(radix = 22)
+ikf5bf1
+///(radix = 23)
+ebelf95
+///(radix = 24)
+b5gge57
+///(radix = 25)
+8jmdnkm
+///(radix = 26)
+6oj8ion
+///(radix = 27)
+5ehncka
+///(radix = 28)
+4clm98f
+///(radix = 29)
+3hk7987
+///(radix = 30)
+2sb6cs7
+///(radix = 31)
+2d09uc1
+///(radix = 32)
+1vvvvvv
+///(radix = 33)
+1lsqtl1
+///(radix = 34)
+1d8xqrp
+///(radix = 35)
+15v22um
+///(radix = 36)
+zik0zj
+///(valueOf)
+2147483647
+//"-0x100000001"
+///(radix unspecified)
+4294967295
+///(radix = 2)
+11111111111111111111111111111111
+///(radix = 3)
+102002022201221111210
+///(radix = 4)
+3333333333333333
+///(radix = 5)
+32244002423140
+///(radix = 6)
+1550104015503
+///(radix = 7)
+211301422353
+///(radix = 8)
+37777777777
+///(radix = 9)
+12068657453
+///(radix = 10)
+4294967295
+///(radix = 11)
+1904440553
+///(radix = 12)
+9ba461593
+///(radix = 13)
+535a79888
+///(radix = 14)
+2ca5b7463
+///(radix = 15)
+1a20dcd80
+///(radix = 16)
+ffffffff
+///(radix = 17)
+a7ffda90
+///(radix = 18)
+704he7g3
+///(radix = 19)
+4f5aff65
+///(radix = 20)
+3723ai4f
+///(radix = 21)
+281d55i3
+///(radix = 22)
+1fj8b183
+///(radix = 23)
+1606k7ib
+///(radix = 24)
+mb994af
+///(radix = 25)
+hek2mgk
+///(radix = 26)
+dnchbnl
+///(radix = 27)
+b28jpdl
+///(radix = 28)
+8pfgih3
+///(radix = 29)
+76beigf
+///(radix = 30)
+5qmcpqf
+///(radix = 31)
+4q0jto3
+///(radix = 32)
+3vvvvvv
+///(radix = 33)
+3aokq93
+///(radix = 34)
+2qhxjlh
+///(radix = 35)
+2br45qa
+///(radix = 36)
+1z141z3
+///(valueOf)
+4294967295
