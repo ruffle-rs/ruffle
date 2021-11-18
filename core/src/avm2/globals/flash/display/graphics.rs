@@ -14,7 +14,7 @@ use std::f64::consts::PI;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
 
 /// Implements `flash.display.Graphics`'s instance constructor.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `flash.display.Graphics`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -36,7 +36,7 @@ pub fn native_instance_init<'gc>(
 }
 
 /// Implements `flash.display.Graphics`'s class constructor.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -51,7 +51,7 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 }
 
 /// Implements `Graphics.beginFill`.
-pub fn begin_fill<'gc>(
+fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -77,7 +77,7 @@ pub fn begin_fill<'gc>(
 }
 
 /// Implements `Graphics.clear`
-pub fn clear<'gc>(
+fn clear<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -92,7 +92,7 @@ pub fn clear<'gc>(
 }
 
 /// Implements `Graphics.curveTo`.
-pub fn curve_to<'gc>(
+fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -132,7 +132,7 @@ pub fn curve_to<'gc>(
 }
 
 /// Implements `Graphics.endFill`.
-pub fn end_fill<'gc>(
+fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -190,7 +190,7 @@ fn scale_mode_to_allow_scale_bits(scale_mode: &str) -> Result<(bool, bool), Erro
 }
 
 /// Implements `Graphics.lineStyle`.
-pub fn line_style<'gc>(
+fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -263,7 +263,7 @@ pub fn line_style<'gc>(
 }
 
 /// Implements `Graphics.lineTo`.
-pub fn line_to<'gc>(
+fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -291,7 +291,7 @@ pub fn line_to<'gc>(
 }
 
 /// Implements `Graphics.moveTo`.
-pub fn move_to<'gc>(
+fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -319,7 +319,7 @@ pub fn move_to<'gc>(
 }
 
 /// Implements `Graphics.drawRect`.
-pub fn draw_rect<'gc>(
+fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -366,7 +366,7 @@ pub fn draw_rect<'gc>(
 }
 
 /// Implements `Graphics.drawRoundRect`.
-pub fn draw_round_rect<'gc>(
+fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -648,7 +648,7 @@ pub fn draw_round_rect<'gc>(
 }
 
 /// Implements `Graphics.drawCircle`.
-pub fn draw_circle<'gc>(
+fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -684,7 +684,7 @@ pub fn draw_circle<'gc>(
 }
 
 /// Implements `Graphics.drawEllipse`.
-pub fn draw_ellipse<'gc>(
+fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
