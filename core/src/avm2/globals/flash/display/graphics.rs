@@ -647,6 +647,42 @@ pub fn draw_round_rect<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `Graphics.drawCircle`.
+pub fn draw_circle<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let x = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    let y = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    let radius = args
+        .get(2)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+
+    draw_round_rect(
+        activation,
+        this,
+        &[
+            (x - radius).into(),
+            (y - radius).into(),
+            (radius * 2.0).into(),
+            (radius * 2.0).into(),
+            (radius * 2.0).into(),
+            (radius * 2.0).into(),
+        ],
+    )
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -677,6 +713,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("moveTo", move_to),
         ("drawRect", draw_rect),
         ("drawRoundRect", draw_round_rect),
+        ("drawCircle", draw_circle),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
