@@ -683,6 +683,47 @@ pub fn draw_circle<'gc>(
     )
 }
 
+/// Implements `Graphics.drawEllipse`.
+pub fn draw_ellipse<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let x = args
+        .get(0)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    let y = args
+        .get(1)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    let width = args
+        .get(2)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+    let height = args
+        .get(3)
+        .cloned()
+        .unwrap_or(Value::Undefined)
+        .coerce_to_number(activation)?;
+
+    draw_round_rect(
+        activation,
+        this,
+        &[
+            x.into(),
+            y.into(),
+            width.into(),
+            height.into(),
+            width.into(),
+            height.into(),
+        ],
+    )
+}
+
 /// Construct `Graphics`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -714,6 +755,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("drawRect", draw_rect),
         ("drawRoundRect", draw_round_rect),
         ("drawCircle", draw_circle),
+        ("drawEllipse", draw_ellipse),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
