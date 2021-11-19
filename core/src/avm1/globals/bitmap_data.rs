@@ -1069,62 +1069,61 @@ pub fn compare<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(bitmap_data) = this.as_bitmap_data_object() {
-        if bitmap_data.disposed() {
-            return Ok((-2).into());
-        }
+    const EQUIVALENT: i32 = 0;
+    const NOT_BITMAP: i32 = -1;
+    const BITMAP_DISPOSED: i32 = -2;
+    const DIFFERENT_WIDTHS: i32 = -3;
+    const DIFFERENT_HEIGHTS: i32 = -4;
 
-        let other_bitmap = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+    let this_bitmap_data = if let Some(bitmap_data) = this.as_bitmap_data_object() {
+        bitmap_data
+    } else {
+        return Ok(NOT_BITMAP.into());
+    };
 
-        if let Some(other_bitmap_data) = other_bitmap.as_bitmap_data_object() {
-            if other_bitmap_data.disposed() {
-                return Ok((-2).into());
-            }
-
-            if bitmap_data.bitmap_data().read().width()
-                != other_bitmap_data.bitmap_data().read().width()
-            {
-                return Ok((-3).into());
-            }
-            if bitmap_data.bitmap_data().read().height()
-                != other_bitmap_data.bitmap_data().read().height()
-            {
-                return Ok((-4).into());
-            }
-            if bitmap_data
-                .bitmap_data()
-                .read()
-                .pixels()
-                .eq(other_bitmap_data.bitmap_data().read().pixels())
-            {
-                return Ok((0).into());
-            }
-
-            let new_bitmap_data = BitmapDataObject::empty_object(
-                activation.context.gc_context,
-                Some(activation.context.avm1.prototypes.bitmap_data),
-            );
-
-            new_bitmap_data
-                .as_bitmap_data_object()
-                .unwrap()
-                .bitmap_data()
-                .write(activation.context.gc_context)
-                .compare(
-                    &bitmap_data.bitmap_data().read(),
-                    &other_bitmap_data.bitmap_data().read(),
-                );
-
-            return Ok(new_bitmap_data.into());
-        }
-
-        return Ok(Value::Undefined);
+    if this_bitmap_data.disposed() {
+        // The documentation says that -2 should be returned here, but -1 is actually returned.
+        return Ok(NOT_BITMAP.into());
     }
 
-    Ok((-1).into())
+    let other = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation);
+
+    let other_bitmap_data = if let Some(other_bitmap_data) = other.as_bitmap_data_object() {
+        other_bitmap_data
+    } else {
+        // The documentation says that -1 should be returned here, but -2 is actually returned.
+        return Ok(BITMAP_DISPOSED.into());
+    };
+
+    if other_bitmap_data.disposed() {
+        return Ok(BITMAP_DISPOSED.into());
+    }
+
+    let this_bitmap_data = this_bitmap_data.bitmap_data();
+    let this_bitmap_data = this_bitmap_data.read();
+    let other_bitmap_data = other_bitmap_data.bitmap_data();
+    let other_bitmap_data = other_bitmap_data.read();
+
+    if this_bitmap_data.width() != other_bitmap_data.width() {
+        return Ok(DIFFERENT_WIDTHS.into());
+    }
+
+    if this_bitmap_data.height() != other_bitmap_data.height() {
+        return Ok(DIFFERENT_HEIGHTS.into());
+    }
+
+    match BitmapData::compare(&this_bitmap_data, &other_bitmap_data) {
+        Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.bitmap_data),
+            bitmap_data,
+        )
+        .into()),
+        None => Ok(EQUIVALENT.into()),
+    }
 }
 
 pub fn create_proto<'gc>(

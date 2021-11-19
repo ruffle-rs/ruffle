@@ -36,12 +36,20 @@ impl<'gc> BitmapDataObject<'gc> {
     );
 
     pub fn empty_object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        BitmapDataObject(GcCell::allocate(
+        Self::with_bitmap_data(gc_context, proto, Default::default())
+    }
+
+    pub fn with_bitmap_data(
+        gc_context: MutationContext<'gc, '_>,
+        proto: Option<Object<'gc>>,
+        bitmap_data: BitmapData<'gc>,
+    ) -> Self {
+        Self(GcCell::allocate(
             gc_context,
             BitmapDataData {
                 base: ScriptObject::object(gc_context, proto),
                 disposed: false,
-                data: GcCell::allocate(gc_context, BitmapData::default()),
+                data: GcCell::allocate(gc_context, bitmap_data),
             },
         ))
     }

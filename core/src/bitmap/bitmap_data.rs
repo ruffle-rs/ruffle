@@ -133,7 +133,7 @@ bitflags! {
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
-    pub pixels: Vec<Color>,
+    pixels: Vec<Color>,
     dirty: bool,
     width: u32,
     height: u32,
@@ -854,32 +854,56 @@ impl<'gc> BitmapData<'gc> {
         }
     }
 
-    pub fn compare(&mut self, bitmap: &Self, other: &Self) {
-        // Should be replaced with i32::abs_diff once stabilized (https://github.com/rust-lang/rust/issues/89492)
-        fn abs_diff(a: i32, b: i32) -> i32 {
-            if a > b {
-                a.wrapping_sub(b)
-            } else {
-                b.wrapping_sub(a)
-            }
-        }
+    /// Compare two BitmapData objects.
+    /// Returns `None` if the bitmaps are equivalent.
+    pub fn compare(bitmap: &Self, other: &Self) -> Option<Self> {
+        // This function expects that the two bitmaps have the same dimensions.
+        // TODO: Relax this assumption and return a special value instead?
+        debug_assert_eq!(bitmap.width, other.width);
+        debug_assert_eq!(bitmap.height, other.height);
 
-        for i in 0..self.pixels().len() {
-            let bitmap_pixel = bitmap.pixels()[i];
-            let other_pixel = other.pixels()[i];
-            self.pixels[i] = Color(
-                if bitmap_pixel.with_alpha(0xffu8) != other_pixel.with_alpha(0xffu8) {
-                    (0xff << 24)
-                        + (abs_diff(bitmap_pixel.red() as i32, other_pixel.red() as i32) << 16)
-                        + (abs_diff(bitmap_pixel.green() as i32, other_pixel.green() as i32) << 8)
-                        + abs_diff(bitmap_pixel.blue() as i32, other_pixel.blue() as i32)
-                } else if bitmap_pixel.alpha() != other_pixel.alpha() {
-                    (abs_diff(bitmap_pixel.alpha() as i32, other_pixel.alpha() as i32) << 24)
-                        + 0xffffff
+        let mut different = false;
+        let pixels = bitmap
+            .pixels
+            .iter()
+            .zip(&other.pixels)
+            .map(|(bitmap_pixel, other_pixel)| {
+                let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
+                let other_pixel = other_pixel.to_un_multiplied_alpha();
+                if bitmap_pixel == other_pixel {
+                    Color::argb(0, 0, 0, 0)
+                } else if bitmap_pixel.with_alpha(0) != other_pixel.with_alpha(0) {
+                    different = true;
+                    Color::argb(
+                        0xff,
+                        bitmap_pixel.red().wrapping_sub(other_pixel.red()),
+                        bitmap_pixel.green().wrapping_sub(other_pixel.green()),
+                        bitmap_pixel.blue().wrapping_sub(other_pixel.blue()),
+                    )
                 } else {
-                    0
-                },
-            )
+                    different = true;
+                    Color::argb(
+                        bitmap_pixel.alpha().wrapping_sub(other_pixel.alpha()),
+                        0xff,
+                        0xff,
+                        0xff,
+                    )
+                }
+            })
+            .collect();
+
+        if different {
+            Some(Self {
+                pixels,
+                dirty: false,
+                width: bitmap.width,
+                height: bitmap.height,
+                transparency: true,
+                bitmap_handle: None,
+                avm2_object: None,
+            })
+        } else {
+            None
         }
     }
 
