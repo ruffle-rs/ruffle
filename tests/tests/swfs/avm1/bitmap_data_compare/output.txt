@@ -1,0 +1,41 @@
+Equivalent
+0
+
+First disposed
+-1
+
+Second disposed
+-2
+
+Both disposed
+-1
+
+Different widths
+-3
+
+Different heights
+-4
+
+Different widths and heights
+-3
+
+Invalid parameter
+-2
+
+Invalid this
+-1
+
+Invalid this and parameter
+-1
+
+Different pixels
+(0, 0): 0
+(0, 1): 0
+(0, 2): -3289651
+(1, 0): -13421773
+(1, 1): 33554431
+(1, 2): -1
+(2, 0): -3289651
+(2, 1): 0
+(2, 2): 0
+
