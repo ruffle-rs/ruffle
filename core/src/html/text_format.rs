@@ -594,7 +594,6 @@ impl FormatSpans {
         };
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
-        reader.trim_text(true);
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
@@ -735,7 +734,7 @@ impl FormatSpans {
                     }
                     format_stack.push(format);
                 }
-                Ok(Event::Text(e)) => {
+                Ok(Event::Text(e)) if !e.is_empty() => {
                     let e = decode_to_wstr(Cow::Borrowed(&e[..]));
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
