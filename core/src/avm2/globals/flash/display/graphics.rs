@@ -8,8 +8,10 @@ use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
+use crate::drawing::Drawing;
 use crate::shape_utils::DrawCommand;
 use gc_arena::{GcCell, MutationContext};
+use lazy_static::lazy_static;
 use std::f64::consts::PI;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
 
@@ -365,6 +367,264 @@ fn draw_rect<'gc>(
     Ok(Value::Undefined)
 }
 
+lazy_static! {
+    /// Length between two points on a unit circle that are 45 degrees apart from
+    /// one another.
+    ///
+    /// This constant is `H`, short for 'hypotenuse', because it is also the length
+    /// of the hypotenuse formed from the control point triangle of any quadratic
+    /// Bezier curve approximating a 45-degree unit circle arc.
+    ///
+    /// The derivation of this constant - or a similar constant for any other arc
+    /// angle hypotenuse - is as follows:
+    ///
+    /// 1. Call the arc angle `alpha`. In this special case, `alpha` is 45 degrees,
+    ///    or one-quarter `PI`.
+    /// 2. Consider the triangle formed by the center of the circle and the two
+    ///    points at the start and end of the arc. The two other angles will be
+    ///    equal, and it and `alpha` sum to 180 degrees. We'll call this angle
+    ///    `beta`, and it is equal to `alpha` minus 180 degrees, divided by 2.
+    /// 3. Using the law of sines, we know that the sine of `alpha` divided by `H`
+    ///    is equal to the sine of `beta` divided by `r`, where `r` is the radius
+    ///    of the circle. We can solve for `H` to get the result. Note that since
+    ///    this is a unit circle, you won't see a radius term in this constant.
+    static ref H: f64 = (PI * 0.25).sin() / (PI * 0.375).sin();
+
+    /// Length between two control points of a quadratic Bezier curve approximating
+    /// a 45-degree arc of a unit circle.
+    ///
+    /// This constant is critical to calculating the off-curve point of the control
+    /// point triangle. We do so by taking the tangents at each on-curve point,
+    /// which point in the direction of the off-curve points. Then, we scale one of
+    /// those tangent vectors by `A_B` and add it to the on-curve point to get the
+    /// off-curve point, constructing our Bezier.
+    ///
+    /// The derivation of this constant - or a similar constant for any other arc
+    /// angle Bezier - is as follows:
+    ///
+    /// 1. Start with the value of `H` for the given arc angle `alpha`.
+    /// 2. Consider the triangle formed by the three control points of our desired
+    ///    Bezier curve. We'll call the angle at the off-curve control point
+    ///    `delta`, and the two other angles of this triangle are `gamma`.
+    /// 3. Because two of the lines of this triangle are tangent lines of the
+    ///    circle, they will form a right angle with the normal, which is the same
+    ///    as the line between the center of the circle and the point.
+    ///    Coincidentally, this right angle is shared between `beta`, meaning that
+    ///    we can subtract it from 90 degrees to obtain `gamma`. Or, after some
+    ///    elementary algebra, just take half of `alpha`.
+    /// 4. We can then derive the value of `delta` by subtracting out the other two
+    ///    `gamma`s from 180 degrees. This, again, can be simplified to just
+    ///    180 degrees minus `alpha`.
+    /// 5. By the law of sines, the sine of `delta` divided by `H` is equal to
+    ///    the sine of `gamma` divided by `A_B`. We can then rearrange this to get
+    ///    `H` times the sine of `gamma`, divided by the sine of `delta`; which is
+    ///    our `A_B` constant.
+    static ref A_B: f64 = *H * (PI * 0.125).sin() / (PI * 0.75).sin();
+
+    /// A list of five quadratic Bezier control points, intended to approximate the
+    /// bottom-right quadrant of a unit circle.
+    ///
+    /// Through coordinate reflections we can obtain the rest of the circle; and
+    /// with translations and scaling we can obtain any ellipse on the plane.
+    ///
+    /// Points are stored in counter-clockwise order from 0 degrees to 90 degrees.
+    static ref UNIT_CIRCLE_POINTS: [(f64, f64); 5] = [
+        ((PI * 0.0).cos(), (PI * 0.0).sin()),
+        ((PI * 0.0).cos() + *A_B * (PI * 0.0).sin() * -1.0,
+        (PI * 0.0).sin() + *A_B * (PI * 0.0).cos()),
+        ((PI * 0.25).cos(), (PI * 0.25).sin()),
+        ((PI * 0.25).cos() + *A_B * (PI * 0.25).sin() * -1.0,
+        (PI * 0.25).sin() + *A_B * (PI * 0.25).cos()),
+        ((PI * 0.5).cos(), (PI * 0.5).sin()),
+    ];
+}
+
+/// Draw a roundrect.
+fn draw_round_rect_internal(
+    draw: &mut Drawing,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    mut ellipse_width: f64,
+    mut ellipse_height: f64,
+) {
+    if ellipse_height.is_nan() {
+        ellipse_height = ellipse_width;
+    }
+
+    //Clamp the ellipse sizes to the size of the rectangle.
+    if ellipse_width > width {
+        ellipse_width = width;
+    }
+
+    if ellipse_height > height {
+        ellipse_height = height;
+    }
+
+    // We'll start from the bottom-right corner of the rectangle,
+    // because that's what Flash Player does.
+    let ucp = *UNIT_CIRCLE_POINTS;
+
+    let line_width = width - ellipse_width;
+    let line_height = height - ellipse_height;
+
+    let br_ellipse_center_x = x + ellipse_width / 2.0 + line_width;
+    let br_ellipse_center_y = y + ellipse_height / 2.0 + line_height;
+
+    let br_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[2].0;
+    let br_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
+
+    draw.draw_command(DrawCommand::MoveTo {
+        x: Twips::from_pixels(br_point_x),
+        y: Twips::from_pixels(br_point_y),
+    });
+
+    let br_b_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
+    let br_b_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[3].1;
+
+    let right_b_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[4].0;
+    let right_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(br_b_curve_x),
+        y1: Twips::from_pixels(br_b_curve_y),
+        x2: Twips::from_pixels(right_b_point_x),
+        y2: Twips::from_pixels(right_b_point_y),
+    });
+
+    // Oh, since we're drawing roundrects, we also need to draw lines
+    // in between each ellipse. This is the bottom line.
+    let tl_ellipse_center_x = x + ellipse_width / 2.0;
+    let tl_ellipse_center_y = y + ellipse_height / 2.0;
+
+    let left_b_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[4].0;
+    let left_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[4].1;
+
+    draw.draw_command(DrawCommand::LineTo {
+        x: Twips::from_pixels(left_b_point_x),
+        y: Twips::from_pixels(left_b_point_y),
+    });
+
+    // Bottom-left ellipse
+    let b_bl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[3].0;
+    let b_bl_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[3].1;
+
+    let bl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[2].0;
+    let bl_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[2].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(b_bl_curve_x),
+        y1: Twips::from_pixels(b_bl_curve_y),
+        x2: Twips::from_pixels(bl_point_x),
+        y2: Twips::from_pixels(bl_point_y),
+    });
+
+    let bl_l_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[1].0;
+    let bl_l_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;
+
+    let bottom_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[0].0;
+    let bottom_l_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(bl_l_curve_x),
+        y1: Twips::from_pixels(bl_l_curve_y),
+        x2: Twips::from_pixels(bottom_l_point_x),
+        y2: Twips::from_pixels(bottom_l_point_y),
+    });
+
+    // Left side
+    let top_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[0].0;
+    let top_l_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
+
+    draw.draw_command(DrawCommand::LineTo {
+        x: Twips::from_pixels(top_l_point_x),
+        y: Twips::from_pixels(top_l_point_y),
+    });
+
+    // Top-left ellipse
+    let l_tl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[1].0;
+    let l_tl_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[1].1;
+
+    let tl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[2].0;
+    let tl_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(l_tl_curve_x),
+        y1: Twips::from_pixels(l_tl_curve_y),
+        x2: Twips::from_pixels(tl_point_x),
+        y2: Twips::from_pixels(tl_point_y),
+    });
+
+    let tl_t_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[3].0;
+    let tl_t_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[3].1;
+
+    let left_t_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * ucp[4].0;
+    let left_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(tl_t_curve_x),
+        y1: Twips::from_pixels(tl_t_curve_y),
+        x2: Twips::from_pixels(left_t_point_x),
+        y2: Twips::from_pixels(left_t_point_y),
+    });
+
+    // Top side
+    let right_t_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[4].0;
+    let right_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[4].1;
+
+    draw.draw_command(DrawCommand::LineTo {
+        x: Twips::from_pixels(right_t_point_x),
+        y: Twips::from_pixels(right_t_point_y),
+    });
+
+    // Top-right ellipse
+    let t_tr_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[3].0;
+    let t_tr_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[3].1;
+
+    let tr_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[2].0;
+    let tr_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[2].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(t_tr_curve_x),
+        y1: Twips::from_pixels(t_tr_curve_y),
+        x2: Twips::from_pixels(tr_point_x),
+        y2: Twips::from_pixels(tr_point_y),
+    });
+
+    let tr_r_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[1].0;
+    let tr_r_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[1].1;
+
+    let top_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[0].0;
+    let top_r_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * ucp[0].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(tr_r_curve_x),
+        y1: Twips::from_pixels(tr_r_curve_y),
+        x2: Twips::from_pixels(top_r_point_x),
+        y2: Twips::from_pixels(top_r_point_y),
+    });
+
+    // Right side & other half of bottom-right ellipse
+    let bottom_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[0].0;
+    let bottom_r_point_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[0].1;
+
+    draw.draw_command(DrawCommand::LineTo {
+        x: Twips::from_pixels(bottom_r_point_x),
+        y: Twips::from_pixels(bottom_r_point_y),
+    });
+
+    let r_br_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * ucp[1].0;
+    let r_br_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * ucp[1].1;
+
+    draw.draw_command(DrawCommand::CurveTo {
+        x1: Twips::from_pixels(r_br_curve_x),
+        y1: Twips::from_pixels(r_br_curve_y),
+        x2: Twips::from_pixels(br_point_x),
+        y2: Twips::from_pixels(br_point_y),
+    });
+}
+
 /// Implements `Graphics.drawRoundRect`.
 fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -392,255 +652,27 @@ fn draw_round_rect<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
-        let mut ellipse_width = args
+        let ellipse_width = args
             .get(4)
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_number(activation)?;
-        let mut ellipse_height = args
+        let ellipse_height = args
             .get(5)
             .cloned()
             .unwrap_or(Value::Number(f64::NAN))
             .coerce_to_number(activation)?;
 
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
-            if ellipse_height.is_nan() {
-                ellipse_height = ellipse_width;
-            }
-
-            //Clamp the ellipse sizes to the size of the rectangle.
-            if ellipse_width > width {
-                ellipse_width = width;
-            }
-
-            if ellipse_height > height {
-                ellipse_height = height;
-            }
-
-            // We always draw ellipses in 45-degree chunks, so let's
-            // precalculate some common math. For efficiency, we'll work on a
-            // unit circle at the origin and then translate and scale to get
-            // four ellipse pieces on our roundrect. This lets us not have to
-            // care about scaling our constants by a potentially varying
-            // radius.
-            //
-            // We first consider the triangle formed by the control points of
-            // our desired Bezier curve. We need to know the length of the
-            // sides, which we don't know yet, but can derive from a second
-            // triangle formed by the two control points on the circle and it's
-            // center. The triangle in the circle shares a side with the Bezier
-            // control point triangle, and that side just so happens to always
-            // be the hypotenuse of the control points. Thanks to the law of
-            // sines and some basic algebra, the length of this hypotenuse will
-            // be the sine of our arc angle, divided by the sine of one of the
-            // angles of the triangle in the circle, which is always 180 minus
-            // half our angle.
-            let h = (PI * 0.25).sin() / (PI * 0.375).sin();
-
-            // Now we need the length of the other two sides of the control
-            // point triangle. For reasons I'll explain shortly, both sides are
-            // the same length, and the angles are related to the same angles
-            // we used to calculate the hypotenuse.
-            let a_b = h * (PI * 0.125).sin() / (PI * 0.75).sin();
-
-            // Now that we know these lengths, we can start calculating the
-            // actual control points. Since we're using quadratic Beziers, we
-            // need two points on the circle, and one control point that we'll
-            // calculate by intersecting the tangent lines at the two points
-            // on the circle.
-            //
-            // Remember, we're still in unit circle mode.
-
-            let unit_r_point_x = (PI * 0.0).cos();
-            let unit_r_point_y = (PI * 0.0).sin();
-
-            let unit_br_point_x = (PI * 0.25).cos();
-            let unit_br_point_y = (PI * 0.25).sin();
-
-            // Here's the actual fun part. We can calculate the tangent vector
-            // of a point on the unit circle by swizzling it's coordinates, and
-            // flipping the sign of the former Y coordinate. That tangent points
-            // in the same direction as the line in our control point triangle,
-            // so we just need to scale it by the length of that side of the
-            // triangle and add it to the point. We now have our Bezier curve
-            // point.
-
-            let unit_r_br_curve_x = unit_r_point_x + a_b * unit_r_point_y * -1.0;
-            let unit_r_br_curve_y = unit_r_point_y + a_b * unit_r_point_x;
-
-            // We need another Bezier segment, of course...
-
-            let unit_b_point_x = (PI * 0.5).cos();
-            let unit_b_point_y = (PI * 0.5).sin();
-
-            let unit_br_b_curve_x = unit_br_point_x + a_b * unit_br_point_y * -1.0;
-            let unit_br_b_curve_y = unit_br_point_y + a_b * unit_br_point_x;
-
-            // At this point we have 90 degrees of a circle in Bezier points.
-            // The remaining points can be derived by coordinate flips,
-            // folllowed by scaling to get an ellipse, and translation to the
-            // actual ellipse centers. All the scary trig is over with.
-            //
-            // We'll start from the bottom-right corner of the rectangle,
-            // because that's what Flash Player does.
-
-            let line_width = width - ellipse_width;
-            let line_height = height - ellipse_height;
-
-            let br_ellipse_center_x = x + ellipse_width / 2.0 + line_width;
-            let br_ellipse_center_y = y + ellipse_height / 2.0 + line_height;
-
-            let br_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_br_point_x;
-            let br_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_br_point_y;
-
-            draw.draw_command(DrawCommand::MoveTo {
-                x: Twips::from_pixels(br_point_x),
-                y: Twips::from_pixels(br_point_y),
-            });
-
-            let br_b_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_br_b_curve_x;
-            let br_b_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_br_b_curve_y;
-
-            let right_b_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_b_point_x;
-            let right_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_b_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(br_b_curve_x),
-                y1: Twips::from_pixels(br_b_curve_y),
-                x2: Twips::from_pixels(right_b_point_x),
-                y2: Twips::from_pixels(right_b_point_y),
-            });
-
-            // Oh, since we're drawing roundrects, we also need to draw lines
-            // in between each ellipse. This is the bottom line.
-            let tl_ellipse_center_x = x + ellipse_width / 2.0;
-            let tl_ellipse_center_y = y + ellipse_height / 2.0;
-
-            let left_b_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_b_point_x;
-            let left_b_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_b_point_y;
-
-            draw.draw_command(DrawCommand::LineTo {
-                x: Twips::from_pixels(left_b_point_x),
-                y: Twips::from_pixels(left_b_point_y),
-            });
-
-            // Bottom-left ellipse
-            let b_bl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_br_b_curve_x;
-            let b_bl_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_br_b_curve_y;
-
-            let bl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_br_point_x;
-            let bl_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_br_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(b_bl_curve_x),
-                y1: Twips::from_pixels(b_bl_curve_y),
-                x2: Twips::from_pixels(bl_point_x),
-                y2: Twips::from_pixels(bl_point_y),
-            });
-
-            let bl_l_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_r_br_curve_x;
-            let bl_l_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_r_br_curve_y;
-
-            let bottom_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_r_point_x;
-            let bottom_l_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_r_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(bl_l_curve_x),
-                y1: Twips::from_pixels(bl_l_curve_y),
-                x2: Twips::from_pixels(bottom_l_point_x),
-                y2: Twips::from_pixels(bottom_l_point_y),
-            });
-
-            // Left side
-            let top_l_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_r_point_x;
-            let top_l_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_r_point_y;
-
-            draw.draw_command(DrawCommand::LineTo {
-                x: Twips::from_pixels(top_l_point_x),
-                y: Twips::from_pixels(top_l_point_y),
-            });
-
-            // Top-left ellipse
-            let l_tl_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_r_br_curve_x;
-            let l_tl_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_r_br_curve_y;
-
-            let tl_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_br_point_x;
-            let tl_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_br_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(l_tl_curve_x),
-                y1: Twips::from_pixels(l_tl_curve_y),
-                x2: Twips::from_pixels(tl_point_x),
-                y2: Twips::from_pixels(tl_point_y),
-            });
-
-            let tl_t_curve_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_br_b_curve_x;
-            let tl_t_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_br_b_curve_y;
-
-            let left_t_point_x = tl_ellipse_center_x + ellipse_width / -2.0 * unit_b_point_x;
-            let left_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_b_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(tl_t_curve_x),
-                y1: Twips::from_pixels(tl_t_curve_y),
-                x2: Twips::from_pixels(left_t_point_x),
-                y2: Twips::from_pixels(left_t_point_y),
-            });
-
-            // Top side
-            let right_t_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_b_point_x;
-            let right_t_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_b_point_y;
-
-            draw.draw_command(DrawCommand::LineTo {
-                x: Twips::from_pixels(right_t_point_x),
-                y: Twips::from_pixels(right_t_point_y),
-            });
-
-            // Top-right ellipse
-            let t_tr_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_br_b_curve_x;
-            let t_tr_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_br_b_curve_y;
-
-            let tr_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_br_point_x;
-            let tr_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_br_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(t_tr_curve_x),
-                y1: Twips::from_pixels(t_tr_curve_y),
-                x2: Twips::from_pixels(tr_point_x),
-                y2: Twips::from_pixels(tr_point_y),
-            });
-
-            let tr_r_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_r_br_curve_x;
-            let tr_r_curve_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_r_br_curve_y;
-
-            let top_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_r_point_x;
-            let top_r_point_y = tl_ellipse_center_y + ellipse_height / -2.0 * unit_r_point_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(tr_r_curve_x),
-                y1: Twips::from_pixels(tr_r_curve_y),
-                x2: Twips::from_pixels(top_r_point_x),
-                y2: Twips::from_pixels(top_r_point_y),
-            });
-
-            // Right side & other half of bottom-right ellipse
-            let bottom_r_point_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_r_point_x;
-            let bottom_r_point_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_r_point_y;
-
-            draw.draw_command(DrawCommand::LineTo {
-                x: Twips::from_pixels(bottom_r_point_x),
-                y: Twips::from_pixels(bottom_r_point_y),
-            });
-
-            let r_br_curve_x = br_ellipse_center_x + ellipse_width / 2.0 * unit_r_br_curve_x;
-            let r_br_curve_y = br_ellipse_center_y + ellipse_height / 2.0 * unit_r_br_curve_y;
-
-            draw.draw_command(DrawCommand::CurveTo {
-                x1: Twips::from_pixels(r_br_curve_x),
-                y1: Twips::from_pixels(r_br_curve_y),
-                x2: Twips::from_pixels(br_point_x),
-                y2: Twips::from_pixels(br_point_y),
-            });
+            draw_round_rect_internal(
+                &mut draw,
+                x,
+                y,
+                width,
+                height,
+                ellipse_width,
+                ellipse_height,
+            );
         }
     }
 
@@ -653,34 +685,37 @@ fn draw_circle<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let x = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
-    let y = args
-        .get(1)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
-    let radius = args
-        .get(2)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        let y = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        let radius = args
+            .get(2)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
 
-    draw_round_rect(
-        activation,
-        this,
-        &[
-            (x - radius).into(),
-            (y - radius).into(),
-            (radius * 2.0).into(),
-            (radius * 2.0).into(),
-            (radius * 2.0).into(),
-            (radius * 2.0).into(),
-        ],
-    )
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw_round_rect_internal(
+                &mut draw,
+                x - radius,
+                y - radius,
+                radius * 2.0,
+                radius * 2.0,
+                radius * 2.0,
+                radius * 2.0,
+            );
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `Graphics.drawEllipse`.
@@ -689,39 +724,34 @@ fn draw_ellipse<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let x = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
-    let y = args
-        .get(1)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
-    let width = args
-        .get(2)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
-    let height = args
-        .get(3)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_number(activation)?;
+    if let Some(this) = this.and_then(|t| t.as_display_object()) {
+        let x = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        let y = args
+            .get(1)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        let width = args
+            .get(2)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
+        let height = args
+            .get(3)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_number(activation)?;
 
-    draw_round_rect(
-        activation,
-        this,
-        &[
-            x.into(),
-            y.into(),
-            width.into(),
-            height.into(),
-            width.into(),
-            height.into(),
-        ],
-    )
+        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+            draw_round_rect_internal(&mut draw, x, y, width, height, width, height)
+        }
+    }
+
+    Ok(Value::Undefined)
 }
 
 /// Construct `Graphics`'s class.
