@@ -46,6 +46,7 @@ symphonia = { version = "0.4.0", default-features = false, features = ["mp3"], o
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
+lazy_static = "1.4.0"
 
 [dependencies.jpeg-decoder]
 version = "0.1.22"
