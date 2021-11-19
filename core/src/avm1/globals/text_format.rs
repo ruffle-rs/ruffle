@@ -4,6 +4,7 @@ use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Value};
 use crate::avm_warn;
+use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
 
@@ -88,7 +89,7 @@ fn set_size<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -255,7 +256,7 @@ fn set_left_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?.max(0.0)).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
 }
@@ -277,7 +278,7 @@ fn set_right_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?.max(0.0)).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
 }
@@ -296,7 +297,7 @@ fn set_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -315,7 +316,7 @@ fn set_leading<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -337,7 +338,7 @@ fn set_block_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(round_to_i32(value.coerce_to_f64(activation)?).into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -370,7 +371,7 @@ fn set_tab_stops<'gc>(
             let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     let element = object.get_element(activation, i);
-                    Ok(round_to_i32(element.coerce_to_f64(activation)?).into())
+                    Ok(round_to_even(element.coerce_to_f64(activation)?).into())
                 })
                 .collect();
             Some(tab_stops?)
@@ -543,24 +544,4 @@ pub fn create_proto<'gc>(
     let object = text_format.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     text_format.into()
-}
-
-/// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
-/// (e.g., both 1.5 and 2.5 will round to 2).
-/// This is the rounding method used by Flash for the above coercions.
-/// Although this is easy to do on most architectures, Rust provides no standard
-/// way to round in this manner (`f64::round` always rounds away from zero).
-/// For more info and the below code snippet, see: https://github.com/rust-lang/rust/issues/55107
-/// This also clamps out-of-range values and NaN to `i32::MIN`.
-/// TODO: Investigate using SSE/wasm intrinsics for this.
-fn round_to_i32(x: f64) -> i32 {
-    let k = 1.0 / f64::EPSILON;
-    let a = x.abs();
-    let out = if a < k { ((a + k) - k).copysign(x) } else { x };
-    // Values outside of i32 range get clamped to i32::MIN.
-    if out.is_finite() && out >= i32::MIN.into() && out <= i32::MAX.into() {
-        out as i32
-    } else {
-        i32::MIN
-    }
 }
