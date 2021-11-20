@@ -11,8 +11,7 @@ use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::shape_utils::DrawCommand;
 use gc_arena::{GcCell, MutationContext};
-use lazy_static::lazy_static;
-use std::f64::consts::PI;
+use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
 
 /// Implements `flash.display.Graphics`'s instance constructor.
@@ -367,77 +366,83 @@ fn draw_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-lazy_static! {
-    /// Length between two points on a unit circle that are 45 degrees apart from
-    /// one another.
-    ///
-    /// This constant is `H`, short for 'hypotenuse', because it is also the length
-    /// of the hypotenuse formed from the control point triangle of any quadratic
-    /// Bezier curve approximating a 45-degree unit circle arc.
-    ///
-    /// The derivation of this constant - or a similar constant for any other arc
-    /// angle hypotenuse - is as follows:
-    ///
-    /// 1. Call the arc angle `alpha`. In this special case, `alpha` is 45 degrees,
-    ///    or one-quarter `PI`.
-    /// 2. Consider the triangle formed by the center of the circle and the two
-    ///    points at the start and end of the arc. The two other angles will be
-    ///    equal, and it and `alpha` sum to 180 degrees. We'll call this angle
-    ///    `beta`, and it is equal to `alpha` minus 180 degrees, divided by 2.
-    /// 3. Using the law of sines, we know that the sine of `alpha` divided by `H`
-    ///    is equal to the sine of `beta` divided by `r`, where `r` is the radius
-    ///    of the circle. We can solve for `H` to get the result. Note that since
-    ///    this is a unit circle, you won't see a radius term in this constant.
-    static ref H: f64 = (PI * 0.25).sin() / (PI * 0.375).sin();
+/// Length between two points on a unit circle that are 45 degrees apart from
+/// one another.
+///
+/// This constant is `H`, short for 'hypotenuse', because it is also the length
+/// of the hypotenuse formed from the control point triangle of any quadratic
+/// Bezier curve approximating a 45-degree unit circle arc.
+///
+/// The derivation of this constant - or a similar constant for any other arc
+/// angle hypotenuse - is as follows:
+///
+/// 1. Call the arc angle `alpha`. In this special case, `alpha` is 45 degrees,
+///    or one-quarter `PI`.
+/// 2. Consider the triangle formed by the center of the circle and the two
+///    points at the start and end of the arc. The two other angles will be
+///    equal, and it and `alpha` sum to 180 degrees. We'll call this angle
+///    `beta`, and it is equal to `alpha` minus 180 degrees, divided by 2.
+/// 3. Using the law of sines, we know that the sine of `alpha` divided by `H`
+///    is equal to the sine of `beta` divided by `r`, where `r` is the radius
+///    of the circle. We can solve for `H` to get the result. Note that since
+///    this is a unit circle, you won't see a radius term in this constant.
+//const H:f64 = (PI * 0.25).sin() / (PI * 0.375).sin();
 
-    /// Length between two control points of a quadratic Bezier curve approximating
-    /// a 45-degree arc of a unit circle.
-    ///
-    /// This constant is critical to calculating the off-curve point of the control
-    /// point triangle. We do so by taking the tangents at each on-curve point,
-    /// which point in the direction of the off-curve points. Then, we scale one of
-    /// those tangent vectors by `A_B` and add it to the on-curve point to get the
-    /// off-curve point, constructing our Bezier.
-    ///
-    /// The derivation of this constant - or a similar constant for any other arc
-    /// angle Bezier - is as follows:
-    ///
-    /// 1. Start with the value of `H` for the given arc angle `alpha`.
-    /// 2. Consider the triangle formed by the three control points of our desired
-    ///    Bezier curve. We'll call the angle at the off-curve control point
-    ///    `delta`, and the two other angles of this triangle are `gamma`.
-    /// 3. Because two of the lines of this triangle are tangent lines of the
-    ///    circle, they will form a right angle with the normal, which is the same
-    ///    as the line between the center of the circle and the point.
-    ///    Coincidentally, this right angle is shared between `beta`, meaning that
-    ///    we can subtract it from 90 degrees to obtain `gamma`. Or, after some
-    ///    elementary algebra, just take half of `alpha`.
-    /// 4. We can then derive the value of `delta` by subtracting out the other two
-    ///    `gamma`s from 180 degrees. This, again, can be simplified to just
-    ///    180 degrees minus `alpha`.
-    /// 5. By the law of sines, the sine of `delta` divided by `H` is equal to
-    ///    the sine of `gamma` divided by `A_B`. We can then rearrange this to get
-    ///    `H` times the sine of `gamma`, divided by the sine of `delta`; which is
-    ///    our `A_B` constant.
-    static ref A_B: f64 = *H * (PI * 0.125).sin() / (PI * 0.75).sin();
+/// Length between two control points of a quadratic Bezier curve approximating
+/// a 45-degree arc of a unit circle.
+///
+/// This constant is critical to calculating the off-curve point of the control
+/// point triangle. We do so by taking the tangents at each on-curve point,
+/// which point in the direction of the off-curve points. Then, we scale one of
+/// those tangent vectors by `A_B` and add it to the on-curve point to get the
+/// off-curve point, constructing our Bezier.
+///
+/// The derivation of this constant - or a similar constant for any other arc
+/// angle Bezier - is as follows:
+///
+/// 1. Start with the value of `H` for the given arc angle `alpha`.
+/// 2. Consider the triangle formed by the three control points of our desired
+///    Bezier curve. We'll call the angle at the off-curve control point
+///    `delta`, and the two other angles of this triangle are `gamma`.
+/// 3. Because two of the lines of this triangle are tangent lines of the
+///    circle, they will form a right angle with the normal, which is the same
+///    as the line between the center of the circle and the point.
+///    Coincidentally, this right angle is shared between `beta`, meaning that
+///    we can subtract it from 90 degrees to obtain `gamma`. Or, after some
+///    elementary algebra, just take half of `alpha`.
+/// 4. We can then derive the value of `delta` by subtracting out the other two
+///    `gamma`s from 180 degrees. This, again, can be simplified to just
+///    180 degrees minus `alpha`.
+/// 5. By the law of sines, the sine of `delta` divided by `H` is equal to
+///    the sine of `gamma` divided by `A_B`. We can then rearrange this to get
+///    `H` times the sine of `gamma`, divided by the sine of `delta`; which is
+///    our `A_B` constant.
+//const A_B:f64 = H * (PI * 0.125).sin() / (PI * 0.75).sin();
 
-    /// A list of five quadratic Bezier control points, intended to approximate the
-    /// bottom-right quadrant of a unit circle.
-    ///
-    /// Through coordinate reflections we can obtain the rest of the circle; and
-    /// with translations and scaling we can obtain any ellipse on the plane.
-    ///
-    /// Points are stored in counter-clockwise order from 0 degrees to 90 degrees.
-    static ref UNIT_CIRCLE_POINTS: [(f64, f64); 5] = [
-        ((PI * 0.0).cos(), (PI * 0.0).sin()),
-        ((PI * 0.0).cos() + *A_B * (PI * 0.0).sin() * -1.0,
-        (PI * 0.0).sin() + *A_B * (PI * 0.0).cos()),
-        ((PI * 0.25).cos(), (PI * 0.25).sin()),
-        ((PI * 0.25).cos() + *A_B * (PI * 0.25).sin() * -1.0,
-        (PI * 0.25).sin() + *A_B * (PI * 0.25).cos()),
-        ((PI * 0.5).cos(), (PI * 0.5).sin()),
-    ];
-}
+/// A list of five quadratic Bezier control points, intended to approximate the
+/// bottom-right quadrant of a unit circle.
+///
+/// Through coordinate reflections we can obtain the rest of the circle; and
+/// with translations and scaling we can obtain any ellipse on the plane.
+///
+/// Points are stored in counter-clockwise order from 0 degrees to 90 degrees.
+const UNIT_CIRCLE_POINTS: [(f64, f64); 5] = [
+    (1.0, 0.0),
+    (1.0, 0.41421356237309503),
+    (FRAC_1_SQRT_2, FRAC_1_SQRT_2),
+    (0.4142135623730951, 1.0),
+    (0.00000000000000006123233995736766, 1.0),
+];
+
+/* [
+    ((PI * 0.0).cos(), (PI * 0.0).sin()),
+    ((PI * 0.0).cos() + *A_B * (PI * 0.0).sin() * -1.0,
+    (PI * 0.0).sin() + *A_B * (PI * 0.0).cos()),
+    ((PI * 0.25).cos(), (PI * 0.25).sin()),
+    ((PI * 0.25).cos() + *A_B * (PI * 0.25).sin() * -1.0,
+    (PI * 0.25).sin() + *A_B * (PI * 0.25).cos()),
+    ((PI * 0.5).cos(), (PI * 0.5).sin()),
+]; */
 
 /// Draw a roundrect.
 fn draw_round_rect_internal(
@@ -464,7 +469,7 @@ fn draw_round_rect_internal(
 
     // We'll start from the bottom-right corner of the rectangle,
     // because that's what Flash Player does.
-    let ucp = *UNIT_CIRCLE_POINTS;
+    let ucp = UNIT_CIRCLE_POINTS;
 
     let line_width = width - ellipse_width;
     let line_height = height - ellipse_height;

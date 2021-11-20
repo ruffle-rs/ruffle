@@ -2977,7 +2977,6 @@ dependencies = [
  "instant",
  "jpeg-decoder",
  "json",
- "lazy_static",
  "log",
  "lzma-rs",
  "minimp3",
