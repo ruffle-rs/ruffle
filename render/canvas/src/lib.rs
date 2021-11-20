@@ -9,8 +9,8 @@ use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
 use ruffle_web_common::JsResult;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, Element, HtmlCanvasElement,
-    HtmlImageElement, Path2d, SvgsvgElement,
+    CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, Element,
+    HtmlCanvasElement, HtmlImageElement, Path2d, SvgsvgElement,
 };
 
 type Error = Box<dyn std::error::Error>;
@@ -583,7 +583,8 @@ impl RenderBackend for WebCanvasRenderBackend {
                             CanvasFillStyle::Pattern(patt) => self.context.set_fill_style(patt),
                         };
 
-                        self.context.fill_with_path_2d(path);
+                        self.context
+                            .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
 
                         if xformed_fill_style.is_none() {
                             self.clear_color_filter();
@@ -1105,7 +1106,6 @@ fn swf_shape_to_svg(
                         fill_id
                     }
                 };
-                svg_path = svg_path.set("fill", fill);
 
                 let mut data = Data::new();
                 for command in commands {
@@ -1118,7 +1118,10 @@ fn swf_shape_to_svg(
                     };
                 }
 
-                svg_path = svg_path.set("d", data);
+                svg_path = svg_path
+                    .set("fill", fill)
+                    .set("fill-rule", "evenodd")
+                    .set("d", data);
                 svg_paths.push(svg_path);
             }
             DrawPath::Stroke {
@@ -1135,8 +1138,7 @@ fn swf_shape_to_svg(
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
                 let stroke_width = std::cmp::max(style.width.get(), 20);
-                let mut svg_path = SvgPath::new();
-                svg_path = svg_path
+                let mut svg_path = SvgPath::new()
                     .set("fill", "none")
                     .set(
                         "stroke",
@@ -1191,9 +1193,9 @@ fn swf_shape_to_svg(
     // We have to use a filter because browser don't seem to implement the `color-interpolation` SVG property.
     if has_linear_rgb_gradient {
         // Add a filter to convert from linear space to sRGB space.
-        let mut filter = Filter::new();
-        filter = filter.set("id", "_linearrgb");
-        filter = filter.set("color-interpolation-filters", "sRGB");
+        let mut filter = Filter::new()
+            .set("id", "_linearrgb")
+            .set("color-interpolation-filters", "sRGB");
         let text = svg::node::Text::new(
             r#"
             <feComponentTransfer>
