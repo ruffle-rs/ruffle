@@ -575,7 +575,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             } else if let Some(name) = multiname.local_name() {
                 let qname = QName::new(ns.clone(), name);
-                if self.has_property(&qname)? {
+                if self.has_own_property(&qname)? {
                     return Ok(Some(qname));
                 }
             } else {
