@@ -547,17 +547,13 @@ impl<'gc> ClassObject<'gc> {
                 name
             )
         })?;
-        let mut class_traits = Vec::new();
-        superclass_object
+        let method_trait = superclass_object
             .inner_class_definition()
             .read()
-            .lookup_instance_traits(&name, &mut class_traits)?;
-        let base_trait = class_traits
-            .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Method { .. }));
+            .lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Method { .. }));
         let scope = superclass_object.class_scope();
 
-        if let Some(TraitKind::Method { method, .. }) = base_trait.map(|b| b.kind()) {
+        if let Some(TraitKind::Method { method, .. }) = method_trait.as_ref().map(|b| b.kind()) {
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
@@ -619,17 +615,13 @@ impl<'gc> ClassObject<'gc> {
                 name
             )
         })?;
-        let mut class_traits = Vec::new();
-        superclass_object
+        let getter_trait = superclass_object
             .inner_class_definition()
             .read()
-            .lookup_instance_traits(&name, &mut class_traits)?;
-        let base_trait = class_traits
-            .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Getter { .. }));
+            .lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Getter { .. }));
         let scope = superclass_object.class_scope();
 
-        if let Some(TraitKind::Getter { method, .. }) = base_trait.map(|b| b.kind()) {
+        if let Some(TraitKind::Getter { method, .. }) = getter_trait.as_ref().map(|b| b.kind()) {
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
@@ -693,17 +685,13 @@ impl<'gc> ClassObject<'gc> {
                 name
             )
         })?;
-        let mut class_traits = Vec::new();
-        superclass_object
+        let setter_trait = superclass_object
             .inner_class_definition()
             .read()
-            .lookup_instance_traits(&name, &mut class_traits)?;
-        let base_trait = class_traits
-            .iter()
-            .find(|t| matches!(t.kind(), TraitKind::Setter { .. }));
+            .lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Setter { .. }));
         let scope = superclass_object.class_scope();
 
-        if let Some(TraitKind::Setter { method, .. }) = base_trait.map(|b| b.kind()) {
+        if let Some(TraitKind::Setter { method, .. }) = setter_trait.as_ref().map(|b| b.kind()) {
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
@@ -735,18 +723,11 @@ impl<'gc> ClassObject<'gc> {
                 return self.instance_method(&QName::dynamic_name(name.local_name()));
             }
 
-            let mut traits = Vec::new();
-            superclassdef
+            let method_trait = superclassdef
                 .read()
-                .lookup_instance_traits(name, &mut traits)?;
+                .lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. }));
 
-            Ok(traits
-                .into_iter()
-                .find_map(|t| match t.kind() {
-                    TraitKind::Method { .. } => Some(t),
-                    _ => None,
-                })
-                .map(|t| (superclass, t)))
+            Ok(method_trait.map(|t| (superclass, t)))
         } else {
             Ok(None)
         }
@@ -806,7 +787,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
         if let Some(superclass) = self.find_class_for_trait_by_disp_id(id)? {
             let superclassdef = superclass.inner_class_definition();
-            let traits = superclassdef.read().lookup_instance_traits_by_slot(id)?;
+            let traits = superclassdef.read().lookup_instance_traits_by_slot(id);
 
             if let Some(method_trait) = traits.and_then(|t| match t.kind() {
                 TraitKind::Method { .. } => Some(t),
@@ -842,13 +823,11 @@ impl<'gc> ClassObject<'gc> {
     /// If a trait is returned, it is guaranteed to have a method.
     pub fn class_method(self, name: &QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
         let classdef = self.inner_class_definition();
-        let mut traits = Vec::new();
-        classdef.read().lookup_class_traits(name, &mut traits)?;
+        let trait_ = classdef
+            .read()
+            .lookup_class_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. }));
 
-        Ok(traits.into_iter().find_map(|t| match t.kind() {
-            TraitKind::Method { .. } => Some(t),
-            _ => None,
-        }))
+        Ok(trait_)
     }
 
     /// Retrieve a bound class method suitable for use as a value.
@@ -902,7 +881,7 @@ impl<'gc> ClassObject<'gc> {
         id: u32,
     ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
         let classdef = self.inner_class_definition();
-        let traits = classdef.read().lookup_class_traits_by_slot(id)?;
+        let traits = classdef.read().lookup_class_traits_by_slot(id);
 
         if let Some(method_trait) = traits.and_then(|t| match t.kind() {
             TraitKind::Method { .. } => Some(t),
