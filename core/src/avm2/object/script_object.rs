@@ -309,30 +309,6 @@ impl<'gc> ScriptObjectData<'gc> {
             }
         }
 
-        let trait_ns = self.resolve_any_trait(local_name)?;
-
-        if trait_ns.is_none() {
-            if let Some(proto) = self.proto() {
-                proto.resolve_any(local_name)
-            } else {
-                Ok(None)
-            }
-        } else {
-            Ok(trait_ns)
-        }
-    }
-
-    pub fn resolve_any_trait(
-        &self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        if let Some(proto) = self.proto {
-            let proto_trait_name = proto.resolve_any_trait(local_name)?;
-            if let Some(ns) = proto_trait_name {
-                return Ok(Some(ns));
-            }
-        }
-
         match &self.instance_of {
             Some(class) => {
                 let mut cur_class = Some(*class);

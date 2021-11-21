@@ -1035,20 +1035,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         read.base.resolve_any(local_name)
     }
 
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        let read = self.0.read();
-        let class = read.class.read();
-
-        if let Some(ns) = class.resolve_any_class_trait(local_name) {
-            return Ok(Some(ns));
-        }
-
-        read.base.resolve_any_trait(local_name)
-    }
-
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         Some(*self)
     }
