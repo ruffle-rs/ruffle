@@ -363,17 +363,14 @@ impl<'gc> ScriptObjectData<'gc> {
         self.values.get(name).is_some()
     }
 
-    pub fn has_own_virtual_getter(&self, name: &QName<'gc>) -> bool {
+    pub fn has_own_virtual_set_only_property(&self, name: &QName<'gc>) -> bool {
         matches!(
             self.values.get(name),
-            Some(Property::Virtual { get: Some(_), .. })
-        )
-    }
-
-    pub fn has_own_virtual_setter(&self, name: &QName<'gc>) -> bool {
-        matches!(
-            self.values.get(name),
-            Some(Property::Virtual { set: Some(_), .. })
+            Some(Property::Virtual {
+                get: None,
+                set: Some(_),
+                ..
+            })
         )
     }
 
