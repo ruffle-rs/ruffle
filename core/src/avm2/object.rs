@@ -604,20 +604,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.resolve_any(local_name)
     }
 
-    /// Given a local name of a trait, find the namespace it resides in, if any.
-    ///
-    /// This function only works for names which are trait properties, not
-    /// dynamic or prototype properties. Furthermore, instance prototypes *will*
-    /// resolve trait names here, contrary to their behavior in `resolve_any.`
-    fn resolve_any_trait(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<Option<Namespace<'gc>>, Error> {
-        let base = self.base();
-
-        base.resolve_any_trait(local_name)
-    }
-
     /// Implements the `in` opcode and AS3 operator.
     ///
     /// By default, this just calls `has_property`, but may be overridden by
