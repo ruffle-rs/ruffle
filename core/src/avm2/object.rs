@@ -212,10 +212,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        let has_no_getter =
-            self.has_own_virtual_setter(&name) && !self.has_own_virtual_getter(&name);
+        let is_set_only = self.base().has_own_virtual_set_only_property(&name);
 
-        if self.has_own_property(&name)? && !has_no_getter {
+        if self.has_own_property(&name)? && !is_set_only {
             return self.get_property_local(receiver, &name, activation);
         }
 
@@ -655,22 +654,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let base = self.base();
 
         base.has_trait(name)
-    }
-
-    /// Check if a particular object contains a virtual getter by the given
-    /// name.
-    fn has_own_virtual_getter(self, name: &QName<'gc>) -> bool {
-        let base = self.base();
-
-        base.has_own_virtual_getter(name)
-    }
-
-    /// Check if a particular object contains a virtual setter by the given
-    /// name.
-    fn has_own_virtual_setter(self, name: &QName<'gc>) -> bool {
-        let base = self.base();
-
-        base.has_own_virtual_setter(name)
     }
 
     /// Indicates whether or not a property is overwritable.
