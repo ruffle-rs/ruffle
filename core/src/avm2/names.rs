@@ -139,12 +139,21 @@ impl<'gc> Namespace<'gc> {
 /// `QName`. All other forms of names and multinames are either versions of
 /// `QName` with unspecified parameters, or multiple names to be checked in
 /// order.
-#[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Collect, Debug, Hash)]
 #[collect(no_drop)]
 pub struct QName<'gc> {
     ns: Namespace<'gc>,
     name: AvmString<'gc>,
 }
+
+impl<'gc> PartialEq for QName<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        // Implemented by hand to enforce order of comparisons for perf
+        self.name == other.name && self.ns == other.ns
+    }
+}
+
+impl<'gc> Eq for QName<'gc> {}
 
 impl<'gc> QName<'gc> {
     pub fn new(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
