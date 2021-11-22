@@ -793,6 +793,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cty"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
+
+[[package]]
 name = "curl"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2855,6 +2861,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "raw-window-handle"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "503bdbfa9605024fdc97f845002e3690d14c5f553594f1cd0f819317a70de02c"
+dependencies = [
+ "cty",
+]
+
+[[package]]
 name = "rayon"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3082,7 +3097,7 @@ dependencies = [
  "futures",
  "image",
  "log",
- "raw-window-handle",
+ "raw-window-handle 0.4.1",
  "ruffle_core",
  "ruffle_render_common_tess",
  "wasm-bindgen-futures",
@@ -3985,7 +4000,7 @@ dependencies = [
  "js-sys",
  "log",
  "parking_lot",
- "raw-window-handle",
+ "raw-window-handle 0.3.3",
  "serde",
  "smallvec",
  "wasm-bindgen",
@@ -4011,7 +4026,7 @@ dependencies = [
  "naga",
  "parking_lot",
  "profiling",
- "raw-window-handle",
+ "raw-window-handle 0.3.3",
  "ron",
  "serde",
  "smallvec",
@@ -4049,7 +4064,7 @@ dependencies = [
  "parking_lot",
  "profiling",
  "range-alloc",
- "raw-window-handle",
+ "raw-window-handle 0.3.3",
  "renderdoc-sys",
  "thiserror",
  "wasm-bindgen",
@@ -4130,7 +4145,7 @@ dependencies = [
  "objc",
  "parking_lot",
  "percent-encoding",
- "raw-window-handle",
+ "raw-window-handle 0.3.3",
  "scopeguard",
  "smithay-client-toolkit",
  "wayland-client",
