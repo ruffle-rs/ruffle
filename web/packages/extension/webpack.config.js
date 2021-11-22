@@ -23,7 +23,6 @@ function transformManifest(content, env) {
         manifest.browser_specific_settings = {
             gecko: {
                 id: process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs",
-                strict_min_version: "91.1.0",
             },
         };
     } else {
