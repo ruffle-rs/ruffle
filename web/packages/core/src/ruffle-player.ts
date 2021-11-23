@@ -638,6 +638,7 @@ export class RufflePlayer extends HTMLElement {
      */
     setFullscreen(isFull: boolean): void {
         if (this.fullscreenEnabled) {
+            this.instance?.set_fullscreen(isFull);
             if (isFull) {
                 this.enterFullscreen();
             } else {
@@ -742,12 +743,12 @@ export class RufflePlayer extends HTMLElement {
             if (this.isFullscreen) {
                 items.push({
                     text: "Exit fullscreen",
-                    onClick: () => this.instance?.set_fullscreen(false),
+                    onClick: () => this.setFullscreen(false),
                 });
             } else {
                 items.push({
                     text: "Enter fullscreen",
-                    onClick: () => this.instance?.set_fullscreen(true),
+                    onClick: () => this.setFullscreen(true),
                 });
             }
         }
