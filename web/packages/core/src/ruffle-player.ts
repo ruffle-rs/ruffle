@@ -217,6 +217,7 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.addEventListener("pointerdown", this.pointerDown.bind(this));
+        this.addEventListener("fullscreenchange", this.fullScreenChange.bind(this));
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
@@ -675,6 +676,17 @@ export class RufflePlayer extends HTMLElement {
         } else if (document.webkitCancelFullScreen) {
             document.webkitCancelFullScreen();
         }
+    }
+
+    /**
+     * Tell Ruffle that the player is no longer fullscreen.
+     */
+    private fullScreenChange(): void {
+      // if we have just stopped being full screen, e.g. because escape was
+      // pressed (which isn't normally caught)
+      if (document.fullscreenElement === null) {
+        this.instance?.set_fullscreen(false)
+      }
     }
 
     private pointerDown(event: PointerEvent): void {
