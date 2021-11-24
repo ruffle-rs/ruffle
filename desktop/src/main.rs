@@ -444,20 +444,19 @@ impl App {
                             }
                             WindowEvent::MouseInput {
                                 button: MouseButton::Left,
-                                state: pressed,
+                                state,
                                 ..
                             } => {
                                 let mut player_lock = player.lock().unwrap();
-                                let event = if pressed == ElementState::Pressed {
-                                    ruffle_core::PlayerEvent::MouseDown {
+                                let event = match state {
+                                    ElementState::Pressed => ruffle_core::PlayerEvent::MouseDown {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
-                                    }
-                                } else {
-                                    ruffle_core::PlayerEvent::MouseUp {
+                                    },
+                                    ElementState::Released => ruffle_core::PlayerEvent::MouseUp {
                                         x: mouse_pos.x,
                                         y: mouse_pos.y,
-                                    }
+                                    },
                                 };
                                 player_lock.handle_event(event);
                                 if player_lock.needs_render() {
@@ -488,8 +487,7 @@ impl App {
                                     window.request_redraw();
                                 }
                             }
-                            WindowEvent::KeyboardInput { .. }
-                            | WindowEvent::ReceivedCharacter(_) => {
+                            WindowEvent::KeyboardInput { .. } => {
                                 let mut player_lock = player.lock().unwrap();
                                 if let Some(event) = player_lock
                                     .ui_mut()
@@ -501,6 +499,14 @@ impl App {
                                     if player_lock.needs_render() {
                                         window.request_redraw();
                                     }
+                                }
+                            }
+                            WindowEvent::ReceivedCharacter(codepoint) => {
+                                let mut player_lock = player.lock().unwrap();
+                                let event = ruffle_core::PlayerEvent::TextInput { codepoint };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
                                 }
                             }
                             _ => (),
