@@ -12,7 +12,6 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// A class instance allocator that allocates `ScriptObject`s.
@@ -126,7 +125,7 @@ impl<'gc> ScriptObject<'gc> {
 impl<'gc> ScriptObjectData<'gc> {
     pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
         ScriptObjectData {
-            values: HashMap::new(),
+            values: PropertyMap::new(),
             slots: Vec::new(),
             methods: Vec::new(),
             proto,
@@ -303,9 +302,9 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
-        for (key, _value) in self.values.iter() {
-            if key.local_name() == local_name {
-                return Ok(Some(key.namespace().clone()));
+        for (ns, local, _value) in self.values.iter() {
+            if *local == local_name {
+                return Ok(Some(ns.clone()));
             }
         }
 
