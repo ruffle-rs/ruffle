@@ -32,33 +32,27 @@ impl DesktopUiBackend {
     pub fn handle_event(&mut self, event: WindowEvent) -> Option<PlayerEvent> {
         // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
         #[allow(deprecated)]
-        match event {
-            WindowEvent::KeyboardInput { input, .. } => {
-                if let Some(key) = input.virtual_keycode {
-                    let key_code = winit_to_ruffle_key_code(key);
-                    self.last_key = key_code;
-                    self.last_char =
-                        winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
-                    match input.state {
-                        ElementState::Pressed => {
-                            self.keys_down.insert(key_code);
-                        }
-                        ElementState::Released => {
-                            self.keys_down.remove(&key_code);
-                        }
+        if let WindowEvent::KeyboardInput { input, .. } = event {
+            if let Some(key) = input.virtual_keycode {
+                let key_code = winit_to_ruffle_key_code(key);
+                self.last_key = key_code;
+                self.last_char =
+                    winit_key_to_char(key, input.modifiers.contains(ModifiersState::SHIFT));
+                match input.state {
+                    ElementState::Pressed => {
+                        self.keys_down.insert(key_code);
                     }
-                    if key_code != KeyCode::Unknown {
-                        return Some(match input.state {
-                            ElementState::Pressed => PlayerEvent::KeyDown { key_code },
-                            ElementState::Released => PlayerEvent::KeyUp { key_code },
-                        });
+                    ElementState::Released => {
+                        self.keys_down.remove(&key_code);
                     }
                 }
+                if key_code != KeyCode::Unknown {
+                    return Some(match input.state {
+                        ElementState::Pressed => PlayerEvent::KeyDown { key_code },
+                        ElementState::Released => PlayerEvent::KeyUp { key_code },
+                    });
+                }
             }
-            WindowEvent::ReceivedCharacter(codepoint) => {
-                return Some(PlayerEvent::TextInput { codepoint });
-            }
-            _ => (),
         }
         None
     }
