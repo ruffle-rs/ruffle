@@ -5,7 +5,6 @@ use crate::backend::render::{BitmapHandle, RenderBackend};
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
-use downcast_rs::__std::fmt::Formatter;
 use std::ops::Range;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -96,7 +95,7 @@ impl Color {
 }
 
 impl std::fmt::Display for Color {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:#x}", self.0))
     }
 }
