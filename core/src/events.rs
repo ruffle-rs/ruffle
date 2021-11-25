@@ -2,14 +2,33 @@ use swf::ClipEventFlag;
 
 #[derive(Debug)]
 pub enum PlayerEvent {
-    KeyDown { key_code: KeyCode },
-    KeyUp { key_code: KeyCode },
-    MouseMove { x: f64, y: f64 },
-    MouseUp { x: f64, y: f64 },
-    MouseDown { x: f64, y: f64 },
+    KeyDown {
+        key_code: KeyCode,
+        key_char: Option<char>,
+    },
+    KeyUp {
+        key_code: KeyCode,
+        key_char: Option<char>,
+    },
+    MouseMove {
+        x: f64,
+        y: f64,
+    },
+    MouseUp {
+        x: f64,
+        y: f64,
+    },
+    MouseDown {
+        x: f64,
+        y: f64,
+    },
     MouseLeft,
-    MouseWheel { delta: MouseWheelDelta },
-    TextInput { codepoint: char },
+    MouseWheel {
+        delta: MouseWheelDelta,
+    },
+    TextInput {
+        codepoint: char,
+    },
 }
 
 /// The distance scrolled by the mouse wheel.

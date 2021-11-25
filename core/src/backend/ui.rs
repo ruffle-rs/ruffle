@@ -1,15 +1,9 @@
-use crate::events::KeyCode;
-use downcast_rs::Downcast;
+use crate::events::{KeyCode, PlayerEvent};
+use std::collections::HashSet;
 
 pub type Error = Box<dyn std::error::Error>;
 
-pub trait UiBackend: Downcast {
-    fn is_key_down(&self, key: KeyCode) -> bool;
-
-    fn last_key_code(&self) -> KeyCode;
-
-    fn last_key_char(&self) -> Option<char>;
-
+pub trait UiBackend {
     fn mouse_visible(&self) -> bool;
 
     fn set_mouse_visible(&mut self, visible: bool);
@@ -17,7 +11,7 @@ pub trait UiBackend: Downcast {
     /// Changes the mouse cursor image.
     fn set_mouse_cursor(&mut self, cursor: MouseCursor);
 
-    /// Set the clipboard to the given content
+    /// Sets the clipboard to the given content.
     fn set_clipboard_content(&mut self, content: String);
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), Error>;
@@ -31,10 +25,9 @@ pub trait UiBackend: Downcast {
     /// by providing a direct .swf link instead.
     fn display_root_movie_download_failed_message(&self);
 
-    // Unused, but kept in case we need it later
+    // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
 }
-impl_downcast!(UiBackend);
 
 /// A mouse cursor icon displayed by the Flash Player.
 /// Communicated from the core to the UI backend via `UiBackend::set_mouse_cursor`.
@@ -57,6 +50,60 @@ pub enum MouseCursor {
     Grab,
 }
 
+pub struct InputManager {
+    keys_down: HashSet<KeyCode>,
+    last_key: KeyCode,
+    last_char: Option<char>,
+}
+
+impl InputManager {
+    pub fn new() -> Self {
+        Self {
+            keys_down: HashSet::new(),
+            last_key: KeyCode::Unknown,
+            last_char: None,
+        }
+    }
+
+    pub fn handle_event(&mut self, event: &PlayerEvent) {
+        match *event {
+            PlayerEvent::KeyDown { key_code, key_char } => {
+                self.last_key = key_code;
+                self.last_char = key_char;
+                if key_code != KeyCode::Unknown {
+                    self.keys_down.insert(key_code);
+                }
+            }
+            PlayerEvent::KeyUp { key_code, key_char } => {
+                self.last_key = key_code;
+                self.last_char = key_char;
+                if key_code != KeyCode::Unknown {
+                    self.keys_down.remove(&key_code);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    pub fn is_key_down(&self, key: KeyCode) -> bool {
+        self.keys_down.contains(&key)
+    }
+
+    pub fn last_key_code(&self) -> KeyCode {
+        self.last_key
+    }
+
+    pub fn last_key_char(&self) -> Option<char> {
+        self.last_char
+    }
+}
+
+impl Default for InputManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// UiBackend that does nothing.
 pub struct NullUiBackend {}
 
@@ -67,18 +114,6 @@ impl NullUiBackend {
 }
 
 impl UiBackend for NullUiBackend {
-    fn is_key_down(&self, _key: KeyCode) -> bool {
-        false
-    }
-
-    fn last_key_code(&self) -> KeyCode {
-        KeyCode::Unknown
-    }
-
-    fn last_key_char(&self) -> Option<char> {
-        None
-    }
-
     fn mouse_visible(&self) -> bool {
         true
     }
