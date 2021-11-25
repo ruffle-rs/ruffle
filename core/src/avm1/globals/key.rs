@@ -41,7 +41,7 @@ pub fn is_down<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_i32(activation)? as u8,
     ) {
-        Ok(activation.context.ui.is_key_down(key).into())
+        Ok(activation.context.input.is_key_down(key).into())
     } else {
         Ok(false.into())
     }
@@ -52,7 +52,7 @@ pub fn get_ascii<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ord = activation.context.ui.last_key_char().unwrap_or_default() as u32;
+    let ord = activation.context.input.last_key_char().unwrap_or_default() as u32;
     Ok(ord.into())
 }
 
@@ -61,7 +61,7 @@ pub fn get_code<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let code = activation.context.ui.last_key_code() as u8;
+    let code = activation.context.input.last_key_code() as u8;
     Ok(code.into())
 }
 

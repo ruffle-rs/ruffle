@@ -60,6 +60,7 @@ where
             video: &mut NullVideoBackend::new(),
             mouse_over_object: None,
             mouse_down_object: None,
+            input: &Default::default(),
             mouse_position: &(Twips::ZERO, Twips::ZERO),
             drag_object: &mut None,
             player: None,
