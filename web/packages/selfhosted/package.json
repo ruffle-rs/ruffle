@@ -20,7 +20,7 @@
     },
     "devDependencies": {
         "@wdio/cli": "^7.14.0",
-        "webpack": "^5.56.0",
+        "webpack": "^5.64.4",
         "webpack-cli": "^4.8.0",
         "webpack-dev-server": "^4.4.0"
     }
