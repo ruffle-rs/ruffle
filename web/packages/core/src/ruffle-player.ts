@@ -221,6 +221,10 @@ export class RufflePlayer extends HTMLElement {
             "fullscreenchange",
             this.fullScreenChange.bind(this)
         );
+        this.addEventListener(
+            "webkitfullscreenchange",
+            this.webKitFullScreenChange.bind(this)
+        );
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
@@ -682,12 +686,21 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Tell Ruffle that the player is no longer fullscreen.
+     * Called when entering / leaving fullscreen on non-Safari
      */
     private fullScreenChange(): void {
-        // if we have just stopped being full screen, e.g. because escape was
-        // pressed (which isn't normally caught)
+        // check if we have just stopped being full screen
         if (document.fullscreenElement === null) {
+            this.instance?.set_fullscreen(false);
+        }
+    }
+
+    /**
+     * Called when entering / leaving fullscreen on Safari
+     */
+    private webKitFullScreenChange(): void {
+        // check if we have just stopped being full screen
+        if (document.webkitFullscreenElement === null) {
             this.instance?.set_fullscreen(false);
         }
     }
