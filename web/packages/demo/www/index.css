@@ -11,7 +11,7 @@ body {
     right: 0;
     padding: 0;
     margin: 0;
-    font-family: "Lato", sans-serif;
+    font-family: Lato, sans-serif;
     display: flex;
     flex-flow: column;
     background: black;
@@ -74,7 +74,7 @@ body {
     align-items: center;
     justify-content: space-around;
     color: white;
-    padding: 10px 0 5px 0;
+    padding: 10px 0 5px;
     margin-bottom: 5px;
 }
 
