@@ -24,3 +24,4 @@ pub mod stagedisplaystate;
 pub mod stagequality;
 pub mod stagescalemode;
 pub mod swfversion;
+pub mod pixelsnapping;
