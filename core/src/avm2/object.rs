@@ -564,23 +564,28 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Resolve a multiname into a single QName, if any of the namespaces
     /// match.
+    ///
+    /// If multiple namespaces could match, this yields an error.
     fn resolve_multiname(self, multiname: &Multiname<'gc>) -> Result<Option<QName<'gc>>, Error> {
-        for ns in multiname.namespace_set() {
-            if ns.is_any() {
-                if let Some(name) = multiname.local_name() {
-                    let ns = self.resolve_any(name)?;
-                    return Ok(ns.map(|ns| QName::new(ns, name)));
-                } else {
-                    return Ok(None);
+        let matching_set = if let Some(local_name) = multiname.local_name() {
+            self.resolve_ns(local_name)?
+        } else {
+            vec![]
+        };
+
+        let multiname_set: Vec<_> = multiname.namespace_set().cloned().collect();
+        if let Some(name) = multiname.local_name() {
+            for ns in matching_set.iter() {
+                if multiname_set.contains(ns) {
+                    return Ok(Some(QName::new(ns.clone(), name)));
                 }
-            } else if let Some(name) = multiname.local_name() {
-                let qname = QName::new(ns.clone(), name);
-                if self.has_own_property(&qname)? {
-                    return Ok(Some(qname));
-                }
-            } else {
-                return Ok(None);
             }
+        }
+
+        if multiname_set.contains(&Namespace::Any) {
+            return Ok(matching_set
+                .first()
+                .map(|ns| QName::new(ns.clone(), multiname.local_name().unwrap())));
         }
 
         if let Some(proto) = self.proto() {
@@ -590,18 +595,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(None)
     }
 
-    /// Given a local name, find the namespace it resides in, if any.
+    /// Given a local name, list all of the namespaces that have properties
+    /// with that local name.
     ///
-    /// The `Namespace` must not be `Namespace::Any`, as this function exists
-    /// specifically resolve names in that namespace.
+    /// None of the returned `Namespace`s can be `Namespace::Any`, as this
+    /// function is also used to resolve such names.
     ///
-    /// Trait names will be resolve on class objects and object instances, but
+    /// Trait names will be resolved on class objects and object instances, but
     /// not prototypes. If you want to search a prototype's provided traits you
     /// must walk the prototype chain using `resolve_any_trait`.
-    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
         let base = self.base();
 
-        base.resolve_any(local_name)
+        base.resolve_ns(local_name)
     }
 
     /// Implements the `in` opcode and AS3 operator.

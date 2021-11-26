@@ -1024,15 +1024,19 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             || read.base.has_trait(name)?)
     }
 
-    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
+    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
         let read = self.0.read();
-        let class = read.class.read();
+        let class = read.class;
 
-        if let Some(ns) = class.resolve_any_class_trait(local_name) {
-            return Ok(Some(ns));
+        let mut ns_set = read.base.resolve_ns(local_name)?;
+
+        for trait_ns in class.read().resolve_class_trait_ns(local_name) {
+            if !ns_set.contains(&trait_ns) {
+                ns_set.push(trait_ns);
+            }
         }
 
-        read.base.resolve_any(local_name)
+        Ok(ns_set)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {

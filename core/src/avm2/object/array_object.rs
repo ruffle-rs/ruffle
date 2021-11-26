@@ -189,14 +189,19 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
-    fn resolve_any(self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
-        if let Ok(index) = local_name.parse::<usize>() {
-            if self.0.read().array.get(index).is_some() {
-                return Ok(Some(Namespace::public()));
+    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+        let base = self.base();
+
+        let mut ns_set = base.resolve_ns(local_name)?;
+        if !ns_set.contains(&Namespace::public()) {
+            if let Ok(index) = local_name.parse::<usize>() {
+                if self.0.read().array.get(index).is_some() {
+                    ns_set.push(Namespace::public())
+                }
             }
         }
 
-        self.0.read().base.resolve_any(local_name)
+        Ok(ns_set)
     }
 
     fn get_next_enumerant(
