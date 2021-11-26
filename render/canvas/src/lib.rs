@@ -1455,7 +1455,7 @@ pub fn srgb_to_linear(mut color: swf::Color) -> swf::Color {
         } else {
             f32::powf((n + 0.055) / 1.055, 2.4)
         };
-        (n.max(0.0).min(1.0) * 255.0).round() as u8
+        (n.clamp(0.0, 1.0) * 255.0).round() as u8
     }
     color.r = to_linear_channel(color.r);
     color.g = to_linear_channel(color.g);

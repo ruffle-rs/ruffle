@@ -236,7 +236,7 @@ fn line_style<'gc>(
                 .unwrap_or_else(|| 3.0.into())
                 .coerce_to_number(activation)?;
 
-            let width = Twips::from_pixels(thickness.min(255.0).max(0.0));
+            let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
             let color = color_from_args(color, alpha);
             let join_style = joints_to_join_style(activation, joints, miter_limit)?;
             let (allow_scale_x, allow_scale_y) = scale_mode_to_allow_scale_bits(&scale_mode)?;
