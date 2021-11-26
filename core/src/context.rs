@@ -83,7 +83,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// The locale backend, used for localisation and personalisation
     pub locale: &'a mut dyn LocaleBackend,
 
-    /// The logging backend, used for trace output capturing
+    /// The logging backend, used for trace output capturing.
+    ///
+    /// **DO NOT** use this field directly, use the `avm_trace` method instead.
     pub log: &'a mut dyn LogBackend,
 
     /// The video backend, used for video decoding
@@ -322,6 +324,10 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     /// Return the VM that this object belongs to
     pub fn avm_type(&self) -> AvmType {
         self.swf.avm_type()
+    }
+
+    pub fn avm_trace(&self, message: &str) {
+        self.log.avm_trace(&message.replace("\r", "\n"));
     }
 }
 

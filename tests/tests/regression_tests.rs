@@ -1213,21 +1213,17 @@ impl ExternalInterfaceTestProvider {
 }
 
 fn do_trace(context: &mut UpdateContext<'_, '_, '_>, args: &[ExternalValue]) -> ExternalValue {
-    context
-        .log
-        .avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
+    context.avm_trace(&format!("[ExternalInterface] trace: {:?}", args));
     "Traced!".into()
 }
 
 fn do_ping(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
-    context.log.avm_trace("[ExternalInterface] ping");
+    context.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }
 
 fn do_reentry(context: &mut UpdateContext<'_, '_, '_>, _args: &[ExternalValue]) -> ExternalValue {
-    context
-        .log
-        .avm_trace("[ExternalInterface] starting reentry");
+    context.avm_trace("[ExternalInterface] starting reentry");
     if let Some(callback) = context.external_interface.get_callback("callWith") {
         callback.call(
             context,

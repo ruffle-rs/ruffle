@@ -1941,7 +1941,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     None => WStr::from_units(b"?"),
                 }
             );
-            self.context.log.avm_trace(&message);
+            self.context.avm_trace(&message);
 
             // When SetTarget has an invalid target, subsequent GetVariables act
             // as if they are targeting root, but subsequent Play/Stop/etc.
@@ -2216,7 +2216,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             val.coerce_to_string(self)?
         };
-        self.context.log.avm_trace(&out.to_utf8_lossy());
+        self.context.avm_trace(&out.to_utf8_lossy());
         Ok(FrameControl::Continue)
     }
 
@@ -2276,7 +2276,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // Undefined/null with is ignored.
             Value::Undefined | Value::Null => {
                 // Mimic Flash's error output.
-                self.context.log.avm_trace(
+                self.context.avm_trace(
                     "Error: A 'with' action failed because the specified object did not exist.\n",
                 );
                 Ok(FrameControl::Continue)
