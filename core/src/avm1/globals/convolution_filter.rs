@@ -58,7 +58,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_convolution_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
@@ -246,7 +246,7 @@ pub fn set_matrix_x<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))? as u8;
+        .map(|x| x.clamp(0, 15))? as u8;
 
     if let Some(filter) = this.as_convolution_filter_object() {
         filter.set_matrix_x(activation.context.gc_context, matrix_x);
@@ -276,7 +276,7 @@ pub fn set_matrix_y<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))? as u8;
+        .map(|x| x.clamp(0, 15))? as u8;
 
     if let Some(filter) = this.as_convolution_filter_object() {
         filter.set_matrix_y(activation.context.gc_context, matrix_y);

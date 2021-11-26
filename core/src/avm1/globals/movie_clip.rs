@@ -242,11 +242,11 @@ fn line_style<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(width) = args.get(0) {
-        let width = Twips::from_pixels(width.coerce_to_f64(activation)?.min(255.0).max(0.0));
+        let width = Twips::from_pixels(width.coerce_to_f64(activation)?.clamp(0.0, 255.0));
         let color = if let Some(rgb) = args.get(1) {
             let rgb = rgb.coerce_to_u32(activation)?;
             let alpha = if let Some(alpha) = args.get(2) {
-                alpha.coerce_to_f64(activation)?.min(100.0).max(0.0)
+                alpha.coerce_to_f64(activation)?.clamp(0.0, 100.0)
             } else {
                 100.0
             } as f32
@@ -285,7 +285,7 @@ fn line_style<'gc>(
         {
             Some("miter") => {
                 if let Some(limit) = args.get(7) {
-                    let limit = limit.coerce_to_f64(activation)?.max(0.0).min(255.0);
+                    let limit = limit.coerce_to_f64(activation)?.clamp(0.0, 255.0);
                     LineJoinStyle::Miter(Fixed8::from_f64(limit))
                 } else {
                     LineJoinStyle::Miter(Fixed8::from_f32(3.0))
@@ -326,7 +326,7 @@ fn begin_fill<'gc>(
     if let Some(rgb) = args.get(0) {
         let rgb = rgb.coerce_to_u32(activation)?;
         let alpha = if let Some(alpha) = args.get(1) {
-            alpha.coerce_to_f64(activation)?.min(100.0).max(0.0)
+            alpha.coerce_to_f64(activation)?.clamp(0.0, 100.0)
         } else {
             100.0
         } as f32

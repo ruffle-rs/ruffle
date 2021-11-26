@@ -54,7 +54,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
@@ -84,7 +84,7 @@ pub fn set_blur_x<'gc>(
         .get(0)
         .unwrap_or(&6.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_blur_x(activation.context.gc_context, blur_x);
@@ -114,7 +114,7 @@ pub fn set_blur_y<'gc>(
         .get(0)
         .unwrap_or(&6.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_blur_y(activation.context.gc_context, blur_y);
@@ -144,7 +144,7 @@ pub fn set_color<'gc>(
         .get(0)
         .unwrap_or(&0xFF0000.into())
         .coerce_to_i32(activation)
-        .map(|x| x.max(1).min(0xFFFFFF))?;
+        .map(|x| x.clamp(1, 0xFFFFFF))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_color(activation.context.gc_context, color);
@@ -232,7 +232,7 @@ pub fn set_quality<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))?;
+        .map(|x| x.clamp(0, 15))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_quality(activation.context.gc_context, quality);
@@ -262,7 +262,7 @@ pub fn set_strength<'gc>(
         .get(0)
         .unwrap_or(&2.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_glow_filter_object() {
         filter.set_strength(activation.context.gc_context, strength);

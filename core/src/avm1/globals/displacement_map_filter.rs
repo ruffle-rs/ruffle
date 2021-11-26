@@ -59,7 +59,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_displacement_map_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
