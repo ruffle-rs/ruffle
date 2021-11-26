@@ -46,10 +46,10 @@ fn trace<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     match args {
-        [] => activation.context.log.avm_trace(""),
+        [] => activation.context.avm_trace(""),
         [arg] => {
             let msg = arg.coerce_to_string(activation)?;
-            activation.context.log.avm_trace(&msg.to_utf8_lossy());
+            activation.context.avm_trace(&msg.to_utf8_lossy());
         }
         args => {
             let strings = args
@@ -57,7 +57,7 @@ fn trace<'gc>(
                 .map(|a| a.coerce_to_string(activation))
                 .collect::<Result<Vec<_>, _>>()?;
             let msg = crate::string::join(&strings, &WStr::from_units(b" "));
-            activation.context.log.avm_trace(&msg.to_utf8_lossy());
+            activation.context.avm_trace(&msg.to_utf8_lossy());
         }
     }
 
