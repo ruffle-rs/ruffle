@@ -95,9 +95,10 @@ impl<'gc, V> PropertyMap<'gc, V> {
         None
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&Namespace<'gc>, &AvmString<'gc>, &V)> {
+    pub fn namespaces_of(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
         self.0
-            .iter()
-            .flat_map(|(s, b)| b.iter().map(move |(n, v)| (n, s, v)))
+            .get(&local_name)
+            .map(|vals| vals.iter().map(|(ns, _v)| ns.clone()).collect())
+            .unwrap_or_default()
     }
 }

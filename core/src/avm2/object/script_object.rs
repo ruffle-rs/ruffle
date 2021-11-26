@@ -301,33 +301,42 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn resolve_any(&self, local_name: AvmString<'gc>) -> Result<Option<Namespace<'gc>>, Error> {
-        for (ns, local, _value) in self.values.iter() {
-            if *local == local_name {
-                return Ok(Some(ns.clone()));
-            }
-        }
+    pub fn resolve_ns(&self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+        let mut ns_set = self.values.namespaces_of(local_name);
 
-        match &self.instance_of {
-            Some(class) => {
-                let mut cur_class = Some(*class);
+        if let Some(class) = &self.instance_of {
+            let mut cur_class = Some(*class);
 
-                while let Some(class) = cur_class {
-                    let cur_static_class = class.inner_class_definition();
-                    if let Some(ns) = cur_static_class
-                        .read()
-                        .resolve_any_instance_trait(local_name)
-                    {
-                        return Ok(Some(ns));
+            while let Some(class) = cur_class {
+                let cur_static_class = class.inner_class_definition();
+                let trait_ns_set = cur_static_class
+                    .read()
+                    .resolve_instance_trait_ns(local_name);
+
+                for trait_ns in trait_ns_set {
+                    if !ns_set.contains(&trait_ns) {
+                        ns_set.push(trait_ns);
                     }
-
-                    cur_class = class.superclass_object();
                 }
 
-                Ok(None)
+                for interface in class.interfaces() {
+                    let iface_static_class = interface.inner_class_definition();
+                    let iface_ns_set = iface_static_class
+                        .read()
+                        .resolve_instance_trait_ns(local_name);
+
+                    for iface_ns in iface_ns_set {
+                        if !ns_set.contains(&iface_ns) {
+                            ns_set.push(iface_ns);
+                        }
+                    }
+                }
+
+                cur_class = class.superclass_object();
             }
-            None => Ok(None),
         }
+
+        Ok(ns_set)
     }
 
     pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {

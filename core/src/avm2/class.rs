@@ -750,19 +750,18 @@ impl<'gc> Class<'gc> {
         &self.class_traits[..]
     }
 
-    /// Look for a class trait with a given local name, and return its
-    /// namespace.
-    ///
-    /// TODO: Matching multiple namespaces with the same local name is at least
-    /// claimed by the AVM2 specification to be a `VerifyError`.
-    pub fn resolve_any_class_trait(&self, local_name: AvmString<'gc>) -> Option<Namespace<'gc>> {
+    /// Look for all class traits with a given local name, and return their
+    /// namespaces.
+    pub fn resolve_class_trait_ns(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+        let mut ns_set = vec![];
+
         for trait_entry in self.class_traits.iter() {
             if local_name == trait_entry.name().local_name() {
-                return Some(trait_entry.name().namespace().clone());
+                ns_set.push(trait_entry.name().namespace().clone());
             }
         }
 
-        None
+        ns_set
     }
 
     /// Define a trait on instances of the class.
@@ -816,19 +815,18 @@ impl<'gc> Class<'gc> {
         &self.instance_traits[..]
     }
 
-    /// Look for an instance trait with a given local name, and return its
-    /// namespace.
-    ///
-    /// TODO: Matching multiple namespaces with the same local name is at least
-    /// claimed by the AVM2 specification to be a `VerifyError`.
-    pub fn resolve_any_instance_trait(&self, local_name: AvmString<'gc>) -> Option<Namespace<'gc>> {
+    /// Look for all instance traits with a given local name, and return their
+    /// namespaces.
+    pub fn resolve_instance_trait_ns(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+        let mut ns_set = vec![];
+
         for trait_entry in self.instance_traits.iter() {
             if local_name == trait_entry.name().local_name() {
-                return Some(trait_entry.name().namespace().clone());
+                ns_set.push(trait_entry.name().namespace().clone());
             }
         }
 
-        None
+        ns_set
     }
 
     /// Get this class's instance allocator.
