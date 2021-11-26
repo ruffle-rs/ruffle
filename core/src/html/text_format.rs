@@ -568,7 +568,7 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
-    pub fn from_html(html: &WStr, default_format: TextFormat) -> Self {
+    pub fn from_html(html: &WStr, default_format: TextFormat, is_multiline: bool) -> Self {
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
@@ -598,7 +598,15 @@ impl FormatSpans {
         loop {
             match reader.read_event(&mut buf) {
                 Ok(Event::Empty(ref e)) => match &e.name().to_ascii_lowercase()[..] {
-                    b"br" | b"sbr" => {
+                    b"br" if is_multiline => {
+                        text.push_byte(b'\n');
+                        if let Some(span) = spans.last_mut() {
+                            span.span_length += 1;
+                        }
+                    }
+                    b"sbr" => {
+                        // TODO: <sbr> tags do not add a newline, but rather only break
+                        // the format span.
                         text.push_byte(b'\n');
                         if let Some(span) = spans.last_mut() {
                             span.span_length += 1;
@@ -618,7 +626,20 @@ impl FormatSpans {
                     };
                     let mut format = format_stack.last().unwrap().clone();
                     match &e.name().to_ascii_lowercase()[..] {
-                        b"br" | b"sbr" => {
+                        b"br" => {
+                            if is_multiline {
+                                text.push_byte(b'\n');
+                                if let Some(span) = spans.last_mut() {
+                                    span.span_length += 1;
+                                }
+                            }
+
+                            // Skip push to `format_stack`.
+                            continue;
+                        }
+                        b"sbr" => {
+                            // TODO: <sbr> tags do not add a newline, but rather only break
+                            // the format span.
                             text.push_byte(b'\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;
@@ -627,7 +648,7 @@ impl FormatSpans {
                             // Skip push to `format_stack`.
                             continue;
                         }
-                        b"p" => {
+                        b"p" if is_multiline => {
                             if let Some(align) = attribute(b"align") {
                                 if align == WStr::from_units(b"left") {
                                     format.align = Some(swf::TextAlign::Left)
@@ -695,7 +716,7 @@ impl FormatSpans {
                         b"u" => {
                             format.underline = Some(true);
                         }
-                        b"li" => {
+                        b"li" if is_multiline => {
                             format.bullet = Some(true);
                         }
                         b"textformat" => {
@@ -747,7 +768,7 @@ impl FormatSpans {
                             // Skip pop from `format_stack`.
                             continue;
                         }
-                        b"p" | b"li" => {
+                        b"p" | b"li" if is_multiline => {
                             text.push_byte(b'\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;

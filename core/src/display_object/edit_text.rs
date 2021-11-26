@@ -223,15 +223,10 @@ impl<'gc> EditText<'gc> {
 
         let text = WString::from_utf8(&text.to_str_lossy(encoding));
         let mut text_spans = if is_html {
-            FormatSpans::from_html(&text, default_format)
+            FormatSpans::from_html(&text, default_format, is_multiline)
         } else {
             FormatSpans::from_text(text, default_format)
         };
-
-        if !is_multiline {
-            let filtered = text_spans.text().replace(b'\n', WStr::empty());
-            text_spans.replace_text(0, text_spans.text().len(), &filtered, None);
-        }
 
         if is_password {
             text_spans.hide_text();
@@ -446,7 +441,7 @@ impl<'gc> EditText<'gc> {
         if self.is_html() {
             let mut write = self.0.write(context.gc_context);
             let default_format = write.text_spans.default_format().clone();
-            write.text_spans = FormatSpans::from_html(text, default_format);
+            write.text_spans = FormatSpans::from_html(text, default_format, write.is_multiline);
             drop(write);
 
             self.relayout(context);
