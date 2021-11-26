@@ -143,7 +143,7 @@ fn to_string<'gc>(
         while n > 0 {
             let digit = n % radix;
             n /= radix;
-            digits[i] = std::char::from_digit(digit, radix).unwrap();
+            digits[i] = char::from_digit(digit, radix).unwrap();
             i += 1;
         }
         if is_negative {

@@ -48,7 +48,7 @@ fn process_html_entity(src: &str) -> Cow<str> {
                                 (&s[start..], 10)
                             };
                             if let Ok(n) = u32::from_str_radix(digits, radix) {
-                                if let Some(c) = std::char::from_u32(n) {
+                                if let Some(c) = char::from_u32(n) {
                                     result_str.push(c);
                                 }
                             } else {

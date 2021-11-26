@@ -654,7 +654,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = if char_code != 0 {
             // Unpaired surrogates turn into replacement char.
             char::try_from(char_code)
-                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
+                .unwrap_or(char::REPLACEMENT_CHARACTER)
                 .to_string()
         } else {
             String::default()
@@ -1578,7 +1578,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = if char_code != 0 {
             // Unpaired surrogates turn into replacement char.
             char::try_from(char_code)
-                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
+                .unwrap_or(char::REPLACEMENT_CHARACTER)
                 .to_string()
         } else {
             String::default()
