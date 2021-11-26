@@ -28,7 +28,6 @@ pub fn next_char_boundary(slice: &str, pos: usize) -> usize {
 /// Creates a `String` from an iterator of UTF-16 code units.
 /// TODO: Unpaired surrogates will get replaced with the Unicode replacement character.
 pub fn utf16_iter_to_string<I: Iterator<Item = u16>>(it: I) -> String {
-    use std::char;
     char::decode_utf16(it)
         .map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER))
         .collect()
@@ -37,7 +36,6 @@ pub fn utf16_iter_to_string<I: Iterator<Item = u16>>(it: I) -> String {
 /// Maps a UTF-16 code unit into a `char`.
 /// TODO: Surrogate characters will get replaced with the Unicode replacement character.
 pub fn utf16_code_unit_to_char(c: u16) -> char {
-    use std::char;
     char::decode_utf16(std::iter::once(c))
         .next()
         .unwrap()
@@ -54,7 +52,7 @@ pub fn swf_char_to_lowercase(c: char) -> char {
     if code_pt <= u16::MAX.into() {
         let code_pt = code_pt as u16;
         match LOWERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&code_pt)) {
-            Ok(i) => unsafe { std::char::from_u32_unchecked(LOWERCASE_TABLE[i].1.into()) },
+            Ok(i) => unsafe { char::from_u32_unchecked(LOWERCASE_TABLE[i].1.into()) },
             Err(_) => c,
         }
     } else {
@@ -72,7 +70,7 @@ pub fn swf_char_to_uppercase(c: char) -> char {
     if code_pt <= u16::MAX.into() {
         let code_pt = code_pt as u16;
         match UPPERCASE_TABLE.binary_search_by(|&(key, _)| key.cmp(&code_pt)) {
-            Ok(i) => unsafe { std::char::from_u32_unchecked(UPPERCASE_TABLE[i].1.into()) },
+            Ok(i) => unsafe { char::from_u32_unchecked(UPPERCASE_TABLE[i].1.into()) },
             Err(_) => c,
         }
     } else {
