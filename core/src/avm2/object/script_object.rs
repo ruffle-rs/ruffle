@@ -271,30 +271,7 @@ impl<'gc> ScriptObjectData<'gc> {
         match self.instance_of {
             //Class instances have instance traits from any class in the base
             //class chain.
-            Some(class) => {
-                let mut cur_class = Some(class);
-
-                while let Some(class) = cur_class {
-                    let cur_static_class = class.inner_class_definition();
-                    if cur_static_class.read().has_instance_trait(name) {
-                        return Ok(true);
-                    }
-
-                    for interfaces in class.interfaces() {
-                        if interfaces
-                            .inner_class_definition()
-                            .read()
-                            .has_instance_trait(name)
-                        {
-                            return Ok(true);
-                        }
-                    }
-
-                    cur_class = class.superclass_object();
-                }
-
-                Ok(false)
-            }
+            Some(class) => Ok(class.has_instance_trait(name)),
 
             // Bare objects, ES3 objects, and prototypes do not have traits.
             None => Ok(false),
@@ -305,34 +282,12 @@ impl<'gc> ScriptObjectData<'gc> {
         let mut ns_set = self.values.namespaces_of(local_name);
 
         if let Some(class) = &self.instance_of {
-            let mut cur_class = Some(*class);
+            let trait_ns_set = class.resolve_instance_trait_ns(local_name);
 
-            while let Some(class) = cur_class {
-                let cur_static_class = class.inner_class_definition();
-                let trait_ns_set = cur_static_class
-                    .read()
-                    .resolve_instance_trait_ns(local_name);
-
-                for trait_ns in trait_ns_set {
-                    if !ns_set.contains(&trait_ns) {
-                        ns_set.push(trait_ns);
-                    }
+            for trait_ns in trait_ns_set {
+                if !ns_set.contains(&trait_ns) {
+                    ns_set.push(trait_ns);
                 }
-
-                for interface in class.interfaces() {
-                    let iface_static_class = interface.inner_class_definition();
-                    let iface_ns_set = iface_static_class
-                        .read()
-                        .resolve_instance_trait_ns(local_name);
-
-                    for iface_ns in iface_ns_set {
-                        if !ns_set.contains(&iface_ns) {
-                            ns_set.push(iface_ns);
-                        }
-                    }
-                }
-
-                cur_class = class.superclass_object();
             }
         }
 

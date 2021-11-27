@@ -773,15 +773,6 @@ impl<'gc> Class<'gc> {
         self.instance_traits.push(my_trait);
     }
 
-    /// Given a name, return the instance class trait matching the name and filter.
-    pub fn lookup_instance_traits(
-        &self,
-        name: &QName<'gc>,
-        filter: fn(&Trait<'gc>) -> bool,
-    ) -> Option<Trait<'gc>> {
-        do_trait_lookup(name, &self.instance_traits, filter)
-    }
-
     /// Given a slot ID, return the first instance trait matching the slot.
     pub fn lookup_instance_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
         do_trait_lookup_by_slot(id, &self.instance_traits)
@@ -813,20 +804,6 @@ impl<'gc> Class<'gc> {
     /// Return instance traits provided by this class.
     pub fn instance_traits(&self) -> &[Trait<'gc>] {
         &self.instance_traits[..]
-    }
-
-    /// Look for all instance traits with a given local name, and return their
-    /// namespaces.
-    pub fn resolve_instance_trait_ns(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
-        let mut ns_set = vec![];
-
-        for trait_entry in self.instance_traits.iter() {
-            if local_name == trait_entry.name().local_name() {
-                ns_set.push(trait_entry.name().namespace().clone());
-            }
-        }
-
-        ns_set
     }
 
     /// Get this class's instance allocator.
