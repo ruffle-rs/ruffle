@@ -573,16 +573,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             vec![]
         };
 
-        let multiname_set: Vec<_> = multiname.namespace_set().cloned().collect();
         if let Some(name) = multiname.local_name() {
             for ns in matching_set.iter() {
-                if multiname_set.contains(ns) {
+                if multiname.namespace_set().any(|n| n == ns) {
                     return Ok(Some(QName::new(ns.clone(), name)));
                 }
             }
         }
 
-        if multiname_set.contains(&Namespace::Any) {
+        if multiname.namespace_set().any(|n| *n == Namespace::Any) {
             return Ok(matching_set
                 .first()
                 .map(|ns| QName::new(ns.clone(), multiname.local_name().unwrap())));
