@@ -8,7 +8,6 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -150,23 +149,6 @@ pub struct Class<'gc> {
     /// System defined classes are allowed to have illegal trait configurations
     /// without throwing a VerifyError.
     is_system: bool,
-}
-
-/// Find first trait in a list of traits matching a name and filter.
-/// The filter should match on TraitKind - in that case, only
-/// a single trait should match the filter.
-fn do_trait_lookup<'gc>(
-    name: &QName<'gc>,
-    all_traits: &[Trait<'gc>],
-    filter: fn(&Trait<'gc>) -> bool,
-) -> Option<Trait<'gc>> {
-    for trait_entry in all_traits {
-        if name == trait_entry.name() && filter(trait_entry) {
-            return Some(trait_entry.clone());
-        }
-    }
-
-    None
 }
 
 /// Find traits in a list of traits matching a slot ID.
@@ -720,48 +702,14 @@ impl<'gc> Class<'gc> {
         self.class_traits.push(my_trait);
     }
 
-    /// Given a name, return the first class trait matching the name and filter.
-    pub fn lookup_class_traits(
-        &self,
-        name: &QName<'gc>,
-        filter: fn(&Trait<'gc>) -> bool,
-    ) -> Option<Trait<'gc>> {
-        do_trait_lookup(name, &self.class_traits, filter)
-    }
-
     /// Given a slot ID, return the first class trait matching the slot.
     pub fn lookup_class_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
         do_trait_lookup_by_slot(id, &self.class_traits)
     }
 
-    /// Determines if this class provides a given trait on itself.
-    pub fn has_class_trait(&self, name: &QName<'gc>) -> bool {
-        for trait_entry in self.class_traits.iter() {
-            if name == trait_entry.name() {
-                return true;
-            }
-        }
-
-        false
-    }
-
     /// Return class traits provided by this class.
     pub fn class_traits(&self) -> &[Trait<'gc>] {
         &self.class_traits[..]
-    }
-
-    /// Look for all class traits with a given local name, and return their
-    /// namespaces.
-    pub fn resolve_class_trait_ns(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
-        let mut ns_set = vec![];
-
-        for trait_entry in self.class_traits.iter() {
-            if local_name == trait_entry.name().local_name() {
-                ns_set.push(trait_entry.name().namespace().clone());
-            }
-        }
-
-        ns_set
     }
 
     /// Define a trait on instances of the class.
