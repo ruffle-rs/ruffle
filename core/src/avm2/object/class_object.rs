@@ -80,6 +80,9 @@ pub struct ClassObjectData<'gc> {
     /// This is a comprehensive list of all traits, including all superclass
     /// and interface traits, as well as the superclass that defined the trait.
     resolved_instance_traits: PropertyMap<'gc, Vec<(ClassObject<'gc>, Trait<'gc>)>>,
+
+    /// All traits present on the class itself.
+    resolved_class_traits: PropertyMap<'gc, Vec<Trait<'gc>>>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -199,6 +202,7 @@ impl<'gc> ClassObject<'gc> {
                 applications: HashMap::new(),
                 interfaces: Vec::new(),
                 resolved_instance_traits: PropertyMap::new(),
+                resolved_class_traits: PropertyMap::new(),
             },
         ));
 
@@ -244,6 +248,7 @@ impl<'gc> ClassObject<'gc> {
         self.inner_class_definition()
             .read()
             .validate_class(self.superclass_object())?;
+        self.resolve_class_traits(activation)?;
         self.resolve_instance_traits(activation)?;
         self.link_interfaces(activation)?;
         self.install_traits(
@@ -276,6 +281,59 @@ impl<'gc> ClassObject<'gc> {
             0,
             self.into(),
         );
+
+        Ok(())
+    }
+
+    /// Copy the list of class traits that this class has.
+    ///
+    /// This should be run during the class finalization step, before instances
+    /// are linked (as instances will further add traits to the list).
+    pub fn resolve_class_traits(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let mut write = self.0.write(activation.context.gc_context);
+
+        let static_class = write.class;
+        let class_read = static_class.read();
+        for trait_data in class_read.class_traits() {
+            if let Some(trait_slot) = write.resolved_class_traits.get_mut(trait_data.name()) {
+                if matches!(trait_data.kind(), TraitKind::Getter { .. }) {
+                    let mut replaced = false;
+                    for overriding_trait in trait_slot.iter_mut() {
+                        if matches!(overriding_trait.kind(), TraitKind::Getter { .. }) {
+                            *overriding_trait = trait_data.clone();
+                            replaced = true;
+                        }
+                    }
+
+                    if !replaced {
+                        trait_slot.push(trait_data.clone());
+                    }
+                } else if matches!(trait_data.kind(), TraitKind::Setter { .. }) {
+                    let mut replaced = false;
+                    for overriding_trait in trait_slot.iter_mut() {
+                        if matches!(overriding_trait.kind(), TraitKind::Setter { .. }) {
+                            *overriding_trait = trait_data.clone();
+                            replaced = true;
+                        }
+                    }
+
+                    if !replaced {
+                        trait_slot.push(trait_data.clone());
+                    }
+                } else if let Some(overriding_trait) = trait_slot.first_mut() {
+                    *overriding_trait = trait_data.clone();
+                } else {
+                    trait_slot.push(trait_data.clone());
+                }
+            } else {
+                write
+                    .resolved_class_traits
+                    .insert(trait_data.name().clone(), vec![trait_data.clone()]);
+            }
+        }
 
         Ok(())
     }
@@ -485,11 +543,7 @@ impl<'gc> ClassObject<'gc> {
             .cloned()
     }
 
-    /// Look up an instance trait by name and yield the trait and it's defining
-    /// class.
-    ///
-    /// The trait must match the provided `filter`. If `None`, then no such
-    /// trait exists with the requested parameters.
+    /// Determine if we have an instance trait with a given name.
     pub fn has_instance_trait(self, name: &QName<'gc>) -> bool {
         self.0.read().resolved_instance_traits.get(name).is_some()
     }
@@ -891,6 +945,37 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
+    /// Look up a class trait by name and yield the trait.
+    ///
+    /// The trait must match the provided `filter`. If `None`, then no such
+    /// trait exists with the requested parameters.
+    pub fn lookup_class_traits(
+        self,
+        name: &QName<'gc>,
+        filter: fn(&Trait<'gc>) -> bool,
+    ) -> Option<Trait<'gc>> {
+        self.0
+            .read()
+            .resolved_class_traits
+            .get(name)
+            .and_then(|v| v.iter().find(|v| filter(v)))
+            .cloned()
+    }
+
+    /// Determine if we have a class trait with a given name.
+    pub fn has_class_trait(self, name: &QName<'gc>) -> bool {
+        self.0.read().resolved_class_traits.get(name).is_some()
+    }
+
+    /// List all namespaces that contain one or more class traits of a given
+    /// local name.
+    pub fn resolve_class_trait_ns(self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+        self.0
+            .read()
+            .resolved_class_traits
+            .namespaces_of(local_name)
+    }
+
     /// Retrieve a class method by name.
     ///
     /// This does not return a defining class as class methods are not
@@ -898,12 +983,7 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// If a trait is returned, it is guaranteed to have a method.
     pub fn class_method(self, name: &QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
-        let classdef = self.inner_class_definition();
-        let trait_ = classdef
-            .read()
-            .lookup_class_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. }));
-
-        Ok(trait_)
+        Ok(self.lookup_class_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. })))
     }
 
     /// Retrieve a bound class method suitable for use as a value.
@@ -1086,27 +1166,24 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
         let read = self.0.read();
-        let class = read.class.read();
 
-        Ok(class.has_class_trait(name) || read.base.has_trait(name)?)
+        Ok(self.has_class_trait(name) || read.base.has_trait(name)?)
     }
 
     fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
         let read = self.0.read();
-        let class = read.class.read();
 
         Ok(read.base.has_own_instantiated_property(name)
-            || class.has_class_trait(name)
+            || self.has_class_trait(name)
             || read.base.has_trait(name)?)
     }
 
     fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
         let read = self.0.read();
-        let class = read.class;
 
         let mut ns_set = read.base.resolve_ns(local_name)?;
 
-        for trait_ns in class.read().resolve_class_trait_ns(local_name) {
+        for trait_ns in self.resolve_class_trait_ns(local_name) {
             if !ns_set.contains(&trait_ns) {
                 ns_set.push(trait_ns);
             }
@@ -1220,6 +1297,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 applications: HashMap::new(),
                 interfaces: Vec::new(),
                 resolved_instance_traits: PropertyMap::new(),
+                resolved_class_traits: PropertyMap::new(),
             },
         ));
 
@@ -1227,6 +1305,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .inner_class_definition()
             .read()
             .validate_class(class_object.superclass_object())?;
+        class_object.resolve_class_traits(activation)?;
         class_object.resolve_instance_traits(activation)?;
         class_object.link_prototype(activation, class_proto)?;
         class_object.link_interfaces(activation)?;
