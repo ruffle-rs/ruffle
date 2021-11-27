@@ -5,9 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
-use std::collections::HashMap;
 
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
@@ -21,7 +21,7 @@ pub fn dictionary_allocator<'gc>(
         activation.context.gc_context,
         DictionaryObjectData {
             base,
-            object_space: HashMap::new(),
+            object_space: Default::default(),
         },
     ))
     .into())
@@ -43,7 +43,7 @@ pub struct DictionaryObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Object key storage
-    object_space: HashMap<Object<'gc>, Value<'gc>>,
+    object_space: FnvHashMap<Object<'gc>, Value<'gc>>,
 }
 
 impl<'gc> DictionaryObject<'gc> {
@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
             activation.context.gc_context,
             DictionaryObjectData {
                 base,
-                object_space: HashMap::new(),
+                object_space: Default::default(),
             },
         ))
         .into())

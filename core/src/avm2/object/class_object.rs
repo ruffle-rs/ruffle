@@ -14,9 +14,9 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
-use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
 /// An Object which can be called to execute its function code.
@@ -70,7 +70,7 @@ pub struct ClassObjectData<'gc> {
     /// as `None` here. AVM2 considers both applications to be separate
     /// classes, though we consider the parameter to be the class `Object` when
     /// we get a param of `null`.
-    applications: HashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
+    applications: FnvHashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
 
     /// Interfaces implemented by this class.
     interfaces: Vec<ClassObject<'gc>>,
@@ -199,7 +199,7 @@ impl<'gc> ClassObject<'gc> {
                 constructor: class.read().instance_init(),
                 native_constructor: class.read().native_instance_init(),
                 params: None,
-                applications: HashMap::new(),
+                applications: Default::default(),
                 interfaces: Vec::new(),
                 resolved_instance_traits: PropertyMap::new(),
                 resolved_class_traits: PropertyMap::new(),
@@ -1294,7 +1294,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 constructor,
                 native_constructor,
                 params: Some(object_param),
-                applications: HashMap::new(),
+                applications: Default::default(),
                 interfaces: Vec::new(),
                 resolved_instance_traits: PropertyMap::new(),
                 resolved_class_traits: PropertyMap::new(),
