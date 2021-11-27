@@ -2,6 +2,7 @@
 
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::AvmString;
+use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use std::collections::HashMap;
 use std::mem::swap;
@@ -22,7 +23,7 @@ use std::mem::swap;
 /// that each `QName` only have one associated `V`.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
-pub struct PropertyMap<'gc, V>(HashMap<AvmString<'gc>, Vec<(Namespace<'gc>, V)>>);
+pub struct PropertyMap<'gc, V>(HashMap<AvmString<'gc>, Vec<(Namespace<'gc>, V)>, FnvBuildHasher>);
 
 impl<'gc, V> Default for PropertyMap<'gc, V> {
     fn default() -> Self {
@@ -32,7 +33,7 @@ impl<'gc, V> Default for PropertyMap<'gc, V> {
 
 impl<'gc, V> PropertyMap<'gc, V> {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(Default::default())
     }
 
     pub fn get(&self, name: QName<'gc>) -> Option<&V> {
