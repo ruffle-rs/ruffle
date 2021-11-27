@@ -137,7 +137,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn get_property_local(
         &self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
         let prop = self.values.get(name);
@@ -152,7 +152,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn set_property_local(
         &mut self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
@@ -174,9 +174,9 @@ impl<'gc> ScriptObjectData<'gc> {
             prop.set(receiver, value)
         } else {
             //TODO: Not all classes are dynamic like this
-            self.enumerants.push(name.clone());
+            self.enumerants.push(name);
             self.values
-                .insert(name.clone(), Property::new_dynamic_property(value));
+                .insert(name, Property::new_dynamic_property(value));
 
             Ok(Value::Undefined.into())
         }
@@ -185,7 +185,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn init_property_local(
         &mut self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<ReturnValue<'gc>, Error> {
@@ -199,20 +199,20 @@ impl<'gc> ScriptObjectData<'gc> {
         } else {
             //TODO: Not all classes are dynamic like this
             self.values
-                .insert(name.clone(), Property::new_dynamic_property(value));
+                .insert(name, Property::new_dynamic_property(value));
 
             Ok(Value::Undefined.into())
         }
     }
 
-    pub fn is_property_overwritable(&self, name: &QName<'gc>) -> bool {
+    pub fn is_property_overwritable(&self, name: QName<'gc>) -> bool {
         self.values
             .get(name)
             .map(|p| p.is_overwritable())
             .unwrap_or(true)
     }
 
-    pub fn delete_property(&mut self, name: &QName<'gc>) -> bool {
+    pub fn delete_property(&mut self, name: QName<'gc>) -> bool {
         let can_delete = if let Some(prop) = self.values.get(name) {
             prop.can_delete()
         } else {
@@ -267,7 +267,7 @@ impl<'gc> ScriptObjectData<'gc> {
         self.methods.get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_trait(&self, name: &QName<'gc>) -> Result<bool, Error> {
+    pub fn has_trait(&self, name: QName<'gc>) -> Result<bool, Error> {
         match self.instance_of {
             //Class instances have instance traits from any class in the base
             //class chain.
@@ -294,15 +294,15 @@ impl<'gc> ScriptObjectData<'gc> {
         Ok(ns_set)
     }
 
-    pub fn has_own_property(&self, name: &QName<'gc>) -> Result<bool, Error> {
+    pub fn has_own_property(&self, name: QName<'gc>) -> Result<bool, Error> {
         Ok(self.has_own_instantiated_property(name) || self.has_trait(name)?)
     }
 
-    pub fn has_own_instantiated_property(&self, name: &QName<'gc>) -> bool {
+    pub fn has_own_instantiated_property(&self, name: QName<'gc>) -> bool {
         self.values.get(name).is_some()
     }
 
-    pub fn has_own_virtual_set_only_property(&self, name: &QName<'gc>) -> bool {
+    pub fn has_own_virtual_set_only_property(&self, name: QName<'gc>) -> bool {
         matches!(
             self.values.get(name),
             Some(Property::Virtual {
@@ -344,13 +344,13 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|q| q.local_name().into())
     }
 
-    pub fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
-        self.enumerants.contains(name)
+    pub fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
+        self.enumerants.contains(&name)
     }
 
     pub fn set_local_property_is_enumerable(
         &mut self,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         // Traits are never enumerable
@@ -358,12 +358,12 @@ impl<'gc> ScriptObjectData<'gc> {
             return Ok(());
         }
 
-        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(name) {
-            self.enumerants.push(name.clone());
-        } else if !is_enumerable && self.enumerants.contains(name) {
+        if is_enumerable && self.values.contains_key(name) && !self.enumerants.contains(&name) {
+            self.enumerants.push(name);
+        } else if !is_enumerable && self.enumerants.contains(&name) {
             let mut index = None;
             for (i, other_name) in self.enumerants.iter().enumerate() {
-                if other_name == name {
+                if *other_name == name {
                     index = Some(i);
                 }
             }
@@ -422,12 +422,12 @@ impl<'gc> ScriptObjectData<'gc> {
             *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
         }
 
-        if !self.values.contains_key(&name) {
-            self.values.insert(name.clone(), Property::new_virtual());
+        if !self.values.contains_key(name) {
+            self.values.insert(name, Property::new_virtual());
         }
 
         self.values
-            .get_mut(&name)
+            .get_mut(name)
             .unwrap()
             .install_virtual_getter(function)
     }
@@ -456,12 +456,12 @@ impl<'gc> ScriptObjectData<'gc> {
             *self.methods.get_mut(disp_id as usize).unwrap() = Some(function);
         }
 
-        if !self.values.contains_key(&name) {
-            self.values.insert(name.clone(), Property::new_virtual());
+        if !self.values.contains_key(name) {
+            self.values.insert(name, Property::new_virtual());
         }
 
         self.values
-            .get_mut(&name)
+            .get_mut(name)
             .unwrap()
             .install_virtual_setter(function)
     }

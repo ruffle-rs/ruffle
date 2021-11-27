@@ -76,10 +76,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         if let Some(local_name) = multiname.local_name() {
             for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname = QNameObject::from_qname(
-                        activation,
-                        QName::new(namespace.clone(), local_name),
-                    )?;
+                    let qname =
+                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return receiver.call_property(
                         &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty")
@@ -116,10 +114,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         if let Some(local_name) = multiname.local_name() {
             for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname = QNameObject::from_qname(
-                        activation,
-                        QName::new(namespace.clone(), local_name),
-                    )?;
+                    let qname =
+                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     receiver.call_property(
                         &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty")
@@ -160,10 +156,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         if let Some(local_name) = multiname.local_name() {
             for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname = QNameObject::from_qname(
-                        activation,
-                        QName::new(namespace.clone(), local_name),
-                    )?;
+                    let qname =
+                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     let mut args = vec![qname.into()];
                     args.extend_from_slice(arguments);
@@ -197,10 +191,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         if let Some(local_name) = multiname.local_name() {
             for namespace in multiname.namespace_set() {
                 if namespace.is_any() || namespace.is_public() || namespace.is_namespace() {
-                    let qname = QNameObject::from_qname(
-                        activation,
-                        QName::new(namespace.clone(), local_name),
-                    )?;
+                    let qname =
+                        QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return Ok(self
                         .call_property(
@@ -227,7 +219,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     fn has_property_via_in(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         Ok(self
             .call_property(

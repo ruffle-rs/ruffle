@@ -69,11 +69,11 @@ pub fn class_init<'gc>(
         int_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
-            .set_name(int_vector_name.clone());
+            .set_name(int_vector_name);
 
         globals.install_const(
             activation.context.gc_context,
-            int_vector_name.clone(),
+            int_vector_name,
             0,
             int_vector_class.into(),
         );
@@ -85,11 +85,11 @@ pub fn class_init<'gc>(
         uint_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
-            .set_name(uint_vector_name.clone());
+            .set_name(uint_vector_name);
 
         globals.install_const(
             activation.context.gc_context,
-            uint_vector_name.clone(),
+            uint_vector_name,
             0,
             uint_vector_class.into(),
         );
@@ -101,11 +101,11 @@ pub fn class_init<'gc>(
         number_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
-            .set_name(number_vector_name.clone());
+            .set_name(number_vector_name);
 
         globals.install_const(
             activation.context.gc_context,
-            number_vector_name.clone(),
+            number_vector_name,
             0,
             number_vector_class.into(),
         );
@@ -116,11 +116,11 @@ pub fn class_init<'gc>(
         object_vector_class
             .inner_class_definition()
             .write(activation.context.gc_context)
-            .set_name(object_vector_name.clone());
+            .set_name(object_vector_name);
 
         globals.install_const(
             activation.context.gc_context,
-            object_vector_name.clone(),
+            object_vector_name,
             0,
             object_vector_class.into(),
         );

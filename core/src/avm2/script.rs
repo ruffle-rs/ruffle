@@ -346,7 +346,7 @@ impl<'gc> Script<'gc> {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
             if !newtrait.name().namespace().is_private() {
                 write.domain.export_definition(
-                    newtrait.name().clone(),
+                    newtrait.name(),
                     *self,
                     activation.context.gc_context,
                 )?;

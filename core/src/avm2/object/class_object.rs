@@ -331,7 +331,7 @@ impl<'gc> ClassObject<'gc> {
             } else {
                 write
                     .resolved_class_traits
-                    .insert(trait_data.name().clone(), vec![trait_data.clone()]);
+                    .insert(trait_data.name(), vec![trait_data.clone()]);
             }
         }
 
@@ -391,7 +391,7 @@ impl<'gc> ClassObject<'gc> {
             } else {
                 write
                     .resolved_instance_traits
-                    .insert(trait_data.name().clone(), vec![new_trait_slot]);
+                    .insert(trait_data.name(), vec![new_trait_slot]);
             }
         }
 
@@ -457,14 +457,14 @@ impl<'gc> ClassObject<'gc> {
                             .0
                             .read()
                             .resolved_instance_traits
-                            .get(&public_name)
+                            .get(public_name)
                             .cloned();
 
                         if let Some(trait_slot) = trait_slot {
                             self.0
                                 .write(activation.context.gc_context)
                                 .resolved_instance_traits
-                                .insert(interface_trait.name().clone(), trait_slot);
+                                .insert(interface_trait.name(), trait_slot);
                         }
                     }
                 }
@@ -532,7 +532,7 @@ impl<'gc> ClassObject<'gc> {
     /// trait exists with the requested parameters.
     pub fn lookup_instance_traits(
         self,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         filter: fn(&Trait<'gc>) -> bool,
     ) -> Option<(ClassObject<'gc>, Trait<'gc>)> {
         self.0
@@ -544,7 +544,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     /// Determine if we have an instance trait with a given name.
-    pub fn has_instance_trait(self, name: &QName<'gc>) -> bool {
+    pub fn has_instance_trait(self, name: QName<'gc>) -> bool {
         self.0.read().resolved_instance_traits.get(name).is_some()
     }
 
@@ -708,7 +708,7 @@ impl<'gc> ClassObject<'gc> {
         let name = name.unwrap();
 
         let lookup_result =
-            self.lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Method { .. }));
+            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. }));
 
         if let Some((superclass_object, method_trait)) = lookup_result {
             let scope = superclass_object.class_scope();
@@ -769,7 +769,7 @@ impl<'gc> ClassObject<'gc> {
         let name = name.unwrap();
 
         let lookup_result =
-            self.lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Getter { .. }));
+            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Getter { .. }));
 
         if let Some((superclass_object, method_trait)) = lookup_result {
             let scope = superclass_object.class_scope();
@@ -832,7 +832,7 @@ impl<'gc> ClassObject<'gc> {
         let name = name.unwrap();
 
         let lookup_result =
-            self.lookup_instance_traits(&name, |t| matches!(t.kind(), TraitKind::Setter { .. }));
+            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Setter { .. }));
 
         if let Some((superclass_object, method_trait)) = lookup_result {
             let scope = superclass_object.class_scope();
@@ -858,7 +858,7 @@ impl<'gc> ClassObject<'gc> {
     /// If a trait is returned, it is guaranteed to have a method.
     pub fn instance_method(
         self,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<Option<(ClassObject<'gc>, Trait<'gc>)>, Error> {
         Ok(self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. })))
     }
@@ -877,7 +877,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some((superclass, method_trait)) = self.instance_method(name)? {
             let method = method_trait.as_method().unwrap();
@@ -923,7 +923,7 @@ impl<'gc> ClassObject<'gc> {
                 TraitKind::Method { .. } => Some(t),
                 _ => None,
             }) {
-                let name = method_trait.name().clone();
+                let name = method_trait.name();
                 let method = method_trait.as_method().unwrap();
                 let scope = self.instance_scope();
 
@@ -951,7 +951,7 @@ impl<'gc> ClassObject<'gc> {
     /// trait exists with the requested parameters.
     pub fn lookup_class_traits(
         self,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         filter: fn(&Trait<'gc>) -> bool,
     ) -> Option<Trait<'gc>> {
         self.0
@@ -963,7 +963,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     /// Determine if we have a class trait with a given name.
-    pub fn has_class_trait(self, name: &QName<'gc>) -> bool {
+    pub fn has_class_trait(self, name: QName<'gc>) -> bool {
         self.0.read().resolved_class_traits.get(name).is_some()
     }
 
@@ -982,7 +982,7 @@ impl<'gc> ClassObject<'gc> {
     /// inherited by subclasses.
     ///
     /// If a trait is returned, it is guaranteed to have a method.
-    pub fn class_method(self, name: &QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
+    pub fn class_method(self, name: QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
         Ok(self.lookup_class_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. })))
     }
 
@@ -999,7 +999,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn bound_class_method(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<Option<(Object<'gc>, u32)>, Error> {
         if let Some(method_trait) = self.class_method(name)? {
             let method = method_trait.as_method().unwrap();
@@ -1044,7 +1044,7 @@ impl<'gc> ClassObject<'gc> {
             _ => None,
         }) {
             let method = method_trait.as_method().unwrap();
-            let name = method_trait.name().clone();
+            let name = method_trait.name();
             let scope = self.class_scope();
 
             Ok(Some((
@@ -1164,13 +1164,13 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         .into())
     }
 
-    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_trait(self, name: QName<'gc>) -> Result<bool, Error> {
         let read = self.0.read();
 
         Ok(self.has_class_trait(name) || read.base.has_trait(name)?)
     }
 
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
         let read = self.0.read();
 
         Ok(read.base.has_own_instantiated_property(name)
@@ -1199,7 +1199,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         // Traits are never enumerable.

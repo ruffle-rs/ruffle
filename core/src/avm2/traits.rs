@@ -102,7 +102,7 @@ pub enum TraitKind<'gc> {
 
 impl<'gc> Trait<'gc> {
     pub fn from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
-        let name = class.read().name().clone();
+        let name = class.read().name();
 
         Trait {
             name,
@@ -273,8 +273,8 @@ impl<'gc> Trait<'gc> {
         })
     }
 
-    pub fn name(&self) -> &QName<'gc> {
-        &self.name
+    pub fn name(&self) -> QName<'gc> {
+        self.name
     }
 
     pub fn kind(&self) -> &TraitKind<'gc> {

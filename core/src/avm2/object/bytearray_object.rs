@@ -81,7 +81,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
@@ -106,7 +106,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -136,7 +136,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -166,7 +166,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn delete_property_local(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
@@ -178,7 +178,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         Ok(self.0.write(gc_context).base.delete_property(name))
     }
 
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(self.0.read().storage.get(index).is_some());
