@@ -43,7 +43,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    write.set_attributes(ClassAttributes::SEALED);
+    write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
     const CONSTANTS: &[(&str, &str)] =
         &[("ALWAYS", "always"), ("AUTO", "auto"), ("NEVER", "never")];
