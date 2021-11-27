@@ -145,7 +145,7 @@ pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> std::cmp::Ordering {
 
 pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
     match s.units() {
-        Units::Bytes(us) => us.iter().for_each(|u| state.write_u8(*u)),
+        Units::Bytes(us) => state.write(us),
         Units::Wide(us) => us.iter().for_each(|u| {
             if *u <= 0xFF {
                 state.write_u8(*u as u8)
