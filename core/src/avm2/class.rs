@@ -497,8 +497,8 @@ impl<'gc> Class<'gc> {
         ))
     }
 
-    pub fn name(&self) -> &QName<'gc> {
-        &self.name
+    pub fn name(&self) -> QName<'gc> {
+        self.name
     }
 
     pub fn set_name(&mut self, name: QName<'gc>) {
@@ -727,7 +727,7 @@ impl<'gc> Class<'gc> {
     }
 
     /// Determines if this class provides a given trait on its instances.
-    pub fn has_instance_trait(&self, name: &QName<'gc>) -> bool {
+    pub fn has_instance_trait(&self, name: QName<'gc>) -> bool {
         for trait_entry in self.instance_traits.iter() {
             if name == trait_entry.name() {
                 return true;

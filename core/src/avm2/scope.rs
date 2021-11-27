@@ -132,8 +132,8 @@ impl<'gc> ScopeChain<'gc> {
                     // 2. We are at depth 0 (global scope)
                     //
                     // But no matter what, we always search traits first.
-                    if values.has_trait(&qname)?
-                        || ((scope.with() || depth == 0) && values.has_property(&qname)?)
+                    if values.has_trait(qname)?
+                        || ((scope.with() || depth == 0) && values.has_property(qname)?)
                     {
                         return Ok(Some(values));
                     }
@@ -202,8 +202,8 @@ impl<'gc> ScopeStack<'gc> {
                 // We search the dynamic properties if either conditions are met:
                 // 1. Scope is a `with` scope
                 // 2. We are at depth 0 AND we are at global$init (script initializer).
-                if values.has_trait(&qname)?
-                    || ((scope.with() || (global && depth == 0)) && values.has_property(&qname)?)
+                if values.has_trait(qname)?
+                    || ((scope.with() || (global && depth == 0)) && values.has_property(qname)?)
                 {
                     return Ok(Some(values));
                 }

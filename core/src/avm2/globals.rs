@@ -312,7 +312,7 @@ fn function<'gc>(
     let qname = QName::new(Namespace::package(package), name);
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
-    domain.export_definition(qname.clone(), script, mc)?;
+    domain.export_definition(qname, script, mc)?;
     script
         .init()
         .1
@@ -333,9 +333,9 @@ fn dynamic_class<'gc>(
 ) -> Result<(), Error> {
     let (_, mut global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
-    let name = class.read().name().clone();
+    let name = class.read().name();
 
-    global.install_const(mc, name.clone(), 0, class_object.into());
+    global.install_const(mc, name, 0, class_object.into());
     domain.export_definition(name, script, mc)
 }
 
@@ -372,13 +372,13 @@ fn class<'gc>(
         None
     };
 
-    let class_name = class_read.name().clone();
+    let class_name = class_read.name();
     drop(class_read);
 
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
     global.install_const(
         activation.context.gc_context,
-        class_name.clone(),
+        class_name,
         0,
         class_object.into(),
     );
@@ -405,7 +405,7 @@ fn constant<'gc>(
 ) -> Result<(), Error> {
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
-    domain.export_definition(name.clone(), script, mc)?;
+    domain.export_definition(name, script, mc)?;
     global.install_const(mc, name, 0, value);
 
     Ok(())

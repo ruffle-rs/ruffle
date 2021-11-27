@@ -90,7 +90,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
@@ -111,7 +111,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -139,7 +139,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -167,7 +167,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn delete_property_local(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
@@ -179,7 +179,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         Ok(self.0.write(gc_context).base.delete_property(name))
     }
 
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
         if name.namespace().is_public() {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(self.0.read().array.get(index).is_some());
@@ -239,7 +239,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         }
     }
 
-    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
+    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
         name.local_name()
             .parse::<u32>()
             .map(|index| self.0.read().array.length() as u32 >= index)

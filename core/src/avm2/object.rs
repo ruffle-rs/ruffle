@@ -121,7 +121,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let base = self.base();
@@ -178,18 +178,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         // At this point, the name must be a valid QName.
         let name = name.unwrap();
-        if !self.base().has_own_instantiated_property(&name) {
+        if !self.base().has_own_instantiated_property(name) {
             // Initialize lazy-bound methods at this point in time.
             if let Some(class) = self.instance_of() {
                 if let Some((bound_method, disp_id)) =
-                    class.bound_instance_method(activation, receiver, &name)?
+                    class.bound_instance_method(activation, receiver, name)?
                 {
-                    self.install_method(
-                        activation.context.gc_context,
-                        name.clone(),
-                        disp_id,
-                        bound_method,
-                    );
+                    self.install_method(activation.context.gc_context, name, disp_id, bound_method);
 
                     return Ok(bound_method.into());
                 }
@@ -197,25 +192,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             // Class methods are also lazy-bound.
             if let Some(class) = self.as_class_object() {
-                if let Some((bound_method, disp_id)) =
-                    class.bound_class_method(activation, &name)?
-                {
-                    self.install_method(
-                        activation.context.gc_context,
-                        name.clone(),
-                        disp_id,
-                        bound_method,
-                    );
+                if let Some((bound_method, disp_id)) = class.bound_class_method(activation, name)? {
+                    self.install_method(activation.context.gc_context, name, disp_id, bound_method);
 
                     return Ok(bound_method.into());
                 }
             }
         }
 
-        let is_set_only = self.base().has_own_virtual_set_only_property(&name);
+        let is_set_only = self.base().has_own_virtual_set_only_property(name);
 
-        if self.has_own_property(&name)? && !is_set_only {
-            return self.get_property_local(receiver, &name, activation);
+        if self.has_own_property(name)? && !is_set_only {
+            return self.get_property_local(receiver, name, activation);
         }
 
         if let Some(proto) = self.proto() {
@@ -233,7 +221,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -311,7 +299,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Reject attempts to overwrite lazy-bound methods before they have
         // been bound.
         if let Some(class) = self.instance_of() {
-            if class.instance_method(&name)?.is_some() {
+            if class.instance_method(name)?.is_some() {
                 return Err(format!(
                     "Cannot overwrite read-only property {:?}",
                     name.local_name()
@@ -321,7 +309,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(class) = self.as_class_object() {
-            if class.class_method(&name)?.is_some() {
+            if class.class_method(name)?.is_some() {
                 return Err(format!(
                     "Cannot overwrite read-only property {:?}",
                     name.local_name()
@@ -330,7 +318,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        self.set_property_local(receiver, &name, value, activation)
+        self.set_property_local(receiver, name, value, activation)
     }
 
     /// Initialize a property by QName, after multiname resolution and all
@@ -341,7 +329,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -381,7 +369,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Reject attempts to overwrite lazy-bound methods before they have
         // been bound.
         if let Some(class) = self.instance_of() {
-            if class.instance_method(&name)?.is_some() {
+            if class.instance_method(name)?.is_some() {
                 return Err(format!(
                     "Cannot overwrite read-only property {:?}",
                     name.local_name()
@@ -391,7 +379,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(class) = self.as_class_object() {
-            if class.class_method(&name)?.is_some() {
+            if class.class_method(name)?.is_some() {
                 return Err(format!(
                     "Cannot overwrite read-only property {:?}",
                     name.local_name()
@@ -400,7 +388,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        self.init_property_local(receiver, &name, value, activation)
+        self.init_property_local(receiver, name, value, activation)
     }
 
     /// Call a named property that does not exist.
@@ -439,7 +427,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let name = name.unwrap();
 
         if let Some(class) = self.instance_of() {
-            if let Some((superclass, method_trait)) = class.instance_method(&name)? {
+            if let Some((superclass, method_trait)) = class.instance_method(name)? {
                 let method = method_trait.as_method().unwrap();
                 if !method.needs_arguments_object() {
                     let scope = class.instance_scope();
@@ -455,7 +443,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         if let Some(class) = self.as_class_object() {
-            if let Some(method_trait) = class.class_method(&name)? {
+            if let Some(method_trait) = class.class_method(name)? {
                 let method = method_trait.as_method().unwrap();
                 if !method.needs_arguments_object() {
                     let scope = class.class_scope();
@@ -532,12 +520,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if let Some((bound_method, name)) =
                     class.bound_instance_method_by_id(activation, self.into(), id)?
                 {
-                    self.install_method(
-                        activation.context.gc_context,
-                        name.clone(),
-                        id,
-                        bound_method,
-                    );
+                    self.install_method(activation.context.gc_context, name, id, bound_method);
                 }
             }
 
@@ -545,12 +528,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if let Some((bound_method, name)) =
                     class.bound_class_method_by_id(activation, id)?
                 {
-                    self.install_method(
-                        activation.context.gc_context,
-                        name.clone(),
-                        id,
-                        bound_method,
-                    );
+                    self.install_method(activation.context.gc_context, name, id, bound_method);
                 }
             }
         }
@@ -576,7 +554,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if let Some(name) = multiname.local_name() {
             for ns in matching_set.iter() {
                 if multiname.namespace_set().any(|n| n == ns) {
-                    return Ok(Some(QName::new(ns.clone(), name)));
+                    return Ok(Some(QName::new(*ns, name)));
                 }
             }
         }
@@ -584,7 +562,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         if multiname.namespace_set().any(|n| *n == Namespace::Any) {
             return Ok(matching_set
                 .first()
-                .map(|ns| QName::new(ns.clone(), multiname.local_name().unwrap())));
+                .map(|ns| QName::new(*ns, multiname.local_name().unwrap())));
         }
 
         if let Some(proto) = self.proto() {
@@ -616,13 +594,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn has_property_via_in(
         self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         self.has_property(name)
     }
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_property(self, name: QName<'gc>) -> Result<bool, Error> {
         if self.has_own_property(name)? {
             Ok(true)
         } else if let Some(proto) = self.proto() {
@@ -634,14 +612,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Indicates whether or not a property or trait exists on an object and is
     /// not part of the prototype chain.
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
         let base = self.base();
 
         base.has_own_property(name)
     }
 
     /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_trait(self, name: QName<'gc>) -> Result<bool, Error> {
         let base = self.base();
 
         base.has_trait(name)
@@ -651,7 +629,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn is_property_overwritable(
         self,
         _gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> bool {
         let base = self.base();
 
@@ -666,7 +644,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn delete_property_local(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         let mut base = self.base_mut(gc_context);
 
@@ -710,10 +688,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         // Reject attempts to delete lazy-bound methods before they have
         // been bound.
-        if !self.base().has_own_instantiated_property(&name) {
+        if !self.base().has_own_instantiated_property(name) {
             if let Some(class) = self.instance_of() {
                 if class
-                    .instance_method(&name)
+                    .instance_method(name)
                     .map(|t| t.is_some())
                     .unwrap_or(false)
                 {
@@ -723,7 +701,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             if let Some(class) = self.as_class_object() {
                 if class
-                    .class_method(&name)
+                    .class_method(name)
                     .map(|t| t.is_some())
                     .unwrap_or(false)
                 {
@@ -732,7 +710,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
         }
 
-        self.delete_property_local(activation.context.gc_context, &name)
+        self.delete_property_local(activation.context.gc_context, name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -812,7 +790,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Determine if a property is currently enumerable.
     ///
     /// Properties that do not exist are also not enumerable.
-    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
+    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
         let base = self.base();
 
         base.property_is_enumerable(name)
@@ -822,7 +800,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(mc);
@@ -985,7 +963,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         defining_class: Option<ClassObject<'gc>>,
     ) -> Result<Value<'gc>, Error> {
         let receiver = (*self).into();
-        let trait_name = trait_entry.name().clone();
+        let trait_name = trait_entry.name();
 
         avm_debug!(
             activation.avm2(),

@@ -168,7 +168,7 @@ pub fn has_own_property<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     let qname = QName::dynamic_name(name);
-    Ok(this.has_own_property(&qname)?.into())
+    Ok(this.has_own_property(qname)?.into())
 }
 
 /// `Object.prototype.isPrototypeOf`
@@ -205,7 +205,7 @@ pub fn property_is_enumerable<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     let qname = QName::dynamic_name(name);
-    Ok(this.property_is_enumerable(&qname).into())
+    Ok(this.property_is_enumerable(qname).into())
 }
 
 /// `Object.prototype.setPropertyIsEnumerable`
@@ -221,7 +221,7 @@ pub fn set_property_is_enumerable<'gc>(
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
         let qname = QName::dynamic_name(name);
-        this.set_local_property_is_enumerable(activation.context.gc_context, &qname, *is_enum)?;
+        this.set_local_property_is_enumerable(activation.context.gc_context, qname, *is_enum)?;
     }
 
     Ok(Value::Undefined)

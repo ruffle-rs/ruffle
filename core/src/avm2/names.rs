@@ -13,7 +13,7 @@ use swf::avm2::types::{
 
 /// Represents the name of a namespace.
 #[allow(clippy::enum_variant_names)]
-#[derive(Clone, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Collect, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[collect(no_drop)]
 pub enum Namespace<'gc> {
     Namespace(AvmString<'gc>),
@@ -139,7 +139,7 @@ impl<'gc> Namespace<'gc> {
 /// `QName`. All other forms of names and multinames are either versions of
 /// `QName` with unspecified parameters, or multiple names to be checked in
 /// order.
-#[derive(Clone, Collect, Debug, Hash)]
+#[derive(Clone, Copy, Collect, Debug, Hash)]
 #[collect(no_drop)]
 pub struct QName<'gc> {
     ns: Namespace<'gc>,
@@ -225,7 +225,7 @@ impl<'gc> QName<'gc> {
     }
 
     /// Converts this `QName` to a fully qualified name.
-    pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn to_qualified_name(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let uri = self.namespace().as_uri();
         let name = self.local_name();
         uri.is_empty().then(|| name).unwrap_or_else(|| {
@@ -240,8 +240,8 @@ impl<'gc> QName<'gc> {
         self.name
     }
 
-    pub fn namespace(&self) -> &Namespace<'gc> {
-        &self.ns
+    pub fn namespace(self) -> Namespace<'gc> {
+        self.ns
     }
 
     /// Get the string value of this QName, including the namespace URI.
@@ -377,9 +377,10 @@ impl<'gc> Multiname<'gc> {
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
-                let ns = activation.avm2().pop().as_namespace()?.clone();
+                let ns_value = activation.avm2().pop();
+                let ns = ns_value.as_namespace()?;
                 Self {
-                    ns: vec![ns],
+                    ns: vec![*ns],
                     name: translation_unit
                         .pool_string_option(name.0, activation.context.gc_context)?,
                     params: Vec::new(),
@@ -387,9 +388,10 @@ impl<'gc> Multiname<'gc> {
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
                 let name = activation.avm2().pop().coerce_to_string(activation)?;
-                let ns = activation.avm2().pop().as_namespace()?.clone();
+                let ns_value = activation.avm2().pop();
+                let ns = ns_value.as_namespace()?;
                 Self {
-                    ns: vec![ns],
+                    ns: vec![*ns],
                     name: Some(name),
                     params: Vec::new(),
                 }
@@ -597,7 +599,7 @@ impl<'gc> Multiname<'gc> {
         let ns_match = self
             .ns
             .iter()
-            .any(|ns| ns == &Namespace::Any || ns == name.namespace());
+            .any(|ns| *ns == Namespace::Any || *ns == name.namespace());
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
 
         ns_match && name_match

@@ -110,14 +110,14 @@ impl<'gc> Domain<'gc> {
                 if let Some(local_name) = multiname.local_name() {
                     for (qname, script) in read.defs.iter() {
                         if qname.local_name() == local_name {
-                            return Ok(Some((qname.clone(), *script)));
+                            return Ok(Some((*qname, *script)));
                         }
                     }
                 } else {
                     return Ok(None);
                 }
             } else if let Some(name) = multiname.local_name() {
-                let qname = QName::new(ns.clone(), name);
+                let qname = QName::new(*ns, name);
                 if read.defs.contains_key(&qname) {
                     let script = read.defs.get(&qname).cloned().unwrap();
                     return Ok(Some((qname, script)));
@@ -141,11 +141,11 @@ impl<'gc> Domain<'gc> {
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let (name, mut script) = self
-            .get_defining_script(&name.clone().into())?
+            .get_defining_script(&name.into())?
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
         let globals = script.globals(&mut activation.context)?;
 
-        globals.get_property(globals, &name.clone().into(), activation)
+        globals.get_property(globals, &name.into(), activation)
     }
 
     /// Export a definition from a script into the current application domain.
@@ -158,7 +158,7 @@ impl<'gc> Domain<'gc> {
         script: Script<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
-        if self.has_definition(name.clone()) {
+        if self.has_definition(name) {
             return Err(format!(
                 "VerifyError: Attempted to redefine existing name {}",
                 name.local_name()

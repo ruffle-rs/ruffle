@@ -595,7 +595,7 @@ impl<'gc> MovieClip<'gc> {
                 .library_for_movie_mut(movie.clone());
             let domain = library.avm2_domain();
             let class_object = domain
-                .get_defined_value(&mut activation, name.clone())
+                .get_defined_value(&mut activation, name)
                 .and_then(|v| v.coerce_to_object(&mut activation))
                 .and_then(|v| {
                     v.as_class_object().ok_or_else(|| {

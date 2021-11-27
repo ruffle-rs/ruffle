@@ -22,9 +22,7 @@ pub fn instance_init<'gc>(
                 let local_arg = args.get(1).cloned().unwrap_or(Value::Undefined);
 
                 let namespace = match ns_arg {
-                    Value::Object(o) if o.as_namespace().is_some() => {
-                        o.as_namespace().unwrap().clone()
-                    }
+                    Value::Object(o) if o.as_namespace().is_some() => *o.as_namespace().unwrap(),
                     Value::Undefined | Value::Null => Namespace::Any,
                     v => Namespace::Namespace(v.coerce_to_string(activation)?),
                 };
@@ -33,13 +31,9 @@ pub fn instance_init<'gc>(
             } else {
                 let qname_arg = args.get(0).cloned().unwrap_or(Value::Undefined);
                 let namespace = match qname_arg {
-                    Value::Object(o) if o.as_qname_object().is_some() => o
-                        .as_qname_object()
-                        .unwrap()
-                        .qname()
-                        .unwrap()
-                        .namespace()
-                        .clone(),
+                    Value::Object(o) if o.as_qname_object().is_some() => {
+                        o.as_qname_object().unwrap().qname().unwrap().namespace()
+                    }
                     _ => Namespace::Namespace("".into()),
                 };
 

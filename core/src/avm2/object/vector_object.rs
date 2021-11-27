@@ -101,7 +101,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
@@ -122,7 +122,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -160,7 +160,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
@@ -198,7 +198,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn delete_property_local(
         &self,
         gc_context: MutationContext<'gc, '_>,
-        name: &QName<'gc>,
+        name: QName<'gc>,
     ) -> Result<bool, Error> {
         if name.namespace().is_package("") && name.local_name().parse::<usize>().is_ok() {
             return Ok(true);
@@ -207,7 +207,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Ok(self.0.write(gc_context).base.delete_property(name))
     }
 
-    fn has_own_property(self, name: &QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
         if name.namespace().is_package("") {
             if let Ok(index) = name.local_name().parse::<usize>() {
                 return Ok(self.0.read().vector.is_in_range(index));
@@ -259,7 +259,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn property_is_enumerable(&self, name: &QName<'gc>) -> bool {
+    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
         name.local_name()
             .parse::<u32>()
             .map(|index| self.0.read().vector.length() as u32 >= index)
