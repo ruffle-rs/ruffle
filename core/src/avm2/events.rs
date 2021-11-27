@@ -7,8 +7,9 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
+use fnv::FnvHashMap;
 use gc_arena::Collect;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 /// Which phase of event dispatch is currently occurring.
@@ -174,12 +175,12 @@ impl<'gc> Event<'gc> {
 /// A set of handlers organized by event type, priority, and order added.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
-pub struct DispatchList<'gc>(HashMap<AvmString<'gc>, BTreeMap<i32, Vec<EventHandler<'gc>>>>);
+pub struct DispatchList<'gc>(FnvHashMap<AvmString<'gc>, BTreeMap<i32, Vec<EventHandler<'gc>>>>);
 
 impl<'gc> DispatchList<'gc> {
     /// Construct a new dispatch list.
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(Default::default())
     }
 
     /// Get all of the event handlers for a given event type, if such a type

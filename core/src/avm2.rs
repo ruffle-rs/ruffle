@@ -7,8 +7,8 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use crate::tag_utils::SwfSlice;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, MutationContext};
-use std::collections::HashMap;
 use std::rc::Rc;
 use swf::avm2::read::Reader;
 
@@ -86,7 +86,7 @@ pub struct Avm2<'gc> {
     ///
     /// TODO: These should be weak object pointers, but our current garbage
     /// collector does not support weak references.
-    broadcast_list: HashMap<AvmString<'gc>, Vec<Object<'gc>>>,
+    broadcast_list: FnvHashMap<AvmString<'gc>, Vec<Object<'gc>>>,
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
@@ -102,7 +102,7 @@ impl<'gc> Avm2<'gc> {
             globals,
             system_prototypes: None,
             system_classes: None,
-            broadcast_list: HashMap::new(),
+            broadcast_list: Default::default(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,

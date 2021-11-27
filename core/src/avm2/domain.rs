@@ -6,8 +6,8 @@ use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::collections::HashMap;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
@@ -19,7 +19,7 @@ pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 #[collect(no_drop)]
 struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.
-    defs: HashMap<QName<'gc>, Script<'gc>>,
+    defs: FnvHashMap<QName<'gc>, Script<'gc>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -46,7 +46,7 @@ impl<'gc> Domain<'gc> {
         Self(GcCell::allocate(
             mc,
             DomainData {
-                defs: HashMap::new(),
+                defs: Default::default(),
                 parent: None,
                 domain_memory: None,
             },
@@ -64,7 +64,7 @@ impl<'gc> Domain<'gc> {
         let this = Self(GcCell::allocate(
             activation.context.gc_context,
             DomainData {
-                defs: HashMap::new(),
+                defs: Default::default(),
                 parent: Some(parent),
                 domain_memory: None,
             },
