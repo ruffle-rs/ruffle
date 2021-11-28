@@ -96,6 +96,10 @@ pub fn str_debug_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 }
 
 pub fn str_eq(left: &WStr, right: &WStr) -> bool {
+    if std::ptr::eq(left, right) {
+        return true;
+    }
+
     let (bytes, wide) = match (left.units(), right.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => return a == b,
         (Units::Wide(a), Units::Wide(b)) => return a == b,
