@@ -108,7 +108,7 @@ impl<'gc> Domain<'gc> {
         let matching_set = if let Some(local_name) = multiname.local_name() {
             read.defs.namespaces_of(local_name)
         } else {
-            vec![]
+            smallvec![]
         };
 
         if let Some(name) = multiname.local_name() {

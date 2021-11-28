@@ -21,6 +21,7 @@ use crate::html::TextFormat;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -548,7 +549,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let matching_set = if let Some(local_name) = multiname.local_name() {
             self.resolve_ns(local_name)?
         } else {
-            vec![]
+            smallvec![]
         };
 
         if let Some(name) = multiname.local_name() {
@@ -581,7 +582,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Trait names will be resolved on class objects and object instances, but
     /// not prototypes. If you want to search a prototype's provided traits you
     /// must walk the prototype chain using `resolve_any_trait`.
-    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+    fn resolve_ns(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
         let base = self.base();
 
         base.resolve_ns(local_name)

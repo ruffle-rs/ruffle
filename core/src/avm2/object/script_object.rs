@@ -11,6 +11,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -278,7 +279,10 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn resolve_ns(&self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+    pub fn resolve_ns(
+        &self,
+        local_name: AvmString<'gc>,
+    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
         let mut ns_set = self.values.namespaces_of(local_name);
 
         if let Some(class) = &self.instance_of {

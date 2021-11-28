@@ -16,6 +16,7 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::hash::{Hash, Hasher};
 
@@ -550,7 +551,10 @@ impl<'gc> ClassObject<'gc> {
 
     /// List all namespaces that contain one or more instance traits of a given
     /// local name.
-    pub fn resolve_instance_trait_ns(self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+    pub fn resolve_instance_trait_ns(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> SmallVec<[Namespace<'gc>; 2]> {
         self.0
             .read()
             .resolved_instance_traits
@@ -969,7 +973,10 @@ impl<'gc> ClassObject<'gc> {
 
     /// List all namespaces that contain one or more class traits of a given
     /// local name.
-    pub fn resolve_class_trait_ns(self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+    pub fn resolve_class_trait_ns(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> SmallVec<[Namespace<'gc>; 2]> {
         self.0
             .read()
             .resolved_class_traits
@@ -1178,7 +1185,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             || read.base.has_trait(name)?)
     }
 
-    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+    fn resolve_ns(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
         let read = self.0.read();
 
         let mut ns_set = read.base.resolve_ns(local_name)?;
