@@ -1,12 +1,12 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ByteArrayObject, TObject};
+use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Represents a set of scripts and movies that share traits across different
@@ -19,7 +19,7 @@ pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 #[collect(no_drop)]
 struct DomainData<'gc> {
     /// A list of all exported definitions and the script that exported them.
-    defs: FnvHashMap<QName<'gc>, Script<'gc>>,
+    defs: PropertyMap<'gc, Script<'gc>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -46,7 +46,7 @@ impl<'gc> Domain<'gc> {
         Self(GcCell::allocate(
             mc,
             DomainData {
-                defs: Default::default(),
+                defs: PropertyMap::new(),
                 parent: None,
                 domain_memory: None,
             },
@@ -64,7 +64,7 @@ impl<'gc> Domain<'gc> {
         let this = Self(GcCell::allocate(
             activation.context.gc_context,
             DomainData {
-                defs: Default::default(),
+                defs: PropertyMap::new(),
                 parent: Some(parent),
                 domain_memory: None,
             },
@@ -84,7 +84,7 @@ impl<'gc> Domain<'gc> {
     pub fn has_definition(self, name: QName<'gc>) -> bool {
         let read = self.0.read();
 
-        if read.defs.contains_key(&name) {
+        if read.defs.contains_key(name) {
             return true;
         }
 
@@ -105,26 +105,30 @@ impl<'gc> Domain<'gc> {
     ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error> {
         let read = self.0.read();
 
-        for ns in multiname.namespace_set() {
-            if ns.is_any() {
-                if let Some(local_name) = multiname.local_name() {
-                    for (qname, script) in read.defs.iter() {
-                        if qname.local_name() == local_name {
-                            return Ok(Some((*qname, *script)));
-                        }
-                    }
-                } else {
-                    return Ok(None);
+        let matching_set = if let Some(local_name) = multiname.local_name() {
+            read.defs.namespaces_of(local_name)
+        } else {
+            vec![]
+        };
+
+        if let Some(name) = multiname.local_name() {
+            for ns in matching_set.iter() {
+                if multiname.namespace_set().any(|n| n == ns) {
+                    let qname = QName::new(*ns, name);
+                    let script = read.defs.get(qname).unwrap();
+
+                    return Ok(Some((qname, *script)));
                 }
-            } else if let Some(name) = multiname.local_name() {
-                let qname = QName::new(*ns, name);
-                if read.defs.contains_key(&qname) {
-                    let script = read.defs.get(&qname).cloned().unwrap();
-                    return Ok(Some((qname, script)));
-                }
-            } else {
-                return Ok(None);
             }
+        }
+
+        if multiname.namespace_set().any(|n| *n == Namespace::Any) {
+            return Ok(matching_set.first().map(|ns| {
+                let qname = QName::new(*ns, multiname.local_name().unwrap());
+                let script = read.defs.get(qname).unwrap();
+
+                (qname, *script)
+            }));
         }
 
         if let Some(parent) = read.parent {
