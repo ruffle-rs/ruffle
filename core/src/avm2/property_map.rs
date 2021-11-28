@@ -114,7 +114,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         None
     }
 
-    pub fn namespaces_of(&self, local_name: AvmString<'gc>) -> Vec<Namespace<'gc>> {
+    pub fn namespaces_of(&self, local_name: AvmString<'gc>) -> SmallVec<[Namespace<'gc>; 2]> {
         self.0
             .get(&local_name)
             .map(|vals| vals.iter().map(|(ns, _v)| *ns).collect())

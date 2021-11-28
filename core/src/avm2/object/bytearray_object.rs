@@ -7,6 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
+use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -188,7 +189,10 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
-    fn resolve_ns(self, local_name: AvmString<'gc>) -> Result<Vec<Namespace<'gc>>, Error> {
+    fn resolve_ns(
+        self,
+        local_name: AvmString<'gc>,
+    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
         let base = self.base();
 
         let mut ns_set = base.resolve_ns(local_name)?;
