@@ -1,6 +1,7 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::html::TextSpan;
 use crate::prelude::*;
+use crate::string::WStr;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 
@@ -178,9 +179,10 @@ impl<'gc> Font<'gc> {
     }
 
     /// Determine if this font contains all the glyphs within a given string.
-    pub fn has_glyphs_for_str(&self, target_str: &str) -> bool {
+    pub fn has_glyphs_for_str(&self, target_str: &WStr) -> bool {
         for character in target_str.chars() {
-            if self.get_glyph_for_char(character).is_none() {
+            let c = character.unwrap_or(char::REPLACEMENT_CHARACTER);
+            if self.get_glyph_for_char(c).is_none() {
                 return false;
             }
         }
@@ -235,7 +237,7 @@ impl<'gc> Font<'gc> {
     /// to render the text on a single horizontal line.
     pub fn evaluate<FGlyph>(
         &self,
-        text: &str,
+        text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
         mut transform: Transform,
         params: EvalParameters,
         mut glyph_func: FGlyph,
@@ -251,10 +253,12 @@ impl<'gc> Font<'gc> {
         let has_kerning_info = self.has_kerning_info();
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
+            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(glyph) = self.get_glyph_for_char(c) {
                 let mut advance = Twips::new(glyph.advance);
                 if has_kerning_info && params.kerning {
-                    let next_char = char_indices.peek().cloned().unwrap_or((0, '\0')).1;
+                    let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
+                    let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
                     advance += self.get_kerning_offset(c, next_char);
                 }
                 let twips_advance =
@@ -273,7 +277,7 @@ impl<'gc> Font<'gc> {
     ///
     /// The `round` flag causes the returned coordinates to be rounded down to
     /// the nearest pixel.
-    pub fn measure(&self, text: &str, params: EvalParameters, round: bool) -> (Twips, Twips) {
+    pub fn measure(&self, text: &WStr, params: EvalParameters, round: bool) -> (Twips, Twips) {
         let mut size = (Twips::ZERO, Twips::ZERO);
 
         self.evaluate(
@@ -315,7 +319,7 @@ impl<'gc> Font<'gc> {
     /// be internationalized to implement AS3 `flash.text.engine`.
     pub fn wrap_line(
         &self,
-        text: &str,
+        text: &WStr,
         params: EvalParameters,
         width: Twips,
         offset: Twips,
@@ -328,13 +332,13 @@ impl<'gc> Font<'gc> {
 
         let mut line_end = 0;
 
-        for word in text.split(' ') {
-            let word_start = word.as_ptr() as usize - text.as_ptr() as usize;
+        for word in text.split(b' ') {
+            let word_start = word.offset_in(text).unwrap();
             let word_end = word_start + word.len();
 
             let measure = self.measure(
-                // +1 is fine because ' ' is 1 byte
-                text.get(word_start..word_end + 1).unwrap_or(word),
+                // +1 is fine because ' ' is 1 unit
+                text.slice(word_start..word_end + 1).unwrap_or(word),
                 params,
                 false,
             );
@@ -502,6 +506,7 @@ mod tests {
     use crate::backend::render::{NullRenderer, RenderBackend};
     use crate::font::{EvalParameters, Font};
     use crate::player::{Player, DEVICE_FONT_TAG};
+    use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
     use std::ops::DerefMut;
     use swf::Twips;
@@ -524,7 +529,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcdefghijklmnopqrstuv";
+            let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
             let breakpoint = df.wrap_line(
                 string,
                 params,
@@ -542,7 +547,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcd efgh ijkl mnop";
+            let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
                 string,
@@ -597,7 +602,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcd efgh ijkl mnop";
+            let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
                 params,
@@ -615,7 +620,7 @@ mod tests {
         with_device_font(|_mc, df| {
             let params =
                 EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
-            let string = "abcdi j kl mnop q rstuv";
+            let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
             let breakpoint = df.wrap_line(
                 string,

@@ -1087,15 +1087,24 @@ impl<'a> Reader<'a> {
                 glyph.advance = Some(self.read_i16()?);
             }
 
-            for glyph in &mut glyphs {
-                glyph.bounds = Some(self.read_rectangle()?);
+            // Some older SWFs end the tag here, as this data isn't used until v7.
+            if !self.as_slice().is_empty() {
+                for glyph in &mut glyphs {
+                    glyph.bounds = Some(self.read_rectangle()?);
+                }
             }
 
-            let num_kerning_records = self.read_u16()? as usize;
-            let mut kerning_records = Vec::with_capacity(num_kerning_records);
-            for _ in 0..num_kerning_records {
-                kerning_records.push(self.read_kerning_record(has_wide_codes)?);
-            }
+            let kerning_records = if !self.as_slice().is_empty() {
+                let num_kerning_records = self.read_u16()? as usize;
+
+                let mut kerning_records = Vec::with_capacity(num_kerning_records);
+                for _ in 0..num_kerning_records {
+                    kerning_records.push(self.read_kerning_record(has_wide_codes)?);
+                }
+                kerning_records
+            } else {
+                vec![]
+            };
 
             Some(FontLayout {
                 ascent,

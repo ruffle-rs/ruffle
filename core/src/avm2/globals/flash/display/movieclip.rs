@@ -9,7 +9,7 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
@@ -186,7 +186,7 @@ pub fn current_labels<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: mc.total_frames(),
         });
@@ -207,14 +207,14 @@ pub fn current_scene<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         let scene = mc.current_scene().unwrap_or_else(|| Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: mc.total_frames(),
         });
         let (scene_name, scene_length, scene_labels) = labels_for_scene(activation, mc, &scene)?;
         let scene_class = activation.context.avm2.classes().scene;
         let args = [
-            AvmString::new(activation.context.gc_context, scene_name).into(),
+            AvmString::new_utf8(activation.context.gc_context, scene_name).into(),
             scene_labels.into(),
             scene_length.into(),
         ];
@@ -240,7 +240,7 @@ pub fn scenes<'gc>(
         let mut mc_scenes = mc.scenes();
         if mc.scenes().is_empty() {
             mc_scenes.push(Scene {
-                name: "".to_string(),
+                name: WString::default(),
                 start: 0,
                 length: mc.total_frames(),
             });
@@ -252,7 +252,7 @@ pub fn scenes<'gc>(
                 labels_for_scene(activation, mc, &scene)?;
             let scene_class = activation.context.avm2.classes().scene;
             let args = [
-                AvmString::new(activation.context.gc_context, scene_name).into(),
+                AvmString::new_utf8(activation.context.gc_context, scene_name).into(),
                 scene_labels.into(),
                 scene_length.into(),
             ];

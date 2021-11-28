@@ -30,6 +30,7 @@ default-features = false
 [dependencies.web-sys]
 version = "0.3.50"
 features = [
-    "CanvasRenderingContext2d", "CssStyleDeclaration", "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement",
-    "Navigator", "Node", "UiEvent", "Window", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement"
+    "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
+    "Document", "Element", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "Navigator", "Node", "Path2d",
+    "SvgMatrix", "SvgsvgElement", "UiEvent", "Window",
 ]

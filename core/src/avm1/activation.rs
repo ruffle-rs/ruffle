@@ -11,7 +11,7 @@ use crate::backend::navigator::{NavigationMethod, RequestOptions};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -557,7 +557,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::SetMember => self.action_set_member(),
                 Action::SetProperty => self.action_set_property(),
                 Action::SetTarget(target) => {
-                    self.action_set_target(&target.to_str_lossy(self.encoding()))
+                    let target = WString::from_utf8_owned(target.to_string_lossy(self.encoding()));
+                    self.action_set_target(&target)
                 }
                 Action::SetTarget2 => self.action_set_target2(),
                 Action::SetVariable => self.action_set_variable(),
@@ -621,14 +622,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // ECMA-262 s. 11.6.1
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = if let Value::String(a) = a {
-            let mut s = b.coerce_to_string(self)?.to_string();
-            s.push_str(&a);
-            AvmString::new(self.context.gc_context, s).into()
+        let result: Value<'_> = if let Value::String(a) = a {
+            AvmString::concat(self.context.gc_context, b.coerce_to_string(self)?, a).into()
         } else if let Value::String(b) = b {
-            let mut b = b.to_string();
-            b.push_str(&a.coerce_to_string(self)?);
-            AvmString::new(self.context.gc_context, b).into()
+            AvmString::concat(self.context.gc_context, b, a.coerce_to_string(self)?).into()
         } else {
             (b.coerce_to_f64(self)? + a.coerce_to_f64(self)?).into()
         };
@@ -649,15 +646,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_ascii_to_char(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // In SWF6+, this operates on UTF-16 code units.
-        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale encoding.
-        let char_code: u32 = self.context.avm1.pop().coerce_to_u16(self)?.into();
-        let result = if char_code != 0 {
-            // Unpaired surrogates turn into replacement char.
-            char::try_from(char_code)
-                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
-                .to_string()
-        } else {
-            String::default()
+        // In SWF5 and below, this operates on bytes, regardless of the locale encoding.
+        let char_code = self.context.avm1.pop().coerce_to_u16(self)?;
+        let result = match char_code {
+            0 => WString::default(),
+            c if self.swf_version() < 6 || char::try_from(c as u32).is_ok() => {
+                WString::from_unit(c)
+            }
+            _ => WString::from_unit(char::REPLACEMENT_CHARACTER as u16),
         };
         self.context
             .avm1
@@ -668,12 +664,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWF4 ord function
         // In SWF6+, this operates on UTF-16 code units.
-        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale.
+        // In SWF5 and below, this operates on bytes, regardless of the locale.
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let char_code = s.encode_utf16().next().unwrap_or(0);
+        let char_code = s.get(0).unwrap_or(0);
         // Unpaired surrogate characters should return the code point for the replacement character.
         // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
+        // TODO: Should this happen in SWF5 and below?
         let c = crate::string::utils::utf16_code_unit_to_char(char_code);
         self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)
@@ -883,7 +880,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool
                 .iter()
                 .map(|s| {
-                    AvmString::new(self.context.gc_context, s.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, s.to_str_lossy(self.encoding()))
                         .into()
                 })
                 .collect(),
@@ -977,7 +974,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context.avm1.push(func_obj.into());
         } else {
             let name = action_func.name.to_str_lossy(self.encoding());
-            let name = AvmString::new(self.context.gc_context, name);
+            let name = AvmString::new_utf8(self.context.gc_context, name);
             self.define_local(name, func_obj.into())?;
         }
 
@@ -1208,7 +1205,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         target: &'_ SwfStr,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = target.to_str_lossy(self.encoding());
-        let target = target.as_ref();
         let url = url.to_string_lossy(self.encoding());
         if target.starts_with("_level") && target.len() > 6 {
             match target[6..].parse::<i32>() {
@@ -1243,13 +1239,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         }
 
-        if let Some(fscommand) = fscommand::parse(&url) {
-            let fsargs = target;
-            fscommand::handle(fscommand, fsargs, self)?;
+        if let Some(fscommand) = fscommand::parse(&WString::from_utf8(&url)) {
+            let fsargs = WString::from_utf8(&target);
+            fscommand::handle(fscommand, &fsargs, self)?;
         } else {
             self.context
                 .navigator
-                .navigate_to_url(url.to_owned(), Some(target.to_owned()), None);
+                .navigate_to_url(url.to_owned(), Some(target.into_owned()), None);
         }
 
         Ok(FrameControl::Continue)
@@ -1268,7 +1264,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let url = url_val.coerce_to_string(self)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            let fsargs = target.coerce_to_string(self)?.to_string();
+            let fsargs = target.coerce_to_string(self)?;
             fscommand::handle(fscommand, &fsargs, self)?;
             return Ok(FrameControl::Continue);
         }
@@ -1293,7 +1289,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .object()
                     .coerce_to_object(self);
                 let (url, opts) = self.locals_into_request_options(
-                    Cow::Borrowed(&url),
+                    &url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
                 let fetch = self.context.navigator.fetch(&url, opts);
@@ -1310,7 +1306,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if is_target_sprite {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
-                    Cow::Borrowed(&url),
+                    &url,
                     NavigationMethod::from_send_vars_method(swf_method),
                 );
 
@@ -1333,11 +1329,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             }
             return Ok(FrameControl::Continue);
-        } else if window_target.starts_with("_level") && window_target.len() > 6 {
+        } else if window_target.starts_with(WStr::from_units(b"_level")) && window_target.len() > 6
+        {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
-                    let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
+                    let fetch = self
+                        .context
+                        .navigator
+                        .fetch(&url.to_utf8_lossy(), RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
                     let process = self.context.load_manager.load_movie_into_clip(
@@ -1408,9 +1408,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_goto_label(&mut self, label: &'_ SwfStr) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                if let Some(frame) =
-                    clip.frame_label_to_number(&label.to_str_lossy(self.encoding()))
-                {
+                let label = WString::from_utf8(&label.to_str_lossy(self.encoding()));
+                if let Some(frame) = clip.frame_label_to_number(&label) {
                     clip.goto_frame(&mut self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
@@ -1578,27 +1577,31 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let result = if char_code != 0 {
             // Unpaired surrogates turn into replacement char.
             char::try_from(char_code)
-                .unwrap_or(std::char::REPLACEMENT_CHARACTER)
+                .unwrap_or(char::REPLACEMENT_CHARACTER)
                 .to_string()
         } else {
             String::default()
         };
         self.context
             .avm1
-            .push(AvmString::new(self.context.gc_context, result).into());
+            .push(AvmString::new_utf8(self.context.gc_context, result).into());
         Ok(FrameControl::Continue)
     }
 
     fn action_mb_char_to_ascii(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWF4 mbord function
         // In SWF6+, this operates on UTF-16 code units.
-        // TODO: In SWF5 and below, this operates on locale-dependent characters.
+        // In SWF5 and below, this operates on locale-dependent characters.
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
-        let char_code = s.encode_utf16().next().unwrap_or(0);
-        // Unpaired surrogate characters should return the code point for the replacement character.
-        // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
-        let c = crate::string::utils::utf16_code_unit_to_char(char_code);
+        let char_code = s.get(0).unwrap_or(0);
+        let c = if self.swf_version() < 6 {
+            char::from(char_code as u8)
+        } else {
+            // Unpaired surrogate characters should return the code point for the replacement character.
+            // Try to convert the code unit back to a character, which will fail if this is invalid UTF-16 (unpaired surrogate).
+            crate::string::utils::utf16_code_unit_to_char(char_code)
+        };
         self.context.avm1.push(u32::from(c).into());
         Ok(FrameControl::Continue)
     }
@@ -1606,9 +1609,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_mb_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWF4 mbsubstring
         // In SWF6+, this operates on UTF-16 code units.
-        // TODO: In SWF5 and below, this operates on locale-dependent characters.
+        // In SWF5 and below, this operates on locale-dependent characters.
         let len = self.context.avm1.pop().coerce_to_i32(self)?;
-        let len = if len >= 0 { len as usize } else { usize::MAX };
+        let len = usize::try_from(len).ok();
 
         // Index is 1-based for this opcode.
         let start = self.context.avm1.pop().coerce_to_i32(self)?;
@@ -1617,11 +1620,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
 
-        let result = crate::string::utils::utf16_iter_to_string(
-            s.encode_utf16()
-                .skip(start) // - 1 safe because max(1) above
-                .take(len),
-        );
+        let end = len
+            .and_then(|l| start.checked_add(l))
+            .filter(|l| *l <= s.len())
+            .unwrap_or_else(|| s.len());
+
+        let result = &s[start.min(end)..end];
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result).into());
@@ -1629,11 +1633,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_mb_string_length(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
-        // TODO: In SWF5, this returns the number of characters using the locale encoding.
         let val = self.context.avm1.pop();
-        let result = val.coerce_to_string(self)?.encode_utf16().count();
-        self.context.avm1.push(result.into());
+        let len = val.coerce_to_string(self)?.len();
+        self.context.avm1.push((len as f64).into());
         Ok(FrameControl::Continue)
     }
 
@@ -1797,7 +1799,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 SwfValue::Float(v) => (*v).into(),
                 SwfValue::Double(v) => (*v).into(),
                 SwfValue::Str(v) => {
-                    AvmString::new(self.context.gc_context, v.to_string_lossy(self.encoding()))
+                    AvmString::new_utf8(self.context.gc_context, v.to_str_lossy(self.encoding()))
                         .into()
                 }
                 SwfValue::Register(v) => self.current_register(*v),
@@ -1909,7 +1911,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
-    fn action_set_target(&mut self, target: &str) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn action_set_target(&mut self, target: &WStr) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.avm1_root(&self.context)?;
@@ -1926,13 +1928,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             avm_warn!(self, "SetTarget failed: {} not found", target);
             // TODO: Emulate AVM1 trace error message.
+            let path = if base_clip.removed() {
+                None
+            } else {
+                Some(base_clip.path())
+            };
             let message = format!(
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
-                if base_clip.removed() {
-                    "?".to_string()
-                } else {
-                    base_clip.path()
+                match &path {
+                    Some(p) => &*p,
+                    None => WStr::from_units(b"?"),
                 }
             );
             self.context.log.avm_trace(&message);
@@ -2062,11 +2068,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // SWFv4 string concatenation
         // TODO(Herschel): Result with non-string operands?
         let a = self.context.avm1.pop();
-        let mut b = self.context.avm1.pop().coerce_to_string(self)?.to_string();
-        b.push_str(&a.coerce_to_string(self)?);
-        self.context
-            .avm1
-            .push(AvmString::new(self.context.gc_context, b).into());
+        let b = self.context.avm1.pop();
+        let s = AvmString::concat(
+            self.context.gc_context,
+            b.coerce_to_string(self)?,
+            a.coerce_to_string(self)?,
+        );
+        self.context.avm1.push(s.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2083,12 +2091,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_string_extract(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // SWF4 substring function
-        // In SWF6+, this operates on UTF-16 code units.
-        // TODO: In SWF5 and below, this operates on bytes, regardless of the locale encoding.
-
-        // len < 0 returns to the end of the string.
         let len = self.context.avm1.pop().coerce_to_i32(self)?;
-        let len = if len >= 0 { len as usize } else { usize::MAX };
+        let len = usize::try_from(len).ok();
 
         // Index is 1-based for this opcode.
         let start = self.context.avm1.pop().coerce_to_i32(self)?;
@@ -2097,11 +2101,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let val = self.context.avm1.pop();
         let s = val.coerce_to_string(self)?;
 
-        let result = crate::string::utils::utf16_iter_to_string(
-            s.encode_utf16()
-                .skip(start) // - 1 safe because max(1) above
-                .take(len),
-        );
+        let end = len
+            .and_then(|l| start.checked_add(l))
+            .filter(|l| *l <= s.len())
+            .unwrap_or_else(|| s.len());
+
+        let result = &s[start.min(end)..end];
         self.context
             .avm1
             .push(AvmString::new(self.context.gc_context, result).into());
@@ -2112,11 +2117,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // AS1 strcmp
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        // This is specifically a non-UTF8 aware comparison.
-        let result = b
-            .coerce_to_string(self)?
-            .bytes()
-            .gt(a.coerce_to_string(self)?.bytes());
+        let result = b.coerce_to_string(self)?.gt(&a.coerce_to_string(self)?);
         self.context
             .avm1
             .push(Value::from_bool(result, self.swf_version()));
@@ -2127,9 +2128,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // AS1 strlen
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
-        let val = self.context.avm1.pop();
-        let result = val.coerce_to_string(self)?.encode_utf16().count();
-        self.context.avm1.push(result.into());
+        let val = self.context.avm1.pop().coerce_to_string(self)?;
+        self.context.avm1.push(val.len().into());
         Ok(FrameControl::Continue)
     }
 
@@ -2137,11 +2137,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // AS1 strcmp
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        // This is specifically a non-UTF8 aware comparison.
-        let result = b
-            .coerce_to_string(self)?
-            .bytes()
-            .lt(a.coerce_to_string(self)?.bytes());
+        let result = b.coerce_to_string(self)?.lt(&a.coerce_to_string(self)?);
         self.context
             .avm1
             .push(Value::from_bool(result, self.swf_version()));
@@ -2207,9 +2203,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_to_string(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.context.avm1.pop();
         let string = val.coerce_to_string(self)?;
-        self.context
-            .avm1
-            .push(AvmString::new(self.context.gc_context, string.to_string()).into());
+        self.context.avm1.push(string.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2222,15 +2216,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             val.coerce_to_string(self)?
         };
-        self.context.log.avm_trace(&out);
+        self.context.log.avm_trace(&out.to_utf8_lossy());
         Ok(FrameControl::Continue)
     }
 
     fn action_type_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let type_of = self.context.avm1.pop().type_of();
-        self.context
-            .avm1
-            .push(AvmString::new(self.context.gc_context, type_of.to_string()).into());
+        self.context.avm1.push(AvmString::from(type_of).into());
         Ok(FrameControl::Continue)
     }
 
@@ -2333,7 +2325,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 match catch_vars {
                     CatchVar::Var(name) => {
                         let name = name.to_str_lossy(activation.encoding());
-                        let name = AvmString::new(activation.context.gc_context, name);
+                        let name = AvmString::new_utf8(activation.context.gc_context, name);
                         activation.set_variable(name, value.to_owned())?
                     }
                     CatchVar::Register(id) => {
@@ -2420,7 +2412,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn object_into_request_options<'c>(
         &mut self,
         object: Object<'gc>,
-        url: Cow<'c, str>,
+        url: &'c WStr,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         match method {
@@ -2431,7 +2423,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .finish();
 
                 match method {
-                    NavigationMethod::Get if url.find('?').is_none() => (
+                    NavigationMethod::Get if url.find(b'?').is_none() => (
                         Cow::Owned(format!("{}?{}", url, qstring)),
                         RequestOptions::get(),
                     ),
@@ -2440,7 +2432,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         RequestOptions::get(),
                     ),
                     NavigationMethod::Post => (
-                        url,
+                        url.to_utf8_lossy(),
                         RequestOptions::post(Some((
                             qstring.as_bytes().to_owned(),
                             "application/x-www-form-urlencoded".to_string(),
@@ -2448,7 +2440,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     ),
                 }
             }
-            None => (url, RequestOptions::get()),
+            None => (url.to_utf8_lossy(), RequestOptions::get()),
         }
     }
 
@@ -2468,7 +2460,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// form data in the request body or URL.
     pub fn locals_into_request_options<'c>(
         &mut self,
-        url: Cow<'c, str>,
+        url: &'c WStr,
         method: Option<NavigationMethod>,
     ) -> (Cow<'c, str>, RequestOptions) {
         let scope = self.scope_cell();
@@ -2532,7 +2524,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         root: DisplayObject<'gc>,
         start: Object<'gc>,
-        path: &str,
+        mut path: &WStr,
         mut first_element: bool,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // Empty path resolves immediately to start clip.
@@ -2542,8 +2534,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Starting / means an absolute path starting from root.
         // (`/bar` means `_root.bar`)
-        let mut path = path.as_bytes();
-        let (mut object, mut is_slash_path) = if path[0] == b'/' {
+        let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
             path = &path[1..];
             (root.object().coerce_to_object(self), true)
         } else {
@@ -2556,17 +2547,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         while !path.is_empty() {
             // Skip any number of leading :
             // `foo`, `:foo`, and `:::foo` are all the same
-            while path.get(0) == Some(&b':') {
-                path = &path[1..];
-            }
+            path = path.trim_start_matches(b':');
 
-            let val = if let b".." | b"../" | b"..:" = &path[..std::cmp::min(path.len(), 3)] {
+            let prefix = &path[..path.len().min(3)];
+            let val = if prefix == b".." || prefix == b"../" || prefix == b"..:" {
                 // Check for ..
                 // SWF-4 style _parent
-                if path.get(2) == Some(&b'/') {
+                if path.get(2) == Some(u16::from(b'/')) {
                     is_slash_path = true;
                 }
-                path = path.get(3..).unwrap_or(&[]);
+                path = path.slice(3..).unwrap_or_default();
                 if let Some(parent) = object.as_display_object().and_then(|o| o.avm1_parent()) {
                     parent.object()
                 } else {
@@ -2581,10 +2571,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 // TODO: SWF4 is probably more restrictive.
                 let mut pos = 0;
                 while pos < path.len() {
-                    match path[pos] {
-                        b':' => break,
-                        b'.' if !is_slash_path => break,
-                        b'/' => {
+                    match u8::try_from(path.at(pos)) {
+                        Ok(b':') => break,
+                        Ok(b'.') if !is_slash_path => break,
+                        Ok(b'/') => {
                             is_slash_path = true;
                             break;
                         }
@@ -2594,15 +2584,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
 
                 // Slice out the identifier and step the cursor past the delimiter.
-                let ident = &path[..pos];
-                path = path.get(pos + 1..).unwrap_or(&[]);
+                let name = &path[..pos];
+                path = path.slice(pos + 1..).unwrap_or_default();
 
-                // Guaranteed to be valid UTF-8.
-                let name = unsafe { std::str::from_utf8_unchecked(ident) };
-
-                if first_element && name == "this" {
+                if first_element && name == b"this" {
                     self.this_cell().into()
-                } else if first_element && name == "_root" {
+                } else if first_element && name == b"_root" {
                     self.root_object()?
                 } else {
                     // Get the value from the object.
@@ -2642,28 +2629,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn resolve_variable_path<'s>(
         &mut self,
         start: DisplayObject<'gc>,
-        path: &'s str,
-    ) -> Result<Option<(Object<'gc>, &'s str)>, Error<'gc>> {
+        path: &'s WStr,
+    ) -> Result<Option<(Object<'gc>, &'s WStr)>, Error<'gc>> {
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        // We also check for a / to skip some unnecessary work later.
-        let mut has_slash = false;
-        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
-            b':' | b'.' => true,
-            b'/' => {
-                has_slash = true;
-                false
-            }
-            _ => false,
-        });
-
-        let b = var_iter.next();
-        let a = var_iter.next();
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2715,24 +2688,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        // We also check for a / to skip some unnecessary work later.
-        let mut has_slash = false;
-        let mut var_iter = path.as_bytes().rsplitn(2, |c| match c {
-            b':' | b'.' => true,
-            b'/' => {
-                has_slash = true;
-                false
-            }
-            _ => false,
-        });
-
-        let b = var_iter.next();
-        let a = var_iter.next();
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(separator) = path.rfind(b":.".as_ref()) {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
+            let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2752,8 +2711,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         // If it doesn't have a trailing variable, it can still be a slash path.
-        // We can skip this step if we didn't find a slash above.
-        if has_slash {
+        if path.contains(b'/') {
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
                 let avm1_root = start.avm1_root(&self.context)?;
@@ -2808,16 +2766,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         // Find the right-most : or . in the path.
         // If we have one, we must resolve as a target path.
-        let mut var_iter = path.as_bytes().rsplitn(2, |&c| c == b':' || c == b'.');
-        let b = var_iter.next();
-        let a = var_iter.next();
+        let separator = path.rfind(b":.".as_ref());
 
-        if let (Some(path), Some(var_name)) = (a, b) {
+        if let Some(sep) = separator {
             // We have a . or :, so this is a path to an object plus a variable name.
             // We resolve it directly on the targeted object.
-            let path = unsafe { std::str::from_utf8_unchecked(path) };
-            let var_name = unsafe { std::str::from_utf8_unchecked(var_name) };
-            let var_name = AvmString::new(self.context.gc_context, var_name);
+            let (path, var_name) = (&path[..sep], &path[sep + 1..]);
 
             let mut current_scope = Some(self.scope_cell());
             while let Some(scope) = current_scope {
@@ -2825,6 +2779,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.read().locals(), path, true)?
                 {
+                    let var_name = AvmString::new(self.context.gc_context, var_name);
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }
@@ -2893,11 +2848,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
-        if name == "this" {
+        if &name == b"this" {
             return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
         }
 
-        if name == "arguments" && self.arguments.is_some() {
+        if &name == b"arguments" && self.arguments.is_some() {
             return Ok(CallableValue::UnCallable(Value::Object(
                 self.arguments.unwrap(),
             )));
@@ -2910,11 +2865,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Check if a particular property in the scope chain is defined.
     pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
-        if name == "this" {
+        if &name == b"this" {
             return true;
         }
 
-        if name == "arguments" && self.arguments.is_some() {
+        if &name == b"arguments" && self.arguments.is_some() {
             return true;
         }
 

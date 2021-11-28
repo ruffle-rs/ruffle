@@ -31,12 +31,12 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
@@ -70,7 +70,7 @@ pub struct MovieClip<'gc>(GcCell<'gc, MovieClipData<'gc>>);
 #[collect(no_drop)]
 pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
-    static_data: Gc<'gc, MovieClipStatic>,
+    static_data: Gc<'gc, MovieClipStatic<'gc>>,
     tag_stream_pos: u64,
     current_frame: FrameNumber,
     #[collect(require_static)]
@@ -100,7 +100,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -134,7 +134,7 @@ impl<'gc> MovieClip<'gc> {
             gc_context,
             MovieClipData {
                 base: Default::default(),
-                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie)),
+                static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
                 audio_stream: None,
@@ -170,7 +170,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf, num_frames),
+                    MovieClipStatic::with_data(id, swf, num_frames, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -204,7 +204,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(0, movie.into(), num_frames),
+                    MovieClipStatic::with_data(0, movie.into(), num_frames, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -585,9 +585,10 @@ impl<'gc> MovieClip<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_str()?.to_string_lossy(reader.encoding());
+            let class_name = reader.read_str()?.to_str_lossy(reader.encoding());
+            let class_name = AvmString::new_utf8(activation.context.gc_context, class_name);
 
-            let name = Avm2QName::from_qualified_name(&class_name, activation.context.gc_context);
+            let name = Avm2QName::from_qualified_name(class_name, activation.context.gc_context);
             let library = activation
                 .context
                 .library
@@ -662,7 +663,7 @@ impl<'gc> MovieClip<'gc> {
     fn scene_and_frame_labels(
         self,
         reader: &mut SwfStream<'_>,
-        static_data: &mut MovieClipStatic,
+        static_data: &mut MovieClipStatic<'gc>,
     ) -> DecodeResult {
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
         sfl_data
@@ -677,7 +678,7 @@ impl<'gc> MovieClip<'gc> {
                 .map(|fld| fld.frame_num + 1)
                 .unwrap_or_else(|| static_data.total_frames as u32 + 1);
 
-            let label = label.to_string_lossy(reader.encoding());
+            let label = WString::from_utf8(&label.to_string_lossy(reader.encoding()));
             static_data.scene_labels.insert(
                 label.clone(),
                 Scene {
@@ -690,7 +691,7 @@ impl<'gc> MovieClip<'gc> {
 
         for FrameLabelData { frame_num, label } in sfl_data.frame_labels {
             static_data.frame_labels.insert(
-                label.to_string_lossy(reader.encoding()),
+                WString::from_utf8(&label.to_string_lossy(reader.encoding())),
                 frame_num as u16 + 1,
             );
         }
@@ -903,10 +904,10 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Yield the current frame label as a tuple of string and frame number.
-    pub fn current_label(self) -> Option<(String, FrameNumber)> {
+    pub fn current_label(self) -> Option<(WString, FrameNumber)> {
         let read = self.0.read();
         let current_frame = read.current_frame();
-        let mut best: Option<(&str, FrameNumber)> = None;
+        let mut best: Option<(&WString, FrameNumber)> = None;
 
         for (label, frame) in read.static_data.frame_labels.iter() {
             if *frame > current_frame {
@@ -918,16 +919,20 @@ impl<'gc> MovieClip<'gc> {
             }
         }
 
-        best.map(|(s, fnum)| (s.to_string(), fnum))
+        best.map(|(s, fnum)| (s.clone(), fnum))
     }
 
     /// Yield a list of labels and frame-numbers in the current scene.
     ///
     /// Labels are returned sorted by frame number.
-    pub fn labels_in_range(self, from: FrameNumber, to: FrameNumber) -> Vec<(String, FrameNumber)> {
+    pub fn labels_in_range(
+        self,
+        from: FrameNumber,
+        to: FrameNumber,
+    ) -> Vec<(WString, FrameNumber)> {
         let read = self.0.read();
 
-        let mut values: Vec<(String, FrameNumber)> = read
+        let mut values: Vec<(WString, FrameNumber)> = read
             .static_data
             .frame_labels
             .iter()
@@ -958,24 +963,25 @@ impl<'gc> MovieClip<'gc> {
         write.avm2_class = constr;
     }
 
-    pub fn frame_label_to_number(self, frame_label: &str) -> Option<FrameNumber> {
-        // Frame labels are case insensitive.
+    pub fn frame_label_to_number(self, frame_label: &WStr) -> Option<FrameNumber> {
+        // Frame labels are case insensitive (ASCII).
+        // TODO: Should be case sensitive in AVM2.
         let label = frame_label.to_ascii_lowercase();
         self.0.read().static_data.frame_labels.get(&label).copied()
     }
 
-    pub fn scene_label_to_number(self, scene_label: &str) -> Option<FrameNumber> {
-        //TODO: Are scene labels also case insensitive?
+    pub fn scene_label_to_number(self, scene_label: &WStr) -> Option<FrameNumber> {
+        // Never used in AVM1, so always be case sensitive.
         self.0
             .read()
             .static_data
             .scene_labels
-            .get(scene_label)
+            .get(&WString::from(scene_label))
             .map(|Scene { start, .. }| start)
             .copied()
     }
 
-    pub fn frame_exists_within_scene(self, frame_label: &str, scene_label: &str) -> bool {
+    pub fn frame_exists_within_scene(self, frame_label: &WStr, scene_label: &WStr) -> bool {
         let scene = self.scene_label_to_number(scene_label);
         let frame = self.frame_label_to_number(frame_label);
 
@@ -2132,9 +2138,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         let frame_name = match event {
-            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some("_up"),
-            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => Some("_over"),
-            ClipEvent::Press | ClipEvent::DragOver => Some("_down"),
+            ClipEvent::RollOut | ClipEvent::ReleaseOutside => Some(WStr::from_units(b"_up")),
+            ClipEvent::RollOver | ClipEvent::Release | ClipEvent::DragOut => {
+                Some(WStr::from_units(b"_over"))
+            }
+            ClipEvent::Press | ClipEvent::DragOver => Some(WStr::from_units(b"_down")),
             _ => None,
         };
 
@@ -2220,7 +2228,7 @@ impl<'gc> MovieClipData<'gc> {
         self.base.base.reset_for_movie_load();
         self.static_data = Gc::allocate(
             gc_context,
-            MovieClipStatic::with_data(0, movie.into(), total_frames),
+            MovieClipStatic::with_data(0, movie.into(), total_frames, gc_context),
         );
         self.tag_stream_pos = 0;
         self.flags = MovieClipFlags::PLAYING;
@@ -2367,11 +2375,11 @@ impl<'gc> MovieClipData<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Option<Avm1Object<'gc>> {
-        let symbol_name = self.static_data.exported_name.borrow();
+        let symbol_name = self.static_data.exported_name.read();
         let symbol_name = symbol_name.as_ref()?;
         let library = context.library.library_for_movie_mut(self.movie());
         let registry = library.avm1_constructor_registry()?;
-        let ctor = registry.get(symbol_name)?;
+        let ctor = registry.get(*symbol_name)?;
         Some(Avm1Object::FunctionObject(ctor))
     }
 
@@ -3076,7 +3084,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let exports = reader.read_export_assets()?;
         for export in exports {
             let name = export.name.to_str_lossy(reader.encoding());
-            let name = AvmString::new(context.gc_context, name);
+            let name = AvmString::new_utf8(context.gc_context, name);
             let character = context
                 .library
                 .library_for_movie_mut(self.movie())
@@ -3084,8 +3092,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(Character::MovieClip(movie_clip)) = character {
-                *movie_clip.0.read().static_data.exported_name.borrow_mut() =
-                    Some(name.to_string());
+                *movie_clip
+                    .0
+                    .read()
+                    .static_data
+                    .exported_name
+                    .write(context.gc_context) = Some(name);
             }
         }
         Ok(())
@@ -3098,14 +3110,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         cur_frame: FrameNumber,
-        static_data: &mut MovieClipStatic,
+        static_data: &mut MovieClipStatic<'gc>,
     ) -> DecodeResult {
         let frame_label = reader.read_frame_label(tag_len)?;
-        // Frame labels are case insensitive (ASCII).
-        let label = frame_label
+        let mut label = frame_label
             .label
             .to_str_lossy(reader.encoding())
-            .to_ascii_lowercase();
+            .into_owned();
+
+        // Frame labels are case insensitive (ASCII).
+        label.make_ascii_lowercase();
+        let label = WString::from_utf8_owned(label);
         if let std::collections::hash_map::Entry::Vacant(v) = static_data.frame_labels.entry(label)
         {
             v.insert(cur_frame);
@@ -3362,7 +3377,7 @@ impl<'gc, 'a> MovieClip<'gc> {
 
 #[derive(Clone)]
 pub struct Scene {
-    pub name: String,
+    pub name: WString,
     pub start: FrameNumber,
     pub length: FrameNumber,
 }
@@ -3370,7 +3385,7 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Scene {
-            name: "".to_string(),
+            name: WString::default(),
             start: 0,
             length: u16::MAX,
         }
@@ -3380,26 +3395,34 @@ impl Default for Scene {
 /// Static data shared between all instances of a movie clip.
 #[allow(dead_code)]
 #[derive(Clone, Collect)]
-#[collect(require_static)]
-struct MovieClipStatic {
+#[collect(no_drop)]
+struct MovieClipStatic<'gc> {
     id: CharacterId,
     swf: SwfSlice,
-    frame_labels: HashMap<String, FrameNumber>,
-    scene_labels: HashMap<String, Scene>,
+    frame_labels: HashMap<WString, FrameNumber>,
+    #[collect(require_static)]
+    scene_labels: HashMap<WString, Scene>,
+    #[collect(require_static)]
     audio_stream_info: Option<swf::SoundStreamHead>,
+    #[collect(require_static)]
     audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
-    exported_name: RefCell<Option<String>>,
+    exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
 }
 
-impl MovieClipStatic {
-    fn empty(movie: Arc<SwfMovie>) -> Self {
-        Self::with_data(0, SwfSlice::empty(movie), 1)
+impl<'gc> MovieClipStatic<'gc> {
+    fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
+        Self::with_data(0, SwfSlice::empty(movie), 1, gc_context)
     }
 
-    fn with_data(id: CharacterId, swf: SwfSlice, total_frames: FrameNumber) -> Self {
+    fn with_data(
+        id: CharacterId,
+        swf: SwfSlice,
+        total_frames: FrameNumber,
+        gc_context: MutationContext<'gc, '_>,
+    ) -> Self {
         Self {
             id,
             swf,
@@ -3408,7 +3431,7 @@ impl MovieClipStatic {
             scene_labels: HashMap::new(),
             audio_stream_info: None,
             audio_stream_handle: None,
-            exported_name: RefCell::new(None),
+            exported_name: GcCell::allocate(gc_context, None),
         }
     }
 }

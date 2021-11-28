@@ -258,14 +258,15 @@ pub fn join<'gc>(
         return Ok("".into());
     }
 
-    let parts: Result<Vec<_>, Error<'gc>> = (0..length)
+    let parts = (0..length)
         .map(|i| {
             let element = this.get_element(activation, i);
-            Ok(element.coerce_to_string(activation)?.to_string())
+            element.coerce_to_string(activation)
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(AvmString::new(activation.context.gc_context, parts?.join(&separator)).into())
+    let joined = crate::string::join(&parts, &separator);
+    Ok(AvmString::new(activation.context.gc_context, joined).into())
 }
 
 /// Handles an index parameter that may be positive (starting from beginning) or negaitve (starting from end).
@@ -628,7 +629,7 @@ fn sort_compare_string_ignore_case<'gc>(
     let b_str = b.coerce_to_string(activation);
     // TODO: Handle errors.
     if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
-        crate::string::utils::swf_string_cmp_ignore_case(&a_str, &b_str)
+        a_str.cmp_ignore_case(&b_str)
     } else {
         DEFAULT_ORDERING
     }

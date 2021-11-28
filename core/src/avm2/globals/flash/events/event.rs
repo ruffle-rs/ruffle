@@ -187,7 +187,7 @@ pub fn format_to_string<'gc>(
             }
         }
 
-        return Ok(AvmString::new(
+        return Ok(AvmString::new_utf8(
             activation.context.gc_context,
             format!("[{}{}]", class_name, stringified_params),
         )

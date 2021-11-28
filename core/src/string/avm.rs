@@ -1,137 +1,133 @@
-use gc_arena::{Collect, Gc, MutationContext};
-use std::cmp::{Eq, Ord, Ordering, PartialOrd};
-use std::fmt;
-use std::hash::{Hash, Hasher};
+use std::borrow::Borrow;
 use std::ops::Deref;
+
+use gc_arena::{Collect, Gc, MutationContext};
+use std::borrow::Cow;
+
+use super::{WStr, WString};
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    Owned(Gc<'gc, String>),
-    Static(&'static str),
+    Owned(Gc<'gc, WString>),
+    Static(&'static WStr),
 }
 
-impl fmt::Debug for Source<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Source::Owned(str) => f.debug_tuple("Owned").field(str.deref()).finish(),
-            Source::Static(str) => f.debug_tuple("Static").field(str).finish(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct AvmString<'gc> {
     source: Source<'gc>,
 }
 
 impl<'gc> AvmString<'gc> {
-    pub fn new<S: Into<String>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
+    pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
+        gc_context: MutationContext<'gc, '_>,
+        string: S,
+    ) -> Self {
+        let buf = match string.into() {
+            Cow::Owned(utf8) => WString::from_utf8_owned(utf8),
+            Cow::Borrowed(utf8) => WString::from_utf8(utf8),
+        };
+        Self {
+            source: Source::Owned(Gc::allocate(gc_context, buf)),
+        }
+    }
+
+    pub fn new_utf8_bytes<'b, B: Into<Cow<'b, [u8]>>>(
+        gc_context: MutationContext<'gc, '_>,
+        bytes: B,
+    ) -> Result<Self, std::str::Utf8Error> {
+        let utf8 = match bytes.into() {
+            Cow::Owned(b) => Cow::Owned(String::from_utf8(b).map_err(|e| e.utf8_error())?),
+            Cow::Borrowed(b) => Cow::Borrowed(std::str::from_utf8(b)?),
+        };
+        Ok(Self::new_utf8(gc_context, utf8))
+    }
+
+    pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         Self {
             source: Source::Owned(Gc::allocate(gc_context, string.into())),
         }
     }
 
-    pub fn as_str(&self) -> &str {
-        self
+    pub fn as_wstr(&self) -> &WStr {
+        match &self.source {
+            Source::Owned(s) => s,
+            Source::Static(s) => s,
+        }
+    }
+
+    pub fn concat(
+        gc_context: MutationContext<'gc, '_>,
+        left: AvmString<'gc>,
+        right: AvmString<'gc>,
+    ) -> AvmString<'gc> {
+        if left.is_empty() {
+            right
+        } else if right.is_empty() {
+            left
+        } else {
+            let mut out = WString::from(left.as_wstr());
+            out.push_str(&right);
+            Self::new(gc_context, out)
+        }
+    }
+
+    #[inline]
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        match (this.source, other.source) {
+            (Source::Owned(this), Source::Owned(other)) => Gc::ptr_eq(this, other),
+            (Source::Static(this), Source::Static(other)) => std::ptr::eq(this, other),
+            _ => false,
+        }
     }
 }
 
 impl Default for AvmString<'_> {
     fn default() -> Self {
         Self {
-            source: Source::Static(""),
+            source: Source::Static(WStr::empty()),
         }
     }
 }
 
 impl<'gc> From<&'static str> for AvmString<'gc> {
+    #[inline]
     fn from(str: &'static str) -> Self {
+        // TODO(moulins): actually check that `str` is valid ASCII.
+        Self {
+            source: Source::Static(WStr::from_units(str.as_bytes())),
+        }
+    }
+}
+
+impl<'gc> From<&'static WStr> for AvmString<'gc> {
+    #[inline]
+    fn from(str: &'static WStr) -> Self {
         Self {
             source: Source::Static(str),
         }
     }
 }
 
-impl fmt::Display for AvmString<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self)
-    }
-}
-
-impl Deref for AvmString<'_> {
-    type Target = str;
-
+impl<'gc> Deref for AvmString<'gc> {
+    type Target = WStr;
     #[inline]
-    fn deref(&self) -> &str {
-        match &self.source {
-            Source::Owned(str) => str.deref(),
-            Source::Static(str) => str,
-        }
+    fn deref(&self) -> &Self::Target {
+        self.as_wstr()
     }
 }
 
-impl AsRef<str> for AvmString<'_> {
+impl<'gc> AsRef<WStr> for AvmString<'gc> {
     #[inline]
-    fn as_ref(&self) -> &str {
-        match &self.source {
-            Source::Owned(str) => str,
-            Source::Static(str) => str,
-        }
+    fn as_ref(&self) -> &WStr {
+        self.as_wstr()
     }
 }
 
-impl<'gc> PartialEq<AvmString<'gc>> for AvmString<'gc> {
+impl<'gc> Borrow<WStr> for AvmString<'gc> {
     #[inline]
-    fn eq(&self, other: &AvmString<'gc>) -> bool {
-        PartialEq::eq(self.as_str(), other.as_str())
+    fn borrow(&self) -> &WStr {
+        self.as_wstr()
     }
 }
-
-impl<'gc> Eq for AvmString<'gc> {}
-
-impl<'gc> PartialOrd<AvmString<'gc>> for AvmString<'gc> {
-    fn partial_cmp(&self, other: &AvmString<'gc>) -> Option<Ordering> {
-        self.as_ref().partial_cmp(other.as_ref())
-    }
-}
-
-impl<'gc> Ord for AvmString<'gc> {
-    fn cmp(&self, other: &AvmString<'gc>) -> Ordering {
-        self.as_ref().cmp(other.as_ref())
-    }
-}
-
-impl<'gc> Hash for AvmString<'gc> {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: Hasher,
-    {
-        self.as_ref().hash(state)
-    }
-}
-
-macro_rules! impl_eq {
-    ($lhs:ty, $rhs: ty) => {
-        #[allow(unused_lifetimes, clippy::redundant_slicing)]
-        impl<'a, 'b> PartialEq<$rhs> for $lhs {
-            #[inline]
-            fn eq(&self, other: &$rhs) -> bool {
-                PartialEq::eq(&self[..], &other[..])
-            }
-        }
-
-        #[allow(unused_lifetimes, clippy::redundant_slicing)]
-        impl<'a, 'b> PartialEq<$lhs> for $rhs {
-            #[inline]
-            fn eq(&self, other: &$lhs) -> bool {
-                PartialEq::eq(&self[..], &other[..])
-            }
-        }
-    };
-}
-
-impl_eq! { AvmString<'_>, str }
-impl_eq! { AvmString<'_>, &'a str }
-impl_eq! { AvmString<'_>, String }

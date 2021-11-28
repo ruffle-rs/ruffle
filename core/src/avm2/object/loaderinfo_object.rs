@@ -127,7 +127,10 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         if let Some(class) = self.instance_of_class_definition() {
-            Ok(AvmString::new(mc, format!("[object {}]", class.read().name().local_name())).into())
+            Ok(
+                AvmString::new_utf8(mc, format!("[object {}]", class.read().name().local_name()))
+                    .into(),
+            )
         } else {
             Ok("[object Object]".into())
         }

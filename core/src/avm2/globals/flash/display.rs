@@ -14,6 +14,7 @@ pub mod jointstyle;
 pub mod linescalemode;
 pub mod loaderinfo;
 pub mod movieclip;
+pub mod pixelsnapping;
 pub mod scene;
 pub mod shape;
 pub mod simplebutton;

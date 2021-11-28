@@ -1,6 +1,7 @@
 use crate::add_field_accessors;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
+use crate::string::WStr;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 use std::fmt;
@@ -13,24 +14,26 @@ pub enum BevelFilterType {
     Full,
 }
 
-impl From<&str> for BevelFilterType {
-    fn from(value: &str) -> Self {
-        match value {
-            "inner" => BevelFilterType::Inner,
-            "outer" => BevelFilterType::Outer,
-            "full" => BevelFilterType::Full,
-            _ => BevelFilterType::Full,
+impl<'a> From<&'a WStr> for BevelFilterType {
+    fn from(value: &'a WStr) -> Self {
+        if value == b"inner" {
+            BevelFilterType::Inner
+        } else if value == b"outer" {
+            BevelFilterType::Outer
+        } else {
+            BevelFilterType::Full
         }
     }
 }
 
-impl From<BevelFilterType> for &str {
-    fn from(v: BevelFilterType) -> Self {
-        match v {
-            BevelFilterType::Inner => "inner",
-            BevelFilterType::Outer => "outer",
-            BevelFilterType::Full => "full",
-        }
+impl From<BevelFilterType> for &'static WStr {
+    fn from(v: BevelFilterType) -> &'static WStr {
+        let s: &[u8] = match v {
+            BevelFilterType::Inner => b"inner",
+            BevelFilterType::Outer => b"outer",
+            BevelFilterType::Full => b"full",
+        };
+        WStr::from_units(s)
     }
 }
 

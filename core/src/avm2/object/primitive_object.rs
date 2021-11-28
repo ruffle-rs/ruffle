@@ -125,7 +125,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
                     .map(|c| c.read().name().local_name())
                     .unwrap_or_else(|| "Object".into());
 
-                Ok(AvmString::new(mc, format!("[object {}]", class_name)).into())
+                Ok(AvmString::new_utf8(mc, format!("[object {}]", class_name)).into())
             }
         }
     }

@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::bevel_filter::{BevelFilterObject, BevelFilterType};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -155,7 +155,7 @@ pub fn set_highlight_alpha<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_highlight_alpha(activation.context.gc_context, highlight_alpha);
@@ -214,7 +214,7 @@ pub fn set_shadow_alpha<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_shadow_alpha(activation.context.gc_context, shadow_alpha);
@@ -244,7 +244,7 @@ pub fn set_quality<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_i32(activation)
-        .map(|x| x.max(0).min(15))?;
+        .map(|x| x.clamp(0, 15))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_quality(activation.context.gc_context, quality);
@@ -274,7 +274,7 @@ pub fn set_strength<'gc>(
         .get(0)
         .unwrap_or(&1.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_strength(activation.context.gc_context, strength);
@@ -333,7 +333,7 @@ pub fn set_blur_x<'gc>(
         .get(0)
         .unwrap_or(&4.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_blur_x(activation.context.gc_context, blur_x);
@@ -363,7 +363,7 @@ pub fn set_blur_y<'gc>(
         .get(0)
         .unwrap_or(&4.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(255.0))?;
+        .map(|x| x.clamp(0.0, 255.0))?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_blur_y(activation.context.gc_context, blur_y);
@@ -378,8 +378,8 @@ pub fn get_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_bevel_filter_object() {
-        let type_: &str = filter.get_type().into();
-        return Ok(AvmString::new(activation.context.gc_context, type_.to_string()).into());
+        let type_: &WStr = filter.get_type().into();
+        return Ok(AvmString::new(activation.context.gc_context, type_).into());
     }
 
     Ok(Value::Undefined)
@@ -394,7 +394,7 @@ pub fn set_type<'gc>(
         .get(0)
         .unwrap_or(&"inner".into())
         .coerce_to_string(activation)
-        .map(|s| s.as_str().into())?;
+        .map(|s| s.as_wstr().into())?;
 
     if let Some(filter) = this.as_bevel_filter_object() {
         filter.set_type(activation.context.gc_context, type_);

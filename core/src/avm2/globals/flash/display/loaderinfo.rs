@@ -247,8 +247,8 @@ pub fn url<'gc>(
                     return Err("Error: The stage's loader info does not have a URL".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let url = root.url().unwrap_or("").to_string();
-                    return Ok(AvmString::new(activation.context.gc_context, url).into());
+                    let url = root.url().unwrap_or("");
+                    return Ok(AvmString::new_utf8(activation.context.gc_context, url).into());
                 }
             }
         }
@@ -345,12 +345,10 @@ pub fn loader_url<'gc>(
                     return Err("Error: The stage's loader info does not have a loader URL".into())
                 }
                 LoaderStream::Swf(root, _) => {
-                    let loader_url = root
-                        .loader_url()
-                        .or_else(|| root.url())
-                        .unwrap_or("")
-                        .to_string();
-                    return Ok(AvmString::new(activation.context.gc_context, loader_url).into());
+                    let loader_url = root.loader_url().or_else(|| root.url()).unwrap_or("");
+                    return Ok(
+                        AvmString::new_utf8(activation.context.gc_context, loader_url).into(),
+                    );
                 }
             }
         }
@@ -380,8 +378,8 @@ pub fn parameters<'gc>(
                     let parameters = root.parameters();
 
                     for (k, v) in parameters.iter() {
-                        let avm_k = AvmString::new(activation.context.gc_context, k);
-                        let avm_v = AvmString::new(activation.context.gc_context, v);
+                        let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
+                        let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
                         params_obj.set_property(
                             params_obj,
                             &QName::new(Namespace::public(), avm_k).into(),

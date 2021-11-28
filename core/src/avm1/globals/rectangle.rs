@@ -80,7 +80,7 @@ fn to_string<'gc>(
     let width = this.get("width", activation)?;
     let height = this.get("height", activation)?;
 
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         format!(
             "(x={}, y={}, w={}, h={})",

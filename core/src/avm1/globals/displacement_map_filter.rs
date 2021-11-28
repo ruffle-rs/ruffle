@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -59,7 +59,7 @@ pub fn set_alpha<'gc>(
         .get(0)
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)
-        .map(|x| x.max(0.0).min(1.0))?;
+        .map(|x| x.clamp(0.0, 1.0))?;
 
     if let Some(filter) = this.as_displacement_map_filter_object() {
         filter.set_alpha(activation.context.gc_context, alpha);
@@ -224,9 +224,8 @@ pub fn mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_displacement_map_filter_object() {
-        return Ok(
-            AvmString::new(activation.context.gc_context, String::from(object.mode())).into(),
-        );
+        let mode: &WStr = object.mode().into();
+        return Ok(AvmString::new(activation.context.gc_context, mode).into());
     }
 
     Ok(Value::Undefined)
@@ -243,7 +242,7 @@ pub fn set_mode<'gc>(
         .coerce_to_string(activation)?;
 
     if let Some(object) = this.as_displacement_map_filter_object() {
-        object.set_mode(activation.context.gc_context, mode.as_str().into());
+        object.set_mode(activation.context.gc_context, mode.as_wstr().into());
     }
 
     Ok(Value::Undefined)

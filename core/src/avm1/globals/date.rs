@@ -672,7 +672,7 @@ fn to_string<'gc>(
 
     if let Some(date) = date {
         let local = date.with_timezone(&activation.context.locale.get_timezone());
-        Ok(AvmString::new(
+        Ok(AvmString::new_utf8(
             activation.context.gc_context,
             local.format("%a %b %-d %T GMT%z %-Y").to_string(),
         )

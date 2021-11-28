@@ -152,47 +152,25 @@ pub struct Class<'gc> {
     is_system: bool,
 }
 
-/// Find traits in a list of traits matching a name.
-///
-/// This function also enforces final/override bits on the traits, and will
-/// raise `VerifyError`s as needed.
-///
-/// TODO: This is an O(n^2) algorithm, it sucks.
+/// Find first trait in a list of traits matching a name and filter.
+/// The filter should match on TraitKind - in that case, only
+/// a single trait should match the filter.
 fn do_trait_lookup<'gc>(
     name: &QName<'gc>,
-    known_traits: &mut Vec<Trait<'gc>>,
     all_traits: &[Trait<'gc>],
-) -> Result<(), Error> {
+    filter: fn(&Trait<'gc>) -> bool,
+) -> Option<Trait<'gc>> {
     for trait_entry in all_traits {
-        if name == trait_entry.name() {
-            for known_trait in known_traits.iter() {
-                match (&trait_entry.kind(), &known_trait.kind()) {
-                    (TraitKind::Getter { .. }, TraitKind::Setter { .. }) => continue,
-                    (TraitKind::Setter { .. }, TraitKind::Getter { .. }) => continue,
-                    _ => {}
-                };
-
-                if known_trait.is_final() {
-                    return Err("Attempting to override a final definition".into());
-                }
-
-                if !trait_entry.is_override() {
-                    return Err("Definition override is not marked as override".into());
-                }
-            }
-
-            known_traits.push(trait_entry.clone());
+        if name == trait_entry.name() && filter(trait_entry) {
+            return Some(trait_entry.clone());
         }
     }
 
-    Ok(())
+    None
 }
 
 /// Find traits in a list of traits matching a slot ID.
-fn do_trait_lookup_by_slot<'gc>(
-    id: u32,
-    all_traits: &[Trait<'gc>],
-) -> Result<Option<Trait<'gc>>, Error> {
+fn do_trait_lookup_by_slot<'gc>(id: u32, all_traits: &[Trait<'gc>]) -> Option<Trait<'gc>> {
     for trait_entry in all_traits {
         let trait_id = match trait_entry.kind() {
             TraitKind::Slot { slot_id, .. } => slot_id,
@@ -203,11 +181,11 @@ fn do_trait_lookup_by_slot<'gc>(
         };
 
         if id == *trait_id {
-            return Ok(Some(trait_entry.clone()));
+            return Some(trait_entry.clone());
         }
     }
 
-    Ok(None)
+    None
 }
 
 impl<'gc> Class<'gc> {
@@ -732,35 +710,17 @@ impl<'gc> Class<'gc> {
         self.class_traits.push(my_trait);
     }
 
-    /// Given a name, append class traits matching the name to a list of known
-    /// traits.
-    ///
-    /// This function adds its result onto the list of known traits, with the
-    /// caveat that duplicate entries will be replaced (if allowed). As such, this
-    /// function should be run on the class hierarchy from top to bottom.
-    ///
-    /// If a given trait has an invalid name, attempts to override a final trait,
-    /// or overlaps an existing trait without being an override, then this function
-    /// returns an error.
+    /// Given a name, return the first class trait matching the name and filter.
     pub fn lookup_class_traits(
         &self,
         name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        do_trait_lookup(name, known_traits, &self.class_traits)
+        filter: fn(&Trait<'gc>) -> bool,
+    ) -> Option<Trait<'gc>> {
+        do_trait_lookup(name, &self.class_traits, filter)
     }
 
-    /// Given a slot ID, append class traits matching the slot to a list of
-    /// known traits.
-    ///
-    /// This function adds its result onto the list of known traits, with the
-    /// caveat that duplicate entries will be replaced (if allowed). As such, this
-    /// function should be run on the class hierarchy from top to bottom.
-    ///
-    /// If a given trait has an invalid name, attempts to override a final trait,
-    /// or overlaps an existing trait without being an override, then this function
-    /// returns an error.
-    pub fn lookup_class_traits_by_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+    /// Given a slot ID, return the first class trait matching the slot.
+    pub fn lookup_class_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
         do_trait_lookup_by_slot(id, &self.class_traits)
     }
 
@@ -804,35 +764,17 @@ impl<'gc> Class<'gc> {
         self.instance_traits.push(my_trait);
     }
 
-    /// Given a name, append instance traits matching the name to a list of
-    /// known traits.
-    ///
-    /// This function adds its result onto the list of known traits, with the
-    /// caveat that duplicate entries will be replaced (if allowed). As such, this
-    /// function should be run on the class hierarchy from top to bottom.
-    ///
-    /// If a given trait has an invalid name, attempts to override a final trait,
-    /// or overlaps an existing trait without being an override, then this function
-    /// returns an error.
+    /// Given a name, return the instance class trait matching the name and filter.
     pub fn lookup_instance_traits(
         &self,
         name: &QName<'gc>,
-        known_traits: &mut Vec<Trait<'gc>>,
-    ) -> Result<(), Error> {
-        do_trait_lookup(name, known_traits, &self.instance_traits)
+        filter: fn(&Trait<'gc>) -> bool,
+    ) -> Option<Trait<'gc>> {
+        do_trait_lookup(name, &self.instance_traits, filter)
     }
 
-    /// Given a slot ID, append instance traits matching the slot to a list of
-    /// known traits.
-    ///
-    /// This function adds its result onto the list of known traits, with the
-    /// caveat that duplicate entries will be replaced (if allowed). As such, this
-    /// function should be run on the class hierarchy from top to bottom.
-    ///
-    /// If a given trait has an invalid name, attempts to override a final trait,
-    /// or overlaps an existing trait without being an override, then this function
-    /// returns an error.
-    pub fn lookup_instance_traits_by_slot(&self, id: u32) -> Result<Option<Trait<'gc>>, Error> {
+    /// Given a slot ID, return the first instance trait matching the slot.
+    pub fn lookup_instance_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
         do_trait_lookup_by_slot(id, &self.instance_traits)
     }
 

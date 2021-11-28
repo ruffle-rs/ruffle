@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::script_object::TYPE_OF_OBJECT;
-use crate::avm1::object::search_prototype;
+use crate::avm1::object::{search_prototype, ExecutionName};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::display_object::DisplayObject;
@@ -86,7 +86,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             .coerce_to_object(activation);
         match constructor.as_executable() {
             Some(exec) => exec.exec(
-                &name,
+                ExecutionName::Dynamic(name),
                 activation,
                 self.0.read().this,
                 self.0.read().depth + 1,
@@ -113,7 +113,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
         match method.as_executable() {
             Some(exec) => exec.exec(
-                &name,
+                ExecutionName::Dynamic(name),
                 activation,
                 this,
                 self.0.read().depth + depth + 1,

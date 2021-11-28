@@ -2,6 +2,7 @@
 
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
+use crate::string::{WStr, WString};
 use swf::{Rectangle, Twips};
 
 #[test]
@@ -245,7 +246,7 @@ fn bounds_with_size() {
 #[test]
 fn textformat_merge() {
     let tf1 = TextFormat {
-        font: Some("First".to_string()),
+        font: Some(WString::from_utf8("First")),
         size: Some(10.0),
         bold: None,
         italic: None,
@@ -253,7 +254,7 @@ fn textformat_merge() {
     };
 
     let tf2 = TextFormat {
-        font: Some("Second".to_string()),
+        font: Some(WString::from_utf8("Second")),
         size: Some(10.0),
         bold: Some(false),
         italic: None,
@@ -271,7 +272,7 @@ fn textformat_merge() {
 #[test]
 fn textformat_mix() {
     let tf1 = TextFormat {
-        font: Some("First".to_string()),
+        font: Some(WString::from_utf8("first")),
         size: Some(10.0),
         bold: None,
         italic: None,
@@ -279,7 +280,7 @@ fn textformat_mix() {
     };
 
     let tf2 = TextFormat {
-        font: Some("Second".to_string()),
+        font: Some(WString::from_utf8("second")),
         size: Some(10.0),
         bold: Some(false),
         italic: None,
@@ -288,7 +289,7 @@ fn textformat_mix() {
 
     let mixed = tf1.mix_with(tf2);
 
-    assert_eq!(mixed.font, Some("First".to_string()));
+    assert_eq!(mixed.font, Some(WString::from_utf8("first")));
     assert_eq!(mixed.size, Some(10.0));
     assert_eq!(mixed.bold, Some(false));
     assert_eq!(mixed.italic, None);
@@ -299,7 +300,7 @@ fn formatspans_set_default() {
     let mut fs = FormatSpans::new();
 
     let tf1 = TextFormat {
-        font: Some("First".to_string()),
+        font: Some(WString::from_utf8("first")),
         size: Some(10.0),
         bold: None,
         italic: None,
@@ -310,13 +311,13 @@ fn formatspans_set_default() {
 
     let out_tf1 = fs.default_format();
 
-    assert_eq!(out_tf1.font, Some("First".to_string()));
+    assert_eq!(out_tf1.font, Some(WString::from_utf8("first")));
     assert_eq!(out_tf1.size, Some(10.0));
     assert_eq!(out_tf1.bold, None);
     assert_eq!(out_tf1.italic, None);
 
     let tf2 = TextFormat {
-        font: Some("Second".to_string()),
+        font: Some(WString::from_utf8("second")),
         size: Some(10.0),
         bold: Some(false),
         italic: None,
@@ -327,7 +328,7 @@ fn formatspans_set_default() {
 
     let out_tf2 = fs.default_format();
 
-    assert_eq!(out_tf2.font, Some("Second".to_string()));
+    assert_eq!(out_tf2.font, Some(WString::from_utf8("second")));
     assert_eq!(out_tf2.size, Some(10.0));
     assert_eq!(out_tf2.bold, Some(false));
     assert_eq!(out_tf2.italic, None);
@@ -336,7 +337,7 @@ fn formatspans_set_default() {
 #[test]
 fn formatspans_resolve_position() {
     let fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(2, Default::default()),
             TextSpan::with_length_and_format(3, Default::default()),
@@ -361,7 +362,7 @@ fn formatspans_resolve_position() {
 #[test]
 fn formatspans_ensure_span_break() {
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(2, Default::default()),
             TextSpan::with_length_and_format(3, Default::default()),
@@ -389,7 +390,7 @@ fn formatspans_ensure_span_break() {
 #[test]
 fn formatspans_ensure_span_break_redundant() {
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(2, Default::default()),
             TextSpan::with_length_and_format(3, Default::default()),
@@ -417,7 +418,7 @@ fn formatspans_ensure_span_break_redundant() {
 #[test]
 fn formatspans_span_boundaries() {
     let fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(2, Default::default()),
             TextSpan::with_length_and_format(3, Default::default()),
@@ -438,19 +439,19 @@ fn formatspans_span_boundaries() {
 #[test]
 fn formatspans_get_text_format() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(2, tf1.clone()),
             TextSpan::with_length_and_format(3, tf1.clone()),
@@ -475,7 +476,7 @@ fn formatspans_get_text_format() {
 
 #[test]
 fn formatspans_normalize_no_spans() {
-    let mut fs = FormatSpans::from_str_and_spans("abcdefghi", &[]);
+    let mut fs = FormatSpans::from_str_and_spans(WStr::from_units(b"abcdefghi"), &[]);
 
     fs.normalize();
 
@@ -484,7 +485,7 @@ fn formatspans_normalize_no_spans() {
 
 #[test]
 fn formatspans_normalize_no_text() {
-    let mut fs = FormatSpans::from_str_and_spans("", &[]);
+    let mut fs = FormatSpans::from_str_and_spans(WStr::empty(), &[]);
 
     fs.normalize();
 
@@ -495,19 +496,19 @@ fn formatspans_normalize_no_text() {
 #[test]
 fn formatspans_normalize_short_spans() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(1, tf2),
@@ -524,19 +525,19 @@ fn formatspans_normalize_short_spans() {
 #[test]
 fn formatspans_normalize_exact_spans() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
@@ -553,19 +554,19 @@ fn formatspans_normalize_exact_spans() {
 #[test]
 fn formatspans_normalize_long_spans() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1.clone()),
             TextSpan::with_length_and_format(2000, tf2),
@@ -583,13 +584,13 @@ fn formatspans_normalize_long_spans() {
 #[test]
 fn formatspans_normalize_merge_spans() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1.clone()),
             TextSpan::with_length_and_format(4, tf1),
@@ -604,13 +605,13 @@ fn formatspans_normalize_merge_spans() {
 #[test]
 fn formatspans_normalize_merge_many_spans() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(1, tf1.clone()),
             TextSpan::with_length_and_format(1, tf1.clone()),
@@ -629,19 +630,19 @@ fn formatspans_normalize_merge_many_spans() {
 #[test]
 fn formatspans_normalize_long_spans_with_merge() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         size: Some(12.0),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1.clone()),
             TextSpan::with_length_and_format(5, tf1),
@@ -658,17 +659,17 @@ fn formatspans_normalize_long_spans_with_merge() {
 #[test]
 fn formatspans_normalize_set_text_format_double_cut() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
@@ -676,7 +677,7 @@ fn formatspans_normalize_set_text_format_double_cut() {
     );
 
     let tf3 = TextFormat {
-        font: Some("Another difference!".to_string()),
+        font: Some(WString::from_utf8("Another difference!")),
         ..Default::default()
     };
 
@@ -690,17 +691,17 @@ fn formatspans_normalize_set_text_format_double_cut() {
 #[test]
 fn formatspans_normalize_set_text_format_single_cut() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
@@ -708,7 +709,7 @@ fn formatspans_normalize_set_text_format_single_cut() {
     );
 
     let tf3 = TextFormat {
-        font: Some("Another difference!".to_string()),
+        font: Some(WString::from_utf8("Another difference!")),
         ..Default::default()
     };
 
@@ -722,17 +723,17 @@ fn formatspans_normalize_set_text_format_single_cut() {
 #[test]
 fn formatspans_normalize_set_text_format_no_cut() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
@@ -740,7 +741,7 @@ fn formatspans_normalize_set_text_format_no_cut() {
     );
 
     let tf3 = TextFormat {
-        font: Some("Another difference!".to_string()),
+        font: Some(WString::from_utf8("Another difference!")),
         ..Default::default()
     };
 
@@ -753,26 +754,26 @@ fn formatspans_normalize_set_text_format_no_cut() {
 #[test]
 fn formatspans_replace_text_inbounds() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
         ],
     );
 
-    fs.replace_text(3, 6, "123", None);
+    fs.replace_text(3, 6, WStr::from_units(b"123"), None);
 
-    assert_eq!("abc123ghi", fs.text());
+    assert_eq!(WStr::from_units(b"abc123ghi"), fs.text());
 
     assert_eq!((0, 1), fs.get_span_boundaries(0, 3));
     assert_eq!((1, 2), fs.get_span_boundaries(3, 9));
@@ -781,26 +782,26 @@ fn formatspans_replace_text_inbounds() {
 #[test]
 fn formatspans_replace_text_edgebounds() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
         ],
     );
 
-    fs.replace_text(8, 35, "123", None);
+    fs.replace_text(8, 35, WStr::from_units(b"123"), None);
 
-    assert_eq!("abcdefgh123", fs.text());
+    assert_eq!(WStr::from_units(b"abcdefgh123"), fs.text());
 
     assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
     assert_eq!((1, 2), fs.get_span_boundaries(5, 8));
@@ -810,26 +811,26 @@ fn formatspans_replace_text_edgebounds() {
 #[test]
 fn formatspans_replace_text_oob() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
         ],
     );
 
-    fs.replace_text(24, 35, "123", None);
+    fs.replace_text(24, 35, WStr::from_units(b"123"), None);
 
-    assert_eq!("abcdefghi123", fs.text());
+    assert_eq!(WStr::from_units(b"abcdefghi123"), fs.text());
 
     assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
     assert_eq!((1, 2), fs.get_span_boundaries(5, 9));
@@ -839,26 +840,26 @@ fn formatspans_replace_text_oob() {
 #[test]
 fn formatspans_replace_text_degenerate() {
     let tf1 = TextFormat {
-        font: Some("Same!".to_string()),
+        font: Some(WString::from_utf8("same!")),
         ..Default::default()
     };
 
     let tf2 = TextFormat {
-        font: Some("Difference!".to_string()),
+        font: Some(WString::from_utf8("difference!")),
         ..Default::default()
     };
 
     let mut fs = FormatSpans::from_str_and_spans(
-        "abcdefghi",
+        WStr::from_units(b"abcdefghi"),
         &[
             TextSpan::with_length_and_format(5, tf1),
             TextSpan::with_length_and_format(4, tf2),
         ],
     );
 
-    fs.replace_text(52, 35, "123", None);
+    fs.replace_text(52, 35, WStr::from_units(b"123"), None);
 
-    assert_eq!("abcdefghi", fs.text());
+    assert_eq!(WStr::from_units(b"abcdefghi"), fs.text());
 
     assert_eq!((0, 1), fs.get_span_boundaries(0, 5));
     assert_eq!((1, 2), fs.get_span_boundaries(5, 9));

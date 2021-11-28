@@ -7,8 +7,9 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{textformat_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
@@ -150,18 +151,27 @@ fn set_align<'gc>(
     text_format: &mut TextFormat,
     value: &Value<'gc>,
 ) -> Result<(), Error> {
-    text_format.align = match value {
-        Value::Undefined | Value::Null => None,
-        value => match value.coerce_to_string(activation)?.as_str() {
-            "left" => Some(swf::TextAlign::Left),
-            "center" => Some(swf::TextAlign::Center),
-            "right" => Some(swf::TextAlign::Right),
-            "justify" => Some(swf::TextAlign::Justify),
-            _ => return Err(
-                "ArgumentError: Error #2008: Parameter align must be one of the accepted values."
-                    .into(),
-            ),
-        },
+    let value = match value {
+        Value::Undefined | Value::Null => {
+            text_format.align = None;
+            return Ok(());
+        }
+        value => value.coerce_to_string(activation)?,
+    };
+
+    text_format.align = if value == WStr::from_units(b"left") {
+        Some(swf::TextAlign::Left)
+    } else if value == WStr::from_units(b"center") {
+        Some(swf::TextAlign::Center)
+    } else if value == WStr::from_units(b"right") {
+        Some(swf::TextAlign::Right)
+    } else if value == WStr::from_units(b"justify") {
+        Some(swf::TextAlign::Justify)
+    } else {
+        return Err(
+            "ArgumentError: Error #2008: Parameter align must be one of the accepted values."
+                .into(),
+        );
     };
     Ok(())
 }
@@ -183,8 +193,7 @@ fn set_block_indent<'gc>(
 ) -> Result<(), Error> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -260,7 +269,7 @@ fn font<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font).into()
+        AvmString::new(activation.context.gc_context, font.as_wstr()).into()
     }))
 }
 
@@ -271,7 +280,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -293,8 +302,7 @@ fn set_indent<'gc>(
 ) -> Result<(), Error> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -360,8 +368,7 @@ fn set_leading<'gc>(
 ) -> Result<(), Error> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -383,8 +390,7 @@ fn set_left_margin<'gc>(
 ) -> Result<(), Error> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -428,8 +434,7 @@ fn set_right_margin<'gc>(
 ) -> Result<(), Error> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -451,8 +456,7 @@ fn set_size<'gc>(
 ) -> Result<(), Error> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: Should be "Round to nearest, ties to even".
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_number(activation)?).into()),
     };
     Ok(())
 }
@@ -487,13 +491,12 @@ fn set_tab_stops<'gc>(
                         object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, format!("{}", i)),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,
                     )?;
-                    // TODO: Should be "Round to nearest, ties to even".
-                    Ok(element.coerce_to_i32(activation)?.into())
+                    Ok(round_to_even(element.coerce_to_number(activation)?).into())
                 })
                 .collect();
             Some(tab_stops?)
@@ -507,7 +510,7 @@ fn target<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target).into()
+        AvmString::new(activation.context.gc_context, target.as_wstr()).into()
     }))
 }
 
@@ -518,7 +521,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -550,7 +553,7 @@ fn url<'gc>(
     text_format: &TextFormat,
 ) -> Result<Value<'gc>, Error> {
     Ok(text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url).into()
+        AvmString::new(activation.context.gc_context, url.as_wstr()).into()
     }))
 }
 
@@ -561,7 +564,7 @@ fn set_url<'gc>(
 ) -> Result<(), Error> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }

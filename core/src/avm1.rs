@@ -361,7 +361,7 @@ impl<'gc> Avm1<'gc> {
                 .unwrap_or(false);
         drop(activation);
 
-        if broadcaster_name == "Mouse" {
+        if &broadcaster_name == b"Mouse" {
             context.avm1.has_mouse_listener = has_listener;
         }
     }
@@ -510,7 +510,7 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: 
             let message = value
                 .coerce_to_string(activation)
                 .unwrap_or_else(|_| "undefined".into());
-            activation.context.log.avm_trace(&message);
+            activation.context.log.avm_trace(&message.to_utf8_lossy());
             // Continue execution without halting.
             return;
         }
@@ -552,11 +552,9 @@ pub fn start_drag<'gc>(
     } else {
         // The object moves relative to current mouse position.
         // Calculate the offset from the mouse to the object in world space.
-        let obj_pos = display_object.local_to_global(Default::default());
-        (
-            obj_pos.0 - activation.context.mouse_position.0,
-            obj_pos.1 - activation.context.mouse_position.1,
-        )
+        let (object_x, object_y) = display_object.local_to_global(Default::default());
+        let (mouse_x, mouse_y) = *activation.context.mouse_position;
+        (object_x - mouse_x, object_y - mouse_y)
     };
 
     let constraint = if args.len() > 1 {

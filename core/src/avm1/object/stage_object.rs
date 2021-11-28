@@ -8,8 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Valu
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string::utils::swf_string_eq;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -115,18 +114,19 @@ impl<'gc> StageObject<'gc> {
     /// or `Some(Value::Undefined)` if the level is not occupied.
     /// Returns `None` if `name` is not a valid level path.
     fn get_level_by_path(
-        name: &str,
+        name: AvmString<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
     ) -> Option<Value<'gc>> {
-        if let Some(slice) = name.get(0..name.len().min(6)) {
+        if let Some(slice) = name.slice(..6) {
+            let level_prefix = WStr::from_units(b"_level");
             let is_level = if case_sensitive {
-                slice == "_level"
+                slice == level_prefix
             } else {
-                slice.eq_ignore_ascii_case("_level")
+                slice.eq_ignore_case(level_prefix)
             };
             if is_level {
-                if let Some(level_id) = name.get(6..).and_then(|v| v.parse::<i32>().ok()) {
+                if let Some(level_id) = name.slice(6..).and_then(|v| v.parse::<i32>().ok()) {
                     let level = context
                         .stage
                         .child_by_depth(level_id)
@@ -174,7 +174,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             // 1) Actual properties on the underlying object
             obj.base.get_local_stored(name, activation)
         } else if let Some(level) =
-            Self::get_level_by_path(&name, &mut activation.context, case_sensitive)
+            Self::get_level_by_path(name, &mut activation.context, case_sensitive)
         {
             // 2) _levelN
             Some(level)
@@ -205,11 +205,13 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
-        for binding in obj
-            .text_field_bindings
-            .iter()
-            .filter(|binding| swf_string_eq(&binding.variable_name, &name, case_sensitive))
-        {
+        for binding in obj.text_field_bindings.iter().filter(|binding| {
+            if case_sensitive {
+                binding.variable_name == name
+            } else {
+                binding.variable_name.eq_ignore_case(&name)
+            }
+        }) {
             let _ = binding.text_field.set_html_text(
                 &value.coerce_to_string(activation)?,
                 &mut activation.context,
@@ -373,7 +375,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .avm1
             .display_properties
             .read()
-            .get_by_name(&name)
+            .get_by_name(name)
             .is_some()
         {
             return true;
@@ -389,7 +391,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if Self::get_level_by_path(&name, &mut activation.context, case_sensitive).is_some() {
+        if Self::get_level_by_path(name, &mut activation.context, case_sensitive).is_some() {
             return true;
         }
 
@@ -587,10 +589,10 @@ impl<'gc> DisplayPropertyMap<'gc> {
 
     /// Gets a property slot by name.
     /// Used by `GetMember`, `GetVariable`, `SetMember`, and `SetVariable`.
-    pub fn get_by_name(&self, name: impl AsRef<str>) -> Option<&DisplayProperty<'gc>> {
+    pub fn get_by_name(&self, name: AvmString<'gc>) -> Option<&DisplayProperty<'gc>> {
         // Display object properties are case insensitive, regardless of SWF version!?
         // TODO: Another string alloc; optimize this eventually.
-        self.0.get(name.as_ref(), false)
+        self.0.get(name, false)
     }
 
     /// Gets a property slot by SWF4 index.
@@ -792,8 +794,8 @@ fn frames_loaded<'gc>(
         .map_or(Value::Undefined, Value::from)
 }
 
-fn name<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    AvmString::new(activation.context.gc_context, this.name().to_string()).into()
+fn name<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.name().into()
 }
 
 fn set_name<'gc>(
@@ -826,7 +828,7 @@ fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) 
         .and_then(|mov| mov.url().map(|url| url.to_string()))
         .map_or_else(
             || "".into(),
-            |s| AvmString::new(activation.context.gc_context, s).into(),
+            |s| AvmString::new_utf8(activation.context.gc_context, s).into(),
         )
 }
 
@@ -908,7 +910,7 @@ fn set_sound_buf_time<'gc>(
 
 fn quality<'gc>(activation: &mut Activation<'_, 'gc, '_>, _this: DisplayObject<'gc>) -> Value<'gc> {
     let quality = activation.context.stage.quality().into_avm_str();
-    AvmString::new(activation.context.gc_context, quality).into()
+    quality.into()
 }
 
 fn set_quality<'gc>(

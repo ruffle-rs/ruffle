@@ -15,7 +15,6 @@ use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
-use std::str::FromStr;
 
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -27,7 +26,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Bool(b) => Value::Bool(*b),
         AmfValue::Integer(i) => Value::Integer(*i),
         AmfValue::Number(n) => Value::Number(*n),
-        AmfValue::String(s) => Value::String(AvmString::new(activation.context.gc_context, s)),
+        AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
         AmfValue::ByteArray(bytes) => {
             let storage = ByteArrayStorage::from_vec(bytes.clone());
             let bytearray = ByteArrayObject::from_storage(activation, storage)?;
@@ -56,7 +55,7 @@ pub fn deserialize_value<'gc>(
                     array,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, element.name()),
+                        AvmString::new_utf8(activation.context.gc_context, element.name()),
                     )
                     .into(),
                     deserialize_value(activation, element.value())?,
@@ -73,7 +72,7 @@ pub fn deserialize_value<'gc>(
                     obj,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, property.name()),
+                        AvmString::new_utf8(activation.context.gc_context, property.name()),
                     )
                     .into(),
                     deserialize_value(activation, property.value())?,
@@ -263,7 +262,11 @@ pub fn write_utf<'gc>(
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
             if let Some(utf_string) = args.get(0) {
                 let utf_string = utf_string.coerce_to_string(activation)?;
-                bytearray.write_utf(utf_string.as_str())?;
+                // NOTE: there is a bug on old Flash Player (e.g. v11.3); if the string to
+                // write ends with an unpaired high surrogate, the routine bails out and nothing
+                // is written.
+                // The bug is fixed on newer FP versions (e.g. v32), but the fix isn't SWF-version-gated.
+                bytearray.write_utf(&utf_string.to_utf8_lossy())?;
             }
         }
     }
@@ -278,7 +281,9 @@ pub fn read_utf<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            return Ok(AvmString::new(activation.context.gc_context, bytearray.read_utf()?).into());
+            return Ok(
+                AvmString::new_utf8(activation.context.gc_context, bytearray.read_utf()?).into(),
+            );
         }
     }
 
@@ -292,7 +297,7 @@ pub fn to_string<'gc>(
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
             let (new_string, _, _) = UTF_8.decode(bytearray.bytes());
-            return Ok(AvmString::new(activation.context.gc_context, new_string).into());
+            return Ok(AvmString::new_utf8(activation.context.gc_context, new_string).into());
         }
     }
 
@@ -416,15 +421,16 @@ pub fn set_endian<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
-            match args
+            let endian = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?
-                .as_str()
-            {
-                "bigEndian" => bytearray.set_endian(Endian::Big),
-                "littleEndian" => bytearray.set_endian(Endian::Little),
-                _ => return Err("Parameter type must be one of the accepted values.".into()),
+                .coerce_to_string(activation)?;
+            if &endian == b"bigEndian" {
+                bytearray.set_endian(Endian::Big);
+            } else if &endian == b"littleEndian" {
+                bytearray.set_endian(Endian::Little);
+            } else {
+                return Err("Parameter type must be one of the accepted values.".into());
             }
         }
     }
@@ -555,7 +561,7 @@ pub fn read_utf_bytes<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_u32(activation)?;
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 String::from_utf8_lossy(bytearray.read_bytes(len as usize)?),
             )
@@ -700,8 +706,10 @@ pub fn write_multibyte<'gc>(
                 .get(1)
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
-            let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
-            let (encoded_bytes, _, _) = encoder.encode(string.as_str());
+            let encoder =
+                Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
+            let utf8 = string.to_utf8_lossy();
+            let (encoded_bytes, _, _) = encoder.encode(&utf8);
             bytearray.write_bytes(&encoded_bytes.into_owned())?;
         }
     }
@@ -725,9 +733,10 @@ pub fn read_multibyte<'gc>(
                 .unwrap_or(&"UTF-8".into())
                 .coerce_to_string(activation)?;
             let bytes = bytearray.read_bytes(len as usize)?;
-            let encoder = Encoding::for_label(charset_label.as_bytes()).unwrap_or(UTF_8);
+            let encoder =
+                Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let (decoded_str, _, _) = encoder.decode(bytes);
-            return Ok(AvmString::new(activation.context.gc_context, decoded_str).into());
+            return Ok(AvmString::new_utf8(activation.context.gc_context, decoded_str).into());
         }
     }
 
@@ -745,7 +754,7 @@ pub fn write_utf_bytes<'gc>(
                 .get(0)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_string(activation)?;
-            bytearray.write_bytes(string.as_bytes())?;
+            bytearray.write_bytes(string.to_utf8_lossy().as_bytes())?;
         }
     }
 
@@ -763,7 +772,7 @@ pub fn compress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer = bytearray.compress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            let buffer = bytearray.compress(algorithm.parse()?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }
@@ -783,8 +792,7 @@ pub fn uncompress<'gc>(
                 .get(0)
                 .unwrap_or(&"zlib".into())
                 .coerce_to_string(activation)?;
-            let buffer =
-                bytearray.decompress(CompressionAlgorithm::from_str(algorithm.as_str())?)?;
+            let buffer = bytearray.decompress(algorithm.parse()?)?;
             bytearray.clear();
             bytearray.write_bytes(&buffer)?;
         }

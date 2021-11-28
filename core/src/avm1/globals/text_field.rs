@@ -8,7 +8,7 @@ use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
 
 macro_rules! tf_method {
@@ -248,8 +248,7 @@ fn replace_text<'gc>(
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_string(activation)?
-        .to_string();
+        .coerce_to_string(activation)?;
 
     text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
 
@@ -496,7 +495,7 @@ fn variable<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(variable) = this.variable() {
-        return Ok(AvmString::new(activation.context.gc_context, variable.to_string()).into());
+        return Ok(AvmString::new_utf8(activation.context.gc_context, &variable[..]).into());
     }
 
     // Unset `variable` returns null, not undefined
@@ -550,29 +549,27 @@ pub fn set_auto_size<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    this.set_autosize(
-        match value {
-            Value::String(s) if s == "left" => AutoSizeMode::Left,
-            Value::String(s) if s == "center" => AutoSizeMode::Center,
-            Value::String(s) if s == "right" => AutoSizeMode::Right,
-            Value::Bool(true) => AutoSizeMode::Left,
-            _ => AutoSizeMode::None,
-        },
-        &mut activation.context,
-    );
+    let mode = match value {
+        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"left")) => AutoSizeMode::Left,
+        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"center")) => AutoSizeMode::Center,
+        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"right")) => AutoSizeMode::Right,
+        Value::Bool(true) => AutoSizeMode::Left,
+        _ => AutoSizeMode::None,
+    };
+    this.set_autosize(mode, &mut activation.context);
 
     Ok(())
 }
 
 pub fn get_type<'gc>(
     this: EditText<'gc>,
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let tf_type = match this.is_editable() {
         true => "input",
         false => "dynamic",
     };
-    Ok(AvmString::new(activation.context.gc_context, tf_type).into())
+    Ok(AvmString::from(tf_type).into())
 }
 
 pub fn set_type<'gc>(
@@ -580,15 +577,16 @@ pub fn set_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    match value
-        .coerce_to_string(activation)?
-        .to_ascii_lowercase()
-        .as_str()
-    {
-        "input" => this.set_editable(true, &mut activation.context),
-        "dynamic" => this.set_editable(false, &mut activation.context),
-        value => log::warn!("Invalid TextField.type: {}", value),
-    };
+    let value = value.coerce_to_string(activation)?;
+
+    if value.eq_ignore_case(WStr::from_units(b"input")) {
+        this.set_editable(true, &mut activation.context);
+    } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
+        this.set_editable(false, &mut activation.context)
+    } else {
+        log::warn!("Invalid TextField.type: {}", value);
+    }
+
     Ok(())
 }
 

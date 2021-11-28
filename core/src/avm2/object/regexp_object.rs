@@ -3,10 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::regexp::RegExp;
+use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -95,22 +95,27 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
 
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
-        let mut s = format!("/{}/", read.regexp.source());
+        let mut s = WString::new();
+        s.push_byte(b'/');
+        s.push_str(&read.regexp.source());
+        s.push_byte(b'/');
 
-        if read.regexp.global() {
-            s.push('g');
+        let flags = read.regexp.flags();
+
+        if flags.contains(RegExpFlags::GLOBAL) {
+            s.push_byte(b'g');
         }
-        if read.regexp.ignore_case() {
-            s.push('i');
+        if flags.contains(RegExpFlags::IGNORE_CASE) {
+            s.push_byte(b'i');
         }
-        if read.regexp.multiline() {
-            s.push('m');
+        if flags.contains(RegExpFlags::MULTILINE) {
+            s.push_byte(b'm');
         }
-        if read.regexp.dotall() {
-            s.push('s');
+        if flags.contains(RegExpFlags::DOTALL) {
+            s.push_byte(b's');
         }
-        if read.regexp.extended() {
-            s.push('x');
+        if flags.contains(RegExpFlags::EXTENDED) {
+            s.push_byte(b'x');
         }
 
         Ok(AvmString::new(mc, s).into())

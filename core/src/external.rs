@@ -154,7 +154,7 @@ impl Value {
             Value::Bool(value) => Avm1Value::Bool(value),
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
-                Avm1Value::String(AvmString::new(activation.context.gc_context, value))
+                Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(values) => {
                 let object = Avm1ScriptObject::object(
@@ -162,7 +162,7 @@ impl Value {
                     Some(activation.context.avm1.prototypes().object),
                 );
                 for (key, value) in values {
-                    let key = AvmString::new(activation.context.gc_context, key);
+                    let key = AvmString::new_utf8(activation.context.gc_context, key);
                     let _ = object.set(key, value.into_avm1(activation), activation);
                 }
                 object.into()
@@ -212,7 +212,7 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm1(&mut activation))
                     .collect();
-                let name = AvmString::new(activation.context.gc_context, name);
+                let name = AvmString::new_utf8(activation.context.gc_context, name);
                 if let Ok(result) = method
                     .call(name, &mut activation, this, &args)
                     .and_then(|value| Value::from_avm1(&mut activation, value))

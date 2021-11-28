@@ -46,7 +46,7 @@ impl<'gc> ArrayObject<'gc> {
         let base = ScriptObject::object(gc_context, proto);
         let mut length: i32 = 0;
         for value in elements.into_iter() {
-            let length_str = AvmString::new(gc_context, length.to_string());
+            let length_str = AvmString::new_utf8(gc_context, length.to_string());
             base.define_value(gc_context, length_str, value, Attribute::empty());
             length += 1;
         }
@@ -59,36 +59,13 @@ impl<'gc> ArrayObject<'gc> {
         Self(GcCell::allocate(gc_context, base))
     }
 
-    #[allow(clippy::wrong_self_convention)]
-    fn to_decimal_digit(c: u8) -> Option<u32> {
-        // If not a digit, a number greater than 10 will be created.
-        let digit = (c as u32).wrapping_sub(b'0' as u32);
-        if digit < 10 {
-            Some(digit)
-        } else {
-            None
-        }
-    }
-
     fn parse_index(name: AvmString<'gc>) -> Option<i32> {
-        let mut chars = name
-            .bytes()
-            .skip_while(|c| c.is_ascii_whitespace())
-            .peekable();
-        let is_negative = chars.peek() == Some(&b'-');
-        if is_negative {
-            chars.next();
-        }
-        let mut index: i32 = 0;
-        for c in chars {
-            let digit = Self::to_decimal_digit(c)? as i32;
-            index = index.wrapping_mul(10);
-            index = index.wrapping_add(digit);
-        }
-        if is_negative {
-            index = index.wrapping_neg();
-        }
-        Some(index)
+        let name = name.trim_start_matches(|c| match u8::try_from(c) {
+            Ok(c) => c.is_ascii_whitespace(),
+            Err(_) => false,
+        });
+
+        name.parse::<std::num::Wrapping<i32>>().ok().map(|i| i.0)
     }
 }
 
@@ -108,7 +85,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
-        if name == "length" {
+        if &name == b"length" {
             let new_length = value.coerce_to_i32(activation)?;
             self.set_length(activation, new_length)?;
         } else if let Some(index) = Self::parse_index(name) {
@@ -302,7 +279,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
-        if let Value::Number(old_length) = self.0.read().get_data("length", activation) {
+        if let Value::Number(old_length) = self.0.read().get_data("length".into(), activation) {
             for i in new_length.max(0)..f64_to_wrapping_i32(old_length) {
                 self.delete_element(activation, i);
             }

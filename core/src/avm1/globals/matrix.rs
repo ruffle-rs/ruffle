@@ -66,10 +66,10 @@ pub fn gradient_object_to_matrix<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Matrix, Error<'gc>> {
-    if object
+    if &object
         .get("matrixType", activation)?
         .coerce_to_string(activation)?
-        == "box"
+        == b"box"
     {
         let width = object.get("w", activation)?.coerce_to_f64(activation)?;
         let height = object.get("h", activation)?.coerce_to_f64(activation)?;
@@ -443,7 +443,7 @@ fn to_string<'gc>(
     let tx = this.get("tx", activation)?;
     let ty = this.get("ty", activation)?;
 
-    Ok(AvmString::new(
+    Ok(AvmString::new_utf8(
         activation.context.gc_context,
         format!(
             "(a={}, b={}, c={}, d={}, tx={}, ty={})",

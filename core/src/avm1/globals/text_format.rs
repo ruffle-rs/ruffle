@@ -4,7 +4,9 @@ use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Value};
 use crate::avm_warn;
+use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
+use crate::string::WStr;
 use gc_arena::MutationContext;
 
 macro_rules! getter {
@@ -58,7 +60,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.font.as_ref().map_or(Value::Null, |font| {
-        AvmString::new(activation.context.gc_context, font).into()
+        AvmString::new(activation.context.gc_context, font.clone()).into()
     })
 }
 
@@ -69,7 +71,7 @@ fn set_font<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.font = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -88,8 +90,7 @@ fn set_size<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -115,7 +116,7 @@ fn set_color<'gc>(
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.url.as_ref().map_or(Value::Null, |url| {
-        AvmString::new(activation.context.gc_context, url).into()
+        AvmString::new(activation.context.gc_context, url.clone()).into()
     })
 }
 
@@ -126,14 +127,14 @@ fn set_url<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.url = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
 
 fn target<'gc>(activation: &mut Activation<'_, 'gc, '_>, text_format: &TextFormat) -> Value<'gc> {
     text_format.target.as_ref().map_or(Value::Null, |target| {
-        AvmString::new(activation.context.gc_context, target).into()
+        AvmString::new(activation.context.gc_context, target.clone()).into()
     })
 }
 
@@ -144,7 +145,7 @@ fn set_target<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.target = match value {
         Value::Undefined | Value::Null => None,
-        value => Some(value.coerce_to_string(activation)?.to_string()),
+        value => Some(value.coerce_to_string(activation)?.as_wstr().into()),
     };
     Ok(())
 }
@@ -226,16 +227,24 @@ fn set_align<'gc>(
     text_format: &mut TextFormat,
     value: &Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    text_format.align = match value {
-        Value::Undefined | Value::Null => None,
-        value => match value.coerce_to_string(activation)?.to_lowercase().as_str() {
-            "left" => Some(swf::TextAlign::Left),
-            "center" => Some(swf::TextAlign::Center),
-            "right" => Some(swf::TextAlign::Right),
-            "justify" => Some(swf::TextAlign::Justify),
-            _ => None,
-        },
+    if matches!(value, Value::Undefined | Value::Null) {
+        text_format.align = None;
+        return Ok(());
+    }
+
+    let value = value.coerce_to_string(activation)?;
+    let align = if value.eq_ignore_case(WStr::from_units(b"left")) {
+        swf::TextAlign::Left
+    } else if value.eq_ignore_case(WStr::from_units(b"center")) {
+        swf::TextAlign::Center
+    } else if value.eq_ignore_case(WStr::from_units(b"right")) {
+        swf::TextAlign::Right
+    } else if value.eq_ignore_case(WStr::from_units(b"justify")) {
+        swf::TextAlign::Justify
+    } else {
+        return Ok(());
     };
+    text_format.align = Some(align);
     Ok(())
 }
 
@@ -256,8 +265,7 @@ fn set_left_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
 }
@@ -279,8 +287,7 @@ fn set_right_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
 }
@@ -299,8 +306,7 @@ fn set_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -319,8 +325,7 @@ fn set_leading<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -342,8 +347,7 @@ fn set_block_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
-        // TODO: round up
-        value => Some(value.coerce_to_i32(activation)?.into()),
+        value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
 }
@@ -376,8 +380,7 @@ fn set_tab_stops<'gc>(
             let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
                     let element = object.get_element(activation, i);
-                    // TODO: round up
-                    Ok(element.coerce_to_i32(activation)?.into())
+                    Ok(round_to_even(element.coerce_to_f64(activation)?).into())
                 })
                 .collect();
             Some(tab_stops?)

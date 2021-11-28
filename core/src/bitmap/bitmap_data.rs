@@ -5,7 +5,6 @@ use crate::backend::render::{BitmapHandle, RenderBackend};
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
-use downcast_rs::__std::fmt::Formatter;
 use std::ops::Range;
 
 /// An implementation of the Lehmer/Park-Miller random number generator
@@ -96,7 +95,7 @@ impl Color {
 }
 
 impl std::fmt::Display for Color {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!("{:#x}", self.0))
     }
 }
@@ -133,7 +132,7 @@ bitflags! {
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
-    pub pixels: Vec<Color>,
+    pixels: Vec<Color>,
     dirty: bool,
     width: u32,
     height: u32,
@@ -851,6 +850,59 @@ impl<'gc> BitmapData<'gc> {
                 src_x += dx;
             }
             src_y += dy;
+        }
+    }
+
+    /// Compare two BitmapData objects.
+    /// Returns `None` if the bitmaps are equivalent.
+    pub fn compare(bitmap: &Self, other: &Self) -> Option<Self> {
+        // This function expects that the two bitmaps have the same dimensions.
+        // TODO: Relax this assumption and return a special value instead?
+        debug_assert_eq!(bitmap.width, other.width);
+        debug_assert_eq!(bitmap.height, other.height);
+
+        let mut different = false;
+        let pixels = bitmap
+            .pixels
+            .iter()
+            .zip(&other.pixels)
+            .map(|(bitmap_pixel, other_pixel)| {
+                let bitmap_pixel = bitmap_pixel.to_un_multiplied_alpha();
+                let other_pixel = other_pixel.to_un_multiplied_alpha();
+                if bitmap_pixel == other_pixel {
+                    Color::argb(0, 0, 0, 0)
+                } else if bitmap_pixel.with_alpha(0) != other_pixel.with_alpha(0) {
+                    different = true;
+                    Color::argb(
+                        0xff,
+                        bitmap_pixel.red().wrapping_sub(other_pixel.red()),
+                        bitmap_pixel.green().wrapping_sub(other_pixel.green()),
+                        bitmap_pixel.blue().wrapping_sub(other_pixel.blue()),
+                    )
+                } else {
+                    different = true;
+                    Color::argb(
+                        bitmap_pixel.alpha().wrapping_sub(other_pixel.alpha()),
+                        0xff,
+                        0xff,
+                        0xff,
+                    )
+                }
+            })
+            .collect();
+
+        if different {
+            Some(Self {
+                pixels,
+                dirty: false,
+                width: bitmap.width,
+                height: bitmap.height,
+                transparency: true,
+                bitmap_handle: None,
+                avm2_object: None,
+            })
+        } else {
+            None
         }
     }
 

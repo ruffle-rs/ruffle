@@ -7,7 +7,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{date_allocator, DateObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{GcCell, MutationContext};
 use num_traits::ToPrimitive;
@@ -879,7 +879,7 @@ pub fn to_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %T GMT%z %-Y").to_string(),
             )
@@ -900,7 +900,7 @@ pub fn to_utc_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this.and_then(|this| this.as_date_object()) {
         if let Some(date) = this.date_time() {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %T %-Y UTC").to_string(),
             )
@@ -924,7 +924,7 @@ pub fn to_locale_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %-Y %T %p").to_string(),
             )
@@ -948,7 +948,7 @@ pub fn to_time_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%T GMT%z").to_string(),
             )
@@ -972,7 +972,7 @@ pub fn to_locale_time_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%T %p").to_string(),
             )
@@ -996,7 +996,7 @@ pub fn to_date_string<'gc>(
             .date_time()
             .map(|date| date.with_timezone(&activation.context.locale.get_timezone()))
         {
-            return Ok(AvmString::new(
+            return Ok(AvmString::new_utf8(
                 activation.context.gc_context,
                 date.format("%a %b %-d %-Y").to_string(),
             )
@@ -1011,8 +1011,8 @@ pub fn to_date_string<'gc>(
 
 /// Parse a date, in any of the three formats: YYYY/MM/DD, MM/DD/YYYY, Mon/DD/YYYY.
 /// The output will always be: (year, month, day), or None if format is invalid.
-fn parse_date(item: &str) -> Option<(u32, u32, u32)> {
-    let mut iter = item.split('/');
+fn parse_date(item: &WStr) -> Option<(u32, u32, u32)> {
+    let mut iter = item.split(b'/');
     let first = iter.next()?;
     let parsed = if first.len() == 4 {
         // If the first item in this date is 4 characters long, we parse as YYYY/MM/DD
@@ -1073,16 +1073,17 @@ fn parse_date(item: &str) -> Option<(u32, u32, u32)> {
 }
 
 /// Convert a month abbrevation to a number.
-fn parse_mon(item: &str) -> Option<usize> {
-    const MONTHS: [&str; 12] = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+fn parse_mon(item: &WStr) -> Option<usize> {
+    const MONTHS: [&[u8]; 12] = [
+        b"Jan", b"Feb", b"Mar", b"Apr", b"May", b"Jun", b"Jul", b"Aug", b"Sep", b"Oct", b"Nov",
+        b"Dec",
     ];
     MONTHS.iter().position(|&x| x == item)
 }
 
 /// Parses HH:MM:SS. The output is always (hours, minutes, seconds), or None if format was invalid.
-fn parse_hms(item: &str) -> Option<(u32, u32, u32)> {
-    let mut iter = item.split(':');
+fn parse_hms(item: &WStr) -> Option<(u32, u32, u32)> {
+    let mut iter = item.split(b':');
     let hours = iter.next()?;
     if hours.len() != 2 {
         return None;
@@ -1114,7 +1115,7 @@ pub fn parse<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    const DAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const DAYS: [&[u8]; 7] = [b"Sun", b"Mon", b"Tue", b"Wed", b"Thu", b"Fri", b"Sat"];
 
     let date_str = args
         .get(0)
@@ -1125,7 +1126,10 @@ pub fn parse<'gc>(
     let mut new_timezone = None;
     // The Date parser is flash is super flexible, so we need to go through each item individually and parse it to match Flash.
     // NOTE: DateTime::parse_from_str is not flexible enough for this, so we need to parse manually.
-    for item in date_str.as_str().split_whitespace() {
+    for item in date_str
+        .split(string_utils::swf_is_whitespace)
+        .filter(|s| !s.is_empty())
+    {
         if let Some((year, month, day)) = parse_date(item) {
             // Parse YYYY/MM/DD, MM/DD/YYYY, Mon/DD/YYYY
 
@@ -1149,14 +1153,15 @@ pub fn parse<'gc>(
             final_time.hour = Some(Some(hours as f64));
             final_time.minute = Some(Some(minutes as f64));
             final_time.second = Some(Some(seconds as f64));
-        } else if DAYS.contains(&item) {
+        } else if DAYS.iter().any(|&d| d == item) {
             // Parse abbreviated weekname (Sun, Mon, etc...)
             // DO NOTHING
         } else if let Some(month) = parse_mon(item) {
             // Parse abbreviated month name (Jan, Feb, etc...)
-
             final_time.month = Some(Some(month as f64));
-        } else if item.starts_with("GMT") || item.starts_with("UTC") {
+        } else if item.starts_with(WStr::from_units(b"GMT"))
+            || item.starts_with(WStr::from_units(b"UTC"))
+        {
             // Parse GMT-HHMM/GMT+HHMM or UTC-HHMM/UTC+HHMM
 
             if new_timezone.is_some() || item.len() != 8 {
@@ -1177,13 +1182,13 @@ pub fn parse<'gc>(
             } else {
                 return Ok(f64::NAN.into());
             };
-            let sign = other.chars().nth(3).unwrap();
+            let sign = other.at(3);
             // NOTE: In real flash, invalid (out of bounds) timezones were allowed, but there isn't a way to construct these using FixedOffset.
             // Since it is insanely rare to ever parse a date with an invalid timezone, for now we just return an error.
-            new_timezone = Some(if sign == '-' {
+            new_timezone = Some(if sign == b'-' as u16 {
                 FixedOffset::west_opt(((hours * 60 * 60) + minutes * 60) as i32)
                     .ok_or("Error: Invalid timezone")?
-            } else if sign == '+' {
+            } else if sign == b'+' as u16 {
                 FixedOffset::east_opt(((hours * 60 * 60) + minutes * 60) as i32)
                     .ok_or("Error: Invalid timezone")?
             } else {

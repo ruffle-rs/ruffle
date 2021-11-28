@@ -101,7 +101,7 @@ impl<'gc> Avm1Function<'gc> {
         let name = if name.is_empty() {
             None
         } else {
-            Some(AvmString::new(gc_context, name))
+            Some(AvmString::new_utf8(gc_context, name))
         };
 
         Avm1Function {
@@ -112,8 +112,8 @@ impl<'gc> Avm1Function<'gc> {
             params: params
                 .iter()
                 .map(|&s| {
-                    let name = s.to_string_lossy(SwfStr::encoding_for_version(swf_version));
-                    (None, AvmString::new(gc_context, name))
+                    let name = s.to_str_lossy(SwfStr::encoding_for_version(swf_version));
+                    (None, AvmString::new_utf8(gc_context, name))
                 })
                 .collect(),
             scope,
@@ -138,8 +138,8 @@ impl<'gc> Avm1Function<'gc> {
         } else {
             let name = swf_function
                 .name
-                .to_string_lossy(SwfStr::encoding_for_version(swf_version));
-            Some(AvmString::new(gc_context, name))
+                .to_str_lossy(SwfStr::encoding_for_version(swf_version));
+            Some(AvmString::new_utf8(gc_context, name))
         };
 
         let params = swf_function
@@ -148,8 +148,8 @@ impl<'gc> Avm1Function<'gc> {
             .map(|p| {
                 let name = p
                     .name
-                    .to_string_lossy(SwfStr::encoding_for_version(swf_version));
-                (p.register_index, AvmString::new(gc_context, name))
+                    .to_str_lossy(SwfStr::encoding_for_version(swf_version));
+                (p.register_index, AvmString::new_utf8(gc_context, name))
             })
             .collect();
 
@@ -220,6 +220,12 @@ impl fmt::Debug for Executable<'_> {
     }
 }
 
+/// Indicates the default name to use for this execution in debug builds.
+pub enum ExecutionName<'gc> {
+    Static(&'static str),
+    Dynamic(AvmString<'gc>),
+}
+
 impl<'gc> Executable<'gc> {
     /// Execute the given code.
     ///
@@ -230,7 +236,7 @@ impl<'gc> Executable<'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn exec(
         &self,
-        name: &str,
+        name: ExecutionName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
         depth: u8,
@@ -289,9 +295,9 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let name = if cfg!(feature = "avm_debug") {
-                    let mut result = match &af.name {
-                        None => name.to_string(),
-                        Some(name) => name.to_string(),
+                    let mut result = match af.name.map(ExecutionName::Dynamic).unwrap_or(name) {
+                        ExecutionName::Static(n) => n.to_owned(),
+                        ExecutionName::Dynamic(n) => n.to_utf8_lossy().into_owned(),
                     };
 
                     result.push('(');
@@ -550,7 +556,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_executable() {
             Some(exec) => exec.exec(
-                &name,
+                ExecutionName::Dynamic(name),
                 activation,
                 this,
                 0,
@@ -585,7 +591,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         // TODO: de-duplicate code.
         if let Some(exec) = &self.data.read().constructor {
             let _ = exec.exec(
-                "[ctor]",
+                ExecutionName::Static("[ctor]"),
                 activation,
                 this,
                 1,
@@ -595,7 +601,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             )?;
         } else if let Some(exec) = &self.data.read().function {
             let _ = exec.exec(
-                "[ctor]",
+                ExecutionName::Static("[ctor]"),
                 activation,
                 this,
                 1,
@@ -636,7 +642,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             // Native constructors will return the constructed `this`.
             // This allows for `new Object` etc. returning different types.
             let this = exec.exec(
-                "[ctor]",
+                ExecutionName::Static("[ctor]"),
                 activation,
                 this,
                 1,
@@ -647,7 +653,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             Ok(this)
         } else if let Some(exec) = &self.data.read().function {
             let _ = exec.exec(
-                "[ctor]",
+                ExecutionName::Static("[ctor]"),
                 activation,
                 this,
                 1,

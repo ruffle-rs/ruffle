@@ -18,6 +18,7 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
+use crate::string::{FromWStr, WStr};
 use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -779,6 +780,24 @@ impl FromStr for StageScaleMode {
     }
 }
 
+impl FromWStr for StageScaleMode {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"exactfit")) {
+            Ok(StageScaleMode::ExactFit)
+        } else if s.eq_ignore_case(WStr::from_units(b"noborder")) {
+            Ok(StageScaleMode::NoBorder)
+        } else if s.eq_ignore_case(WStr::from_units(b"noscale")) {
+            Ok(StageScaleMode::NoScale)
+        } else if s.eq_ignore_case(WStr::from_units(b"showall")) {
+            Ok(StageScaleMode::ShowAll)
+        } else {
+            Err(ParseEnumError)
+        }
+    }
+}
+
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
@@ -828,6 +847,22 @@ impl FromStr for StageDisplayState {
     }
 }
 
+impl FromWStr for StageDisplayState {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"fullscreen")) {
+            Ok(StageDisplayState::FullScreen)
+        } else if s.eq_ignore_case(WStr::from_units(b"fullscreeninteractive")) {
+            Ok(StageDisplayState::FullScreenInteractive)
+        } else if s.eq_ignore_case(WStr::from_units(b"normal")) {
+            Ok(StageDisplayState::Normal)
+        } else {
+            Err(ParseEnumError)
+        }
+    }
+}
+
 bitflags! {
     /// The alignment of the stage.
     /// This controls the position of the movie after scaling to fill the viewport.
@@ -865,6 +900,26 @@ impl FromStr for StageAlign {
                 b'B' => align.insert(StageAlign::BOTTOM),
                 b'L' => align.insert(StageAlign::LEFT),
                 b'R' => align.insert(StageAlign::RIGHT),
+                _ => (),
+            }
+        }
+        Ok(align)
+    }
+}
+
+impl FromWStr for StageAlign {
+    type Err = std::convert::Infallible;
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        // Chars get converted into flags.
+        // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
+        let mut align = StageAlign::default();
+        for c in s.iter() {
+            match u8::try_from(c).map(|c| c.to_ascii_uppercase()) {
+                Ok(b'T') => align.insert(StageAlign::TOP),
+                Ok(b'B') => align.insert(StageAlign::BOTTOM),
+                Ok(b'L') => align.insert(StageAlign::LEFT),
+                Ok(b'R') => align.insert(StageAlign::RIGHT),
                 _ => (),
             }
         }
@@ -971,5 +1026,31 @@ impl FromStr for StageQuality {
             _ => return Err(ParseEnumError),
         };
         Ok(quality)
+    }
+}
+
+impl FromWStr for StageQuality {
+    type Err = ParseEnumError;
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s.eq_ignore_case(WStr::from_units(b"low")) {
+            Ok(StageQuality::Low)
+        } else if s.eq_ignore_case(WStr::from_units(b"medium")) {
+            Ok(StageQuality::Medium)
+        } else if s.eq_ignore_case(WStr::from_units(b"high")) {
+            Ok(StageQuality::High)
+        } else if s.eq_ignore_case(WStr::from_units(b"best")) {
+            Ok(StageQuality::Best)
+        } else if s.eq_ignore_case(WStr::from_units(b"8x8")) {
+            Ok(StageQuality::High8x8)
+        } else if s.eq_ignore_case(WStr::from_units(b"8x8linear")) {
+            Ok(StageQuality::High8x8Linear)
+        } else if s.eq_ignore_case(WStr::from_units(b"16x16")) {
+            Ok(StageQuality::High16x16)
+        } else if s.eq_ignore_case(WStr::from_units(b"16x16linear")) {
+            Ok(StageQuality::High16x16Linear)
+        } else {
+            Err(ParseEnumError)
+        }
     }
 }

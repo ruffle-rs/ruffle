@@ -119,7 +119,7 @@ fn to_string<'gc>(
 
     if radix == 10 {
         // Output number as floating-point decimal.
-        Ok(AvmString::new(
+        Ok(AvmString::new_utf8(
             activation.context.gc_context,
             Value::from(this).coerce_to_string(activation)?.to_string(),
         )
@@ -143,7 +143,7 @@ fn to_string<'gc>(
         while n > 0 {
             let digit = n % radix;
             n /= radix;
-            digits[i] = std::char::from_digit(digit, radix).unwrap();
+            digits[i] = char::from_digit(digit, radix).unwrap();
             i += 1;
         }
         if is_negative {
@@ -151,7 +151,7 @@ fn to_string<'gc>(
             i += 1;
         }
         let out: String = digits[..i].iter().rev().collect();
-        Ok(AvmString::new(activation.context.gc_context, out).into())
+        Ok(AvmString::new_utf8(activation.context.gc_context, out).into())
     } else {
         // NaN or large numbers.
         // Player version specific behavior:

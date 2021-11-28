@@ -40,6 +40,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "pixelDissolve" => method(pixel_dissolve);
     "scroll" => method(scroll);
     "threshold" => method(threshold);
+    "compare" => method(compare);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -1063,6 +1064,68 @@ pub fn threshold<'gc>(
     Ok((-1).into())
 }
 
+pub fn compare<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    const EQUIVALENT: i32 = 0;
+    const NOT_BITMAP: i32 = -1;
+    const BITMAP_DISPOSED: i32 = -2;
+    const DIFFERENT_WIDTHS: i32 = -3;
+    const DIFFERENT_HEIGHTS: i32 = -4;
+
+    let this_bitmap_data = if let Some(bitmap_data) = this.as_bitmap_data_object() {
+        bitmap_data
+    } else {
+        return Ok(NOT_BITMAP.into());
+    };
+
+    if this_bitmap_data.disposed() {
+        // The documentation says that -2 should be returned here, but -1 is actually returned.
+        return Ok(NOT_BITMAP.into());
+    }
+
+    let other = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation);
+
+    let other_bitmap_data = if let Some(other_bitmap_data) = other.as_bitmap_data_object() {
+        other_bitmap_data
+    } else {
+        // The documentation says that -1 should be returned here, but -2 is actually returned.
+        return Ok(BITMAP_DISPOSED.into());
+    };
+
+    if other_bitmap_data.disposed() {
+        return Ok(BITMAP_DISPOSED.into());
+    }
+
+    let this_bitmap_data = this_bitmap_data.bitmap_data();
+    let this_bitmap_data = this_bitmap_data.read();
+    let other_bitmap_data = other_bitmap_data.bitmap_data();
+    let other_bitmap_data = other_bitmap_data.read();
+
+    if this_bitmap_data.width() != other_bitmap_data.width() {
+        return Ok(DIFFERENT_WIDTHS.into());
+    }
+
+    if this_bitmap_data.height() != other_bitmap_data.height() {
+        return Ok(DIFFERENT_HEIGHTS.into());
+    }
+
+    match BitmapData::compare(&this_bitmap_data, &other_bitmap_data) {
+        Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
+            activation.context.gc_context,
+            Some(activation.context.avm1.prototypes.bitmap_data),
+            bitmap_data,
+        )
+        .into()),
+        None => Ok(EQUIVALENT.into()),
+    }
+}
+
 pub fn create_proto<'gc>(
     gc_context: MutationContext<'gc, '_>,
     proto: Object<'gc>,
@@ -1092,7 +1155,7 @@ pub fn load_bitmap<'gc>(
 
     let character = movie
         .and_then(|m| library.library_for_movie(m))
-        .and_then(|l| l.character_by_export_name(name.as_str()));
+        .and_then(|l| l.character_by_export_name(name));
 
     if let Some(Character::Bitmap(bitmap_object)) = character {
         if let Some(bitmap_handle) = bitmap_object.bitmap_handle() {

@@ -324,6 +324,7 @@ swf_tests! {
     (textfield_background_color, "avm1/textfield_background_color", 1),
     (textfield_border_color, "avm1/textfield_border_color", 1),
     (textfield_variable, "avm1/textfield_variable", 8),
+    (text_format, "avm1/text_format", 1),
     (error, "avm1/error", 1),
     (color_transform, "avm1/color_transform", 1),
     (with, "avm1/with", 1),
@@ -372,6 +373,7 @@ swf_tests! {
     (gradient_bevel_filter, "avm1/gradient_bevel_filter", 1),
     (gradient_glow_filter, "avm1/gradient_glow_filter", 1),
     (bitmap_data, "avm1/bitmap_data", 1),
+    (bitmap_data_compare, "avm1/bitmap_data_compare", 1),
     (bitmap_data_max_size_swf9, "avm1/bitmap_data_max_size_swf9", 1),
     (bitmap_data_max_size_swf10, "avm1/bitmap_data_max_size_swf10", 1),
     (bitmap_data_noise, "avm1/bitmap_data_noise", 1),
@@ -730,6 +732,7 @@ swf_tests! {
     (as3_uint_constr, "avm2/uint_constr", 1),
     (as3_number_constr, "avm2/number_constr", 1),
     (as3_function_type, "avm2/function_type", 1),
+    (as3_textformat, "avm2/textformat", 1),
 }
 
 // TODO: These tests have some inaccuracies currently, so we use approx_eq to test that numeric values are close enough.

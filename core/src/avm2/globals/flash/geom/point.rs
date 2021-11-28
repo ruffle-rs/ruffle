@@ -341,9 +341,11 @@ pub fn to_string<'gc>(
                 activation,
             )?
             .coerce_to_string(activation)?;
-        return Ok(
-            AvmString::new(activation.context.gc_context, format!("(x={}, y={})", x, y)).into(),
-        );
+        return Ok(AvmString::new_utf8(
+            activation.context.gc_context,
+            format!("(x={}, y={})", x, y),
+        )
+        .into());
     }
 
     Ok(Value::Undefined)

@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::ExecutionReason;
+use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
@@ -33,18 +33,10 @@ impl<'gc> Watcher<'gc> {
         new_value: Value<'gc>,
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let args = [
-            Value::String(AvmString::new(
-                activation.context.gc_context,
-                name.to_string(),
-            )),
-            old_value,
-            new_value,
-            self.user_data,
-        ];
+        let args = [Value::String(name), old_value, new_value, self.user_data];
         let exec = self.callback.as_executable().unwrap();
         exec.exec(
-            &name,
+            ExecutionName::Dynamic(name),
             activation,
             this,
             0,
@@ -124,7 +116,11 @@ impl<'gc> ScriptObject<'gc> {
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
-    pub fn get_data(&self, name: &str, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
+    pub fn get_data(
+        &self,
+        name: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Value<'gc> {
         self.0
             .read()
             .properties
@@ -198,7 +194,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         if let Some(setter) = setter {
             if let Some(exec) = setter.as_executable() {
                 if let Err(Error::ThrownValue(e)) = exec.exec(
-                    "[Setter]",
+                    ExecutionName::Static("[Setter]"),
                     activation,
                     this,
                     1,
@@ -402,7 +398,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn proto(&self, activation: &mut Activation<'_, 'gc, '_>) -> Value<'gc> {
-        self.get_data("__proto__", activation)
+        self.get_data("__proto__".into(), activation)
     }
 
     /// Checks if the object has a given named property.
@@ -502,7 +498,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn length(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
-        self.get_data("length", activation)
+        self.get_data("length".into(), activation)
             .coerce_to_i32(activation)
     }
 
@@ -515,12 +511,13 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn has_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.has_own_property(activation, index_str)
     }
 
     fn get_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> Value<'gc> {
-        self.get_data(&index.to_string(), activation)
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
+        self.get_data(index_str, activation)
     }
 
     fn set_element(
@@ -529,12 +526,12 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         index: i32,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.set_data(index_str, value, activation)
     }
 
     fn delete_element(&self, activation: &mut Activation<'_, 'gc, '_>, index: i32) -> bool {
-        let index_str = AvmString::new(activation.context.gc_context, index.to_string());
+        let index_str = AvmString::new_utf8(activation.context.gc_context, index.to_string());
         self.delete(activation, index_str)
     }
 }

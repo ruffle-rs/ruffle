@@ -6,9 +6,10 @@ use crate::ecma_conversions::{
     f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
     f64_to_wrapping_u32,
 };
-use crate::string::AvmString;
+use crate::string::{AvmString, Integer, WStr};
 use gc_arena::Collect;
 use std::borrow::Cow;
+use std::num::Wrapping;
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -139,74 +140,52 @@ impl<'gc> Value<'gc> {
     /// rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
     fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
-        match self {
-            Value::Undefined if activation.swf_version() < 7 => 0.0,
-            Value::Null if activation.swf_version() < 7 => 0.0,
-            Value::Undefined => f64::NAN,
-            Value::Null => f64::NAN,
-            Value::Bool(false) => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Number(v) => *v,
-            Value::String(v) => match v.as_str() {
-                v if activation.swf_version() >= 6 && v.starts_with("0x") => {
-                    let mut n: u32 = 0;
-                    for c in v[2..].bytes() {
-                        n = n.wrapping_shl(4);
-                        n |= match c {
-                            b'0' => 0,
-                            b'1' => 1,
-                            b'2' => 2,
-                            b'3' => 3,
-                            b'4' => 4,
-                            b'5' => 5,
-                            b'6' => 6,
-                            b'7' => 7,
-                            b'8' => 8,
-                            b'9' => 9,
-                            b'a' | b'A' => 10,
-                            b'b' | b'B' => 11,
-                            b'c' | b'C' => 12,
-                            b'd' | b'D' => 13,
-                            b'e' | b'E' => 14,
-                            b'f' | b'F' => 15,
-                            _ => return f64::NAN,
-                        }
-                    }
-                    f64::from(n as i32)
+        let v = match self {
+            Value::Undefined if activation.swf_version() < 7 => return 0.0,
+            Value::Null if activation.swf_version() < 7 => return 0.0,
+            Value::Undefined => return f64::NAN,
+            Value::Null => return f64::NAN,
+            Value::Bool(false) => return 0.0,
+            Value::Bool(true) => return 1.0,
+            Value::Number(v) => return *v,
+            Value::Object(_) => return f64::NAN,
+            Value::String(v) => v,
+        };
+
+        if v.is_empty() {
+            return f64::NAN;
+        }
+
+        if activation.swf_version() >= 6 {
+            if let Some(v) = v.strip_prefix(WStr::from_units(b"0x")) {
+                // Flash allows the '-' sign here.
+                return match Wrapping::<i32>::from_wstr_radix(v, 16) {
+                    Ok(n) => f64::from(n.0 as i32),
+                    Err(_) => f64::NAN,
+                };
+            } else if v.starts_with(b'0')
+                || v.starts_with(WStr::from_units(b"+0"))
+                || v.starts_with(WStr::from_units(b"-0"))
+            {
+                // Flash allows the '-' sign here.
+                if let Ok(n) = Wrapping::<i32>::from_wstr_radix(v, 8) {
+                    return f64::from(n.0);
                 }
-                v if activation.swf_version() >= 6
-                    && (v.starts_with('0') || v.starts_with("+0") || v.starts_with("-0"))
-                    && v[1..].bytes().all(|c| c >= b'0' && c <= b'7') =>
-                {
-                    let trimmed = v.trim_start_matches(|c| c == '+' || c == '-');
-                    let mut n: u32 = 0;
-                    for c in trimmed.bytes() {
-                        n = n.wrapping_shl(3);
-                        n |= (c - b'0') as u32;
-                    }
-                    if v.starts_with('-') {
-                        n = n.wrapping_neg();
-                    }
-                    f64::from(n as i32)
-                }
-                "" => f64::NAN,
-                _ => {
-                    // Rust parses "inf" and "+inf" into Infinity, but Flash doesn't.
-                    // (as of nightly 4/13, Rust also accepts "infinity")
-                    // Check if the strign starts with 'i' (ignoring any leading +/-).
-                    if v.strip_prefix(['+', '-'].as_ref())
-                        .unwrap_or(v)
-                        .starts_with(['i', 'I'].as_ref())
-                    {
-                        f64::NAN
-                    } else {
-                        v.trim_start_matches(|c| c == '\t' || c == '\n' || c == '\r' || c == ' ')
-                            .parse()
-                            .unwrap_or(f64::NAN)
-                    }
-                }
-            },
-            Value::Object(_) => f64::NAN,
+            }
+        }
+
+        // Rust parses "inf" and "+inf" into Infinity, but Flash doesn't.
+        // (as of nightly 4/13, Rust also accepts "infinity")
+        // Check if the string starts with 'i' (ignoring any leading +/-).
+        if v.strip_prefix(&b"+-"[..])
+            .unwrap_or(v)
+            .starts_with(&b"iI"[..])
+        {
+            f64::NAN
+        } else {
+            v.trim_start_matches(&b"\t\n\r "[..])
+                .parse()
+                .unwrap_or(f64::NAN)
         }
     }
 
@@ -290,7 +269,7 @@ impl<'gc> Value<'gc> {
 
                 Ok(false)
             }
-            (Value::String(a), Value::String(b)) => Ok(**a == **b),
+            (Value::String(a), Value::String(b)) => Ok(*a == *b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
             (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
             (Value::Object(a), Value::Undefined | Value::Null) => Ok(Object::ptr_eq(
@@ -438,7 +417,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => "false".into(),
             Value::Number(v) => match f64_to_string(*v) {
                 Cow::Borrowed(s) => s.into(),
-                Cow::Owned(s) => AvmString::new(activation.context.gc_context, s),
+                Cow::Owned(s) => AvmString::new_utf8(activation.context.gc_context, s),
             },
             Value::String(v) => v.to_owned(),
         })
@@ -638,14 +617,8 @@ mod test {
     #[test]
     fn abstract_lt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(
-                activation.context.gc_context,
-                "a".to_owned(),
-            ));
-            let b = Value::String(AvmString::new(
-                activation.context.gc_context,
-                "b".to_owned(),
-            ));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
             assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
 
@@ -656,14 +629,8 @@ mod test {
     #[test]
     fn abstract_gt_str() {
         with_avm(8, |activation, _this| -> Result<(), Error> {
-            let a = Value::String(AvmString::new(
-                activation.context.gc_context,
-                "a".to_owned(),
-            ));
-            let b = Value::String(AvmString::new(
-                activation.context.gc_context,
-                "b".to_owned(),
-            ));
+            let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
+            let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
             assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
 

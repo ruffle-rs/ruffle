@@ -32,7 +32,7 @@ fn sandbox_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let sandbox_type = activation.context.system.sandbox_type.to_string();
-    return Ok(AvmString::new(activation.context.gc_context, sandbox_type).into());
+    return Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into());
 }
 
 fn allow_domain<'gc>(

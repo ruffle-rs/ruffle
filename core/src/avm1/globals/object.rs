@@ -30,9 +30,9 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match args.get(0) {
-        None | Some(Value::Null) | Some(Value::Undefined) => this,
-        Some(val) => val.coerce_to_object(activation),
+    let this = match args.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined | Value::Null => this,
+        val => val.coerce_to_object(activation),
     };
     Ok(this.into())
 }
@@ -43,11 +43,11 @@ pub fn object_function<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let obj = match args.get(0) {
-        None | Some(Value::Null) | Some(Value::Undefined) => {
+    let obj = match args.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined | Value::Null => {
             Object::from(ScriptObject::object(activation.context.gc_context, None))
         }
-        Some(val) => val.coerce_to_object(activation),
+        val => val.coerce_to_object(activation),
     };
     Ok(obj.into())
 }
@@ -294,8 +294,8 @@ pub fn as_set_prop_flags<'gc>(
         ),
         Some(v) => {
             let props = v.coerce_to_string(activation)?;
-            if props.contains(',') {
-                for prop_name in props.split(',') {
+            if props.contains(b',') {
+                for prop_name in props.split(b',') {
                     object.set_attributes(
                         activation.context.gc_context,
                         Some(AvmString::new(activation.context.gc_context, prop_name)),

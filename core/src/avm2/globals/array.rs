@@ -135,7 +135,7 @@ pub fn resolve_array_hole<'gc>(
                     p,
                     &QName::new(
                         Namespace::public(),
-                        AvmString::new(activation.context.gc_context, i.to_string()),
+                        AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                     )
                     .into(),
                     activation,
@@ -170,17 +170,13 @@ where
                 if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
                     accum.push("".into());
                 } else {
-                    accum.push(
-                        conv(item, activation)?
-                            .coerce_to_string(activation)?
-                            .to_string(),
-                    );
+                    accum.push(conv(item, activation)?.coerce_to_string(activation)?);
                 }
             }
 
             return Ok(AvmString::new(
                 activation.context.gc_context,
-                accum.join(&string_separator),
+                crate::string::join(&accum, &string_separator),
             )
             .into());
         }
@@ -307,7 +303,7 @@ impl<'gc> ArrayIter<'gc> {
                         self.array_object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, i.to_string()),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,
@@ -338,7 +334,7 @@ impl<'gc> ArrayIter<'gc> {
                         self.array_object,
                         &QName::new(
                             Namespace::public(),
-                            AvmString::new(activation.context.gc_context, i.to_string()),
+                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                         )
                         .into(),
                         activation,
@@ -903,10 +899,10 @@ pub fn compare_string_case_insensitive<'gc>(
     a: Value<'gc>,
     b: Value<'gc>,
 ) -> Result<Ordering, Error> {
-    let string_a = a.coerce_to_string(activation)?.to_lowercase();
-    let string_b = b.coerce_to_string(activation)?.to_lowercase();
+    let string_a = a.coerce_to_string(activation)?;
+    let string_b = b.coerce_to_string(activation)?;
 
-    Ok(string_a.cmp(&string_b))
+    Ok(string_a.cmp_ignore_case(&string_b))
 }
 
 pub fn compare_numeric<'gc>(
