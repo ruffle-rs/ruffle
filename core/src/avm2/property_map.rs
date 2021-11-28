@@ -3,7 +3,8 @@
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::AvmString;
 use fnv::FnvBuildHasher;
-use gc_arena::Collect;
+use gc_arena::{Collect, CollectionContext};
+use smallvec::SmallVec;
 use std::collections::HashMap;
 use std::mem::swap;
 
@@ -21,9 +22,26 @@ use std::mem::swap;
 /// The internal structure of the `PropertyMap` technically allows storage of
 /// multiple values per `QName`. It's implementation enforces the invariant
 /// that each `QName` only have one associated `V`.
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
-pub struct PropertyMap<'gc, V>(HashMap<AvmString<'gc>, Vec<(Namespace<'gc>, V)>, FnvBuildHasher>);
+#[derive(Clone, Debug)]
+pub struct PropertyMap<'gc, V>(
+    HashMap<AvmString<'gc>, SmallVec<[(Namespace<'gc>, V); 2]>, FnvBuildHasher>,
+);
+
+unsafe impl<'gc, V> Collect for PropertyMap<'gc, V>
+where
+    V: Collect,
+{
+    #[inline]
+    fn trace(&self, cc: CollectionContext) {
+        for (key, value) in self.0.iter() {
+            key.trace(cc);
+            for (ns, v) in value.iter() {
+                ns.trace(cc);
+                v.trace(cc);
+            }
+        }
+    }
+}
 
 impl<'gc, V> Default for PropertyMap<'gc, V> {
     fn default() -> Self {
