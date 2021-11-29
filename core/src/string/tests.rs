@@ -120,6 +120,25 @@ fn buf_concat_wide() {
     assert!(matches!(s.units(), Units::Wide(_)));
 }
 
+#[test]
+fn offset_in() {
+    let bstr = bstr!(b"abcdefghijk");
+    assert_eq!(bstr.offset_in(bstr), Some(0));
+    assert_eq!(bstr[3..6].offset_in(bstr), Some(3));
+    assert_eq!(bstr.offset_in(&bstr[3..6]), None);
+    assert_eq!(bstr[..3].offset_in(&bstr[6..]), None);
+    assert_eq!(bstr[6..].offset_in(&bstr[..3]), None);
+
+    let wstr = wstr!('a''b''c''d''e''f''g''h''i''j''k');
+    assert_eq!(wstr.offset_in(wstr), Some(0));
+    assert_eq!(wstr[3..6].offset_in(wstr), Some(3));
+    assert_eq!(wstr.offset_in(&wstr[3..6]), None);
+    assert_eq!(wstr[..3].offset_in(&wstr[6..]), None);
+    assert_eq!(wstr[6..].offset_in(&wstr[..3]), None);
+
+    assert_eq!(bstr.offset_in(wstr), None);
+}
+
 fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
     haystack: &'a WStr,
     pattern: P,

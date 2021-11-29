@@ -162,7 +162,7 @@ pub fn str_hash<H: Hasher>(s: &WStr, state: &mut H) {
 }
 
 pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
-    match (s.units(), other.units()) {
+    let offset = match (s.units(), other.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => {
             (a.as_ptr() as usize).checked_sub(b.as_ptr() as usize)
         }
@@ -170,7 +170,9 @@ pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
             .checked_sub(b.as_ptr() as usize)
             .map(|n| n / std::mem::size_of::<u16>()),
         _ => None,
-    }
+    };
+
+    offset.filter(|o| o + s.len() <= other.len())
 }
 
 fn map_latin1_chars(s: &WStr, mut map: impl FnMut(u8) -> u8) -> WString {
