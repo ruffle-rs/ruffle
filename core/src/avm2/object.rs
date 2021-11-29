@@ -585,7 +585,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn resolve_ns(
         self,
         local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
+    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
         let base = self.base();
 
         base.resolve_ns(local_name)
