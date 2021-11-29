@@ -648,7 +648,8 @@ impl FormatSpans {
                             // Skip push to `format_stack`.
                             continue;
                         }
-                        b"p" if is_multiline => {
+                        // TODO: Remove heading tag 'polyfills' once stylesheets are supported
+                        b"p" | b"h1" | b"h2" | b"h3" | b"h4" | b"h5" | b"h6" if is_multiline => {
                             if let Some(align) = attribute(b"align") {
                                 if align == WStr::from_units(b"left") {
                                     format.align = Some(swf::TextAlign::Left)
@@ -768,7 +769,10 @@ impl FormatSpans {
                             // Skip pop from `format_stack`.
                             continue;
                         }
-                        b"p" | b"li" if is_multiline => {
+                        // TODO: Remove heading tag 'polyfills' once stylesheets are supported
+                        b"p" | b"li" | b"h1" | b"h2" | b"h3" | b"h4" | b"h5" | b"h6"
+                            if is_multiline =>
+                        {
                             text.push_byte(b'\n');
                             if let Some(span) = spans.last_mut() {
                                 span.span_length += 1;
