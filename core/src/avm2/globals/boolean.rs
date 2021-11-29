@@ -10,7 +10,7 @@ use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Boolean`'s instance initializer.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -32,7 +32,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `Boolean`'s native instance initializer.
-pub fn native_instance_init<'gc>(
+fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -45,7 +45,7 @@ pub fn native_instance_init<'gc>(
 }
 
 /// Implements `Boolean`'s class initializer.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -88,7 +88,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `Boolean.toString`
-pub fn to_string<'gc>(
+fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -107,7 +107,7 @@ pub fn to_string<'gc>(
 }
 
 /// Implements `Boolean.valueOf`
-pub fn value_of<'gc>(
+fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],

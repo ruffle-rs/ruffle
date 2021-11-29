@@ -11,7 +11,7 @@ use crate::avm2::{AvmString, Error};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `int`'s instance initializer.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -33,7 +33,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `int`'s native instance initializer.
-pub fn native_instance_init<'gc>(
+fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -46,7 +46,7 @@ pub fn native_instance_init<'gc>(
 }
 
 /// Implements `int`'s class initializer.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -125,7 +125,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `int.toExponential`
-pub fn to_exponential<'gc>(
+fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -159,7 +159,7 @@ pub fn to_exponential<'gc>(
 }
 
 /// Implements `int.toFixed`
-pub fn to_fixed<'gc>(
+fn to_fixed<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -190,7 +190,7 @@ pub fn to_fixed<'gc>(
 }
 
 /// Implements `int.toPrecision`
-pub fn to_precision<'gc>(
+fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -217,7 +217,7 @@ pub fn to_precision<'gc>(
 }
 
 /// Implements `int.toString`
-pub fn to_string<'gc>(
+fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -244,7 +244,7 @@ pub fn to_string<'gc>(
 }
 
 /// Implements `int.valueOf`
-pub fn value_of<'gc>(
+fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],

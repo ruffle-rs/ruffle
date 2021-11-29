@@ -10,7 +10,7 @@ use crate::avm2::{AvmString, Error};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `Number`'s instance initializer.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -32,7 +32,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `Number`'s native instance initializer.
-pub fn native_instance_init<'gc>(
+fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -45,7 +45,7 @@ pub fn native_instance_init<'gc>(
 }
 
 /// Implements `Number`'s class initializer.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -124,7 +124,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `Number.toLocaleString`
-pub fn to_locale_string<'gc>(
+fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -139,7 +139,7 @@ pub fn to_locale_string<'gc>(
 }
 
 /// Implements `Number.toExponential`
-pub fn to_exponential<'gc>(
+fn to_exponential<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -173,7 +173,7 @@ pub fn to_exponential<'gc>(
 }
 
 /// Implements `Number.toFixed`
-pub fn to_fixed<'gc>(
+fn to_fixed<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -235,7 +235,7 @@ pub fn print_with_precision<'gc>(
 }
 
 /// Implements `Number.toPrecision`
-pub fn to_precision<'gc>(
+fn to_precision<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -304,7 +304,7 @@ pub fn print_with_radix<'gc>(
 }
 
 /// Implements `Number.toString`
-pub fn to_string<'gc>(
+fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -331,7 +331,7 @@ pub fn to_string<'gc>(
 }
 
 /// Implements `Number.valueOf`
-pub fn value_of<'gc>(
+fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
