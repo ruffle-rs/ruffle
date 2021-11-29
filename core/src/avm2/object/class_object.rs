@@ -554,7 +554,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn resolve_instance_trait_ns(
         self,
         local_name: AvmString<'gc>,
-    ) -> SmallVec<[Namespace<'gc>; 2]> {
+    ) -> SmallVec<[Namespace<'gc>; 1]> {
         self.0
             .read()
             .resolved_instance_traits
@@ -976,7 +976,7 @@ impl<'gc> ClassObject<'gc> {
     pub fn resolve_class_trait_ns(
         self,
         local_name: AvmString<'gc>,
-    ) -> SmallVec<[Namespace<'gc>; 2]> {
+    ) -> SmallVec<[Namespace<'gc>; 1]> {
         self.0
             .read()
             .resolved_class_traits
@@ -1188,7 +1188,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn resolve_ns(
         self,
         local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
+    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
         let read = self.0.read();
 
         let mut ns_set = read.base.resolve_ns(local_name)?;

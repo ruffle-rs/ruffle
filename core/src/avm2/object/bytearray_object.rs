@@ -192,7 +192,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn resolve_ns(
         self,
         local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
+    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
         let base = self.base();
 
         let mut ns_set = base.resolve_ns(local_name)?;

@@ -282,7 +282,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn resolve_ns(
         &self,
         local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 2]>, Error> {
+    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
         let mut ns_set = self.values.namespaces_of(local_name);
 
         if let Some(class) = &self.instance_of {
