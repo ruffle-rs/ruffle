@@ -5,9 +5,10 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
+use bitflags::bitflags;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
@@ -42,6 +43,36 @@ pub enum PropagationMode {
     StopImmediate,
 }
 
+bitflags! {
+    /// Keyboard modifiers.
+    #[derive(Collect)]
+    #[collect(require_static)]
+    pub struct KeyModifiers: u8 {
+        const CTRL = 0b00000001;
+        const ALT = 0b00000010;
+        const SHIFT = 0b00000100;
+        const COMMAND = 0b00001000;
+    }
+}
+
+/// The data for a dispatched event.
+///
+/// This roughly corresponds to properties provided on specific AS3 `Event`
+/// subclasses.
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum EventData<'gc> {
+    Event,
+    MouseEvent {
+        local_x: f64,
+        local_y: f64,
+        related_object: Option<DisplayObject<'gc>>,
+        modifiers: KeyModifiers,
+        button_down: bool,
+        delta: u32,
+    },
+}
+
 /// Represents data fields of an event that can be fired on an object that
 /// implements `IEventDispatcher`.
 #[derive(Clone, Collect, Debug)]
@@ -72,6 +103,9 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
+
+    /// The event's data set.
+    event_data: EventData<'gc>,
 }
 
 impl<'gc> Event<'gc> {
@@ -89,6 +123,7 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
+            event_data: EventData::Event,
         }
     }
 
