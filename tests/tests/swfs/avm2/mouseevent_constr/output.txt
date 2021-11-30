@@ -1,0 +1,60 @@
+Attempting to launch and connect to Player using URL I:\Code\ruffle\tests\tests\swfs\avm2\mouseevent_constr\test.swf
+[SWF] I:\Code\ruffle\tests\tests\swfs\avm2\mouseevent_constr\test.swf - 1991 bytes after decompression
+/// var evt = new MouseEvent('FakeEvent');
+/// evt.type
+FakeEvent
+/// evt.altKey
+false
+/// evt.buttonDown
+false
+/// evt.ctrlKey
+false
+/// evt.delta
+0
+/// evt.isRelatedObjectInaccessible
+false
+/// evt.localX
+NaN
+/// evt.localY
+NaN
+/// evt.movementX
+0
+/// evt.movementY
+0
+/// evt.relatedObject
+null
+/// evt.shiftKey
+false
+/// evt.stageX
+NaN
+/// evt.stageY
+NaN
+/// var evt = new MouseEvent(MouseEvent.CLICK, false, true, 50, 50, null, false, false, false, true, 12);
+/// evt.type
+click
+/// evt.altKey
+false
+/// evt.buttonDown
+true
+/// evt.ctrlKey
+false
+/// evt.delta
+12
+/// evt.isRelatedObjectInaccessible
+false
+/// evt.localX
+50
+/// evt.localY
+50
+/// evt.movementX
+0
+/// evt.movementY
+0
+/// evt.relatedObject
+null
+/// evt.shiftKey
+false
+/// evt.stageX
+0
+/// evt.stageY
+0

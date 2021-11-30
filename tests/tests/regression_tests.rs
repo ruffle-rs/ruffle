@@ -331,6 +331,7 @@ swf_tests! {
     (as3_loaderinfo_quine, "avm2/loaderinfo_quine", 2),
     (as3_lshift, "avm2/lshift", 1),
     (as3_modulo, "avm2/modulo", 1),
+    (as3_mouseevent_constr, "avm2/mouseevent_constr", 1),
     (as3_movieclip_constr, "avm2/movieclip_constr", 1),
     (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 5),
     (as3_movieclip_currentscene, "avm2/movieclip_currentscene", 5),
