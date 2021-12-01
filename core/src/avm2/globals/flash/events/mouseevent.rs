@@ -6,6 +6,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::{TDisplayObject, TInteractiveObject};
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.MouseEvent`'s instance constructor.
@@ -33,7 +34,8 @@ pub fn instance_init<'gc>(
                 .unwrap_or(Value::Null)
                 .coerce_to_object(activation)
                 .ok()
-                .and_then(|o| o.as_display_object());
+                .and_then(|o| o.as_display_object())
+                .and_then(|o| o.as_interactive());
             let ctrl_key = args
                 .get(6)
                 .cloned()
@@ -523,6 +525,49 @@ pub fn set_movement_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `relatedObject`'s getter.
+pub fn related_object<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { related_object, .. } = evt.event_data() {
+                return Ok(related_object
+                    .map(|o| o.as_displayobject().object2())
+                    .unwrap_or(Value::Null));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `relatedObject`'s setter.
+pub fn set_related_object<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { related_object, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .and_then(|o| o.coerce_to_object(activation).ok())
+                    .and_then(|o| o.as_display_object())
+                    .and_then(|o| o.as_interactive());
+
+                *related_object = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -581,6 +626,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("localY", Some(local_y), Some(set_local_y)),
         ("movementX", Some(movement_x), Some(set_movement_x)),
         ("movementY", Some(movement_y), Some(set_movement_y)),
+        (
+            "relatedObject",
+            Some(related_object),
+            Some(set_related_object),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

@@ -5,7 +5,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{InteractiveObject, TDisplayObject};
 use crate::string::AvmString;
 use bitflags::bitflags;
 use fnv::FnvHashMap;
@@ -72,7 +72,7 @@ pub enum EventData<'gc> {
         local_y: f64,
         movement_x: f64,
         movement_y: f64,
-        related_object: Option<DisplayObject<'gc>>,
+        related_object: Option<InteractiveObject<'gc>>,
         modifiers: KeyModifiers,
         button_down: bool,
         delta: i32,
