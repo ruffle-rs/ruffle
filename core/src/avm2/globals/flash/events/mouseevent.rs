@@ -76,6 +76,8 @@ pub fn instance_init<'gc>(
             evt.set_event_data(EventData::MouseEvent {
                 local_x,
                 local_y,
+                movement_x: 0.0,
+                movement_y: 0.0,
                 related_object,
                 modifiers,
                 button_down,
@@ -441,6 +443,86 @@ pub fn set_local_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `movementX`'s getter.
+pub fn movement_x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { movement_x, .. } = evt.event_data() {
+                return Ok(Value::Number(*movement_x));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `movementX`'s setter.
+pub fn set_movement_x<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { movement_x, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_number(activation)?;
+
+                *movement_x = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `movementY`'s getter.
+pub fn movement_y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { movement_y, .. } = evt.event_data() {
+                return Ok(Value::Number(*movement_y));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `movementY`'s setter.
+pub fn set_movement_y<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { movement_y, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_number(activation)?;
+
+                *movement_y = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -497,6 +579,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("localX", Some(local_x), Some(set_local_x)),
         ("localY", Some(local_y), Some(set_local_y)),
+        ("movementX", Some(movement_x), Some(set_movement_x)),
+        ("movementY", Some(movement_y), Some(set_movement_y)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
