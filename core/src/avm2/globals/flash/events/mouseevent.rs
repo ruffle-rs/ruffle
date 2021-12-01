@@ -312,6 +312,46 @@ pub fn set_button_down<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `delta`'s getter.
+pub fn delta<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { delta, .. } = evt.event_data() {
+                return Ok(Value::Integer(*delta));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `delta`'s setter.
+pub fn set_delta<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { delta, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_i32(activation)?;
+
+                *delta = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -360,6 +400,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("ctrlKey", Some(control_key), Some(set_control_key)),
         ("shiftKey", Some(shift_key), Some(set_shift_key)),
         ("buttonDown", Some(button_down), Some(set_button_down)),
+        ("delta", Some(delta), Some(set_delta)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
