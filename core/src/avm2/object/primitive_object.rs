@@ -88,7 +88,7 @@ impl<'gc> PrimitiveObject<'gc> {
             PrimitiveObjectData { base, primitive },
         ))
         .into();
-        this.install_instance_traits(activation, class)?;
+        this.install_instance_slots(activation, class);
 
         //We explicitly DO NOT CALL the native initializers of primitives here.
         //If we did so, then those primitive initializers' method types would

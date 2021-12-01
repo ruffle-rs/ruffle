@@ -213,6 +213,7 @@ pub fn to_locale_string<'gc>(
         let o = v.coerce_to_object(activation)?;
 
         o.call_property(
+            o,
             &QName::new(Namespace::public(), "toLocaleString").into(),
             &[],
             activation,

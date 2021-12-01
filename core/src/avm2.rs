@@ -35,7 +35,6 @@ mod object;
 mod property;
 mod property_map;
 mod regexp;
-mod return_value;
 mod scope;
 mod script;
 mod slot;
@@ -43,6 +42,7 @@ mod string;
 mod traits;
 mod value;
 mod vector;
+mod vtable;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;

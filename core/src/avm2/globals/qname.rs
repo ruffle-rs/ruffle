@@ -98,6 +98,9 @@ pub fn class_init<'gc>(
         activation,
     )?;
 
+    qname_proto.set_local_property_is_enumerable(activation.context.gc_context, "toString".into(), false)?;
+    qname_proto.set_local_property_is_enumerable(activation.context.gc_context, "valueOf".into(), false)?;
+
     Ok(Value::Undefined)
 }
 

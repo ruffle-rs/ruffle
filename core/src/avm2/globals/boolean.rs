@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -51,37 +51,39 @@ fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut boolean_proto = this
+        let boolean_proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
         let this_class = this.as_class_object().unwrap();
 
-        boolean_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toString"),
+        boolean_proto.set_property_local(
+            boolean_proto,
+            &Multiname::public("toString"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
                 scope,
                 None,
                 Some(this_class),
-            )
-            .into(),
+            ).into(),
+            activation
         )?;
-        boolean_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "valueOf"),
+        boolean_proto.set_property_local(
+            boolean_proto,
+            &Multiname::public("valueOf"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
                 scope,
                 None,
                 Some(this_class),
-            )
-            .into(),
+            ).into(),
+            activation
         )?;
+        boolean_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false)?;
+        boolean_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false)?;
     }
 
     Ok(Value::Undefined)

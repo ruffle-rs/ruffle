@@ -1,6 +1,6 @@
 //! Property map
 
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::AvmString;
 use fnv::FnvBuildHasher;
 use gc_arena::{Collect, CollectionContext};
@@ -67,6 +67,23 @@ impl<'gc, V> PropertyMap<'gc, V> {
             .next()
     }
 
+    pub fn get_multiname(&self, name: &Multiname<'gc>) -> Option<&V> {
+        if let Some(local_name) = name.local_name() {
+            self.0
+                .get(&local_name)
+                .iter()
+                .filter_map(|v| {
+                    v.iter()
+                        .filter(|(n, _)| name.namespace_set().find(|ns| *ns == n).is_some())
+                        .map(|(_, v)| v)
+                        .next()
+                })
+                .next()
+        } else {
+            None
+        }
+    }
+
     pub fn get_mut(&mut self, name: QName<'gc>) -> Option<&mut V> {
         if let Some(bucket) = self.0.get_mut(&name.local_name()) {
             if let Some((_, old_value)) = bucket.iter_mut().find(|(n, _)| *n == name.namespace()) {
@@ -98,6 +115,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 

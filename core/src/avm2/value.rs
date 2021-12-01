@@ -306,6 +306,7 @@ impl<'gc> Value<'gc> {
                     object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
                     prim = object.call_property(
+                        object,
                         &QName::dynamic_name("toString").into(),
                         &[],
                         activation,
@@ -320,6 +321,7 @@ impl<'gc> Value<'gc> {
                     object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
                     prim = object.call_property(
+                        object,
                         &QName::dynamic_name("valueOf").into(),
                         &[],
                         activation,
@@ -340,6 +342,7 @@ impl<'gc> Value<'gc> {
                     object.get_property(*o, &QName::dynamic_name("valueOf").into(), activation)?
                 {
                     prim = object.call_property(
+                        object,
                         &QName::dynamic_name("valueOf").into(),
                         &[],
                         activation,
@@ -354,6 +357,7 @@ impl<'gc> Value<'gc> {
                     object.get_property(*o, &QName::dynamic_name("toString").into(), activation)?
                 {
                     prim = object.call_property(
+                        object,
                         &QName::dynamic_name("toString").into(),
                         &[],
                         activation,

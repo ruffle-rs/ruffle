@@ -1,15 +1,14 @@
 //! Vector storage object
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
+use crate::string::AvmString;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
-use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
@@ -80,7 +79,7 @@ impl<'gc> VectorObject<'gc> {
         ))
         .into();
 
-        object.install_instance_traits(activation, applied_class)?;
+        object.install_instance_slots(activation, applied_class);
 
         Ok(object)
     }
@@ -102,138 +101,116 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
 
-        if name.namespace().is_package("") {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                return Ok(read.vector.get(index).unwrap_or(Value::Undefined));
+        // TODO: why is this this way?
+        //if name.namespace().is_package("") {
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    return Ok(read.vector.get(index).unwrap_or(Value::Undefined));
+                }
             }
         }
 
-        let rv = read.base.get_property_local(receiver, name, activation)?;
-
-        drop(read);
-
-        rv.resolve(activation)
+        read.base.get_property_local(receiver, name, activation)
     }
 
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if name.namespace().is_package("") {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                let type_of = self.0.read().vector.value_type();
-                let value = match value.coerce_to_type(activation, type_of)? {
-                    Value::Undefined => self.0.read().vector.default(activation),
-                    Value::Null => self.0.read().vector.default(activation),
-                    v => v,
-                };
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    let type_of = self.0.read().vector.value_type();
+                    let value = match value.coerce_to_type(activation, type_of)? {
+                        Value::Undefined => self.0.read().vector.default(activation),
+                        Value::Null => self.0.read().vector.default(activation),
+                        v => v,
+                    };
 
-                self.0
-                    .write(activation.context.gc_context)
-                    .vector
-                    .set(index, value, activation)?;
+                    self.0
+                        .write(activation.context.gc_context)
+                        .vector
+                        .set(index, value, activation)?;
 
-                return Ok(());
+                    return Ok(());
+                }
             }
         }
 
         let mut write = self.0.write(activation.context.gc_context);
 
-        let rv = write
+        write
             .base
-            .set_property_local(receiver, name, value, activation)?;
-
-        drop(write);
-
-        rv.resolve(activation)?;
-
-        Ok(())
+            .set_property_local(receiver, name, value, activation)
     }
 
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if name.namespace().is_package("") {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                let type_of = self.0.read().vector.value_type();
-                let value = match value.coerce_to_type(activation, type_of)? {
-                    Value::Undefined => self.0.read().vector.default(activation),
-                    Value::Null => self.0.read().vector.default(activation),
-                    v => v,
-                };
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    let type_of = self.0.read().vector.value_type();
+                    let value = match value.coerce_to_type(activation, type_of)? {
+                        Value::Undefined => self.0.read().vector.default(activation),
+                        Value::Null => self.0.read().vector.default(activation),
+                        v => v,
+                    };
 
-                self.0
-                    .write(activation.context.gc_context)
-                    .vector
-                    .set(index, value, activation)?;
+                    self.0
+                        .write(activation.context.gc_context)
+                        .vector
+                        .set(index, value, activation)?;
 
-                return Ok(());
+                    return Ok(());
+                }
             }
         }
 
         let mut write = self.0.write(activation.context.gc_context);
 
-        let rv = write
+        write
             .base
-            .init_property_local(receiver, name, value, activation)?;
-
-        drop(write);
-
-        rv.resolve(activation)?;
-
-        Ok(())
+            .init_property_local(receiver, name, value, activation)
     }
 
     fn delete_property_local(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: QName<'gc>,
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &Multiname<'gc>,
     ) -> Result<bool, Error> {
-        if name.namespace().is_package("") && name.local_name().parse::<usize>().is_ok() {
+        if name.contains_public_namespace()
+            && name.local_name().is_some()
+            && name.local_name().unwrap().parse::<usize>().is_ok() {
             return Ok(true);
         }
 
-        Ok(self.0.write(gc_context).base.delete_property(name))
+        Ok(self.0.write(activation.context.gc_context).base.delete_property_local(name))
     }
 
-    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
-        if name.namespace().is_package("") {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                return Ok(self.0.read().vector.is_in_range(index));
-            }
-        }
-
-        self.0.read().base.has_own_property(name)
-    }
-
-    fn resolve_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
-        let base = self.base();
-
-        let mut ns_set = base.resolve_ns(local_name)?;
-        if !ns_set.contains(&Namespace::public()) {
-            if let Ok(index) = local_name.parse::<usize>() {
-                if self.0.read().vector.is_in_range(index) {
-                    ns_set.push(Namespace::public())
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    return self.0.read().vector.is_in_range(index);
                 }
             }
         }
 
-        Ok(ns_set)
+        self.0.read().base.has_own_property(name)
     }
 
     fn get_next_enumerant(
@@ -263,9 +240,8 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
-        name.local_name()
-            .parse::<u32>()
+    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+        name.parse::<u32>()
             .map(|index| self.0.read().vector.length() as u32 >= index)
             .unwrap_or(false)
     }
