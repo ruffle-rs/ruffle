@@ -361,6 +361,86 @@ pub fn is_related_object_inaccessible<'gc>(
     Ok(false.into())
 }
 
+/// Implements `localX`'s getter.
+pub fn local_x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { local_x, .. } = evt.event_data() {
+                return Ok(Value::Number(*local_x));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `localX`'s setter.
+pub fn set_local_x<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { local_x, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_number(activation)?;
+
+                *local_x = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `localY`'s getter.
+pub fn local_y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { local_y, .. } = evt.event_data() {
+                return Ok(Value::Number(*local_y));
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `localY`'s setter.
+pub fn set_local_y<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { local_y, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_number(activation)?;
+
+                *local_y = value;
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -415,6 +495,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(is_related_object_inaccessible),
             None,
         ),
+        ("localX", Some(local_x), Some(set_local_x)),
+        ("localY", Some(local_y), Some(set_local_y)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
