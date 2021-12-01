@@ -1,7 +1,7 @@
 //! Object representation for events
 
 use crate::avm2::activation::Activation;
-use crate::avm2::events::Event;
+use crate::avm2::events::{Event, EventData};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -22,7 +22,7 @@ pub fn event_allocator<'gc>(
         activation.context.gc_context,
         EventObjectData {
             base,
-            event: Event::new(""),
+            event: Event::new("", EventData::Event),
         },
     ))
     .into())

@@ -46,7 +46,7 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
-pub use crate::avm2::events::Event;
+pub use crate::avm2::events::{Event, EventData};
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{
     ArrayObject, ClassObject, Object, ScriptObject, SoundChannelObject, StageObject, TObject,

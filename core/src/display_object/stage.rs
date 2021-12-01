@@ -2,8 +2,9 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Event as Avm2Event, Object as Avm2Object,
-    ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, Event as Avm2Event, EventData as Avm2EventData,
+    Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
+    Value as Avm2Value,
 };
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
@@ -559,7 +560,7 @@ impl<'gc> Stage<'gc> {
                 &[],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let mut resized_event = Avm2Event::new("resize");
+            let mut resized_event = Avm2Event::new("resize", Avm2EventData::Event);
             resized_event.set_bubbles(false);
             resized_event.set_cancelable(false);
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
@@ -581,7 +582,13 @@ impl<'gc> Stage<'gc> {
                 &[self.is_fullscreen().into()],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let mut full_screen_event = Avm2Event::new("fullScreen");
+            let mut full_screen_event = Avm2Event::new(
+                "fullScreen",
+                Avm2EventData::FullScreenEvent {
+                    full_screen: self.is_fullscreen(),
+                    interactive: true,
+                },
+            );
             full_screen_event.set_bubbles(false);
             full_screen_event.set_cancelable(false);
 
