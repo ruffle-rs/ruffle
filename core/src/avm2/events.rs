@@ -70,6 +70,8 @@ pub enum EventData<'gc> {
     MouseEvent {
         local_x: f64,
         local_y: f64,
+        movement_x: f64,
+        movement_y: f64,
         related_object: Option<DisplayObject<'gc>>,
         modifiers: KeyModifiers,
         button_down: bool,
