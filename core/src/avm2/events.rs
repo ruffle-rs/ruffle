@@ -45,7 +45,7 @@ pub enum PropagationMode {
 
 bitflags! {
     /// Keyboard modifiers.
-    #[derive(Collect)]
+    #[derive(Collect, Default)]
     #[collect(require_static)]
     pub struct KeyModifiers: u8 {
         const CTRL = 0b00000001;
@@ -73,7 +73,7 @@ pub enum EventData<'gc> {
         related_object: Option<DisplayObject<'gc>>,
         modifiers: KeyModifiers,
         button_down: bool,
-        delta: u32,
+        delta: i32,
     },
 }
 
@@ -208,6 +208,14 @@ impl<'gc> Event<'gc> {
 
     pub fn set_current_target(&mut self, current_target: Object<'gc>) {
         self.current_target = Some(current_target)
+    }
+
+    pub fn event_data(&self) -> &EventData<'gc> {
+        &self.event_data
+    }
+
+    pub fn set_event_data(&mut self, event_data: EventData<'gc>) {
+        self.event_data = event_data;
     }
 }
 
