@@ -1,8 +1,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::events::{EventData, KeyModifiers};
 use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -15,7 +16,74 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         activation.super_init(this, args)?; // Event uses the first three parameters
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            let local_x = args
+                .get(3)
+                .cloned()
+                .unwrap_or_else(|| f64::NAN.into())
+                .coerce_to_number(activation)?;
+            let local_y = args
+                .get(4)
+                .cloned()
+                .unwrap_or_else(|| f64::NAN.into())
+                .coerce_to_number(activation)?;
+            let related_object = args
+                .get(5)
+                .cloned()
+                .unwrap_or(Value::Null)
+                .coerce_to_object(activation)
+                .ok()
+                .and_then(|o| o.as_display_object());
+            let ctrl_key = args
+                .get(6)
+                .cloned()
+                .unwrap_or_else(|| false.into())
+                .coerce_to_boolean();
+            let alt_key = args
+                .get(7)
+                .cloned()
+                .unwrap_or_else(|| false.into())
+                .coerce_to_boolean();
+            let shift_key = args
+                .get(8)
+                .cloned()
+                .unwrap_or_else(|| false.into())
+                .coerce_to_boolean();
+            let button_down = args
+                .get(9)
+                .cloned()
+                .unwrap_or_else(|| false.into())
+                .coerce_to_boolean();
+            let delta = args
+                .get(10)
+                .cloned()
+                .unwrap_or_else(|| 0.into())
+                .coerce_to_i32(activation)?;
+
+            let mut modifiers = KeyModifiers::default();
+            if ctrl_key {
+                modifiers.insert(KeyModifiers::CTRL);
+            }
+
+            if alt_key {
+                modifiers.insert(KeyModifiers::ALT);
+            }
+
+            if shift_key {
+                modifiers.insert(KeyModifiers::SHIFT);
+            }
+
+            evt.set_event_data(EventData::MouseEvent {
+                local_x,
+                local_y,
+                related_object,
+                modifiers,
+                button_down,
+                delta,
+            });
+        }
     }
+
     Ok(Value::Undefined)
 }
 
