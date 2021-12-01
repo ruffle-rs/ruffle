@@ -3,8 +3,8 @@ use crate::avm1::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, Event as Avm2Event,
-    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
-    Value as Avm2Value,
+    EventData as Avm2EventData, Namespace as Avm2Namespace, Object as Avm2Object,
+    QName as Avm2QName, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -1027,7 +1027,7 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `enterFrame` event on this DisplayObject and any children it
     /// may have.
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut enter_frame_evt = Avm2Event::new("enterFrame");
+        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Event);
         enter_frame_evt.set_bubbles(false);
         enter_frame_evt.set_cancelable(false);
 
@@ -1073,7 +1073,7 @@ pub trait TDisplayObject<'gc>:
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut frame_constructed_evt = Avm2Event::new("frameConstructed");
+        let mut frame_constructed_evt = Avm2Event::new("frameConstructed", Avm2EventData::Event);
         frame_constructed_evt.set_bubbles(false);
         frame_constructed_evt.set_cancelable(false);
 
@@ -1098,7 +1098,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Emit an `exitFrame` broadcast event.
     fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut exit_frame_evt = Avm2Event::new("exitFrame");
+        let mut exit_frame_evt = Avm2Event::new("exitFrame", Avm2EventData::Event);
         exit_frame_evt.set_bubbles(false);
         exit_frame_evt.set_cancelable(false);
 

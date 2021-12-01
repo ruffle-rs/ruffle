@@ -7,8 +7,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
-use fnv::FnvHashMap;
 use bitflags::bitflags;
+use fnv::FnvHashMap;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
@@ -63,6 +63,10 @@ bitflags! {
 #[collect(no_drop)]
 pub enum EventData<'gc> {
     Event,
+    FullScreenEvent {
+        full_screen: bool,
+        interactive: bool,
+    },
     MouseEvent {
         local_x: f64,
         local_y: f64,
@@ -110,7 +114,7 @@ pub struct Event<'gc> {
 
 impl<'gc> Event<'gc> {
     /// Construct a new event of a given type.
-    pub fn new<S>(event_type: S) -> Self
+    pub fn new<S>(event_type: S, event_data: EventData<'gc>) -> Self
     where
         S: Into<AvmString<'gc>>,
     {
@@ -123,7 +127,7 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
-            event_data: EventData::Event,
+            event_data,
         }
     }
 

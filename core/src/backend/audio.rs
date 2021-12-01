@@ -1,6 +1,7 @@
 use crate::{
     avm1::SoundObject,
     avm2::Event as Avm2Event,
+    avm2::EventData as Avm2EventData,
     avm2::SoundChannelObject,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
@@ -313,7 +314,7 @@ impl<'gc> AudioManager<'gc> {
                     action_queue.queue_actions(
                         root,
                         crate::context::ActionType::Event2 {
-                            event: Avm2Event::new("soundComplete"),
+                            event: Avm2Event::new("soundComplete", Avm2EventData::Event),
                             target: object.into(),
                         },
                         false,
