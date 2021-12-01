@@ -217,7 +217,7 @@ fn deserialize_lso<'gc>(
 
 /// Deserialize a Json shared object element into a Value
 fn recursive_deserialize_json<'gc>(
-    json_value: JsonValue,
+    json_value: &JsonValue,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     match json_value {
@@ -229,8 +229,8 @@ fn recursive_deserialize_json<'gc>(
         JsonValue::String(s) => {
             Value::String(AvmString::new_utf8(activation.context.gc_context, s))
         }
-        JsonValue::Number(f) => Value::Number(f.into()),
-        JsonValue::Boolean(b) => b.into(),
+        JsonValue::Number(f) => Value::Number((*f).into()),
+        JsonValue::Boolean(b) => (*b).into(),
         JsonValue::Object(o) => {
             if o.get("__proto__").and_then(JsonValue::as_str) == Some("Array") {
                 deserialize_array_json(o, activation)
@@ -244,7 +244,7 @@ fn recursive_deserialize_json<'gc>(
 
 /// Deserialize an Object and any children from a JSON object
 fn deserialize_object_json<'gc>(
-    json_obj: json::object::Object,
+    json_obj: &json::object::Object,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     // Deserialize Object
@@ -252,13 +252,11 @@ fn deserialize_object_json<'gc>(
         activation.context.gc_context,
         Some(activation.context.avm1.prototypes.object),
     );
-    for entry in json_obj.iter() {
-        let value = recursive_deserialize_json(entry.1.clone(), activation);
-        let name = AvmString::new_utf8(activation.context.gc_context, entry.0);
+    for (name, value) in json_obj.iter() {
         obj.define_value(
             activation.context.gc_context,
-            name,
-            value,
+            AvmString::new_utf8(activation.context.gc_context, name),
+            recursive_deserialize_json(value, activation),
             Attribute::empty(),
         );
     }
@@ -267,7 +265,7 @@ fn deserialize_object_json<'gc>(
 
 /// Deserialize an Array and any children from a JSON object
 fn deserialize_array_json<'gc>(
-    mut json_obj: json::object::Object,
+    json_obj: &json::object::Object,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     let array_constructor = activation.context.avm1.prototypes.array_constructor;
@@ -276,19 +274,19 @@ fn deserialize_array_json<'gc>(
         .and_then(JsonValue::as_i32)
         .unwrap_or_default();
     if let Ok(Value::Object(obj)) = array_constructor.construct(activation, &[len.into()]) {
-        // Remove length and proto meta-properties.
-        json_obj.remove("length");
-        json_obj.remove("__proto__");
-
-        for entry in json_obj.iter() {
-            let value = recursive_deserialize_json(entry.1.clone(), activation);
-            if let Ok(i) = entry.0.parse::<i32>() {
+        for (name, value) in json_obj.iter() {
+            let value = recursive_deserialize_json(value, activation);
+            if let Ok(i) = name.parse::<i32>() {
                 obj.set_element(activation, i, value).unwrap();
             } else {
-                let name = AvmString::new_utf8(activation.context.gc_context, entry.0);
+                // Ignore length and proto meta-properties
+                if name == "length" || name == "__proto__" {
+                    continue;
+                }
+
                 obj.define_value(
                     activation.context.gc_context,
-                    name,
+                    AvmString::new_utf8(activation.context.gc_context, name),
                     value,
                     Attribute::empty(),
                 );
@@ -451,7 +449,7 @@ pub fn get_local<'gc>(
             // Attempt to load legacy Json
             if let Ok(saved_string) = String::from_utf8(saved) {
                 if let Ok(json_data) = json::parse(&saved_string) {
-                    data = recursive_deserialize_json(json_data, activation);
+                    data = recursive_deserialize_json(&json_data, activation);
                 }
             }
         }
