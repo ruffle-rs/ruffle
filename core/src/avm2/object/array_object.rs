@@ -2,14 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
-use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates array objects.
@@ -67,7 +66,7 @@ impl<'gc> ArrayObject<'gc> {
             ArrayObjectData { base, array },
         ))
         .into();
-        instance.install_instance_traits(activation, class)?;
+        instance.install_instance_slots(activation, class);
 
         class.call_native_init(Some(instance), &[], activation)?;
 
@@ -91,121 +90,95 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
 
-        if name.namespace().is_public() {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                return Ok(read.array.get(index).unwrap_or(Value::Undefined));
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    if let Some(result) = read.array.get(index) {
+                        return Ok(result);
+                    }
+                }
             }
         }
 
-        let rv = read.base.get_property_local(receiver, name, activation)?;
-
-        drop(read);
-
-        rv.resolve(activation)
+        read.base.get_property_local(receiver, name, activation)
     }
 
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut write = self.0.write(activation.context.gc_context);
 
-        if name.namespace().is_public() {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                write.array.set(index, value);
-
-                return Ok(());
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    write.array.set(index, value);
+                    return Ok(());
+                }
             }
         }
 
-        let rv = write
+        write
             .base
-            .set_property_local(receiver, name, value, activation)?;
-
-        drop(write);
-
-        rv.resolve(activation)?;
-
-        Ok(())
+            .set_property_local(receiver, name, value, activation)
     }
 
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut write = self.0.write(activation.context.gc_context);
 
-        if name.namespace().is_public() {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                write.array.set(index, value);
-
-                return Ok(());
-            }
-        }
-
-        let rv = write
-            .base
-            .init_property_local(receiver, name, value, activation)?;
-
-        drop(write);
-
-        rv.resolve(activation)?;
-
-        Ok(())
-    }
-
-    fn delete_property_local(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-    ) -> Result<bool, Error> {
-        if name.namespace().is_public() {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                self.0.write(gc_context).array.delete(index);
-                return Ok(true);
-            }
-        }
-
-        Ok(self.0.write(gc_context).base.delete_property(name))
-    }
-
-    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
-        if name.namespace().is_public() {
-            if let Ok(index) = name.local_name().parse::<usize>() {
-                return Ok(self.0.read().array.get(index).is_some());
-            }
-        }
-
-        self.0.read().base.has_own_property(name)
-    }
-
-    fn resolve_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
-        let base = self.base();
-
-        let mut ns_set = base.resolve_ns(local_name)?;
-        if !ns_set.contains(&Namespace::public()) {
-            if let Ok(index) = local_name.parse::<usize>() {
-                if self.0.read().array.get(index).is_some() {
-                    ns_set.push(Namespace::public())
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    write.array.set(index, value);
+                    return Ok(());
                 }
             }
         }
 
-        Ok(ns_set)
+        write.base.init_property_local(receiver, name, value, activation)
+    }
+
+    fn delete_property_local(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error> {
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    self.0.write(activation.context.gc_context).array.delete(index);
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(self.0.write(activation.context.gc_context).base.delete_property_local(name))
+    }
+
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
+        if name.contains_public_namespace() {
+            if let Some(name) = name.local_name() {
+                if let Ok(index) = name.parse::<usize>() {
+                    return self.0.read().array.get(index).is_some();
+                }
+            }
+        }
+
+        self.0.read().base.has_own_property(name)
     }
 
     fn get_next_enumerant(
@@ -243,9 +216,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         }
     }
 
-    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
-        name.local_name()
-            .parse::<u32>()
+    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+        name.parse::<u32>()
             .map(|index| self.0.read().array.length() as u32 >= index)
             .unwrap_or(false)
             || self.base().property_is_enumerable(name)

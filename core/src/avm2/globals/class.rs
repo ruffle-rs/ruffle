@@ -2,9 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::object::{TObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -30,6 +30,19 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+fn prototype<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(class) = this.as_class_object() {
+            return Ok(class.prototype().into());
+        }
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `Class`'s class.
 pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class_class = Class::new(
@@ -39,6 +52,17 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
     );
+
+    let mut write = class_class.write(gc_context);
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
+        ("prototype", Some(prototype), None),
+    ];
+    write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
 
     class_class
 }

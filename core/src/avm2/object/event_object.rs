@@ -67,7 +67,7 @@ impl<'gc> EventObject<'gc> {
             EventObjectData { base, event },
         ))
         .into();
-        event_object.install_instance_traits(activation, class)?;
+        event_object.install_instance_slots(activation, class);
 
         //TODO: Find a way to call the constructor's default initializer
         //without overwriting the event we just put on the object.

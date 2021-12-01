@@ -1146,7 +1146,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let value = receiver.call_property(&multiname, &args, self)?;
+        let value = receiver.call_property(receiver, &multiname, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1182,7 +1182,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        receiver.call_property(&multiname, &args, self)?;
+        receiver.call_property(receiver, &multiname, &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1467,8 +1467,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         let name = name_value.coerce_to_string(self)?;
-        let qname = QName::new(Namespace::public(), name);
-        let has_prop = obj.has_property_via_in(self, qname)?;
+        let multiname = Multiname::public(name);
+        let has_prop = obj.has_property_via_in(self, &multiname)?;
 
         self.context.avm2.push(has_prop);
 

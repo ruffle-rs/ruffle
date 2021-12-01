@@ -71,10 +71,10 @@ pub fn class_init<'gc>(
             .write(activation.context.gc_context)
             .set_name(int_vector_name);
 
-        globals.install_const(
+        globals.install_const_late(
             activation.context.gc_context,
+            None,
             int_vector_name,
-            0,
             int_vector_class.into(),
         );
         domain.export_definition(int_vector_name, script, activation.context.gc_context)?;
@@ -87,10 +87,10 @@ pub fn class_init<'gc>(
             .write(activation.context.gc_context)
             .set_name(uint_vector_name);
 
-        globals.install_const(
+        globals.install_const_late(
             activation.context.gc_context,
+            None,
             uint_vector_name,
-            0,
             uint_vector_class.into(),
         );
         domain.export_definition(uint_vector_name, script, activation.context.gc_context)?;
@@ -103,10 +103,10 @@ pub fn class_init<'gc>(
             .write(activation.context.gc_context)
             .set_name(number_vector_name);
 
-        globals.install_const(
+        globals.install_const_late(
             activation.context.gc_context,
+            None,
             number_vector_name,
-            0,
             number_vector_class.into(),
         );
         domain.export_definition(number_vector_name, script, activation.context.gc_context)?;
@@ -118,10 +118,10 @@ pub fn class_init<'gc>(
             .write(activation.context.gc_context)
             .set_name(object_vector_name);
 
-        globals.install_const(
+        globals.install_const_late(
             activation.context.gc_context,
+            None,
             object_vector_name,
-            0,
             object_vector_class.into(),
         );
         domain.export_definition(object_vector_name, script, activation.context.gc_context)?;
@@ -383,6 +383,7 @@ pub fn to_locale_string<'gc>(
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
             o.call_property(
+                o,
                 &QName::new(Namespace::public(), "toLocaleString").into(),
                 &[],
                 act,

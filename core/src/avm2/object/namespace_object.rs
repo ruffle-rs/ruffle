@@ -57,7 +57,7 @@ impl<'gc> NamespaceObject<'gc> {
             NamespaceObjectData { base, namespace },
         ))
         .into();
-        this.install_instance_traits(activation, class)?;
+        this.install_instance_slots(activation, class);
 
         class.call_native_init(Some(this), &[], activation)?;
 

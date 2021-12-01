@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -26,16 +26,16 @@ pub fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut object_proto = this
+        let object_proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
         let this_class = this.as_class_object().unwrap();
 
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "hasOwnProperty"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("hasOwnProperty"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(has_own_property, "hasOwnProperty", gc_context),
@@ -44,10 +44,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "propertyIsEnumerable"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("propertyIsEnumerable"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(property_is_enumerable, "propertyIsEnumerable", gc_context),
@@ -56,10 +57,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "setPropertyIsEnumerable"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("setPropertyIsEnumerable"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(
@@ -72,10 +74,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "isPrototypeOf"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("isPrototypeOf"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(is_prototype_of, "isPrototypeOf", gc_context),
@@ -84,10 +87,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toString"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("toString"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
@@ -96,10 +100,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toLocaleString"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("toLocaleString"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
@@ -108,10 +113,11 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
-        object_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "valueOf"),
+        object_proto.set_property_local(
+            object_proto,
+            &Multiname::public("valueOf"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
@@ -120,7 +126,16 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation,
         )?;
+
+        object_proto.set_local_property_is_enumerable(gc_context, "hasOwnProperty".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "propertyIsEnumerable".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "setPropertyIsEnumerable".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "isPrototypeOf".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "toLocaleString".into(), false)?;
+        object_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false)?;
     }
 
     Ok(Value::Undefined)
@@ -167,8 +182,8 @@ pub fn has_own_property<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    let qname = QName::dynamic_name(name);
-    Ok(this.has_own_property(qname)?.into())
+    let multiname = Multiname::public(name);
+    Ok(this.has_own_property(&multiname).into())
 }
 
 /// `Object.prototype.isPrototypeOf`
@@ -204,8 +219,7 @@ pub fn property_is_enumerable<'gc>(
     let name: Result<&Value<'gc>, Error> = args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
 
-    let qname = QName::dynamic_name(name);
-    Ok(this.property_is_enumerable(qname).into())
+    Ok(this.property_is_enumerable(name).into())
 }
 
 /// `Object.prototype.setPropertyIsEnumerable`
@@ -220,8 +234,7 @@ pub fn set_property_is_enumerable<'gc>(
     let name = name?.coerce_to_string(activation)?;
 
     if let Some(Value::Bool(is_enum)) = args.get(1) {
-        let qname = QName::dynamic_name(name);
-        this.set_local_property_is_enumerable(activation.context.gc_context, qname, *is_enum)?;
+        this.set_local_property_is_enumerable(activation.context.gc_context, name, *is_enum)?;
     }
 
     Ok(Value::Undefined)

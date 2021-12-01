@@ -147,13 +147,14 @@ impl<'gc> SystemPrototypes<'gc> {
         object: Object<'gc>,
         function: Object<'gc>,
         class: Object<'gc>,
+        global: Object<'gc>,
         empty: Object<'gc>,
     ) -> Self {
         SystemPrototypes {
             object,
             function,
             class,
-            global: empty,
+            global,
             string: empty,
             boolean: empty,
             number: empty,
@@ -250,13 +251,13 @@ impl<'gc> SystemClasses<'gc> {
     /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
-    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>) -> Self {
+    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>, global: ClassObject<'gc>) -> Self {
         SystemClasses {
             object,
             function,
             class,
+            global,
             // temporary initialization
-            global: object,
             string: object,
             boolean: object,
             number: object,
@@ -306,18 +307,14 @@ fn function<'gc>(
     nf: NativeMethodImpl,
     script: Script<'gc>,
 ) -> Result<(), Error> {
-    let (_, _, mut domain) = script.init();
+    let (_, mut global, mut domain) = script.init();
     let mc = activation.context.gc_context;
     let scope = activation.create_scopechain();
     let qname = QName::new(Namespace::package(package), name);
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
     domain.export_definition(qname, script, mc)?;
-    script
-        .init()
-        .1
-        .install_dynamic_property(mc, qname, as3fn)
-        .unwrap();
+    global.install_const_late(mc, None, qname, as3fn);
 
     Ok(())
 }
@@ -335,7 +332,7 @@ fn dynamic_class<'gc>(
     let class = class_object.inner_class_definition();
     let name = class.read().name();
 
-    global.install_const(mc, name, 0, class_object.into());
+    global.install_const_late(mc, None, name, class_object.into());
     domain.export_definition(name, script, mc)
 }
 
@@ -376,10 +373,10 @@ fn class<'gc>(
     drop(class_read);
 
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
-    global.install_const(
+    global.install_const_late(
         activation.context.gc_context,
+        None,
         class_name,
-        0,
         class_object.into(),
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
@@ -406,7 +403,7 @@ fn constant<'gc>(
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name, script, mc)?;
-    global.install_const(mc, name, 0, value);
+    global.install_const_late(mc, None, name, value);
 
     Ok(())
 }
@@ -470,6 +467,8 @@ pub fn load_player_globals<'gc>(
     //  - Function's prototype is an instance of itself
     //  - All methods created by the above-mentioned classes are also instances
     //    of Function
+    //  - All classes are put on Global's trait list, but Global needs
+    //    to be initialized first, but you can't do that until Object/Class are ready.
     //
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.
@@ -486,6 +485,11 @@ pub fn load_player_globals<'gc>(
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
     let class_proto = ScriptObject::instance(mc, object_class, object_proto);
 
+    let global_classdef = global_scope::create_class(mc);
+    let global_class =
+        ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
+    let global_proto = ScriptObject::instance(mc, object_class, object_proto);
+
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
     object_class.link_type(activation, class_proto, class_class);
@@ -496,6 +500,9 @@ pub fn load_player_globals<'gc>(
     class_class.link_prototype(activation, class_proto)?;
     class_class.link_type(activation, class_proto, class_class);
 
+    global_class.link_prototype(activation, global_proto)?;
+    global_class.link_type(activation, class_proto, class_class);
+
     // At this point, we need at least a partial set of system prototypes in
     // order to continue initializing the player. The rest of the prototypes
     // are set to a bare object until we have a chance to initialize them.
@@ -503,19 +510,27 @@ pub fn load_player_globals<'gc>(
         object_proto,
         fn_proto,
         class_proto,
+        global_proto,
         ScriptObject::bare_object(mc),
     ));
 
     activation.context.avm2.system_classes =
-        Some(SystemClasses::new(object_class, fn_class, class_class));
+        Some(SystemClasses::new(object_class, fn_class, class_class, global_class));
 
     // Our activation environment is now functional enough to finish
     // initializing the core class weave. The order of initialization shouldn't
     // matter here, as long as all the initialization machinery can see and
     // link the various system types together correctly.
-    let object_class = object_class.into_finished_class(activation)?;
-    let fn_class = fn_class.into_finished_class(activation)?;
     let class_class = class_class.into_finished_class(activation)?;
+    let fn_class = fn_class.into_finished_class(activation)?;
+    let object_class = object_class.into_finished_class(activation)?;
+    let _global_class = global_class.into_finished_class(activation)?;
+
+    globals.set_proto(mc, activation.avm2().prototypes().global);
+    globals.set_instance_of(mc, activation.avm2().classes().global);
+    globals.fork_vtable(activation.context.gc_context);
+
+    // From this point, `globals` is safe to be modified
 
     dynamic_class(mc, object_class, script)?;
     dynamic_class(mc, fn_class, script)?;
@@ -523,13 +538,6 @@ pub fn load_player_globals<'gc>(
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
-    avm2_system_class!(global, activation, global_scope::create_class(mc), script);
-
-    // Oh, one more small hitch: the domain everything gets put into was
-    // actually made *before* the core class weave, so let's fix that up now
-    // that the global class actually exists.
-    globals.set_proto(mc, activation.avm2().prototypes().global);
-    globals.set_instance_of(mc, activation.avm2().classes().global);
 
     avm2_system_class!(string, activation, string::create_class(mc), script);
     avm2_system_class!(boolean, activation, boolean::create_class(mc), script);

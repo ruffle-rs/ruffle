@@ -8,15 +8,14 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
-use crate::avm2::property_map::PropertyMap;
+use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
-use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
+use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
-use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::hash::{Hash, Hasher};
 
@@ -33,6 +32,10 @@ pub struct ClassObjectData<'gc> {
 
     /// The class associated with this class object.
     class: GcCell<'gc, Class<'gc>>,
+
+    /// The associated prototype.
+    /// Should always be non-None after initialization.
+    prototype: Option<Object<'gc>>,
 
     /// The captured scope that all class traits will use.
     class_scope: ScopeChain<'gc>,
@@ -76,17 +79,18 @@ pub struct ClassObjectData<'gc> {
     /// Interfaces implemented by this class.
     interfaces: Vec<ClassObject<'gc>>,
 
-    /// All traits present on instances of this class.
-    ///
-    /// This is a comprehensive list of all traits, including all superclass
-    /// and interface traits, as well as the superclass that defined the trait.
-    resolved_instance_traits: PropertyMap<'gc, Vec<(ClassObject<'gc>, Trait<'gc>)>>,
+    /// VTable used for instances of this class.
+    instance_vtable: VTable<'gc>,
 
-    /// All traits present on the class itself.
-    resolved_class_traits: PropertyMap<'gc, Vec<Trait<'gc>>>,
+    /// VTable used for a ScriptObject of this class object.
+    class_vtable: VTable<'gc>,
 }
 
 impl<'gc> ClassObject<'gc> {
+    pub fn name(self) -> QName<'gc> {
+        self.inner_class_definition().read().name()
+    }
+
     /// Allocate the prototype for this class.
     ///
     /// This function is not used during the initialization of "early classes",
@@ -193,6 +197,7 @@ impl<'gc> ClassObject<'gc> {
             ClassObjectData {
                 base: ScriptObjectData::base_new(None, None),
                 class,
+                prototype: None,
                 class_scope: scope,
                 instance_scope: scope,
                 superclass_object,
@@ -202,8 +207,8 @@ impl<'gc> ClassObject<'gc> {
                 params: None,
                 applications: Default::default(),
                 interfaces: Vec::new(),
-                resolved_instance_traits: PropertyMap::new(),
-                resolved_class_traits: PropertyMap::new(),
+                instance_vtable: VTable::empty(activation.context.gc_context),
+                class_vtable: VTable::empty(activation.context.gc_context),
             },
         ));
 
@@ -242,159 +247,61 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Self, Error> {
         let class = self.inner_class_definition();
-        let class_class = self.instance_of().ok_or(
+        self.instance_of().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
         )?;
 
-        self.inner_class_definition()
-            .read()
-            .validate_class(self.superclass_object())?;
-        self.resolve_class_traits(activation)?;
-        self.resolve_instance_traits(activation)?;
-        self.link_interfaces(activation)?;
-        self.install_traits(
-            activation,
+        class.read().validate_class(self.superclass_object())?;
+
+        self.instance_vtable().init_vtable(
+            Some(self),
+            class.read().instance_traits(),
+            self.instance_scope(),
+            self.superclass_object().map(|cls| cls.instance_vtable()),
+            activation
+        )?;
+
+        // class vtable == class traits + Class instance traits
+        self.class_vtable().init_vtable(
+            Some(self),
             class.read().class_traits(),
             self.class_scope(),
-            Some(self),
+            Some(self.instance_of().unwrap().instance_vtable()),
+            activation
         )?;
-        self.install_instance_traits(activation, class_class)?;
+
+        self.link_interfaces(activation)?;
+        self.install_class_vtable_and_slots(activation);
         self.run_class_initializer(activation)?;
 
         Ok(self)
     }
 
+    fn install_class_vtable_and_slots(&mut self, activation: &mut Activation<'_, 'gc, '_>) {
+        self.set_vtable(activation.context.gc_context, self.class_vtable());
+
+        let slots = self.class_vtable().default_slots();
+        self.base_mut(activation.context.gc_context).install_instance_slots(activation, slots);
+    }
+
     /// Link this class to a prototype.
     pub fn link_prototype(
-        mut self,
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
-        mut class_proto: Object<'gc>,
+        class_proto: Object<'gc>,
     ) -> Result<(), Error> {
-        self.install_slot(
-            activation.context.gc_context,
-            QName::new(Namespace::public(), "prototype"),
-            0,
-            class_proto.into(),
-        );
-        class_proto.install_slot(
-            activation.context.gc_context,
-            QName::new(Namespace::public(), "constructor"),
-            0,
+        self.0.write(activation.context.gc_context).prototype = Some(class_proto);
+        class_proto.set_property_local(
+            class_proto,
+            &Multiname::public("constructor"),
             self.into(),
-        );
-
-        Ok(())
-    }
-
-    /// Copy the list of class traits that this class has.
-    ///
-    /// This should be run during the class finalization step, before instances
-    /// are linked (as instances will further add traits to the list).
-    pub fn resolve_class_traits(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(activation.context.gc_context);
-
-        let static_class = write.class;
-        let class_read = static_class.read();
-        for trait_data in class_read.class_traits() {
-            if let Some(trait_slot) = write.resolved_class_traits.get_mut(trait_data.name()) {
-                if matches!(trait_data.kind(), TraitKind::Getter { .. }) {
-                    let mut replaced = false;
-                    for overriding_trait in trait_slot.iter_mut() {
-                        if matches!(overriding_trait.kind(), TraitKind::Getter { .. }) {
-                            *overriding_trait = trait_data.clone();
-                            replaced = true;
-                        }
-                    }
-
-                    if !replaced {
-                        trait_slot.push(trait_data.clone());
-                    }
-                } else if matches!(trait_data.kind(), TraitKind::Setter { .. }) {
-                    let mut replaced = false;
-                    for overriding_trait in trait_slot.iter_mut() {
-                        if matches!(overriding_trait.kind(), TraitKind::Setter { .. }) {
-                            *overriding_trait = trait_data.clone();
-                            replaced = true;
-                        }
-                    }
-
-                    if !replaced {
-                        trait_slot.push(trait_data.clone());
-                    }
-                } else if let Some(overriding_trait) = trait_slot.first_mut() {
-                    *overriding_trait = trait_data.clone();
-                } else {
-                    trait_slot.push(trait_data.clone());
-                }
-            } else {
-                write
-                    .resolved_class_traits
-                    .insert(trait_data.name(), vec![trait_data.clone()]);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Calculate the flattened list of instance traits that this class
-    /// maintains.
-    ///
-    /// This should be run during the class finalization step, before instances
-    /// are linked (as instances will further add traits to the list).
-    pub fn resolve_instance_traits(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
-        let mut write = self.0.write(activation.context.gc_context);
-
-        if let Some(superclass) = write.superclass_object {
-            write.resolved_instance_traits = superclass.0.read().resolved_instance_traits.clone();
-        }
-
-        let static_class = write.class;
-        let class_read = static_class.read();
-        for trait_data in class_read.instance_traits() {
-            let new_trait_slot = (self, trait_data.clone());
-
-            if let Some(trait_slot) = write.resolved_instance_traits.get_mut(trait_data.name()) {
-                if matches!(trait_data.kind(), TraitKind::Getter { .. }) {
-                    let mut replaced = false;
-                    for overriding_trait in trait_slot.iter_mut() {
-                        if matches!(overriding_trait.1.kind(), TraitKind::Getter { .. }) {
-                            *overriding_trait = new_trait_slot.clone();
-                            replaced = true;
-                        }
-                    }
-
-                    if !replaced {
-                        trait_slot.push(new_trait_slot);
-                    }
-                } else if matches!(trait_data.kind(), TraitKind::Setter { .. }) {
-                    let mut replaced = false;
-                    for overriding_trait in trait_slot.iter_mut() {
-                        if matches!(overriding_trait.1.kind(), TraitKind::Setter { .. }) {
-                            *overriding_trait = new_trait_slot.clone();
-                            replaced = true;
-                        }
-                    }
-
-                    if !replaced {
-                        trait_slot.push(new_trait_slot);
-                    }
-                } else if let Some(overriding_trait) = trait_slot.first_mut() {
-                    *overriding_trait = new_trait_slot;
-                } else {
-                    trait_slot.push(new_trait_slot);
-                }
-            } else {
-                write
-                    .resolved_instance_traits
-                    .insert(trait_data.name(), vec![new_trait_slot]);
-            }
-        }
+            activation
+        )?;
+        class_proto.set_local_property_is_enumerable(
+            activation.context.gc_context,
+            "constructor".into(),
+            false
+        )?;
 
         Ok(())
     }
@@ -454,19 +361,11 @@ impl<'gc> ClassObject<'gc> {
                 for interface_trait in iface_read.instance_traits() {
                     if !interface_trait.name().namespace().is_public() {
                         let public_name = QName::dynamic_name(interface_trait.name().local_name());
-                        let trait_slot = self
-                            .0
-                            .read()
-                            .resolved_instance_traits
-                            .get(public_name)
-                            .cloned();
-
-                        if let Some(trait_slot) = trait_slot {
-                            self.0
-                                .write(activation.context.gc_context)
-                                .resolved_instance_traits
-                                .insert(interface_trait.name(), trait_slot);
-                        }
+                        self.instance_vtable().copy_property_for_interface(
+                            activation.context.gc_context,
+                            public_name,
+                            interface_trait.name()
+                        );
                     }
                 }
             }
@@ -488,9 +387,11 @@ impl<'gc> ClassObject<'gc> {
         proto: Object<'gc>,
         instance_of: ClassObject<'gc>,
     ) {
+        let instance_vtable = instance_of.instance_vtable();
+
         let mut write = self.0.write(activation.context.gc_context);
 
-        write.base.set_instance_of(instance_of);
+        write.base.set_instance_of(instance_of, instance_vtable);
         write.base.set_proto(proto);
     }
 
@@ -524,65 +425,6 @@ impl<'gc> ClassObject<'gc> {
         }
 
         Ok(())
-    }
-
-    /// Look up an instance trait by name and yield the trait and it's defining
-    /// class.
-    ///
-    /// The trait must match the provided `filter`. If `None`, then no such
-    /// trait exists with the requested parameters.
-    pub fn lookup_instance_traits(
-        self,
-        name: QName<'gc>,
-        filter: fn(&Trait<'gc>) -> bool,
-    ) -> Option<(ClassObject<'gc>, Trait<'gc>)> {
-        self.0
-            .read()
-            .resolved_instance_traits
-            .get(name)
-            .and_then(|v| v.iter().find(|(_, v)| filter(v)))
-            .cloned()
-    }
-
-    /// Determine if we have an instance trait with a given name.
-    pub fn has_instance_trait(self, name: QName<'gc>) -> bool {
-        self.0.read().resolved_instance_traits.get(name).is_some()
-    }
-
-    /// List all namespaces that contain one or more instance traits of a given
-    /// local name.
-    pub fn resolve_instance_trait_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> SmallVec<[Namespace<'gc>; 1]> {
-        self.0
-            .read()
-            .resolved_instance_traits
-            .namespaces_of(local_name)
-    }
-
-    /// Retrieve the class object that a particular QName trait is defined in.
-    ///
-    /// Must be called on a class object; will error out if called on
-    /// anything else.
-    ///
-    /// This function returns `None` for non-trait properties, such as actually
-    /// defined prototype methods for ES3-style classes.
-    pub fn find_class_for_trait_by_disp_id(
-        self,
-        id: u32,
-    ) -> Result<Option<ClassObject<'gc>>, Error> {
-        let class_definition = self.inner_class_definition();
-
-        if class_definition.read().has_instance_trait_by_disp_id(id) {
-            return Ok(Some(self));
-        }
-
-        if let Some(base) = self.superclass_object() {
-            return base.find_class_for_trait_by_disp_id(id);
-        }
-
-        Ok(None)
     }
 
     /// Determine if this class has a given type in its superclass chain.
@@ -700,34 +542,29 @@ impl<'gc> ClassObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let name = reciever.resolve_multiname(multiname)?;
-        if name.is_none() {
+        let property = self.instance_vtable().get_trait(multiname);
+        if property.is_none() {
             return Err(format!(
                 "Attempted to supercall method {:?}, which does not exist",
                 multiname.local_name()
             )
             .into());
         }
-
-        let name = name.unwrap();
-
-        let lookup_result =
-            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. }));
-
-        if let Some((superclass_object, method_trait)) = lookup_result {
-            let scope = superclass_object.class_scope();
-            let method = method_trait.as_method().unwrap();
+        if let Some(Property::Method{disp_id, ..}) = property {
+            // todo: handle errors
+            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                superclass_object,
             );
 
             callee.call(Some(reciever), arguments, activation)
         } else {
-            reciever.call_property(multiname, arguments, activation)
+            reciever.call_property(reciever, multiname, arguments, activation)
         }
     }
 
@@ -761,29 +598,24 @@ impl<'gc> ClassObject<'gc> {
         reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let name = reciever.resolve_multiname(multiname)?;
-        if name.is_none() {
+        let property = self.instance_vtable().get_trait(multiname);
+        if property.is_none() {
             return Err(format!(
-                "Attempted to supercall getter {:?}, which does not exist",
+                "Attempted to supercall method {:?}, which does not exist",
                 multiname.local_name()
             )
             .into());
         }
-
-        let name = name.unwrap();
-
-        let lookup_result =
-            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Getter { .. }));
-
-        if let Some((superclass_object, method_trait)) = lookup_result {
-            let scope = superclass_object.class_scope();
-            let method = method_trait.as_method().unwrap();
+        if let Some(Property::Virtual{get: Some(disp_id), ..}) = property {
+            // todo: handle errors
+            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                superclass_object,
             );
 
             callee.call(Some(reciever), &[], activation)
@@ -824,29 +656,24 @@ impl<'gc> ClassObject<'gc> {
         mut reciever: Object<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let name = reciever.resolve_multiname(multiname)?;
-        if name.is_none() {
+        let property = self.instance_vtable().get_trait(multiname);
+        if property.is_none() {
             return Err(format!(
-                "Attempted to supercall setter {:?}, which does not exist",
+                "Attempted to supercall method {:?}, which does not exist",
                 multiname.local_name()
             )
             .into());
         }
-
-        let name = name.unwrap();
-
-        let lookup_result =
-            self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Setter { .. }));
-
-        if let Some((superclass_object, method_trait)) = lookup_result {
-            let scope = superclass_object.class_scope();
-            let method = method_trait.as_method().unwrap();
+        if let Some(Property::Virtual{set: Some(disp_id), ..}) = property {
+            // todo: handle errors
+            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                superclass_object,
             );
 
             callee.call(Some(reciever), &[value], activation)?;
@@ -857,220 +684,20 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
-    /// Retrieve an instance method and it's defining class by name.
-    ///
-    /// If a trait is returned, it is guaranteed to have a method.
-    pub fn instance_method(
-        self,
-        name: QName<'gc>,
-    ) -> Result<Option<(ClassObject<'gc>, Trait<'gc>)>, Error> {
-        Ok(self.lookup_instance_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. })))
+    pub fn instance_vtable(self) -> VTable<'gc> {
+        self.0.read().instance_vtable
     }
 
-    /// Retrieve a bound instance method suitable for use as a value.
-    ///
-    /// This returns the bound method object itself, as well as it's dispatch
-    /// ID. You will need the additional properties in order to install the
-    /// method into your object.
-    ///
-    /// You should only call this method once per reciever/name pair, and cache
-    /// the result. Otherwise, code that relies on bound methods having stable
-    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
-    /// fail.
-    pub fn bound_instance_method(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        receiver: Object<'gc>,
-        name: QName<'gc>,
-    ) -> Result<Option<(Object<'gc>, u32)>, Error> {
-        if let Some((superclass, method_trait)) = self.instance_method(name)? {
-            let method = method_trait.as_method().unwrap();
-            let disp_id = method_trait.disp_id().unwrap();
-            let scope = self.instance_scope();
-
-            Ok(Some((
-                FunctionObject::from_method(
-                    activation,
-                    method,
-                    scope,
-                    Some(receiver),
-                    Some(superclass),
-                ),
-                disp_id,
-            )))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Retrieve a bound instance method by slot ID.
-    ///
-    /// This returns the bound method object itself, as well as it's name. You
-    /// will need the additional properties in order to install the method into
-    /// your object.
-    ///
-    /// You should only call this method once per reciever/name pair, and cache
-    /// the result. Otherwise, code that relies on bound methods having stable
-    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
-    /// fail.
-    pub fn bound_instance_method_by_id(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        receiver: Object<'gc>,
-        id: u32,
-    ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
-        if let Some(superclass) = self.find_class_for_trait_by_disp_id(id)? {
-            let superclassdef = superclass.inner_class_definition();
-            let traits = superclassdef.read().lookup_instance_traits_by_slot(id);
-
-            if let Some(method_trait) = traits.and_then(|t| match t.kind() {
-                TraitKind::Method { .. } => Some(t),
-                _ => None,
-            }) {
-                let name = method_trait.name();
-                let method = method_trait.as_method().unwrap();
-                let scope = self.instance_scope();
-
-                Ok(Some((
-                    FunctionObject::from_method(
-                        activation,
-                        method,
-                        scope,
-                        Some(receiver),
-                        Some(superclass),
-                    ),
-                    name,
-                )))
-            } else {
-                Ok(None)
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Look up a class trait by name and yield the trait.
-    ///
-    /// The trait must match the provided `filter`. If `None`, then no such
-    /// trait exists with the requested parameters.
-    pub fn lookup_class_traits(
-        self,
-        name: QName<'gc>,
-        filter: fn(&Trait<'gc>) -> bool,
-    ) -> Option<Trait<'gc>> {
-        self.0
-            .read()
-            .resolved_class_traits
-            .get(name)
-            .and_then(|v| v.iter().find(|v| filter(v)))
-            .cloned()
-    }
-
-    /// Determine if we have a class trait with a given name.
-    pub fn has_class_trait(self, name: QName<'gc>) -> bool {
-        self.0.read().resolved_class_traits.get(name).is_some()
-    }
-
-    /// List all namespaces that contain one or more class traits of a given
-    /// local name.
-    pub fn resolve_class_trait_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> SmallVec<[Namespace<'gc>; 1]> {
-        self.0
-            .read()
-            .resolved_class_traits
-            .namespaces_of(local_name)
-    }
-
-    /// Retrieve a class method by name.
-    ///
-    /// This does not return a defining class as class methods are not
-    /// inherited by subclasses.
-    ///
-    /// If a trait is returned, it is guaranteed to have a method.
-    pub fn class_method(self, name: QName<'gc>) -> Result<Option<Trait<'gc>>, Error> {
-        Ok(self.lookup_class_traits(name, |t| matches!(t.kind(), TraitKind::Method { .. })))
-    }
-
-    /// Retrieve a bound class method suitable for use as a value.
-    ///
-    /// This returns the bound method object itself, as well as it's dispatch
-    /// ID. You will need the additional properties in order to install the
-    /// method into your object.
-    ///
-    /// You should only call this method once per reciever/name pair, and cache
-    /// the result. Otherwise, code that relies on bound methods having stable
-    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
-    /// fail.
-    pub fn bound_class_method(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: QName<'gc>,
-    ) -> Result<Option<(Object<'gc>, u32)>, Error> {
-        if let Some(method_trait) = self.class_method(name)? {
-            let method = method_trait.as_method().unwrap();
-            let disp_id = method_trait.disp_id().unwrap();
-            let scope = self.class_scope();
-
-            Ok(Some((
-                FunctionObject::from_method(
-                    activation,
-                    method,
-                    scope,
-                    Some(self.into()),
-                    Some(self),
-                ),
-                disp_id,
-            )))
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Retrieve a bound class method by id.
-    ///
-    /// This returns the bound method object itself, as well as it's name. You
-    /// will need the additional properties in order to install the method into
-    /// your object.
-    ///
-    /// You should only call this method once per reciever/name pair, and cache
-    /// the result. Otherwise, code that relies on bound methods having stable
-    /// object identitities (e.g. `EventDispatcher.removeEventListener`) will
-    /// fail.
-    pub fn bound_class_method_by_id(
-        self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        id: u32,
-    ) -> Result<Option<(Object<'gc>, QName<'gc>)>, Error> {
-        let classdef = self.inner_class_definition();
-        let traits = classdef.read().lookup_class_traits_by_slot(id);
-
-        if let Some(method_trait) = traits.and_then(|t| match t.kind() {
-            TraitKind::Method { .. } => Some(t),
-            _ => None,
-        }) {
-            let method = method_trait.as_method().unwrap();
-            let name = method_trait.name();
-            let scope = self.class_scope();
-
-            Ok(Some((
-                FunctionObject::from_method(
-                    activation,
-                    method,
-                    scope,
-                    Some(self.into()),
-                    Some(self),
-                ),
-                name,
-            )))
-        } else {
-            Ok(None)
-        }
+    pub fn class_vtable(self) -> VTable<'gc> {
+        self.0.read().class_vtable
     }
 
     pub fn inner_class_definition(self) -> GcCell<'gc, Class<'gc>> {
         self.0.read().class
+    }
+
+    pub fn prototype(self) -> Object<'gc> {
+        self.0.read().prototype.unwrap()
     }
 
     pub fn interfaces(self) -> Vec<ClassObject<'gc>> {
@@ -1146,17 +773,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let instance_allocator = self.0.read().instance_allocator.0;
-        let prototype = self
-            .get_property(
-                self.into(),
-                &QName::new(Namespace::public(), "prototype").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let prototype = self.0.read().prototype.unwrap();
 
         let mut instance = instance_allocator(self, prototype, activation)?;
 
-        instance.install_instance_traits(activation, self)?;
+        instance.install_instance_slots(activation, self);
 
         self.call_init(Some(instance), arguments, activation)?;
 
@@ -1171,35 +792,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         .into())
     }
 
-    fn has_trait(self, name: QName<'gc>) -> Result<bool, Error> {
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         let read = self.0.read();
 
-        Ok(self.has_class_trait(name) || read.base.has_trait(name)?)
-    }
-
-    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
-        let read = self.0.read();
-
-        Ok(read.base.has_own_instantiated_property(name)
-            || self.has_class_trait(name)
-            || read.base.has_trait(name)?)
-    }
-
-    fn resolve_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
-        let read = self.0.read();
-
-        let mut ns_set = read.base.resolve_ns(local_name)?;
-
-        for trait_ns in self.resolve_class_trait_ns(local_name) {
-            if !ns_set.contains(&trait_ns) {
-                ns_set.push(trait_ns);
-            }
-        }
-
-        Ok(ns_set)
+        read.base.has_own_dynamic_property(name)
+            || self.class_vtable().has_trait(name)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
@@ -1209,19 +806,9 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
+        name: AvmString<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
-        // Traits are never enumerable.
-        //
-        // We have to do this here because the `ScriptObjectBase` version of
-        // this function calls the version of `has_trait` that checks instance
-        // traits, and because we're not an instance, we don't have any and
-        // thus the check fails.
-        if self.has_trait(name)? {
-            return Ok(());
-        }
-
         self.0
             .write(mc)
             .base
@@ -1297,6 +884,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             ClassObjectData {
                 base: ScriptObjectData::base_new(Some(class_class_proto), Some(class_class)),
                 class: parameterized_class,
+                prototype: None,
                 class_scope,
                 instance_scope,
                 superclass_object,
@@ -1306,8 +894,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 params: Some(object_param),
                 applications: Default::default(),
                 interfaces: Vec::new(),
-                resolved_instance_traits: PropertyMap::new(),
-                resolved_class_traits: PropertyMap::new(),
+                instance_vtable: VTable::empty(activation.context.gc_context),
+                class_vtable: VTable::empty(activation.context.gc_context),
             },
         ));
 
@@ -1315,17 +903,27 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .inner_class_definition()
             .read()
             .validate_class(class_object.superclass_object())?;
-        class_object.resolve_class_traits(activation)?;
-        class_object.resolve_instance_traits(activation)?;
+
+        class_object.instance_vtable().init_vtable(
+            Some(class_object),
+            parameterized_class.read().instance_traits(),
+            class_object.instance_scope(),
+            class_object.superclass_object().map(|cls| cls.instance_vtable()),
+            activation
+        )?;
+
+        // class vtable == class traits + Class instance traits
+        class_object.class_vtable().init_vtable(
+            Some(class_object),
+            parameterized_class.read().class_traits(),
+            class_object.class_scope(),
+            Some(class_object.instance_of().unwrap().instance_vtable()),
+            activation
+        )?;
+
         class_object.link_prototype(activation, class_proto)?;
         class_object.link_interfaces(activation)?;
-        class_object.install_traits(
-            activation,
-            parameterized_class.read().class_traits(),
-            class_scope,
-            Some(class_object),
-        )?;
-        class_object.install_instance_traits(activation, class_class)?;
+        class_object.install_class_vtable_and_slots(activation);
         class_object.run_class_initializer(activation)?;
 
         self.0

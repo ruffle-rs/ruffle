@@ -217,14 +217,14 @@ pub fn exec<'gc>(
 
             object.set_property_local(
                 object,
-                QName::new(Namespace::public(), "index"),
+                &QName::new(Namespace::public(), "index").into(),
                 Value::Number(index as f64),
                 activation,
             )?;
 
             object.set_property_local(
                 object,
-                QName::new(Namespace::public(), "input"),
+                &QName::new(Namespace::public(), "input").into(),
                 text.into(),
                 activation,
             )?;

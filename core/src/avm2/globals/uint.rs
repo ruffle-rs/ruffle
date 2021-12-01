@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::globals::number::{print_with_precision, print_with_radix};
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
@@ -52,16 +52,16 @@ fn class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let mut uint_proto = this
+        let uint_proto = this
             .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
         let this_class = this.as_class_object().unwrap();
 
-        uint_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toExponential"),
+        uint_proto.set_property_local(
+            uint_proto,
+            &Multiname::public("toExponential"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_exponential, "toExponential", gc_context),
@@ -70,10 +70,11 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation
         )?;
-        uint_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toFixed"),
+        uint_proto.set_property_local(
+            uint_proto,
+            &Multiname::public("toFixed"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_fixed, "toFixed", gc_context),
@@ -82,10 +83,11 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation
         )?;
-        uint_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toPrecision"),
+        uint_proto.set_property_local(
+            uint_proto,
+            &Multiname::public("toPrecision"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_precision, "toPrecision", gc_context),
@@ -94,10 +96,11 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation
         )?;
-        uint_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "toString"),
+        uint_proto.set_property_local(
+            uint_proto,
+            &Multiname::public("toString"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(to_string, "toString", gc_context),
@@ -106,10 +109,11 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation
         )?;
-        uint_proto.install_dynamic_property(
-            gc_context,
-            QName::new(Namespace::public(), "valueOf"),
+        uint_proto.set_property_local(
+            uint_proto,
+            &Multiname::public("valueOf"),
             FunctionObject::from_method(
                 activation,
                 Method::from_builtin(value_of, "valueOf", gc_context),
@@ -118,7 +122,13 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
+            activation
         )?;
+        uint_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false)?;
+        uint_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false)?;
+        uint_proto.set_local_property_is_enumerable(gc_context, "toPrecision".into(), false)?;
+        uint_proto.set_local_property_is_enumerable(gc_context, "toString".into(), false)?;
+        uint_proto.set_local_property_is_enumerable(gc_context, "valueOf".into(), false)?;
     }
 
     Ok(Value::Undefined)

@@ -63,7 +63,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         .into())
     }
 
-    fn get_property_undef(
+    fn get_property_local(
         self,
         receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
@@ -79,7 +79,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     let qname =
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
-                    return receiver.call_property(
+                    return receiver.call_property_trait_only(
                         &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "getProperty")
                             .into(),
                         &[qname.into()],
@@ -100,13 +100,14 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
     }
 
-    fn set_property_undef(
-        &mut self,
+    fn set_property_local(
+        self,
         receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<QName<'gc>>, Error> {
+    ) -> Result<(), Error> {
+        println!("in proxy set_property_local");
         // NOTE: This is incorrect behavior.
         // `QName` should instead store the whole multiname's namespace set,
         // so that it can be used to index other objects using the same
@@ -117,14 +118,14 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     let qname =
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
-                    receiver.call_property(
+                    receiver.call_property_trait_only(
                         &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "setProperty")
                             .into(),
                         &[qname.into(), value],
                         activation,
                     )?;
 
-                    return Ok(None);
+                    return Ok(());
                 }
             }
         }
@@ -137,14 +138,16 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             let local_name: Result<AvmString<'gc>, Error> = multiname
                 .local_name()
                 .ok_or_else(|| "Cannot set undefined property using any name".into());
-            Ok(Some(QName::dynamic_name(local_name?)))
+            let _ = local_name?;
+            Ok(())
         } else {
             Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
         }
     }
 
-    fn call_property_undef(
+    fn call_property_local(
         self,
+        _receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
@@ -162,7 +165,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     let mut args = vec![qname.into()];
                     args.extend_from_slice(arguments);
 
-                    return self.call_property(
+                    return self.call_property_trait_only(
                         &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "callProperty")
                             .into(),
                         &args[..],
@@ -179,8 +182,8 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         .into())
     }
 
-    fn delete_property_undef(
-        &self,
+    fn delete_property_local(
+        self,
         activation: &mut Activation<'_, 'gc, '_>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error> {
@@ -195,7 +198,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                         QNameObject::from_qname(activation, QName::new(*namespace, local_name))?;
 
                     return Ok(self
-                        .call_property(
+                        .call_property_trait_only(
                             &QName::new(
                                 Namespace::Namespace(NS_FLASH_PROXY.into()),
                                 "deleteProperty",
@@ -219,12 +222,14 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     fn has_property_via_in(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
     ) -> Result<bool, Error> {
         Ok(self
-            .call_property(
+            .call_property_trait_only(
                 &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty").into(),
-                &[name.local_name().into()],
+                // TODO: handle unwrap?
+                // this should probably pass the multiname as-is? See above
+                &[name.local_name().unwrap().into()],
                 activation,
             )?
             .coerce_to_boolean())
@@ -236,7 +241,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<u32>, Error> {
         Ok(Some(
-            self.call_property(
+            self.call_property_trait_only(
                 &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextNameIndex").into(),
                 &[last_index.into()],
                 activation,
@@ -250,7 +255,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        self.call_property(
+        self.call_property_trait_only(
             &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextName").into(),
             &[index.into()],
             activation,
@@ -262,7 +267,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         index: u32,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        self.call_property(
+        self.call_property_trait_only(
             &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "nextValue").into(),
             &[index.into()],
             activation,

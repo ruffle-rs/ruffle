@@ -9,11 +9,11 @@ use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::regexp::RegExp;
-use crate::avm2::scope::ScopeChain;
-use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
+use crate::avm2::property::Property;
 use crate::avm2::Error;
+use crate::avm2::vtable::VTable;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
@@ -21,7 +21,6 @@ use crate::html::TextFormat;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
-use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -122,41 +121,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let base = self.base();
-        let rv = base.get_property_local(receiver, name, activation)?;
-
-        drop(base);
-
-        rv.resolve(activation)
-    }
-
-    /// Retrieve a property that does not exist.
-    ///
-    /// By default, this returns an error for sealed classes, and `undefined`
-    /// for dynamic ones. Objects that have particular alternative behavior for
-    /// undefined values may substitute their own implementation here without
-    /// disturbing the rest of `getproperty`'s implementation.
-    fn get_property_undef(
-        self,
-        _receiver: Object<'gc>,
-        multiname: &Multiname<'gc>,
-        _activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as dynamic properties that have not yet been set, and yield
-        // `undefined`
-        if !self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false)
-        {
-            return Ok(Value::Undefined);
-        }
-
-        return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
+        self.base().get_property_local(receiver, name, activation)
     }
 
     /// Retrieve a property by Multiname lookup.
@@ -171,47 +139,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let name = self.resolve_multiname(multiname)?;
-
-        if name.is_none() {
-            return self.get_property_undef(receiver, multiname, activation);
-        }
-
-        // At this point, the name must be a valid QName.
-        let name = name.unwrap();
-        if !self.base().has_own_instantiated_property(name) {
-            // Initialize lazy-bound methods at this point in time.
-            if let Some(class) = self.instance_of() {
-                if let Some((bound_method, disp_id)) =
-                    class.bound_instance_method(activation, receiver, name)?
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            Some(Property::Slot{slot_id, ..}) => self.base().get_slot(slot_id),
+            Some(Property::Method{disp_id, ..}) => {
+                if let Some(bound_method) = self.base().get_bound_method(disp_id) {
+                    return Ok(bound_method.into());
+                }
+                let vtable = self.vtable().unwrap();
+                if let Some(bound_method) = vtable.make_bound_method(activation, receiver, disp_id)
                 {
-                    self.install_method(activation.context.gc_context, name, disp_id, bound_method);
-
+                    self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
                     return Ok(bound_method.into());
                 }
+                todo!("unreachable?")
             }
-
-            // Class methods are also lazy-bound.
-            if let Some(class) = self.as_class_object() {
-                if let Some((bound_method, disp_id)) = class.bound_class_method(activation, name)? {
-                    self.install_method(activation.context.gc_context, name, disp_id, bound_method);
-
-                    return Ok(bound_method.into());
-                }
+            Some(Property::Virtual{get: Some(get), ..}) => {
+                self.call_method(get, &[], activation)
+            }
+            Some(Property::Virtual{get: None, ..}) => {
+                todo!("throw error")
+            }
+            None => {
+                self.get_property_local(receiver, multiname, activation)
             }
         }
-
-        let is_set_only = self.base().has_own_virtual_set_only_property(name);
-
-        if self.has_own_property(name)? && !is_set_only {
-            return self.get_property_local(receiver, name, activation);
-        }
-
-        if let Some(proto) = self.proto() {
-            return proto.get_property(receiver, multiname, activation);
-        }
-
-        Ok(Value::Undefined)
     }
 
     /// Set a property by QName, after multiname resolution and all other
@@ -222,54 +173,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(activation.context.gc_context);
-
-        let rv = base.set_property_local(receiver, name, value, activation)?;
-
-        drop(base);
-
-        rv.resolve(activation)?;
-
-        Ok(())
-    }
-
-    /// Qualify the name of a property that does not exist, in the context of
-    /// setting a property.
-    ///
-    /// By default, this returns an error for sealed classes, and a name in the
-    /// public namespace for dynamic ones. Objects that have particular
-    /// alternative behavior for undefined values may substitute their own
-    /// implementation here without disturbing the rest of `setproperty`'s
-    /// implementation.
-    ///
-    /// This function typically returns a `QName` or an error. Returning `None`
-    /// indicates that the object handled the `setproperty` without needing to
-    /// store anything.
-    fn set_property_undef(
-        &mut self,
-        _receiver: Object<'gc>,
-        multiname: &Multiname<'gc>,
-        _value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<QName<'gc>>, Error> {
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as initializing a new dynamic property on namespace Public("").
-        if !self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false)
-        {
-            let local_name: Result<AvmString<'gc>, Error> = multiname
-                .local_name()
-                .ok_or_else(|| "Cannot set undefined property using any name".into());
-            Ok(Some(QName::dynamic_name(local_name?)))
-        } else {
-            Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into())
-        }
+        base.set_property_local(receiver, name, value, activation)
     }
 
     /// Set a property by Multiname lookup.
@@ -284,42 +193,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut name = self.resolve_multiname(multiname)?;
-
-        if name.is_none() {
-            name = self.set_property_undef(receiver, multiname, value, activation)?;
-        }
-
-        if name.is_none() {
-            return Ok(());
-        }
-
-        // At this point, name resolution should have completed.
-        let name = name.unwrap();
-
-        // Reject attempts to overwrite lazy-bound methods before they have
-        // been bound.
-        if let Some(class) = self.instance_of() {
-            if class.instance_method(name)?.is_some() {
-                return Err(format!(
-                    "Cannot overwrite read-only property {:?}",
-                    name.local_name()
-                )
-                .into());
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            // also TODO: check for read-only (`const`)
+            Some(Property::Slot{slot_id, ..}) => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::Method{..}) => {
+                todo!("thow error")
+            }
+            Some(Property::Virtual{set: Some(set), ..}) => {
+                self.call_method(set, &[value], activation).map(|_| ())
+            }
+            Some(Property::Virtual{set: None, ..}) => {
+                todo!("throw error")
+            }
+            None => {
+                self.set_property_local(receiver, multiname, value, activation)
             }
         }
-
-        if let Some(class) = self.as_class_object() {
-            if class.class_method(name)?.is_some() {
-                return Err(format!(
-                    "Cannot overwrite read-only property {:?}",
-                    name.local_name()
-                )
-                .into());
-            }
-        }
-
-        self.set_property_local(receiver, name, value, activation)
     }
 
     /// Initialize a property by QName, after multiname resolution and all
@@ -330,18 +219,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn init_property_local(
         self,
         receiver: Object<'gc>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(activation.context.gc_context);
-        let rv = base.init_property_local(receiver, name, value, activation)?;
-
-        drop(base);
-
-        rv.resolve(activation)?;
-
-        Ok(())
+        base.init_property_local(receiver, name, value, activation)
     }
 
     /// Initialize a property by Multiname lookup.
@@ -354,125 +237,123 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut name = self.resolve_multiname(multiname)?;
-
-        if name.is_none() {
-            name = self.set_property_undef(receiver, multiname, value, activation)?;
-        }
-
-        if name.is_none() {
-            return Ok(());
-        }
-
-        // At this point, name resolution should have completed.
-        let name = name.unwrap();
-
-        // Reject attempts to overwrite lazy-bound methods before they have
-        // been bound.
-        if let Some(class) = self.instance_of() {
-            if class.instance_method(name)?.is_some() {
-                return Err(format!(
-                    "Cannot overwrite read-only property {:?}",
-                    name.local_name()
-                )
-                .into());
+        // TODO: currently identical to set_property
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            // also TODO: check for read-only (`const`)
+            Some(Property::Slot{slot_id, ..}) => self.init_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::Method{..}) => {
+                todo!("thow error")
+            }
+            Some(Property::Virtual{set: Some(set), ..}) => {
+                self.call_method(set, &[value], activation).map(|_| ())
+            }
+            Some(Property::Virtual{set: None, ..}) => {
+                todo!("throw error")
+            }
+            None => {
+                self.init_property_local(receiver, multiname, value, activation)
             }
         }
-
-        if let Some(class) = self.as_class_object() {
-            if class.class_method(name)?.is_some() {
-                return Err(format!(
-                    "Cannot overwrite read-only property {:?}",
-                    name.local_name()
-                )
-                .into());
-            }
-        }
-
-        self.init_property_local(receiver, name, value, activation)
     }
 
-    /// Call a named property that does not exist.
-    ///
-    /// By default, this returns an error. Objects that have particular
-    /// alternative behavior for calling undefined properties may substitute
-    /// their own implementation here without disturbing the rest of
-    /// `callproperty`'s implementation.
-    fn call_property_undef(
+    // Note: normally this would just call into ScriptObjectData::call_property_local
+    // but because calling into ScriptObjectData borrows it for entire duration,
+    // we run a risk of a double borrow if the inner call borrows again.
+    fn call_property_local(
         self,
+        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
-        _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc, '_>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        Err(format!(
-            "Attempted to call undefined property {:?}",
-            multiname.local_name()
-        )
-        .into())
+        let result = self.base().get_property_local(receiver, multiname, activation)?
+            .coerce_to_object(activation)?;
+        result.call(Some(receiver), arguments, activation)
     }
 
     /// Call a named property on the object.
     ///
     /// This corresponds directly to the `callproperty` operation in AVM2.
+    #[allow(unused_mut)]
     fn call_property(
-        self,
+        mut self,
+        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let name = self.resolve_multiname(multiname)?;
-        if name.is_none() {
-            return self.call_property_undef(multiname, arguments, activation);
-        }
-
-        let name = name.unwrap();
-
-        if let Some(class) = self.instance_of() {
-            if let Some((superclass, method_trait)) = class.instance_method(name)? {
-                let method = method_trait.as_method().unwrap();
-                if !method.needs_arguments_object() {
-                    let scope = class.instance_scope();
-
-                    return Executable::from_method(method, scope, None, Some(superclass)).exec(
-                        Some(self.into()),
-                        arguments,
-                        activation,
-                        superclass.into(), //Deliberately invalid.
-                    );
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            Some(Property::Slot{slot_id, ..}) => {
+                let obj = self.base().get_slot(slot_id)?
+                    .coerce_to_object(activation)?;
+                obj.call(Some(self.into()), arguments, activation)
+            }
+            Some(Property::Method{disp_id, ..}) => {
+                let vtable = self.vtable().unwrap();
+                if let Some((superclass, method)) = vtable.get_full_method(disp_id)
+                {
+                    if !method.needs_arguments_object() {
+                        let scope = superclass.unwrap().instance_scope();
+                        return Executable::from_method(method, scope, None, superclass).exec(
+                            Some(self.into()),
+                            arguments,
+                            activation,
+                            superclass.unwrap().into(), //Deliberately invalid.
+                        );
+                    } else {
+                        if let Some(bound_method) = self.base().get_bound_method(disp_id) {
+                            return bound_method.call(Some(receiver), arguments, activation);
+                        }
+                        let bound_method = vtable.make_bound_method(activation, receiver, disp_id).unwrap();
+                        self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
+                        return bound_method.call(Some(receiver), arguments, activation);
+                    }
                 }
+                todo!("unreachable?")
+            },
+            Some(Property::Virtual{get: Some(get), ..}) => {
+                let obj = self.call_method(get, &[], activation)?
+                    .coerce_to_object(activation)?;
+                obj.call(Some(receiver), arguments, activation)
+            }
+            Some(Property::Virtual{get: None, ..}) => {
+                todo!("throw error")
+            }
+            None => {
+                self.call_property_local(receiver, multiname, arguments, activation)
             }
         }
+    }
 
-        if let Some(class) = self.as_class_object() {
-            if let Some(method_trait) = class.class_method(name)? {
-                let method = method_trait.as_method().unwrap();
-                if !method.needs_arguments_object() {
-                    let scope = class.class_scope();
+    /// Call a named property on the object.
+    ///
+    /// This exists specifically for Proxy, to avoid infinite loops.
+    /// Also, Proxy methods are guaranteed to be on traits anyway.
+    #[allow(unused_mut)] //Not unused.
+    fn call_property_trait_only(
+        mut self,
+        multiname: &Multiname<'gc>,
+        arguments: &[Value<'gc>],
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error> {
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            Some(Property::Method{disp_id, ..}) => {
+                let vtable = self.vtable().unwrap();
 
-                    return Executable::from_method(method, scope, None, Some(class)).exec(
-                        Some(self.into()),
-                        arguments,
-                        activation,
-                        class.into(), //Deliberately invalid.
-                    );
+                if let Some(bound_method) = self.base().get_bound_method(disp_id) {
+                    return bound_method.call(Some(self.into()), arguments, activation)
                 }
+                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), disp_id)
+                {
+                    self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
+                    return bound_method.call(Some(self.into()), arguments, activation)
+                }
+                todo!("unreachable?")
+            },
+            _ => {
+                Ok(Value::Undefined)
             }
         }
-
-        let function = self
-            .get_property(self.into(), multiname, activation)?
-            .coerce_to_object(activation);
-        if function.is_err() {
-            return Err(format!(
-                "Attempted to call undefined property {:?}",
-                multiname.local_name()
-            )
-            .into());
-        }
-
-        function
-            .unwrap()
-            .call(Some(self.into()), arguments, activation)
     }
 
     /// Retrieve a slot by its index.
@@ -516,79 +397,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        if self.base().get_method(id).is_none() {
-            if let Some(class) = self.instance_of() {
-                if let Some((bound_method, name)) =
-                    class.bound_instance_method_by_id(activation, self.into(), id)?
+        if self.base().get_bound_method(id).is_none() {
+            if let Some(vtable) = self.vtable() {
+                if let Some(bound_method) =
+                    vtable.make_bound_method(activation, self.into(), id)
                 {
-                    self.install_method(activation.context.gc_context, name, id, bound_method);
-                }
-            }
-
-            if let Some(class) = self.as_class_object() {
-                if let Some((bound_method, name)) =
-                    class.bound_class_method_by_id(activation, id)?
-                {
-                    self.install_method(activation.context.gc_context, name, id, bound_method);
+                    self.install_bound_method(activation.context.gc_context, id, bound_method);
                 }
             }
         }
 
-        if let Some(method_object) = self.base().get_method(id) {
+        let bound_method = self.base().get_bound_method(id);
+        if let Some(method_object) = bound_method {
             return method_object.call(Some(self.into()), arguments, activation);
         }
 
         Err(format!("Cannot call unknown method id {}", id).into())
-    }
-
-    /// Resolve a multiname into a single QName, if any of the namespaces
-    /// match.
-    ///
-    /// If multiple namespaces could match, this yields an error.
-    fn resolve_multiname(self, multiname: &Multiname<'gc>) -> Result<Option<QName<'gc>>, Error> {
-        let matching_set = if let Some(local_name) = multiname.local_name() {
-            self.resolve_ns(local_name)?
-        } else {
-            smallvec![]
-        };
-
-        if let Some(name) = multiname.local_name() {
-            for ns in matching_set.iter() {
-                if multiname.namespace_set().any(|n| n == ns) {
-                    return Ok(Some(QName::new(*ns, name)));
-                }
-            }
-        }
-
-        if multiname.namespace_set().any(|n| *n == Namespace::Any) {
-            return Ok(matching_set
-                .first()
-                .map(|ns| QName::new(*ns, multiname.local_name().unwrap())));
-        }
-
-        if let Some(proto) = self.proto() {
-            return proto.resolve_multiname(multiname);
-        }
-
-        Ok(None)
-    }
-
-    /// Given a local name, list all of the namespaces that have properties
-    /// with that local name.
-    ///
-    /// None of the returned `Namespace`s can be `Namespace::Any`, as this
-    /// function is also used to resolve such names.
-    ///
-    /// Trait names will be resolved on class objects and object instances, but
-    /// not prototypes. If you want to search a prototype's provided traits you
-    /// must walk the prototype chain using `resolve_any_trait`.
-    fn resolve_ns(
-        self,
-        local_name: AvmString<'gc>,
-    ) -> Result<SmallVec<[Namespace<'gc>; 1]>, Error> {
-        let base = self.base();
-
-        base.resolve_ns(local_name)
     }
 
     /// Implements the `in` opcode and AS3 operator.
@@ -598,46 +422,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn has_property_via_in(
         self,
         _activation: &mut Activation<'_, 'gc, '_>,
-        name: QName<'gc>,
+        name: &Multiname<'gc>,
     ) -> Result<bool, Error> {
-        self.has_property(name)
+        Ok(self.has_property(name))
     }
 
     /// Indicates whether or not a property exists on an object.
-    fn has_property(self, name: QName<'gc>) -> Result<bool, Error> {
-        if self.has_own_property(name)? {
-            Ok(true)
+    fn has_property(self, name: &Multiname<'gc>) -> bool {
+        if self.has_own_property(name) {
+            true
         } else if let Some(proto) = self.proto() {
-            Ok(proto.has_own_property(name)?)
+            proto.has_own_property(name)
         } else {
-            Ok(false)
+            false
         }
     }
 
     /// Indicates whether or not a property or trait exists on an object and is
     /// not part of the prototype chain.
-    fn has_own_property(self, name: QName<'gc>) -> Result<bool, Error> {
-        let base = self.base();
-
-        base.has_own_property(name)
+    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
+        self.base().has_own_property(name)
     }
 
     /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: QName<'gc>) -> Result<bool, Error> {
+    fn has_trait(self, name: &Multiname<'gc>) -> bool {
         let base = self.base();
-
         base.has_trait(name)
-    }
-
-    /// Indicates whether or not a property is overwritable.
-    fn is_property_overwritable(
-        self,
-        _gc_context: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-    ) -> bool {
-        let base = self.base();
-
-        base.is_property_overwritable(name)
     }
 
     /// Delete a property by QName, after multiname resolution and all other
@@ -646,31 +456,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This required method is only intended to be called by other TObject
     /// methods.
     fn delete_property_local(
-        &self,
-        gc_context: MutationContext<'gc, '_>,
-        name: QName<'gc>,
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: &Multiname<'gc>,
     ) -> Result<bool, Error> {
-        let mut base = self.base_mut(gc_context);
+        let mut base = self.base_mut(activation.context.gc_context);
 
-        Ok(base.delete_property(name))
-    }
-
-    /// Delete a property that does not exist.
-    ///
-    /// By default, undefined property deletion succeeds for dynamic classes,
-    /// and fails for sealed ones. Objects that have particular alternative
-    /// behavior for undefined values may substitute their own implementation
-    /// here without disturbing the rest of `deleteproperty`'s implementation.
-    fn delete_property_undef(
-        &self,
-        _activation: &mut Activation<'_, 'gc, '_>,
-        _multiname: &Multiname<'gc>,
-    ) -> Result<bool, Error> {
-        // Unknown properties on a dynamic class delete successfully.
-        return Ok(!self
-            .instance_of_class_definition()
-            .map(|c| c.read().is_sealed())
-            .unwrap_or(false));
+        Ok(base.delete_property_local(name))
     }
 
     /// Delete a named property from the object.
@@ -681,40 +473,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error> {
-        let name = self.resolve_multiname(multiname)?;
-
-        if name.is_none() {
-            return self.delete_property_undef(activation, multiname);
-        }
-
-        //At this point, the name should be known.
-        let name = name.unwrap();
-
-        // Reject attempts to delete lazy-bound methods before they have
-        // been bound.
-        if !self.base().has_own_instantiated_property(name) {
-            if let Some(class) = self.instance_of() {
-                if class
-                    .instance_method(name)
-                    .map(|t| t.is_some())
-                    .unwrap_or(false)
-                {
-                    return Ok(false);
+        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+            None => {
+                if self.instance_of_class_definition()
+                    .map(|c| c.read().is_sealed())
+                    .unwrap_or(false) {
+                    Ok(false)
+                } else {
+                    self.delete_property_local(activation, multiname)
                 }
-            }
-
-            if let Some(class) = self.as_class_object() {
-                if class
-                    .class_method(name)
-                    .map(|t| t.is_some())
-                    .unwrap_or(false)
-                {
-                    return Ok(false);
-                }
-            }
+            },
+            _ => Ok(false)
         }
-
-        self.delete_property_local(activation.context.gc_context, name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -794,7 +564,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Determine if a property is currently enumerable.
     ///
     /// Properties that do not exist are also not enumerable.
-    fn property_is_enumerable(&self, name: QName<'gc>) -> bool {
+    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
         let base = self.base();
 
         base.property_is_enumerable(name)
@@ -804,7 +574,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn set_local_property_is_enumerable(
         &self,
         mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
+        name: AvmString<'gc>,
         is_enumerable: bool,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(mc);
@@ -812,259 +582,42 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_local_property_is_enumerable(name, is_enumerable)
     }
 
-    /// Install a method (or any other non-slot value) on an object.
-    fn install_method(
+    /// Install a bound method on an object.
+    fn install_bound_method(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
         disp_id: u32,
-        function: Object<'gc>,
+        function: FunctionObject<'gc>,
     ) {
         let mut base = self.base_mut(mc);
 
-        base.install_method(name, disp_id, function)
+        base.install_bound_method(disp_id, function)
     }
 
-    /// Install a getter method on an object property.
-    fn install_getter(
+
+
+    
+    /// Install a const trait on the global object.
+    /// This should only ever be called on the `global` object, during initialization.
+    fn install_const_late(
         &mut self,
         mc: MutationContext<'gc, '_>,
+        slot_id: Option<u32>,
         name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-    ) -> Result<(), Error> {
-        let mut base = self.base_mut(mc);
-
-        base.install_getter(name, disp_id, function)
-    }
-
-    /// Install a setter method on an object property.
-    fn install_setter(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        disp_id: u32,
-        function: Object<'gc>,
-    ) -> Result<(), Error> {
-        let mut base = self.base_mut(mc);
-
-        base.install_setter(name, disp_id, function)
-    }
-
-    /// Install a dynamic or built-in value property on an object.
-    fn install_dynamic_property(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-    ) -> Result<(), Error> {
-        let mut base = self.base_mut(mc);
-
-        base.install_dynamic_property(name, value)
-    }
-
-    /// Install a slot on an object property.
-    fn install_slot(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        id: u32,
         value: Value<'gc>,
     ) {
-        let mut base = self.base_mut(mc);
-
-        base.install_slot(name, id, value)
+        let new_slot_id = self.vtable().unwrap().install_const_trait_late(mc, slot_id, name, value.clone());
+        self.base_mut(mc).install_const_slot_late(new_slot_id, value);
     }
 
-    /// Install a const on an object property.
-    fn install_const(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        name: QName<'gc>,
-        id: u32,
-        value: Value<'gc>,
-    ) {
-        let mut base = self.base_mut(mc);
 
-        base.install_const(name, id, value)
-    }
-
-    /// Install all instance traits provided by a class.
-    ///
-    /// This method will also install superclass instance traits first. By
-    /// calling this method with the lowest class in the chain, you will ensure
-    /// all instance traits are installed.
-    ///
-    /// Read the documentation for `install_trait` to learn more about exactly
-    /// how traits are instantiated.
-    fn install_instance_traits(
+    fn install_instance_slots(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         from_class_object: ClassObject<'gc>,
-    ) -> Result<(), Error> {
-        if let Some(superclass_object) = from_class_object.superclass_object() {
-            self.install_instance_traits(activation, superclass_object)?;
-        }
-
-        let class = from_class_object.inner_class_definition();
-        self.install_traits(
-            activation,
-            class.read().instance_traits(),
-            from_class_object.instance_scope(),
-            Some(from_class_object),
-        )?;
-
-        Ok(())
-    }
-
-    /// Install a list of traits into this object.
-    ///
-    /// This function should be called immediately after object allocation and
-    /// before any constructors have a chance to run.
-    ///
-    /// Read the documentation for `install_trait` to learn more about exactly
-    /// how traits are instantiated.
-    fn install_traits(
-        &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        traits: &[Trait<'gc>],
-        scope: ScopeChain<'gc>,
-        defining_class: Option<ClassObject<'gc>>,
-    ) -> Result<(), Error> {
-        for trait_entry in traits {
-            self.install_trait(activation, trait_entry, scope, defining_class)?;
-        }
-
-        Ok(())
-    }
-
-    /// Install a single trait into this object.
-    ///
-    /// This function should be called immediately after object allocation and
-    /// before any constructors have a chance to run. It should also only be
-    /// called once per name and/or slot ID, as reinstalling a trait may unset
-    /// already set properties.
-    ///
-    /// Class, function, and method traits are *not* instantiated at
-    /// installation time. Instead, installing such traits merely installs a
-    /// placeholder (such as an `undefined` const slot) until the trait is
-    /// properly initialized.
-    ///
-    /// All traits that are instantiated at install time will be instantiated
-    /// with this object's current scope stack and this object as a bound
-    /// receiver.
-    ///
-    /// The value of the trait at the time of installation will be returned
-    /// here, or `undefined` for classes, functions, and methods.
-    ///
-    /// No verification happens in `install_trait`. Instead, you must make sure
-    /// to only install traits from validated classes.
-    fn install_trait(
-        &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        trait_entry: &Trait<'gc>,
-        scope: ScopeChain<'gc>,
-        defining_class: Option<ClassObject<'gc>>,
-    ) -> Result<Value<'gc>, Error> {
-        let receiver = (*self).into();
-        let trait_name = trait_entry.name();
-
-        avm_debug!(
-            activation.avm2(),
-            "Installing trait {:?} of kind {:?}",
-            trait_name,
-            trait_entry.kind()
-        );
-
-        match trait_entry.kind() {
-            TraitKind::Slot {
-                slot_id,
-                default_value,
-                ..
-            } => {
-                self.install_slot(
-                    activation.context.gc_context,
-                    trait_name,
-                    *slot_id,
-                    *default_value,
-                );
-
-                Ok(*default_value)
-            }
-            TraitKind::Method { .. } => Ok(Value::Undefined),
-            TraitKind::Getter {
-                disp_id, method, ..
-            } => {
-                let function = FunctionObject::from_method(
-                    activation,
-                    method.clone(),
-                    scope,
-                    Some(receiver),
-                    defining_class,
-                );
-                self.install_getter(
-                    activation.context.gc_context,
-                    trait_name,
-                    *disp_id,
-                    function,
-                )?;
-
-                Ok(function.into())
-            }
-            TraitKind::Setter {
-                disp_id, method, ..
-            } => {
-                let function = FunctionObject::from_method(
-                    activation,
-                    method.clone(),
-                    scope,
-                    Some(receiver),
-                    defining_class,
-                );
-                self.install_setter(
-                    activation.context.gc_context,
-                    trait_name,
-                    *disp_id,
-                    function,
-                )?;
-
-                Ok(function.into())
-            }
-            TraitKind::Class { slot_id, .. } => {
-                self.install_const(
-                    activation.context.gc_context,
-                    trait_name,
-                    *slot_id,
-                    Value::Undefined,
-                );
-
-                Ok(Value::Undefined)
-            }
-            TraitKind::Function { slot_id, .. } => {
-                self.install_const(
-                    activation.context.gc_context,
-                    trait_name,
-                    *slot_id,
-                    Value::Undefined,
-                );
-
-                Ok(Value::Undefined)
-            }
-            TraitKind::Const {
-                slot_id,
-                default_value,
-                ..
-            } => {
-                self.install_const(
-                    activation.context.gc_context,
-                    trait_name,
-                    *slot_id,
-                    *default_value,
-                );
-
-                Ok(*default_value)
-            }
-        }
+    ) {
+        let slots = from_class_object.instance_vtable().default_slots();
+        self.base_mut(activation.context.gc_context).install_instance_slots(activation, slots);
     }
 
     /// Call the object.
@@ -1269,8 +822,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's class, if it has one.
     fn instance_of(&self) -> Option<ClassObject<'gc>> {
         let base = self.base();
-
         base.instance_of()
+    }
+
+    /// Get this object's vtable, if it has one.
+    /// Every object with class should have a vtable
+    fn vtable(&self) -> Option<VTable<'gc>> {
+        let base = self.base();
+        base.vtable()
     }
 
     /// Get this object's class's `Class`, if it has one.
@@ -1279,13 +838,32 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     fn set_instance_of(&self, mc: MutationContext<'gc, '_>, instance_of: ClassObject<'gc>) {
-        let mut base = self.base_mut(mc);
+        let instance_vtable = instance_of.instance_vtable();
 
-        base.set_instance_of(instance_of);
+        let mut base = self.base_mut(mc);
+        base.set_instance_of(instance_of, instance_vtable);
+    }
+
+    // Sets a different vtable for object, without changing instance_of.
+    fn set_vtable(&self, mc: MutationContext<'gc, '_>, vtable: VTable<'gc>) {
+        let mut base = self.base_mut(mc);
+        base.set_vtable(vtable);
+    }
+
+    // Duplicates the vtable for modification without subclassing
+    // Note: this detaches the vtable from the original class.
+    fn fork_vtable(&self, mc: MutationContext<'gc, '_>) {
+        let mut base = self.base_mut(mc);
+        let vtable = base.vtable().unwrap().duplicate(mc);
+        base.set_vtable(vtable);
     }
 
     /// Try to corece this object into a `ClassObject`.
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
+        None
+    }
+
+    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
         None
     }
 

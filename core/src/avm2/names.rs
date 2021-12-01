@@ -86,7 +86,7 @@ impl<'gc> Namespace<'gc> {
     }
 
     pub fn is_public(&self) -> bool {
-        *self == Self::public()
+        matches!(self, Self::Package(name) if name.is_empty())
     }
 
     pub fn is_any(&self) -> bool {
@@ -95,10 +95,6 @@ impl<'gc> Namespace<'gc> {
 
     pub fn is_private(&self) -> bool {
         matches!(self, Self::Private(_))
-    }
-
-    pub fn is_dynamic(&self) -> bool {
-        self.is_public() || self.is_any()
     }
 
     pub fn is_package(&self, package_name: impl Into<AvmString<'gc>>) -> bool {
@@ -571,6 +567,14 @@ impl<'gc> Multiname<'gc> {
         }
     }
 
+    pub fn public(name: impl Into<AvmString<'gc>>) -> Self {
+        Self {
+            ns: vec![Namespace::public()],
+            name: Some(name.into()),
+            params: Vec::new(),
+        }
+    }
+
     pub fn namespace_set(&self) -> impl Iterator<Item = &Namespace<'gc>> {
         self.ns.iter()
     }
@@ -579,14 +583,8 @@ impl<'gc> Multiname<'gc> {
         self.name
     }
 
-    pub fn includes_dynamic_namespace(&self) -> bool {
-        for ns in self.ns.iter() {
-            if ns.is_dynamic() {
-                return true;
-            }
-        }
-
-        false
+    pub fn contains_public_namespace(&self) -> bool {
+        self.ns.iter().any(|ns| ns.is_public())
     }
 
     /// Indicates if this multiname matches any type in any namespace.

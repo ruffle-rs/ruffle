@@ -151,25 +151,6 @@ pub struct Class<'gc> {
     is_system: bool,
 }
 
-/// Find traits in a list of traits matching a slot ID.
-fn do_trait_lookup_by_slot<'gc>(id: u32, all_traits: &[Trait<'gc>]) -> Option<Trait<'gc>> {
-    for trait_entry in all_traits {
-        let trait_id = match trait_entry.kind() {
-            TraitKind::Slot { slot_id, .. } => slot_id,
-            TraitKind::Const { slot_id, .. } => slot_id,
-            TraitKind::Class { slot_id, .. } => slot_id,
-            TraitKind::Function { slot_id, .. } => slot_id,
-            _ => continue,
-        };
-
-        if id == *trait_id {
-            return Some(trait_entry.clone());
-        }
-    }
-
-    None
-}
-
 impl<'gc> Class<'gc> {
     /// Create a new class.
     ///
@@ -702,11 +683,6 @@ impl<'gc> Class<'gc> {
         self.class_traits.push(my_trait);
     }
 
-    /// Given a slot ID, return the first class trait matching the slot.
-    pub fn lookup_class_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
-        do_trait_lookup_by_slot(id, &self.class_traits)
-    }
-
     /// Return class traits provided by this class.
     pub fn class_traits(&self) -> &[Trait<'gc>] {
         &self.class_traits[..]
@@ -719,34 +695,6 @@ impl<'gc> Class<'gc> {
     /// properties defined on the prototype will be shadowed by these traits.
     pub fn define_instance_trait(&mut self, my_trait: Trait<'gc>) {
         self.instance_traits.push(my_trait);
-    }
-
-    /// Given a slot ID, return the first instance trait matching the slot.
-    pub fn lookup_instance_traits_by_slot(&self, id: u32) -> Option<Trait<'gc>> {
-        do_trait_lookup_by_slot(id, &self.instance_traits)
-    }
-
-    /// Determines if this class provides a given trait on its instances.
-    pub fn has_instance_trait(&self, name: QName<'gc>) -> bool {
-        for trait_entry in self.instance_traits.iter() {
-            if name == trait_entry.name() {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    /// Determines if this class provides a given trait with a particular
-    /// dispatch ID on its instances.
-    pub fn has_instance_trait_by_disp_id(&self, id: u32) -> bool {
-        for trait_entry in self.instance_traits.iter() {
-            if Some(id) == trait_entry.disp_id() {
-                return true;
-            }
-        }
-
-        false
     }
 
     /// Return instance traits provided by this class.

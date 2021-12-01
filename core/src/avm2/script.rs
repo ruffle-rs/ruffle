@@ -5,9 +5,10 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
+use crate::avm2::vtable::trait_to_default_value;
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -153,6 +154,7 @@ impl<'gc> TranslationUnit<'gc> {
         let mut activation = Activation::from_nothing(uc.reborrow());
         let global_class = activation.avm2().classes().global;
         let global_obj = global_class.construct(&mut activation, &[])?;
+        global_obj.fork_vtable(activation.context.gc_context);
 
         let mut script =
             Script::from_abc_index(self, script_index, global_obj, domain, &mut activation)?;
@@ -369,6 +371,8 @@ impl<'gc> Script<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         let mut write = self.0.write(context.gc_context);
+
+
         if !write.initialized {
             write.initialized = true;
 
@@ -378,12 +382,32 @@ impl<'gc> Script<'gc> {
 
             drop(write);
 
-            globals.install_traits(
-                &mut null_activation,
-                &self.traits()?,
-                ScopeChain::new(domain),
-                None,
-            )?;
+            let scope = ScopeChain::new(domain);
+
+            // scope for managing lifetime of self.traits() borrow
+            {
+                let traits: &[Trait<'gc>] = &self.traits()?;
+                for newtrait in traits {
+                    if newtrait.disp_id().is_some() {
+                        todo!("script traits with disp_ids are not handled due to possible conflicts with Object instance methods")
+                        // ideally we should have something like:
+                        // globals.vtable().unwrap().install_traits_late(
+                        //    &mut null_activation,
+                        //    &self.traits()?,
+                        //    ScopeChain::new(domain)
+                        // )
+                        // as installing traits this way is pretty flimsy
+                    }
+                    if let Some(slot_id) = newtrait.slot_id() {
+                        globals.install_const_late(
+                            null_activation.context.gc_context,
+                            Some(slot_id),
+                            newtrait.name(),
+                            trait_to_default_value(scope, newtrait, &mut null_activation).unwrap()
+                        );
+                    }
+                }
+            }
 
             Avm2::run_script_initializer(*self, context)?;
 
