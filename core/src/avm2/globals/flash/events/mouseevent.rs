@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::events::{EventData, KeyModifiers};
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -96,6 +96,182 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `altKey`'s getter.
+pub fn alt_key<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+                return Ok(modifiers.contains(KeyModifiers::ALT).into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `altKey`'s setter.
+pub fn set_alt_key<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_boolean();
+
+                if value {
+                    modifiers.insert(KeyModifiers::ALT);
+                } else {
+                    modifiers.remove(KeyModifiers::ALT);
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `commandKey`'s getter.
+pub fn command_key<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+                return Ok(modifiers.contains(KeyModifiers::COMMAND).into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `commandKey`'s setter.
+pub fn set_command_key<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_boolean();
+
+                if value {
+                    modifiers.insert(KeyModifiers::COMMAND);
+                } else {
+                    modifiers.remove(KeyModifiers::COMMAND);
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `ctrlKey`/`controlKey`'s getter.
+pub fn control_key<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+                return Ok(modifiers.contains(KeyModifiers::CTRL).into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `ctrlKey`/`controlKey`'s setter.
+pub fn set_control_key<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_boolean();
+
+                if value {
+                    modifiers.insert(KeyModifiers::CTRL);
+                } else {
+                    modifiers.remove(KeyModifiers::CTRL);
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `shiftKey`'s getter.
+pub fn shift_key<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+                return Ok(modifiers.contains(KeyModifiers::SHIFT).into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `shiftKey`'s setter.
+pub fn set_shift_key<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+                let value = args
+                    .get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_boolean();
+
+                if value {
+                    modifiers.insert(KeyModifiers::SHIFT);
+                } else {
+                    modifiers.remove(KeyModifiers::SHIFT);
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -132,6 +308,19 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
 
     write.define_public_constant_string_class_traits(CONSTANTS);
+
+    const PUBLIC_INSTANCE_PROPERTIES: &[(
+        &str,
+        Option<NativeMethodImpl>,
+        Option<NativeMethodImpl>,
+    )] = &[
+        ("altKey", Some(alt_key), Some(set_alt_key)),
+        ("commandKey", Some(command_key), Some(set_command_key)),
+        ("controlKey", Some(control_key), Some(set_control_key)),
+        ("ctrlKey", Some(control_key), Some(set_control_key)),
+        ("shiftKey", Some(shift_key), Some(set_shift_key)),
+    ];
+    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     class
 }

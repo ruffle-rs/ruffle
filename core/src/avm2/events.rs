@@ -214,6 +214,10 @@ impl<'gc> Event<'gc> {
         &self.event_data
     }
 
+    pub fn event_data_mut(&mut self) -> &mut EventData<'gc> {
+        &mut self.event_data
+    }
+
     pub fn set_event_data(&mut self, event_data: EventData<'gc>) {
         self.event_data = event_data;
     }
