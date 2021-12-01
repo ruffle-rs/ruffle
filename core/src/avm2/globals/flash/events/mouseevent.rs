@@ -352,6 +352,15 @@ pub fn set_delta<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Stubs `isRelatedObjectInaccessible`'s getter.
+pub fn is_related_object_inaccessible<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(false.into())
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -401,6 +410,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("shiftKey", Some(shift_key), Some(set_shift_key)),
         ("buttonDown", Some(button_down), Some(set_button_down)),
         ("delta", Some(delta), Some(set_delta)),
+        (
+            "isRelatedObjectInaccessible",
+            Some(is_related_object_inaccessible),
+            None,
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
