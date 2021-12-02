@@ -49,9 +49,14 @@ impl<'gc> EventObject<'gc> {
     /// we will pull the `prototype` off the `class` given to us.
     pub fn from_event(
         activation: &mut Activation<'_, 'gc, '_>,
-        class: ClassObject<'gc>,
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
+        let class = match event.event_data() {
+            EventData::Event => activation.avm2().classes().event,
+            EventData::FullScreenEvent { .. } => activation.avm2().classes().fullscreenevent,
+            EventData::MouseEvent { .. } => activation.avm2().classes().mouseevent,
+        };
+
         let proto = class.prototype();
         let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
