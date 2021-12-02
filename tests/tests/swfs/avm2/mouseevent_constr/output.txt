@@ -1,5 +1,3 @@
-Attempting to launch and connect to Player using URL I:\Code\ruffle\tests\tests\swfs\avm2\mouseevent_constr\test.swf
-[SWF] I:\Code\ruffle\tests\tests\swfs\avm2\mouseevent_constr\test.swf - 1991 bytes after decompression
 /// var evt = new MouseEvent('FakeEvent');
 /// evt.type
 FakeEvent
