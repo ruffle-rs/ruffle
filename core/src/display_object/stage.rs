@@ -592,12 +592,7 @@ impl<'gc> Stage<'gc> {
             full_screen_event.set_bubbles(false);
             full_screen_event.set_cancelable(false);
 
-            if let Err(e) = crate::avm2::Avm2::dispatch_event_with_class(
-                context,
-                full_screen_event,
-                context.avm2.classes().fullscreenevent,
-                stage,
-            ) {
+            if let Err(e) = crate::avm2::Avm2::dispatch_event(context, full_screen_event, stage) {
                 log::error!("Encountered AVM2 error when dispatching event: {}", e);
             }
         }

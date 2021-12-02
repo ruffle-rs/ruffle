@@ -142,9 +142,7 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(evt) = this.unwrap().as_event() {
-        let evt_class = activation.avm2().classes().event;
-
-        return Ok(EventObject::from_event(activation, evt_class, evt.clone())?.into());
+        return Ok(EventObject::from_event(activation, evt.clone())?.into());
     }
 
     Ok(Value::Undefined)
