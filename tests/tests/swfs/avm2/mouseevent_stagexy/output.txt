@@ -1,0 +1,23 @@
+/// (dispatching MouseEvent at 5.0, 1.5...)
+/// evt.stageX
+5
+/// evt.stageY
+1.5
+/// (dispatching MouseEvent at 5.0, 1.5...)
+/// evt.stageX
+37
+/// evt.stageY
+17.5
+///this.addChild(this.te);
+/// (dispatching MouseEvent at 5.0, 1.5...)
+/// evt.stageX
+37
+/// evt.stageY
+17.5
+///this.scaleX = 0.5
+///this.scaleY = 0.25
+/// (dispatching MouseEvent at 5.0, 1.5...)
+/// evt.stageX
+18.5
+/// evt.stageY
+4.4
