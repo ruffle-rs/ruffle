@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 use gc_arena::{GcCell, MutationContext};
+use swf::Twips;
 
 /// Implements `flash.events.MouseEvent`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -568,6 +569,54 @@ pub fn set_related_object<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `stageX`'s getter.
+pub fn stage_x<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { local_x, .. } = evt.event_data() {
+                if let Some(target) = evt.target().and_then(|t| t.as_display_object()) {
+                    let as_twips = Twips::from_pixels(*local_x);
+                    let xformed = target.local_to_global((as_twips, Twips::ZERO)).0;
+
+                    return Ok(Value::Number(xformed.to_pixels()));
+                } else {
+                    return Ok(Value::Number(*local_x * 0.0));
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `stageY`'s getter.
+pub fn stage_y<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(evt) = this.as_event() {
+            if let EventData::MouseEvent { local_y, .. } = evt.event_data() {
+                if let Some(target) = evt.target().and_then(|t| t.as_display_object()) {
+                    let as_twips = Twips::from_pixels(*local_y);
+                    let xformed = target.local_to_global((Twips::ZERO, as_twips)).1;
+
+                    return Ok(Value::Number(xformed.to_pixels()));
+                } else {
+                    return Ok(Value::Number(*local_y * 0.0));
+                }
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -631,6 +680,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(related_object),
             Some(set_related_object),
         ),
+        ("stageX", Some(stage_x), None),
+        ("stageY", Some(stage_y), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
