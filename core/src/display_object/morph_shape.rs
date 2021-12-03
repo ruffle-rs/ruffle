@@ -223,7 +223,7 @@ impl MorphShapeStatic {
             match (s, e) {
                 (ShapeRecord::StyleChange(start_change), ShapeRecord::StyleChange(end_change)) => {
                     let mut style_change = start_change.clone();
-                    if start_change.move_to != end_change.move_to {
+                    if start_change.move_to.is_some() || end_change.move_to.is_some() {
                         if let Some((s_x, s_y)) = start_change.move_to {
                             start_x = s_x;
                             start_y = s_y;
