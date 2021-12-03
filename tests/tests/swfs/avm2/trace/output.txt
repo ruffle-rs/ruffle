@@ -1,4 +1,13 @@
-
 test
 trace with multiple params
 false true undefined null 0 1 1.2345 string [object Object]
+
+// "a\rb"
+a
+b
+
+// "a\r\nb"
+a
+
+b
+
