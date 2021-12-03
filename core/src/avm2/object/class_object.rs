@@ -4,9 +4,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{QName};
 use crate::avm2::object::function_object::FunctionObject;
-use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObject, ScriptObjectData};
+use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
@@ -96,32 +96,18 @@ impl<'gc> ClassObject<'gc> {
     /// This function is not used during the initialization of "early classes",
     /// i.e. `Object`, `Function`, and `Class`. Those classes and their
     /// prototypes are weaved together separately.
-    ///
-    /// The returned prototype will be an instance of `Object` (and thus not
-    /// have this class's instance traits), but will be allocated by this
-    /// class's instance allocator.
     fn allocate_prototype(
         self,
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Object<'gc>, Error> {
-        let instance_allocator = self.0.read().instance_allocator.clone();
+        let proto = activation.avm2().classes().object.construct(activation, &[])?;
 
         if let Some(superclass_object) = superclass_object {
-            let base_proto = superclass_object
-                .get_property(
-                    superclass_object.into(),
-                    &QName::new(Namespace::public(), "prototype").into(),
-                    activation,
-                )?
-                .coerce_to_object(activation)?;
-
-            //NOTE: If we do not use `instance_allocator` here, then Vector
-            //enumeration will break.
-            (instance_allocator.0)(activation.avm2().classes().object, base_proto, activation)
-        } else {
-            Ok(ScriptObject::bare_object(activation.context.gc_context))
+            let base_proto = superclass_object.prototype();
+            proto.set_proto(activation.context.gc_context, base_proto);
         }
+        Ok(proto)
     }
 
     /// Construct a class.

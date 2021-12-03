@@ -271,7 +271,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn install_instance_slots(
         &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
+        _activation: &mut Activation<'_, 'gc, '_>,
         slots: Vec<Option<Value<'gc>>>,
     ) {
         for value in slots {

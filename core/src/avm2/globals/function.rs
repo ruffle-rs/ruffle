@@ -76,7 +76,8 @@ fn call<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let this = args
         .get(0)
-        .and_then(|v| v.coerce_to_object(activation).ok());
+        .and_then(|v| v.coerce_to_object(activation).ok())
+        .or_else(|| activation.global_scope());
 
     if let Some(func) = func {
         if args.len() > 1 {
@@ -97,7 +98,8 @@ fn apply<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let this = args
         .get(0)
-        .and_then(|v| v.coerce_to_object(activation).ok());
+        .and_then(|v| v.coerce_to_object(activation).ok())
+        .or_else(|| activation.global_scope());
 
     if let Some(func) = func {
         let arg_array = args

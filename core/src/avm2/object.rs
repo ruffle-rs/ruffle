@@ -325,37 +325,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    /// Call a named property on the object.
-    ///
-    /// This exists specifically for Proxy, to avoid infinite loops.
-    /// Also, Proxy methods are guaranteed to be on traits anyway.
-    #[allow(unused_mut)] //Not unused.
-    fn call_property_trait_only(
-        mut self,
-        multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Value<'gc>, Error> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Method{disp_id, ..}) => {
-                let vtable = self.vtable().unwrap();
-
-                if let Some(bound_method) = self.base().get_bound_method(disp_id) {
-                    return bound_method.call(Some(self.into()), arguments, activation)
-                }
-                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), disp_id)
-                {
-                    self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                    return bound_method.call(Some(self.into()), arguments, activation)
-                }
-                todo!("unreachable?")
-            },
-            _ => {
-                Ok(Value::Undefined)
-            }
-        }
-    }
-
     /// Retrieve a slot by its index.
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error> {
         let base = self.base();
