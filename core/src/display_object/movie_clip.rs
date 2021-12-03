@@ -2661,16 +2661,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let alpha_len = tag_len
             .checked_sub(jpeg_len + 6)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
-        let mut jpeg_data = Vec::with_capacity(jpeg_len);
-        let mut alpha_data = Vec::with_capacity(alpha_len);
-        reader
-            .get_mut()
-            .take(jpeg_len as u64)
-            .read_to_end(&mut jpeg_data)?;
-        reader
-            .get_mut()
-            .take(alpha_len as u64)
-            .read_to_end(&mut alpha_data)?;
+        let mut jpeg_data = vec![0; jpeg_len];
+        reader.get_mut().read_exact(&mut jpeg_data)?;
+        let mut alpha_data = vec![0; alpha_len];
+        reader.get_mut().read_exact(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
@@ -2702,16 +2696,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let alpha_len = tag_len
             .checked_sub(jpeg_len + 6)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
-        let mut jpeg_data = Vec::with_capacity(jpeg_len);
-        let mut alpha_data = Vec::with_capacity(alpha_len);
-        reader
-            .get_mut()
-            .take(jpeg_len as u64)
-            .read_to_end(&mut jpeg_data)?;
-        reader
-            .get_mut()
-            .take(alpha_len as u64)
-            .read_to_end(&mut alpha_data)?;
+        let mut jpeg_data = vec![0; jpeg_len];
+        reader.get_mut().read_exact(&mut jpeg_data)?;
+        let mut alpha_data = vec![0; alpha_len];
+        reader.get_mut().read_exact(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
             .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
