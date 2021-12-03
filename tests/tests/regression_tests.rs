@@ -695,6 +695,7 @@ swf_tests! {
     (this_scoping, "avm1/this_scoping", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
     (timer_run_actions, "avm1/timer_run_actions", 1),
+    (trace, "avm1/trace", 1),
     (transform, "avm1/transform", 1),
     (try_catch_finally, "avm1/try_catch_finally", 1),
     (try_finally_simple, "avm1/try_finally_simple", 1),
