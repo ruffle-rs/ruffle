@@ -533,7 +533,7 @@ impl Default for FormatSpans {
 
 impl FormatSpans {
     pub fn new() -> Self {
-        FormatSpans {
+        Self {
             text: WString::new(),
             displayed_text: WString::new(),
             spans: vec![TextSpan::default()],
@@ -544,7 +544,7 @@ impl FormatSpans {
     /// Construct a format span from its raw parts.
     #[allow(dead_code)]
     pub fn from_str_and_spans(text: &WStr, spans: &[TextSpan]) -> Self {
-        FormatSpans {
+        Self {
             text: text.into(),
             displayed_text: WString::new(),
             spans: spans.to_vec(),
@@ -575,22 +575,11 @@ impl FormatSpans {
 
         // quick_xml::Reader requires a [u8] slice, but doesn't actually care about Unicode;
         // this means we can pass the raw buffer in the Latin1 case.
-        let (raw_bytes, is_raw_latin1) = match html.units() {
-            Units::Bytes(units) => (Cow::Borrowed(units), true),
+        let raw_bytes = match html.units() {
+            Units::Bytes(units) => Cow::Borrowed(units),
             // TODO: In principle, we should be able to encode (and later decode)
             // the utf16 units in the [u8] array without discarding losing surrogates.
-            Units::Wide(_) => (
-                Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
-                true,
-            ),
-        };
-
-        let decode_to_wstr = |raw: Cow<'_, [u8]>| -> WString {
-            if is_raw_latin1 {
-                WString::from_buf(raw.into_owned())
-            } else {
-                WString::from_utf8(&String::from_utf8_lossy(&raw))
-            }
+            Units::Wide(_) => Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
         };
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
@@ -615,13 +604,20 @@ impl FormatSpans {
                     _ => {}
                 },
                 Ok(Event::Start(ref e)) => {
+                    let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
+                    let attributes = match attributes {
+                        Ok(attributes) => attributes,
+                        Err(e) => {
+                            log::warn!("Error while parsing HTML: {}", e);
+                            return Default::default();
+                        }
+                    };
                     let attribute = move |name| {
-                        e.attributes().with_checks(false).find_map(|attribute| {
-                            let attribute = attribute.unwrap();
+                        attributes.iter().find_map(|attribute| {
                             attribute
                                 .key
                                 .eq_ignore_ascii_case(name)
-                                .then(|| decode_to_wstr(attribute.value))
+                                .then(|| WString::from_buf(attribute.value.to_vec()))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
@@ -756,7 +752,7 @@ impl FormatSpans {
                     format_stack.push(format);
                 }
                 Ok(Event::Text(e)) if !e.is_empty() => {
-                    let e = decode_to_wstr(Cow::Borrowed(&e[..]));
+                    let e = WString::from_buf(e.escaped().to_owned());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
                     text.push_str(&e);
@@ -781,7 +777,7 @@ impl FormatSpans {
                 Ok(Event::Eof) => break,
                 Err(e) => {
                     log::warn!("Error while parsing HTML: {}", e);
-                    break;
+                    return Default::default();
                 }
                 _ => {}
             }
