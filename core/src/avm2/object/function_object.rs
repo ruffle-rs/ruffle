@@ -134,7 +134,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
-        // todo: handle errors?
         let prototype = self.prototype().unwrap();
 
         let instance = prototype.derive(activation)?;
