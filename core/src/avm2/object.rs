@@ -113,11 +113,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn base(&self) -> Ref<ScriptObjectData<'gc>>;
     fn base_mut(&self, mc: MutationContext<'gc, '_>) -> RefMut<ScriptObjectData<'gc>>;
 
-    /// Retrieve a property by QName, after multiname resolution, prototype
-    /// lookups, and all other considerations have been taken.
+    /// Retrieve a local property of the object. The Multiname should always be public.
     ///
-    /// This required method is only intended to be called by other TObject
-    /// methods.
+    /// This skips class field lookups and looks at:
+    /// - object-specific storage (like arrays)
+    /// - Object dynamic properties
+    /// - prototype chain.
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
@@ -127,6 +128,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Retrieve a property by Multiname lookup.
+    ///
+    /// This method should not be overridden.
     ///
     /// This corresponds directly to the AVM2 operation `getproperty`, with the
     /// exception that it does not special-case object lookups on dictionary
@@ -165,11 +168,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    /// Set a property by QName, after multiname resolution and all other
-    /// considerations have been taken.
+    /// Set a local property of the object. The Multiname should always be public.
     ///
-    /// This required method is only intended to be called by other TObject
-    /// methods.
+    /// This skips class field lookups and looks at:
+    /// - object-specific storage (like arrays)
+    /// - Object dynamic properties
     fn set_property_local(
         self,
         name: &Multiname<'gc>,
@@ -181,6 +184,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Set a property by Multiname lookup.
+    ///
+    /// This method should not be overridden.
     ///
     /// This corresponds directly with the AVM2 operation `setproperty`, with
     /// the exception that it does not special-case object lookups on
@@ -211,11 +216,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    /// Initialize a property by QName, after multiname resolution and all
-    /// other considerations have been taken.
+    /// Init a local property of the object. The Multiname should always be public.
     ///
-    /// This required method is only intended to be called by other TObject
-    /// methods.
+    /// This skips class field lookups and looks at:
+    /// - object-specific storage (like arrays)
+    /// - Object dynamic properties
+    ///
+    /// This should be effectively equivalent to set_property_local,
+    /// as "init" is a concept specific to class const fields.
     fn init_property_local(
         self,
         name: &Multiname<'gc>,
@@ -227,6 +235,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Initialize a property by Multiname lookup.
+    ///
+    /// This method should not be overridden.
     ///
     /// This corresponds directly with the AVM2 operation `initproperty`.
     fn init_property(
@@ -253,21 +263,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
     }
 
-    // Note: normally this would just call into ScriptObjectData::call_property_local
-    // but because calling into ScriptObjectData borrows it for entire duration,
-    // we run a risk of a double borrow if the inner call borrows again.
+
+    /// Call a local property of the object. The Multiname should always be public.
+    ///
+    /// This skips class field lookups and looks at:
+    /// - object-specific storage (like arrays)
+    /// - Object dynamic properties
+    /// - prototype chain
     fn call_property_local(
         self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
+        // Note: normally this would just call into ScriptObjectData::call_property_local
+        // but because calling into ScriptObjectData borrows it for entire duration,
+        // we run a risk of a double borrow if the inner call borrows again.
         let result = self.base().get_property_local(multiname, activation)?
             .coerce_to_object(activation)?;
         result.call(Some(self.into()), arguments, activation)
     }
 
     /// Call a named property on the object.
+    ///
+    /// This method should not be overridden.
     ///
     /// This corresponds directly to the `callproperty` operation in AVM2.
     #[allow(unused_mut)]
