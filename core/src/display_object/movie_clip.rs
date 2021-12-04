@@ -276,11 +276,11 @@ impl<'gc> MovieClip<'gc> {
             TagCode::DefineBitsJpeg3 => self
                 .0
                 .write(context.gc_context)
-                .define_bits_jpeg_3(context, reader, tag_len),
+                .define_bits_jpeg_3_or_4(context, reader, tag_len, 3),
             TagCode::DefineBitsJpeg4 => self
                 .0
                 .write(context.gc_context)
-                .define_bits_jpeg_4(context, reader, tag_len),
+                .define_bits_jpeg_3_or_4(context, reader, tag_len, 4),
             TagCode::DefineBitsLossless => self
                 .0
                 .write(context.gc_context)
@@ -2401,7 +2401,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let bitmap_info = context
             .renderer
             .register_bitmap_png(&define_bits_lossless)?;
-        let bitmap = crate::display_object::Bitmap::new(
+        let bitmap = Bitmap::new(
             context,
             define_bits_lossless.id,
             bitmap_info.handle,
@@ -2607,7 +2607,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 .library_for_movie_mut(self.movie())
                 .jpeg_tables(),
         )?;
-        let bitmap = crate::display_object::Bitmap::new(
+        let bitmap = Bitmap::new(
             context,
             id,
             bitmap_info.handle,
@@ -2634,40 +2634,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let mut jpeg_data = Vec::with_capacity(data_len);
         reader.get_mut().read_to_end(&mut jpeg_data)?;
         let bitmap_info = context.renderer.register_bitmap_jpeg_2(&jpeg_data)?;
-        let bitmap = crate::display_object::Bitmap::new(
-            context,
-            id,
-            bitmap_info.handle,
-            bitmap_info.width,
-            bitmap_info.height,
-        );
-        context
-            .library
-            .library_for_movie_mut(self.movie())
-            .register_character(id, Character::Bitmap(bitmap));
-        Ok(())
-    }
-
-    #[inline]
-    fn define_bits_jpeg_3(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
-    ) -> DecodeResult {
-        use std::io::Read;
-        let id = reader.read_u16()?;
-        let jpeg_len = reader.read_u32()? as usize;
-        let alpha_len = tag_len
-            .checked_sub(jpeg_len + 6)
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
-        let mut jpeg_data = vec![0; jpeg_len];
-        reader.get_mut().read_exact(&mut jpeg_data)?;
-        let mut alpha_data = vec![0; alpha_len];
-        reader.get_mut().read_exact(&mut alpha_data)?;
-        let bitmap_info = context
-            .renderer
-            .register_bitmap_jpeg_3_or_4(&jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,
@@ -2683,16 +2649,19 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
-    fn define_bits_jpeg_4(
+    fn define_bits_jpeg_3_or_4(
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
+        version: u8,
     ) -> DecodeResult {
         use std::io::Read;
         let id = reader.read_u16()?;
         let jpeg_len = reader.read_u32()? as usize;
-        let _deblocking = reader.read_u16()?;
+        if version == 4 {
+            let _deblocking = reader.read_u16()?;
+        }
         let alpha_len = tag_len
             .checked_sub(jpeg_len + 6)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::Other, "Invalid jpeg length"))?;
