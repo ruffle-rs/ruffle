@@ -1,0 +1,4 @@
+function Function() {}
+undefined
+undefined
+undefined

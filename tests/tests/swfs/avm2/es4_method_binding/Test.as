@@ -34,5 +34,3 @@ y.test_proto_method.call(x);
 	trace("Hi");
 	trace(this);
 }).call.call();
-
-trace(Function.prototype.call.call());

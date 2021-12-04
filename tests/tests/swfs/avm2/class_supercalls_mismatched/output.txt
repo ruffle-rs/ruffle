@@ -12,10 +12,6 @@
 //(Evil.b get)
 // (Base.b_base set with 20)
 20
-//e.c = 14
-//(Evil.c set with 14)
-// (Base.c_base get)
-14
 //e.d()
 //(Base.d_base called)
 // (Base.d_base closure called)

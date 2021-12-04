@@ -4,3 +4,5 @@ var y: ES4Class
 Using prototype method...
 var y: ES4Class
 var x: ES4Class
+Hi
+[object global]
