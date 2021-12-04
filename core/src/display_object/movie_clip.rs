@@ -2667,7 +2667,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader.get_mut().read_exact(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
+            .register_bitmap_jpeg_3_or_4(&jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,
@@ -2702,7 +2702,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader.get_mut().read_exact(&mut alpha_data)?;
         let bitmap_info = context
             .renderer
-            .register_bitmap_jpeg_3(&jpeg_data, &alpha_data)?;
+            .register_bitmap_jpeg_3_or_4(&jpeg_data, &alpha_data)?;
         let bitmap = Bitmap::new(
             context,
             id,
