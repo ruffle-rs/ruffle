@@ -15,6 +15,9 @@ pub enum Property {
     Slot {
         slot_id: u32,
     },
+    ConstSlot {
+        slot_id: u32,
+    },
 }
 
 impl Property {
@@ -32,5 +35,9 @@ impl Property {
 
     pub fn new_slot(slot_id: u32) -> Self {
         Property::Slot { slot_id }
+    }
+
+    pub fn new_const_slot(slot_id: u32) -> Self {
+        Property::ConstSlot { slot_id }
     }
 }

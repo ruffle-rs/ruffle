@@ -231,7 +231,15 @@ impl<'gc> VTable<'gc> {
                         }
                     } as u32;
 
-                    resolved_traits.insert(trait_data.name(), Property::new_slot(new_slot_id));
+                    let new_prop = match trait_data.kind() {
+                        TraitKind::Slot{..} | TraitKind::Function{..}
+                            => Property::new_slot(new_slot_id),
+                        TraitKind::Const{..} | TraitKind::Class {..}
+                            => Property::new_const_slot(new_slot_id),
+                        _ => unreachable!(),
+                    };
+
+                    resolved_traits.insert(trait_data.name(), new_prop);
                 }
             }
         }
