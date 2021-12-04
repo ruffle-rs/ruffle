@@ -26,7 +26,7 @@ num-derive = "0.3"
 quick-xml = { git = "https://github.com/ruffle-rs/quick-xml", rev = "8496365ec1412eb5ba5de350937b6bce352fa0ba" }
 downcast-rs = "1.2.0"
 url = "2.2.2"
-weak-table = "0.3.0"
+weak-table = "0.3.2"
 percent-encoding = "2.1.0"
 thiserror = "1.0"
 chrono = "0.4"
