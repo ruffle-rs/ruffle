@@ -1,13 +1,13 @@
 //! Vector storage object
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname};
+use crate::avm2::names::Multiname;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::string::AvmString;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -179,11 +179,16 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<bool, Error> {
         if name.contains_public_namespace()
             && name.local_name().is_some()
-            && name.local_name().unwrap().parse::<usize>().is_ok() {
+            && name.local_name().unwrap().parse::<usize>().is_ok()
+        {
             return Ok(true);
         }
 
-        Ok(self.0.write(activation.context.gc_context).base.delete_property_local(name))
+        Ok(self
+            .0
+            .write(activation.context.gc_context)
+            .base
+            .delete_property_local(name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {

@@ -170,7 +170,11 @@ pub fn specialized_class_init<'gc>(
                 .into(),
                 activation,
             )?;
-            proto.set_local_property_is_enumerable(activation.context.gc_context, (*pubname).into(), false)?;
+            proto.set_local_property_is_enumerable(
+                activation.context.gc_context,
+                (*pubname).into(),
+                false,
+            )?;
         }
     }
 

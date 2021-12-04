@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::function::Executable;
 use crate::avm2::method::Method;
-use crate::avm2::names::{QName};
+use crate::avm2::names::QName;
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObjectData};
 use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
@@ -101,7 +101,11 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Object<'gc>, Error> {
-        let proto = activation.avm2().classes().object.construct(activation, &[])?;
+        let proto = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])?;
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
@@ -244,7 +248,7 @@ impl<'gc> ClassObject<'gc> {
             class.read().instance_traits(),
             self.instance_scope(),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            activation
+            activation,
         )?;
 
         // class vtable == class traits + Class instance traits
@@ -253,7 +257,7 @@ impl<'gc> ClassObject<'gc> {
             class.read().class_traits(),
             self.class_scope(),
             Some(self.instance_of().unwrap().instance_vtable()),
-            activation
+            activation,
         )?;
 
         self.link_interfaces(activation)?;
@@ -265,7 +269,8 @@ impl<'gc> ClassObject<'gc> {
 
     fn install_class_vtable_and_slots(&mut self, activation: &mut Activation<'_, 'gc, '_>) {
         self.set_vtable(activation.context.gc_context, self.class_vtable());
-        self.base_mut(activation.context.gc_context).install_instance_slots();
+        self.base_mut(activation.context.gc_context)
+            .install_instance_slots();
     }
 
     /// Link this class to a prototype.
@@ -278,12 +283,12 @@ impl<'gc> ClassObject<'gc> {
         class_proto.set_property_local(
             &Multiname::public("constructor"),
             self.into(),
-            activation
+            activation,
         )?;
         class_proto.set_local_property_is_enumerable(
             activation.context.gc_context,
             "constructor".into(),
-            false
+            false,
         )?;
 
         Ok(())
@@ -347,7 +352,7 @@ impl<'gc> ClassObject<'gc> {
                         self.instance_vtable().copy_property_for_interface(
                             activation.context.gc_context,
                             public_name,
-                            interface_trait.name()
+                            interface_trait.name(),
                         );
                     }
                 }
@@ -533,9 +538,10 @@ impl<'gc> ClassObject<'gc> {
             )
             .into());
         }
-        if let Some(Property::Method{disp_id, ..}) = property {
+        if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
-            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let (superclass_object, method) =
+                self.instance_vtable().get_full_method(disp_id).unwrap();
             let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
@@ -589,9 +595,13 @@ impl<'gc> ClassObject<'gc> {
             )
             .into());
         }
-        if let Some(Property::Virtual{get: Some(disp_id), ..}) = property {
+        if let Some(Property::Virtual {
+            get: Some(disp_id), ..
+        }) = property
+        {
             // todo: handle errors
-            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let (superclass_object, method) =
+                self.instance_vtable().get_full_method(disp_id).unwrap();
             let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
@@ -647,9 +657,13 @@ impl<'gc> ClassObject<'gc> {
             )
             .into());
         }
-        if let Some(Property::Virtual{set: Some(disp_id), ..}) = property {
+        if let Some(Property::Virtual {
+            set: Some(disp_id), ..
+        }) = property
+        {
             // todo: handle errors
-            let (superclass_object, method) = self.instance_vtable().get_full_method(disp_id).unwrap();
+            let (superclass_object, method) =
+                self.instance_vtable().get_full_method(disp_id).unwrap();
             let scope = superclass_object.unwrap().class_scope();
             let callee = FunctionObject::from_method(
                 activation,
@@ -778,8 +792,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         let read = self.0.read();
 
-        read.base.has_own_dynamic_property(name)
-            || self.class_vtable().has_trait(name)
+        read.base.has_own_dynamic_property(name) || self.class_vtable().has_trait(name)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
@@ -891,8 +904,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             Some(class_object),
             parameterized_class.read().instance_traits(),
             class_object.instance_scope(),
-            class_object.superclass_object().map(|cls| cls.instance_vtable()),
-            activation
+            class_object
+                .superclass_object()
+                .map(|cls| cls.instance_vtable()),
+            activation,
         )?;
 
         // class vtable == class traits + Class instance traits
@@ -901,7 +916,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             parameterized_class.read().class_traits(),
             class_object.class_scope(),
             Some(class_object.instance_of().unwrap().instance_vtable()),
-            activation
+            activation,
         )?;
 
         class_object.link_prototype(activation, class_proto)?;

@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::names::{Multiname};
+use crate::avm2::names::Multiname;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -153,13 +153,20 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    self.0.write(activation.context.gc_context).storage.delete(index);
+                    self.0
+                        .write(activation.context.gc_context)
+                        .storage
+                        .delete(index);
                     return Ok(true);
                 }
             }
         }
 
-        Ok(self.0.write(activation.context.gc_context).base.delete_property_local(name))
+        Ok(self
+            .0
+            .write(activation.context.gc_context)
+            .base
+            .delete_property_local(name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {

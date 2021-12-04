@@ -251,7 +251,12 @@ impl<'gc> SystemClasses<'gc> {
     /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
-    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>, global: ClassObject<'gc>) -> Self {
+    fn new(
+        object: ClassObject<'gc>,
+        function: ClassObject<'gc>,
+        class: ClassObject<'gc>,
+        global: ClassObject<'gc>,
+    ) -> Self {
         SystemClasses {
             object,
             function,
@@ -505,8 +510,12 @@ pub fn load_player_globals<'gc>(
         ScriptObject::bare_object(mc),
     ));
 
-    activation.context.avm2.system_classes =
-        Some(SystemClasses::new(object_class, fn_class, class_class, global_class));
+    activation.context.avm2.system_classes = Some(SystemClasses::new(
+        object_class,
+        fn_class,
+        class_class,
+        global_class,
+    ));
 
     // Our activation environment is now functional enough to finish
     // initializing the core class weave. The order of initialization shouldn't

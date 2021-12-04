@@ -5,9 +5,9 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
-use crate::avm2::scope::ScopeChain;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -370,7 +370,6 @@ impl<'gc> Script<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         let mut write = self.0.write(context.gc_context);
-
 
         if !write.initialized {
             write.initialized = true;

@@ -66,7 +66,7 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         number_proto.set_property_local(
             &Multiname::public("toFixed"),
@@ -78,7 +78,7 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         number_proto.set_property_local(
             &Multiname::public("toPrecision"),
@@ -90,7 +90,7 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         number_proto.set_property_local(
             &Multiname::public("toString"),
@@ -102,7 +102,7 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         number_proto.set_property_local(
             &Multiname::public("valueOf"),
@@ -114,7 +114,7 @@ fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         number_proto.set_local_property_is_enumerable(gc_context, "toExponential".into(), false)?;
         number_proto.set_local_property_is_enumerable(gc_context, "toFixed".into(), false)?;

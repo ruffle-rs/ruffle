@@ -241,10 +241,7 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     let object_proto = activation.avm2().prototypes().object;
     object_proto
-        .get_property(
-            &QName::dynamic_name("toString").into(),
-            activation,
-        )?
+        .get_property(&QName::dynamic_name("toString").into(), activation)?
         .coerce_to_object(activation)?
         .call(this, args, activation)
 }

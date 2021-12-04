@@ -1,16 +1,16 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname};
-use crate::avm2::object::{FunctionObject, ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::names::Multiname;
+use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::vtable::VTable;
+use crate::avm2::Error;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use std::collections::hash_map::Entry;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::collections::hash_map::Entry;
 use std::fmt::Debug;
 
 /// A class instance allocator that allocates `ScriptObject`s.
@@ -153,19 +153,19 @@ impl<'gc> ScriptObjectData<'gc> {
 
         let value = self.values.get(&local_name);
 
-
         if let Some(value) = value {
             return Ok(value.clone());
         } else {
             if let Some(proto) = self.proto() {
                 return proto.get_property_local(multiname, activation);
-            }    
+            }
         }
 
         // Special case: Unresolvable properties on dynamic classes are treated
         // as dynamic properties that have not yet been set, and yield
         // `undefined`
-        if self.instance_of()
+        if self
+            .instance_of()
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
@@ -181,11 +181,14 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        if self.instance_of()
+        if self
+            .instance_of()
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            return Err(format!("Cannot set undefined property {:?}", multiname.local_name()).into());
+            return Err(
+                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
+            );
         }
 
         if !multiname.contains_public_namespace() {
@@ -198,7 +201,9 @@ impl<'gc> ScriptObjectData<'gc> {
         };
 
         match self.values.entry(local_name) {
-            Entry::Occupied(mut o) => { o.insert(value); },
+            Entry::Occupied(mut o) => {
+                o.insert(value);
+            }
             Entry::Vacant(v) => {
                 //TODO: Not all classes are dynamic like this
                 self.enumerants.push(local_name);
@@ -281,11 +286,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
     /// Set a slot by its index. This does extend the array if needed.
     /// This should only be used during AVM initialization, not at runtime.
-    pub fn install_const_slot_late(
-        &mut self,
-        id: u32,
-        value: Value<'gc>,
-    ) {
+    pub fn install_const_slot_late(&mut self, id: u32, value: Value<'gc>) {
         if self.slots.len() < id as usize + 1 {
             self.slots.resize(id as usize + 1, Value::Undefined);
         }
@@ -348,10 +349,7 @@ impl<'gc> ScriptObjectData<'gc> {
         // sentinel.
         let true_index = (index as usize).checked_sub(1)?;
 
-        self.enumerants
-            .get(true_index)
-            .cloned()
-            .map(|q| q.into())
+        self.enumerants.get(true_index).cloned().map(|q| q.into())
     }
 
     pub fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
@@ -398,8 +396,6 @@ impl<'gc> ScriptObjectData<'gc> {
 
         *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
     }
-
-
 
     /// Get the class object for this object, if it has one.
     pub fn instance_of(&self) -> Option<ClassObject<'gc>> {

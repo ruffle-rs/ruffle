@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{TObject, Object};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
@@ -59,9 +59,7 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[
-        ("prototype", Some(prototype), None),
-    ];
+    )] = &[("prototype", Some(prototype), None)];
     write.define_public_builtin_instance_properties(gc_context, PUBLIC_INSTANCE_PROPERTIES);
 
     class_class

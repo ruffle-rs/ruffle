@@ -44,7 +44,7 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
         function_proto.set_property_local(
             &Multiname::public("apply"),
@@ -56,10 +56,18 @@ pub fn class_init<'gc>(
                 Some(this_class),
             )
             .into(),
-            activation
+            activation,
         )?;
-        function_proto.set_local_property_is_enumerable(activation.context.gc_context, "call".into(), false)?;
-        function_proto.set_local_property_is_enumerable(activation.context.gc_context, "apply".into(), false)?;
+        function_proto.set_local_property_is_enumerable(
+            activation.context.gc_context,
+            "call".into(),
+            false,
+        )?;
+        function_proto.set_local_property_is_enumerable(
+            activation.context.gc_context,
+            "apply".into(),
+            false,
+        )?;
     }
     Ok(Value::Undefined)
 }
@@ -135,9 +143,9 @@ fn prototype<'gc>(
     if let Some(this) = this {
         if let Some(function) = this.as_function_object() {
             if let Some(proto) = function.prototype() {
-                return Ok(proto.into())
+                return Ok(proto.into());
             } else {
-                return Ok(Value::Undefined)
+                return Ok(Value::Undefined);
             }
         }
     }
@@ -174,10 +182,7 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
     let mut write = function_class.write(gc_context);
 
     // Fixed traits (in AS3 namespace)
-    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("call", call),
-        ("apply", apply),
-    ];
+    const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("call", call), ("apply", apply)];
     write.define_as3_builtin_instance_methods(gc_context, AS3_INSTANCE_METHODS);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
