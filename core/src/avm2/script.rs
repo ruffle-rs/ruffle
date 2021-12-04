@@ -403,7 +403,7 @@ impl<'gc> Script<'gc> {
                             null_activation.context.gc_context,
                             Some(slot_id),
                             newtrait.name(),
-                            trait_to_default_value(scope, newtrait, &mut null_activation).unwrap()
+                            trait_to_default_value(scope, newtrait, &mut null_activation)
                         );
                     }
                 }

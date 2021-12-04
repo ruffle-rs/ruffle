@@ -37,7 +37,6 @@ mod property_map;
 mod regexp;
 mod scope;
 mod script;
-mod slot;
 mod string;
 mod traits;
 mod value;

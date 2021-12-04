@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::names::{Multiname};
 use crate::avm2::object::{FunctionObject, ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::slot::Slot;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::vtable::VTable;
@@ -42,7 +41,7 @@ pub struct ScriptObjectData<'gc> {
     values: FnvHashMap<AvmString<'gc>, Value<'gc>>,
 
     /// Slots stored on this object.
-    slots: Vec<Slot<'gc>>,
+    slots: Vec<Value<'gc>>,
 
     /// Methods stored on this object.
     bound_methods: Vec<Option<FunctionObject<'gc>>>,
@@ -238,7 +237,6 @@ impl<'gc> ScriptObjectData<'gc> {
             .get(id as usize)
             .cloned()
             .ok_or_else(|| format!("Slot index {} out of bounds!", id).into())
-            .map(|slot| slot.get().unwrap_or(Value::Undefined))
     }
 
     /// Set a slot by its index.
@@ -249,7 +247,8 @@ impl<'gc> ScriptObjectData<'gc> {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
-            slot.set(value)
+            *slot = value;
+            Ok(())
         } else {
             Err(format!("Slot index {} out of bounds!", id).into())
         }
@@ -263,7 +262,8 @@ impl<'gc> ScriptObjectData<'gc> {
         _mc: MutationContext<'gc, '_>,
     ) -> Result<(), Error> {
         if let Some(slot) = self.slots.get_mut(id as usize) {
-            slot.init(value)
+            *slot = value;
+            Ok(())
         } else {
             Err(format!("Slot index {} out of bounds!", id).into())
         }
@@ -276,9 +276,9 @@ impl<'gc> ScriptObjectData<'gc> {
     ) {
         for value in slots {
             if let Some(value) = value {
-                self.slots.push(Slot::new(value));
+                self.slots.push(value);
             } else {
-                self.slots.push(Default::default())
+                self.slots.push(Value::Undefined)
             }
         }
     }
@@ -291,10 +291,10 @@ impl<'gc> ScriptObjectData<'gc> {
         value: Value<'gc>,
     ) {
         if self.slots.len() < id as usize + 1 {
-            self.slots.resize_with(id as usize + 1, Default::default);
+            self.slots.resize(id as usize + 1, Value::Undefined);
         }
         if let Some(slot) = self.slots.get_mut(id as usize) {
-            *slot = Slot::new(value);
+            *slot = value;
         }
     }
 
@@ -395,14 +395,12 @@ impl<'gc> ScriptObjectData<'gc> {
 
     /// Install a method into the object.
     pub fn install_bound_method(&mut self, disp_id: u32, function: FunctionObject<'gc>) {
-        if disp_id > 0 {
-            if self.bound_methods.len() <= disp_id as usize {
-                self.bound_methods
-                    .resize_with(disp_id as usize + 1, Default::default);
-            }
-
-            *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
+        if self.bound_methods.len() <= disp_id as usize {
+            self.bound_methods
+                .resize_with(disp_id as usize + 1, Default::default);
         }
+
+        *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
     }
 
 
