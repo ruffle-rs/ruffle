@@ -1120,19 +1120,31 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         Ok(FrameControl::Continue)
     }
 
+    #[allow(unused_variables)]
     fn op_call_method(
         &mut self,
         index: Index<AbcMethod>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
-        let args = self.context.avm2.pop_args(arg_count);
-        let receiver = self.context.avm2.pop().coerce_to_object(self)?;
+        // The entire implementation of VTable assumes that
+        // call_method is never encountered. (see the long comment there)
+        // This was also the conlusion from analysing avmplus behavior - they
+        // unconditionally VerifyError upon noticing it.
+        // If we ever reach here, let's immediately panic instead of erroring,
+        // so we get an issue report ASAP.
+        panic!("Call_method is not supported");
 
-        let value = receiver.call_method(index.0, &args, self)?;
+        #[allow(unreachable_code)]
+        {
+            let args = self.context.avm2.pop_args(arg_count);
+            let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        self.context.avm2.push(value);
+            let value = receiver.call_method(index.0, &args, self)?;
 
-        Ok(FrameControl::Continue)
+            self.context.avm2.push(value);
+
+            Ok(FrameControl::Continue)
+        }
     }
 
     fn op_call_property(
