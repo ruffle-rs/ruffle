@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
-use crate::avm2::names::{Multiname};
+use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -198,7 +198,11 @@ impl<'gc> ScopeStack<'gc> {
     /// The `global` parameter indicates whether we are on global$init (script initializer).
     /// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
     /// searched for dynamic properties.
-    pub fn find(&self, multiname: &Multiname<'gc>, global: bool) -> Result<Option<Object<'gc>>, Error> {
+    pub fn find(
+        &self,
+        multiname: &Multiname<'gc>,
+        global: bool,
+    ) -> Result<Option<Object<'gc>>, Error> {
         for (depth, scope) in self.scopes.iter().enumerate().rev() {
             let values = scope.values();
 

@@ -151,7 +151,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(FunctionObject(GcCell::allocate(
             activation.context.gc_context,
             // todo: should this be None?
-            FunctionObjectData { base, exec, prototype: None },
+            FunctionObjectData {
+                base,
+                exec,
+                prototype: None,
+            },
         ))
         .into())
     }

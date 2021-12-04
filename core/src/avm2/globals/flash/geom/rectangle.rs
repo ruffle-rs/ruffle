@@ -27,10 +27,7 @@ pub fn create_rectangle<'gc>(
 macro_rules! get_prop {
     ($this:expr, $activation:expr, $name: expr) => {
         $this
-            .get_property(
-                &QName::new(Namespace::public(), $name).into(),
-                $activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), $name).into(), $activation)?
             .coerce_to_number($activation)
     };
 }
@@ -454,18 +451,10 @@ pub fn copy_from<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(rect) = args.get(0) {
         let rect = rect.coerce_to_object(activation)?;
-        let x = rect.get_property(
-            &QName::new(Namespace::public(), "x").into(),
-            activation,
-        )?;
-        let y = rect.get_property(
-            &QName::new(Namespace::public(), "y").into(),
-            activation,
-        )?;
-        let width = rect.get_property(
-            &QName::new(Namespace::public(), "width").into(),
-            activation,
-        )?;
+        let x = rect.get_property(&QName::new(Namespace::public(), "x").into(), activation)?;
+        let y = rect.get_property(&QName::new(Namespace::public(), "y").into(), activation)?;
+        let width =
+            rect.get_property(&QName::new(Namespace::public(), "width").into(), activation)?;
         let height = rect.get_property(
             &QName::new(Namespace::public(), "height").into(),
             activation,
@@ -752,22 +741,13 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let x = this
-            .get_property(
-                &QName::new(Namespace::public(), "x").into(),
-                activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), "x").into(), activation)?
             .coerce_to_string(activation)?;
         let y = this
-            .get_property(
-                &QName::new(Namespace::public(), "y").into(),
-                activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), "y").into(), activation)?
             .coerce_to_string(activation)?;
         let width = this
-            .get_property(
-                &QName::new(Namespace::public(), "width").into(),
-                activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), "width").into(), activation)?
             .coerce_to_string(activation)?;
         let height = this
             .get_property(

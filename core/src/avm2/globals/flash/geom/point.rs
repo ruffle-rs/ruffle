@@ -33,16 +33,10 @@ fn coords<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<(f64, f64), Error> {
     let x = this
-        .get_property(
-            &QName::new(Namespace::public(), "x").into(),
-            activation,
-        )?
+        .get_property(&QName::new(Namespace::public(), "x").into(), activation)?
         .coerce_to_number(activation)?;
     let y = this
-        .get_property(
-            &QName::new(Namespace::public(), "y").into(),
-            activation,
-        )?
+        .get_property(&QName::new(Namespace::public(), "y").into(), activation)?
         .coerce_to_number(activation)?;
     Ok((x, y))
 }
@@ -324,16 +318,10 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let x = this
-            .get_property(
-                &QName::new(Namespace::public(), "x").into(),
-                activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), "x").into(), activation)?
             .coerce_to_string(activation)?;
         let y = this
-            .get_property(
-                &QName::new(Namespace::public(), "y").into(),
-                activation,
-            )?
+            .get_property(&QName::new(Namespace::public(), "y").into(), activation)?
             .coerce_to_string(activation)?;
         return Ok(AvmString::new_utf8(
             activation.context.gc_context,

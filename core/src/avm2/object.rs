@@ -8,12 +8,12 @@ use crate::avm2::domain::Domain;
 use crate::avm2::events::{DispatchList, Event};
 use crate::avm2::function::Executable;
 use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::property::Property;
-use crate::avm2::Error;
 use crate::avm2::vtable::VTable;
+use crate::avm2::Error;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
@@ -141,14 +141,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id})
-                => self.base().get_slot(slot_id),
-            Some(Property::Method{disp_id}) => {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                self.base().get_slot(slot_id)
+            }
+            Some(Property::Method { disp_id }) => {
                 if let Some(bound_method) = self.base().get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
                 let vtable = self.vtable().unwrap();
-                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), disp_id)
+                if let Some(bound_method) =
+                    vtable.make_bound_method(activation, self.into(), disp_id)
                 {
                     self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
                     Ok(bound_method.into())
@@ -156,15 +158,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     Err("Method not found".into())
                 }
             }
-            Some(Property::Virtual{get: Some(get), ..}) => {
+            Some(Property::Virtual { get: Some(get), .. }) => {
                 self.call_method(get, &[], activation)
             }
-            Some(Property::Virtual{get: None, ..}) => {
+            Some(Property::Virtual { get: None, .. }) => {
                 Err("Illegal read of write-only property".into())
             }
-            None => {
-                self.get_property_local(multiname, activation)
-            }
+            None => self.get_property_local(multiname, activation),
         }
     }
 
@@ -197,22 +197,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id}) => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
-            Some(Property::ConstSlot{..}) => {
-                Err("Illegal write to read-only property".into())
-            }
-            Some(Property::Method{..}) => {
-                Err("Cannot assign to a method".into())
-            }
-            Some(Property::Virtual{set: Some(set), ..}) => {
+            Some(Property::Slot { slot_id }) => self
+                .base_mut(activation.context.gc_context)
+                .set_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::ConstSlot { .. }) => Err("Illegal write to read-only property".into()),
+            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::Virtual{set: None, ..}) => {
+            Some(Property::Virtual { set: None, .. }) => {
                 Err("Illegal write to read-only property".into())
             }
-            None => {
-                self.set_property_local(multiname, value, activation)
-            }
+            None => self.set_property_local(multiname, value, activation),
         }
     }
 
@@ -246,23 +242,19 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id})
-                => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
-            Some(Property::Method{..}) => {
-                Err("Cannot assign to a method".into())
-            }
-            Some(Property::Virtual{set: Some(set), ..}) => {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => self
+                .base_mut(activation.context.gc_context)
+                .set_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::Method { .. }) => Err("Cannot assign to a method".into()),
+            Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::Virtual{set: None, ..}) => {
+            Some(Property::Virtual { set: None, .. }) => {
                 Err("Illegal write to read-only property".into())
             }
-            None => {
-                self.init_property_local(multiname, value, activation)
-            }
+            None => self.init_property_local(multiname, value, activation),
         }
     }
-
 
     /// Call a local property of the object. The Multiname should always be public.
     ///
@@ -279,7 +271,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Note: normally this would just call into ScriptObjectData::call_property_local
         // but because calling into ScriptObjectData borrows it for entire duration,
         // we run a risk of a double borrow if the inner call borrows again.
-        let result = self.base().get_property_local(multiname, activation)?
+        let result = self
+            .base()
+            .get_property_local(multiname, activation)?
             .coerce_to_object(activation)?;
         result.call(Some(self.into()), arguments, activation)
     }
@@ -297,15 +291,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id}) => {
-                let obj = self.base().get_slot(slot_id)?
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                let obj = self
+                    .base()
+                    .get_slot(slot_id)?
                     .coerce_to_object(activation)?;
                 obj.call(Some(self.into()), arguments, activation)
             }
-            Some(Property::Method{disp_id}) => {
+            Some(Property::Method { disp_id }) => {
                 let vtable = self.vtable().unwrap();
-                if let Some((superclass, method)) = vtable.get_full_method(disp_id)
-                {
+                if let Some((superclass, method)) = vtable.get_full_method(disp_id) {
                     if !method.needs_arguments_object() {
                         let scope = superclass.unwrap().instance_scope();
                         Executable::from_method(method, scope, None, superclass).exec(
@@ -318,25 +313,30 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         if let Some(bound_method) = self.base().get_bound_method(disp_id) {
                             return bound_method.call(Some(self.into()), arguments, activation);
                         }
-                        let bound_method = vtable.make_bound_method(activation, self.into(), disp_id).unwrap();
-                        self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
+                        let bound_method = vtable
+                            .make_bound_method(activation, self.into(), disp_id)
+                            .unwrap();
+                        self.install_bound_method(
+                            activation.context.gc_context,
+                            disp_id,
+                            bound_method,
+                        );
                         bound_method.call(Some(self.into()), arguments, activation)
                     }
                 } else {
                     Err("Method not found".into())
                 }
-            },
-            Some(Property::Virtual{get: Some(get), ..}) => {
-                let obj = self.call_method(get, &[], activation)?
+            }
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                let obj = self
+                    .call_method(get, &[], activation)?
                     .coerce_to_object(activation)?;
                 obj.call(Some(self.into()), arguments, activation)
             }
-            Some(Property::Virtual{get: None, ..}) => {
+            Some(Property::Virtual { get: None, .. }) => {
                 Err("Illegal read of write-only property".into())
             }
-            None => {
-                self.call_property_local(multiname, arguments, activation)
-            }
+            None => self.call_property_local(multiname, arguments, activation),
         }
     }
 
@@ -383,9 +383,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         if self.base().get_bound_method(id).is_none() {
             if let Some(vtable) = self.vtable() {
-                if let Some(bound_method) =
-                    vtable.make_bound_method(activation, self.into(), id)
-                {
+                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), id) {
                     self.install_bound_method(activation.context.gc_context, id, bound_method);
                 }
             }
@@ -459,15 +457,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<bool, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             None => {
-                if self.instance_of_class_definition()
+                if self
+                    .instance_of_class_definition()
                     .map(|c| c.read().is_sealed())
-                    .unwrap_or(false) {
+                    .unwrap_or(false)
+                {
                     Ok(false)
                 } else {
                     self.delete_property_local(activation, multiname)
                 }
-            },
-            _ => Ok(false)
+            }
+            _ => Ok(false),
         }
     }
 
@@ -578,7 +578,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.install_bound_method(disp_id, function)
     }
 
-
     /// Install a const trait on the global object.
     /// This should only ever be called on the `global` object, during initialization.
     fn install_const_late(
@@ -587,16 +586,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: QName<'gc>,
         value: Value<'gc>,
     ) {
-        let new_slot_id = self.vtable().unwrap().install_const_trait_late(mc, name, value.clone());
-        self.base_mut(mc).install_const_slot_late(new_slot_id, value);
+        let new_slot_id = self
+            .vtable()
+            .unwrap()
+            .install_const_trait_late(mc, name, value.clone());
+        self.base_mut(mc)
+            .install_const_slot_late(new_slot_id, value);
     }
 
-
-    fn install_instance_slots(
-        &mut self,
-        activation: &mut Activation<'_, 'gc, '_>,
-    ) {
-        self.base_mut(activation.context.gc_context).install_instance_slots();
+    fn install_instance_slots(&mut self, activation: &mut Activation<'_, 'gc, '_>) {
+        self.base_mut(activation.context.gc_context)
+            .install_instance_slots();
     }
 
     /// Call the object.
