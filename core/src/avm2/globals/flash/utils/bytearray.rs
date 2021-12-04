@@ -52,7 +52,6 @@ pub fn deserialize_value<'gc>(
             // Now lets add each element as a property
             for element in elements {
                 array.set_property(
-                    array,
                     &QName::new(
                         Namespace::public(),
                         AvmString::new_utf8(activation.context.gc_context, element.name()),
@@ -69,7 +68,6 @@ pub fn deserialize_value<'gc>(
             let mut obj = obj_class.construct(activation, &[])?;
             for property in properties {
                 obj.set_property(
-                    obj,
                     &QName::new(
                         Namespace::public(),
                         AvmString::new_utf8(activation.context.gc_context, property.name()),

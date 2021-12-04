@@ -66,12 +66,11 @@ pub fn class_init<'gc>(
     let this = this.unwrap();
     let scope = activation.create_scopechain();
     let mut qname_proto = this
-        .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+        .get_property(&QName::dynamic_name("prototype").into(), activation)?
         .coerce_to_object(activation)?;
     let this_class = this.as_class_object().unwrap();
 
     qname_proto.set_property(
-        qname_proto,
         &QName::dynamic_name("toString").into(),
         FunctionObject::from_method(
             activation,
@@ -85,7 +84,6 @@ pub fn class_init<'gc>(
     )?;
 
     qname_proto.set_property(
-        qname_proto,
         &QName::dynamic_name("valueOf").into(),
         FunctionObject::from_method(
             activation,

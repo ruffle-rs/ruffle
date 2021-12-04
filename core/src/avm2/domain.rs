@@ -149,7 +149,7 @@ impl<'gc> Domain<'gc> {
             .ok_or_else(|| format!("MovieClip Symbol {} does not exist", name.local_name()))?;
         let globals = script.globals(&mut activation.context)?;
 
-        globals.get_property(globals, &name.into(), activation)
+        globals.get_property(&name.into(), activation)
     }
 
     /// Export a definition from a script into the current application domain.

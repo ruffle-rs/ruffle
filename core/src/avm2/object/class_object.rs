@@ -276,7 +276,6 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<(), Error> {
         self.0.write(activation.context.gc_context).prototype = Some(class_proto);
         class_proto.set_property_local(
-            class_proto,
             &Multiname::public("constructor"),
             self.into(),
             activation
@@ -548,7 +547,7 @@ impl<'gc> ClassObject<'gc> {
 
             callee.call(Some(reciever), arguments, activation)
         } else {
-            reciever.call_property(reciever, multiname, arguments, activation)
+            reciever.call_property(multiname, arguments, activation)
         }
     }
 
@@ -604,7 +603,7 @@ impl<'gc> ClassObject<'gc> {
 
             callee.call(Some(reciever), &[], activation)
         } else {
-            reciever.get_property(reciever, multiname, activation)
+            reciever.get_property(multiname, activation)
         }
     }
 
@@ -664,7 +663,7 @@ impl<'gc> ClassObject<'gc> {
 
             Ok(())
         } else {
-            reciever.set_property(reciever, multiname, value, activation)
+            reciever.set_property(multiname, value, activation)
         }
     }
 

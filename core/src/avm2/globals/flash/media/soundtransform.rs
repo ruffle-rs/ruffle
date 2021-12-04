@@ -30,13 +30,11 @@ pub fn instance_init<'gc>(
             .coerce_to_number(activation)?;
 
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "volume").into(),
             volume.into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "pan").into(),
             pan.into(),
             activation,
@@ -64,14 +62,12 @@ pub fn pan<'gc>(
     if let Some(this) = this {
         let left_to_right = this
             .get_property(
-                this,
                 &QName::new(Namespace::public(), "leftToRight").into(),
                 activation,
             )?
             .coerce_to_number(activation)?;
         let right_to_left = this
             .get_property(
-                this,
                 &QName::new(Namespace::public(), "rightToLeft").into(),
                 activation,
             )?
@@ -83,7 +79,6 @@ pub fn pan<'gc>(
 
         let left_to_left = this
             .get_property(
-                this,
                 &QName::new(Namespace::public(), "leftToLeft").into(),
                 activation,
             )?
@@ -109,25 +104,21 @@ pub fn set_pan<'gc>(
             .coerce_to_number(activation)?;
 
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "leftToLeft").into(),
             (1.0 - pan).sqrt().into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "rightToRight").into(),
             (1.0 + pan).sqrt().into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "leftToRight").into(),
             (0.0).into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "rightToLeft").into(),
             (0.0).into(),
             activation,

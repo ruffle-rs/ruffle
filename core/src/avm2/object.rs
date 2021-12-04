@@ -120,11 +120,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// methods.
     fn get_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        self.base().get_property_local(receiver, name, activation)
+        self.base().get_property_local(name, activation)
     }
 
     /// Retrieve a property by Multiname lookup.
@@ -135,7 +134,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     #[allow(unused_mut)] //Not unused.
     fn get_property(
         mut self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -147,7 +145,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     return Ok(bound_method.into());
                 }
                 let vtable = self.vtable().unwrap();
-                if let Some(bound_method) = vtable.make_bound_method(activation, receiver, disp_id)
+                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), disp_id)
                 {
                     self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
                     return Ok(bound_method.into());
@@ -161,7 +159,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Err("Illegal read of write-only property".into())
             }
             None => {
-                self.get_property_local(receiver, multiname, activation)
+                self.get_property_local(multiname, activation)
             }
         }
     }
@@ -173,13 +171,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// methods.
     fn set_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(activation.context.gc_context);
-        base.set_property_local(receiver, name, value, activation)
+        base.set_property_local(name, value, activation)
     }
 
     /// Set a property by Multiname lookup.
@@ -189,7 +186,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// dictionary structured objects.
     fn set_property(
         &mut self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -210,7 +206,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Err("Illegal write to read-only property".into())
             }
             None => {
-                self.set_property_local(receiver, multiname, value, activation)
+                self.set_property_local(multiname, value, activation)
             }
         }
     }
@@ -222,13 +218,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// methods.
     fn init_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         let mut base = self.base_mut(activation.context.gc_context);
-        base.init_property_local(receiver, name, value, activation)
+        base.init_property_local(name, value, activation)
     }
 
     /// Initialize a property by Multiname lookup.
@@ -236,7 +231,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This corresponds directly with the AVM2 operation `initproperty`.
     fn init_property(
         &mut self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -255,7 +249,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Err("Illegal write to read-only property".into())
             }
             None => {
-                self.init_property_local(receiver, multiname, value, activation)
+                self.init_property_local(multiname, value, activation)
             }
         }
     }
@@ -265,14 +259,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     // we run a risk of a double borrow if the inner call borrows again.
     fn call_property_local(
         self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        let result = self.base().get_property_local(receiver, multiname, activation)?
+        let result = self.base().get_property_local(multiname, activation)?
             .coerce_to_object(activation)?;
-        result.call(Some(receiver), arguments, activation)
+        result.call(Some(self.into()), arguments, activation)
     }
 
     /// Call a named property on the object.
@@ -281,7 +274,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     #[allow(unused_mut)]
     fn call_property(
         mut self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
@@ -306,11 +298,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                         );
                     } else {
                         if let Some(bound_method) = self.base().get_bound_method(disp_id) {
-                            return bound_method.call(Some(receiver), arguments, activation);
+                            return bound_method.call(Some(self.into()), arguments, activation);
                         }
-                        let bound_method = vtable.make_bound_method(activation, receiver, disp_id).unwrap();
+                        let bound_method = vtable.make_bound_method(activation, self.into(), disp_id).unwrap();
                         self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                        return bound_method.call(Some(receiver), arguments, activation);
+                        return bound_method.call(Some(self.into()), arguments, activation);
                     }
                 }
                 todo!("unreachable?")
@@ -318,13 +310,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             Some(Property::Virtual{get: Some(get), ..}) => {
                 let obj = self.call_method(get, &[], activation)?
                     .coerce_to_object(activation)?;
-                obj.call(Some(receiver), arguments, activation)
+                obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Virtual{get: None, ..}) => {
                 todo!("throw error")
             }
             None => {
-                self.call_property_local(receiver, multiname, arguments, activation)
+                self.call_property_local(multiname, arguments, activation)
             }
         }
     }
@@ -531,7 +523,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let name = self
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        self.get_property(self.into(), &QName::dynamic_name(name).into(), activation)
+        self.get_property(&QName::dynamic_name(name).into(), activation)
     }
 
     /// Determine if a property is currently enumerable.
@@ -635,7 +627,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
         let ctor = self
-            .get_property(self.into(), multiname, activation)?
+            .get_property(multiname, activation)?
             .coerce_to_object(activation)?;
 
         ctor.construct(activation, args)
@@ -736,7 +728,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         class: Object<'gc>,
     ) -> Result<bool, Error> {
         let type_proto = class
-            .get_property(class, &QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
 
         self.has_prototype_in_chain(type_proto)

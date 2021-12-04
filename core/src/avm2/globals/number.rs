@@ -52,14 +52,13 @@ fn class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let number_proto = this
-            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
         let this_class = this.as_class_object().unwrap();
 
         number_proto.set_property_local(
-            number_proto,
             &Multiname::public("toExponential"),
             FunctionObject::from_method(
                 activation,
@@ -72,7 +71,6 @@ fn class_init<'gc>(
             activation
         )?;
         number_proto.set_property_local(
-            number_proto,
             &Multiname::public("toFixed"),
             FunctionObject::from_method(
                 activation,
@@ -85,7 +83,6 @@ fn class_init<'gc>(
             activation
         )?;
         number_proto.set_property_local(
-            number_proto,
             &Multiname::public("toPrecision"),
             FunctionObject::from_method(
                 activation,
@@ -98,7 +95,6 @@ fn class_init<'gc>(
             activation
         )?;
         number_proto.set_property_local(
-            number_proto,
             &Multiname::public("toString"),
             FunctionObject::from_method(
                 activation,
@@ -111,7 +107,6 @@ fn class_init<'gc>(
             activation
         )?;
         number_proto.set_property_local(
-            number_proto,
             &Multiname::public("valueOf"),
             FunctionObject::from_method(
                 activation,

@@ -22,7 +22,6 @@ fn instance_init<'gc>(
             .object
             .construct(activation, &[])?;
         this.set_property(
-            this,
             &QName::new(Namespace::public(), "data").into(),
             data.into(),
             activation,

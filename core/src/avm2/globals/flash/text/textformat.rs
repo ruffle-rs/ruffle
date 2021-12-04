@@ -488,7 +488,6 @@ fn set_tab_stops<'gc>(
             let tab_stops: Result<Vec<_>, Error> = (0..length)
                 .map(|i| {
                     let element = object.get_property(
-                        object,
                         &QName::new(
                             Namespace::public(),
                             AvmString::new_utf8(activation.context.gc_context, i.to_string()),

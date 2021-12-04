@@ -138,7 +138,7 @@ pub fn specialized_class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let mut proto = this
-            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
 
@@ -165,7 +165,6 @@ pub fn specialized_class_init<'gc>(
         ];
         for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
             proto.set_property(
-                this,
                 &QName::dynamic_name(*pubname).into(),
                 FunctionObject::from_function(
                     activation,
@@ -384,7 +383,6 @@ pub fn to_locale_string<'gc>(
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
             o.call_property(
-                o,
                 &QName::new(Namespace::public(), "toLocaleString").into(),
                 &[],
                 act,
@@ -564,7 +562,6 @@ pub fn index_of<'gc>(
         let from_index = if from_index < 0 {
             let length = this
                 .get_property(
-                    this,
                     &QName::new(Namespace::public(), "length").into(),
                     activation,
                 )?
@@ -605,7 +602,6 @@ pub fn last_index_of<'gc>(
         let from_index = if from_index < 0 {
             let length = this
                 .get_property(
-                    this,
                     &QName::new(Namespace::public(), "length").into(),
                     activation,
                 )?

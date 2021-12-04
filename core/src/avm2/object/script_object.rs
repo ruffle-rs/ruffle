@@ -139,7 +139,6 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn get_property_local(
         &self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -159,7 +158,7 @@ impl<'gc> ScriptObjectData<'gc> {
             return Ok(value.clone());
         } else {
             if let Some(proto) = self.proto() {
-                return proto.get_property_local(receiver, multiname, activation);
+                return proto.get_property_local(multiname, activation);
             }    
         }
 
@@ -178,7 +177,6 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn set_property_local(
         &mut self,
-        _receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
@@ -212,12 +210,11 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn init_property_local(
         &mut self,
-        receiver: Object<'gc>,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        self.set_property_local(receiver, multiname, value, activation)
+        self.set_property_local(multiname, value, activation)
     }
 
     pub fn delete_property_local(&mut self, multiname: &Multiname<'gc>) -> bool {

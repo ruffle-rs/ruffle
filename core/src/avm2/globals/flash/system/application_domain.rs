@@ -75,7 +75,7 @@ pub fn get_definition<'gc>(
             .get_defining_script(&qname.into())?
             .ok_or_else(|| format!("No definition called {} exists", local_name))?;
         let globals = defined_script.globals(&mut activation.context)?;
-        let definition = globals.get_property(globals, &qname.into(), activation)?;
+        let definition = globals.get_property(&qname.into(), activation)?;
 
         return Ok(definition);
     }
