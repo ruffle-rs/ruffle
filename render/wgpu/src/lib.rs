@@ -858,7 +858,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(self.register_bitmap(bitmap, "JPEG2"))
     }
 
-    fn register_bitmap_jpeg_3(
+    fn register_bitmap_jpeg_3_or_4(
         &mut self,
         jpeg_data: &[u8],
         alpha_data: &[u8],
