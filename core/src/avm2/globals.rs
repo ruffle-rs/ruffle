@@ -594,6 +594,12 @@ pub fn load_player_globals<'gc>(
         flash::events::fullscreenevent::create_class(mc),
         script
     );
+    class(
+        activation,
+        flash::events::eventphase::create_class(mc),
+        script,
+    )?;
+
     // package `flash.utils`
     avm2_system_class!(
         bytearray,
