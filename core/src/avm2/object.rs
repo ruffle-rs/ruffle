@@ -148,9 +148,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), disp_id)
                 {
                     self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                    return Ok(bound_method.into());
+                    Ok(bound_method.into())
+                } else {
+                    Err("Method not found".into())
                 }
-                todo!("unreachable?")
             }
             Some(Property::Virtual{get: Some(get), ..}) => {
                 self.call_method(get, &[], activation)
@@ -191,7 +192,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            // also TODO: check for read-only (`const`)
             Some(Property::Slot{slot_id}) => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
             Some(Property::ConstSlot{..}) => {
                 Err("Illegal write to read-only property".into())
@@ -235,7 +235,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        // TODO: currently identical to set_property
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id})
                 => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
@@ -290,22 +289,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 {
                     if !method.needs_arguments_object() {
                         let scope = superclass.unwrap().instance_scope();
-                        return Executable::from_method(method, scope, None, superclass).exec(
+                        Executable::from_method(method, scope, None, superclass).exec(
                             Some(self.into()),
                             arguments,
                             activation,
                             superclass.unwrap().into(), //Deliberately invalid.
-                        );
+                        )
                     } else {
                         if let Some(bound_method) = self.base().get_bound_method(disp_id) {
                             return bound_method.call(Some(self.into()), arguments, activation);
                         }
                         let bound_method = vtable.make_bound_method(activation, self.into(), disp_id).unwrap();
                         self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                        return bound_method.call(Some(self.into()), arguments, activation);
+                        bound_method.call(Some(self.into()), arguments, activation)
                     }
+                } else {
+                    Err("Method not found".into())
                 }
-                todo!("unreachable?")
             },
             Some(Property::Virtual{get: Some(get), ..}) => {
                 let obj = self.call_method(get, &[], activation)?
@@ -313,7 +313,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Virtual{get: None, ..}) => {
-                todo!("throw error")
+                Err("Illegal read of write-only property".into())
             }
             None => {
                 self.call_property_local(multiname, arguments, activation)

@@ -143,11 +143,11 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !multiname.contains_public_namespace() {
-            todo!("throw error")
+            return Err("Non-public property not found on Object".into());
         }
 
         let local_name = match multiname.local_name() {
-            None => todo!("throw error"),
+            None => return Err("Unnamed property not found on Object".into()),
             Some(name) => name,
         };
 
@@ -189,11 +189,11 @@ impl<'gc> ScriptObjectData<'gc> {
         }
 
         if !multiname.contains_public_namespace() {
-            todo!("throw error")
+            return Err("Non-public property not found on Object".into());
         }
 
         let local_name = match multiname.local_name() {
-            None => todo!("throw error"),
+            None => return Err("Unnamed property not found on Object".into()),
             Some(name) => name,
         };
 

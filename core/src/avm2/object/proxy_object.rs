@@ -223,7 +223,6 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         Ok(self
             .call_property(
                 &QName::new(Namespace::Namespace(NS_FLASH_PROXY.into()), "hasProperty").into(),
-                // TODO: handle unwrap?
                 // this should probably pass the multiname as-is? See above
                 &[name.local_name().unwrap().into()],
                 activation,

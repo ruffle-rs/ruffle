@@ -99,8 +99,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
 
-        // TODO: why is this this way?
-        //if name.namespace().is_package("") {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
