@@ -129,7 +129,7 @@ impl<'gc> VTable<'gc> {
         // such slot with `getslot` wouldn't have passed verification in the first place.
         // So such SWFs shouldn't be encountered in the wild.
         //
-        // Worst-case is that someone can hand-craft such an SWF speficically for Ruff;e
+        // Worst-case is that someone can hand-craft such an SWF speficically for Ruffle
         // and be able to access private class members with `getslot/setslot,
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
