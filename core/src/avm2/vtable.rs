@@ -86,6 +86,7 @@ impl<'gc> VTable<'gc> {
     ///
     /// This should be run during the class finalization step, before instances
     /// are linked (as instances will further add traits to the list).
+    #[allow(clippy::if_same_then_else)]
     pub fn init_vtable(
         self,
         defining_class: Option<ClassObject<'gc>>,
@@ -231,25 +232,23 @@ impl<'gc> VTable<'gc> {
                 | TraitKind::Class { slot_id, .. } => {
                     let slot_id = *slot_id;
 
-                    let value = trait_to_default_value(scope, &trait_data, activation);
+                    let value = trait_to_default_value(scope, trait_data, activation);
                     let value = Some(value);
 
                     let new_slot_id = if slot_id == 0 {
                         default_slots.push(value);
                         default_slots.len() as u32 - 1
+                    } else if let Some(Some(_)) = default_slots.get(slot_id as usize) {
+                        // slot_id conflict
+                        default_slots.push(value);
+                        default_slots.len() as u32 - 1
                     } else {
-                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
-                            // slot_id conflict
-                            default_slots.push(value);
-                            default_slots.len() as u32 - 1
-                        } else {
-                            if slot_id as usize >= default_slots.len() {
-                                default_slots.resize_with(slot_id as usize + 1, Default::default);
-                            }
-                            default_slots[slot_id as usize] = value;
-                            slot_id
+                        if slot_id as usize >= default_slots.len() {
+                            default_slots.resize_with(slot_id as usize + 1, Default::default);
                         }
-                    } as u32;
+                        default_slots[slot_id as usize] = value;
+                        slot_id
+                    };
 
                     let new_prop = match trait_data.kind() {
                         TraitKind::Slot { .. } | TraitKind::Function { .. } => {
@@ -343,8 +342,8 @@ fn trait_to_default_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Value<'gc> {
     match trait_data.kind() {
-        TraitKind::Slot { default_value, .. } => default_value.clone(),
-        TraitKind::Const { default_value, .. } => default_value.clone(),
+        TraitKind::Slot { default_value, .. } => *default_value,
+        TraitKind::Const { default_value, .. } => *default_value,
         TraitKind::Function { function, .. } => {
             FunctionObject::from_function(activation, function.clone(), scope)
                 .unwrap()

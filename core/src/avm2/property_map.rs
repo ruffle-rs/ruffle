@@ -74,7 +74,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
                 .iter()
                 .filter_map(|v| {
                     v.iter()
-                        .filter(|(n, _)| name.namespace_set().find(|ns| *ns == n).is_some())
+                        .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
                         .map(|(_, v)| v)
                         .next()
                 })
