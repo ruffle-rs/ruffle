@@ -805,6 +805,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             self.set_state(context, new_state);
         }
 
+        self.event_dispatch_to_avm2(context, event);
+
         handled
     }
 }

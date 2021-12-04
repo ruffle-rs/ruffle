@@ -720,6 +720,8 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _event: ClipEvent,
     ) -> ClipEventResult {
+        //NOTE: Stage does not appear to fire common InteractiveObject events
+        //within AVM2.
         ClipEventResult::Handled
     }
 }

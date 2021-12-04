@@ -1821,7 +1821,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        _event: ClipEvent,
+        event: ClipEvent,
     ) -> ClipEventResult {
         let tracker = context.focus_tracker;
         tracker.set(Some(self.into()), context);
@@ -1834,6 +1834,8 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             self.0.write(context.gc_context).selection =
                 Some(TextSelection::for_position(self.text_length()));
         }
+
+        self.event_dispatch_to_avm2(context, event);
 
         ClipEventResult::Handled
     }

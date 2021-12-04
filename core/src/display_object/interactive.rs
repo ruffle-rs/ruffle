@@ -1,6 +1,6 @@
 //! Interactive object enumtrait
 
-use crate::avm2::Value;
+use crate::avm2::{Avm2, Event as Avm2Event, EventData as Avm2EventData, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
@@ -36,7 +36,7 @@ bitflags! {
 pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
     flags: InteractiveObjectFlags,
-    context_menu: Value<'gc>,
+    context_menu: Avm2Value<'gc>,
 }
 
 impl<'gc> Default for InteractiveObjectBase<'gc> {
@@ -44,7 +44,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
         Self {
             base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
-            context_menu: Value::Null,
+            context_menu: Avm2Value::Null,
         }
     }
 }
@@ -97,11 +97,11 @@ pub trait TInteractiveObject<'gc>:
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
     }
 
-    fn context_menu(self) -> Value<'gc> {
+    fn context_menu(self) -> Avm2Value<'gc> {
         self.ibase().context_menu
     }
 
-    fn set_context_menu(self, mc: MutationContext<'gc, '_>, value: Value<'gc>) {
+    fn set_context_menu(self, mc: MutationContext<'gc, '_>, value: Avm2Value<'gc>) {
         self.ibase_mut(mc).context_menu = value;
     }
 
@@ -149,6 +149,48 @@ pub trait TInteractiveObject<'gc>:
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _event: ClipEvent,
     ) -> ClipEventResult;
+
+    /// Convert the clip event into an AVM2 event and dispatch it into the
+    /// AVM2 side of this object.
+    ///
+    /// This is only intended to be called for events defined by
+    /// `InteractiveObject` itself. Display object impls that have their own
+    /// event types should dispatch them in `event_dispatch`.
+    fn event_dispatch_to_avm2(self, context: &mut UpdateContext<'_, 'gc, '_>, event: ClipEvent) {
+        let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
+            target
+        } else {
+            return;
+        };
+
+        match event {
+            ClipEvent::MouseDown => {
+                let mut avm2_event = Avm2Event::new(
+                    "mouseDown",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+            }
+            ClipEvent::MouseUp => {
+                let mut avm2_event = Avm2Event::new(
+                    "mouseUp",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+            }
+            _ => {}
+        };
+    }
 
     /// Executes and propagates the given clip event.
     /// Events execute inside-out; the deepest child will react first, followed
