@@ -1,7 +1,7 @@
 //! Vector storage object
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::names::{Multiname};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -62,12 +62,7 @@ impl<'gc> VectorObject<'gc> {
         let vector_class = activation.avm2().classes().vector;
 
         let applied_class = vector_class.apply(activation, &[value_type.into()])?;
-        let applied_proto = applied_class
-            .get_property(
-                &QName::new(Namespace::public(), "prototype").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let applied_proto = applied_class.prototype();
 
         let mut object: Object<'gc> = VectorObject(GcCell::allocate(
             activation.context.gc_context,

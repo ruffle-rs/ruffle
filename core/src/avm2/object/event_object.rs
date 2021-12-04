@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -53,12 +52,7 @@ impl<'gc> EventObject<'gc> {
         class: ClassObject<'gc>,
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let proto = class
-            .get_property(
-                &QName::new(Namespace::public(), "prototype").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let proto = class.prototype();
         let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
         let mut event_object: Object<'gc> = EventObject(GcCell::allocate(

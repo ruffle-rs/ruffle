@@ -1,7 +1,6 @@
 //! Object representation for sounds
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -54,12 +53,7 @@ impl<'gc> SoundChannelObject<'gc> {
         sound: SoundInstanceHandle,
     ) -> Result<Self, Error> {
         let class = activation.avm2().classes().soundchannel;
-        let proto = class
-            .get_property(
-                &QName::new(Namespace::public(), "prototype").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let proto = class.prototype();
         let base = ScriptObjectData::base_new(Some(proto), Some(class));
 
         let mut sound_object = SoundChannelObject(GcCell::allocate(

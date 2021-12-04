@@ -381,14 +381,7 @@ fn class<'gc>(
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
-    let proto = class_object
-        .get_property(
-            &QName::new(Namespace::public(), "prototype").into(),
-            activation,
-        )?
-        .coerce_to_object(activation)?;
-
-    Ok((class_object, proto))
+    Ok((class_object, class_object.prototype()))
 }
 
 /// Add a builtin constant to the global scope.
