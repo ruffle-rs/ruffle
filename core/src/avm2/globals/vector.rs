@@ -73,7 +73,6 @@ pub fn class_init<'gc>(
 
         globals.install_const_late(
             activation.context.gc_context,
-            None,
             int_vector_name,
             int_vector_class.into(),
         );
@@ -89,7 +88,6 @@ pub fn class_init<'gc>(
 
         globals.install_const_late(
             activation.context.gc_context,
-            None,
             uint_vector_name,
             uint_vector_class.into(),
         );
@@ -105,7 +103,6 @@ pub fn class_init<'gc>(
 
         globals.install_const_late(
             activation.context.gc_context,
-            None,
             number_vector_name,
             number_vector_class.into(),
         );
@@ -120,7 +117,6 @@ pub fn class_init<'gc>(
 
         globals.install_const_late(
             activation.context.gc_context,
-            None,
             object_vector_name,
             object_vector_class.into(),
         );

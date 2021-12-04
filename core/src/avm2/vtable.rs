@@ -288,30 +288,13 @@ impl<'gc> VTable<'gc> {
     pub fn install_const_trait_late(
         self,
         mc: MutationContext<'gc, '_>,
-        slot_id: Option<u32>,
         name: QName<'gc>,
         value: Value<'gc>,
     ) -> u32 {
         let mut write = self.0.write(mc);
 
-        let new_slot_id = if let Some(slot_id) = slot_id {
-
-            if slot_id == 0 {
-                write.default_slots.push(Some(value));
-                write.default_slots.len() as u32 - 1
-            } else {
-                // Should be safe from slot conflicts, as `global` has a fresh Object vtable.
-                if slot_id as usize >= write.default_slots.len() {
-                    write.default_slots.resize_with(slot_id as usize + 1, Default::default);
-                }
-                write.default_slots[slot_id as usize] = Some(value);
-                slot_id
-            }
-
-        } else {
-            write.default_slots.push(Some(value));
-            write.default_slots.len() as u32 - 1
-        };
+        write.default_slots.push(Some(value));
+        let new_slot_id = write.default_slots.len() as u32 - 1;
         write.resolved_traits.insert(name, Property::new_slot(new_slot_id));
 
         new_slot_id

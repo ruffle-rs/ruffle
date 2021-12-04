@@ -314,7 +314,7 @@ fn function<'gc>(
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
     domain.export_definition(qname, script, mc)?;
-    global.install_const_late(mc, None, qname, as3fn);
+    global.install_const_late(mc, qname, as3fn);
 
     Ok(())
 }
@@ -332,7 +332,7 @@ fn dynamic_class<'gc>(
     let class = class_object.inner_class_definition();
     let name = class.read().name();
 
-    global.install_const_late(mc, None, name, class_object.into());
+    global.install_const_late(mc, name, class_object.into());
     domain.export_definition(name, script, mc)
 }
 
@@ -375,7 +375,6 @@ fn class<'gc>(
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
     global.install_const_late(
         activation.context.gc_context,
-        None,
         class_name,
         class_object.into(),
     );
@@ -395,7 +394,7 @@ fn constant<'gc>(
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name, script, mc)?;
-    global.install_const_late(mc, None, name, value);
+    global.install_const_late(mc, name, value);
 
     Ok(())
 }
