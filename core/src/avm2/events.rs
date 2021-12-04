@@ -5,7 +5,9 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{InteractiveObject, TDisplayObject};
+use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, InteractiveObject, TDisplayObject};
+use crate::events::KeyCode;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use fnv::FnvHashMap;
@@ -55,6 +57,28 @@ bitflags! {
     }
 }
 
+impl KeyModifiers {
+    fn from_current_keys<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) -> Self {
+        let mut keymods = KeyModifiers::default();
+
+        if context.input.is_key_down(KeyCode::Control) {
+            keymods.insert(KeyModifiers::CTRL);
+        }
+
+        if context.input.is_key_down(KeyCode::Alt) {
+            keymods.insert(KeyModifiers::ALT);
+        }
+
+        if context.input.is_key_down(KeyCode::Shift) {
+            keymods.insert(KeyModifiers::SHIFT);
+        }
+
+        //TODO: We don't have a UI keycode for ⌘.
+
+        keymods
+    }
+}
+
 /// The data for a dispatched event.
 ///
 /// This roughly corresponds to properties provided on specific AS3 `Event`
@@ -77,6 +101,28 @@ pub enum EventData<'gc> {
         button_down: bool,
         delta: i32,
     },
+}
+
+impl<'gc> EventData<'gc> {
+    pub fn mouse_event(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        target: DisplayObject<'gc>,
+        related_object: Option<InteractiveObject<'gc>>,
+        delta: i32,
+    ) -> Self {
+        let local_pos = target.global_to_local(*context.mouse_position);
+
+        Self::MouseEvent {
+            local_x: local_pos.0.to_pixels(),
+            local_y: local_pos.1.to_pixels(),
+            movement_x: 0.0, //TODO: Implement mouselocking.
+            movement_y: 0.0,
+            related_object,
+            modifiers: KeyModifiers::from_current_keys(context),
+            button_down: context.input.is_mouse_down(),
+            delta,
+        }
+    }
 }
 
 /// Represents data fields of an event that can be fired on an object that
