@@ -213,7 +213,7 @@ impl<'gc> AvmSerializer<'gc> {
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
                 None,
-                &[eval_key.unwrap_or_else(|| key()).into(), value],
+                &[eval_key.unwrap_or_else(key).into(), value],
                 activation,
             )
         } else {
@@ -253,11 +253,8 @@ impl<'gc> AvmSerializer<'gc> {
                     Value::Undefined => break,
                     name_val => {
                         let name = name_val.coerce_to_string(activation)?;
-                        let value = obj.get_property(
-                            obj.into(),
-                            &QName::dynamic_name(name).into(),
-                            activation,
-                        )?;
+                        let value =
+                            obj.get_property(obj, &QName::dynamic_name(name).into(), activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
                         js_obj.insert(
                             &name.to_utf8_lossy(),
