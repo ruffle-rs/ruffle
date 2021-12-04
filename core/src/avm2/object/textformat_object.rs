@@ -54,7 +54,7 @@ impl<'gc> TextFormatObject<'gc> {
             TextFormatObjectData { base, text_format },
         ))
         .into();
-        this.install_instance_slots(activation, class);
+        this.install_instance_slots(activation);
 
         Ok(this)
     }

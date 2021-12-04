@@ -269,14 +269,13 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn install_instance_slots(
-        &mut self,
-        _activation: &mut Activation<'_, 'gc, '_>,
-        slots: Vec<Option<Value<'gc>>>,
-    ) {
-        for value in slots {
+    pub fn install_instance_slots(&mut self) {
+        use std::ops::Deref;
+        let vtable = self.vtable.unwrap();
+        let default_slots = vtable.default_slots();
+        for value in default_slots.deref() {
             if let Some(value) = value {
-                self.slots.push(value);
+                self.slots.push(value.clone());
             } else {
                 self.slots.push(Value::Undefined)
             }

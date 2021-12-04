@@ -73,7 +73,7 @@ impl<'gc> StageObject<'gc> {
                 display_object: Some(display_object),
             },
         ));
-        instance.install_instance_slots(activation, class);
+        instance.install_instance_slots(activation);
 
         Ok(instance)
     }
@@ -109,7 +109,7 @@ impl<'gc> StageObject<'gc> {
                 display_object: Some(display_object),
             },
         ));
-        this.install_instance_slots(activation, class);
+        this.install_instance_slots(activation);
 
         class.call_native_init(Some(this.into()), &[], activation)?;
 

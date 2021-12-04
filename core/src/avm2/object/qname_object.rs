@@ -57,7 +57,7 @@ impl<'gc> QNameObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation, class);
+        this.install_instance_slots(activation);
 
         class.call_native_init(Some(this), &[], activation)?;
 
