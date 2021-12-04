@@ -12,12 +12,6 @@ class Base {
 		return "value of b_base";
 	}
 	
-	function get c_base() {
-		trace("// (Base.c_base get)");
-		
-		return "value of c_base";
-	}
-	
 	function get d_base() {
 		trace("//(Base.d_base called)");
 		return function() {
@@ -46,13 +40,6 @@ dynamic class Evil extends Base {
 		return super.b_base = 20;
 	}
 	
-	function set c(value) {
-		trace("//(Evil.c set with " + value + ")");
-		super.c_base = value;
-		
-		return super.c_base;
-	}
-	
 	function d() {
 		super.d_base();
 	}
@@ -76,9 +63,6 @@ trace(e.a);
 
 trace("//e.b");
 trace(e.b);
-
-trace("//e.c = 14");
-trace(e.c = 14);
 
 trace("//e.d()");
 trace(e.d());
