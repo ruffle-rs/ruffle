@@ -1059,7 +1059,12 @@ pub enum GradientSpread {
 
 impl GradientSpread {
     pub fn from_u8(n: u8) -> Option<Self> {
-        num_traits::FromPrimitive::from_u8(n)
+        num_traits::FromPrimitive::from_u8(match n {
+            // Per SWF19 p. 136, SpreadMode 3 is reserved.
+            // Flash treats it as pad mode.
+            3 => 0,
+            n => n,
+        })
     }
 }
 
@@ -1071,7 +1076,12 @@ pub enum GradientInterpolation {
 
 impl GradientInterpolation {
     pub fn from_u8(n: u8) -> Option<Self> {
-        num_traits::FromPrimitive::from_u8(n)
+        num_traits::FromPrimitive::from_u8(match n {
+            // Per SWF19 p. 136, InterpolationMode 2 and 3 are reserved.
+            // Flash treats them as normal RGB mode interpolation.
+            2 | 3 => 0,
+            n => n,
+        })
     }
 }
 
