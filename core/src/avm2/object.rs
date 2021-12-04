@@ -589,7 +589,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let new_slot_id = self
             .vtable()
             .unwrap()
-            .install_const_trait_late(mc, name, value.clone());
+            .install_const_trait_late(mc, name, value);
         self.base_mut(mc)
             .install_const_slot_late(new_slot_id, value);
     }

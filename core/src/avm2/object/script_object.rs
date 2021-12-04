@@ -154,11 +154,9 @@ impl<'gc> ScriptObjectData<'gc> {
         let value = self.values.get(&local_name);
 
         if let Some(value) = value {
-            return Ok(value.clone());
-        } else {
-            if let Some(proto) = self.proto() {
-                return proto.get_property_local(multiname, activation);
-            }
+            return Ok(*value);
+        } else if let Some(proto) = self.proto() {
+            return proto.get_property_local(multiname, activation);
         }
 
         // Special case: Unresolvable properties on dynamic classes are treated
@@ -169,9 +167,9 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            return Err(format!("Cannot get undefined property {:?}", local_name).into());
+            Err(format!("Cannot get undefined property {:?}", local_name).into())
         } else {
-            return Ok(Value::Undefined);
+            Ok(Value::Undefined)
         }
     }
 
@@ -277,7 +275,7 @@ impl<'gc> ScriptObjectData<'gc> {
         let default_slots = vtable.default_slots();
         for value in default_slots.deref() {
             if let Some(value) = value {
-                self.slots.push(value.clone());
+                self.slots.push(*value);
             } else {
                 self.slots.push(Value::Undefined)
             }

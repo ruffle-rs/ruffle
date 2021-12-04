@@ -117,6 +117,7 @@ impl<'gc> ScopeChain<'gc> {
         self.domain
     }
 
+    #[allow(clippy::collapsible_if)]
     pub fn find(
         &self,
         multiname: &Multiname<'gc>,
@@ -134,11 +135,9 @@ impl<'gc> ScopeChain<'gc> {
                 // But no matter what, we always search traits first.
                 if values.has_trait(multiname) {
                     return Ok(Some(values));
-                } else {
-                    if scope.with() || depth == 0 {
-                        if values.has_own_property(multiname) {
-                            return Ok(Some(values));
-                        }
+                } else if scope.with() || depth == 0 {
+                    if values.has_own_property(multiname) {
+                        return Ok(Some(values));
                     }
                 }
             }
@@ -198,6 +197,7 @@ impl<'gc> ScopeStack<'gc> {
     /// The `global` parameter indicates whether we are on global$init (script initializer).
     /// When the `global` parameter is true, the scope at depth 0 is considered the global scope, and is
     /// searched for dynamic properties.
+    #[allow(clippy::collapsible_if)]
     pub fn find(
         &self,
         multiname: &Multiname<'gc>,
@@ -208,14 +208,12 @@ impl<'gc> ScopeStack<'gc> {
 
             if values.has_trait(multiname) {
                 return Ok(Some(values));
-            } else {
+            } else if scope.with() || (global && depth == 0) {
                 // We search the dynamic properties if either conditions are met:
                 // 1. Scope is a `with` scope
                 // 2. We are at depth 0 AND we are at global$init (script initializer).
-                if scope.with() || (global && depth == 0) {
-                    if values.has_own_property(multiname) {
-                        return Ok(Some(values));
-                    }
+                if values.has_own_property(multiname) {
+                    return Ok(Some(values));
                 }
             }
         }
