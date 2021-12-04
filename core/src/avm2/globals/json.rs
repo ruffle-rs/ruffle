@@ -256,10 +256,12 @@ impl<'gc> AvmSerializer<'gc> {
                         let value =
                             obj.get_property(obj, &QName::dynamic_name(name).into(), activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
-                        js_obj.insert(
-                            &name.to_utf8_lossy(),
-                            self.serialize_value(activation, mapped)?,
-                        );
+                        if !matches!(mapped, Value::Undefined) {
+                            js_obj.insert(
+                                &name.to_utf8_lossy(),
+                                self.serialize_value(activation, mapped)?,
+                            );
+                        }
                     }
                 }
             }
