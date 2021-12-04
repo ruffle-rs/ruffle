@@ -140,8 +140,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id, ..}) => self.base().get_slot(slot_id),
-            Some(Property::Method{disp_id, ..}) => {
+            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id})
+                => self.base().get_slot(slot_id),
+            Some(Property::Method{disp_id}) => {
                 if let Some(bound_method) = self.base().get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
@@ -157,7 +158,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 self.call_method(get, &[], activation)
             }
             Some(Property::Virtual{get: None, ..}) => {
-                todo!("throw error")
+                Err("Illegal read of write-only property".into())
             }
             None => {
                 self.get_property_local(receiver, multiname, activation)
@@ -195,15 +196,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             // also TODO: check for read-only (`const`)
-            Some(Property::Slot{slot_id, ..}) => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::Slot{slot_id}) => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::ConstSlot{..}) => {
+                Err("Illegal write to read-only property".into())
+            }
             Some(Property::Method{..}) => {
-                todo!("thow error")
+                Err("Cannot assign to a method".into())
             }
             Some(Property::Virtual{set: Some(set), ..}) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
             Some(Property::Virtual{set: None, ..}) => {
-                todo!("throw error")
+                Err("Illegal write to read-only property".into())
             }
             None => {
                 self.set_property_local(receiver, multiname, value, activation)
@@ -239,16 +243,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<(), Error> {
         // TODO: currently identical to set_property
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            // also TODO: check for read-only (`const`)
-            Some(Property::Slot{slot_id, ..}) => self.init_slot(slot_id, value, activation.context.gc_context),
+            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id})
+                => self.base_mut(activation.context.gc_context).set_slot(slot_id, value, activation.context.gc_context),
             Some(Property::Method{..}) => {
-                todo!("thow error")
+                Err("Cannot assign to a method".into())
             }
             Some(Property::Virtual{set: Some(set), ..}) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
             Some(Property::Virtual{set: None, ..}) => {
-                todo!("throw error")
+                Err("Illegal write to read-only property".into())
             }
             None => {
                 self.init_property_local(receiver, multiname, value, activation)
@@ -283,12 +287,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot{slot_id, ..}) => {
+            Some(Property::Slot{slot_id}) | Some(Property::ConstSlot{slot_id}) => {
                 let obj = self.base().get_slot(slot_id)?
                     .coerce_to_object(activation)?;
                 obj.call(Some(self.into()), arguments, activation)
             }
-            Some(Property::Method{disp_id, ..}) => {
+            Some(Property::Method{disp_id}) => {
                 let vtable = self.vtable().unwrap();
                 if let Some((superclass, method)) = vtable.get_full_method(disp_id)
                 {
