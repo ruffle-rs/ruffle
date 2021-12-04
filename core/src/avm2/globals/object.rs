@@ -27,14 +27,13 @@ pub fn class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let object_proto = this
-            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let gc_context = activation.context.gc_context;
         let this_class = this.as_class_object().unwrap();
 
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("hasOwnProperty"),
             FunctionObject::from_method(
                 activation,
@@ -47,7 +46,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("propertyIsEnumerable"),
             FunctionObject::from_method(
                 activation,
@@ -60,7 +58,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("setPropertyIsEnumerable"),
             FunctionObject::from_method(
                 activation,
@@ -77,7 +74,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("isPrototypeOf"),
             FunctionObject::from_method(
                 activation,
@@ -90,7 +86,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("toString"),
             FunctionObject::from_method(
                 activation,
@@ -103,7 +98,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("toLocaleString"),
             FunctionObject::from_method(
                 activation,
@@ -116,7 +110,6 @@ pub fn class_init<'gc>(
             activation,
         )?;
         object_proto.set_property_local(
-            object_proto,
             &Multiname::public("valueOf"),
             FunctionObject::from_method(
                 activation,

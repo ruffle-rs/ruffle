@@ -60,7 +60,6 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error> {
         let proto = class
             .get_property(
-                class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?

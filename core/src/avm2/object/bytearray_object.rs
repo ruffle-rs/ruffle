@@ -79,7 +79,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
 
     fn get_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -97,12 +96,11 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        read.base.get_property_local(receiver, name, activation)
+        read.base.get_property_local(name, activation)
     }
 
     fn set_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -121,14 +119,11 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        write
-            .base
-            .set_property_local(receiver, name, value, activation)
+        write.base.set_property_local(name, value, activation)
     }
 
     fn init_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -147,7 +142,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        write.base.init_property_local(receiver, name, value, activation)
+        write.base.init_property_local(name, value, activation)
     }
 
     fn delete_property_local(

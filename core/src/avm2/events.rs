@@ -380,7 +380,6 @@ pub fn dispatch_event_to_target<'gc>(
     );
     let dispatch_list = target
         .get_property(
-            target,
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
             activation,
         )?
@@ -431,7 +430,6 @@ pub fn dispatch_event<'gc>(
 ) -> Result<bool, Error> {
     let target = this
         .get_property(
-            this,
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
             activation,
         )?

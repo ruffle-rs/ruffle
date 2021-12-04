@@ -31,13 +31,11 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         this.set_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             name.into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "frame").into(),
             frame.into(),
             activation,
@@ -64,7 +62,6 @@ pub fn name<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         return this.get_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             activation,
         );
@@ -81,7 +78,6 @@ pub fn frame<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         return this.get_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "frame").into(),
             activation,
         );

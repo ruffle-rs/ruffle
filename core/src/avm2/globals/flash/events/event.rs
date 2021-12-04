@@ -175,7 +175,7 @@ pub fn format_to_string<'gc>(
                 .into();
 
                 let param_value = this
-                    .get_property(this, &param_name, activation)?
+                    .get_property(&param_name, activation)?
                     .coerce_to_debug_string(activation)?;
                 write!(
                     stringified_params,

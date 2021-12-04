@@ -27,13 +27,11 @@ pub fn instance_init<'gc>(
         let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
 
         this.init_property(
-            this,
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
             target,
             activation,
         )?;
         this.init_property(
-            this,
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
             dispatch_list.into(),
             activation,
@@ -52,7 +50,6 @@ pub fn add_event_listener<'gc>(
     if let Some(this) = this {
         let dispatch_list = this
             .get_property(
-                this,
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
@@ -99,7 +96,6 @@ pub fn remove_event_listener<'gc>(
     if let Some(this) = this {
         let dispatch_list = this
             .get_property(
-                this,
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
@@ -138,7 +134,6 @@ pub fn has_event_listener<'gc>(
     if let Some(this) = this {
         let dispatch_list = this
             .get_property(
-                this,
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
@@ -168,7 +163,6 @@ pub fn will_trigger<'gc>(
     if let Some(this) = this {
         let dispatch_list = this
             .get_property(
-                this,
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
                 activation,
             )?
@@ -189,7 +183,6 @@ pub fn will_trigger<'gc>(
 
         let target = this
             .get_property(
-                this,
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
                 activation,
             )?
@@ -249,7 +242,6 @@ pub fn to_string<'gc>(
     let object_proto = activation.avm2().prototypes().object;
     object_proto
         .get_property(
-            object_proto,
             &QName::dynamic_name("toString").into(),
             activation,
         )?

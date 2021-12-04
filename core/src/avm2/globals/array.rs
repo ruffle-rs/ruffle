@@ -132,7 +132,6 @@ pub fn resolve_array_hole<'gc>(
         this.proto()
             .map(|p| {
                 p.get_property(
-                    p,
                     &QName::new(
                         Namespace::public(),
                         AvmString::new_utf8(activation.context.gc_context, i.to_string()),
@@ -213,7 +212,6 @@ pub fn to_locale_string<'gc>(
         let o = v.coerce_to_object(activation)?;
 
         o.call_property(
-            o,
             &QName::new(Namespace::public(), "toLocaleString").into(),
             &[],
             activation,
@@ -272,7 +270,6 @@ impl<'gc> ArrayIter<'gc> {
     ) -> Result<Self, Error> {
         let length = array_object
             .get_property(
-                array_object,
                 &QName::new(Namespace::public(), "length").into(),
                 activation,
             )?
@@ -301,7 +298,6 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_property(
-                        self.array_object,
                         &QName::new(
                             Namespace::public(),
                             AvmString::new_utf8(activation.context.gc_context, i.to_string()),
@@ -332,7 +328,6 @@ impl<'gc> ArrayIter<'gc> {
             Some(
                 self.array_object
                     .get_property(
-                        self.array_object,
                         &QName::new(
                             Namespace::public(),
                             AvmString::new_utf8(activation.context.gc_context, i.to_string()),
@@ -1174,14 +1169,12 @@ pub fn sort_on<'gc>(
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
                         let a_object = a.coerce_to_object(activation)?;
                         let a_field = a_object.get_property(
-                            a_object,
                             &QName::new(Namespace::public(), *field_name).into(),
                             activation,
                         )?;
 
                         let b_object = b.coerce_to_object(activation)?;
                         let b_field = b_object.get_property(
-                            b_object,
                             &QName::new(Namespace::public(), *field_name).into(),
                             activation,
                         )?;

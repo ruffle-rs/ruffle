@@ -1189,7 +1189,7 @@ impl<'gc> MovieClip<'gc> {
                     if let Avm2Value::Object(c) = child.object2() {
                         let name = Avm2QName::new(Avm2Namespace::public(), child.name());
                         let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        if let Err(e) = p.init_property(p, &name.into(), c.into(), &mut activation)
+                        if let Err(e) = p.init_property(&name.into(), c.into(), &mut activation)
                         {
                             log::error!(
                                 "Got error when setting AVM2 child named \"{}\": {}",

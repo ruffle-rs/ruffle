@@ -31,13 +31,12 @@ pub fn class_init<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let function_proto = this
-            .get_property(this, &QName::dynamic_name("prototype").into(), activation)?
+            .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .coerce_to_object(activation)?;
         let scope = activation.create_scopechain();
         let this_class = this.as_class_object().unwrap();
 
         function_proto.set_property_local(
-            function_proto,
             &Multiname::public("call"),
             FunctionObject::from_method(
                 activation,
@@ -50,7 +49,6 @@ pub fn class_init<'gc>(
             activation
         )?;
         function_proto.set_property_local(
-            function_proto,
             &Multiname::public("apply"),
             FunctionObject::from_method(
                 activation,

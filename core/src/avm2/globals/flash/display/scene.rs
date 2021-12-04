@@ -32,19 +32,16 @@ pub fn instance_init<'gc>(
             .coerce_to_i32(activation)?;
 
         this.set_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             name.into(),
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "labels").into(),
             labels,
             activation,
         )?;
         this.set_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "numFrames").into(),
             num_frames.into(),
             activation,
@@ -71,7 +68,6 @@ pub fn labels<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         this.get_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "labels").into(),
             activation,
         )
@@ -88,7 +84,6 @@ pub fn name<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         this.get_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
             activation,
         )
@@ -105,7 +100,6 @@ pub fn num_frames<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         this.get_property(
-            this,
             &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "numFrames").into(),
             activation,
         )

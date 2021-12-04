@@ -48,7 +48,6 @@ pub fn instance_init<'gc>(
                     let bd_object = bd_class.construct(activation, &[])?;
 
                     this.set_property(
-                        this,
                         &QName::new(Namespace::public(), "bitmapData").into(),
                         bd_object.into(),
                         activation,

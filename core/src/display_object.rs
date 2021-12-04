@@ -1620,7 +1620,6 @@ impl SoundTransform {
         Ok(SoundTransform {
             left_to_left: (as3_st
                 .get_property(
-                    as3_st,
                     &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
                     activation,
                 )?
@@ -1628,7 +1627,6 @@ impl SoundTransform {
                 * 100.0) as i32,
             left_to_right: (as3_st
                 .get_property(
-                    as3_st,
                     &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
                     activation,
                 )?
@@ -1636,7 +1634,6 @@ impl SoundTransform {
                 * 100.0) as i32,
             right_to_left: (as3_st
                 .get_property(
-                    as3_st,
                     &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
                     activation,
                 )?
@@ -1644,7 +1641,6 @@ impl SoundTransform {
                 * 100.0) as i32,
             right_to_right: (as3_st
                 .get_property(
-                    as3_st,
                     &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
                     activation,
                 )?
@@ -1652,7 +1648,6 @@ impl SoundTransform {
                 * 100.0) as i32,
             volume: (as3_st
                 .get_property(
-                    as3_st,
                     &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
                     activation,
                 )?
@@ -1672,31 +1667,26 @@ impl SoundTransform {
             .construct(activation, &[])?;
 
         as3_st.set_property(
-            as3_st,
             &Avm2QName::new(Avm2Namespace::public(), "leftToLeft").into(),
             (self.left_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            as3_st,
             &Avm2QName::new(Avm2Namespace::public(), "leftToRight").into(),
             (self.left_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            as3_st,
             &Avm2QName::new(Avm2Namespace::public(), "rightToLeft").into(),
             (self.right_to_left as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            as3_st,
             &Avm2QName::new(Avm2Namespace::public(), "rightToRight").into(),
             (self.right_to_right as f64 / 100.0).into(),
             activation,
         )?;
         as3_st.set_property(
-            as3_st,
             &Avm2QName::new(Avm2Namespace::public(), "volume").into(),
             (self.volume as f64 / 100.0).into(),
             activation,

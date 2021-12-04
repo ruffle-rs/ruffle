@@ -216,14 +216,12 @@ pub fn exec<'gc>(
             let object = ArrayObject::from_storage(activation, storage)?;
 
             object.set_property_local(
-                object,
                 &QName::new(Namespace::public(), "index").into(),
                 Value::Number(index as f64),
                 activation,
             )?;
 
             object.set_property_local(
-                object,
                 &QName::new(Namespace::public(), "input").into(),
                 text.into(),
                 activation,

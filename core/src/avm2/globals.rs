@@ -350,7 +350,7 @@ fn class<'gc>(
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
         let super_class: Result<Object<'gc>, Error> = global
-            .get_property(global, sc_name, activation)?
+            .get_property(sc_name, activation)?
             .coerce_to_object(activation)
             .map_err(|_e| {
                 format!(
@@ -383,7 +383,6 @@ fn class<'gc>(
 
     let proto = class_object
         .get_property(
-            class_object.into(),
             &QName::new(Namespace::public(), "prototype").into(),
             activation,
         )?

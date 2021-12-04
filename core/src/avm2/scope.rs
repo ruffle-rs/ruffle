@@ -156,7 +156,7 @@ impl<'gc> ScopeChain<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<Value<'gc>>, Error> {
         if let Some(object) = self.find(name, activation)? {
-            Ok(Some(object.get_property(object, name, activation)?))
+            Ok(Some(object.get_property(name, activation)?))
         } else {
             Ok(None)
         }

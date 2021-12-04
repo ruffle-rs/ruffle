@@ -64,7 +64,6 @@ impl<'gc> VectorObject<'gc> {
         let applied_class = vector_class.apply(activation, &[value_type.into()])?;
         let applied_proto = applied_class
             .get_property(
-                applied_class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?
@@ -100,7 +99,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
     fn get_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
@@ -116,12 +114,11 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        read.base.get_property_local(receiver, name, activation)
+        read.base.get_property_local(name, activation)
     }
 
     fn set_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -148,14 +145,11 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
         let mut write = self.0.write(activation.context.gc_context);
 
-        write
-            .base
-            .set_property_local(receiver, name, value, activation)
+        write.base.set_property_local(name, value, activation)
     }
 
     fn init_property_local(
         self,
-        receiver: Object<'gc>,
         name: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -182,9 +176,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
 
         let mut write = self.0.write(activation.context.gc_context);
 
-        write
-            .base
-            .init_property_local(receiver, name, value, activation)
+        write.base.init_property_local(name, value, activation)
     }
 
     fn delete_property_local(

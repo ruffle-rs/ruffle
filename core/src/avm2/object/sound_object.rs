@@ -53,7 +53,6 @@ impl<'gc> SoundObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let proto = class
             .get_property(
-                class.into(),
                 &QName::new(Namespace::public(), "prototype").into(),
                 activation,
             )?

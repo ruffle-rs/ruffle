@@ -230,7 +230,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let outer_scope = self.outer;
 
         if let Some(obj) = self.scope_stack.find(name, outer_scope.is_empty())? {
-            Ok(Some(obj.get_property(obj, name, self)?))
+            Ok(Some(obj.get_property(name, self)?))
         } else if let Some(result) = outer_scope.resolve(name, self)? {
             Ok(Some(result))
         } else {
@@ -460,7 +460,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             if method.method().needs_arguments_object {
                 args_object.set_property(
-                    args_object,
                     &QName::new(Namespace::public(), "callee").into(),
                     callee.into(),
                     &mut activation,
@@ -1146,7 +1145,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        let value = receiver.call_property(receiver, &multiname, &args, self)?;
+        let value = receiver.call_property(&multiname, &args, self)?;
 
         self.context.avm2.push(value);
 
@@ -1163,7 +1162,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
         let function = receiver
-            .get_property(receiver, &multiname, self)?
+            .get_property(&multiname, self)?
             .coerce_to_object(self)?;
         let value = function.call(None, &args, self)?;
 
@@ -1182,7 +1181,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let receiver = self.context.avm2.pop().coerce_to_object(self)?;
 
-        receiver.call_property(receiver, &multiname, &args, self)?;
+        receiver.call_property(&multiname, &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1297,7 +1296,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             (multiname, object)
         };
 
-        let value = object.get_property(object, &multiname, self)?;
+        let value = object.get_property(&multiname, self)?;
         self.context.avm2.push(value);
 
         Ok(FrameControl::Continue)
@@ -1345,7 +1344,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             (multiname, object)
         };
 
-        object.set_property(object, &multiname, value, self)?;
+        object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1359,7 +1358,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let multiname = self.pool_multiname(method, index)?;
         let mut object = self.context.avm2.pop().coerce_to_object(self)?;
 
-        object.init_property(object, &multiname, value, self)?;
+        object.init_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1677,7 +1676,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let name = self.context.avm2.pop();
 
             object.set_property(
-                object,
                 &QName::dynamic_name(name.coerce_to_string(self)?).into(),
                 value,
                 self,
