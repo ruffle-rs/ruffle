@@ -9,6 +9,7 @@ use crate::avm2::method::Method;
 use crate::avm2::names::{QName, Multiname};
 use crate::avm2::object::{FunctionObject, ClassObject, Object};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::ops::DerefMut;
 
 
 #[derive(Collect, Debug, Clone, Copy)]
@@ -25,7 +26,7 @@ pub struct VTableData<'gc> {
 
     resolved_traits: PropertyMap<'gc, Property>,
 
-    method_table: Vec<Option<(Option<ClassObject<'gc>>, Method<'gc>)>>,
+    method_table: Vec<(Option<ClassObject<'gc>>, Method<'gc>)>,
 
     default_slots: Vec<Option<Value<'gc>>>,
 }
@@ -56,11 +57,11 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_method(self, disp_id: u32) -> Option<Method<'gc>> {
-        self.0.read().method_table.get(disp_id as usize).cloned().flatten().map(|x| x.1)
+        self.0.read().method_table.get(disp_id as usize).cloned().map(|x| x.1)
     }
 
     pub fn get_full_method(self, disp_id: u32) -> Option<(Option<ClassObject<'gc>>, Method<'gc>)> {
-        self.0.read().method_table.get(disp_id as usize).cloned().flatten()
+        self.0.read().method_table.get(disp_id as usize).cloned()
     }
 
     pub fn default_slots(self) -> Vec<Option<Value<'gc>>> {
@@ -80,7 +81,61 @@ impl<'gc> VTable<'gc> {
         superclass_vtable: Option<Self>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
+
+        // Let's talk about slot_ids and disp_ids.
+        // Specification is one thing, but reality is another.
+
+        // disp_id in FP:
+        // It appears that FP completely ignores it and assigns values on its own.
+        // Any attempt to use `callmethod` opcode to observe the disp_id fails
+        // with VerifyError.
+        //
+        // disp_id in Ruffle:
+        // Let's just do the same. We could go the easy way and always-increment,
+        // but reusing same disp_id for overriding virtual methods is a nice idea,
+        // both for space savings and lets us still use call_method() internally
+        // for virtual dispatch when it's safe to do so.
+        // And let's error on every `callmethod` opcode and hope it never ever happens.
+
+        // slot_id in FP:
+        // It's a bit more complex here.
+        //
+        // If class and superclass come from the same ABC (constant pool) or superclass has no slots,
+        // then slot_ids are respected; conflicts result in VerifyError.
+        // You are only allowed to call `getslot` on the object if calling method,
+        // callee's class and all subclasses come from the same ABC (constant pool).
+        // (or class has no slots, but then `getslot` fails verification anyway as it's out-of-range)
+        // 
+        // If class and superclass come from different ABC (constant pool) and superclass has slots,
+        // then subclass's slot_ids are ignored and assigned automatically.
+        // ignored, as in: even if trait's slot_id conflicts, it's not verified at all.
+        //
+        // In practice, this all means that compiler is allowed to use `getslot`
+        // or affect/observe slots in any other way only on classes
+        // it had 100% control over slot layout of, on the entire class hierarchy.
+        //
+        // (*in particular, trying to use `getslot` in script initializer
+        //   on class defined in same script also throws VerifyError;
+        //   not sure why it's treated as "different constant pool")
+
+        // slot_id in Ruffle:
+        // Currently we don't really have ability to "compare abc between
+        // methods/activations/traits/etc", so let's do something simpler.
+        // We try to respect slot_id whenever possible, but if a conflict arises,
+        // let's just auto-assign a higher one.
+        // The logic is that if we ever see a conflict, either it's a class that
+        // wouldn't have passed verification in the first place, or trying to observe
+        // such slot with `getslot` wouldn't have passed verification in the first place.
+        // So such SWFs shouldn't be encountered in the wild.
+        //
+        // Worst-case is that someone can hand-craft such an SWF speficically for Ruff;e
+        // and be able to access private class members with `getslot/setslot,
+        // so long-term it's still something we should verify.
+        // (and it's far from the only verification check we lack anyway)
+
+
         let mut write = self.0.write(activation.context.gc_context);
+        let write = write.deref_mut();
 
 
         write.defining_class = defining_class;
@@ -92,53 +147,92 @@ impl<'gc> VTable<'gc> {
             write.default_slots = superclass_vtable.0.read().default_slots.clone();
         }
 
-        let mut max_disp_id = write.method_table.len().saturating_sub(1) as u32;
-        let mut max_slot_id = write.default_slots.len().saturating_sub(1) as u32;
+        let (resolved_traits, method_table, default_slots) =
+            (&mut write.resolved_traits, &mut write.method_table, &mut write.default_slots);
 
         for trait_data in traits {
-            if let Some(disp_id) = trait_data.disp_id() {
-                max_disp_id = max_disp_id.max(disp_id);
-            }
-            if let Some(slot_id) = trait_data.slot_id() {
-                max_slot_id = max_slot_id.max(slot_id);
-            }
-        }
-
-        write.method_table.resize_with(max_disp_id as usize + 1, Default::default);
-        write.default_slots.resize_with(max_slot_id as usize + 1, Default::default);
-
-        for trait_data in traits {
-            let mut trait_data = trait_data.clone();
-            if matches!(trait_data.disp_id(), Some(0)) {
-                max_disp_id += 1;
-                trait_data.set_disp_id(max_disp_id);
-                write.method_table.resize_with(max_disp_id as usize + 1, Default::default);
-            }
-            if let Some(disp_id) = trait_data.disp_id() {
-                let entry = (defining_class, trait_data.as_method().unwrap());
-                write.method_table[disp_id as usize] = Some(entry);
-            }
-
-            if matches!(trait_data.slot_id(), Some(0)) {
-                max_slot_id += 1;
-                trait_data.set_slot_id(max_slot_id);
-                write.default_slots.resize_with(max_slot_id as usize + 1, Default::default);
-            }
-            if let Some(slot_id) = trait_data.slot_id() {
-                let value = trait_to_default_value(scope, &trait_data, activation);
-                write.default_slots[slot_id as usize] = value;
-            }
-
-            let new_prop = trait_to_property(&trait_data);
-
-            if let Some(prop_slot) = write.resolved_traits.get_mut(trait_data.name()) {
-                match trait_data.kind() {
-                    TraitKind::Getter { disp_id, .. } => prop_slot.install_virtual_getter(*disp_id)?,
-                    TraitKind::Setter { disp_id, .. } => prop_slot.install_virtual_setter(*disp_id)?,
-                    _ => *prop_slot = new_prop,
+            match trait_data.kind() {
+                TraitKind::Method { method, .. } => {
+                    let entry = (defining_class, method.clone());
+                    match resolved_traits.get(trait_data.name()) {
+                        Some(Property::Method{disp_id, ..}) => {
+                            let disp_id = *disp_id as usize;
+                            method_table[disp_id] = entry;
+                        },
+                        // note: ideally overwriting other property types
+                        // should be a VerifyError
+                        _ => {
+                            let disp_id = method_table.len() as u32;
+                            method_table.push(entry);
+                            resolved_traits.insert(trait_data.name(), Property::new_method(disp_id));
+                        }
+                    }
                 }
-            } else {
-                write.resolved_traits.insert(trait_data.name(), new_prop);
+                TraitKind::Getter { method, .. } => {
+                    let entry = (defining_class, method.clone());
+                    match resolved_traits.get_mut(trait_data.name()) {
+                        Some(Property::Virtual{get: Some(disp_id), ..}) => {
+                            let disp_id = *disp_id as usize;
+                            method_table[disp_id] = entry;
+                        },
+                        Some(Property::Virtual{get, ..}) => {
+                            let disp_id = method_table.len() as u32;
+                            *get = Some(disp_id);
+                            method_table.push(entry);
+                        },
+                        _ => {
+                            let disp_id = method_table.len() as u32;
+                            method_table.push(entry);
+                            resolved_traits.insert(trait_data.name(), Property::new_getter(disp_id));
+                        }
+                    }
+                },
+                TraitKind::Setter { method, .. } => {
+                    let entry = (defining_class, method.clone());
+                    match resolved_traits.get_mut(trait_data.name()) {
+                        Some(Property::Virtual{set: Some(disp_id), ..}) => {
+                            method_table[*disp_id as usize] = entry;
+                        },
+                        Some(Property::Virtual{set, ..}) => {
+                            let disp_id = method_table.len() as u32;
+                            method_table.push(entry);
+                            *set = Some(disp_id);
+                        },
+                        _ => {
+                            let disp_id = method_table.len() as u32;
+                            method_table.push(entry);
+                            resolved_traits.insert(trait_data.name(), Property::new_setter(disp_id));
+                        }
+                    }
+                },
+                TraitKind::Slot { slot_id, .. }
+                | TraitKind::Const { slot_id, .. }
+                | TraitKind::Function { slot_id, .. }
+                | TraitKind::Class { slot_id, .. } => {
+                    let slot_id = *slot_id;
+
+                    let value = trait_to_default_value(scope, &trait_data, activation);
+                    let value = Some(value);
+
+                    let new_slot_id = if slot_id == 0 {
+                        default_slots.push(value);
+                        default_slots.len()as u32 - 1
+                    } else {
+                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
+                            // slot_id conflict
+                            default_slots.push(value);
+                            default_slots.len() as u32 - 1
+                        } else {
+                            if slot_id as usize >= default_slots.len() {
+                                default_slots.resize_with(slot_id as usize + 1, Default::default);
+                            }
+                            default_slots[slot_id as usize] = value;
+                            slot_id
+                        }
+                    } as u32;
+
+                    resolved_traits.insert(trait_data.name(), Property::new_slot(new_slot_id));
+                }
             }
         }
 
@@ -233,43 +327,23 @@ impl<'gc> VTable<'gc> {
 
 }
 
-fn trait_to_property<'gc>(trait_data: &Trait<'gc>) -> Property {
-    match trait_data.kind() {
-        TraitKind::Slot { slot_id, .. }
-        | TraitKind::Const { slot_id, .. }
-        | TraitKind::Function { slot_id, .. }
-        | TraitKind::Class { slot_id, .. } => Property::new_slot(*slot_id),
-        TraitKind::Method { disp_id, .. } => Property::new_method(*disp_id),
-        TraitKind::Getter { disp_id, .. } => {
-            let mut prop = Property::new_virtual();
-            prop.install_virtual_getter(*disp_id).unwrap();
-            prop
-        },
-        TraitKind::Setter { disp_id, .. } => {
-            let mut prop = Property::new_virtual();
-            prop.install_virtual_setter(*disp_id).unwrap();
-            prop
-        },
-    }
-}
-
 pub fn trait_to_default_value<'gc>(
     scope: ScopeChain<'gc>,
     trait_data: &Trait<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Option<Value<'gc>> {
+) -> Value<'gc> {
     match trait_data.kind() {
-        TraitKind::Slot { default_value, .. } => Some(default_value.clone()),
-        TraitKind::Const { default_value, .. } => Some(default_value.clone()),
+        TraitKind::Slot { default_value, .. } => default_value.clone(),
+        TraitKind::Const { default_value, .. } => default_value.clone(),
         TraitKind::Function { function, .. } => {
-            Some(FunctionObject::from_function(
+            FunctionObject::from_function(
                 activation,
                 function.clone(),
                 scope,
-            ).unwrap().into())
+            ).unwrap().into()
         }
-        TraitKind::Class { .. } => Some(Value::Undefined),
-        _ => None
+        TraitKind::Class { .. } => Value::Undefined,
+        _ => unreachable!()
     }
 }
 
