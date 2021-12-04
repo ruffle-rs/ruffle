@@ -7,7 +7,6 @@ use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
-use crate::avm2::vtable::trait_to_default_value;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
@@ -384,30 +383,14 @@ impl<'gc> Script<'gc> {
 
             let scope = ScopeChain::new(domain);
 
-            // scope for managing lifetime of self.traits() borrow
-            {
-                let traits: &[Trait<'gc>] = &self.traits()?;
-                for newtrait in traits {
-                    if newtrait.disp_id().is_some() {
-                        todo!("script traits with disp_ids are not handled due to possible conflicts with Object instance methods")
-                        // ideally we should have something like:
-                        // globals.vtable().unwrap().install_traits_late(
-                        //    &mut null_activation,
-                        //    &self.traits()?,
-                        //    ScopeChain::new(domain)
-                        // )
-                        // as installing traits this way is pretty flimsy
-                    }
-                    if let Some(slot_id) = newtrait.slot_id() {
-                        globals.install_const_late(
-                            null_activation.context.gc_context,
-                            Some(slot_id),
-                            newtrait.name(),
-                            trait_to_default_value(scope, newtrait, &mut null_activation)
-                        );
-                    }
-                }
-            }
+            globals.vtable().unwrap().init_vtable(
+                None,
+                &self.traits()?,
+                scope,
+                None,
+                &mut null_activation,
+            )?;
+            globals.install_instance_slots(&mut null_activation);
 
             Avm2::run_script_initializer(*self, context)?;
 

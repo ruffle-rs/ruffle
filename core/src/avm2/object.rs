@@ -587,10 +587,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn install_instance_slots(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
-        from_class_object: ClassObject<'gc>,
     ) {
-        let slots = from_class_object.instance_vtable().default_slots();
-        self.base_mut(activation.context.gc_context).install_instance_slots(activation, slots);
+        self.base_mut(activation.context.gc_context).install_instance_slots();
     }
 
     /// Call the object.

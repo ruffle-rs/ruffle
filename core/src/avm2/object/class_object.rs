@@ -265,9 +265,7 @@ impl<'gc> ClassObject<'gc> {
 
     fn install_class_vtable_and_slots(&mut self, activation: &mut Activation<'_, 'gc, '_>) {
         self.set_vtable(activation.context.gc_context, self.class_vtable());
-
-        let slots = self.class_vtable().default_slots();
-        self.base_mut(activation.context.gc_context).install_instance_slots(activation, slots);
+        self.base_mut(activation.context.gc_context).install_instance_slots();
     }
 
     /// Link this class to a prototype.
@@ -763,7 +761,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         let mut instance = instance_allocator(self, prototype, activation)?;
 
-        instance.install_instance_slots(activation, self);
+        instance.install_instance_slots(activation);
 
         self.call_init(Some(instance), arguments, activation)?;
 

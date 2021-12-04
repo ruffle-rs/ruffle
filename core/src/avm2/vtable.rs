@@ -10,6 +10,7 @@ use crate::avm2::names::{QName, Multiname};
 use crate::avm2::object::{FunctionObject, ClassObject, Object};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::ops::DerefMut;
+use std::cell::Ref;
 
 
 #[derive(Collect, Debug, Clone, Copy)]
@@ -64,8 +65,8 @@ impl<'gc> VTable<'gc> {
         self.0.read().method_table.get(disp_id as usize).cloned()
     }
 
-    pub fn default_slots(self) -> Vec<Option<Value<'gc>>> {
-        self.0.read().default_slots.clone()
+    pub fn default_slots(&self) -> Ref<Vec<Option<Value<'gc>>>> {
+        Ref::map(self.0.read(), |v| &v.default_slots)
     }
 
     /// Calculate the flattened list of instance traits that this class
@@ -335,7 +336,7 @@ impl<'gc> VTable<'gc> {
 
 }
 
-pub fn trait_to_default_value<'gc>(
+fn trait_to_default_value<'gc>(
     scope: ScopeChain<'gc>,
     trait_data: &Trait<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,

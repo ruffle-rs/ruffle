@@ -79,7 +79,7 @@ impl<'gc> VectorObject<'gc> {
         ))
         .into();
 
-        object.install_instance_slots(activation, applied_class);
+        object.install_instance_slots(activation);
 
         Ok(object)
     }

@@ -57,7 +57,7 @@ impl<'gc> DomainObject<'gc> {
             DomainObjectData { base, domain },
         ))
         .into();
-        this.install_instance_slots(activation, class);
+        this.install_instance_slots(activation);
 
         class.call_init(Some(this), &[], activation)?;
 

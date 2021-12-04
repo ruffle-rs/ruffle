@@ -56,7 +56,7 @@ impl<'gc> ByteArrayObject<'gc> {
             },
         ))
         .into();
-        instance.install_instance_slots(activation, class);
+        instance.install_instance_slots(activation);
 
         class.call_native_init(Some(instance), &[], activation)?;
 
