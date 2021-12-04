@@ -244,8 +244,14 @@ impl App {
             .with_title(title)
             .with_window_icon(Some(icon))
             .with_inner_size(window_size)
+            .with_min_inner_size(window_size)
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
             .build(&event_loop)?;
+
+        // Setting and resetting `min_inner_size` is a workaround for a winit and/or KDE Plasma
+        // bug on Wayland, resulting in the window being shown initially in 0x0 size, despite
+        // of the correct `inner_size` being passed to the builder.
+        window.set_min_inner_size(None::<LogicalSize<i16>>);
 
         let viewport_size = window.inner_size();
         let viewport_scale_factor = window.scale_factor();
