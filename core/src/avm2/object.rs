@@ -560,18 +560,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
 
-
-    
     /// Install a const trait on the global object.
     /// This should only ever be called on the `global` object, during initialization.
     fn install_const_late(
         &mut self,
         mc: MutationContext<'gc, '_>,
-        slot_id: Option<u32>,
         name: QName<'gc>,
         value: Value<'gc>,
     ) {
-        let new_slot_id = self.vtable().unwrap().install_const_trait_late(mc, slot_id, name, value.clone());
+        let new_slot_id = self.vtable().unwrap().install_const_trait_late(mc, name, value.clone());
         self.base_mut(mc).install_const_slot_late(new_slot_id, value);
     }
 
