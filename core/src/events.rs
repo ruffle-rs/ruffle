@@ -60,9 +60,18 @@ pub enum ClipEventResult {
     Handled,
 }
 
-/// An event type that can be handled by a movie clip
-/// instance.
-/// TODO: Move this representation in the swf crate?
+/// An event type that can be handled by a movie clip instance.
+///
+/// Clip events come in two flavors: anycast and targeted. An anycast event is
+/// provided to the first `DisplayObject` that claims it, in render list order.
+/// Targeted events are sent to a particular object and are lost if not
+/// handled by the object.
+///
+/// Clip events are consumed by both AVM1 and AVM2 event handlers. As AVM2
+/// provides it's own notion of broadcast events, none of the anycast events
+/// here will be dispatched to AVM2. Targeted events are dispatched to both
+/// kinds of scripts; with AVM2 versions of those events optionally providing
+/// capture and bubbling phases.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ClipEvent {
     Construct,
@@ -73,15 +82,50 @@ pub enum ClipEvent {
     Initialize,
     KeyUp,
     KeyDown,
-    KeyPress { key_code: ButtonKeyCode },
+    KeyPress {
+        key_code: ButtonKeyCode,
+    },
     Load,
+
+    /// Mouse button was released.
+    ///
+    /// This is an anycast event.
     MouseUp,
+
+    /// Mouse button was released inside this current display object.
+    ///
+    /// This is a targeted equivalent to `MouseUp` and corresponds directly to
+    /// the AVM2 `mouseUp` event, which has no AVM1 equivalent. The target of
+    /// this event is determined by the position of the mouse cursor.
+    MouseUpInside,
+
+    /// Mouse button was pressed.
+    ///
+    /// This is an anycast event.
     MouseDown,
     MouseMove,
+
+    /// Mouse button was pressed inside this current display object.
+    ///
+    /// This is a targeted equivalent to `MouseDown` and is available in both
+    /// AVM1 and AVM2. The target of this event is determined by the position
+    /// of the mouse cursor.
     Press,
     RollOut,
     RollOver,
+
+    /// Mouse button was released inside a previously-pressed display object.
+    ///
+    /// This is a targeted equivalent to `MouseUp` and is available in both
+    /// AVM1 and AVM2. The target of this event is the last target of the
+    /// `Press` event.
     Release,
+
+    /// Mouse button was released outside a previously-pressed display object.
+    ///
+    /// This is a targeted equivalent to `MouseUp` and is available in both
+    /// AVM1 and AVM2. The target of this event is the last target of the
+    /// `Press` event.
     ReleaseOutside,
     Unload,
 }
@@ -124,7 +168,7 @@ impl ClipEvent {
             ClipEvent::Load => ClipEventFlag::LOAD,
             ClipEvent::MouseDown => ClipEventFlag::MOUSE_DOWN,
             ClipEvent::MouseMove => ClipEventFlag::MOUSE_MOVE,
-            ClipEvent::MouseUp => ClipEventFlag::MOUSE_UP,
+            ClipEvent::MouseUp | ClipEvent::MouseUpInside => ClipEventFlag::MOUSE_UP,
             ClipEvent::Press => ClipEventFlag::PRESS,
             ClipEvent::RollOut => ClipEventFlag::ROLL_OUT,
             ClipEvent::RollOver => ClipEventFlag::ROLL_OVER,
@@ -179,6 +223,7 @@ impl ClipEvent {
             ClipEvent::Release => Some("onRelease"),
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
+            ClipEvent::MouseUpInside => None,
         }
     }
 }
