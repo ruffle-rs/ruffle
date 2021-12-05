@@ -182,7 +182,7 @@ pub trait TInteractiveObject<'gc>:
 
                 ClipEventResult::Handled
             }
-            ClipEvent::Release => {
+            ClipEvent::MouseUpInside => {
                 let mut avm2_event = Avm2Event::new(
                     "mouseUp",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
@@ -194,6 +194,9 @@ pub trait TInteractiveObject<'gc>:
                     log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                 }
 
+                ClipEventResult::Handled
+            }
+            ClipEvent::Release => {
                 let mut avm2_event = Avm2Event::new(
                     "click",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
@@ -208,17 +211,6 @@ pub trait TInteractiveObject<'gc>:
                 ClipEventResult::Handled
             }
             ClipEvent::ReleaseOutside => {
-                let mut avm2_event = Avm2Event::new(
-                    "mouseUp",
-                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
-                );
-
-                avm2_event.set_bubbles(true);
-
-                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
-                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
-                }
-
                 let mut avm2_event = Avm2Event::new(
                     "releaseOutside",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),

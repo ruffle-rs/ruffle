@@ -1176,6 +1176,12 @@ impl Player {
                         events.push((context.stage.into(), ClipEvent::Press));
                     }
                 } else {
+                    if let Some(over_object) = context.mouse_over_object {
+                        events.push((over_object, ClipEvent::MouseUpInside));
+                    } else {
+                        events.push((context.stage.into(), ClipEvent::MouseUpInside));
+                    }
+
                     let released_inside = DisplayObject::option_ptr_eq(
                         context.mouse_down_object,
                         context.mouse_over_object,
