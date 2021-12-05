@@ -2213,7 +2213,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
         } else {
-            self.event_dispatch_to_avm2(context, event);
+            handled = self.event_dispatch_to_avm2(context, event);
         }
 
         handled
