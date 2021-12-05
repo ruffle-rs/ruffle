@@ -1324,7 +1324,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The cursor to use when this object is the hovered element under a mouse.
-    fn mouse_cursor(&self) -> MouseCursor {
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
         MouseCursor::Hand
     }
 

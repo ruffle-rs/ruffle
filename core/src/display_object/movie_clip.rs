@@ -1992,8 +1992,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         None
     }
 
-    fn mouse_cursor(&self) -> MouseCursor {
-        if self.use_hand_cursor() {
+    fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        if self.use_hand_cursor() && self.is_button_mode(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow

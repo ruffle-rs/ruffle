@@ -670,7 +670,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         None
     }
 
-    fn mouse_cursor(&self) -> MouseCursor {
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
         if self.use_hand_cursor() {
             MouseCursor::Hand
         } else {

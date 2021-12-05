@@ -1156,7 +1156,7 @@ impl Player {
                     }
                     // Rolled over the new object.
                     if let Some(new_over_object) = new_over_object {
-                        new_cursor = new_over_object.mouse_cursor();
+                        new_cursor = new_over_object.mouse_cursor(context);
                         events.push((new_over_object, ClipEvent::RollOver));
                     } else {
                         new_cursor = MouseCursor::Arrow;
@@ -1190,7 +1190,7 @@ impl Player {
                         }
                         // The new object is rolled over immediately.
                         if let Some(over_object) = context.mouse_over_object {
-                            new_cursor = over_object.mouse_cursor();
+                            new_cursor = over_object.mouse_cursor(context);
                             events.push((over_object, ClipEvent::RollOver));
                         } else {
                             new_cursor = MouseCursor::Arrow;
