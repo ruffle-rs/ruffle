@@ -1980,7 +1980,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 return result;
             }
 
-            if !require_button_mode {
+            // AVM2 allows movie clips to recieve mouse events without
+            // explicitly enabling button mode.
+            if !require_button_mode || matches!(self.object2(), Avm2Value::Object(_)) {
                 let mut options = HitTestOptions::SKIP_INVISIBLE;
                 options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
                 if self.hit_test_shape(context, point, options) {
