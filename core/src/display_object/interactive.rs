@@ -156,15 +156,19 @@ pub trait TInteractiveObject<'gc>:
     /// This is only intended to be called for events defined by
     /// `InteractiveObject` itself. Display object impls that have their own
     /// event types should dispatch them in `event_dispatch`.
-    fn event_dispatch_to_avm2(self, context: &mut UpdateContext<'_, 'gc, '_>, event: ClipEvent) {
+    fn event_dispatch_to_avm2(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
+    ) -> ClipEventResult {
         let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
             target
         } else {
-            return;
+            return ClipEventResult::NotHandled;
         };
 
         match event {
-            ClipEvent::MouseDown => {
+            ClipEvent::Press => {
                 let mut avm2_event = Avm2Event::new(
                     "mouseDown",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
@@ -175,8 +179,10 @@ pub trait TInteractiveObject<'gc>:
                 if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
                     log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                 }
+
+                ClipEventResult::Handled
             }
-            ClipEvent::MouseUp => {
+            ClipEvent::Release => {
                 let mut avm2_event = Avm2Event::new(
                     "mouseUp",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
@@ -187,9 +193,47 @@ pub trait TInteractiveObject<'gc>:
                 if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
                     log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                 }
+
+                let mut avm2_event = Avm2Event::new(
+                    "click",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                ClipEventResult::Handled
             }
-            _ => {}
-        };
+            ClipEvent::ReleaseOutside => {
+                let mut avm2_event = Avm2Event::new(
+                    "mouseUp",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                let mut avm2_event = Avm2Event::new(
+                    "releaseOutside",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                ClipEventResult::Handled
+            }
+            _ => ClipEventResult::NotHandled,
+        }
     }
 
     /// Executes and propagates the given clip event.

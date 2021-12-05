@@ -781,7 +781,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         event: ClipEvent,
     ) -> ClipEventResult {
-        let handled = ClipEventResult::NotHandled;
         let write = self.0.write(context.gc_context);
 
         // Translate the clip event to a button event, based on how the button state changes.
@@ -805,9 +804,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             self.set_state(context, new_state);
         }
 
-        self.event_dispatch_to_avm2(context, event);
-
-        handled
+        self.event_dispatch_to_avm2(context, event)
     }
 }
 
