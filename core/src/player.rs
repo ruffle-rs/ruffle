@@ -1172,6 +1172,8 @@ impl Player {
                     if let Some(over_object) = context.mouse_over_object {
                         events.push((over_object, ClipEvent::Press));
                         context.mouse_down_object = context.mouse_over_object;
+                    } else {
+                        events.push((context.stage.into(), ClipEvent::Press));
                     }
                 } else {
                     let released_inside = DisplayObject::option_ptr_eq(
@@ -1182,11 +1184,15 @@ impl Player {
                         // Released inside the clicked object.
                         if let Some(down_object) = context.mouse_down_object {
                             events.push((down_object, ClipEvent::Release));
+                        } else {
+                            events.push((context.stage.into(), ClipEvent::Release));
                         }
                     } else {
                         // Released outside the clicked object.
                         if let Some(down_object) = context.mouse_down_object {
                             events.push((down_object, ClipEvent::ReleaseOutside));
+                        } else {
+                            events.push((context.stage.into(), ClipEvent::ReleaseOutside));
                         }
                         // The new object is rolled over immediately.
                         if let Some(over_object) = context.mouse_over_object {

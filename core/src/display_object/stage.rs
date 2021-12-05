@@ -717,11 +717,11 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
 
     fn event_dispatch(
         self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        _event: ClipEvent,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        event: ClipEvent,
     ) -> ClipEventResult {
-        //NOTE: Stage does not appear to fire common InteractiveObject events
-        //within AVM2.
+        self.event_dispatch_to_avm2(context, event);
+
         ClipEventResult::Handled
     }
 }
