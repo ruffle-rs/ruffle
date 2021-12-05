@@ -87,7 +87,13 @@ pub struct MovieClipData<'gc> {
     is_focusable: bool,
     has_focus: bool,
     enabled: bool,
+
+    /// Show a hand cursor when the clip is in button mode.
     use_hand_cursor: bool,
+
+    /// Force enable button mode, which causes all mouse-related events to
+    /// trigger on this clip rather than any input-eligible children.
+    button_mode: bool,
     last_queued_script_frame: Option<FrameNumber>,
     queued_script_frame: Option<FrameNumber>,
     queued_goto_frame: Option<FrameNumber>,
@@ -116,6 +122,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -150,6 +157,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -187,6 +195,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -221,6 +230,7 @@ impl<'gc> MovieClip<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
+                button_mode: false,
                 last_queued_script_frame: None,
                 queued_script_frame: None,
                 queued_goto_frame: None,
@@ -1675,12 +1685,25 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().tag_stream_len()
     }
 
+    pub fn forced_button_mode(self) -> bool {
+        self.0.read().button_mode
+    }
+
+    pub fn set_forced_button_mode(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        button_mode: bool,
+    ) {
+        self.0.write(context.gc_context).button_mode = button_mode;
+    }
+
     pub fn is_button_mode(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> bool {
-        if self
-            .0
-            .read()
-            .clip_event_flags
-            .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
+        if self.forced_button_mode()
+            || self
+                .0
+                .read()
+                .clip_event_flags
+                .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
         {
             true
         } else {

@@ -113,6 +113,44 @@ pub fn set_sound_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `buttonMode`'s getter
+pub fn button_mode<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_movie_clip())
+    {
+        return Ok(mc.forced_button_mode().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `buttonMode`'s setter
+pub fn set_button_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mc) = this
+        .and_then(|o| o.as_display_object())
+        .and_then(|o| o.as_movie_clip())
+    {
+        let forced_button_mode = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_boolean();
+
+        mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `Sprite`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -144,6 +182,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(sound_transform),
             Some(set_sound_transform),
         ),
+        ("buttonMode", Some(button_mode), Some(set_button_mode)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
