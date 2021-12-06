@@ -22,19 +22,28 @@ var test = {
 	k: 5.3
 }
 
-trace(JSON.stringify(test).length)
+function get_props(str) {
+	var parsed = JSON.parse(str);
+	with (parsed) {
+			trace(a, c, d, e, e.f, e.g, e.h, j, j.e, k);
+	}
+	trace(str.length);
+}
 
-trace(JSON.stringify(test, function(k, v) {
+get_props(JSON.stringify(test))
+
+get_props(JSON.stringify(test, function(k, v) {
 	if (v == "b" || v == "i") {
 		return "replacement";
 	}
 	return v;
-}).length);
+}));
 
-trace(JSON.stringify(test, ["a", "e", "f"]).length);
 
-trace(JSON.stringify(test, null, 1).length);
 
-trace(JSON.stringify(test, null, 20).length);
+get_props(JSON.stringify(test, null, 1));
+
+get_props(JSON.stringify(test, null, 20));
 
 trace(JSON.stringify(test, null, "custom").length);
+trace(JSON.stringify(test, ["a", "e", "f"]).length);
