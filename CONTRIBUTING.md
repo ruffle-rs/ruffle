@@ -20,7 +20,7 @@ This document serves as a general guide for contributing to Ruffle. Follow your 
 
 ## Getting Started
 
-The [Ruffle wiki](https://github.com/ruffle-rs/ruffle/wiki) is a great way to familiarize yourself with the project. It contains info on how to building Ruffle, using Ruffle, and links to helpful documentation about the Flash format.
+The [Ruffle wiki](https://github.com/ruffle-rs/ruffle/wiki) is a great way to familiarize yourself with the project. It contains info on how to build Ruffle, using Ruffle, and links to helpful documentation about the Flash format.
 
 Feel free to ask questions in our [Discord server](https://discord.gg/J8hgCQN).
 
