@@ -136,7 +136,7 @@ fn apply<'gc>(
 
             let mut resolved_args = Vec::with_capacity(arg_storage.len());
             for (i, v) in arg_storage.iter().enumerate() {
-                resolved_args.push(resolve_array_hole(activation, arg_array, i, v.clone())?);
+                resolved_args.push(resolve_array_hole(activation, arg_array, i, *v)?);
             }
 
             resolved_args
