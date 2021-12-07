@@ -357,7 +357,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let mut name = self.resolve_multiname(multiname)?;
 
         if name.is_none() {
-            name = self.set_property_undef(receiver, multiname, value.clone(), activation)?;
+            name = self.set_property_undef(receiver, multiname, value, activation)?;
         }
 
         if name.is_none() {
@@ -986,10 +986,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.clone(),
+                    *default_value,
                 );
 
-                Ok(default_value.clone())
+                Ok(*default_value)
             }
             TraitKind::Method { .. } => Ok(Value::Undefined),
             TraitKind::Getter {
@@ -1059,10 +1059,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation.context.gc_context,
                     trait_name,
                     *slot_id,
-                    default_value.clone(),
+                    *default_value,
                 );
 
-                Ok(default_value.clone())
+                Ok(*default_value)
             }
         }
     }
