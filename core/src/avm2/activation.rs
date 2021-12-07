@@ -439,7 +439,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 .iter()
                 .enumerate()
             {
-                *write.get_mut(1 + i as u32).unwrap() = arg.clone();
+                *write.get_mut(1 + i as u32).unwrap() = *arg;
             }
         }
 
