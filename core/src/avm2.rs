@@ -310,7 +310,7 @@ impl<'gc> Avm2<'gc> {
         let mut value = value.into();
         if let Value::Object(o) = value {
             if let Some(prim) = o.as_primitive() {
-                value = prim.clone();
+                value = *prim;
             }
         }
 
