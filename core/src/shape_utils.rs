@@ -598,13 +598,13 @@ mod tests {
     #[test]
     fn basic_shape() {
         let shape = build_shape(vec![
-            ShapeRecord::StyleChange(swf::StyleChangeData {
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
                 move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
                 fill_style_0: None,
                 fill_style_1: Some(1),
                 line_style: None,
                 new_styles: None,
-            }),
+            })),
             ShapeRecord::StraightEdge {
                 delta_x: Twips::from_pixels(100.0),
                 delta_y: Twips::from_pixels(0.0),
@@ -655,13 +655,13 @@ mod tests {
     #[test]
     fn flipped_edges() {
         let shape = build_shape(vec![
-            ShapeRecord::StyleChange(swf::StyleChangeData {
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
                 move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
                 fill_style_0: None,
                 fill_style_1: Some(1),
                 line_style: None,
                 new_styles: None,
-            }),
+            })),
             ShapeRecord::StraightEdge {
                 delta_x: Twips::from_pixels(100.0),
                 delta_y: Twips::from_pixels(0.0),
@@ -674,13 +674,13 @@ mod tests {
                 delta_x: Twips::from_pixels(-100.0),
                 delta_y: Twips::from_pixels(0.0),
             },
-            ShapeRecord::StyleChange(swf::StyleChangeData {
+            ShapeRecord::StyleChange(Box::new(swf::StyleChangeData {
                 move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(100.0))),
                 fill_style_0: Some(1),
                 fill_style_1: Some(0),
                 line_style: None,
                 new_styles: None,
-            }),
+            })),
             ShapeRecord::StraightEdge {
                 delta_x: Twips::from_pixels(0.0),
                 delta_y: Twips::from_pixels(100.0),

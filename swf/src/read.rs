@@ -1835,7 +1835,7 @@ impl<'a> Reader<'a> {
                     new_style.new_styles = Some(new_styles);
                     *bits.reader() = reader.input;
                 }
-                Some(ShapeRecord::StyleChange(new_style))
+                Some(ShapeRecord::StyleChange(Box::new(new_style)))
             } else {
                 None
             }
