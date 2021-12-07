@@ -287,7 +287,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let mut name = self.resolve_multiname(multiname)?;
 
         if name.is_none() {
-            name = self.set_property_undef(receiver, multiname, value.clone(), activation)?;
+            name = self.set_property_undef(receiver, multiname, value, activation)?;
         }
 
         if name.is_none() {
