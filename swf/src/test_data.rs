@@ -405,13 +405,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 id: 1,
                 glyphs: vec![
                     vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(19.45), Twips::from_pixels(-14.0))),
                             fill_style_0: None,
                             fill_style_1: Some(1),
                             line_style: Some(0),
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(-15.6),
                             delta_y: Twips::from_pixels(0.0),
@@ -430,13 +430,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     ],
                     vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(32.65), Twips::from_pixels(7.5))),
                             fill_style_0: None,
                             fill_style_1: Some(1),
                             line_style: Some(0),
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(-32.75),
                             delta_y: Twips::from_pixels(0.0),
@@ -509,24 +509,24 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             y_max: 0.0,
                         }),
                         shape_records: vec![
-                            ShapeRecord::StyleChange(StyleChangeData {
+                            ShapeRecord::StyleChange(Box::new(StyleChangeData {
                                 move_to: Some((12.9, -37.2)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
                                 new_styles: None
-                            }),
+                            })),
                             ShapeRecord::StraightEdge { delta_x: -0.65, delta_y: 26.95 },
                             ShapeRecord::StraightEdge { delta_x: -4.25, delta_y: 0.0 },
                             ShapeRecord::StraightEdge { delta_x: -0.7, delta_y: -26.95 },
                             ShapeRecord::StraightEdge { delta_x: 5.6, delta_y: 0.0 },
-                            ShapeRecord::StyleChange(StyleChangeData {
+                            ShapeRecord::StyleChange(Box::new(StyleChangeData {
                                 move_to: Some((12.65, 0.0)),
                                 fill_style_0: None,
                                 fill_style_1: None,
                                 line_style: None,
                                 new_styles: None
-                            }),
+                            })),
                             ShapeRecord::StraightEdge { delta_x: -5.1, delta_y: 0.0 },
                             ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: -5.25 },
                             ShapeRecord::StraightEdge { delta_x: 5.1, delta_y: 0.0 },
@@ -564,13 +564,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 glyphs: vec![
                     Glyph {
                         shape_records: vec![
-                            ShapeRecord::StyleChange(StyleChangeData {
+                            ShapeRecord::StyleChange(Box::new(StyleChangeData {
                                 move_to: Some((205.5, -527.5)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
                                 new_styles: None }
-                            ),
+                            )),
                             ShapeRecord::StraightEdge { delta_x: 371.0, delta_y: 0.0 },
                             ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 65.0 },
                             ShapeRecord::StraightEdge { delta_x: -371.0, delta_y: 0.0 },
@@ -582,13 +582,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     },
                     Glyph {
                         shape_records: vec![
-                            ShapeRecord::StyleChange(StyleChangeData {
+                            ShapeRecord::StyleChange(Box::new(StyleChangeData {
                                 move_to: Some((249.0, -694.0)),
                                 fill_style_0: Some(1),
                                 fill_style_1: None,
                                 line_style: None,
                                 new_styles: None
-                            }),
+                            })),
                             ShapeRecord::StraightEdge { delta_x: 135.5, delta_y: 0.0 },
                             ShapeRecord::StraightEdge { delta_x: 0.0, delta_y: 660.5 },
                             ShapeRecord::StraightEdge { delta_x: -135.5, delta_y: 0.0 },
@@ -764,13 +764,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     )],
                     shape: vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: Some(1),
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(40.0),
                             delta_y: Twips::from_pixels(0.0),
@@ -787,13 +787,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             delta_x: Twips::from_pixels(0.0),
                             delta_y: Twips::from_pixels(-40.0),
                         },
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
                             fill_style_0: Some(1),
                             fill_style_1: None,
                             line_style: None,
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(40.0),
                             delta_y: Twips::from_pixels(0.0),
@@ -867,13 +867,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     )],
                     shape: vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(60.0))),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: None,
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(17.4),
                             delta_y: Twips::from_pixels(-50.65),
@@ -1004,13 +1004,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         allow_close: true,
                     }],
                     shape: vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: Some(1),
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(200.0),
                             delta_y: Twips::from_pixels(0.0),
@@ -1027,13 +1027,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             delta_x: Twips::from_pixels(0.0),
                             delta_y: Twips::from_pixels(-200.0),
                         },
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
                             fill_style_0: Some(1),
                             fill_style_1: None,
                             line_style: None,
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(200.0),
                             delta_y: Twips::from_pixels(0.0),
@@ -1127,13 +1127,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         allow_close: true,
                     }],
                     shape: vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(26.0), Twips::from_pixels(147.35))),
                             fill_style_0: None,
                             fill_style_1: None,
                             line_style: None,
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(95.0),
                             delta_y: Twips::from_pixels(-131.0),
@@ -1252,13 +1252,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         allow_close: true,
                     }],
                     shape: vec![
-                        ShapeRecord::StyleChange(StyleChangeData {
+                        ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
                             fill_style_0: Some(1),
                             fill_style_1: None,
                             line_style: Some(1),
                             new_styles: None,
-                        }),
+                        })),
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(200.0),
                             delta_y: Twips::from_pixels(0.0),
@@ -1451,13 +1451,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     line_styles: vec![],
                 },
                 shape: vec![
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: None,
                         fill_style_0: None,
                         fill_style_1: Some(1),
                         line_style: None,
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::StraightEdge {
                         delta_x: Twips::from_pixels(20.0),
                         delta_y: Twips::from_pixels(0.0),
@@ -1534,13 +1534,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     line_styles: vec![],
                 },
                 shape: vec![
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: Some((Twips::from_pixels(50.0), Twips::from_pixels(25.0))),
                         fill_style_0: None,
                         fill_style_1: Some(1),
                         line_style: None,
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::CurvedEdge {
                         control_delta_x: Twips::from_pixels(0.0),
                         control_delta_y: Twips::from_pixels(10.35),
@@ -1743,13 +1743,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     ],
                 },
                 shape: vec![
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: Some((Twips::from_pixels(150.0), Twips::from_pixels(0.0))),
                         fill_style_0: None,
                         fill_style_1: Some(1),
                         line_style: Some(1),
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::StraightEdge {
                         delta_x: Twips::from_pixels(100.0),
                         delta_y: Twips::from_pixels(0.0),
@@ -1758,13 +1758,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta_x: Twips::from_pixels(0.0),
                         delta_y: Twips::from_pixels(100.0),
                     },
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: None,
                         fill_style_0: None,
                         fill_style_1: None,
                         line_style: Some(3),
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::StraightEdge {
                         delta_x: Twips::from_pixels(-100.0),
                         delta_y: Twips::from_pixels(0.0),
@@ -1773,13 +1773,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta_x: Twips::from_pixels(0.0),
                         delta_y: Twips::from_pixels(-100.0),
                     },
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: Some((Twips::from_pixels(100.0), Twips::from_pixels(50.0))),
                         fill_style_0: None,
                         fill_style_1: Some(2),
                         line_style: Some(2),
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::CurvedEdge {
                         control_delta_x: Twips::from_pixels(0.0),
                         control_delta_y: Twips::from_pixels(20.65),
@@ -2619,13 +2619,13 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     }],
                 },
                 shape: vec![
-                    ShapeRecord::StyleChange(StyleChangeData {
+                    ShapeRecord::StyleChange(Box::new(StyleChangeData {
                         move_to: None,
                         fill_style_0: None,
                         fill_style_1: None,
                         line_style: Some(1),
                         new_styles: None,
-                    }),
+                    })),
                     ShapeRecord::StraightEdge {
                         delta_x: Twips::from_pixels(200.0),
                         delta_y: Twips::from_pixels(0.0),

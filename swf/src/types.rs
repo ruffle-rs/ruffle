@@ -1003,7 +1003,7 @@ pub struct ShapeStyles {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ShapeRecord {
-    StyleChange(StyleChangeData),
+    StyleChange(Box<StyleChangeData>),
     StraightEdge {
         delta_x: Twips,
         delta_y: Twips,
