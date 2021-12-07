@@ -113,11 +113,11 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
     }
 
     fn to_string(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self.0.read().primitive.clone())
+        Ok(self.0.read().primitive)
     }
 
     fn to_locale_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        match self.0.read().primitive.clone() {
+        match self.0.read().primitive {
             val @ Value::Integer(_) | val @ Value::Unsigned(_) => Ok(val),
             _ => {
                 let class_name = self
@@ -131,7 +131,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
     }
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self.0.read().primitive.clone())
+        Ok(self.0.read().primitive)
     }
 
     fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
