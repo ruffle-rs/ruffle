@@ -57,7 +57,7 @@ pub fn add_frame_script<'gc>(
         .and_then(|o| o.as_display_object())
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0].clone(), s[1].clone())) {
+        for (frame_id, callable) in args.chunks_exact(2).map(|s| (s[0], s[1])) {
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
             let callable = callable.coerce_to_object(activation)?;
 
