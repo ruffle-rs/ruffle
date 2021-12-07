@@ -299,7 +299,7 @@ impl<'gc> Value<'gc> {
 
         match self {
             Value::Object(o) if hint == Hint::String => {
-                let mut prim = self.clone();
+                let mut prim = *self;
                 let object = *o;
 
                 if let Value::Object(_) =
@@ -333,7 +333,7 @@ impl<'gc> Value<'gc> {
                 Err("TypeError: cannot convert object to string".into())
             }
             Value::Object(o) if hint == Hint::Number => {
-                let mut prim = self.clone();
+                let mut prim = *self;
                 let object = *o;
 
                 if let Value::Object(_) =
@@ -366,7 +366,7 @@ impl<'gc> Value<'gc> {
 
                 Err("TypeError: cannot convert object to number".into())
             }
-            _ => Ok(self.clone()),
+            _ => Ok(*self),
         }
     }
 
@@ -571,7 +571,7 @@ impl<'gc> Value<'gc> {
             _ => {}
         };
 
-        PrimitiveObject::from_primitive(self.clone(), activation)
+        PrimitiveObject::from_primitive(*self, activation)
     }
 
     /// Coerce the value to another value by type name.
