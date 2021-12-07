@@ -6,7 +6,7 @@ use crate::avm2::class::Class;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{ArrayObject, FunctionObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -163,7 +163,7 @@ enum Replacer<'gc> {
 
 struct AvmSerializer<'gc> {
     /// This object stack will be used to detect circular references and return an error instead of a panic.
-    obj_stack: Vec<*const ObjectPtr>,
+    obj_stack: Vec<Object<'gc>>,
     replacer: Option<Replacer<'gc>>,
 }
 
@@ -308,10 +308,10 @@ impl<'gc> AvmSerializer<'gc> {
                 if let Some(prim) = obj.as_primitive() {
                     return self.serialize_value(activation, prim.deref().clone());
                 }
-                if self.obj_stack.contains(&obj.as_ptr()) {
+                if self.obj_stack.contains(&obj) {
                     return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
                 }
-                self.obj_stack.push(obj.as_ptr());
+                self.obj_stack.push(obj);
                 let value = if obj.is_of_type(activation.avm2().classes().array, activation)? {
                     // TODO: Vectors
                     self.serialize_iterable(activation, obj)?
