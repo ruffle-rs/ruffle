@@ -501,7 +501,7 @@ pub fn filter<'gc>(
             let (i, item) = r?;
 
             let result = callback
-                .call(receiver, &[item.clone(), i.into(), this.into()], activation)?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if result {
@@ -659,7 +659,7 @@ pub fn map<'gc>(
             let (i, item) = r?;
 
             let new_item =
-                callback.call(receiver, &[item.clone(), i.into(), this.into()], activation)?;
+                callback.call(receiver, &[item, i.into(), this.into()], activation)?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
             new_storage.push(coerced_item)?;
@@ -906,7 +906,7 @@ pub fn sort<'gc>(
 
             let mut unique_sort_satisfied = true;
             let mut error_signal = Ok(());
-            values.sort_unstable_by(|a, b| match compare(activation, a.clone(), b.clone()) {
+            values.sort_unstable_by(|a, b| match compare(activation, *a, *b) {
                 Ok(Ordering::Equal) => {
                     unique_sort_satisfied = false;
                     Ordering::Equal
