@@ -45,9 +45,10 @@ fn deserialize_json_inner<'gc>(
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.context.gc_context, entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
-                let mapped_val = reviver.map_or(Ok(val.clone()), |reviver| {
-                    reviver.call(None, &[key.into(), val], activation)
-                })?;
+                let mapped_val = match reviver {
+                    None => val,
+                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                };
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_property(activation, &QName::new(Namespace::public(), key).into())?;
                 } else {
@@ -65,9 +66,10 @@ fn deserialize_json_inner<'gc>(
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(js_arr.len());
             for (key, val) in js_arr.iter().enumerate() {
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
-                let mapped_val = reviver.map_or(Ok(val.clone()), |reviver| {
-                    reviver.call(None, &[key.into(), val], activation)
-                })?;
+                let mapped_val = match reviver {
+                    None => val,
+                    Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
+                };
                 arr.push(Some(mapped_val));
             }
             let storage = ArrayStorage::from_storage(arr);
