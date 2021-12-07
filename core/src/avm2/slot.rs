@@ -51,7 +51,7 @@ impl<'gc> Slot<'gc> {
     pub fn get(&self) -> Option<Value<'gc>> {
         match self {
             Self::Unoccupied => None,
-            Self::Occupied { value, .. } => Some(value.clone()),
+            Self::Occupied { value, .. } => Some(*value),
         }
     }
 
