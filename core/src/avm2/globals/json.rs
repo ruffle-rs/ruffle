@@ -50,11 +50,11 @@ fn deserialize_json_inner<'gc>(
                     Some(reviver) => reviver.call(None, &[key.into(), val], activation)?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_property(activation, &QName::new(Namespace::public(), key).into())?;
+                    obj.delete_property(activation, &QName::dynamic_name(key).into())?;
                 } else {
                     obj.set_property(
                         obj,
-                        &QName::new(Namespace::public(), key).into(),
+                        &QName::dynamic_name(key).into(),
                         mapped_val,
                         activation,
                     )?;
