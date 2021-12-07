@@ -132,7 +132,7 @@ fn to_exponential<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            if let Value::Unsigned(number) = this.clone() {
+            if let Value::Unsigned(number) = *this {
                 let digits = args
                     .get(0)
                     .cloned()
@@ -166,7 +166,7 @@ fn to_fixed<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            if let Value::Unsigned(number) = this.clone() {
+            if let Value::Unsigned(number) = *this {
                 let digits = args
                     .get(0)
                     .cloned()
@@ -197,7 +197,7 @@ fn to_precision<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            if let Value::Unsigned(number) = this.clone() {
+            if let Value::Unsigned(number) = *this {
                 let wanted_digits = args
                     .get(0)
                     .cloned()
@@ -224,7 +224,7 @@ fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            if let Value::Unsigned(number) = this.clone() {
+            if let Value::Unsigned(number) = *this {
                 let radix = args
                     .get(0)
                     .cloned()
@@ -251,7 +251,7 @@ fn value_of<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            return Ok(this.clone());
+            return Ok(*this);
         }
     }
 
