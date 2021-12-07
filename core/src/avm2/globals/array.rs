@@ -987,12 +987,7 @@ fn extract_array_values<'gc>(
 
     let mut unholey_vec = Vec::with_capacity(holey_vec.length());
     for (i, v) in holey_vec.iter().enumerate() {
-        unholey_vec.push(resolve_array_hole(
-            activation,
-            object.unwrap(),
-            i,
-            v,
-        )?);
+        unholey_vec.push(resolve_array_hole(activation, object.unwrap(), i, v)?);
     }
 
     Ok(Some(unholey_vec))

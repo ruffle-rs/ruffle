@@ -658,8 +658,7 @@ pub fn map<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
 
-            let new_item =
-                callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+            let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
             let coerced_item = new_item.coerce_to_type(activation, value_type)?;
 
             new_storage.push(coerced_item)?;
