@@ -95,7 +95,7 @@ fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            match this.clone() {
+            match *this {
                 Value::Bool(true) => return Ok("true".into()),
                 Value::Bool(false) => return Ok("false".into()),
                 _ => {}
@@ -114,7 +114,7 @@ fn value_of<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(this) = this.as_primitive() {
-            return Ok(this.clone());
+            return Ok(*this);
         }
     }
 
