@@ -28,7 +28,7 @@ pub enum Hint {
 /// An AVM2 value.
 ///
 /// TODO: AVM2 also needs Scope, Namespace, and XML values.
-#[derive(Clone, Collect, Debug)]
+#[derive(Clone, Copy, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Value<'gc> {
     Undefined,
