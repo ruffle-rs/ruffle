@@ -66,7 +66,7 @@ pub fn graphics<'gc>(
                     this.set_property(
                         this,
                         &QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "graphics").into(),
-                        graphics.clone(),
+                        graphics,
                         activation,
                     )?;
                     graphics
