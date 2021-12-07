@@ -33,7 +33,7 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn from_args(values: &[Value<'gc>]) -> Self {
         let storage = values
             .iter()
-            .map(|v| Some(v.clone()))
+            .map(|v| Some(*v))
             .collect::<Vec<Option<Value<'gc>>>>();
 
         Self { storage }
@@ -89,7 +89,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// Holes are copied as holes and not resolved at append time.
     pub fn append(&mut self, other_array: &Self) {
         for other_item in other_array.storage.iter() {
-            self.storage.push(other_item.clone())
+            self.storage.push(*other_item)
         }
     }
 

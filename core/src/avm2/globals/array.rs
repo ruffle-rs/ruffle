@@ -40,7 +40,7 @@ pub fn instance_init<'gc>(
             }
 
             for (i, arg) in args.iter().enumerate() {
-                array.set(i, arg.clone());
+                array.set(i, *arg);
             }
         }
     }
@@ -114,7 +114,7 @@ pub fn concat<'gc>(
         if let Some(other_array) = arg.coerce_to_object(activation)?.as_array_storage() {
             base_array.append(&other_array);
         } else {
-            base_array.push(arg.clone());
+            base_array.push(*arg);
         }
     }
 
@@ -435,7 +435,7 @@ pub fn filter<'gc>(
         while let Some(r) = iter.next(activation) {
             let (i, item) = r?;
             let is_allowed = callback
-                .call(receiver, &[item.clone(), i.into(), this.into()], activation)?
+                .call(receiver, &[item, i.into(), this.into()], activation)?
                 .coerce_to_boolean();
 
             if is_allowed {
@@ -607,7 +607,7 @@ pub fn push<'gc>(
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             for arg in args {
-                array.push(arg.clone())
+                array.push(*arg)
             }
         }
     }
@@ -676,7 +676,7 @@ pub fn unshift<'gc>(
     if let Some(this) = this {
         if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
             for arg in args.iter().rev() {
-                array.unshift(arg.clone())
+                array.unshift(*arg)
             }
         }
     }
@@ -773,7 +773,7 @@ pub fn splice<'gc>(
 
                 let mut resolved = Vec::with_capacity(contents.len());
                 for (i, v) in contents.iter().enumerate() {
-                    resolved.push(resolve_array_hole(activation, this, i, v.clone())?);
+                    resolved.push(resolve_array_hole(activation, this, i, *v)?);
                 }
 
                 let removed = resolved
@@ -852,8 +852,8 @@ where
     let mut error_signal = Ok(());
 
     values.sort_unstable_by(|(_a_index, a), (_b_index, b)| {
-        let unresolved_a = a.clone();
-        let unresolved_b = b.clone();
+        let unresolved_a = *a;
+        let unresolved_b = *b;
 
         if matches!(unresolved_a, Value::Undefined) && matches!(unresolved_b, Value::Undefined) {
             unique_sort_satisfied = false;
@@ -864,7 +864,7 @@ where
             return Ordering::Less;
         }
 
-        match sort_func(activation, a.clone(), b.clone()) {
+        match sort_func(activation, *a, *b) {
             Ok(Ordering::Equal) => {
                 unique_sort_satisfied = false;
                 Ordering::Equal
@@ -948,7 +948,7 @@ fn sort_postprocess<'gc>(
                         if let Some(old_value) = old_array.get(*src) {
                             Some(old_value)
                         } else if !matches!(v, Value::Undefined) {
-                            Some(v.clone())
+                            Some(*v)
                         } else {
                             None
                         }
@@ -991,7 +991,7 @@ fn extract_array_values<'gc>(
             activation,
             object.unwrap(),
             i,
-            v.clone(),
+            v,
         )?);
     }
 
@@ -1036,7 +1036,7 @@ pub fn sort<'gc>(
             values
                 .iter()
                 .enumerate()
-                .map(|(i, v)| (i, v.clone()))
+                .map(|(i, v)| (i, *v))
                 .collect::<Vec<(usize, Value<'gc>)>>()
         } else {
             return Ok(0.into());
@@ -1094,7 +1094,7 @@ fn extract_maybe_array_values<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Vec<Value<'gc>>, Error> {
-    Ok(extract_array_values(activation, value.clone())?.unwrap_or_else(|| vec![value]))
+    Ok(extract_array_values(activation, value)?.unwrap_or_else(|| vec![value]))
 }
 
 /// Given a value, extract its array values and coerce them to strings.
@@ -1157,7 +1157,7 @@ pub fn sort_on<'gc>(
                 values
                     .iter()
                     .enumerate()
-                    .map(|(i, v)| (i, v.clone()))
+                    .map(|(i, v)| (i, *v))
                     .collect::<Vec<(usize, Value<'gc>)>>()
             } else {
                 return Ok(0.into());
