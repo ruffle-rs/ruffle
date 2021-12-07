@@ -85,9 +85,10 @@ fn deserialize_json<'gc>(
     reviver: Option<Object<'gc>>,
 ) -> Result<Value<'gc>, Error> {
     let val = deserialize_json_inner(activation, json, reviver)?;
-    reviver.map_or(Ok(val.clone()), |reviver| {
-        reviver.call(None, &["".into(), val], activation)
-    })
+    match reviver {
+        None => Ok(val),
+        Some(reviver) => reviver.call(None, &["".into(), val], activation),
+    }
 }
 
 /// This is a custom generator backend for the json crate that allows modifying the indentation character.
