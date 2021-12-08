@@ -640,44 +640,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         false
     }
 
-    fn mouse_pick(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        point: (Twips, Twips),
-        require_button_mode: bool,
-    ) -> Option<DisplayObject<'gc>> {
-        // The button is hovered if the mouse is over any child nodes.
-        if self.visible() {
-            let state = self.0.read().state;
-            let state_child = self.get_state_child(state.into());
-
-            if let Some(state_child) = state_child {
-                let mouse_pick = state_child.mouse_pick(context, point, require_button_mode);
-                if mouse_pick.is_some() {
-                    return mouse_pick;
-                }
-            }
-
-            let hit_area = self.0.read().hit_area;
-            if let Some(hit_area) = hit_area {
-                // hit_area is not actually a child, so transform point into local space before passing it down.
-                let point = self.global_to_local(point);
-                if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some((*self).into());
-                }
-            }
-        }
-        None
-    }
-
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        if self.use_hand_cursor() {
-            MouseCursor::Hand
-        } else {
-            MouseCursor::Arrow
-        }
-    }
-
     fn object2(&self) -> Avm2Value<'gc> {
         self.0
             .read()
@@ -807,6 +769,46 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         }
 
         self.event_dispatch_to_avm2(context, event)
+    }
+
+    fn mouse_pick(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Option<InteractiveObject<'gc>> {
+        // The button is hovered if the mouse is over any child nodes.
+        if self.visible() {
+            let state = self.0.read().state;
+            let state_child = self.get_state_child(state.into());
+
+            if let Some(state_child) = state_child {
+                let mouse_pick = state_child
+                    .as_interactive()
+                    .and_then(|c| c.mouse_pick(context, point, require_button_mode));
+                if mouse_pick.is_some() {
+                    return mouse_pick;
+                }
+            }
+
+            let hit_area = self.0.read().hit_area;
+            if let Some(hit_area) = hit_area {
+                // hit_area is not actually a child, so transform point into local space before passing it down.
+                let point = self.global_to_local(point);
+                if hit_area.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
+                    return Some((*self).into());
+                }
+            }
+        }
+        None
+    }
+
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        if self.use_hand_cursor() {
+            MouseCursor::Hand
+        } else {
+            MouseCursor::Arrow
+        }
     }
 }
 

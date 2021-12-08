@@ -1762,27 +1762,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_removed(context.gc_context, true);
     }
 
-    fn mouse_pick(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        point: (Twips, Twips),
-        _require_button_mode: bool,
-    ) -> Option<DisplayObject<'gc>> {
-        // The button is hovered if the mouse is over any child nodes.
-        if self.visible()
-            && self.is_selectable()
-            && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
-        {
-            Some((*self).into())
-        } else {
-            None
-        }
-    }
-
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        MouseCursor::IBeam
-    }
-
     fn on_focus_changed(&self, gc_context: MutationContext<'gc, '_>, focused: bool) {
         let mut text = self.0.write(gc_context);
         text.has_focus = focused;
@@ -1838,6 +1817,27 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         self.event_dispatch_to_avm2(context, event);
 
         ClipEventResult::Handled
+    }
+
+    fn mouse_pick(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+        _require_button_mode: bool,
+    ) -> Option<InteractiveObject<'gc>> {
+        // The button is hovered if the mouse is over any child nodes.
+        if self.visible()
+            && self.is_selectable()
+            && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
+        {
+            Some((*self).into())
+        } else {
+            None
+        }
+    }
+
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        MouseCursor::IBeam
     }
 }
 

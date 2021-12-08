@@ -16,7 +16,7 @@ use crate::backend::{
     video::VideoBackend,
 };
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
@@ -98,10 +98,10 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     pub stage: Stage<'gc>,
 
     /// The display object that the mouse is currently hovering over.
-    pub mouse_over_object: Option<DisplayObject<'gc>>,
+    pub mouse_over_object: Option<InteractiveObject<'gc>>,
 
     /// If the mouse is down, the display object that the mouse is currently pressing.
-    pub mouse_down_object: Option<DisplayObject<'gc>>,
+    pub mouse_down_object: Option<InteractiveObject<'gc>>,
 
     /// The input manager, tracking keys state.
     pub input: &'a InputManager,

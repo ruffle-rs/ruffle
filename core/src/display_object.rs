@@ -37,7 +37,6 @@ mod text;
 mod video;
 
 use crate::avm1::activation::Activation;
-use crate::backend::ui::MouseCursor;
 pub use crate::display_object::container::{
     DisplayObjectContainer, Lists, TDisplayObjectContainer,
 };
@@ -1279,16 +1278,6 @@ pub trait TDisplayObject<'gc>:
         self.hit_test_bounds(pos)
     }
 
-    #[allow(unused_variables)]
-    fn mouse_pick(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        pos: (Twips, Twips),
-        require_button_mode: bool,
-    ) -> Option<DisplayObject<'gc>> {
-        None
-    }
-
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -1321,11 +1310,6 @@ pub trait TDisplayObject<'gc>:
     /// This is used by movie clips to disable the mask when there are no children, for example.
     fn allow_as_mask(&self) -> bool {
         true
-    }
-
-    /// The cursor to use when this object is the hovered element under a mouse.
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        MouseCursor::Hand
     }
 
     /// Obtain the top-most non-Stage parent of the display tree hierarchy, if

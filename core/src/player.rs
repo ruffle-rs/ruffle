@@ -19,8 +19,8 @@ use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
-    EditText, MorphShape, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
-    StageScaleMode, TInteractiveObject,
+    EditText, InteractiveObject, MorphShape, MovieClip, Stage, StageAlign, StageDisplayState,
+    StageQuality, StageScaleMode, TInteractiveObject,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -65,10 +65,10 @@ struct GcRootData<'gc> {
     stage: Stage<'gc>,
 
     /// The display object that the mouse is currently hovering over.
-    mouse_hovered_object: Option<DisplayObject<'gc>>,
+    mouse_hovered_object: Option<InteractiveObject<'gc>>,
 
     /// If the mouse is down, the display object that the mouse is currently pressing.
-    mouse_pressed_object: Option<DisplayObject<'gc>>,
+    mouse_pressed_object: Option<InteractiveObject<'gc>>,
 
     /// The object being dragged via a `startDrag` action.
     drag_object: Option<DragObject<'gc>>,
@@ -1087,9 +1087,14 @@ impl Player {
                                 .iter_depth_list()
                                 .rev()
                                 .find_map(|(_depth, level)| {
-                                    level.mouse_pick(context, *context.mouse_position, false)
+                                    level.as_interactive().and_then(|l| {
+                                        l.mouse_pick(context, *context.mouse_position, false)
+                                    })
                                 });
-                        movie_clip.set_drop_target(context.gc_context, drop_target_object);
+                        movie_clip.set_drop_target(
+                            context.gc_context,
+                            drop_target_object.map(|d| d.as_displayobject()),
+                        );
                         display_object.set_visible(context.gc_context, was_visible);
                     }
                 }
@@ -1110,37 +1115,41 @@ impl Player {
                     .iter_depth_list()
                     .rev()
                     .find_map(|(_depth, level)| {
-                        level.mouse_pick(context, *context.mouse_position, true)
+                        level
+                            .as_interactive()
+                            .and_then(|l| l.mouse_pick(context, *context.mouse_position, true))
                     });
 
-            let mut events: smallvec::SmallVec<[(DisplayObject<'_>, ClipEvent); 2]> =
+            let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
 
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
-                if hovered.removed() {
+                if hovered.as_displayobject().removed() {
                     context.mouse_over_object = None;
                 }
             }
             if let Some(pressed) = context.mouse_down_object {
-                if pressed.removed() {
+                if pressed.as_displayobject().removed() {
                     context.mouse_down_object = None;
                 }
             }
 
             let cur_over_object = context.mouse_over_object;
             // Check if a new object has been hovered over.
-            if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
+            if !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignroed.
                 if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
-                        if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
-                        {
+                        if InteractiveObject::option_ptr_eq(
+                            context.mouse_down_object,
+                            cur_over_object,
+                        ) {
                             // Dragged from outside the clicked object to the inside.
                             events.push((down_object, ClipEvent::DragOut));
-                        } else if DisplayObject::option_ptr_eq(
+                        } else if InteractiveObject::option_ptr_eq(
                             context.mouse_down_object,
                             new_over_object,
                         ) {
@@ -1155,7 +1164,7 @@ impl Player {
                         events.push((
                             cur_over_object,
                             ClipEvent::RollOut {
-                                to: new_over_object.and_then(|d| d.as_interactive()),
+                                to: new_over_object,
                             },
                         ));
                     }
@@ -1165,7 +1174,7 @@ impl Player {
                         events.push((
                             new_over_object,
                             ClipEvent::RollOver {
-                                from: cur_over_object.and_then(|d| d.as_interactive()),
+                                from: cur_over_object,
                             },
                         ));
                     } else {
@@ -1192,7 +1201,7 @@ impl Player {
                         events.push((context.stage.into(), ClipEvent::MouseUpInside));
                     }
 
-                    let released_inside = DisplayObject::option_ptr_eq(
+                    let released_inside = InteractiveObject::option_ptr_eq(
                         context.mouse_down_object,
                         context.mouse_over_object,
                     );
@@ -1216,7 +1225,7 @@ impl Player {
                             events.push((
                                 over_object,
                                 ClipEvent::RollOver {
-                                    from: cur_over_object.and_then(|d| d.as_interactive()),
+                                    from: cur_over_object,
                                 },
                             ));
                         } else {
@@ -1232,10 +1241,8 @@ impl Player {
                 false
             } else {
                 for (object, event) in events {
-                    if !object.removed() {
-                        if let Some(interactive) = object.as_interactive() {
-                            interactive.handle_clip_event(context, event);
-                        }
+                    if !object.as_displayobject().removed() {
+                        object.handle_clip_event(context, event);
                     }
                 }
                 true

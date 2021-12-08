@@ -358,38 +358,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn mouse_pick(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        point: (Twips, Twips),
-        require_button_mode: bool,
-    ) -> Option<DisplayObject<'gc>> {
-        // The button is hovered if the mouse is over any child nodes.
-        if self.visible() {
-            for child in self.iter_render_list().rev() {
-                let result = child.mouse_pick(context, point, require_button_mode);
-                if result.is_some() {
-                    return result;
-                }
-            }
-
-            for child in self.0.read().hit_area.values() {
-                if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
-                    return Some((*self).into());
-                }
-            }
-        }
-        None
-    }
-
-    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        if self.use_hand_cursor() {
-            MouseCursor::Hand
-        } else {
-            MouseCursor::Arrow
-        }
-    }
-
     fn object(&self) -> Value<'gc> {
         self.0
             .read()
@@ -548,6 +516,40 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         }
 
         ClipEventResult::NotHandled
+    }
+
+    fn mouse_pick(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        point: (Twips, Twips),
+        require_button_mode: bool,
+    ) -> Option<InteractiveObject<'gc>> {
+        // The button is hovered if the mouse is over any child nodes.
+        if self.visible() {
+            for child in self.iter_render_list().rev() {
+                let result = child
+                    .as_interactive()
+                    .and_then(|c| c.mouse_pick(context, point, require_button_mode));
+                if result.is_some() {
+                    return result;
+                }
+            }
+
+            for child in self.0.read().hit_area.values() {
+                if child.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK) {
+                    return Some((*self).into());
+                }
+            }
+        }
+        None
+    }
+
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        if self.use_hand_cursor() {
+            MouseCursor::Hand
+        } else {
+            MouseCursor::Arrow
+        }
     }
 }
 

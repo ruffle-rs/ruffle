@@ -1,6 +1,7 @@
 //! Interactive object enumtrait
 
 use crate::avm2::{Avm2, Event as Avm2Event, EventData as Avm2EventData, Value as Avm2Value};
+use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
@@ -16,6 +17,7 @@ use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use swf::Twips;
 
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
@@ -250,11 +252,39 @@ pub trait TInteractiveObject<'gc>:
 
         self.event_dispatch(context, event)
     }
+
+    /// Determine the bottom-most interactive display object under the given
+    /// mouse cursor.
+    ///
+    /// Only objects capable of handling mouse input should flag themselves as
+    /// mouse-pickable, as doing so will make them eligible to recieve targeted
+    /// mouse events. As a result of this, the returned object will always be
+    /// an `InteractiveObject`.
+    fn mouse_pick(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _pos: (Twips, Twips),
+        _require_button_mode: bool,
+    ) -> Option<InteractiveObject<'gc>> {
+        None
+    }
+
+    /// The cursor to use when this object is the hovered element under a mouse.
+    fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        MouseCursor::Hand
+    }
 }
 
 impl<'gc> InteractiveObject<'gc> {
     pub fn ptr_eq<T: TInteractiveObject<'gc>>(a: T, b: T) -> bool {
         a.as_displayobject().as_ptr() == b.as_displayobject().as_ptr()
+    }
+
+    pub fn option_ptr_eq(
+        a: Option<InteractiveObject<'gc>>,
+        b: Option<InteractiveObject<'gc>>,
+    ) -> bool {
+        a.map(|o| o.as_displayobject().as_ptr()) == b.map(|o| o.as_displayobject().as_ptr())
     }
 }
 
