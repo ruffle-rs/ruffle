@@ -689,7 +689,11 @@ export class RufflePlayer extends HTMLElement {
      * Called when entering / leaving fullscreen
      */
     private fullScreenChange(): void {
-        this.instance?.set_fullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
+        this.instance?.set_fullscreen(
+            Boolean(
+                document.fullscreenElement || document.webkitFullscreenElement
+            )
+        );
     }
 
     private pointerDown(event: PointerEvent): void {
