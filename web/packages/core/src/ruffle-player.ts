@@ -223,7 +223,7 @@ export class RufflePlayer extends HTMLElement {
         );
         this.addEventListener(
             "webkitfullscreenchange",
-            this.webKitFullScreenChange.bind(this)
+            this.fullScreenChange.bind(this)
         );
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
@@ -686,23 +686,10 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Called when entering / leaving fullscreen on non-Safari
+     * Called when entering / leaving fullscreen
      */
     private fullScreenChange(): void {
-        // check if we have just stopped being full screen
-        if (document.fullscreenElement === null) {
-            this.instance?.set_fullscreen(false);
-        }
-    }
-
-    /**
-     * Called when entering / leaving fullscreen on Safari
-     */
-    private webKitFullScreenChange(): void {
-        // check if we have just stopped being full screen
-        if (document.webkitFullscreenElement === null) {
-            this.instance?.set_fullscreen(false);
-        }
+        this.instance?.set_fullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
     }
 
     private pointerDown(event: PointerEvent): void {
