@@ -264,8 +264,7 @@ impl fmt::Debug for SwfStr {
         for chr in self
             .string
             .iter()
-            .map(|&c| std::ascii::escape_default(c))
-            .flatten()
+            .flat_map(|&c| std::ascii::escape_default(c))
         {
             fmt::Write::write_char(f, char::from(chr))?;
         }
