@@ -251,3 +251,17 @@ pub trait TInteractiveObject<'gc>:
         self.event_dispatch(context, event)
     }
 }
+
+impl<'gc> InteractiveObject<'gc> {
+    pub fn ptr_eq<T: TInteractiveObject<'gc>>(a: T, b: T) -> bool {
+        a.as_displayobject().as_ptr() == b.as_displayobject().as_ptr()
+    }
+}
+
+impl<'gc> PartialEq for InteractiveObject<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        InteractiveObject::ptr_eq(*self, *other)
+    }
+}
+
+impl<'gc> Eq for InteractiveObject<'gc> {}

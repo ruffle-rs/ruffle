@@ -1,3 +1,4 @@
+use crate::display_object::InteractiveObject;
 use swf::ClipEventFlag;
 
 #[derive(Debug)]
@@ -73,7 +74,7 @@ pub enum ClipEventResult {
 /// kinds of scripts; with AVM2 versions of those events optionally providing
 /// capture and bubbling phases.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ClipEvent {
+pub enum ClipEvent<'gc> {
     Construct,
     Data,
     DragOut,
@@ -111,8 +112,23 @@ pub enum ClipEvent {
     /// AVM1 and AVM2. The target of this event is determined by the position
     /// of the mouse cursor.
     Press,
-    RollOut,
-    RollOver,
+
+    /// Mouse moved out of a display object.
+    ///
+    /// This is a targeted equivalent to `MouseMove` and is available in both
+    /// AVM1 and AVM2. Confusingly, it covers both `mouseOut` and `rollOut`,
+    /// the difference being that the former bubbles, while the latter only
+    /// fires when the cursor has left the parent *and* it's children.
+    ///
+    /// The parameter `to` is the current object that is now under the cursor.
+    RollOut {
+        to: Option<InteractiveObject<'gc>>,
+    },
+
+    /// Mouse moved into a display object.
+    RollOver {
+        from: Option<InteractiveObject<'gc>>,
+    },
 
     /// Mouse button was released inside a previously-pressed display object.
     ///
@@ -130,7 +146,7 @@ pub enum ClipEvent {
     Unload,
 }
 
-impl ClipEvent {
+impl<'gc> ClipEvent<'gc> {
     /// Method names for button event handles.
     pub const BUTTON_EVENT_METHODS: [&'static str; 7] = [
         "onDragOver",
@@ -170,8 +186,8 @@ impl ClipEvent {
             ClipEvent::MouseMove => ClipEventFlag::MOUSE_MOVE,
             ClipEvent::MouseUp | ClipEvent::MouseUpInside => ClipEventFlag::MOUSE_UP,
             ClipEvent::Press => ClipEventFlag::PRESS,
-            ClipEvent::RollOut => ClipEventFlag::ROLL_OUT,
-            ClipEvent::RollOver => ClipEventFlag::ROLL_OVER,
+            ClipEvent::RollOut { .. } => ClipEventFlag::ROLL_OUT,
+            ClipEvent::RollOver { .. } => ClipEventFlag::ROLL_OVER,
             ClipEvent::Release => ClipEventFlag::RELEASE,
             ClipEvent::ReleaseOutside => ClipEventFlag::RELEASE_OUTSIDE,
             ClipEvent::Unload => ClipEventFlag::UNLOAD,
@@ -218,8 +234,8 @@ impl ClipEvent {
             ClipEvent::MouseMove => Some("onMouseMove"),
             ClipEvent::MouseUp => Some("onMouseUp"),
             ClipEvent::Press => Some("onPress"),
-            ClipEvent::RollOut => Some("onRollOut"),
-            ClipEvent::RollOver => Some("onRollOver"),
+            ClipEvent::RollOut { .. } => Some("onRollOut"),
+            ClipEvent::RollOver { .. } => Some("onRollOver"),
             ClipEvent::Release => Some("onRelease"),
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),

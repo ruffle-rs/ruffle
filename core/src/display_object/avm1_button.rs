@@ -503,12 +503,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
                 ButtonActionCondition::OUT_DOWN_TO_IDLE,
                 static_data.over_to_up_sound.as_ref(),
             ),
-            ClipEvent::RollOut => (
+            ClipEvent::RollOut { .. } => (
                 ButtonState::Up,
                 ButtonActionCondition::OVER_UP_TO_IDLE,
                 static_data.over_to_up_sound.as_ref(),
             ),
-            ClipEvent::RollOver => (
+            ClipEvent::RollOver { .. } => (
                 ButtonState::Over,
                 ButtonActionCondition::IDLE_TO_OVER_UP,
                 static_data.up_to_over_sound.as_ref(),
