@@ -679,12 +679,12 @@ pub fn get_text_format<'gc>(
         let mut begin_index = args
             .get(0)
             .cloned()
-            .unwrap_or_else(|| Value::Integer(-1))
+            .unwrap_or(Value::Integer(-1))
             .coerce_to_i32(activation)?;
         let mut end_index = args
             .get(1)
             .cloned()
-            .unwrap_or_else(|| Value::Integer(-1))
+            .unwrap_or(Value::Integer(-1))
             .coerce_to_i32(activation)?;
 
         if begin_index < 0 {

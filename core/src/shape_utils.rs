@@ -281,8 +281,7 @@ impl PendingPath {
     fn into_draw_commands(self) -> impl Iterator<Item = DrawCommand> {
         self.segments
             .into_iter()
-            .map(PathSegment::into_draw_commands)
-            .flatten()
+            .flat_map(PathSegment::into_draw_commands)
     }
 }
 
