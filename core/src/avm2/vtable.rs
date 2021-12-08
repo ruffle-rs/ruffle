@@ -49,11 +49,19 @@ impl<'gc> VTable<'gc> {
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
-        self.0.read().resolved_traits.get_multiname(name).cloned()
+        self.0
+            .read()
+            .resolved_traits
+            .get_for_multiname(name)
+            .cloned()
     }
 
     pub fn has_trait(self, name: &Multiname<'gc>) -> bool {
-        self.0.read().resolved_traits.get_multiname(name).is_some()
+        self.0
+            .read()
+            .resolved_traits
+            .get_for_multiname(name)
+            .is_some()
     }
 
     pub fn get_method(self, disp_id: u32) -> Option<Method<'gc>> {

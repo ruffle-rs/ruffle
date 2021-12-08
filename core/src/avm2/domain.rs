@@ -1,7 +1,7 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
@@ -105,30 +105,11 @@ impl<'gc> Domain<'gc> {
     ) -> Result<Option<(QName<'gc>, Script<'gc>)>, Error> {
         let read = self.0.read();
 
-        let matching_set = if let Some(local_name) = multiname.local_name() {
-            read.defs.namespaces_of(local_name)
-        } else {
-            smallvec![]
-        };
-
         if let Some(name) = multiname.local_name() {
-            for ns in matching_set.iter() {
-                if multiname.namespace_set().any(|n| n == ns) {
-                    let qname = QName::new(*ns, name);
-                    let script = read.defs.get(qname).unwrap();
-
-                    return Ok(Some((qname, *script)));
-                }
+            if let Some((ns, script)) = read.defs.get_with_ns_for_multiname(multiname) {
+                let qname = QName::new(ns, name);
+                return Ok(Some((qname, *script)));
             }
-        }
-
-        if multiname.namespace_set().any(|n| *n == Namespace::Any) {
-            return Ok(matching_set.first().map(|ns| {
-                let qname = QName::new(*ns, multiname.local_name().unwrap());
-                let script = read.defs.get(qname).unwrap();
-
-                (qname, *script)
-            }));
         }
 
         if let Some(parent) = read.parent {

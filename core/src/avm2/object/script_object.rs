@@ -306,7 +306,9 @@ impl<'gc> ScriptObjectData<'gc> {
             //class chain.
             Some(vtable) => vtable.has_trait(name),
 
-            // Bare objects, ES3 objects, and prototypes do not have traits.
+            // bare objects do not have traits.
+            // TODO: should we have bare objects at all?
+            // Shouldn't every object have a vtable?
             None => false,
         }
     }

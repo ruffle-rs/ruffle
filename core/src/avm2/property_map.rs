@@ -67,7 +67,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
             .next()
     }
 
-    pub fn get_multiname(&self, name: &Multiname<'gc>) -> Option<&V> {
+    pub fn get_for_multiname(&self, name: &Multiname<'gc>) -> Option<&V> {
         if let Some(local_name) = name.local_name() {
             self.0
                 .get(&local_name)
@@ -76,6 +76,23 @@ impl<'gc, V> PropertyMap<'gc, V> {
                     v.iter()
                         .filter(|(n, _)| name.namespace_set().find(|ns| *ns == n).is_some())
                         .map(|(_, v)| v)
+                        .next()
+                })
+                .next()
+        } else {
+            None
+        }
+    }
+
+    pub fn get_with_ns_for_multiname(&self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, &V)> {
+        if let Some(local_name) = name.local_name() {
+            self.0
+                .get(&local_name)
+                .iter()
+                .filter_map(|v| {
+                    v.iter()
+                        .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
+                        .map(|(ns, v)| (*ns, v))
                         .next()
                 })
                 .next()
@@ -130,12 +147,5 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
 
         None
-    }
-
-    pub fn namespaces_of(&self, local_name: AvmString<'gc>) -> SmallVec<[Namespace<'gc>; 1]> {
-        self.0
-            .get(&local_name)
-            .map(|vals| vals.iter().map(|(ns, _v)| *ns).collect())
-            .unwrap_or_default()
     }
 }
