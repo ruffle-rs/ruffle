@@ -12,21 +12,21 @@ use gc_arena::MutationContext;
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of);
     "valueOf" => method(to_string_value_of);
-    "charAt" => method(char_at; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "charCodeAt" => method(char_code_at; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "concat" => method(concat; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "indexOf" => method(index_of; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "lastIndexOf" => method(last_index_of; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "slice" => method(slice; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "split" => method(split; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "substr" => method(substr; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "substring" => method(substring; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "toLowerCase" => method(to_lower_case; DONT_DELETE | DONT_ENUM | READ_ONLY);
-    "toUpperCase" => method(to_upper_case; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "charAt" => method(char_at; DONT_DELETE | DONT_ENUM);
+    "charCodeAt" => method(char_code_at; DONT_DELETE | DONT_ENUM);
+    "concat" => method(concat; DONT_DELETE | DONT_ENUM);
+    "indexOf" => method(index_of; DONT_DELETE | DONT_ENUM);
+    "lastIndexOf" => method(last_index_of; DONT_DELETE | DONT_ENUM);
+    "slice" => method(slice; DONT_DELETE | DONT_ENUM);
+    "split" => method(split; DONT_DELETE | DONT_ENUM);
+    "substr" => method(substr; DONT_DELETE | DONT_ENUM);
+    "substring" => method(substring; DONT_DELETE | DONT_ENUM);
+    "toLowerCase" => method(to_lower_case; DONT_DELETE | DONT_ENUM);
+    "toUpperCase" => method(to_upper_case; DONT_DELETE | DONT_ENUM);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "fromCharCode" => method(from_char_code; DONT_DELETE | DONT_ENUM | READ_ONLY);
+    "fromCharCode" => method(from_char_code; DONT_DELETE | DONT_ENUM);
 };
 
 /// `String` constructor

@@ -55,48 +55,48 @@ macro_rules! setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getDay" => method(local_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getFullYear" => method(local_getter!(Datelike::year); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getDate" => method(local_getter!(Datelike::day); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getHours" => method(local_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getMilliseconds" => method(local_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getMinutes" => method(local_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getMonth" => method(local_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getSeconds" => method(local_getter!(Timelike::second); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getYear" => method(local_getter!(year_1900_based); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "valueOf" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getTime" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCDate" => method(utc_getter!(Datelike::day); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCDay" => method(utc_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCFullYear" => method(utc_getter!(Datelike::year); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCHours" => method(utc_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCMilliseconds" => method(utc_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCMinutes" => method(utc_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCMonth" => method(utc_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCSeconds" => method(utc_getter!(Timelike::second); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getUTCYear" => method(utc_getter!(year_1900_based); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "toString" => method(setter!(to_string); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getTimezoneOffset" => method(setter!(get_timezone_offset); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setDate" => method(setter!(set_date); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCDate" => method(setter!(set_utc_date); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setYear" => method(setter!(set_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setFullYear" => method(setter!(set_full_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCFullYear" => method(setter!(set_utc_full_year); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setHours" => method(setter!(set_hours); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCHours" => method(setter!(set_utc_hours); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setMilliseconds" => method(setter!(set_milliseconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCMilliseconds" => method(setter!(set_utc_milliseconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setMinutes" => method(setter!(set_minutes); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCMinutes" => method(setter!(set_utc_minutes); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setMonth" => method(setter!(set_month); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCMonth" => method(setter!(set_utc_month); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setSeconds" => method(setter!(set_seconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setUTCSeconds" => method(setter!(set_utc_seconds); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setTime" => method(setter!(set_time); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getDay" => method(local_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE);
+    "getFullYear" => method(local_getter!(Datelike::year); DONT_ENUM | DONT_DELETE);
+    "getDate" => method(local_getter!(Datelike::day); DONT_ENUM | DONT_DELETE);
+    "getHours" => method(local_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE);
+    "getMilliseconds" => method(local_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE);
+    "getMinutes" => method(local_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE);
+    "getMonth" => method(local_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE);
+    "getSeconds" => method(local_getter!(Timelike::second); DONT_ENUM | DONT_DELETE);
+    "getYear" => method(local_getter!(year_1900_based); DONT_ENUM | DONT_DELETE);
+    "valueOf" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE);
+    "getTime" => method(utc_getter!(timestamp_millis_f64); DONT_ENUM | DONT_DELETE);
+    "getUTCDate" => method(utc_getter!(Datelike::day); DONT_ENUM | DONT_DELETE);
+    "getUTCDay" => method(utc_getter!(days_from_sunday); DONT_ENUM | DONT_DELETE);
+    "getUTCFullYear" => method(utc_getter!(Datelike::year); DONT_ENUM | DONT_DELETE);
+    "getUTCHours" => method(utc_getter!(Timelike::hour); DONT_ENUM | DONT_DELETE);
+    "getUTCMilliseconds" => method(utc_getter!(DateTime::timestamp_subsec_millis); DONT_ENUM | DONT_DELETE);
+    "getUTCMinutes" => method(utc_getter!(Timelike::minute); DONT_ENUM | DONT_DELETE);
+    "getUTCMonth" => method(utc_getter!(Datelike::month0); DONT_ENUM | DONT_DELETE);
+    "getUTCSeconds" => method(utc_getter!(Timelike::second); DONT_ENUM | DONT_DELETE);
+    "getUTCYear" => method(utc_getter!(year_1900_based); DONT_ENUM | DONT_DELETE);
+    "toString" => method(setter!(to_string); DONT_ENUM | DONT_DELETE);
+    "getTimezoneOffset" => method(setter!(get_timezone_offset); DONT_ENUM | DONT_DELETE);
+    "setDate" => method(setter!(set_date); DONT_ENUM | DONT_DELETE);
+    "setUTCDate" => method(setter!(set_utc_date); DONT_ENUM | DONT_DELETE);
+    "setYear" => method(setter!(set_year); DONT_ENUM | DONT_DELETE);
+    "setFullYear" => method(setter!(set_full_year); DONT_ENUM | DONT_DELETE);
+    "setUTCFullYear" => method(setter!(set_utc_full_year); DONT_ENUM | DONT_DELETE);
+    "setHours" => method(setter!(set_hours); DONT_ENUM | DONT_DELETE);
+    "setUTCHours" => method(setter!(set_utc_hours); DONT_ENUM | DONT_DELETE);
+    "setMilliseconds" => method(setter!(set_milliseconds); DONT_ENUM | DONT_DELETE);
+    "setUTCMilliseconds" => method(setter!(set_utc_milliseconds); DONT_ENUM | DONT_DELETE);
+    "setMinutes" => method(setter!(set_minutes); DONT_ENUM | DONT_DELETE);
+    "setUTCMinutes" => method(setter!(set_utc_minutes); DONT_ENUM | DONT_DELETE);
+    "setMonth" => method(setter!(set_month); DONT_ENUM | DONT_DELETE);
+    "setUTCMonth" => method(setter!(set_utc_month); DONT_ENUM | DONT_DELETE);
+    "setSeconds" => method(setter!(set_seconds); DONT_ENUM | DONT_DELETE);
+    "setUTCSeconds" => method(setter!(set_utc_seconds); DONT_ENUM | DONT_DELETE);
+    "setTime" => method(setter!(set_time); DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "UTC" => method(create_utc);
+    "UTC" => method(create_utc; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 fn days_from_sunday<T: Datelike>(date: &T) -> u32 {

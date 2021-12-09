@@ -31,26 +31,26 @@ type CompareFn<'a, 'gc> =
     Box<dyn 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering>;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "push" => method(push; DONT_ENUM);
-    "unshift" => method(unshift; DONT_ENUM);
-    "shift" => method(shift; DONT_ENUM);
-    "pop" => method(pop; DONT_ENUM);
-    "reverse" => method(reverse; DONT_ENUM);
-    "join" => method(join; DONT_ENUM);
-    "slice" => method(slice; DONT_ENUM);
-    "splice" => method(splice; DONT_ENUM);
-    "concat" => method(concat; DONT_ENUM);
-    "toString" => method(to_string; DONT_ENUM);
-    "sort" => method(sort; DONT_ENUM);
-    "sortOn" => method(sort_on; DONT_ENUM);
+    "push" => method(push; DONT_ENUM | DONT_DELETE);
+    "unshift" => method(unshift; DONT_ENUM | DONT_DELETE);
+    "shift" => method(shift; DONT_ENUM | DONT_DELETE);
+    "pop" => method(pop; DONT_ENUM | DONT_DELETE);
+    "reverse" => method(reverse; DONT_ENUM | DONT_DELETE);
+    "join" => method(join; DONT_ENUM | DONT_DELETE);
+    "slice" => method(slice; DONT_ENUM | DONT_DELETE);
+    "splice" => method(splice; DONT_ENUM | DONT_DELETE);
+    "concat" => method(concat; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
+    "sort" => method(sort; DONT_ENUM | DONT_DELETE);
+    "sortOn" => method(sort_on; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "CASEINSENSITIVE" => int(SortFlags::CASE_INSENSITIVE.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "DESCENDING" => int(SortFlags::DESCENDING.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "UNIQUESORT" => int(SortFlags::UNIQUE_SORT.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "RETURNINDEXEDARRAY" => int(SortFlags::RETURN_INDEXED_ARRAY.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "NUMERIC" => int(SortFlags::NUMERIC.bits(); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "CASEINSENSITIVE" => int(SortFlags::CASE_INSENSITIVE.bits());
+    "DESCENDING" => int(SortFlags::DESCENDING.bits());
+    "UNIQUESORT" => int(SortFlags::UNIQUE_SORT.bits());
+    "RETURNINDEXEDARRAY" => int(SortFlags::RETURN_INDEXED_ARRAY.bits());
+    "NUMERIC" => int(SortFlags::NUMERIC.bits());
 };
 
 pub fn create_array_object<'gc>(
