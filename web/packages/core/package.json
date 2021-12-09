@@ -9,14 +9,29 @@
         "pkg/"
     ],
     "scripts": {
-        "build": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt && npm run build:ts",
+        "build": "npm run build:ruffle_web && npm run build:ruffle_web-wasm_extensions && npm run build:ts",
+
+        "//1": "# Unfortunately, we have to set $RUSTFLAGS here, instead of in .cargo/config.toml (for example), because it's not possible to specify them per-profile; see cargo issue #7878.",
+        "//2": "# Enabling 'build-std' would also be great, but it's not stable yet.",
+
+        "build:ruffle_web": "cross-env OUT_NAME=ruffle_web RUSTFLAGS=\"--cfg=web_sys_unstable_apis\" npm run build:cargo_bindgen_opt",
+        "build:ruffle_web-wasm_extensions": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext\" npm run build:cargo_bindgen_opt",
+
+        "//3": "# This just chains together the three commands after it.",
+        "build:cargo_bindgen_opt": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt",
+
         "build:cargo": "cross-env-shell \"cargo build --release --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\"\"",
-        "build:wasm-bindgen": "wasm-bindgen ../../../target/wasm32-unknown-unknown/release/ruffle_web.wasm --target web --out-dir ./pkg --out-name ruffle_web",
-        "build:wasm-opt": "wasm-opt -o ./pkg/ruffle_web_bg.wasm -O -g ./pkg/ruffle_web_bg.wasm || npm run build:wasm-opt-failed",
+        "build:wasm-bindgen": "cross-env-shell \"wasm-bindgen ../../../target/wasm32-unknown-unknown/release/ruffle_web.wasm --target web --out-dir ./pkg --out-name $OUT_NAME\"",
+        "build:wasm-opt": "cross-env-shell \"wasm-opt -o ./pkg/${OUT_NAME}_bg.wasm -O -g ./pkg/${OUT_NAME}_bg.wasm || npm run build:wasm-opt-failed\"",
+
         "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
+
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
+    },
+    "dependencies": {
+        "wasm-feature-detect": "^1.2.11"
     },
     "devDependencies": {
         "@types/mocha": "^9.0.0",
