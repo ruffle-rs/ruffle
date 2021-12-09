@@ -12,17 +12,17 @@ use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "load" => method(load; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "send" => method(send; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "decode" => method(decode; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "contentType" => string("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "onData" => method(on_data; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "load" => method(load; DONT_ENUM | DONT_DELETE);
+    "send" => method(send; DONT_ENUM | DONT_DELETE);
+    "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE);
+    "decode" => method(decode; DONT_ENUM | DONT_DELETE);
+    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE);
+    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
+    "contentType" => string("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
+    "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE);
+    "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
+    "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE);
 };
 
 /// Implements `LoadVars`
