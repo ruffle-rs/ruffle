@@ -358,6 +358,10 @@ pub fn decode_jpeg(
             }
             rgb
         }
+        jpeg_decoder::PixelFormat::L16 => {
+            log::warn!("Unimplemented L16 JPEG pixel format");
+            decoded_data
+        }
     };
 
     // Decompress the alpha data (DEFLATE compression).
