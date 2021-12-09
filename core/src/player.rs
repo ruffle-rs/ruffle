@@ -910,30 +910,31 @@ impl Player {
             }
         }
 
-        // Propagate button events.
-        let button_event = match event {
-            // ASCII characters convert directly to keyPress button events.
-            PlayerEvent::TextInput { codepoint }
-                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
-            {
-                Some(ClipEvent::KeyPress {
-                    key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
-                })
-            }
-            // Special keys have custom values for keyPress.
-            PlayerEvent::KeyDown { key_code, .. } => {
-                if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
-                    Some(ClipEvent::KeyPress { key_code })
-                } else {
-                    None
+        self.mutate_with_update_context(|context| {
+            // Propagate button events.
+            let button_event = match event {
+                // ASCII characters convert directly to keyPress button events.
+                PlayerEvent::TextInput { codepoint }
+                    if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
+                {
+                    Some(ClipEvent::KeyPress {
+                        key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
+                    })
                 }
-            }
-            _ => None,
-        };
 
-        let mut key_press_handled = false;
-        if let Some(button_event) = button_event {
-            self.mutate_with_update_context(|context| {
+                // Special keys have custom values for keyPress.
+                PlayerEvent::KeyDown { key_code, .. } => {
+                    if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
+                        Some(ClipEvent::KeyPress { key_code })
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+
+            let mut key_press_handled = false;
+            if let Some(button_event) = button_event {
                 let levels: Vec<_> = context.stage.iter_depth_list().collect();
                 for (_depth, level) in levels {
                     let state = if let Some(interactive) = level.as_interactive() {
@@ -944,7 +945,7 @@ impl Player {
 
                     if state == ClipEventResult::Handled {
                         key_press_handled = true;
-                        return;
+                        break;
                     } else if let Some(text) =
                         context.focus_tracker.get().and_then(|o| o.as_edit_text())
                     {
@@ -953,26 +954,22 @@ impl Player {
                             == ClipEventResult::Handled
                         {
                             key_press_handled = true;
-                            return;
+                            break;
                         }
                     }
                 }
-            });
-        }
+            }
 
-        // keyPress events take precedence over text input.
-        if !key_press_handled {
-            if let PlayerEvent::TextInput { codepoint } = event {
-                self.mutate_with_update_context(|context| {
+            // keyPress events take precedence over text input.
+            if !key_press_handled {
+                if let PlayerEvent::TextInput { codepoint } = event {
                     if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
                         text.text_input(codepoint, context);
                     }
-                });
+                }
             }
-        }
 
-        // Propagate clip events.
-        self.mutate_with_update_context(|context| {
+            // Propagate clip events.
             let (clip_event, listener) = match event {
                 PlayerEvent::KeyDown { .. } => {
                     (Some(ClipEvent::KeyDown), Some(("Key", "onKeyDown", vec![])))

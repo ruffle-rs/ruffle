@@ -718,7 +718,7 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         self.event_dispatch_to_avm2(context, event);
 

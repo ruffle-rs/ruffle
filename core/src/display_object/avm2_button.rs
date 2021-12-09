@@ -722,7 +722,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn propagate_to_children(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if event.propagates() {
             let state = self.0.read().state;
@@ -741,7 +741,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         let write = self.0.write(context.gc_context);
 

@@ -1800,7 +1800,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         let tracker = context.focus_tracker;
         tracker.set(Some(self.into()), context);

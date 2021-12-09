@@ -126,6 +126,14 @@ pub enum ClipEvent<'gc> {
     },
 
     /// Mouse moved into a display object.
+    ///
+    /// This is a targeted equivalent to `MouseMove` and is available in both
+    /// AVM1 and AVM2. Confusingly, it covers both `mouseOver` and `rollOver`,
+    /// the difference being that the former bubbles, while the latter only
+    /// fires when the cursor has left the parent *and* it's children.
+    ///
+    /// The parameter `from` is the previous object that was under the cursor
+    /// before this one.
     RollOver {
         from: Option<InteractiveObject<'gc>>,
     },

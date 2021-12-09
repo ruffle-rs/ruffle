@@ -19,6 +19,44 @@ use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use swf::Twips;
 
+/// Find the lowest common ancestor between the display objects in `from` and
+/// `to`.
+///
+/// If no such common ancestor exists, this returns `None`.
+fn lowest_common_ancestor<'gc>(
+    from: DisplayObject<'gc>,
+    to: DisplayObject<'gc>,
+) -> Option<DisplayObject<'gc>> {
+    let mut from_parents = vec![];
+    let mut us = Some(from);
+    while let Some(parent) = us {
+        from_parents.push(parent);
+        us = parent.parent();
+    }
+
+    let mut to_parents = vec![];
+    let mut them = Some(to);
+    while let Some(parent) = them {
+        to_parents.push(parent);
+        them = parent.parent();
+    }
+
+    let mut hca = None;
+    for (us_parent, them_parent) in from_parents
+        .into_iter()
+        .rev()
+        .zip(to_parents.into_iter().rev())
+    {
+        if DisplayObject::ptr_eq(us_parent, them_parent) {
+            hca = Some(us_parent);
+        } else {
+            break;
+        }
+    }
+
+    hca
+}
+
 bitflags! {
     /// Boolean state flags used by `InteractiveObject`.
     #[derive(Collect)]
@@ -122,7 +160,7 @@ pub trait TInteractiveObject<'gc>:
     fn propagate_to_children(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if event.propagates() {
             if let Some(container) = self.as_displayobject().as_container() {
@@ -149,7 +187,7 @@ pub trait TInteractiveObject<'gc>:
     fn event_dispatch(
         self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
-        _event: ClipEvent,
+        _event: ClipEvent<'gc>,
     ) -> ClipEventResult;
 
     /// Convert the clip event into an AVM2 event and dispatch it into the
@@ -161,7 +199,7 @@ pub trait TInteractiveObject<'gc>:
     fn event_dispatch_to_avm2(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         let target = if let Avm2Value::Object(target) = self.as_displayobject().object2() {
             target
@@ -226,6 +264,84 @@ pub trait TInteractiveObject<'gc>:
 
                 ClipEventResult::Handled
             }
+            ClipEvent::RollOut { to } => {
+                let mut avm2_event = Avm2Event::new(
+                    "mouseOut",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), to, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                let lca = lowest_common_ancestor(
+                    self.as_displayobject(),
+                    to.map(|t| t.as_displayobject())
+                        .unwrap_or_else(|| context.stage.into()),
+                );
+
+                let mut rollover_target = Some(self.as_displayobject());
+                while let Some(tgt) = rollover_target {
+                    if DisplayObject::option_ptr_eq(rollover_target, lca) {
+                        break;
+                    }
+
+                    let avm2_event =
+                        Avm2Event::new("rollOut", Avm2EventData::mouse_event(context, tgt, to, 0));
+
+                    if let Avm2Value::Object(avm2_target) = tgt.object2() {
+                        if let Err(e) = Avm2::dispatch_event(context, avm2_event, avm2_target) {
+                            log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                        }
+                    }
+
+                    rollover_target = tgt.parent();
+                }
+
+                ClipEventResult::Handled
+            }
+            ClipEvent::RollOver { from } => {
+                let lca = lowest_common_ancestor(
+                    self.as_displayobject(),
+                    from.map(|t| t.as_displayobject())
+                        .unwrap_or_else(|| context.stage.into()),
+                );
+
+                let mut rollover_target = Some(self.as_displayobject());
+                while let Some(tgt) = rollover_target {
+                    if DisplayObject::option_ptr_eq(rollover_target, lca) {
+                        break;
+                    }
+
+                    let avm2_event = Avm2Event::new(
+                        "rollOver",
+                        Avm2EventData::mouse_event(context, tgt, from, 0),
+                    );
+
+                    if let Avm2Value::Object(avm2_target) = tgt.object2() {
+                        if let Err(e) = Avm2::dispatch_event(context, avm2_event, avm2_target) {
+                            log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                        }
+                    }
+
+                    rollover_target = tgt.parent();
+                }
+
+                let mut avm2_event = Avm2Event::new(
+                    "mouseOver",
+                    Avm2EventData::mouse_event(context, self.as_displayobject(), from, 0),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                ClipEventResult::Handled
+            }
             _ => ClipEventResult::NotHandled,
         }
     }
@@ -236,7 +352,7 @@ pub trait TInteractiveObject<'gc>:
     fn handle_clip_event(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if !self.mouse_enabled() {
             return ClipEventResult::NotHandled;
