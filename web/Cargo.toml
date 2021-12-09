@@ -50,7 +50,7 @@ base64 = "0.13.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["h263", "vp6", "serde", "wasm-bindgen"]
+features = ["h263", "vp6", "screenvideo", "serde", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.50"
