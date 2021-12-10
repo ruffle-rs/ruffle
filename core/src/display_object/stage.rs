@@ -560,7 +560,7 @@ impl<'gc> Stage<'gc> {
                 &[],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let mut resized_event = Avm2Event::new("resize", Avm2EventData::Event);
+            let mut resized_event = Avm2Event::new("resize", Avm2EventData::Empty);
             resized_event.set_bubbles(false);
             resized_event.set_cancelable(false);
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
@@ -584,7 +584,7 @@ impl<'gc> Stage<'gc> {
         } else if let Avm2Value::Object(stage) = self.object2() {
             let mut full_screen_event = Avm2Event::new(
                 "fullScreen",
-                Avm2EventData::FullScreenEvent {
+                Avm2EventData::FullScreen {
                     full_screen: self.is_fullscreen(),
                     interactive: true,
                 },

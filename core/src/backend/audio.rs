@@ -314,7 +314,7 @@ impl<'gc> AudioManager<'gc> {
                     action_queue.queue_actions(
                         root,
                         crate::context::ActionType::Event2 {
-                            event: Avm2Event::new("soundComplete", Avm2EventData::Event),
+                            event: Avm2Event::new("soundComplete", Avm2EventData::Empty),
                             target: object.into(),
                         },
                         false,

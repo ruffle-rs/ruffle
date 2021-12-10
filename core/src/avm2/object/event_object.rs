@@ -22,7 +22,7 @@ pub fn event_allocator<'gc>(
         activation.context.gc_context,
         EventObjectData {
             base,
-            event: Event::new("", EventData::Event),
+            event: Event::new("", EventData::Empty),
         },
     ))
     .into())
@@ -52,9 +52,9 @@ impl<'gc> EventObject<'gc> {
         event: Event<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = match event.event_data() {
-            EventData::Event => activation.avm2().classes().event,
-            EventData::FullScreenEvent { .. } => activation.avm2().classes().fullscreenevent,
-            EventData::MouseEvent { .. } => activation.avm2().classes().mouseevent,
+            EventData::Empty => activation.avm2().classes().event,
+            EventData::FullScreen { .. } => activation.avm2().classes().fullscreenevent,
+            EventData::Mouse { .. } => activation.avm2().classes().mouseevent,
         };
 
         let proto = class.prototype();

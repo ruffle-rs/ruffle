@@ -86,12 +86,12 @@ impl KeyModifiers {
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum EventData<'gc> {
-    Event,
-    FullScreenEvent {
+    Empty,
+    FullScreen {
         full_screen: bool,
         interactive: bool,
     },
-    MouseEvent {
+    Mouse {
         local_x: f64,
         local_y: f64,
         movement_x: f64,
@@ -112,7 +112,7 @@ impl<'gc> EventData<'gc> {
     ) -> Self {
         let local_pos = target.global_to_local(*context.mouse_position);
 
-        Self::MouseEvent {
+        Self::Mouse {
             local_x: local_pos.0.to_pixels(),
             local_y: local_pos.1.to_pixels(),
             movement_x: 0.0, //TODO: Implement mouselocking.
