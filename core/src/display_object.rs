@@ -1026,7 +1026,7 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `enterFrame` event on this DisplayObject and any children it
     /// may have.
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Event);
+        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Empty);
         enter_frame_evt.set_bubbles(false);
         enter_frame_evt.set_cancelable(false);
 
@@ -1072,7 +1072,7 @@ pub trait TDisplayObject<'gc>:
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut frame_constructed_evt = Avm2Event::new("frameConstructed", Avm2EventData::Event);
+        let mut frame_constructed_evt = Avm2Event::new("frameConstructed", Avm2EventData::Empty);
         frame_constructed_evt.set_bubbles(false);
         frame_constructed_evt.set_cancelable(false);
 
@@ -1097,7 +1097,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Emit an `exitFrame` broadcast event.
     fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut exit_frame_evt = Avm2Event::new("exitFrame", Avm2EventData::Event);
+        let mut exit_frame_evt = Avm2Event::new("exitFrame", Avm2EventData::Empty);
         exit_frame_evt.set_bubbles(false);
         exit_frame_evt.set_cancelable(false);
 

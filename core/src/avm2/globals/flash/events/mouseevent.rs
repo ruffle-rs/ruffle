@@ -76,7 +76,7 @@ pub fn instance_init<'gc>(
                 modifiers.insert(KeyModifiers::SHIFT);
             }
 
-            evt.set_event_data(EventData::MouseEvent {
+            evt.set_event_data(EventData::Mouse {
                 local_x,
                 local_y,
                 movement_x: 0.0,
@@ -109,7 +109,7 @@ pub fn alt_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data() {
                 return Ok(modifiers.contains(KeyModifiers::ALT).into());
             }
         }
@@ -126,7 +126,7 @@ pub fn set_alt_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -153,7 +153,7 @@ pub fn command_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data() {
                 return Ok(modifiers.contains(KeyModifiers::COMMAND).into());
             }
         }
@@ -170,7 +170,7 @@ pub fn set_command_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -197,7 +197,7 @@ pub fn control_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data() {
                 return Ok(modifiers.contains(KeyModifiers::CTRL).into());
             }
         }
@@ -214,7 +214,7 @@ pub fn set_control_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -241,7 +241,7 @@ pub fn shift_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data() {
                 return Ok(modifiers.contains(KeyModifiers::SHIFT).into());
             }
         }
@@ -258,7 +258,7 @@ pub fn set_shift_key<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { modifiers, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { modifiers, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -285,7 +285,7 @@ pub fn button_down<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { button_down, .. } = evt.event_data() {
+            if let EventData::Mouse { button_down, .. } = evt.event_data() {
                 return Ok(Value::Bool(*button_down));
             }
         }
@@ -302,7 +302,7 @@ pub fn set_button_down<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { button_down, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { button_down, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -325,7 +325,7 @@ pub fn delta<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { delta, .. } = evt.event_data() {
+            if let EventData::Mouse { delta, .. } = evt.event_data() {
                 return Ok(Value::Integer(*delta));
             }
         }
@@ -342,7 +342,7 @@ pub fn set_delta<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { delta, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { delta, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -374,7 +374,7 @@ pub fn local_x<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { local_x, .. } = evt.event_data() {
+            if let EventData::Mouse { local_x, .. } = evt.event_data() {
                 return Ok(Value::Number(*local_x));
             }
         }
@@ -391,7 +391,7 @@ pub fn set_local_x<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { local_x, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { local_x, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -414,7 +414,7 @@ pub fn local_y<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { local_y, .. } = evt.event_data() {
+            if let EventData::Mouse { local_y, .. } = evt.event_data() {
                 return Ok(Value::Number(*local_y));
             }
         }
@@ -431,7 +431,7 @@ pub fn set_local_y<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { local_y, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { local_y, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -454,7 +454,7 @@ pub fn movement_x<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { movement_x, .. } = evt.event_data() {
+            if let EventData::Mouse { movement_x, .. } = evt.event_data() {
                 return Ok(Value::Number(*movement_x));
             }
         }
@@ -471,7 +471,7 @@ pub fn set_movement_x<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { movement_x, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { movement_x, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -494,7 +494,7 @@ pub fn movement_y<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { movement_y, .. } = evt.event_data() {
+            if let EventData::Mouse { movement_y, .. } = evt.event_data() {
                 return Ok(Value::Number(*movement_y));
             }
         }
@@ -511,7 +511,7 @@ pub fn set_movement_y<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { movement_y, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { movement_y, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -534,7 +534,7 @@ pub fn related_object<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { related_object, .. } = evt.event_data() {
+            if let EventData::Mouse { related_object, .. } = evt.event_data() {
                 return Ok(related_object
                     .map(|o| o.as_displayobject().object2())
                     .unwrap_or(Value::Null));
@@ -553,7 +553,7 @@ pub fn set_related_object<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            if let EventData::MouseEvent { related_object, .. } = evt.event_data_mut() {
+            if let EventData::Mouse { related_object, .. } = evt.event_data_mut() {
                 let value = args
                     .get(0)
                     .cloned()
@@ -577,7 +577,7 @@ pub fn stage_x<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { local_x, .. } = evt.event_data() {
+            if let EventData::Mouse { local_x, .. } = evt.event_data() {
                 if let Some(target) = evt.target().and_then(|t| t.as_display_object()) {
                     let as_twips = Twips::from_pixels(*local_x);
                     let xformed = target.local_to_global((as_twips, Twips::ZERO)).0;
@@ -601,7 +601,7 @@ pub fn stage_y<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
-            if let EventData::MouseEvent { local_y, .. } = evt.event_data() {
+            if let EventData::Mouse { local_y, .. } = evt.event_data() {
                 if let Some(target) = evt.target().and_then(|t| t.as_display_object()) {
                     let as_twips = Twips::from_pixels(*local_y);
                     let xformed = target.local_to_global((Twips::ZERO, as_twips)).1;

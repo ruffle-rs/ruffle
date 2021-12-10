@@ -22,7 +22,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("removedFromStage", Avm2EventData::Event);
+        let mut removed_evt = Avm2Event::new("removedFromStage", Avm2EventData::Empty);
         removed_evt.set_bubbles(false);
         removed_evt.set_cancelable(false);
 
@@ -45,7 +45,7 @@ pub fn dispatch_removed_event<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("removed", Avm2EventData::Event);
+        let mut removed_evt = Avm2Event::new("removed", Avm2EventData::Empty);
         removed_evt.set_bubbles(true);
         removed_evt.set_cancelable(false);
 
@@ -65,7 +65,7 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("addedToStage", Avm2EventData::Event);
+        let mut removed_evt = Avm2Event::new("addedToStage", Avm2EventData::Empty);
         removed_evt.set_bubbles(false);
         removed_evt.set_cancelable(false);
 
@@ -97,7 +97,7 @@ pub fn dispatch_added_event_only<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("added", Avm2EventData::Event);
+        let mut removed_evt = Avm2Event::new("added", Avm2EventData::Empty);
         removed_evt.set_bubbles(true);
         removed_evt.set_cancelable(false);
 
