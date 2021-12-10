@@ -10,7 +10,6 @@ use gc_arena::MutationContext;
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "call" => method(call);
     "apply" => method(apply);
-    "toString" => method(to_string);
 };
 
 /// Implements `new Function()`
@@ -108,15 +107,6 @@ pub fn apply<'gc>(
         ),
         _ => Ok(Value::Undefined),
     }
-}
-
-/// Implements `Function.prototype.toString`
-fn to_string<'gc>(
-    _: &mut Activation<'_, 'gc, '_>,
-    _: Object<'gc>,
-    _: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("[type Function]".into())
 }
 
 /// Partially construct `Function.prototype`.
