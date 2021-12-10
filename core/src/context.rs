@@ -327,7 +327,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
     }
 
     pub fn avm_trace(&self, message: &str) {
-        self.log.avm_trace(&message.replace("\r", "\n"));
+        self.log.avm_trace(&message.replace('\r', "\n"));
     }
 }
 
