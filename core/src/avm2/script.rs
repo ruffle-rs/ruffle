@@ -11,7 +11,6 @@ use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
-use fnv::FnvHashMap;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::Ref;
 use std::mem::drop;
@@ -45,31 +44,37 @@ pub struct TranslationUnitData<'gc> {
     abc: Rc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
-    classes: FnvHashMap<u32, GcCell<'gc, Class<'gc>>>,
+    classes: Vec<Option<GcCell<'gc, Class<'gc>>>>,
 
     /// All methods loaded from the ABC's method list.
-    methods: FnvHashMap<u32, Method<'gc>>,
+    methods: Vec<Option<Method<'gc>>>,
 
     /// All scripts loaded from the ABC's scripts list.
-    scripts: FnvHashMap<u32, Script<'gc>>,
+    scripts: Vec<Option<Script<'gc>>>,
 
     /// All strings loaded from the ABC's strings list.
-    strings: FnvHashMap<u32, AvmString<'gc>>,
+    /// They're lazy loaded and offset by 1, with the 0th element being always None.
+    strings: Vec<Option<AvmString<'gc>>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
     /// Construct a new `TranslationUnit` for a given ABC file intended to
     /// execute within a particular domain.
     pub fn from_abc(abc: Rc<AbcFile>, domain: Domain<'gc>, mc: MutationContext<'gc, '_>) -> Self {
+        let classes = vec![None; abc.classes.len()];
+        let methods = vec![None; abc.methods.len()];
+        let scripts = vec![None; abc.scripts.len()];
+        let strings = vec![None; abc.constant_pool.strings.len() + 1];
+
         Self(GcCell::allocate(
             mc,
             TranslationUnitData {
                 domain,
                 abc,
-                classes: FnvHashMap::default(),
-                methods: FnvHashMap::default(),
-                scripts: FnvHashMap::default(),
-                strings: FnvHashMap::default(),
+                classes,
+                methods,
+                scripts,
+                strings,
             },
         ))
     }
@@ -87,7 +92,7 @@ impl<'gc> TranslationUnit<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Method<'gc>, Error> {
         let read = self.0.read();
-        if let Some(method) = read.methods.get(&method_index) {
+        if let Some(Some(method)) = read.methods.get(method_index as usize) {
             return Ok(method.clone());
         }
 
@@ -101,10 +106,8 @@ impl<'gc> TranslationUnit<'gc> {
         );
         let method: Method<'gc> = method?.into();
 
-        self.0
-            .write(activation.context.gc_context)
-            .methods
-            .insert(method_index, method.clone());
+        self.0.write(activation.context.gc_context).methods[method_index as usize] =
+            Some(method.clone());
 
         Ok(method)
     }
@@ -116,17 +119,14 @@ impl<'gc> TranslationUnit<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<GcCell<'gc, Class<'gc>>, Error> {
         let read = self.0.read();
-        if let Some(class) = read.classes.get(&class_index) {
+        if let Some(Some(class)) = read.classes.get(class_index as usize) {
             return Ok(*class);
         }
 
         drop(read);
 
         let class = Class::from_abc_index(self, class_index, activation)?;
-        self.0
-            .write(activation.context.gc_context)
-            .classes
-            .insert(class_index, class);
+        self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
 
         class
             .write(activation.context.gc_context)
@@ -142,7 +142,7 @@ impl<'gc> TranslationUnit<'gc> {
         uc: &mut UpdateContext<'_, 'gc, '_>,
     ) -> Result<Script<'gc>, Error> {
         let read = self.0.read();
-        if let Some(scripts) = read.scripts.get(&script_index) {
+        if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
             return Ok(*scripts);
         }
 
@@ -156,10 +156,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         let mut script =
             Script::from_abc_index(self, script_index, global_obj, domain, &mut activation)?;
-        self.0
-            .write(activation.context.gc_context)
-            .scripts
-            .insert(script_index, script);
+        self.0.write(activation.context.gc_context).scripts[script_index as usize] = Some(script);
 
         script.load_traits(self, script_index, &mut activation)?;
 
@@ -178,7 +175,7 @@ impl<'gc> TranslationUnit<'gc> {
         mc: MutationContext<'gc, '_>,
     ) -> Result<Option<AvmString<'gc>>, Error> {
         let mut write = self.0.write(mc);
-        if let Some(string) = write.strings.get(&string_index) {
+        if let Some(Some(string)) = write.strings.get(string_index as usize) {
             return Ok(Some(*string));
         }
 
@@ -195,7 +192,7 @@ impl<'gc> TranslationUnit<'gc> {
                 .get(string_index as usize - 1)
                 .ok_or_else(|| format!("Unknown string constant {}", string_index))?,
         );
-        write.strings.insert(string_index, avm_string);
+        write.strings[string_index as usize] = Some(avm_string);
 
         Ok(Some(avm_string))
     }
