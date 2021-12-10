@@ -65,6 +65,10 @@ module.exports = (env, _argv) => {
         resolve: {
             extensions: [".ts", "..."],
         },
+        performance: {
+            assetFilter: (assetFilename) =>
+                !/\.(map|wasm)$/i.test(assetFilename),
+        },
         plugins: [
             new CopyPlugin({
                 patterns: [
