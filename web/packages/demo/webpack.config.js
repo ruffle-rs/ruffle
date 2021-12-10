@@ -24,6 +24,10 @@ module.exports = (_env, _argv) => {
                 },
             ],
         },
+        performance: {
+            assetFilter: (assetFilename) =>
+                !/\.(map|wasm)$/i.test(assetFilename),
+        },
         devtool: "source-map",
         plugins: [
             new CopyPlugin({
