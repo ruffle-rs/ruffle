@@ -217,6 +217,14 @@ export class RufflePlayer extends HTMLElement {
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
         this.addEventListener("pointerdown", this.pointerDown.bind(this));
+        this.addEventListener(
+            "fullscreenchange",
+            this.fullScreenChange.bind(this)
+        );
+        this.addEventListener(
+            "webkitfullscreenchange",
+            this.fullScreenChange.bind(this)
+        );
         window.addEventListener("click", this.hideContextMenu.bind(this));
 
         this.instance = null;
@@ -675,6 +683,13 @@ export class RufflePlayer extends HTMLElement {
         } else if (document.webkitCancelFullScreen) {
             document.webkitCancelFullScreen();
         }
+    }
+
+    /**
+     * Called when entering / leaving fullscreen
+     */
+    private fullScreenChange(): void {
+        this.instance?.set_fullscreen(this.isFullscreen);
     }
 
     private pointerDown(event: PointerEvent): void {
