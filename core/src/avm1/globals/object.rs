@@ -110,10 +110,14 @@ pub fn has_own_property<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
-    _: Object<'gc>,
-    _: &[Value<'gc>],
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("[object Object]".into())
+    if this.as_executable().is_some() {
+        Ok("[type Function]".into())
+    } else {
+        Ok("[object Object]".into())
+    }
 }
 
 /// Implements `Object.prototype.isPropertyEnumerable`
