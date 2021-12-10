@@ -1056,6 +1056,20 @@ impl Player {
                 self.needs_render = true;
             }
         }
+
+        if let PlayerEvent::MouseWheel { delta } = event {
+            self.mutate_with_update_context(|context| {
+                if let Some(over_object) = context.mouse_over_object {
+                    if !over_object.as_displayobject().removed() {
+                        over_object.handle_clip_event(context, ClipEvent::MouseWheel { delta });
+                    }
+                } else {
+                    context
+                        .stage
+                        .handle_clip_event(context, ClipEvent::MouseWheel { delta });
+                }
+            });
+        }
     }
 
     /// Update dragged object, if any.
