@@ -749,8 +749,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         let static_data = write.static_data;
         let static_data = static_data.read();
         let (new_state, sound) = match event {
-            ClipEvent::DragOut => (ButtonState::Over, None),
-            ClipEvent::DragOver => (ButtonState::Down, None),
+            ClipEvent::DragOut { .. } => (ButtonState::Over, None),
+            ClipEvent::DragOver { .. } => (ButtonState::Down, None),
             ClipEvent::Press => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
             ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
             ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),

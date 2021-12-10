@@ -77,8 +77,27 @@ pub enum ClipEventResult {
 pub enum ClipEvent<'gc> {
     Construct,
     Data,
-    DragOut,
-    DragOver,
+
+    /// Mouse moved out of a display object while the primary button is held
+    /// down.
+    ///
+    /// This is a targeted equivalent to `MouseMove` and is available in both
+    /// AVM1 and AVM2. In AVM2, it is dispatched identically to `RollOut`, with
+    /// the only difference being that the `buttonDown` flag is set to true.
+    DragOut {
+        to: Option<InteractiveObject<'gc>>,
+    },
+
+    /// Mouse moved into of a display object while the primary button is held
+    /// down.
+    ///
+    /// This is a targeted equivalent to `MouseMove` and is available in both
+    /// AVM1 and AVM2. In AVM2, it is dispatched identically to `RollOver`,
+    /// with the only difference being that the `buttonDown` flag is set to
+    /// true.
+    DragOver {
+        from: Option<InteractiveObject<'gc>>,
+    },
     EnterFrame,
     Initialize,
     KeyUp,
@@ -182,8 +201,8 @@ impl<'gc> ClipEvent<'gc> {
         match self {
             ClipEvent::Construct => ClipEventFlag::CONSTRUCT,
             ClipEvent::Data => ClipEventFlag::DATA,
-            ClipEvent::DragOut => ClipEventFlag::DRAG_OUT,
-            ClipEvent::DragOver => ClipEventFlag::DRAG_OVER,
+            ClipEvent::DragOut { .. } => ClipEventFlag::DRAG_OUT,
+            ClipEvent::DragOver { .. } => ClipEventFlag::DRAG_OVER,
             ClipEvent::EnterFrame => ClipEventFlag::ENTER_FRAME,
             ClipEvent::Initialize => ClipEventFlag::INITIALIZE,
             ClipEvent::KeyDown => ClipEventFlag::KEY_DOWN,
@@ -230,8 +249,8 @@ impl<'gc> ClipEvent<'gc> {
         match self {
             ClipEvent::Construct => None,
             ClipEvent::Data => Some("onData"),
-            ClipEvent::DragOut => Some("onDragOut"),
-            ClipEvent::DragOver => Some("onDragOver"),
+            ClipEvent::DragOut { .. } => Some("onDragOut"),
+            ClipEvent::DragOver { .. } => Some("onDragOver"),
             ClipEvent::EnterFrame => Some("onEnterFrame"),
             ClipEvent::Initialize => None,
             ClipEvent::KeyDown => Some("onKeyDown"),

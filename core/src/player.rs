@@ -1145,13 +1145,23 @@ impl Player {
                             cur_over_object,
                         ) {
                             // Dragged from outside the clicked object to the inside.
-                            events.push((down_object, ClipEvent::DragOut));
+                            events.push((
+                                down_object,
+                                ClipEvent::DragOut {
+                                    to: new_over_object,
+                                },
+                            ));
                         } else if InteractiveObject::option_ptr_eq(
                             context.mouse_down_object,
                             new_over_object,
                         ) {
                             // Dragged from inside the clicked object to the outside.
-                            events.push((down_object, ClipEvent::DragOver));
+                            events.push((
+                                down_object,
+                                ClipEvent::DragOver {
+                                    from: cur_over_object,
+                                },
+                            ));
                         }
                     }
                 } else {

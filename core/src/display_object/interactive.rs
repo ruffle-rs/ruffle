@@ -264,7 +264,7 @@ pub trait TInteractiveObject<'gc>:
 
                 ClipEventResult::Handled
             }
-            ClipEvent::RollOut { to } => {
+            ClipEvent::RollOut { to } | ClipEvent::DragOut { to } => {
                 let mut avm2_event = Avm2Event::new(
                     "mouseOut",
                     Avm2EventData::mouse_event(context, self.as_displayobject(), to, 0),
@@ -302,7 +302,7 @@ pub trait TInteractiveObject<'gc>:
 
                 ClipEventResult::Handled
             }
-            ClipEvent::RollOver { from } => {
+            ClipEvent::RollOver { from } | ClipEvent::DragOver { from } => {
                 let lca = lowest_common_ancestor(
                     self.as_displayobject(),
                     from.map(|t| t.as_displayobject())

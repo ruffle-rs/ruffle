@@ -446,12 +446,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         let static_data = write.static_data;
         let static_data = static_data.read();
         let (new_state, condition, sound) = match event {
-            ClipEvent::DragOut => (
+            ClipEvent::DragOut { .. } => (
                 ButtonState::Over,
                 ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN,
                 None,
             ),
-            ClipEvent::DragOver => (
+            ClipEvent::DragOver { .. } => (
                 ButtonState::Down,
                 ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN,
                 None,
