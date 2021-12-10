@@ -35,7 +35,7 @@ pub enum PlayerEvent {
 }
 
 /// The distance scrolled by the mouse wheel.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum MouseWheelDelta {
     Lines(f64),
     Pixels(f64),
@@ -53,6 +53,27 @@ impl MouseWheelDelta {
         }
     }
 }
+
+impl PartialEq for MouseWheelDelta {
+    fn eq(&self, rhs: &Self) -> bool {
+        match (self, rhs) {
+            (Self::Lines(s), Self::Lines(r))
+            | (Self::Pixels(s), Self::Pixels(r))
+            | (Self::Pixels(s), Self::Lines(r))
+            | (Self::Lines(s), Self::Pixels(r))
+                if s.is_nan() && r.is_nan() =>
+            {
+                true
+            }
+            (Self::Lines(s), Self::Lines(r)) => s == r,
+            (Self::Pixels(s), Self::Pixels(r)) => s == r,
+            (Self::Pixels(s), Self::Lines(r)) => *s == r * Self::MOUSE_WHEEL_SCALE,
+            (Self::Lines(s), Self::Pixels(r)) => s * Self::MOUSE_WHEEL_SCALE == *r,
+        }
+    }
+}
+
+impl Eq for MouseWheelDelta {}
 
 /// Whether this button event was handled by some child.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -171,6 +192,15 @@ pub enum ClipEvent<'gc> {
     /// `Press` event.
     ReleaseOutside,
     Unload,
+
+    /// Mouse wheel was turned over a particular display object.
+    ///
+    /// This is a targeted event with no anycast equivalent. It is targeted to
+    /// any interactive object under the mouse cursor, including the stage
+    /// itself. Only AVM2 can recieve these events.
+    MouseWheel {
+        delta: MouseWheelDelta,
+    },
 }
 
 impl<'gc> ClipEvent<'gc> {
@@ -197,27 +227,28 @@ impl<'gc> ClipEvent<'gc> {
     );
 
     /// Returns the `swf::ClipEventFlag` corresponding to this event type.
-    pub const fn flag(self) -> ClipEventFlag {
+    pub const fn flag(self) -> Option<ClipEventFlag> {
         match self {
-            ClipEvent::Construct => ClipEventFlag::CONSTRUCT,
-            ClipEvent::Data => ClipEventFlag::DATA,
-            ClipEvent::DragOut { .. } => ClipEventFlag::DRAG_OUT,
-            ClipEvent::DragOver { .. } => ClipEventFlag::DRAG_OVER,
-            ClipEvent::EnterFrame => ClipEventFlag::ENTER_FRAME,
-            ClipEvent::Initialize => ClipEventFlag::INITIALIZE,
-            ClipEvent::KeyDown => ClipEventFlag::KEY_DOWN,
-            ClipEvent::KeyPress { .. } => ClipEventFlag::KEY_PRESS,
-            ClipEvent::KeyUp => ClipEventFlag::KEY_UP,
-            ClipEvent::Load => ClipEventFlag::LOAD,
-            ClipEvent::MouseDown => ClipEventFlag::MOUSE_DOWN,
-            ClipEvent::MouseMove => ClipEventFlag::MOUSE_MOVE,
-            ClipEvent::MouseUp | ClipEvent::MouseUpInside => ClipEventFlag::MOUSE_UP,
-            ClipEvent::Press => ClipEventFlag::PRESS,
-            ClipEvent::RollOut { .. } => ClipEventFlag::ROLL_OUT,
-            ClipEvent::RollOver { .. } => ClipEventFlag::ROLL_OVER,
-            ClipEvent::Release => ClipEventFlag::RELEASE,
-            ClipEvent::ReleaseOutside => ClipEventFlag::RELEASE_OUTSIDE,
-            ClipEvent::Unload => ClipEventFlag::UNLOAD,
+            ClipEvent::Construct => Some(ClipEventFlag::CONSTRUCT),
+            ClipEvent::Data => Some(ClipEventFlag::DATA),
+            ClipEvent::DragOut { .. } => Some(ClipEventFlag::DRAG_OUT),
+            ClipEvent::DragOver { .. } => Some(ClipEventFlag::DRAG_OVER),
+            ClipEvent::EnterFrame => Some(ClipEventFlag::ENTER_FRAME),
+            ClipEvent::Initialize => Some(ClipEventFlag::INITIALIZE),
+            ClipEvent::KeyDown => Some(ClipEventFlag::KEY_DOWN),
+            ClipEvent::KeyPress { .. } => Some(ClipEventFlag::KEY_PRESS),
+            ClipEvent::KeyUp => Some(ClipEventFlag::KEY_UP),
+            ClipEvent::Load => Some(ClipEventFlag::LOAD),
+            ClipEvent::MouseDown => Some(ClipEventFlag::MOUSE_DOWN),
+            ClipEvent::MouseMove => Some(ClipEventFlag::MOUSE_MOVE),
+            ClipEvent::MouseUp | ClipEvent::MouseUpInside => Some(ClipEventFlag::MOUSE_UP),
+            ClipEvent::Press => Some(ClipEventFlag::PRESS),
+            ClipEvent::RollOut { .. } => Some(ClipEventFlag::ROLL_OUT),
+            ClipEvent::RollOver { .. } => Some(ClipEventFlag::ROLL_OVER),
+            ClipEvent::Release => Some(ClipEventFlag::RELEASE),
+            ClipEvent::ReleaseOutside => Some(ClipEventFlag::RELEASE_OUTSIDE),
+            ClipEvent::Unload => Some(ClipEventFlag::UNLOAD),
+            ClipEvent::MouseWheel { .. } => None,
         }
     }
 
@@ -236,7 +267,11 @@ impl<'gc> ClipEvent<'gc> {
 
     /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
     pub const fn is_button_event(self) -> bool {
-        self.flag().contains(Self::BUTTON_EVENT_FLAGS)
+        if let Some(flag) = self.flag() {
+            flag.contains(Self::BUTTON_EVENT_FLAGS)
+        } else {
+            false
+        }
     }
 
     /// Indicates whether this is a keyboard event type (keyUp, keyDown, keyPress).
@@ -267,6 +302,7 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
             ClipEvent::MouseUpInside => None,
+            ClipEvent::MouseWheel { .. } => None,
         }
     }
 }

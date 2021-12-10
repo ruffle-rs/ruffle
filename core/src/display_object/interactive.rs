@@ -342,6 +342,25 @@ pub trait TInteractiveObject<'gc>:
 
                 ClipEventResult::Handled
             }
+            ClipEvent::MouseWheel { delta } => {
+                let mut avm2_event = Avm2Event::new(
+                    "mouseWheel",
+                    Avm2EventData::mouse_event(
+                        context,
+                        self.as_displayobject(),
+                        None,
+                        delta.lines() as i32,
+                    ),
+                );
+
+                avm2_event.set_bubbles(true);
+
+                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                }
+
+                ClipEventResult::Handled
+            }
             _ => ClipEventResult::NotHandled,
         }
     }

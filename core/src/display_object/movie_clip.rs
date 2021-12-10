@@ -2084,27 +2084,30 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         if let Some(AvmObject::Avm1(object)) = read.object {
             let swf_version = read.movie().version();
             if swf_version >= 5 {
-                for event_handler in read
-                    .clip_event_handlers
-                    .iter()
-                    .filter(|handler| handler.events.contains(event.flag()))
-                {
-                    // KeyPress event must have matching key code.
-                    if let ClipEvent::KeyPress { key_code } = event {
-                        if key_code == event_handler.key_code {
-                            // KeyPress events are consumed by a single instance.
-                            handled = ClipEventResult::Handled;
-                        } else {
-                            continue;
+                if let Some(flag) = event.flag() {
+                    for event_handler in read
+                        .clip_event_handlers
+                        .iter()
+                        .filter(|handler| handler.events.contains(flag))
+                    {
+                        // KeyPress event must have matching key code.
+                        if let ClipEvent::KeyPress { key_code } = event {
+                            if key_code == event_handler.key_code {
+                                // KeyPress events are consumed by a single instance.
+                                handled = ClipEventResult::Handled;
+                            } else {
+                                continue;
+                            }
                         }
+
+                        context.action_queue.queue_actions(
+                            self.into(),
+                            ActionType::Normal {
+                                bytecode: event_handler.action_data.clone(),
+                            },
+                            event == ClipEvent::Unload,
+                        );
                     }
-                    context.action_queue.queue_actions(
-                        self.into(),
-                        ActionType::Normal {
-                            bytecode: event_handler.action_data.clone(),
-                        },
-                        event == ClipEvent::Unload,
-                    );
                 }
 
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
