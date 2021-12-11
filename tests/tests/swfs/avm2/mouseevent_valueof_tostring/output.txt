@@ -1,0 +1,28 @@
+/// new MouseEvent('FakeEvent');
+/// (via Object.prototype.toString...)
+[object MouseEvent]
+/// Object.prototype.valueOf.call(evt) is MouseEvent
+true
+/// (via Object.prototype.valueOf...)
+[MouseEvent type="FakeEvent" bubbles=true cancelable=false eventPhase=2 localX=NaN localY=NaN stageX=NaN stageY=NaN relatedObject=null ctrlKey=false altKey=false shiftKey=false buttonDown=false delta=0]
+/// (via MouseEvent.toString...)
+[MouseEvent type="FakeEvent" bubbles=true cancelable=false eventPhase=2 localX=NaN localY=NaN stageX=NaN stageY=NaN relatedObject=null ctrlKey=false altKey=false shiftKey=false buttonDown=false delta=0]
+/// new MouseEvent(MouseEvent.CLICK, false, true, 50, 50, null, false, false, false, true, 12);
+/// (via Object.prototype.toString...)
+[object MouseEvent]
+/// Object.prototype.valueOf.call(evt) is MouseEvent
+true
+/// (via Object.prototype.valueOf...)
+[MouseEvent type="click" bubbles=false cancelable=true eventPhase=2 localX=50 localY=50 stageX=0 stageY=0 relatedObject=null ctrlKey=false altKey=false shiftKey=false buttonDown=true delta=12]
+/// (via MouseEvent.toString...)
+[MouseEvent type="click" bubbles=false cancelable=true eventPhase=2 localX=50 localY=50 stageX=0 stageY=0 relatedObject=null ctrlKey=false altKey=false shiftKey=false buttonDown=true delta=12]
+/// var related_obj = new MovieClip();
+/// new MouseEvent(MouseEvent.CLICK, false, true, 202, 103, related_obj, false, false, false, true, 12);
+/// (via Object.prototype.toString...)
+[object MouseEvent]
+/// Object.prototype.valueOf.call(evt) is MouseEvent
+true
+/// (via Object.prototype.valueOf...)
+[MouseEvent type="click" bubbles=false cancelable=true eventPhase=2 localX=202 localY=103 stageX=0 stageY=0 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false buttonDown=true delta=12]
+/// (via MouseEvent.toString...)
+[MouseEvent type="click" bubbles=false cancelable=true eventPhase=2 localX=202 localY=103 stageX=0 stageY=0 relatedObject=[object MovieClip] ctrlKey=false altKey=false shiftKey=false buttonDown=true delta=12]

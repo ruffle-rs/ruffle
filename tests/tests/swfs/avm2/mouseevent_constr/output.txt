@@ -1,6 +1,10 @@
 /// var evt = new MouseEvent('FakeEvent');
 /// evt.type
 FakeEvent
+///evt.bubbles
+true
+///evt.cancelable
+false
 /// evt.altKey
 false
 /// evt.buttonDown
@@ -30,6 +34,10 @@ NaN
 /// var evt = new MouseEvent(MouseEvent.CLICK, false, true, 50, 50, null, false, false, false, true, 12);
 /// evt.type
 click
+///evt.bubbles
+false
+///evt.cancelable
+true
 /// evt.altKey
 false
 /// evt.buttonDown

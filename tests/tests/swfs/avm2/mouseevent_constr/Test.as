@@ -7,6 +7,12 @@ import flash.events.MouseEvent;
 function assert_event(evt: MouseEvent) {
 	trace("/// evt.type");
 	trace(evt.type);
+	
+	trace("///evt.bubbles");
+	trace(evt.bubbles);
+	
+	trace("///evt.cancelable");
+	trace(evt.cancelable);
 
 	trace("/// evt.altKey");
 	trace(evt.altKey);

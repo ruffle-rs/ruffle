@@ -333,6 +333,7 @@ swf_tests! {
     (as3_modulo, "avm2/modulo", 1),
     (as3_mouseevent_constr, "avm2/mouseevent_constr", 1),
     (as3_mouseevent_stagexy, "avm2/mouseevent_stagexy", 1),
+    (as3_mouseevent_valueof_tostring, "avm2/mouseevent_valueof_tostring", 1),
     (as3_movieclip_constr, "avm2/movieclip_constr", 1),
     (as3_movieclip_currentlabels, "avm2/movieclip_currentlabels", 5),
     (as3_movieclip_currentscene, "avm2/movieclip_currentscene", 5),

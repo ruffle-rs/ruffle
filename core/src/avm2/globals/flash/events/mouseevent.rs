@@ -5,7 +5,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{AvmString, Error};
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 use gc_arena::{GcCell, MutationContext};
 use swf::Twips;
@@ -17,8 +17,31 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        activation.super_init(this, args)?; // Event uses the first three parameters
+        activation.super_init(this, args)?;
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
+            // This is technically duplicative of `Event`'s initializer, but
+            // we have different default parameters.
+            // TODO: When we get the ability to store parameter data on
+            // builtin methods, we should remove these lines.
+            evt.set_event_type(
+                args.get(0)
+                    .cloned()
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_string(activation)?,
+            );
+            evt.set_bubbles(
+                args.get(1)
+                    .cloned()
+                    .unwrap_or(Value::Bool(true))
+                    .coerce_to_boolean(),
+            );
+            evt.set_cancelable(
+                args.get(2)
+                    .cloned()
+                    .unwrap_or(Value::Bool(false))
+                    .coerce_to_boolean(),
+            );
+
             let local_x = args
                 .get(3)
                 .cloned()
@@ -617,6 +640,73 @@ pub fn stage_y<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `toString`'s getter.
+pub fn to_string<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        if let Some(event) = this.as_event() {
+            if let EventData::Mouse {
+                local_x,
+                local_y,
+                related_object,
+                modifiers,
+                button_down,
+                delta,
+                ..
+            } = event.event_data()
+            {
+                let event_type = event.event_type();
+                let bubbles = event.is_bubbling();
+                let cancelable = event.is_cancelable();
+                let phase = event.phase() as u32;
+
+                let (stage_x, stage_y) =
+                    if let Some(target) = event.target().and_then(|t| t.as_display_object()) {
+                        let (x, y) = target.local_to_global((
+                            Twips::from_pixels(*local_x),
+                            Twips::from_pixels(*local_y),
+                        ));
+
+                        (x.to_pixels(), y.to_pixels())
+                    } else {
+                        (local_x * 0.0, local_y * 0.0)
+                    };
+
+                let related_object = if let Some(related_object) = related_object.and_then(|ro| {
+                    ro.as_displayobject()
+                        .object2()
+                        .coerce_to_object(activation)
+                        .ok()
+                }) {
+                    related_object
+                        .to_string(activation.context.gc_context)?
+                        .coerce_to_string(activation)?
+                } else {
+                    "null".into()
+                };
+
+                let ctrl_key = modifiers.contains(KeyModifiers::CTRL);
+                let alt_key = modifiers.contains(KeyModifiers::ALT);
+                let shift_key = modifiers.contains(KeyModifiers::SHIFT);
+
+                return Ok(AvmString::new_utf8(
+                    activation.context.gc_context,
+                    format!(
+                        "[MouseEvent type=\"{}\" bubbles={} cancelable={} eventPhase={} localX={} localY={} stageX={} stageY={} relatedObject={} ctrlKey={} altKey={} shiftKey={} buttonDown={} delta={}]",
+                        event_type, bubbles, cancelable, phase, local_x, local_y, stage_x, stage_y, related_object, ctrl_key, alt_key, shift_key, button_down, delta
+                    ),
+                )
+                .into());
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Construct `MouseEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -684,6 +774,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("stageY", Some(stage_y), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("toString", to_string)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

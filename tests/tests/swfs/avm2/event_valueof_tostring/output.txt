@@ -3,6 +3,8 @@
 [Event type="test_event" bubbles=false cancelable=false eventPhase=2]
 //Object.prototype.valueOf.call(e)
 [Event type="test_event" bubbles=false cancelable=false eventPhase=2]
+//Object.prototype.valueOf.call(e) is Event
+true
 //Object.prototype.toString.call(e)
 [object Event]
 //e = new Event("test_event", true, true);
@@ -10,5 +12,7 @@
 [Event type="test_event" bubbles=true cancelable=true eventPhase=2]
 //Object.prototype.valueOf.call(e)
 [Event type="test_event" bubbles=true cancelable=true eventPhase=2]
+//Object.prototype.valueOf.call(e) is Event
+true
 //Object.prototype.toString.call(e)
 [object Event]

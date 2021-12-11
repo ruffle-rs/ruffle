@@ -14,6 +14,9 @@ trace(e.toString());
 trace("//Object.prototype.valueOf.call(e)");
 trace(Object.prototype.valueOf.call(e));
 
+trace("//Object.prototype.valueOf.call(e) is Event");
+trace(Object.prototype.valueOf.call(e) is Event);
+
 trace("//Object.prototype.toString.call(e)");
 trace(Object.prototype.toString.call(e));
 
@@ -25,6 +28,9 @@ trace(e.toString());
 
 trace("//Object.prototype.valueOf.call(e)");
 trace(Object.prototype.valueOf.call(e));
+
+trace("//Object.prototype.valueOf.call(e) is Event");
+trace(Object.prototype.valueOf.call(e) is Event);
 
 trace("//Object.prototype.toString.call(e)");
 trace(Object.prototype.toString.call(e));
