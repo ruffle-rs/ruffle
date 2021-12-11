@@ -52,12 +52,7 @@ fn deserialize_json_inner<'gc>(
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_property(activation, &QName::dynamic_name(key).into())?;
                 } else {
-                    obj.set_property(
-                        obj,
-                        &QName::dynamic_name(key).into(),
-                        mapped_val,
-                        activation,
-                    )?;
+                    obj.set_property(&QName::dynamic_name(key).into(), mapped_val, activation)?;
                 }
             }
             obj.into()
@@ -199,7 +194,6 @@ impl<'gc> AvmSerializer<'gc> {
             let obj = value.coerce_to_object(activation)?;
             let to_json = obj
                 .get_property(
-                    obj,
                     &QName::new(Namespace::public(), "toJSON").into(),
                     activation,
                 )?
@@ -236,11 +230,8 @@ impl<'gc> AvmSerializer<'gc> {
             while let Some(r) = iter.next(activation) {
                 let item = r?.1;
                 let key = item.coerce_to_string(activation)?;
-                let value = obj.get_property(
-                    obj,
-                    &QName::new(Namespace::public(), key).into(),
-                    activation,
-                )?;
+                let value =
+                    obj.get_property(&QName::new(Namespace::public(), key).into(), activation)?;
                 let mapped = self.map_value(activation, || key, value)?;
                 if !matches!(mapped, Value::Undefined) {
                     js_obj.insert(
@@ -257,7 +248,7 @@ impl<'gc> AvmSerializer<'gc> {
                     name_val => {
                         let name = name_val.coerce_to_string(activation)?;
                         let value =
-                            obj.get_property(obj, &QName::dynamic_name(name).into(), activation)?;
+                            obj.get_property(&QName::dynamic_name(name).into(), activation)?;
                         let mapped = self.map_value(activation, || name, value)?;
                         if !matches!(mapped, Value::Undefined) {
                             js_obj.insert(
@@ -307,7 +298,7 @@ impl<'gc> AvmSerializer<'gc> {
             Value::Object(obj) => {
                 // special case for boxed primitives
                 if let Some(prim) = obj.as_primitive() {
-                    return self.serialize_value(activation, prim.deref().clone());
+                    return self.serialize_value(activation, *prim);
                 }
                 if self.obj_stack.contains(&obj) {
                     return Err("TypeError: Error #1129: Cyclic structure cannot be converted to JSON string.".into());
@@ -400,7 +391,7 @@ pub fn stringify<'gc>(
     }).transpose()?;
 
     let mut serializer = AvmSerializer::new(replacer);
-    let result = serializer.serialize(activation, val.clone())?;
+    let result = serializer.serialize(activation, *val)?;
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
     let output = if let Value::String(s) = spaces {
         // If the string is empty, just use the normal dump generator.

@@ -851,10 +851,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        None
-    }
-
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
         None
