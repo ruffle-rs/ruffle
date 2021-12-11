@@ -144,7 +144,17 @@ pub enum ClipEvent<'gc> {
     ///
     /// This is an anycast event.
     MouseDown,
+
+    /// Mouse was moved.
+    ///
+    /// This is an anycast event.
     MouseMove,
+
+    /// Mouse was moved inside this current display object.
+    ///
+    /// This is a targeted equivalent to `MouseMove` to support AVM2's
+    /// `mouseMove` event, since AVM2 cannot consume anycast events.
+    MouseMoveInside,
 
     /// Mouse button was pressed inside this current display object.
     ///
@@ -241,14 +251,16 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::Load => Some(ClipEventFlag::LOAD),
             ClipEvent::MouseDown => Some(ClipEventFlag::MOUSE_DOWN),
             ClipEvent::MouseMove => Some(ClipEventFlag::MOUSE_MOVE),
-            ClipEvent::MouseUp | ClipEvent::MouseUpInside => Some(ClipEventFlag::MOUSE_UP),
+            ClipEvent::MouseUp => Some(ClipEventFlag::MOUSE_UP),
             ClipEvent::Press => Some(ClipEventFlag::PRESS),
             ClipEvent::RollOut { .. } => Some(ClipEventFlag::ROLL_OUT),
             ClipEvent::RollOver { .. } => Some(ClipEventFlag::ROLL_OVER),
             ClipEvent::Release => Some(ClipEventFlag::RELEASE),
             ClipEvent::ReleaseOutside => Some(ClipEventFlag::RELEASE_OUTSIDE),
             ClipEvent::Unload => Some(ClipEventFlag::UNLOAD),
-            ClipEvent::MouseWheel { .. } => None,
+            ClipEvent::MouseWheel { .. }
+            | ClipEvent::MouseMoveInside
+            | ClipEvent::MouseUpInside => None,
         }
     }
 
@@ -301,8 +313,9 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::Release => Some("onRelease"),
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
-            ClipEvent::MouseUpInside => None,
-            ClipEvent::MouseWheel { .. } => None,
+            ClipEvent::MouseWheel { .. }
+            | ClipEvent::MouseMoveInside
+            | ClipEvent::MouseUpInside => None,
         }
     }
 }
