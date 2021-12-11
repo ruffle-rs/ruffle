@@ -1043,10 +1043,13 @@ impl Player {
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
+            let old_pos = self.mouse_pos;
             self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
 
+            let is_mouse_moved = old_pos != self.mouse_pos;
+
             // This fires button rollover/press events, which should run after the above mouseMove events.
-            if self.update_mouse_state(is_mouse_button_changed) {
+            if self.update_mouse_state(is_mouse_button_changed, is_mouse_moved) {
                 self.needs_render = true;
             }
         }
@@ -1114,7 +1117,7 @@ impl Player {
     }
 
     /// Updates the hover state of buttons.
-    fn update_mouse_state(&mut self, is_mouse_button_changed: bool) -> bool {
+    fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
 
         // Determine the display object the mouse is hovering over.
@@ -1133,6 +1136,13 @@ impl Player {
 
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
+
+            if is_mouse_moved {
+                events.push((
+                    new_over_object.unwrap_or_else(|| context.stage.into()),
+                    ClipEvent::MouseMoveInside,
+                ));
+            }
 
             // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_over_object {
@@ -1676,7 +1686,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_mouse_state(false);
+        self.update_mouse_state(false, false);
 
         // GC
         self.gc_arena.collect_debt();
