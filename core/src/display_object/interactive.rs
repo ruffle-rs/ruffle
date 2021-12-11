@@ -14,9 +14,11 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
+use instant::Instant;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::time::Duration;
 use swf::Twips;
 
 /// Find the lowest common ancestor between the display objects in `from` and
@@ -77,6 +79,13 @@ pub struct InteractiveObjectBase<'gc> {
     pub base: DisplayObjectBase<'gc>,
     flags: InteractiveObjectFlags,
     context_menu: Avm2Value<'gc>,
+
+    /// The time of the last click registered on this object.
+    ///
+    /// This should be cleared to `None` when the mouse leaves the current
+    /// display object.
+    #[collect(require_static)]
+    last_click: Option<Instant>,
 }
 
 impl<'gc> Default for InteractiveObjectBase<'gc> {
@@ -85,6 +94,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
             base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
+            last_click: None,
         }
     }
 }
@@ -237,15 +247,45 @@ pub trait TInteractiveObject<'gc>:
                 ClipEventResult::Handled
             }
             ClipEvent::Release => {
-                let mut avm2_event = Avm2Event::new(
-                    "click",
-                    Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
-                );
+                let read = self.ibase();
+                let last_click = read.last_click;
+                let this_click = Instant::now();
 
-                avm2_event.set_bubbles(true);
+                let is_double_click = read
+                    .flags
+                    .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
+                    && last_click
+                        .map(|lc| this_click - lc < Duration::from_secs(1))
+                        .unwrap_or(false);
 
-                if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
-                    log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                drop(read);
+
+                if is_double_click {
+                    let mut avm2_event = Avm2Event::new(
+                        "doubleClick",
+                        Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                    );
+
+                    avm2_event.set_bubbles(true);
+
+                    if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                        log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                    }
+
+                    self.ibase_mut(context.gc_context).last_click = None;
+                } else {
+                    let mut avm2_event = Avm2Event::new(
+                        "click",
+                        Avm2EventData::mouse_event(context, self.as_displayobject(), None, 0),
+                    );
+
+                    avm2_event.set_bubbles(true);
+
+                    if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
+                        log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
+                    }
+
+                    self.ibase_mut(context.gc_context).last_click = Some(this_click);
                 }
 
                 ClipEventResult::Handled
@@ -261,6 +301,8 @@ pub trait TInteractiveObject<'gc>:
                 if let Err(e) = Avm2::dispatch_event(context, avm2_event, target) {
                     log::error!("Got error when dispatching {:?} to AVM2: {}", event, e);
                 }
+
+                self.ibase_mut(context.gc_context).last_click = None;
 
                 ClipEventResult::Handled
             }
@@ -299,6 +341,8 @@ pub trait TInteractiveObject<'gc>:
 
                     rollover_target = tgt.parent();
                 }
+
+                self.ibase_mut(context.gc_context).last_click = None;
 
                 ClipEventResult::Handled
             }

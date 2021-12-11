@@ -2138,6 +2138,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 }
             }
         } else {
+            drop(read);
             handled = self.event_dispatch_to_avm2(context, event);
         }
 
