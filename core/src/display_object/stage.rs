@@ -616,6 +616,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         self.0.as_ptr() as *const DisplayObjectPtr
     }
 
+    fn local_to_global_matrix(&self) -> Matrix {
+        // TODO: See comments in DisplayObject::local_to_global_matrix.
+        Default::default()
+    }
+
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
