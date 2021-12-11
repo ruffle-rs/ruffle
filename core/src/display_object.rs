@@ -578,6 +578,8 @@ pub trait TDisplayObject<'gc>:
             // mode and alignment transform, but the AS APIs expect "global" to be relative to the
             // Stage, not final view coordinates.
             // I suspect we want this to include the stage transform eventually.
+            // NOTE: If we do, make sure to remove the override of this
+            // function on `Stage`.
             if display_object.as_stage().is_some() {
                 break;
             }
