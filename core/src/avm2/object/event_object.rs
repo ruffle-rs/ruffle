@@ -6,7 +6,6 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -87,21 +86,8 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        let read = self.0.read();
-        let event_type = read.event.event_type();
-        let bubbles = read.event.is_bubbling();
-        let cancelable = read.event.is_cancelable();
-        let phase = read.event.phase() as u32;
-
-        Ok(AvmString::new_utf8(
-            mc,
-            format!(
-                "[Event type=\"{}\" bubbles={} cancelable={} eventPhase={}]",
-                event_type, bubbles, cancelable, phase
-            ),
-        )
-        .into())
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(Value::Object((*self).into()))
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
