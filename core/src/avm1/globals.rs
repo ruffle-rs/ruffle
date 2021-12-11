@@ -59,6 +59,7 @@ mod text_format;
 mod transform;
 mod video;
 mod xml;
+mod xml_node;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "isFinite" => method(is_finite; DONT_ENUM);
@@ -592,9 +593,9 @@ pub fn create_globals<'gc>(
 
     let error_proto = error::create_proto(gc_context, object_proto, function_proto);
 
-    let xmlnode_proto = xml::create_xmlnode_proto(gc_context, object_proto, function_proto);
+    let xmlnode_proto = xml_node::create_proto(gc_context, object_proto, function_proto);
 
-    let xml_proto = xml::create_xml_proto(gc_context, xmlnode_proto, function_proto);
+    let xml_proto = xml::create_proto(gc_context, xmlnode_proto, function_proto);
 
     let string_proto = string::create_proto(gc_context, object_proto, function_proto);
     let number_proto = number::create_proto(gc_context, object_proto, function_proto);
@@ -705,15 +706,15 @@ pub fn create_globals<'gc>(
     let array = array::create_array_object(gc_context, array_proto, function_proto);
     let xmlnode = FunctionObject::constructor(
         gc_context,
-        Executable::Native(xml::xmlnode_constructor),
-        constructor_to_fn!(xml::xmlnode_constructor),
+        Executable::Native(xml_node::constructor),
+        constructor_to_fn!(xml_node::constructor),
         Some(function_proto),
         xmlnode_proto,
     );
     let xml = FunctionObject::constructor(
         gc_context,
-        Executable::Native(xml::xml_constructor),
-        constructor_to_fn!(xml::xml_constructor),
+        Executable::Native(xml::constructor),
+        constructor_to_fn!(xml::constructor),
         Some(function_proto),
         xml_proto,
     );

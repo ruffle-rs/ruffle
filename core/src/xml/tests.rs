@@ -82,7 +82,7 @@ fn round_trip_tostring() {
 
         let result = xml
             .as_node()
-            .into_string(&mut |_| true)
+            .into_string(&|_| true)
             .expect("Successful toString");
 
         assert_eq!(std::str::from_utf8(test_string).unwrap(), result);
@@ -102,7 +102,7 @@ fn round_trip_filtered_tostring() {
 
         let result = xml
             .as_node()
-            .into_string(&mut |node| !node.is_comment())
+            .into_string(&|node| !node.is_comment())
             .expect("Successful toString");
 
         assert_eq!("<test>This is a text node</test>", result);
