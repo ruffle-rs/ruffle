@@ -84,16 +84,22 @@ pub enum ClipEventResult {
 
 /// An event type that can be handled by a movie clip instance.
 ///
-/// Clip events come in two flavors: anycast and targeted. An anycast event is
-/// provided to the first `DisplayObject` that claims it, in render list order.
-/// Targeted events are sent to a particular object and are lost if not
-/// handled by the object.
+/// Clip events come in three flavors: broadcast, anycast and targeted. An
+/// anycast event is provided to the first `DisplayObject` that claims it, in
+/// render list order. Targeted events are sent to a particular object and are
+/// lost if not handled by the object. Broadcast events are delivered to all
+/// objects in the display list tree.
 ///
-/// Clip events are consumed by both AVM1 and AVM2 event handlers. As AVM2
-/// provides it's own notion of broadcast events, none of the anycast events
-/// here will be dispatched to AVM2. Targeted events are dispatched to both
-/// kinds of scripts; with AVM2 versions of those events optionally providing
-/// capture and bubbling phases.
+/// These events are consumed both by display objects themselves as well as
+/// event handlers in AVM1 and AVM2. These have slightly different event
+/// handling semantics:
+///
+///  * AVM1 delivers broadcasts via `ClipEvent` or system listeners
+///  * AVM2 delivers broadcasts to all registered `EventDispatcher`s
+///  * Anycast events are not delivered to AVM2
+///  * Targeted events are supported and consumed by both VMs
+///  * AVM2 additionally supports bubble/capture, which AVM1 and
+///    `InteractiveObject` itself does not support
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ClipEvent<'gc> {
     Construct,
