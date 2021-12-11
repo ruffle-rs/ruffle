@@ -762,9 +762,10 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         };
 
         write.play_sound(context, sound);
+        let old_state = write.state;
+        drop(write);
 
-        if write.state != new_state {
-            drop(write);
+        if old_state != new_state {
             self.set_state(context, new_state);
         }
 
