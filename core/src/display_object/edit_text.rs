@@ -417,7 +417,7 @@ impl<'gc> EditText<'gc> {
     pub fn html_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> WString {
         if self.is_html() {
             let html_tree = self.html_tree(context).as_node();
-            let html_string_result = html_tree.into_string(&mut |_node| true);
+            let html_string_result = html_tree.into_string(&|_node| true);
 
             if let Err(err) = &html_string_result {
                 log::warn!(

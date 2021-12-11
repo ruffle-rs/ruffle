@@ -1152,9 +1152,9 @@ impl<'gc> XmlNode<'gc> {
     /// resulting string. It will be called at least once for each node
     /// encountered in the tree (other than this one) if specified; only nodes
     /// that yield `true` shall be printed.
-    pub fn into_string<F>(self, filter: &mut F) -> Result<String, Error>
+    pub fn into_string<F>(self, filter: &F) -> Result<String, Error>
     where
-        F: FnMut(&XmlNode<'gc>) -> bool,
+        F: Fn(&XmlNode<'gc>) -> bool,
     {
         let mut buf = Vec::new();
         let mut writer = Writer::new(Cursor::new(&mut buf));
@@ -1172,11 +1172,11 @@ impl<'gc> XmlNode<'gc> {
     fn write_node_to_event_writer<W, F>(
         self,
         writer: &mut Writer<W>,
-        filter: &mut F,
+        filter: &F,
     ) -> Result<(), Error>
     where
         W: Write,
-        F: FnMut(&XmlNode<'gc>) -> bool,
+        F: Fn(&XmlNode<'gc>) -> bool,
     {
         // TODO: we convert all strings to utf8, replacing unpaired surrogates by the replacement char.
         // It is correct?
@@ -1252,6 +1252,16 @@ impl<'gc> XmlNode<'gc> {
         }?;
 
         Ok(())
+    }
+
+    /// Returns whether this node can be exposed to AVM1 or not.
+    ///
+    /// Our internal XML tree representation supports node types that AVM1 XML did
+    /// not. Those nodes are filtered from all attributes that return XML nodes to
+    /// act as if those nodes did not exist. For example, `prevSibling` skips
+    /// past incompatible nodes, etc.
+    pub fn is_as2_compatible(&self) -> bool {
+        self.is_document_root() || self.is_element() || self.is_text()
     }
 }
 
