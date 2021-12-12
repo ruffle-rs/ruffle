@@ -1,0 +1,6 @@
+C::foo
+A::foo
+C::foo
+A::foo
+C::foo
+A::foo

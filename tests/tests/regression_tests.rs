@@ -251,6 +251,7 @@ swf_tests! {
     (as3_es4_interfaces, "avm2/es4_interfaces", 1),
     (as3_es4_method_binding, "avm2/es4_method_binding", 1),
     (as3_es4_oop_prototypes, "avm2/es4_oop_prototypes", 1),
+    (as3_es4_protected_inheritance, "avm2/es4_protected_inheritance", 1),
     (as3_event_bubbles, "avm2/event_bubbles", 1),
     (as3_event_cancelable, "avm2/event_cancelable", 1),
     (as3_event_clone, "avm2/event_clone", 1),
