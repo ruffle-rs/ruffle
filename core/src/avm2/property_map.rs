@@ -118,6 +118,12 @@ impl<'gc, V> PropertyMap<'gc, V> {
             .any(|v| v.iter().any(|(n, _)| *n == name.namespace()))
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = (AvmString<'gc>, Namespace<'gc>, &V)> {
+        self.0
+            .iter()
+            .flat_map(|(k, vs)| vs.iter().map(|(ns, v)| (*k, *ns, v)))
+    }
+
     pub fn insert(&mut self, name: QName<'gc>, mut value: V) -> Option<V> {
         let bucket = self.0.entry(name.local_name()).or_default();
 

@@ -87,10 +87,6 @@ pub struct ClassObjectData<'gc> {
 }
 
 impl<'gc> ClassObject<'gc> {
-    pub fn name(self) -> QName<'gc> {
-        self.inner_class_definition().read().name()
-    }
-
     /// Allocate the prototype for this class.
     ///
     /// This function is not used during the initialization of "early classes",

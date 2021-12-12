@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::method::Method;
-use crate::avm2::names::{Multiname, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, FunctionObject, Object};
 use crate::avm2::property::Property;
 use crate::avm2::property_map::PropertyMap;
@@ -24,6 +24,8 @@ pub struct VTableData<'gc> {
     /// should always be Some post-initialization
     scope: Option<ScopeChain<'gc>>,
 
+    protected_namespace: Option<Namespace<'gc>>,
+
     resolved_traits: PropertyMap<'gc, Property>,
 
     method_table: Vec<(Option<ClassObject<'gc>>, Method<'gc>)>,
@@ -37,6 +39,7 @@ impl<'gc> VTable<'gc> {
             VTableData {
                 defining_class: None,
                 scope: None,
+                protected_namespace: None,
                 resolved_traits: PropertyMap::new(),
                 method_table: vec![],
                 default_slots: vec![],
@@ -152,10 +155,33 @@ impl<'gc> VTable<'gc> {
         write.defining_class = defining_class;
         write.scope = Some(scope);
 
+        if let Some(defining_class) = defining_class {
+            write.protected_namespace = defining_class
+                .inner_class_definition()
+                .read()
+                .protected_namespace();
+        }
+
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
             write.method_table = superclass_vtable.0.read().method_table.clone();
             write.default_slots = superclass_vtable.0.read().default_slots.clone();
+
+            if let Some(protected_namespace) = write.protected_namespace {
+                if let Some(super_protected_namespace) =
+                    superclass_vtable.0.read().protected_namespace
+                {
+                    // Copy all protected traits from superclass
+                    // but with this class's protected namespace
+                    for (local_name, ns, prop) in superclass_vtable.0.read().resolved_traits.iter()
+                    {
+                        if ns == super_protected_namespace {
+                            let new_name = QName::new(protected_namespace, local_name);
+                            write.resolved_traits.insert(new_name, *prop);
+                        }
+                    }
+                }
+            }
         }
 
         let (resolved_traits, method_table, default_slots) = (

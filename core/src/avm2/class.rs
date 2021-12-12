@@ -220,11 +220,6 @@ impl<'gc> Class<'gc> {
         self.attributes = attributes;
     }
 
-    /// Add a protected namespace to this class.
-    pub fn set_protected_namespace(&mut self, ns: Namespace<'gc>) {
-        self.protected_namespace = Some(ns)
-    }
-
     /// Construct a class from a `TranslationUnit` and its class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
@@ -375,6 +370,9 @@ impl<'gc> Class<'gc> {
 
         if let Some(superclass) = superclass {
             for instance_trait in self.instance_traits.iter() {
+                let is_protected =
+                    self.protected_namespace() == Some(instance_trait.name().namespace());
+
                 let mut current_superclass = Some(superclass);
                 let mut did_override = false;
 
@@ -383,7 +381,14 @@ impl<'gc> Class<'gc> {
                     let read = superclass_def.read();
 
                     for supertrait in read.instance_traits.iter() {
-                        if supertrait.name() == instance_trait.name() {
+                        let super_name = supertrait.name();
+                        let my_name = instance_trait.name();
+
+                        let names_match = super_name.local_name() == my_name.local_name()
+                            && (super_name.namespace() == my_name.namespace()
+                                || (is_protected
+                                    && read.protected_namespace() == Some(super_name.namespace())));
+                        if names_match {
                             match (supertrait.kind(), instance_trait.kind()) {
                                 //Getter/setter pairs do NOT override one another
                                 (TraitKind::Getter { .. }, TraitKind::Setter { .. }) => continue,
@@ -488,6 +493,10 @@ impl<'gc> Class<'gc> {
 
     pub fn super_class_name(&self) -> &Option<Multiname<'gc>> {
         &self.super_class
+    }
+
+    pub fn protected_namespace(&self) -> Option<Namespace<'gc>> {
+        self.protected_namespace
     }
 
     #[inline(never)]
