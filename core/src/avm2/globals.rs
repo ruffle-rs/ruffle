@@ -511,6 +511,8 @@ pub fn load_player_globals<'gc>(
     function(activation, "", "trace", toplevel::trace, script)?;
     function(activation, "", "isFinite", toplevel::is_finite, script)?;
     function(activation, "", "isNaN", toplevel::is_nan, script)?;
+    function(activation, "", "parseInt", toplevel::parse_int, script)?;
+    function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     constant(mc, "", "undefined", Value::Undefined, script)?;
     constant(mc, "", "null", Value::Null, script)?;
     constant(mc, "", "NaN", f64::NAN.into(), script)?;

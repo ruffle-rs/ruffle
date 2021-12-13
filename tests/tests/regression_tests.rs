@@ -373,6 +373,7 @@ swf_tests! {
     (as3_op_escxattr, "avm2/op_escxattr", 1),
     (as3_op_escxelem, "avm2/op_escxelem", 1),
     (as3_op_lookupswitch, "avm2/op_lookupswitch", 1),
+    (as3_parse_int, "avm2/parse_int", 1),
     (as3_place_object_replace_2, "avm2/place_object_replace_2", 3),
     (as3_place_object_replace, "avm2/place_object_replace", 2),
     (as3_point, "avm2/point", 1),
@@ -771,6 +772,7 @@ swf_tests_approx! {
     (as3_number_toexponential, "avm2/number_toexponential", 1, max_relative = 0.001),
     (as3_number_tofixed, "avm2/number_tofixed", 1, max_relative = 0.001),
     (as3_number_toprecision, "avm2/number_toprecision", 1, max_relative = 0.001),
+    (as3_parse_float, "avm2/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
     (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 4.0), // TODO Flash has _width higher by 4.0, probably padding logic mistake
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
