@@ -249,18 +249,7 @@ pub fn get_nan<'gc>(
     }
 }
 
-pub fn parse_float<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let s = if let Some(val) = args.get(0) {
-        val.coerce_to_string(activation)?
-    } else {
-        return Ok(f64::NAN.into());
-    };
-
-    let s = s.trim_start();
+pub fn parse_float_impl(s: &WStr, allow_multiple_dots: bool) -> f64 {
     let mut out_str = String::with_capacity(s.len());
 
     // TODO: Implementing this in a very janky way for now,
@@ -288,13 +277,17 @@ pub fn parse_float<'gc>(
                 out_str.push(c.into());
             }
             b'.' if allow_exp => {
-                // Flash allows multiple . except after e
                 allow_sign = false;
                 if allow_dot {
                     allow_dot = false;
                     out_str.push(c.into());
                 } else {
-                    allow_exp = false;
+                    // AVM1 allows multiple . except after e
+                    if allow_multiple_dots {
+                        allow_exp = false;
+                    } else {
+                        break;
+                    }
                 }
             }
             b'e' | b'E' if allow_exp => {
@@ -309,8 +302,23 @@ pub fn parse_float<'gc>(
         };
     }
 
-    let n = out_str.parse::<f64>().unwrap_or(f64::NAN);
-    Ok(n.into())
+    out_str.parse::<f64>().unwrap_or(f64::NAN)
+}
+
+pub fn parse_float<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let s = if let Some(val) = args.get(0) {
+        val.coerce_to_string(activation)?
+    } else {
+        return Ok(f64::NAN.into());
+    };
+
+    let s = s.trim_start();
+
+    Ok(parse_float_impl(s, true).into())
 }
 
 pub fn set_interval<'gc>(
