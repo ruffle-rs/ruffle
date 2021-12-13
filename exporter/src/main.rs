@@ -66,18 +66,12 @@ struct Opt {
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(
-        long,
-        short,
-        case_insensitive = true,
-        default_value = "default",
-        arg_enum
-    )]
+    #[clap(long, short, ignore_case = true, default_value = "default", arg_enum)]
     graphics: GraphicsBackend,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, case_insensitive = true, default_value = "high", arg_enum)]
+    #[clap(long, short, ignore_case = true, default_value = "high", arg_enum)]
     power: PowerPreference,
 
     /// Location to store a wgpu trace output
