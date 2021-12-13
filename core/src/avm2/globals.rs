@@ -1,5 +1,3 @@
-//! Global scope built-ins
-
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
@@ -12,7 +10,7 @@ use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, WStr};
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 mod array;
@@ -31,6 +29,7 @@ mod object;
 mod qname;
 mod regexp;
 mod string;
+mod toplevel;
 mod r#uint;
 mod vector;
 mod xml;
@@ -40,54 +39,6 @@ const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
 const NS_VECTOR: &str = "__AS3__.vec";
 
 pub use flash::utils::NS_FLASH_PROXY;
-
-fn trace<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    match args {
-        [] => activation.context.avm_trace(""),
-        [arg] => {
-            let msg = arg.coerce_to_string(activation)?;
-            activation.context.avm_trace(&msg.to_utf8_lossy());
-        }
-        args => {
-            let strings = args
-                .iter()
-                .map(|a| a.coerce_to_string(activation))
-                .collect::<Result<Vec<_>, _>>()?;
-            let msg = crate::string::join(&strings, &WStr::from_units(b" "));
-            activation.context.avm_trace(&msg.to_utf8_lossy());
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
-fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_number(activation)?.is_finite().into())
-    } else {
-        Ok(false.into())
-    }
-}
-
-fn is_nan<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(val) = args.get(0) {
-        Ok(val.coerce_to_number(activation)?.is_nan().into())
-    } else {
-        Ok(true.into())
-    }
-}
 
 /// This structure represents all system builtins' prototypes.
 #[derive(Clone, Collect)]
@@ -557,9 +508,9 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(qname, activation, qname::create_class(mc), script);
     avm2_system_class!(array, activation, array::create_class(mc), script);
 
-    function(activation, "", "trace", trace, script)?;
-    function(activation, "", "isFinite", is_finite, script)?;
-    function(activation, "", "isNaN", is_nan, script)?;
+    function(activation, "", "trace", toplevel::trace, script)?;
+    function(activation, "", "isFinite", toplevel::is_finite, script)?;
+    function(activation, "", "isNaN", toplevel::is_nan, script)?;
     constant(mc, "", "undefined", Value::Undefined, script)?;
     constant(mc, "", "null", Value::Null, script)?;
     constant(mc, "", "NaN", f64::NAN.into(), script)?;
