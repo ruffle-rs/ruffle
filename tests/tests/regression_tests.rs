@@ -321,6 +321,8 @@ swf_tests! {
     (as3_istype, "avm2/istype", 1),
     (as3_istypelate_coerce, "avm2/istypelate_coerce", 1),
     (as3_istypelate, "avm2/istypelate", 1),
+    (as3_json_parse, "avm2/json_parse", 1),
+    (as3_json_stringify, "avm2/json_stringify", 1),
     (as3_lazyinit, "avm2/lazyinit", 1),
     (as3_lessequals, "avm2/lessequals", 1),
     (as3_lessthan, "avm2/lessthan", 1),

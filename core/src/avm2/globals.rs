@@ -23,6 +23,7 @@ mod flash;
 mod function;
 mod global_scope;
 mod int;
+mod json;
 mod math;
 mod namespace;
 mod number;
@@ -565,6 +566,7 @@ pub fn load_player_globals<'gc>(
     constant(mc, "", "Infinity", f64::INFINITY.into(), script)?;
 
     class(activation, math::create_class(mc), script)?;
+    class(activation, json::create_class(mc), script)?;
     avm2_system_class!(regexp, activation, regexp::create_class(mc), script);
     avm2_system_class!(vector, activation, vector::create_class(mc), script);
     avm2_system_class!(xml, activation, xml::create_class(mc), script);

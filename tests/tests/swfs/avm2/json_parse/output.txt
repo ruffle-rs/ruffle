@@ -1,0 +1,21 @@
+value 1,2,3 [object Object] test
+// Parse with reviver
+test value
+0 1
+1 2
+2 3
+another 1,2,3
+recursive test
+example [object Object]
+ [object Object]
+value 1,2,3 [object Object] test
+// Parse with custom reviver
+test value
+0 1
+1 2
+2 3
+another custom,custom,custom
+recursive test
+example [object Object]
+ [object Object]
+value custom,custom,custom [object Object] test

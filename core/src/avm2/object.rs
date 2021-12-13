@@ -861,6 +861,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
+        None
+    }
+
     /// Unwrap this object as array storage.
     fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
         None
