@@ -24,21 +24,42 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         let target = args.get(0).cloned().unwrap_or(Value::Null);
-        let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
 
         this.init_property(
             &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
             target,
             activation,
         )?;
-        this.init_property(
-            &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
-            dispatch_list.into(),
-            activation,
-        )?;
+
+        //NOTE: We *cannot* initialize the dispatch list at construction time,
+        //since it is possible to gain access to some event dispatchers before
+        //their constructors run. Notably, `SimpleButton` does this
     }
 
     Ok(Value::Undefined)
+}
+
+/// Get an object's dispatch list, lazily initializing it if necessary.
+fn dispatch_list<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    mut this: Object<'gc>,
+) -> Result<Object<'gc>, Error> {
+    match this.get_property(
+        &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
+        activation,
+    )? {
+        Value::Object(o) => Ok(o),
+        _ => {
+            let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
+            this.init_property(
+                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
+                dispatch_list.into(),
+                activation,
+            )?;
+
+            Ok(dispatch_list)
+        }
+    }
 }
 
 /// Implements `EventDispatcher.addEventListener`.
@@ -48,12 +69,7 @@ pub fn add_event_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let dispatch_list = this
-            .get_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
             .get(0)
             .cloned()
@@ -94,12 +110,7 @@ pub fn remove_event_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let dispatch_list = this
-            .get_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
             .get(0)
             .cloned()
@@ -132,12 +143,7 @@ pub fn has_event_listener<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let dispatch_list = this
-            .get_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
             .get(0)
             .cloned()
@@ -161,12 +167,7 @@ pub fn will_trigger<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let dispatch_list = this
-            .get_property(
-                &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
+        let dispatch_list = dispatch_list(activation, this)?;
         let event_type = args
             .get(0)
             .cloned()
