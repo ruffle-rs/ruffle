@@ -33,5 +33,9 @@ window.addEventListener("DOMContentLoaded", async () => {
         letterbox: Letterbox.On,
         ...options,
     };
-    player.load({ url: swfUrl, base: swfUrl, ...config });
+    player.load({
+        url: swfUrl,
+        base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
+        ...config,
+    });
 });
