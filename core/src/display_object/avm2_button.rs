@@ -538,7 +538,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 self.exit_frame(context);
             }
-        } else if self.0.read().needs_avm2_initialization {
+        }
+
+        // For some reason buttons that were placed on frame 2 or later run
+        // their constructors one frame late.
+        if self.0.read().needs_avm2_initialization
+            && (self.place_frame() == 1 || !needs_avm2_construction)
+        {
             self.0.write(context.gc_context).needs_avm2_initialization = false;
             let avm2_object = self.0.read().object;
             if let Some(avm2_object) = avm2_object {
