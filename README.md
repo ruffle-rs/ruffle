@@ -110,7 +110,7 @@ Sincere thanks to the diamond level sponsors of Ruffle:
     <img src="https://ruffle.rs/assets/sponsors/dolldivine.png" alt="Doll Divine">
   </a>
   <a href="https://movavi.com/">
-    <img src="https://ruffle.rs/assets/sponsors/movavi.png" alt="Movavi">
+    <img src="https://ruffle.rs/assets/sponsors/movavi.svg" alt="Movavi">
   </a>
 </p>
 
