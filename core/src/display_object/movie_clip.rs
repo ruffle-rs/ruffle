@@ -1752,7 +1752,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.determine_next_frame() != NextFrame::First {
+            if self.playing() && self.determine_next_frame() != NextFrame::First {
                 let mc = self.0.read();
                 let data = mc.static_data.swf.clone();
                 let mut reader = data.read_from(mc.tag_stream_pos);
