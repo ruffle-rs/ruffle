@@ -376,6 +376,7 @@ swf_tests! {
     (as3_movieclip_displayevents_dblhandler, "avm2/movieclip_displayevents_dblhandler", 4),
     (as3_movieclip_displayevents_looping, "avm2/movieclip_displayevents_looping", 5),
     (as3_movieclip_displayevents_timeline, "avm2/movieclip_displayevents_timeline", 5),
+    (as3_movieclip_displayevents_stopped, "avm2/movieclip_displayevents_stopped", 10),
     (as3_movieclip_displayevents, "avm2/movieclip_displayevents", 9),
     (as3_movieclip_drawrect, "avm2/movieclip_drawrect", 1),
     (as3_movieclip_goto_during_frame_script, "avm2/movieclip_goto_during_frame_script", 1),
