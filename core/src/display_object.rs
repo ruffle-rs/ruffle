@@ -1136,6 +1136,10 @@ pub trait TDisplayObject<'gc>:
     ///    as properties on the class
     fn construct_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 
+    /// Destroy all display objects that the timeline indicates should be
+    /// removed this frame, and their children.
+    fn destroy_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
+
     /// Execute all other timeline actions on this object.
     fn run_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 

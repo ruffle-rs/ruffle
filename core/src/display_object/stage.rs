@@ -717,6 +717,12 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
+    fn destroy_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.destroy_frame(context);
+        }
+    }
+
     fn object2(&self) -> Avm2Value<'gc> {
         self.0.read().avm2_object.into()
     }

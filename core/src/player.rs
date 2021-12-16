@@ -1243,6 +1243,7 @@ impl Player {
                 }
                 AvmType::Avm2 => {
                     stage.exit_frame(context);
+                    stage.destroy_frame(context);
                     stage.enter_frame(context);
                     stage.construct_frame(context);
                     stage.frame_constructed(context);

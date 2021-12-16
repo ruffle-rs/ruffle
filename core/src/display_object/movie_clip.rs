@@ -1077,8 +1077,12 @@ impl<'gc> MovieClip<'gc> {
             TagCode::PlaceObject4 if run_display_actions && vm_type == AvmType::Avm1 => {
                 self.place_object(context, reader, tag_len, 4)
             }
-            TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
-            TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
+            TagCode::RemoveObject if run_display_actions && vm_type == AvmType::Avm1 => {
+                self.remove_object(context, reader, 1)
+            }
+            TagCode::RemoveObject2 if run_display_actions && vm_type == AvmType::Avm1 => {
+                self.remove_object(context, reader, 2)
+            }
             TagCode::SetBackgroundColor => self.set_background_color(context, reader),
             TagCode::StartSound => self.start_sound_1(context, reader),
             TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
@@ -1769,6 +1773,33 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if needs_construction {
                 self.construct_as_avm2_object(context);
             }
+        }
+    }
+
+    /// Destroy objects placed on this frame.
+    fn destroy_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.destroy_frame(context);
+        }
+
+        // AVM1 code expects to execute in line with timeline instructions, so
+        // it's exempted from frame destruction.
+        if context.avm_type() == AvmType::Avm2
+            && self.playing()
+            && self.determine_next_frame() != NextFrame::First
+        {
+            let mc = self.0.read();
+            let data = mc.static_data.swf.clone();
+            let mut reader = data.read_from(mc.tag_stream_pos);
+            drop(mc);
+
+            use swf::TagCode;
+            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| match tag_code {
+                TagCode::RemoveObject => self.remove_object(context, reader, 1),
+                TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
+                _ => Ok(()),
+            };
+            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
         }
     }
 
