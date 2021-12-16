@@ -1829,27 +1829,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_convert_b(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_boolean();
-
-        self.context.avm2.push(value);
-
-        Ok(FrameControl::Continue)
+        self.op_coerce_b()
     }
 
     fn op_convert_i(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_i32(self)?;
-
-        self.context.avm2.push(Value::Number(value.into()));
-
-        Ok(FrameControl::Continue)
+        self.op_coerce_i()
     }
 
     fn op_convert_d(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_number(self)?;
-
-        self.context.avm2.push(Value::Number(value));
-
-        Ok(FrameControl::Continue)
+        self.op_coerce_d()
     }
 
     fn op_convert_o(&mut self) -> Result<FrameControl<'gc>, Error> {
@@ -1861,11 +1849,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_convert_u(&mut self) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_u32(self)?;
-
-        self.context.avm2.push(Value::Number(value.into()));
-
-        Ok(FrameControl::Continue)
+        self.op_coerce_u()
     }
 
     fn op_convert_s(&mut self) -> Result<FrameControl<'gc>, Error> {
