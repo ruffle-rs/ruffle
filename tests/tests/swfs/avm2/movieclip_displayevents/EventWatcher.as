@@ -10,7 +10,7 @@
 		}
 		
 		function trace_event(event: Event) {
-			trace(this.name + ":" + event);
+			trace(this.name + " (frame " + this.currentFrame + "):" + event);
 		}
 		
 		public function setup() {
