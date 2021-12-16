@@ -408,6 +408,7 @@ swf_tests! {
     (as3_set_property_is_enumerable, "avm2/set_property_is_enumerable", 1),
     (as3_shape_drawrect, "avm2/shape_drawrect", 1),
     (as3_simplebutton_childevents_nested, "avm2/simplebutton_childevents_nested", 2),
+    (as3_simplebutton_childevents_symbol, "avm2/simplebutton_childevents_symbol", 5),
     (as3_simplebutton_childevents, "avm2/simplebutton_childevents", 2),
     (as3_simplebutton_childprops, "avm2/simplebutton_childprops", 1),
     (as3_simplebutton_childshuffle, "avm2/simplebutton_childshuffle", 1),
