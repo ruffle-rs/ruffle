@@ -1130,8 +1130,12 @@ impl<'gc> MovieClip<'gc> {
             TagCode::PlaceObject4 if run_display_actions && !context.is_action_script_3() => {
                 self.place_object(context, reader, tag_len, 4)
             }
-            TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
-            TagCode::RemoveObject2 if run_display_actions => self.remove_object(context, reader, 2),
+            TagCode::RemoveObject if run_display_actions && !context.is_action_script_3() => {
+                self.remove_object(context, reader, 1)
+            }
+            TagCode::RemoveObject2 if run_display_actions && !context.is_action_script_3() => {
+                self.remove_object(context, reader, 2)
+            }
             TagCode::SetBackgroundColor => self.set_background_color(context, reader),
             TagCode::StartSound => self.start_sound_1(context, reader),
             TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
@@ -1858,6 +1862,36 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn swf_version(&self) -> u8 {
         self.0.read().movie().version()
+    }
+
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.enter_frame(context);
+        }
+
+        if context.is_action_script_3() {
+            let is_playing = self.playing();
+
+            if is_playing {
+                // Frame destruction happens in-line with frame number advance.
+                // If we expect to loop, we do not run `RemoveObject` tags.
+                if self.current_frame() < self.total_frames() {
+                    let mc = self.0.read();
+                    let data = mc.static_data.swf.clone();
+                    let mut reader = data.read_from(mc.tag_stream_pos);
+                    drop(mc);
+
+                    use swf::TagCode;
+                    let tag_callback =
+                        |reader: &mut SwfStream<'_>, tag_code, _tag_len| match tag_code {
+                            TagCode::RemoveObject => self.remove_object(context, reader, 1),
+                            TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
+                            _ => Ok(()),
+                        };
+                    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                }
+            }
+        }
     }
 
     /// Construct objects placed on this frame.
