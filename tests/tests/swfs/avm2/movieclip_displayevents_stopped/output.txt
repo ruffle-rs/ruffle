@@ -1,0 +1,113 @@
+//this.addChild(new SymbolA());
+SymbolA(frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.getChildAt(0).stop();
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(new SymbolB());
+SymbolB(frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+SymbolB(frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.getChildAt(1).gotoAndStop(3);
+SymbolB(frame 3):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+symbol_c(frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+symbol_c(frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 4):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 4):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 4):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 5):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 5):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 5):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 6):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+SymbolA(frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+SymbolB(frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+symbol_c(frame 6):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+///name
+root1
+///currentFrame
+10
+///isPlaying
+false
+///children:  2
+///name
+SymbolA
+///currentFrame
+10
+///isPlaying
+false
+///children:  1
+///name
+instance2
+///end children
+///name
+SymbolB
+///currentFrame
+10
+///isPlaying
+false
+///children:  2
+///name
+instance4
+///name
+symbol_c
+///currentFrame
+10
+///isPlaying
+false
+///children:  1
+///name
+instance5
+///end children
+///end children
+///end children
