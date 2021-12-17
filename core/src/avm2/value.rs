@@ -205,11 +205,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => Ok(NamespaceObject::from_namespace(
             activation,
-            Namespace::from_abc_namespace(
-                translation_unit,
-                ns.clone(),
-                activation.context.gc_context,
-            )?,
+            Namespace::from_abc_namespace(translation_unit, *ns, activation.context.gc_context)?,
         )?
         .into()),
     }

@@ -243,17 +243,14 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(
-            unit,
-            abc_instance.name.clone(),
-            activation.context.gc_context,
-        )?;
+        let name =
+            QName::from_abc_multiname(unit, abc_instance.name, activation.context.gc_context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             Some(Multiname::from_abc_multiname_static(
                 unit,
-                abc_instance.super_name.clone(),
+                abc_instance.super_name,
                 activation.context.gc_context,
             )?)
         };
@@ -261,7 +258,7 @@ impl<'gc> Class<'gc> {
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
             Some(Namespace::from_abc_namespace(
                 unit,
-                ns.clone(),
+                *ns,
                 activation.context.gc_context,
             )?)
         } else {
@@ -272,7 +269,7 @@ impl<'gc> Class<'gc> {
         for interface_name in &abc_instance.interfaces {
             interfaces.push(Multiname::from_abc_multiname_static(
                 unit,
-                interface_name.clone(),
+                *interface_name,
                 activation.context.gc_context,
             )?);
         }

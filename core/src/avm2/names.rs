@@ -189,7 +189,7 @@ impl<'gc> QName<'gc> {
 
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } => Self {
-                ns: Namespace::from_abc_namespace(translation_unit, namespace.clone(), mc)?,
+                ns: Namespace::from_abc_namespace(translation_unit, *namespace, mc)?,
                 name: translation_unit.pool_string(name.0, mc)?,
             },
             _ => return Err("Attempted to pull QName from non-QName multiname".into()),
@@ -311,11 +311,7 @@ impl<'gc> Multiname<'gc> {
         let mut result = vec![];
 
         for ns in ns_set? {
-            result.push(Namespace::from_abc_namespace(
-                translation_unit,
-                ns.clone(),
-                mc,
-            )?)
+            result.push(Namespace::from_abc_namespace(translation_unit, *ns, mc)?)
         }
 
         Ok(result)
@@ -336,7 +332,7 @@ impl<'gc> Multiname<'gc> {
             | AbcMultiname::MultinameLA { namespace_set } => Ok(Self {
                 ns: Self::abc_namespace_set(
                     translation_unit,
-                    namespace_set.clone(),
+                    *namespace_set,
                     activation.context.gc_context,
                 )?,
                 name: Some(name.coerce_to_string(activation)?),
@@ -364,7 +360,7 @@ impl<'gc> Multiname<'gc> {
                 Self {
                     ns: vec![Namespace::from_abc_namespace(
                         translation_unit,
-                        namespace.clone(),
+                        *namespace,
                         activation.context.gc_context,
                     )?],
                     name: translation_unit
@@ -402,7 +398,7 @@ impl<'gc> Multiname<'gc> {
             } => Self {
                 ns: Self::abc_namespace_set(
                     translation_unit,
-                    namespace_set.clone(),
+                    *namespace_set,
                     activation.context.gc_context,
                 )?,
                 name: translation_unit.pool_string_option(name.0, activation.context.gc_context)?,
@@ -452,7 +448,7 @@ impl<'gc> Multiname<'gc> {
                 base_type,
                 parameters,
             } => {
-                let base_multiname = Self::resolve_multiname_index(&abc, base_type.clone())?;
+                let base_multiname = Self::resolve_multiname_index(&abc, *base_type)?;
                 let mut base =
                     Self::resolve_multiname_params(translation_unit, base_multiname, activation)?;
 
@@ -466,7 +462,7 @@ impl<'gc> Multiname<'gc> {
 
                 for param_type in parameters {
                     let param_multiname =
-                        Self::from_abc_multiname(translation_unit, param_type.clone(), activation)?;
+                        Self::from_abc_multiname(translation_unit, *param_type, activation)?;
 
                     base.params.push(param_multiname);
                 }
@@ -508,7 +504,7 @@ impl<'gc> Multiname<'gc> {
                 Self {
                     ns: vec![Namespace::from_abc_namespace(
                         translation_unit,
-                        namespace.clone(),
+                        *namespace,
                         mc,
                     )?],
                     name: translation_unit.pool_string_option(name.0, mc)?,
@@ -523,7 +519,7 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(translation_unit, namespace_set.clone(), mc)?,
+                ns: Self::abc_namespace_set(translation_unit, *namespace_set, mc)?,
                 name: translation_unit.pool_string_option(name.0, mc)?,
                 params: Vec::new(),
             },
@@ -531,8 +527,7 @@ impl<'gc> Multiname<'gc> {
                 base_type,
                 parameters,
             } => {
-                let mut base =
-                    Self::from_abc_multiname_static(translation_unit, base_type.clone(), mc)?;
+                let mut base = Self::from_abc_multiname_static(translation_unit, *base_type, mc)?;
 
                 if parameters.len() > 1 {
                     return Err(format!(
@@ -546,7 +541,7 @@ impl<'gc> Multiname<'gc> {
                     let param_multiname = if param_type.0 == 0 {
                         Self::any()
                     } else {
-                        Self::from_abc_multiname_static(translation_unit, param_type.clone(), mc)?
+                        Self::from_abc_multiname_static(translation_unit, *param_type, mc)?
                     };
 
                     base.params.push(param_multiname);
