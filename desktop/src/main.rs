@@ -485,7 +485,7 @@ impl App {
                             }
                             WindowEvent::CursorLeft { .. } => {
                                 let mut player_lock = player.lock().unwrap();
-                                player_lock.handle_event(PlayerEvent::MouseLeft);
+                                player_lock.handle_event(PlayerEvent::MouseLeave);
                                 if player_lock.needs_render() {
                                     window.request_redraw();
                                 }
