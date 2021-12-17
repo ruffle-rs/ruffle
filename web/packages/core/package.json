@@ -13,7 +13,7 @@
         "build:cargo": "cross-env-shell \"cargo build --release --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\"\"",
         "build:wasm-bindgen": "wasm-bindgen ../../../target/wasm32-unknown-unknown/release/ruffle_web.wasm --target web --out-dir ./pkg --out-name ruffle_web",
         "build:wasm-opt": "wasm-opt -o ./pkg/ruffle_web_bg.wasm -O -g ./pkg/ruffle_web_bg.wasm || npm run build:wasm-opt-failed",
-        "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$GITHUB_ACTIONS\" != true ] # > nul",
+        "build:wasm-opt-failed": "echo 'NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.' && echo ; [ \"$CI\" != true ] # > nul",
         "build:ts": "tsc -d && node tools/set_version.js",
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
