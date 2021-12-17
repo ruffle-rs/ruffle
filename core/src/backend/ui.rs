@@ -106,6 +106,10 @@ impl InputManager {
     pub fn last_key_char(&self) -> Option<char> {
         self.last_char
     }
+
+    pub fn is_mouse_down(&self) -> bool {
+        self.is_key_down(KeyCode::MouseLeft)
+    }
 }
 
 impl Default for InputManager {
