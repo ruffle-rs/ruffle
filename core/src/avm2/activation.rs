@@ -244,14 +244,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// typed named is not a class object.
     fn resolve_type(
         &mut self,
-        type_name: Multiname<'gc>,
+        type_name: &Multiname<'gc>,
     ) -> Result<Option<ClassObject<'gc>>, Error> {
         if type_name.is_any() {
             return Ok(None);
         }
 
         let class = self
-            .resolve_definition(&type_name)?
+            .resolve_definition(type_name)?
             .ok_or_else(|| format!("Could not resolve parameter type {:?}", type_name))?
             .coerce_to_object(self)?;
 
@@ -266,7 +266,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             let mut param_types = Vec::with_capacity(type_name.params().len());
 
             for param in type_name.params() {
-                param_types.push(match self.resolve_type(param.clone())? {
+                param_types.push(match self.resolve_type(param)? {
                     Some(o) => Value::Object(o.into()),
                     None => Value::Null,
                 });
@@ -305,8 +305,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .into());
         };
 
-        let type_name = param_config.param_type_name.clone();
-        let param_type = self.resolve_type(type_name)?;
+        let param_type = self.resolve_type(&param_config.param_type_name)?;
 
         if let Some(param_type) = param_type {
             arg.coerce_to_type(self, param_type)
@@ -2739,7 +2738,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let val = self.context.avm2.pop();
         let type_name = self.pool_multiname_static_any(method, index)?;
-        let param_type = self.resolve_type(type_name)?;
+        let param_type = self.resolve_type(&type_name)?;
 
         let x = if let Some(param_type) = param_type {
             val.coerce_to_type(self, param_type)?
