@@ -22,7 +22,7 @@ pub enum PlayerEvent {
         x: f64,
         y: f64,
     },
-    MouseLeft,
+    MouseLeave,
     MouseWheel {
         delta: MouseWheelDelta,
     },
