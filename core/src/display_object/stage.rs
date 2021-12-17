@@ -2,7 +2,7 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Event as Avm2Event, EventData as Avm2EventData,
+    Activation as Avm2Activation, Avm2, Event as Avm2Event, EventData as Avm2EventData,
     Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
     Value as Avm2Value,
 };
@@ -709,6 +709,25 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
 
         context.renderer.end_frame();
+    }
+
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.enter_frame(context);
+        }
+
+        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Empty);
+        enter_frame_evt.set_bubbles(false);
+        enter_frame_evt.set_cancelable(false);
+
+        let dobject_constr = context.avm2.classes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting enterFrame event: {}",
+                e
+            );
+        }
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {

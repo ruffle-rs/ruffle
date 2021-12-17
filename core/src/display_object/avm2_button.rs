@@ -224,6 +224,7 @@ impl<'gc> Avm2Button<'gc> {
 
             child.set_parent(context.gc_context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
+            child.enter_frame(context);
             child.construct_frame(context);
 
             (child, false)
@@ -232,6 +233,7 @@ impl<'gc> Avm2Button<'gc> {
 
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context.gc_context, Some(self.into()));
+            state_sprite.enter_frame(context);
             state_sprite.construct_frame(context);
 
             for (child, depth) in children {
@@ -242,6 +244,7 @@ impl<'gc> Avm2Button<'gc> {
                 state_sprite.replace_at_depth(context, child, depth.into());
                 child.set_parent(context.gc_context, Some(self.into()));
                 child.post_instantiation(context, None, Instantiator::Movie, false);
+                child.enter_frame(context);
                 child.construct_frame(context);
                 child.set_parent(context.gc_context, Some(state_sprite.into()));
             }
@@ -426,6 +429,28 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         self.set_state(context, ButtonState::Up);
+    }
+
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let hit_area = self.0.read().hit_area;
+        if let Some(hit_area) = hit_area {
+            hit_area.enter_frame(context);
+        }
+
+        let up_state = self.0.read().up_state;
+        if let Some(up_state) = up_state {
+            up_state.enter_frame(context);
+        }
+
+        let down_state = self.0.read().down_state;
+        if let Some(down_state) = down_state {
+            down_state.enter_frame(context);
+        }
+
+        let over_state = self.0.read().over_state;
+        if let Some(over_state) = over_state {
+            over_state.enter_frame(context);
+        }
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {

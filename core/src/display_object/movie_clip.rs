@@ -45,7 +45,8 @@ use swf::{ClipEventFlag, FrameLabelData};
 type FrameNumber = u16;
 
 /// Indication of what frame `run_frame` should jump to next.
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Collect)]
+#[collect(require_static)]
 enum NextFrame {
     /// Construct and run the next frame in the clip.
     Next,
@@ -72,7 +73,12 @@ pub struct MovieClipData<'gc> {
     base: InteractiveObjectBase<'gc>,
     static_data: Gc<'gc, MovieClipStatic<'gc>>,
     tag_stream_pos: u64,
+
+    // The number of the frame that is currently executing.
     current_frame: FrameNumber,
+
+    // The playback action that the movie clip is taking this frame.
+    natural_playhead_action: NextFrame,
     #[collect(require_static)]
     audio_stream: Option<SoundInstanceHandle>,
     container: ChildContainer<'gc>,
@@ -109,6 +115,7 @@ impl<'gc> MovieClip<'gc> {
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
+                natural_playhead_action: NextFrame::Next,
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
@@ -144,6 +151,7 @@ impl<'gc> MovieClip<'gc> {
                 static_data: Gc::allocate(gc_context, MovieClipStatic::empty(movie, gc_context)),
                 tag_stream_pos: 0,
                 current_frame: 0,
+                natural_playhead_action: NextFrame::Next,
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: Some(this.into()),
@@ -182,6 +190,7 @@ impl<'gc> MovieClip<'gc> {
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
+                natural_playhead_action: NextFrame::Next,
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
@@ -217,6 +226,7 @@ impl<'gc> MovieClip<'gc> {
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
+                natural_playhead_action: NextFrame::Next,
                 audio_stream: None,
                 container: ChildContainer::new(),
                 object: None,
@@ -1043,15 +1053,40 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Advance playhead to the next frame in the clip.
+    ///
+    /// This supports three different actions as stated in `NextFrame`. The
+    /// selected action is stored in `natural_playhead_action` and can be
+    /// referenced at different parts during frame execution.
+    fn advance_playhead(self, context: &mut UpdateContext<'_, 'gc, '_>) -> NextFrame {
+        let playhead_action = self.determine_next_frame();
+        self.0.write(context.gc_context).natural_playhead_action = playhead_action;
+
+        match playhead_action {
+            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
+            NextFrame::First => self.run_goto(context, 1, true),
+            NextFrame::Same => self.stop(context),
+        };
+        playhead_action
+    }
+
     fn run_frame_internal(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
-        match self.determine_next_frame() {
-            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
-            NextFrame::First => return self.run_goto(context, 1, true),
-            NextFrame::Same => self.stop(context),
+        let vm_type = context.avm_type();
+        let action = if vm_type == AvmType::Avm1 {
+            self.advance_playhead(context)
+        } else {
+            self.0.read().natural_playhead_action
+        };
+
+        //NOTE: For some reason, we actually have to use the playhead action
+        //that `advance_playhead` returns. If you pull `natural_playhead_action`
+        //out of the clip, you get some weird miscompile and AVM1 breaks
+        if action == NextFrame::First {
+            return;
         }
 
         let mc = self.0.read();
@@ -1059,8 +1094,6 @@ impl<'gc> MovieClip<'gc> {
         let data = mc.static_data.swf.clone();
         let mut reader = data.read_from(mc.tag_stream_pos);
         drop(mc);
-
-        let vm_type = context.avm_type();
 
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
@@ -1172,6 +1205,7 @@ impl<'gc> MovieClip<'gc> {
                     // TODO: Missing PlaceObject properties: amf_data, filters
 
                     // Run first frame.
+                    child.enter_frame(context);
                     child.construct_frame(context);
                     child.post_instantiation(context, None, Instantiator::Movie, false);
                     // In AVM1, children are added in `run_frame` so this is necessary.
@@ -1392,6 +1426,7 @@ impl<'gc> MovieClip<'gc> {
         if hit_target_frame {
             self.0.write(context.gc_context).current_frame -= 1;
             self.0.write(context.gc_context).tag_stream_pos = frame_pos;
+            self.enter_frame(context); //We explicitly DO NOT construct any frames
             self.run_frame_internal(context, false);
         } else {
             self.0.write(context.gc_context).current_frame = clamped_frame;
@@ -1734,6 +1769,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.read().movie().version()
     }
 
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.enter_frame(context);
+        }
+
+        if context.avm_type() == AvmType::Avm2 {
+            self.advance_playhead(context);
+        }
+    }
+
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // New children will be constructed when they are instantiated and thus
@@ -1753,7 +1798,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.playing() && self.determine_next_frame() != NextFrame::First {
+            if self.playing() && self.0.read().natural_playhead_action != NextFrame::First {
                 let mc = self.0.read();
                 let data = mc.static_data.swf.clone();
                 let mut reader = data.read_from(mc.tag_stream_pos);
