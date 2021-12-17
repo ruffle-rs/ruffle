@@ -1242,13 +1242,13 @@ impl Player {
                         .movie_clip_on_load(context.action_queue);
                 }
                 AvmType::Avm2 => {
-                    stage.exit_frame(context);
-                    stage.destroy_frame(context);
                     stage.enter_frame(context);
                     stage.construct_frame(context);
                     stage.frame_constructed(context);
                     stage.run_frame_avm2(context);
                     stage.run_frame_scripts(context);
+                    stage.exit_frame(context);
+                    stage.destroy_frame(context);
                 }
             }
             context.update_sounds();
