@@ -3,7 +3,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::TObject;
 use crate::avm2::{
-    Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
+    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
     ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::config::Letterbox;
@@ -715,6 +715,23 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
 
         context.renderer.end_frame();
+    }
+
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        for child in self.iter_render_list() {
+            child.enter_frame(context);
+        }
+
+        let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
+
+        let dobject_constr = context.avm2.classes().display_object;
+
+        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
+            log::error!(
+                "Encountered AVM2 error when broadcasting enterFrame event: {}",
+                e
+            );
+        }
     }
 
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
