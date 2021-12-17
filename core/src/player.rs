@@ -206,7 +206,6 @@ pub struct Player {
     input: InputManager,
 
     mouse_pos: (Twips, Twips),
-    is_mouse_down: bool,
 
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
@@ -300,7 +299,6 @@ impl Player {
             input: Default::default(),
 
             mouse_pos: (Twips::ZERO, Twips::ZERO),
-            is_mouse_down: false,
             mouse_cursor: MouseCursor::Arrow,
 
             renderer,
@@ -852,7 +850,9 @@ impl Player {
     /// 9. Mouse state is updated. This triggers button rollovers, which are a
     ///    second wave of event processing.
     pub fn handle_event(&mut self, event: PlayerEvent) {
+        let prev_is_mouse_down = self.input.is_mouse_down();
         self.input.handle_event(&event);
+        let is_mouse_button_changed = self.input.is_mouse_down() != prev_is_mouse_down;
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -1054,15 +1054,6 @@ impl Player {
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
             self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
 
-            let is_mouse_down = match event {
-                PlayerEvent::MouseMove { .. } => self.is_mouse_down,
-                PlayerEvent::MouseDown { .. } => true,
-                PlayerEvent::MouseUp { .. } => false,
-                _ => unreachable!(),
-            };
-            let is_mouse_button_changed = self.is_mouse_down != is_mouse_down;
-            self.is_mouse_down = is_mouse_down;
-
             // This fires button rollover/press events, which should run after the above mouseMove events.
             if self.update_mouse_state(is_mouse_button_changed) {
                 self.needs_render = true;
@@ -1114,7 +1105,6 @@ impl Player {
 
     /// Updates the hover state of buttons.
     fn update_mouse_state(&mut self, is_mouse_button_changed: bool) -> bool {
-        let is_mouse_down = self.is_mouse_down;
         let mut new_cursor = self.mouse_cursor;
 
         // Determine the display object the mouse is hovering over.
@@ -1149,7 +1139,7 @@ impl Player {
             if !DisplayObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignroed.
-                if is_mouse_down {
+                if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
                         if DisplayObject::option_ptr_eq(context.mouse_down_object, cur_over_object)
@@ -1183,7 +1173,7 @@ impl Player {
 
             // Handle presses and releases.
             if is_mouse_button_changed {
-                if is_mouse_down {
+                if context.input.is_mouse_down() {
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_over_object {
                         events.push((over_object, ClipEvent::Press));
