@@ -15,7 +15,7 @@ use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Index, Script as AbcScript};
+use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, Script as AbcScript};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -87,26 +87,22 @@ impl<'gc> TranslationUnit<'gc> {
     /// Load a method from the ABC file and return its method definition.
     pub fn load_method(
         self,
-        method_index: u32,
+        method_index: Index<AbcMethod>,
         is_function: bool,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Method<'gc>, Error> {
         let read = self.0.read();
-        if let Some(Some(method)) = read.methods.get(method_index as usize) {
+        if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
             return Ok(method.clone());
         }
 
         drop(read);
 
-        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> = BytecodeMethod::from_method_index(
-            self,
-            Index::new(method_index),
-            is_function,
-            activation,
-        );
+        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
+            BytecodeMethod::from_method_index(self, method_index, is_function, activation);
         let method: Method<'gc> = method?.into();
 
-        self.0.write(activation.context.gc_context).methods[method_index as usize] =
+        self.0.write(activation.context.gc_context).methods[method_index.0 as usize] =
             Some(method.clone());
 
         Ok(method)
@@ -298,7 +294,7 @@ impl<'gc> Script<'gc> {
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
 
-        let init = unit.load_method(script.init_method.0, false, activation)?;
+        let init = unit.load_method(script.init_method, false, activation)?;
 
         Ok(Self(GcCell::allocate(
             activation.context.gc_context,

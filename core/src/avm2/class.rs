@@ -277,9 +277,9 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        let instance_init = unit.load_method(abc_instance.init_method.0, false, activation)?;
+        let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
         let native_instance_init = instance_init.clone();
-        let class_init = unit.load_method(abc_class.init_method.0, false, activation)?;
+        let class_init = unit.load_method(abc_class.init_method, false, activation)?;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);

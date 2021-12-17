@@ -214,7 +214,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, false, activation)?,
+                    method: unit.load_method(*method, false, activation)?,
                 },
             },
             AbcTraitKind::Getter { disp_id, method } => Trait {
@@ -222,7 +222,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, false, activation)?,
+                    method: unit.load_method(*method, false, activation)?,
                 },
             },
             AbcTraitKind::Setter { disp_id, method } => Trait {
@@ -230,7 +230,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
                     disp_id: *disp_id,
-                    method: unit.load_method(method.0, false, activation)?,
+                    method: unit.load_method(*method, false, activation)?,
                 },
             },
             AbcTraitKind::Class { slot_id, class } => Trait {
@@ -246,7 +246,7 @@ impl<'gc> Trait<'gc> {
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Function {
                     slot_id: *slot_id,
-                    function: unit.load_method(function.0, true, activation)?,
+                    function: unit.load_method(*function, true, activation)?,
                 },
             },
             AbcTraitKind::Const {
