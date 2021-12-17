@@ -563,6 +563,28 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
+    fn destroy_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let hit_area = self.0.read().hit_area;
+        if let Some(hit_area) = hit_area {
+            hit_area.destroy_frame(context);
+        }
+
+        let up_state = self.0.read().up_state;
+        if let Some(up_state) = up_state {
+            up_state.destroy_frame(context);
+        }
+
+        let down_state = self.0.read().down_state;
+        if let Some(down_state) = down_state {
+            down_state.destroy_frame(context);
+        }
+
+        let over_state = self.0.read().over_state;
+        if let Some(over_state) = over_state {
+            over_state.destroy_frame(context);
+        }
+    }
+
     fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.0.read().skip_current_frame {
             self.0.write(context.gc_context).skip_current_frame = false;
