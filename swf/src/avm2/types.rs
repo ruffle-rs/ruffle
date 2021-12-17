@@ -24,8 +24,11 @@ pub struct ConstantPool {
     pub multinames: Vec<Multiname>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Index<T>(pub u32, pub PhantomData<T>);
+
+// see: https://github.com/rust-lang/rust/issues/26925
+impl<T: Clone> Copy for Index<T> {}
 
 impl<T> Index<T> {
     pub fn new(i: u32) -> Index<T> {

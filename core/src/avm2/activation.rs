@@ -727,8 +727,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMethod>,
         is_function: bool,
-    ) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
-        BytecodeMethod::from_method_index(method.translation_unit(), index, is_function, self)
+    ) -> Result<Method<'gc>, Error> {
+        method
+            .translation_unit()
+            .load_method(index, is_function, self)
     }
 
     /// Retrieve a class entry from the current ABC file's method table.
@@ -1209,7 +1211,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method = self.table_method(method, index, false)?;
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
-        let function = FunctionObject::from_method(self, method.into(), scope, None, None);
+        let function = FunctionObject::from_method(self, method, scope, None, None);
         let value = function.call(Some(receiver), &args, self)?;
 
         self.context.avm2.push(value);
@@ -1707,7 +1709,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method_entry = self.table_method(method, index, true)?;
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_function(self, method_entry.into(), scope)?;
+        let new_fn = FunctionObject::from_function(self, method_entry, scope)?;
 
         self.context.avm2.push(new_fn);
 
