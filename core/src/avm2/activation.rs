@@ -1277,7 +1277,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let txunit = method.translation_unit();
         let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
         let (multiname, object) = if matches!(
             abc_multiname,
             AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
@@ -1323,7 +1323,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let value = self.context.avm2.pop();
         let txunit = method.translation_unit();
         let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
         let (multiname, mut object) = if matches!(
             abc_multiname,
             AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
@@ -1383,7 +1383,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error> {
         let txunit = method.translation_unit();
         let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index.clone())?;
+        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
         let (multiname, object) = if matches!(
             abc_multiname,
             AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }

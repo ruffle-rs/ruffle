@@ -64,7 +64,7 @@ impl<'gc> ParamConfig<'gc> {
         } else {
             Multiname::from_abc_multiname_static(
                 txunit,
-                config.kind.clone(),
+                config.kind,
                 activation.context.gc_context,
             )?
         };
@@ -154,7 +154,7 @@ impl<'gc> BytecodeMethod<'gc> {
             } else {
                 Multiname::from_abc_multiname_static(
                     txunit,
-                    method.return_type.clone(),
+                    method.return_type,
                     activation.context.gc_context,
                 )?
             };
