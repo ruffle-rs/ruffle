@@ -583,27 +583,11 @@ impl FormatSpans {
         };
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
+        reader.expand_empty_elements(true);
         reader.check_end_names(false);
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
-                Ok(Event::Empty(ref e)) => match &e.name().to_ascii_lowercase()[..] {
-                    b"br" if is_multiline => {
-                        text.push_byte(b'\n');
-                        if let Some(span) = spans.last_mut() {
-                            span.span_length += 1;
-                        }
-                    }
-                    b"sbr" => {
-                        // TODO: <sbr> tags do not add a newline, but rather only break
-                        // the format span.
-                        text.push_byte(b'\n');
-                        if let Some(span) = spans.last_mut() {
-                            span.span_length += 1;
-                        }
-                    }
-                    _ => {}
-                },
                 Ok(Event::Start(ref e)) => {
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
