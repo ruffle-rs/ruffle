@@ -1259,12 +1259,12 @@ impl Player {
         self.update(|context| {
             if context.is_action_script_3() {
                 let stage = context.stage;
-                stage.exit_frame(context);
                 stage.enter_frame(context);
                 stage.construct_frame(context);
                 stage.frame_constructed(context);
                 stage.run_frame_avm2(context);
                 stage.run_frame_scripts(context);
+                stage.exit_frame(context);
             } else {
                 // AVM1 execution order is determined by the global execution list, based on instantiation order.
                 for clip in context.avm1.clip_exec_iter() {
