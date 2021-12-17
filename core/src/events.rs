@@ -17,10 +17,12 @@ pub enum PlayerEvent {
     MouseUp {
         x: f64,
         y: f64,
+        button: MouseButton,
     },
     MouseDown {
         x: f64,
         y: f64,
+        button: MouseButton,
     },
     MouseLeave,
     MouseWheel {
@@ -185,6 +187,9 @@ impl ClipEvent {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, FromPrimitive)]
 pub enum KeyCode {
     Unknown = 0,
+    MouseLeft = 1,
+    MouseRight = 2,
+    MouseMiddle = 4,
     Backspace = 8,
     Tab = 9,
     Return = 13,
@@ -285,6 +290,26 @@ pub enum KeyCode {
 impl KeyCode {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
+    }
+}
+
+/// Subset of `KeyCode` that contains only mouse buttons.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MouseButton {
+    Unknown = KeyCode::Unknown as isize,
+    Left = KeyCode::MouseLeft as isize,
+    Right = KeyCode::MouseRight as isize,
+    Middle = KeyCode::MouseMiddle as isize,
+}
+
+impl From<MouseButton> for KeyCode {
+    fn from(button: MouseButton) -> Self {
+        match button {
+            MouseButton::Unknown => Self::Unknown,
+            MouseButton::Left => Self::MouseLeft,
+            MouseButton::Right => Self::MouseRight,
+            MouseButton::Middle => Self::MouseMiddle,
+        }
     }
 }
 

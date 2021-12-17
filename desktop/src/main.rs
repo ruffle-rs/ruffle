@@ -445,21 +445,22 @@ impl App {
                                     window.request_redraw();
                                 }
                             }
-                            WindowEvent::MouseInput {
-                                button: MouseButton::Left,
-                                state,
-                                ..
-                            } => {
+                            WindowEvent::MouseInput { button, state, .. } => {
+                                use ruffle_core::events::MouseButton as RuffleMouseButton;
                                 let mut player_lock = player.lock().unwrap();
+                                let x = mouse_pos.x;
+                                let y = mouse_pos.y;
+                                let button = match button {
+                                    MouseButton::Left => RuffleMouseButton::Left,
+                                    MouseButton::Right => RuffleMouseButton::Right,
+                                    MouseButton::Middle => RuffleMouseButton::Middle,
+                                    MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                                };
                                 let event = match state {
-                                    ElementState::Pressed => PlayerEvent::MouseDown {
-                                        x: mouse_pos.x,
-                                        y: mouse_pos.y,
-                                    },
-                                    ElementState::Released => PlayerEvent::MouseUp {
-                                        x: mouse_pos.x,
-                                        y: mouse_pos.y,
-                                    },
+                                    ElementState::Pressed => {
+                                        PlayerEvent::MouseDown { x, y, button }
+                                    }
+                                    ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                                 };
                                 player_lock.handle_event(event);
                                 if player_lock.needs_render() {
