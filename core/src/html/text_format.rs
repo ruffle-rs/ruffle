@@ -583,6 +583,7 @@ impl FormatSpans {
         };
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
+        reader.check_end_names(false);
         let mut buf = Vec::new();
         loop {
             match reader.read_event(&mut buf) {
