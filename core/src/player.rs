@@ -22,7 +22,7 @@ use crate::display_object::{
     EditText, MorphShape, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
     StageScaleMode, TInteractiveObject,
 };
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, PlayerEvent};
+use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
@@ -990,11 +990,17 @@ impl Player {
                     Some(ClipEvent::MouseMove),
                     Some(("Mouse", "onMouseMove", vec![])),
                 ),
-                PlayerEvent::MouseUp { .. } => (
+                PlayerEvent::MouseUp {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseUp),
                     Some(("Mouse", "onMouseUp", vec![])),
                 ),
-                PlayerEvent::MouseDown { .. } => (
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Left,
+                    ..
+                } => (
                     Some(ClipEvent::MouseDown),
                     Some(("Mouse", "onMouseDown", vec![])),
                 ),
@@ -1033,8 +1039,16 @@ impl Player {
 
         // Update mouse state.
         if let PlayerEvent::MouseMove { x, y }
-        | PlayerEvent::MouseDown { x, y }
-        | PlayerEvent::MouseUp { x, y } = event
+        | PlayerEvent::MouseDown {
+            x,
+            y,
+            button: MouseButton::Left,
+        }
+        | PlayerEvent::MouseUp {
+            x,
+            y,
+            button: MouseButton::Left,
+        } = event
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());

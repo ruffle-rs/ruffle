@@ -22,7 +22,7 @@ use ruffle_core::backend::{
 };
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseWheelDelta};
+use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
@@ -588,22 +588,25 @@ impl Ruffle {
             // Create mouse down handler.
             let mouse_down_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance(move |instance| {
-                    // Only fire player mouse event for left clicks.
-                    if js_event.button() == 0 {
-                        if let Some(target) = js_event.current_target() {
-                            let _ = target
-                                .unchecked_ref::<Element>()
-                                .set_pointer_capture(js_event.pointer_id());
-                        }
-                        let device_pixel_ratio = instance.device_pixel_ratio;
-                        let event = PlayerEvent::MouseDown {
-                            x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                        };
-                        let _ = instance.with_core_mut(|core| {
-                            core.handle_event(event);
-                        });
+                    if let Some(target) = js_event.current_target() {
+                        let _ = target
+                            .unchecked_ref::<Element>()
+                            .set_pointer_capture(js_event.pointer_id());
                     }
+                    let device_pixel_ratio = instance.device_pixel_ratio;
+                    let event = PlayerEvent::MouseDown {
+                        x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                        y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                        button: match js_event.button() {
+                            0 => MouseButton::Left,
+                            1 => MouseButton::Middle,
+                            2 => MouseButton::Right,
+                            _ => MouseButton::Unknown,
+                        },
+                    };
+                    let _ = instance.with_core_mut(|core| {
+                        core.handle_event(event);
+                    });
 
                     js_event.prevent_default();
                 });
@@ -660,21 +663,24 @@ impl Ruffle {
             // Create mouse up handler.
             let mouse_up_callback = Closure::wrap(Box::new(move |js_event: PointerEvent| {
                 let _ = ruffle.with_instance_mut(|instance| {
-                    // Only fire player mouse event for left clicks.
-                    if js_event.button() == 0 {
-                        if let Some(target) = js_event.current_target() {
-                            let _ = target
-                                .unchecked_ref::<Element>()
-                                .release_pointer_capture(js_event.pointer_id());
-                        }
-                        let event = PlayerEvent::MouseUp {
-                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                        };
-                        let _ = instance.with_core_mut(|core| {
-                            core.handle_event(event);
-                        });
+                    if let Some(target) = js_event.current_target() {
+                        let _ = target
+                            .unchecked_ref::<Element>()
+                            .release_pointer_capture(js_event.pointer_id());
                     }
+                    let event = PlayerEvent::MouseUp {
+                        x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                        y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                        button: match js_event.button() {
+                            0 => MouseButton::Left,
+                            1 => MouseButton::Middle,
+                            2 => MouseButton::Right,
+                            _ => MouseButton::Unknown,
+                        },
+                    };
+                    let _ = instance.with_core_mut(|core| {
+                        core.handle_event(event);
+                    });
 
                     if instance.has_focus {
                         js_event.prevent_default();
