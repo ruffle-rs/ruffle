@@ -1108,22 +1108,10 @@ pub trait TDisplayObject<'gc>:
             .set_instantiated_by_timeline(value);
     }
 
-    /// Emit an `enterFrame` event on this DisplayObject and any children it
-    /// may have.
-    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Empty);
-        enter_frame_evt.set_bubbles(false);
-        enter_frame_evt.set_cancelable(false);
-
-        let dobject_constr = context.avm2.classes().display_object;
-
-        if let Err(e) = Avm2::broadcast_event(context, enter_frame_evt, dobject_constr) {
-            log::error!(
-                "Encountered AVM2 error when broadcasting enterFrame event: {}",
-                e
-            );
-        }
-    }
+    /// Run any start-of-frame actions for this display object.
+    ///
+    /// When fired on `Stage`, this also emits the AVM2 `enterFrame` broadcast.
+    fn enter_frame(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 
     /// Construct all display objects that the timeline indicates should exist
     /// this frame, and their children.

@@ -428,6 +428,28 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.set_state(context, ButtonState::Up);
     }
 
+    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let hit_area = self.0.read().hit_area;
+        if let Some(hit_area) = hit_area {
+            hit_area.enter_frame(context);
+        }
+
+        let up_state = self.0.read().up_state;
+        if let Some(up_state) = up_state {
+            up_state.enter_frame(context);
+        }
+
+        let down_state = self.0.read().down_state;
+        if let Some(down_state) = down_state {
+            down_state.enter_frame(context);
+        }
+
+        let over_state = self.0.read().over_state;
+        if let Some(over_state) = over_state {
+            over_state.enter_frame(context);
+        }
+    }
+
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let hit_area = self.0.read().hit_area;
         if let Some(hit_area) = hit_area {
