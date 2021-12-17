@@ -762,7 +762,7 @@ impl FormatSpans {
                 Ok(Event::Eof) => break,
                 Err(e) => {
                     log::warn!("Error while parsing HTML: {}", e);
-                    return Default::default();
+                    break;
                 }
                 _ => {}
             }
