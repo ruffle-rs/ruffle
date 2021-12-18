@@ -51,6 +51,7 @@ impl Color {
         ((self.0 >> 24) & 0xFF) as u8
     }
 
+    #[must_use]
     pub fn to_premultiplied_alpha(self, transparency: bool) -> Self {
         // This has some accuracy issues with some alpha values
 
@@ -65,6 +66,7 @@ impl Color {
         Self::argb(old_alpha, r, g, b)
     }
 
+    #[must_use]
     pub fn to_un_multiplied_alpha(self) -> Self {
         let a = self.alpha() as f64 / 255.0;
 
@@ -75,14 +77,17 @@ impl Color {
         Self::argb(self.alpha(), r, g, b)
     }
 
+    #[must_use]
     pub fn argb(alpha: u8, red: u8, green: u8, blue: u8) -> Self {
         Self(i32::from_le_bytes([blue, green, red, alpha]))
     }
 
+    #[must_use]
     pub fn with_alpha(&self, alpha: u8) -> Self {
         Self::argb(alpha, self.red(), self.green(), self.blue())
     }
 
+    #[must_use]
     pub fn blend_over(&self, source: &Self) -> Self {
         let sa = source.alpha();
 

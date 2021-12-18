@@ -708,7 +708,7 @@ pub fn write_multibyte<'gc>(
                 Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
             let utf8 = string.to_utf8_lossy();
             let (encoded_bytes, _, _) = encoder.encode(&utf8);
-            bytearray.write_bytes(&encoded_bytes.into_owned())?;
+            bytearray.write_bytes(&encoded_bytes)?;
         }
     }
 
