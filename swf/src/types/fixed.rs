@@ -125,24 +125,28 @@ macro_rules! define_fixed {
             /// Wrapping (modular) negation. Computes -self, wrapping around at the boundary of the type.
             /// -Self::MIN is the only case where wrapping occurs.
             #[inline]
+            #[must_use]
             pub fn wrapping_neg(self) -> Self {
                 Self(self.0.wrapping_neg())
             }
 
             /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
             #[inline]
+            #[must_use]
             pub fn wrapping_add(self, other: Self) -> Self {
                 Self(self.0.wrapping_add(other.0))
             }
 
             /// Wrapping (modular) subtraction. Computes self - rhs, wrapping around at the boundary of the type.
             #[inline]
+            #[must_use]
             pub fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
             }
 
             /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
             #[inline]
+            #[must_use]
             pub fn wrapping_mul(self, other: Self) -> Self {
                 let n = <$intermediate_type>::from(self.0)
                     .wrapping_mul(<$intermediate_type>::from(other.0))
@@ -152,6 +156,7 @@ macro_rules! define_fixed {
 
             /// Wrapping (modular) division. Computes self / rhs, wrapping around at the boundary of the type.
             #[inline]
+            #[must_use]
             pub fn wrapping_div(self, other: Self) -> Self {
                 let n = (<$intermediate_type>::from(self.0) << Self::FRACTIONAL_BITS).wrapping_div(<$intermediate_type>::from(other.0));
                 Self(n as $underlying_type)
