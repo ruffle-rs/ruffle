@@ -163,7 +163,7 @@ fn initialize_internal<'gc>(
     broadcaster.define_value(
         gc_context,
         "_listeners",
-        ArrayObject::empty_with_proto(gc_context, Some(array_proto)).into(),
+        ArrayObject::empty_with_proto(gc_context, array_proto).into(),
         Attribute::DONT_ENUM,
     );
     broadcaster.define_value(

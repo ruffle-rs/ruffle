@@ -599,7 +599,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let array = ArrayObject::empty_with_proto(gc_context, Some(proto));
+    let array = ArrayObject::empty_with_proto(gc_context, proto);
     let object = array.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()

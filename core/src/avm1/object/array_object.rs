@@ -23,10 +23,7 @@ impl<'gc> ArrayObject<'gc> {
         )
     }
 
-    pub fn empty_with_proto(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> Self {
+    pub fn empty_with_proto(gc_context: MutationContext<'gc, '_>, proto: Object<'gc>) -> Self {
         Self::new_internal(gc_context, proto, [])
     }
 
@@ -35,15 +32,15 @@ impl<'gc> ArrayObject<'gc> {
         array_proto: Object<'gc>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
-        Self::new_internal(gc_context, Some(array_proto), elements)
+        Self::new_internal(gc_context, array_proto, elements)
     }
 
     fn new_internal(
         gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
+        proto: Object<'gc>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
-        let base = ScriptObject::object(gc_context, proto);
+        let base = ScriptObject::object(gc_context, Some(proto));
         let mut length: i32 = 0;
         for value in elements.into_iter() {
             let length_str = AvmString::new_utf8(gc_context, length.to_string());
@@ -129,7 +126,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(Self::empty_with_proto(activation.context.gc_context, Some(this)).into())
+        Ok(Self::empty_with_proto(activation.context.gc_context, this).into())
     }
 
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
