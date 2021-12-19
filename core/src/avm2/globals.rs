@@ -846,6 +846,7 @@ pub fn load_player_globals<'gc>(
         flash::ui::contextmenu::create_class(mc),
         script
     );
+    class(activation, flash::ui::mouse::create_class(mc), script)?;
 
     // package `flash.net`
     avm2_system_class!(
