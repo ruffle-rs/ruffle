@@ -575,11 +575,25 @@ impl FormatSpans {
 
         // quick_xml::Reader requires a [u8] slice, but doesn't actually care about Unicode;
         // this means we can pass the raw buffer in the Latin1 case.
-        let raw_bytes = match html.units() {
-            Units::Bytes(units) => Cow::Borrowed(units),
+        let (raw_bytes, is_raw_latin1) = match html.units() {
+            Units::Bytes(units) => (Cow::Borrowed(units), true),
             // TODO: In principle, we should be able to encode (and later decode)
             // the utf16 units in the [u8] array without discarding losing surrogates.
-            Units::Wide(_) => Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
+            Units::Wide(_) => (
+                Cow::Owned(html.to_utf8_lossy().into_owned().into_bytes()),
+                false,
+            ),
+        };
+
+        // Helper function to decode a byte sequence returned by quick_xml into a WString.
+        // TODO: use Cow<'_, WStr>?
+        let decode_to_wstr = |raw: &[u8]| -> WString {
+            if is_raw_latin1 {
+                WString::from_buf(raw.to_vec())
+            } else {
+                let utf8 = std::str::from_utf8(raw).expect("raw should be valid utf8");
+                WString::from_utf8(utf8)
+            }
         };
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
@@ -602,7 +616,7 @@ impl FormatSpans {
                             attribute
                                 .key
                                 .eq_ignore_ascii_case(name)
-                                .then(|| WString::from_buf(attribute.value.to_vec()))
+                                .then(|| decode_to_wstr(&attribute.value))
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
@@ -737,7 +751,7 @@ impl FormatSpans {
                     format_stack.push(format);
                 }
                 Ok(Event::Text(e)) if !e.is_empty() => {
-                    let e = WString::from_buf(e.escaped().to_owned());
+                    let e = decode_to_wstr(e.escaped());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
                     text.push_str(&e);
