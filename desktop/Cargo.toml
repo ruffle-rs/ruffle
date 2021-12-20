@@ -7,7 +7,7 @@ default-run = "ruffle_desktop"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = "3.0.0-rc.4"
+clap = "3.0.0-rc.7"
 cpal = "0.13.4"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }

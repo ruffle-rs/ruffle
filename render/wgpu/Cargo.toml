@@ -11,7 +11,7 @@ ruffle_core = { path = "../../core", default-features = false }
 ruffle_render_common_tess = { path = "../common_tess" }
 bytemuck = { version = "1.7.0", features = ["derive"] }
 raw-window-handle = "0.3.3"
-clap = { version = "3.0.0-rc.5", features = ["derive"], optional = true }
+clap = { version = "3.0.0-rc.7", features = ["derive"], optional = true }
 enum-map = "1.1.1"
 
 # desktop
