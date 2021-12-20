@@ -433,8 +433,9 @@ impl WebCanvasRenderBackend {
             && color_transform.b_add == 0
             && color_transform.a_add == 0
         {
+            // Values outside the range of 0 and 1 are ignored in canvas, unlike Flash that clamps them.
             self.context
-                .set_global_alpha(f64::from(color_transform.a_mult));
+                .set_global_alpha(f64::from(color_transform.a_mult).clamp(0.0, 1.0));
         } else {
             let mult = color_transform.mult_rgba_normalized();
             let add = color_transform.add_rgba_normalized();
