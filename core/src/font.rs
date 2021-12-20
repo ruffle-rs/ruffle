@@ -4,6 +4,7 @@ use crate::prelude::*;
 use crate::string::WStr;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
+use std::cell::{Cell, Ref, RefCell};
 
 pub use swf::TextGridFit;
 
@@ -104,20 +105,37 @@ impl<'gc> Font<'gc> {
     pub fn from_swf_tag(
         gc_context: MutationContext<'gc, '_>,
         renderer: &mut dyn RenderBackend,
-        tag: &swf::Font,
+        tag: swf::Font,
         encoding: &'static swf::Encoding,
     ) -> Result<Font<'gc>, Error> {
         let mut glyphs = vec![];
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
-        for swf_glyph in &tag.glyphs {
+
+        let tag_version = tag.version;
+        let descriptor = FontDescriptor::from_swf_tag(&tag, encoding);
+        let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
+            (layout.ascent, layout.descent, layout.leading)
+        } else {
+            (0, 0, 0)
+        };
+
+        for swf_glyph in tag.glyphs {
+            // load non-ascii chars lazily
+            let handle = if swf_glyph.code <= 127 {
+                Some(renderer.register_glyph_shape(&swf_glyph))
+            } else {
+                None
+            };
+            let glyph_code = swf_glyph.code;
             let glyph = Glyph {
-                shape_handle: renderer.register_glyph_shape(swf_glyph),
+                shape_handle: Cell::new(handle),
                 advance: swf_glyph.advance.unwrap_or(0),
-                shape: crate::shape_utils::swf_glyph_to_shape(swf_glyph),
+                shape: RefCell::new(None),
+                swf_glyph,
             };
             let index = glyphs.len();
             glyphs.push(glyph);
-            code_point_to_glyph.insert(swf_glyph.code, index);
+            code_point_to_glyph.insert(glyph_code, index);
         }
         let kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips> = if let Some(layout) = &tag.layout {
             layout
@@ -129,13 +147,6 @@ impl<'gc> Font<'gc> {
             fnv::FnvHashMap::default()
         };
 
-        let descriptor = FontDescriptor::from_swf_tag(tag, encoding);
-        let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
-            (layout.ascent, layout.descent, layout.leading)
-        } else {
-            (0, 0, 0)
-        };
-
         Ok(Font(Gc::allocate(
             gc_context,
             FontData {
@@ -144,7 +155,7 @@ impl<'gc> Font<'gc> {
 
                 /// DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
                 /// (SWF19 p.164)
-                scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
+                scale: if tag_version >= 3 { 20480.0 } else { 1024.0 },
                 kerning_pairs,
                 ascent,
                 descent,
@@ -395,9 +406,37 @@ impl<'gc> Font<'gc> {
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
-    pub shape_handle: ShapeHandle,
-    pub shape: swf::Shape,
     pub advance: i16,
+    // Handle to registered shape.
+    // If None, it'll be loaded lazily on first render of this glyph.
+    shape_handle: Cell<Option<ShapeHandle>>,
+    // Same shape as one in swf_glyph, but wrapped in an swf::Shape;
+    // For use in hit tests. Created lazily on first use.
+    // (todo: refactor hit tests to not require this?
+    // this literally copies the shape_record, which is wasteful...)
+    shape: RefCell<Option<swf::Shape>>,
+    // The underlying glyph record, containing its shape.
+    swf_glyph: swf::Glyph,
+}
+
+impl Glyph {
+    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
+        if self.shape_handle.get().is_none() {
+            self.shape_handle
+                .set(Some(renderer.register_glyph_shape(&self.swf_glyph)))
+        }
+        self.shape_handle.get().unwrap()
+    }
+
+    pub fn as_shape(&self) -> Ref<'_, swf::Shape> {
+        let mut write = self.shape.borrow_mut();
+        if write.is_none() {
+            *write = Some(crate::shape_utils::swf_glyph_to_shape(&self.swf_glyph));
+        }
+        drop(write);
+        let read = self.shape.borrow();
+        Ref::map(read, |s| s.as_ref().unwrap())
+    }
 }
 
 /// Structure which identifies a particular font by name and properties.

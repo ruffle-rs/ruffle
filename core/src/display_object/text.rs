@@ -134,9 +134,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
                         context.transform_stack.push(&transform);
+                        let glyph_shape_handle = glyph.shape_handle(context.renderer);
                         context
                             .renderer
-                            .render_shape(glyph.shape_handle, context.transform_stack.transform());
+                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
                         context.transform_stack.pop();
                         transform.matrix.tx += Twips::new(c.advance);
                     }
@@ -197,10 +198,11 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             let mut matrix = glyph_matrix;
                             matrix.invert();
                             let point = matrix * point;
-                            let glyph_bounds: BoundingBox = (&glyph.shape.shape_bounds).into();
+                            let glyph_shape = glyph.as_shape();
+                            let glyph_bounds: BoundingBox = (&glyph_shape.shape_bounds).into();
                             if glyph_bounds.contains(point)
                                 && crate::shape_utils::shape_hit_test(
-                                    &glyph.shape,
+                                    &glyph_shape,
                                     point,
                                     &local_matrix,
                                 )
