@@ -973,9 +973,10 @@ impl<'gc> EditText<'gc> {
                     }
 
                     // Render glyph.
+                    let glyph_shape_handle = glyph.shape_handle(context.renderer);
                     context
                         .renderer
-                        .render_shape(glyph.shape_handle, context.transform_stack.transform());
+                        .render_shape(glyph_shape_handle, context.transform_stack.transform());
                     context.transform_stack.pop();
 
                     if let Some((caret_pos, length)) = caret {

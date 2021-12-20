@@ -1590,7 +1590,7 @@ impl Player {
         let device_font = crate::font::Font::from_swf_tag(
             gc_context,
             renderer,
-            &reader.read_define_font_2(3)?,
+            reader.read_define_font_2(3)?,
             reader.encoding(),
         )?;
         Ok(device_font)

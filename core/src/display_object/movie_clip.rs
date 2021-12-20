@@ -2834,6 +2834,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             })
             .collect::<Vec<_>>();
 
+        let font_id = font.id;
         let font = swf::Font {
             id: font.id,
             version: 0,
@@ -2850,14 +2851,14 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let font_object = Font::from_swf_tag(
             context.gc_context,
             context.renderer,
-            &font,
+            font,
             reader.encoding(),
         )
         .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(font.id, Character::Font(font_object));
+            .register_character(font_id, Character::Font(font_object));
         Ok(())
     }
 
@@ -2868,17 +2869,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(2)?;
+        let font_id = font.id;
         let font_object = Font::from_swf_tag(
             context.gc_context,
             context.renderer,
-            &font,
+            font,
             reader.encoding(),
         )
         .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(font.id, Character::Font(font_object));
+            .register_character(font_id, Character::Font(font_object));
         Ok(())
     }
 
@@ -2889,17 +2891,18 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> DecodeResult {
         let font = reader.read_define_font_2(3)?;
+        let font_id = font.id;
         let font_object = Font::from_swf_tag(
             context.gc_context,
             context.renderer,
-            &font,
+            font,
             reader.encoding(),
         )
         .unwrap();
         context
             .library
             .library_for_movie_mut(self.movie())
-            .register_character(font.id, Character::Font(font_object));
+            .register_character(font_id, Character::Font(font_object));
 
         Ok(())
     }
