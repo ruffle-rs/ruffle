@@ -1440,6 +1440,7 @@ impl<'gc> MovieClip<'gc> {
                 self.run_frame_internal(context, false);
             }
         } else {
+            self.0.write(context.gc_context).queued_script_frame = Some(clamped_frame);
             self.0.write(context.gc_context).current_frame = clamped_frame;
         }
 
