@@ -1774,7 +1774,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             child.enter_frame(context);
         }
 
-        if context.avm_type() == AvmType::Avm2 {
+        if context.avm_type() == AvmType::Avm2 && self.playing() {
             self.advance_playhead(context);
         }
     }
