@@ -1422,7 +1422,16 @@ impl<'gc> MovieClip<'gc> {
                 // AVM2 gets the final frame because run_frame_internal does
                 // NOT advance to the next frame.
                 self.0.write(context.gc_context).tag_stream_pos = frame_pos;
+
+                // `run_frame_internal` is a no-op when looping. On AVM1, this
+                // didn't matter, because we'd conveniently set the frame back
+                // by one and everything worked out. We can't do this on AVM2,
+                // because it won't move it forward, so instead we have to lie
+                // and say we're moving to the next frame.
+                let old_npa = self.0.read().natural_playhead_action;
+                self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
                 self.run_frame_internal(context, false);
+                self.0.write(context.gc_context).natural_playhead_action = old_npa;
             } else {
                 // AVM1 gets current_frame - 1 because we expect it to be
                 // incremented again in run_frame_internal.
