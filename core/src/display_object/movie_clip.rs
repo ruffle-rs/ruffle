@@ -1424,10 +1424,18 @@ impl<'gc> MovieClip<'gc> {
         // Note that this only happens if the frame exists and is loaded;
         // e.g. gotoAndStop(9999) displays the final frame, but actions don't run!
         if hit_target_frame {
-            self.0.write(context.gc_context).current_frame -= 1;
-            self.0.write(context.gc_context).tag_stream_pos = frame_pos;
-            self.enter_frame(context); //We explicitly DO NOT construct any frames
-            self.run_frame_internal(context, false);
+            if matches!(context.avm_type(), AvmType::Avm2) {
+                // AVM2 gets the final frame because run_frame_internal does
+                // NOT advance to the next frame.
+                self.0.write(context.gc_context).tag_stream_pos = frame_pos;
+                self.run_frame_internal(context, false);
+            } else {
+                // AVM1 gets current_frame - 1 because we expect it to be
+                // incremented again in run_frame_internal.
+                self.0.write(context.gc_context).current_frame -= 1;
+                self.0.write(context.gc_context).tag_stream_pos = frame_pos;
+                self.run_frame_internal(context, false);
+            }
         } else {
             self.0.write(context.gc_context).current_frame = clamped_frame;
         }
