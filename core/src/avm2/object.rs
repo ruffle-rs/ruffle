@@ -1068,6 +1068,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_text_format_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<TextFormat>> {
         None
     }
+
+    /// Get this object as a `ErrorObject`, if it is one.
+    fn as_error_object(self) -> Option<ErrorObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}

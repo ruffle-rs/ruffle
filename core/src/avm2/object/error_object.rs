@@ -3,6 +3,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
@@ -15,7 +16,12 @@ pub fn error_allocator<'gc>(
 
     Ok(ErrorObject(GcCell::allocate(
         activation.context.gc_context,
-        ErrorObjectData { base },
+        ErrorObjectData {
+            base,
+            id: 0,
+            message: AvmString::default(),
+            name: "Error".into(),
+        },
     ))
     .into())
 }
@@ -28,6 +34,35 @@ pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
 pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
+    name: AvmString<'gc>,
+    message: AvmString<'gc>,
+    id: i32,
+}
+
+impl<'gc> ErrorObject<'gc> {
+    pub fn name(&self) -> AvmString<'gc> {
+        self.0.read().name
+    }
+
+    pub fn set_name(&self, mc: MutationContext<'gc, '_>, name: AvmString<'gc>) {
+        self.0.write(mc).name = name;
+    }
+
+    pub fn message(&self) -> AvmString<'gc> {
+        self.0.read().message
+    }
+
+    pub fn set_message(&self, mc: MutationContext<'gc, '_>, message: AvmString<'gc>) {
+        self.0.write(mc).message = message;
+    }
+
+    pub fn id(&self) -> i32 {
+        self.0.read().id
+    }
+
+    pub fn set_id(&self, mc: MutationContext<'gc, '_>, id: i32) {
+        self.0.write(mc).id = id;
+    }
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
@@ -47,5 +82,8 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         let this: Object<'gc> = Object::ErrorObject(*self);
 
         Ok(this.into())
+    }
+    fn as_error_object(self) -> Option<Self> {
+        Some(self)
     }
 }
