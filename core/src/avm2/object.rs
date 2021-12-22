@@ -33,6 +33,7 @@ mod date_object;
 mod dictionary_object;
 mod dispatch_object;
 mod domain_object;
+mod error_object;
 mod event_object;
 mod function_object;
 mod loaderinfo_object;
@@ -57,6 +58,7 @@ pub use crate::avm2::object::date_object::{date_allocator, DateObject};
 pub use crate::avm2::object::dictionary_object::{dictionary_allocator, DictionaryObject};
 pub use crate::avm2::object::dispatch_object::DispatchObject;
 pub use crate::avm2::object::domain_object::{appdomain_allocator, DomainObject};
+pub use crate::avm2::object::error_object::{error_allocator, ErrorObject};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject};
 pub use crate::avm2::object::function_object::FunctionObject;
 pub use crate::avm2::object::loaderinfo_object::{
@@ -89,6 +91,7 @@ pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject};
         ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
         DomainObject(DomainObject<'gc>),
+        ErrorObject(ErrorObject<'gc>),
         EventObject(EventObject<'gc>),
         DispatchObject(DispatchObject<'gc>),
         XmlObject(XmlObject<'gc>),

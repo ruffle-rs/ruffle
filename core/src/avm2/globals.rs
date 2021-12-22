@@ -21,6 +21,7 @@ mod array;
 mod boolean;
 mod class;
 mod date;
+mod error;
 mod flash;
 mod function;
 mod global_scope;
@@ -94,6 +95,7 @@ pub struct SystemClasses<'gc> {
     pub errorevent: ClassObject<'gc>,
     pub ioerrorevent: ClassObject<'gc>,
     pub securityerrorevent: ClassObject<'gc>,
+    pub error: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -158,6 +160,7 @@ impl<'gc> SystemClasses<'gc> {
             errorevent: object,
             ioerrorevent: object,
             securityerrorevent: object,
+            error: object,
         }
     }
 }
@@ -201,7 +204,6 @@ fn dynamic_class<'gc>(
     domain.export_definition(name, script, mc)
 }
 
-/// Add a class builtin to the global scope.
 ///
 /// This function returns the class object and class prototype as a class, which
 /// may be stored in `SystemClasses`
@@ -430,6 +432,7 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(xml_list, activation, xml_list::create_class(mc), script);
 
     avm2_system_class!(date, activation, date::create_class(mc), script);
+    avm2_system_class!(error, activation, error::create_class(mc), script);
 
     // package `flash.system`
     avm2_system_class!(
