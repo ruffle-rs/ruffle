@@ -111,7 +111,7 @@ fn set_message<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::public(), "Error"),
-        Some(QName::new(Namespace::public(), "Error").into()),
+        Some(QName::new(Namespace::public(), "Object").into()),
         Method::from_builtin(instance_init, "<Error instance initializer>", mc),
         Method::from_builtin(class_init, "<Error class initializer>", mc),
         mc,

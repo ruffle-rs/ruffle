@@ -6,6 +6,7 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::fmt::Write;
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -63,6 +64,15 @@ impl<'gc> ErrorObject<'gc> {
     pub fn set_id(&self, mc: MutationContext<'gc, '_>, id: i32) {
         self.0.write(mc).id = id;
     }
+
+    pub fn display(&self) -> String {
+        let read = self.0.read();
+        let mut output = read.name.to_utf8_lossy().into_owned();
+        if !read.message.is_empty() {
+            write!(output, ": {}", read.message).unwrap();
+        }
+        output
+    }
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
@@ -83,6 +93,11 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
 
         Ok(this.into())
     }
+
+    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(AvmString::new_utf8(mc, self.display()).into())
+    }
+
     fn as_error_object(self) -> Option<Self> {
         Some(self)
     }
