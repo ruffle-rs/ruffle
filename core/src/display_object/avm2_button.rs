@@ -132,7 +132,11 @@ impl<'gc> Avm2Button<'gc> {
             actions: Vec::new(),
         };
 
-        Self::from_swf_tag(&button_record, &movie.into(), context)
+        let this = Self::from_swf_tag(&button_record, &movie.into(), context);
+
+        this.0.write(context.gc_context).needs_frame_construction = false;
+
+        this
     }
 
     pub fn set_sounds(self, gc_context: MutationContext<'gc, '_>, sounds: swf::ButtonSounds) {
