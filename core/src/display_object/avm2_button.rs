@@ -389,6 +389,31 @@ impl<'gc> Avm2Button<'gc> {
     pub fn set_avm2_class(self, mc: MutationContext<'gc, '_>, class: Avm2ClassObject<'gc>) {
         self.0.write(mc).class = class;
     }
+
+    /// Initialize the AVM2 side of this object.
+    ///
+    /// This function is called at various times based on the situation,
+    /// because there appears to be multiple times at which buttons may be
+    /// initialized.
+    fn initialize_avm2_object(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.0.write(context.gc_context).needs_avm2_initialization = false;
+
+        let class = self.0.read().class;
+        let avm2_object = self.0.read().object;
+        if let Some(avm2_object) = avm2_object {
+            let mut constr_thing = || {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                class.call_native_init(Some(avm2_object), &[], &mut activation)?;
+
+                Ok(())
+            };
+            let result: Result<(), Avm2Error> = constr_thing();
+
+            if let Err(e) = result {
+                log::error!("Got {} when constructing AVM2 side of button", e);
+            }
+        }
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
@@ -522,8 +547,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if needs_avm2_construction {
-                self.0.write(context.gc_context).needs_avm2_initialization = true;
-
                 self.frame_constructed(context);
 
                 self.set_state(context, ButtonState::Over);
@@ -541,27 +564,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 hit_area.run_frame_scripts(context);
 
                 self.exit_frame(context);
-            }
-        }
 
-        // For some reason buttons that were placed on frame 2 or later run
-        // their constructors one frame late.
-        if self.0.read().needs_avm2_initialization
-            && (self.place_frame() == 1 || !needs_avm2_construction)
-        {
-            self.0.write(context.gc_context).needs_avm2_initialization = false;
-            let avm2_object = self.0.read().object;
-            if let Some(avm2_object) = avm2_object {
-                let mut constr_thing = || {
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                    class.call_native_init(Some(avm2_object), &[], &mut activation)?;
-
-                    Ok(())
-                };
-                let result: Result<(), Avm2Error> = constr_thing();
-
-                if let Err(e) = result {
-                    log::error!("Got {} when constructing AVM2 side of button", e);
+                if self.place_frame() < 2 {
+                    self.initialize_avm2_object(context)
+                } else {
+                    self.0.write(context.gc_context).needs_avm2_initialization = true;
                 }
             }
         }
@@ -586,6 +593,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         let over_state = self.0.read().over_state;
         if let Some(over_state) = over_state {
             over_state.destroy_frame(context);
+        }
+
+        if self.0.read().needs_avm2_initialization {
+            self.initialize_avm2_object(context);
         }
     }
 
