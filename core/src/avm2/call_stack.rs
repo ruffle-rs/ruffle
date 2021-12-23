@@ -53,7 +53,7 @@ impl<'gc> CallStack<'gc> {
             };
 
             if let Some(prefix) = prefix {
-                output.push_char(prefix)
+                output.push_utf8(prefix)
             }
             output.push_str(&name);
             output.push_utf8("()");
@@ -67,33 +67,41 @@ fn resolve_executable_name<'gc>(
     mc: MutationContext<'gc, '_>,
     class_def: Option<Ref<Class<'gc>>>,
     exec: &Executable<'gc>,
-) -> (Option<char>, AvmString<'gc>) {
+) -> (Option<&'static str>, AvmString<'gc>) {
     match exec {
-        Executable::Native(nm) => (Some('/'), AvmString::new_utf8(mc, &*nm.method().name)),
+        Executable::Native(nm) => (Some("/"), AvmString::new_utf8(mc, &*nm.method().name)),
         Executable::Action(bm) => {
             if let Some(class_def) = class_def {
+                // First check if this is an instance initializer or class initializer
+                // We know that this is an ABC class, therefore all methods must be bytecode.
                 if Gc::ptr_eq(class_def.class_init().into_bytecode().unwrap(), bm.method()) {
-                    return (Some('$'), "cinit".into());
+                    return (Some("$"), "cinit".into());
                 } else if Gc::ptr_eq(
                     class_def.instance_init().into_bytecode().unwrap(),
                     bm.method(),
                 ) {
                     return (None, AvmString::default());
                 }
-                for t in class_def
-                    .class_traits()
-                    .iter()
-                    .chain(class_def.instance_traits().iter())
-                {
+                // Now that we know it isn't either of those, search class traits & instance traits for the method
+                for t in class_def.class_traits() {
                     if let Some(m) = t.as_method() {
-                        // We know that this is an ABC class, therefore all methods must be bytecode.
                         let bytecode = m.into_bytecode().unwrap();
                         if Gc::ptr_eq(bytecode, bm.method()) {
-                            return (Some('/'), t.name().local_name());
+                            return (Some("$/"), t.name().local_name());
+                        }
+                    }
+                }
+
+                for t in class_def.instance_traits() {
+                    if let Some(m) = t.as_method() {
+                        let bytecode = m.into_bytecode().unwrap();
+                        if Gc::ptr_eq(bytecode, bm.method()) {
+                            return (Some("/"), t.name().local_name());
                         }
                     }
                 }
             }
+            // If we were unable to resolve this method to any name, use MethodInfo-{abc_index} by default.
             (
                 None,
                 AvmString::new_utf8(mc, format!("MethodInfo-{}", bm.method().abc_method)),
