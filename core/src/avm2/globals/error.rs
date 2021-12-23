@@ -107,6 +107,20 @@ fn set_message<'gc>(
     Ok(Value::Undefined)
 }
 
+fn get_stack_trace<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this.and_then(|this| this.as_error_object()) {
+        return Ok(this
+            .stack_trace()
+            .display(activation.context.gc_context)
+            .into());
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `Error`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -130,6 +144,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("message", Some(message), Some(set_message)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
+        &[("getStackTrace", get_stack_trace)];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }

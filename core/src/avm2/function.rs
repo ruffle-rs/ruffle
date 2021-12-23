@@ -54,6 +54,18 @@ pub struct NativeExecutable<'gc> {
     bound_superclass: Option<ClassObject<'gc>>,
 }
 
+impl<'gc> NativeExecutable<'gc> {
+    pub fn method(&self) -> Gc<'gc, NativeMethod<'gc>> {
+        self.method
+    }
+}
+
+impl<'gc> BytecodeExecutable<'gc> {
+    pub fn method(&self) -> Gc<'gc, BytecodeMethod<'gc>> {
+        self.method
+    }
+}
+
 /// Represents code that can be executed by some means.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -107,7 +119,7 @@ impl<'gc> Executable<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        match self {
+        let ret = match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;
                 let receiver = bm.bound_receiver.or(unbound_receiver);
@@ -136,7 +148,7 @@ impl<'gc> Executable<'gc> {
                     arguments,
                     &bm.method.signature,
                 )?;
-
+                activation.context.avm2.push_call(self.clone());
                 method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
@@ -159,9 +171,22 @@ impl<'gc> Executable<'gc> {
                     subclass_object,
                     callee,
                 )?;
-
+                activation.context.avm2.push_call(self.clone());
                 activation.run_actions(bm.method)
             }
+        };
+        activation.context.avm2.pop_call();
+        ret
+    }
+
+    pub fn bound_superclass(&self) -> Option<ClassObject<'gc>> {
+        match self {
+            Executable::Native(NativeExecutable {
+                bound_superclass, ..
+            }) => *bound_superclass,
+            Executable::Action(BytecodeExecutable {
+                bound_superclass, ..
+            }) => *bound_superclass,
         }
     }
 }

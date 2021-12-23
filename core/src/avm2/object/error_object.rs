@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::call_stack::CallStack;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -22,6 +23,7 @@ pub fn error_allocator<'gc>(
             id: 0,
             message: AvmString::default(),
             name: "Error".into(),
+            stack_trace: activation.context.avm2.call_stack().clone(),
         },
     ))
     .into())
@@ -38,6 +40,7 @@ pub struct ErrorObjectData<'gc> {
     name: AvmString<'gc>,
     message: AvmString<'gc>,
     id: i32,
+    stack_trace: CallStack<'gc>,
 }
 
 impl<'gc> ErrorObject<'gc> {
@@ -72,6 +75,10 @@ impl<'gc> ErrorObject<'gc> {
             write!(output, ": {}", read.message).unwrap();
         }
         output
+    }
+
+    pub fn stack_trace(&self) -> Ref<CallStack<'gc>> {
+        Ref::map(self.0.read(), |r| &r.stack_trace)
     }
 }
 
