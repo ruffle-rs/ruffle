@@ -4,10 +4,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
-use std::fmt::Write;
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -68,13 +67,32 @@ impl<'gc> ErrorObject<'gc> {
         self.0.write(mc).id = id;
     }
 
-    pub fn display(&self) -> String {
+    pub fn display(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let read = self.0.read();
-        let mut output = read.name.to_utf8_lossy().into_owned();
-        if !read.message.is_empty() {
-            write!(output, ": {}", read.message).unwrap();
+        if read.message.is_empty() {
+            return read.name;
         }
-        output
+        let mut output = WString::new();
+        output.push_str(&read.name);
+        output.push_utf8(": ");
+        output.push_str(&read.message);
+        AvmString::new(mc, output)
+    }
+
+    pub fn display_to(&self, output: &mut WString) {
+        let read = self.0.read();
+        output.push_str(&read.name);
+        if !read.message.is_empty() {
+            output.push_utf8(": ");
+            output.push_str(&read.message);
+        }
+    }
+
+    pub fn display_full(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        let mut output = WString::new();
+        self.display_to(&mut output);
+        self.stack_trace().display(mc, &mut output);
+        AvmString::new(mc, output)
     }
 
     pub fn stack_trace(&self) -> Ref<CallStack<'gc>> {
@@ -102,7 +120,7 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(AvmString::new_utf8(mc, self.display()).into())
+        Ok(self.display(mc).into())
     }
 
     fn as_error_object(self) -> Option<Self> {

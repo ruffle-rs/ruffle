@@ -113,10 +113,7 @@ fn get_stack_trace<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this.and_then(|this| this.as_error_object()) {
-        return Ok(this
-            .stack_trace()
-            .display(activation.context.gc_context)
-            .into());
+        return Ok(this.display_full(activation.context.gc_context).into());
     }
     Ok(Value::Undefined)
 }

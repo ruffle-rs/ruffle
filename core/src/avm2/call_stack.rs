@@ -34,8 +34,7 @@ impl<'gc> CallStack<'gc> {
         self.stack.pop()
     }
 
-    pub fn display(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        let mut output = WString::new();
+    pub fn display(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
         for call in self.stack.iter().rev() {
             output.push_utf8("\n\tat ");
             let (prefix, name) = match call {
@@ -58,7 +57,6 @@ impl<'gc> CallStack<'gc> {
             output.push_str(&name);
             output.push_utf8("()");
         }
-        AvmString::new(mc, output)
     }
 }
 
