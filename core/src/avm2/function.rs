@@ -242,6 +242,7 @@ impl<'gc> Executable<'gc> {
                         }
                         // TODO: What happens if we can't find the trait?
                     }
+                    // We purposely do nothing for instance initializers
                 } else {
                     output.push_utf8("MethodInfo-");
                     output.push_utf8(&method.abc_method.to_string());
