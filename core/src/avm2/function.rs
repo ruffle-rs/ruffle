@@ -180,8 +180,7 @@ impl<'gc> Executable<'gc> {
         }
     }
 
-    pub fn full_name(&self, mc: MutationContext<'gc, '_>) -> WString {
-        let mut output = WString::new();
+    pub fn write_full_name(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
         let class_def = self.bound_superclass().map(|superclass| {
             let class_def = superclass.inner_class_definition();
             let name = class_def.read().name().to_qualified_name(mc);
@@ -250,7 +249,6 @@ impl<'gc> Executable<'gc> {
             }
         }
         output.push_utf8("()");
-        output
     }
 }
 

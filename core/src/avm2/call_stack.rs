@@ -37,7 +37,7 @@ impl<'gc> CallStack<'gc> {
             output.push_utf8("\n\tat ");
             match call {
                 CallNode::GlobalInit => output.push_utf8("global$init()"),
-                CallNode::Method(exec) => output.push_str(&exec.full_name(mc)),
+                CallNode::Method(exec) => exec.write_full_name(mc, output),
             }
         }
     }
