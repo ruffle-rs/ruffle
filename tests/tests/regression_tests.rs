@@ -269,6 +269,7 @@ swf_tests! {
     (as3_eventdispatcher_haseventlistener, "avm2/eventdispatcher_haseventlistener", 1),
     (as3_eventdispatcher_tostring, "avm2/eventdispatcher_tostring", 1),
     (as3_eventdispatcher_willtrigger, "avm2/eventdispatcher_willtrigger", 1),
+    (as3_error_stack_traceback, "avm2/error_stack_traceback", 1),
     (as3_falsiness, "avm2/falsiness", 1),
     (as3_font_embedded, "avm2/font_embedded", 1),
     (as3_font_hasglyphs, "avm2/font_hasglyphs", 1),
