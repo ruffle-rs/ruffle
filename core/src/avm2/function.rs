@@ -6,7 +6,8 @@ use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, Gc};
+use crate::string::WString;
+use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
@@ -52,18 +53,6 @@ pub struct NativeExecutable<'gc> {
     /// then there is no defining superclass and `super` operations should fall
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
-}
-
-impl<'gc> NativeExecutable<'gc> {
-    pub fn method(&self) -> Gc<'gc, NativeMethod<'gc>> {
-        self.method
-    }
-}
-
-impl<'gc> BytecodeExecutable<'gc> {
-    pub fn method(&self) -> Gc<'gc, BytecodeMethod<'gc>> {
-        self.method
-    }
 }
 
 /// Represents code that can be executed by some means.
@@ -188,6 +177,57 @@ impl<'gc> Executable<'gc> {
                 bound_superclass, ..
             }) => *bound_superclass,
         }
+    }
+
+    pub fn full_name(&self, mc: MutationContext<'gc, '_>) -> WString {
+        let mut output = WString::new();
+        let class_def = self.bound_superclass().map(|superclass| {
+            let class_def = superclass.inner_class_definition();
+            let name = class_def.read().name().to_qualified_name(mc);
+            output.push_str(&name);
+            class_def
+        });
+        match self {
+            Executable::Native(NativeExecutable { method, .. }) => output.push_utf8(&method.name),
+            Executable::Action(BytecodeExecutable { method, .. }) => {
+                if let Some(class_def) = class_def {
+                    if Gc::ptr_eq(
+                        class_def.read().class_init().into_bytecode().unwrap(),
+                        *method,
+                    ) {
+                        output.push_utf8("$cinit");
+                    } else {
+                        (|| {
+                            for t in class_def.read().class_traits() {
+                                if let Some(m) = t.as_method() {
+                                    let bytecode = m.into_bytecode().unwrap();
+                                    if Gc::ptr_eq(bytecode, *method) {
+                                        output.push_utf8("$/");
+                                        output.push_str(&t.name().local_name());
+                                        return;
+                                    }
+                                }
+                            }
+                            for t in class_def.read().instance_traits() {
+                                if let Some(m) = t.as_method() {
+                                    let bytecode = m.into_bytecode().unwrap();
+                                    if Gc::ptr_eq(bytecode, *method) {
+                                        output.push_char('/');
+                                        output.push_str(&t.name().local_name());
+                                        break;
+                                    }
+                                }
+                            }
+                        })();
+                    }
+                } else {
+                    output.push_utf8("MethodInfo-");
+                    output.push_utf8(&method.abc_method.to_string());
+                }
+            }
+        }
+        output.push_utf8("()");
+        output
     }
 }
 
