@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
+use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
@@ -190,35 +191,56 @@ impl<'gc> Executable<'gc> {
         match self {
             Executable::Native(NativeExecutable { method, .. }) => output.push_utf8(method.name),
             Executable::Action(BytecodeExecutable { method, .. }) => {
+                // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
+                // rather than the name of the method itself.
                 if let Some(class_def) = class_def {
                     if Gc::ptr_eq(
                         class_def.read().class_init().into_bytecode().unwrap(),
                         *method,
                     ) {
                         output.push_utf8("$cinit");
-                    } else {
-                        (|| {
-                            for t in class_def.read().class_traits() {
-                                if let Some(m) = t.as_method() {
-                                    let bytecode = m.into_bytecode().unwrap();
-                                    if Gc::ptr_eq(bytecode, *method) {
-                                        output.push_utf8("$/");
-                                        output.push_str(&t.name().local_name());
-                                        return;
-                                    }
+                    } else if !Gc::ptr_eq(
+                        class_def.read().instance_init().into_bytecode().unwrap(),
+                        *method,
+                    ) {
+                        // TODO: Ideally, the declaring trait of this executable should already be attached here, that way
+                        // we can avoid needing to lookup the trait like this.
+                        let class_def = class_def.read();
+                        let mut method_trait = None;
+                        // First search instance traits for the method
+                        for t in class_def.instance_traits() {
+                            if let Some(m) = t.as_method() {
+                                let bytecode = m.into_bytecode().unwrap();
+                                if Gc::ptr_eq(bytecode, *method) {
+                                    method_trait = Some(t);
+                                    break;
                                 }
                             }
-                            for t in class_def.read().instance_traits() {
+                        }
+                        if method_trait.is_none() {
+                            // If we can't find it in instance traits, search class traits instead
+                            for t in class_def.class_traits() {
                                 if let Some(m) = t.as_method() {
                                     let bytecode = m.into_bytecode().unwrap();
                                     if Gc::ptr_eq(bytecode, *method) {
-                                        output.push_char('/');
-                                        output.push_str(&t.name().local_name());
+                                        // Class traits always start with $
+                                        output.push_char('$');
+                                        method_trait = Some(t);
                                         break;
                                     }
                                 }
                             }
-                        })();
+                        }
+                        if let Some(method_trait) = method_trait {
+                            output.push_char('/');
+                            match method_trait.kind() {
+                                TraitKind::Setter { .. } => output.push_utf8("set "),
+                                TraitKind::Getter { .. } => output.push_utf8("get "),
+                                _ => (),
+                            }
+                            output.push_str(&method_trait.name().local_name());
+                        } 
+                        // TODO: What happens if we can't find the trait?
                     }
                 } else {
                     output.push_utf8("MethodInfo-");
