@@ -239,7 +239,7 @@ impl<'gc> Executable<'gc> {
                                 _ => (),
                             }
                             output.push_str(&method_trait.name().local_name());
-                        } 
+                        }
                         // TODO: What happens if we can't find the trait?
                     }
                 } else {
