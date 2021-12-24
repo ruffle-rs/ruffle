@@ -75,6 +75,7 @@ pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
 
+    /// The current call stack of the player.
     call_stack: CallStack<'gc>,
 
     /// Global scope object.
