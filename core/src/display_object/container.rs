@@ -36,6 +36,12 @@ pub fn dispatch_removed_from_stage_event<'gc>(
             dispatch_removed_from_stage_event(grandchild, context)
         }
     }
+
+    if let Some(child_button) = child.as_avm2_button() {
+        if let Some(up) = child_button.get_state_child(child_button.state().into()) {
+            dispatch_removed_from_stage_event(up, context)
+        }
+    }
 }
 
 /// Dispatch the `removed` event on a child and log any errors encountered
@@ -86,6 +92,12 @@ pub fn dispatch_added_to_stage_event<'gc>(
     if let Some(child_container) = child.as_container() {
         for grandchild in child_container.iter_render_list() {
             dispatch_added_to_stage_event(grandchild, context)
+        }
+    }
+
+    if let Some(child_button) = child.as_avm2_button() {
+        if let Some(up) = child_button.get_state_child(child_button.state().into()) {
+            dispatch_added_to_stage_event(up, context)
         }
     }
 }
