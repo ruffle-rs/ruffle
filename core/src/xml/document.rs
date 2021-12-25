@@ -2,8 +2,8 @@
 
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::Object;
-use crate::string::AvmString;
-use crate::xml::{Error, ParseError, XmlName, XmlNode};
+use crate::string::{AvmString, WStr};
+use crate::xml::{Error, ParseError, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
 use quick_xml::{Error as QXError, Writer};
@@ -215,7 +215,7 @@ impl<'gc> XmlDocument<'gc> {
 
     /// Update the idmap object with a given new node.
     pub fn update_idmap(&mut self, mc: MutationContext<'gc, '_>, node: XmlNode<'gc>) {
-        if let Some(id) = node.attribute_value(XmlName::from_str("id")) {
+        if let Some(id) = node.attribute_value(WStr::from_units(b"id")) {
             self.0.write(mc).idmap.insert(id, node);
         }
     }

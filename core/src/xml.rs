@@ -3,7 +3,6 @@
 mod document;
 mod error;
 mod iterators;
-mod namespace;
 mod tree;
 
 #[cfg(test)]
@@ -12,7 +11,6 @@ mod tests;
 pub use document::XmlDocument;
 pub use error::Error;
 pub use error::ParseError;
-pub use namespace::XmlName;
 pub use tree::XmlNode;
 
 pub const ELEMENT_NODE: u8 = 1;
