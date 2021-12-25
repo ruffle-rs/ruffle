@@ -2,7 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::avm_warn;
@@ -520,7 +520,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xmlnode_proto = XmlObject::empty_node(gc_context, Some(proto));
+    let xmlnode_proto = XmlNodeObject::empty_node(gc_context, Some(proto));
     let object = xmlnode_proto.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     xmlnode_proto

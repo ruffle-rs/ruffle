@@ -25,7 +25,7 @@ use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
-use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
 use crate::xml::XmlNode;
@@ -57,7 +57,7 @@ pub mod transform_object;
 pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
-pub mod xml_object;
+pub mod xml_node_object;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -71,7 +71,7 @@ pub mod xml_object;
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        XmlObject(XmlObject<'gc>),
+        XmlNodeObject(XmlNodeObject<'gc>),
         XmlAttributesObject(XmlAttributesObject<'gc>),
         XmlIdMapObject(XmlIdMapObject<'gc>),
         ValueObject(ValueObject<'gc>),
