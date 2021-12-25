@@ -52,7 +52,9 @@ pub fn native_instance_init<'gc>(
                 child.set_object2(activation.context.gc_context, this);
 
                 child.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
+                child.enter_frame(&mut activation.context);
                 child.construct_frame(&mut activation.context);
+                child.run_frame_avm2(&mut activation.context);
             }
         }
     }
