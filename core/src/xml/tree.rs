@@ -5,7 +5,7 @@ use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::{Object, TObject};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
-use crate::xml::{Error, XmlDocument, XmlName};
+use crate::xml::{Error, XmlDocument};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -64,10 +64,10 @@ pub enum XmlNodeData<'gc> {
         next_sibling: Option<XmlNode<'gc>>,
 
         /// The tag name of this element.
-        tag_name: XmlName<'gc>,
+        tag_name: AvmString<'gc>,
 
         /// Attributes of the element.
-        attributes: BTreeMap<XmlName<'gc>, AvmString<'gc>>,
+        attributes: BTreeMap<AvmString<'gc>, AvmString<'gc>>,
 
         /// Child nodes of this element.
         children: Vec<XmlNode<'gc>>,
@@ -175,7 +175,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                tag_name: XmlName::from_str(element_name),
+                tag_name: element_name,
                 attributes: BTreeMap::new(),
                 attributes_script_object: None,
                 children: Vec::new(),
@@ -296,7 +296,7 @@ impl<'gc> XmlNode<'gc> {
         document: XmlDocument<'gc>,
         process_entity: bool,
     ) -> Result<Self, Error> {
-        let tag_name = XmlName::from_str(AvmString::new_utf8_bytes(mc, bs.name())?);
+        let tag_name = AvmString::new_utf8_bytes(mc, bs.name())?;
         let mut attributes = BTreeMap::new();
 
         for a in bs.attributes() {
@@ -309,7 +309,7 @@ impl<'gc> XmlNode<'gc> {
 
             let value = AvmString::new_utf8_bytes(mc, value_bytes)?;
             let attr_key = AvmString::new_utf8_bytes(mc, attribute.key)?;
-            attributes.insert(XmlName::from_str(attr_key), value);
+            attributes.insert(attr_key, value);
         }
 
         Ok(XmlNode(GcCell::allocate(
@@ -737,11 +737,25 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Returns the tagname, if the element has one.
-    pub fn tag_name(self) -> Option<XmlName<'gc>> {
+    pub fn tag_name(self) -> Option<AvmString<'gc>> {
         match &*self.0.read() {
             XmlNodeData::Element { ref tag_name, .. } => Some(*tag_name),
             _ => None,
         }
+    }
+
+    pub fn local_name(self, gc_context: MutationContext<'gc, '_>) -> Option<AvmString<'gc>> {
+        self.tag_name().map(|name| match name.find(b':') {
+            Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[i + 1..]),
+            _ => name,
+        })
+    }
+
+    pub fn prefix(self, gc_context: MutationContext<'gc, '_>) -> Option<AvmString<'gc>> {
+        self.tag_name().map(|name| match name.find(b':') {
+            Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[..i]),
+            _ => "".into(),
+        })
     }
 
     /// Returns the string contents of the node, if the element has them.
@@ -1016,9 +1030,9 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// If the node does not contain attributes, then this function always
     /// yields None.
-    pub fn attribute_value(self, name: XmlName<'gc>) -> Option<AvmString<'gc>> {
+    pub fn attribute_value(self, name: &WStr) -> Option<AvmString<'gc>> {
         match &*self.0.read() {
-            XmlNodeData::Element { attributes, .. } => attributes.get(&name).copied(),
+            XmlNodeData::Element { attributes, .. } => attributes.get(name).copied(),
             _ => None,
         }
     }
@@ -1027,7 +1041,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn attribute_keys(self) -> Vec<AvmString<'gc>> {
         match &*self.0.read() {
             XmlNodeData::Element { attributes, .. } => {
-                attributes.keys().map(|v| v.node_name()).collect::<Vec<_>>()
+                attributes.keys().cloned().collect::<Vec<_>>()
             }
             _ => Vec::new(),
         }
@@ -1036,7 +1050,7 @@ impl<'gc> XmlNode<'gc> {
     /// Retrieve the value of a single attribute on this node, case-insensitively.
     ///
     /// TODO: Probably won't need this when we have a proper HTML parser.
-    pub fn attribute_value_ignore_case(self, name: XmlName<'gc>) -> Option<AvmString<'gc>> {
+    pub fn attribute_value_ignore_case(self, name: &WStr) -> Option<AvmString<'gc>> {
         match &*self.0.read() {
             XmlNodeData::Element { attributes, .. } => attributes
                 .iter()
@@ -1052,7 +1066,7 @@ impl<'gc> XmlNode<'gc> {
     pub fn set_attribute_value(
         self,
         gc_context: MutationContext<'gc, '_>,
-        name: XmlName<'gc>,
+        name: AvmString<'gc>,
         value: AvmString<'gc>,
     ) {
         if let XmlNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
@@ -1063,9 +1077,9 @@ impl<'gc> XmlNode<'gc> {
     /// Delete the value of a single attribute on this node.
     ///
     /// If the node does not contain attributes, then this function silently fails.
-    pub fn delete_attribute(self, gc_context: MutationContext<'gc, '_>, name: XmlName<'gc>) {
+    pub fn delete_attribute(self, gc_context: MutationContext<'gc, '_>, name: &WStr) {
         if let XmlNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
-            attributes.remove(&name);
+            attributes.remove(name);
         }
     }
 
@@ -1073,60 +1087,23 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
     /// current node, or its parent.
-    pub fn lookup_uri_for_namespace(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        namespace: &WStr,
-    ) -> Option<AvmString<'gc>> {
-        if namespace.is_empty() {
-            let xmlns_default = XmlName::in_default_namespace("xmlns".into());
-            if let Some(url) = self.attribute_value(xmlns_default) {
+    pub fn lookup_uri_for_namespace(self, namespace: &WStr) -> Option<AvmString<'gc>> {
+        let mut attribute_name = WString::from_buf(b"xmlns:".to_vec());
+        attribute_name.push_str(namespace);
+
+        for node in self.ancestors() {
+            if namespace.is_empty() {
+                if let Some(url) = node.attribute_value(WStr::from_units(b"xmlns")) {
+                    return Some(url);
+                }
+            }
+
+            if let Some(url) = node.attribute_value(&attribute_name) {
                 return Some(url);
             }
         }
 
-        let xmlns_ns = XmlName::in_namespace(gc_context, WStr::from_units(b"xmlns"), namespace);
-        if let Some(url) = self.attribute_value(xmlns_ns) {
-            return Some(url);
-        }
-
-        if let Some(parent) = self.parent() {
-            parent.lookup_uri_for_namespace(gc_context, namespace)
-        } else {
-            None
-        }
-    }
-
-    /// Retrieve the first attribute key set to a given value, if any.
-    ///
-    /// If the node does not contain attributes, then this function always
-    /// yields None.
-    ///
-    /// You may restrict your value search to specific namespaces by setting
-    /// `within_namespace`. If it is set to `None`, then any namespace's
-    /// attributes may satisfy the search. It is it set to `""`, then
-    /// the default namespace will be searched.
-    pub fn value_attribute(
-        self,
-        value: &WStr,
-        within_namespace: Option<&WStr>,
-    ) -> Option<XmlName<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { attributes, .. } => {
-                for (attr, attr_value) in attributes.iter() {
-                    if let Some(namespace) = within_namespace {
-                        if attr.prefix().unwrap_or_default() == namespace && value == attr_value {
-                            return Some(*attr);
-                        }
-                    } else if value == attr_value {
-                        return Some(*attr);
-                    }
-                }
-
-                None
-            }
-            _ => None,
-        }
+        None
     }
 
     /// Look up the namespace for the given URI.
@@ -1137,13 +1114,21 @@ impl<'gc> XmlNode<'gc> {
     /// If there are multiple namespaces that match the URI, the first
     /// mentioned on the closest node will be returned.
     pub fn lookup_namespace_for_uri(self, uri: &WStr) -> Option<WString> {
-        if let Some(xname) = self.value_attribute(uri, Some(WStr::from_units(b"xmlns"))) {
-            Some(xname.local_name().into())
-        } else if let Some(parent) = self.parent() {
-            parent.lookup_namespace_for_uri(uri)
-        } else {
-            None
+        for node in self.ancestors() {
+            if let XmlNodeData::Element { attributes, .. } = &*node.0.read() {
+                for (attr, attr_value) in attributes.iter() {
+                    if attr_value == uri {
+                        if attr == b"xmlns" {
+                            return Some(WString::new());
+                        } else if attr.starts_with(WStr::from_units(b"xmlns:")) {
+                            return Some(attr[b"xmlns:".len()..].into());
+                        }
+                    }
+                }
+            }
         }
+
+        None
     }
 
     /// Convert the given node to a string of UTF-8 encoded XML.
@@ -1191,8 +1176,7 @@ impl<'gc> XmlNode<'gc> {
                 attributes,
                 ..
             } => {
-                let node_name = tag_name.node_name();
-                let mut node_name = node_name.to_utf8_lossy();
+                let mut node_name = tag_name.to_utf8_lossy();
                 if children_len == 0 {
                     let mut n = node_name.into_owned();
                     n.push(' ');
@@ -1203,9 +1187,8 @@ impl<'gc> XmlNode<'gc> {
                     Cow::Owned(name) => BytesStart::owned_name(name),
                 };
                 for (key, value) in attributes {
-                    let name = key.node_name();
                     bs.push_attribute(Attribute::from((
-                        name.to_utf8_lossy().as_ref(),
+                        key.to_utf8_lossy().as_ref(),
                         value.to_utf8_lossy().as_ref(),
                     )));
                 }
@@ -1235,9 +1218,7 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => Ok(()),
             XmlNodeData::Element { tag_name, .. } => {
                 if children_len > 0 {
-                    let node_name = tag_name.node_name();
-
-                    let bs = match node_name.to_utf8_lossy() {
+                    let bs = match tag_name.to_utf8_lossy() {
                         Cow::Borrowed(name) => BytesEnd::borrowed(name.as_bytes()),
                         Cow::Owned(name) => BytesEnd::owned(name.into()),
                     };

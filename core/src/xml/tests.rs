@@ -2,7 +2,7 @@
 
 use crate::string::WStr;
 use crate::xml;
-use crate::xml::{XmlDocument, XmlName};
+use crate::xml::XmlDocument;
 use gc_arena::rootless_arena;
 
 /// Tests very basic parsing of a single-element document.
@@ -17,7 +17,7 @@ fn parse_single_element() {
 
         let root = roots.next().expect("Parsed document should have a root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test")));
+        assert_eq!(root.tag_name(), Some("test".into()));
 
         let mut root_children = root.children();
         assert!(root_children.next().is_none());
@@ -46,23 +46,23 @@ fn double_ended_children() {
 
         let root = roots.next().expect("Should have first root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test")));
+        assert_eq!(root.tag_name(), Some("test".into()));
 
         let root = roots.next_back().expect("Should have last root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test5")));
+        assert_eq!(root.tag_name(), Some("test5".into()));
 
         let root = roots.next().expect("Should have next root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test2")));
+        assert_eq!(root.tag_name(), Some("test2".into()));
 
         let root = roots.next_back().expect("Should have second-to-last root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test4")));
+        assert_eq!(root.tag_name(), Some("test4".into()));
 
         let root = roots.next().expect("Should have next root");
         assert_eq!(root.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(root.tag_name(), Some(XmlName::from_str("test3")));
+        assert_eq!(root.tag_name(), Some("test3".into()));
 
         assert!(roots.next().is_none());
         assert!(roots.next_back().is_none());
@@ -127,15 +127,15 @@ fn ignore_white() {
 
         let mut node = root.next().expect("Should have root");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(node.tag_name(), Some(XmlName::from_str("test")));
+        assert_eq!(node.tag_name(), Some("test".into()));
 
         node = node.children().next().expect("Should have children");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(node.tag_name(), Some(XmlName::from_str("test2")));
+        assert_eq!(node.tag_name(), Some("test2".into()));
 
         node = node.children().next().expect("Should have children");
         assert_eq!(node.node_type(), xml::ELEMENT_NODE);
-        assert_eq!(node.tag_name(), Some(XmlName::from_str("test3")));
+        assert_eq!(node.tag_name(), Some("test3".into()));
 
         node = node.children().next().expect("Should have text");
         assert_eq!(node.node_type(), xml::TEXT_NODE);

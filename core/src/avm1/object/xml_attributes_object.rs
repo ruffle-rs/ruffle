@@ -6,7 +6,7 @@ use crate::avm1::object::{ObjectPtr, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::string::AvmString;
-use crate::xml::{XmlName, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
 use std::fmt;
 
@@ -61,9 +61,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         name: impl Into<AvmString<'gc>>,
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Option<Value<'gc>> {
-        self.node()
-            .attribute_value(XmlName::from_str(name))
-            .map(|s| s.into())
+        self.node().attribute_value(&name.into()).map(|s| s.into())
     }
 
     fn set_local(
@@ -75,7 +73,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         self.node().set_attribute_value(
             activation.context.gc_context,
-            XmlName::from_str(name),
+            name,
             value.coerce_to_string(activation)?,
         );
         Ok(())
@@ -119,7 +117,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
 
     fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         self.node()
-            .delete_attribute(activation.context.gc_context, XmlName::from_str(name));
+            .delete_attribute(activation.context.gc_context, &name);
         self.base().delete(activation, name)
     }
 
@@ -206,9 +204,7 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         _activation: &mut Activation<'_, 'gc, '_>,
         name: AvmString<'gc>,
     ) -> bool {
-        self.node()
-            .attribute_value(XmlName::from_str(name))
-            .is_some()
+        self.node().attribute_value(&name).is_some()
     }
 
     fn has_own_virtual(

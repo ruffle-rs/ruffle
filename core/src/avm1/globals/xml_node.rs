@@ -158,9 +158,7 @@ fn get_namespace_for_prefix<'gc>(
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
-        if let Some(uri) =
-            xmlnode.lookup_uri_for_namespace(activation.context.gc_context, &prefix_string?)
-        {
+        if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
             Ok(uri.into())
         } else {
             Ok(Value::Null)
@@ -245,9 +243,8 @@ fn local_name<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.tag_name())
-        .map(|n| AvmString::new(activation.context.gc_context, n.local_name()).into())
-        .unwrap_or_else(|| Value::Null))
+        .and_then(|n| n.local_name(activation.context.gc_context))
+        .map_or(Value::Null, Value::from))
 }
 
 fn node_name<'gc>(
@@ -258,8 +255,7 @@ fn node_name<'gc>(
     Ok(this
         .as_xml_node()
         .and_then(|n| n.tag_name())
-        .map(|n| Value::from(n.node_name()))
-        .unwrap_or_else(|| Value::Null))
+        .map_or(Value::Null, Value::from))
 }
 
 fn node_type<'gc>(
@@ -300,14 +296,8 @@ fn prefix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.tag_name())
-        .map(|n| {
-            n.prefix()
-                .map(|n| AvmString::new(activation.context.gc_context, n))
-                .unwrap_or_default()
-                .into()
-        })
-        .unwrap_or_else(|| Value::Null))
+        .and_then(|n| n.prefix(activation.context.gc_context))
+        .map_or(Value::Null, Value::from))
 }
 
 fn child_nodes<'gc>(
@@ -498,12 +488,9 @@ fn namespace_uri<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Some(name) = node.tag_name() {
+        if let Some(prefix) = node.prefix(activation.context.gc_context) {
             return Ok(node
-                .lookup_uri_for_namespace(
-                    activation.context.gc_context,
-                    name.prefix().unwrap_or_default(),
-                )
+                .lookup_uri_for_namespace(&prefix)
                 .unwrap_or_default()
                 .into());
         }
