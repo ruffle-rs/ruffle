@@ -71,13 +71,6 @@ pub struct Avm2ButtonData<'gc> {
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
-
-    /// Skip the next `run_frame` call.
-    ///
-    /// This flag exists due to a really odd feature of buttons: they run their
-    /// children for one frame before parents can run. Then they go back to the
-    /// normal AVM2 execution order for future frames.
-    skip_current_frame: bool,
 }
 
 impl<'gc> Avm2Button<'gc> {
@@ -118,7 +111,6 @@ impl<'gc> Avm2Button<'gc> {
                 has_focus: false,
                 enabled: true,
                 use_hand_cursor: true,
-                skip_current_frame: false,
             },
         ))
     }
@@ -178,11 +170,14 @@ impl<'gc> Avm2Button<'gc> {
     ///
     /// If the boolean parameter is `true`, then the caller of this function
     /// should signal events on all children of the returned display object.
+    ///
+    /// The integer parameter is the number of children present in the returned
+    /// state object.
     fn create_state(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         swf_state: swf::ButtonState,
-    ) -> (DisplayObject<'gc>, bool) {
+    ) -> (DisplayObject<'gc>, bool, usize) {
         let movie = self
             .movie()
             .expect("All SWF-defined buttons should have movies");
@@ -223,6 +218,8 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
+        let num_children = children.len();
+
         if children.len() == 1 {
             let child = children.first().cloned().unwrap().0;
 
@@ -230,7 +227,7 @@ impl<'gc> Avm2Button<'gc> {
             child.post_instantiation(context, None, Instantiator::Movie, false);
             child.construct_frame(context);
 
-            (child, false)
+            (child, false, num_children)
         } else {
             let state_sprite = MovieClip::new(movie, context.gc_context);
 
@@ -250,7 +247,7 @@ impl<'gc> Avm2Button<'gc> {
                 child.set_parent(context.gc_context, Some(state_sprite.into()));
             }
 
-            (state_sprite.into(), true)
+            (state_sprite.into(), true, num_children)
         }
     }
 
@@ -490,10 +487,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
         let needs_frame_construction = self.0.read().needs_frame_construction;
         if needs_frame_construction {
-            let (up_state, up_should_fire) = self.create_state(context, swf::ButtonState::UP);
-            let (over_state, over_should_fire) = self.create_state(context, swf::ButtonState::OVER);
-            let (down_state, down_should_fire) = self.create_state(context, swf::ButtonState::DOWN);
-            let (hit_area, hit_should_fire) =
+            let (up_state, up_should_fire, up_children) =
+                self.create_state(context, swf::ButtonState::UP);
+            let (over_state, over_should_fire, _) =
+                self.create_state(context, swf::ButtonState::OVER);
+            let (down_state, down_should_fire, _) =
+                self.create_state(context, swf::ButtonState::DOWN);
+            let (hit_area, hit_should_fire, _) =
                 self.create_state(context, swf::ButtonState::HIT_TEST);
 
             let mut write = self.0.write(context.gc_context);
@@ -501,7 +501,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             write.over_state = Some(over_state);
             write.down_state = Some(down_state);
             write.hit_area = Some(hit_area);
-            write.skip_current_frame = true;
             write.needs_frame_construction = false;
 
             drop(write);
@@ -547,25 +546,27 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if needs_avm2_construction {
-                self.frame_constructed(context);
-
                 self.set_state(context, ButtonState::Over);
 
-                //NOTE: Yes, we do have to run these in a different order from the
-                //regular run_frame method.
-                up_state.run_frame_avm2(context);
-                over_state.run_frame_avm2(context);
-                down_state.run_frame_avm2(context);
-                hit_area.run_frame_avm2(context);
-
-                up_state.run_frame_scripts(context);
-                over_state.run_frame_scripts(context);
-                down_state.run_frame_scripts(context);
-                hit_area.run_frame_scripts(context);
-
-                self.exit_frame(context);
-
                 if self.place_frame() < 2 {
+                    if up_children > 0 {
+                        self.frame_constructed(context);
+
+                        //NOTE: Yes, we do have to run these in a different order from the
+                        //regular run_frame method.
+                        up_state.run_frame_avm2(context);
+                        over_state.run_frame_avm2(context);
+                        down_state.run_frame_avm2(context);
+                        hit_area.run_frame_avm2(context);
+
+                        up_state.run_frame_scripts(context);
+                        over_state.run_frame_scripts(context);
+                        down_state.run_frame_scripts(context);
+                        hit_area.run_frame_scripts(context);
+
+                        self.exit_frame(context);
+                    }
+
                     self.initialize_avm2_object(context)
                 } else {
                     self.0.write(context.gc_context).needs_avm2_initialization = true;
@@ -601,11 +602,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     }
 
     fn run_frame_avm2(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if self.0.read().skip_current_frame {
-            self.0.write(context.gc_context).skip_current_frame = false;
-            return;
-        }
-
         let hit_area = self.0.read().hit_area;
         if let Some(hit_area) = hit_area {
             hit_area.run_frame_avm2(context);
