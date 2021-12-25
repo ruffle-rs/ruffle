@@ -13,16 +13,16 @@ use std::fmt;
 /// A ScriptObject that is inherently tied to an XML node.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct XmlObject<'gc>(GcCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlNodeObject<'gc>(GcCell<'gc, XmlNodeObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct XmlObjectData<'gc> {
+pub struct XmlNodeObjectData<'gc> {
     base: ScriptObject<'gc>,
     node: XmlNode<'gc>,
 }
 
-impl<'gc> XmlObject<'gc> {
+impl<'gc> XmlNodeObject<'gc> {
     /// Construct a new XML node and object pair.
     pub fn empty_node(
         gc_context: MutationContext<'gc, '_>,
@@ -31,9 +31,9 @@ impl<'gc> XmlObject<'gc> {
         let empty_document = XmlDocument::new(gc_context);
         let mut xml_node = XmlNode::new_text(gc_context, AvmString::default(), empty_document);
         let base_object = ScriptObject::object(gc_context, proto);
-        let object = XmlObject(GcCell::allocate(
+        let object = XmlNodeObject(GcCell::allocate(
             gc_context,
-            XmlObjectData {
+            XmlNodeObjectData {
                 base: base_object,
                 node: xml_node,
             },
@@ -45,15 +45,15 @@ impl<'gc> XmlObject<'gc> {
         object
     }
 
-    /// Construct an XmlObject for an already existing node.
+    /// Construct an XmlNodeObject for an already existing node.
     pub fn from_xml_node(
         gc_context: MutationContext<'gc, '_>,
         xml_node: XmlNode<'gc>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        XmlObject(GcCell::allocate(
+        XmlNodeObject(GcCell::allocate(
             gc_context,
-            XmlObjectData {
+            XmlNodeObjectData {
                 base: ScriptObject::object(gc_context, proto),
                 node: xml_node,
             },
@@ -62,17 +62,17 @@ impl<'gc> XmlObject<'gc> {
     }
 }
 
-impl fmt::Debug for XmlObject<'_> {
+impl fmt::Debug for XmlNodeObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let this = self.0.read();
-        f.debug_struct("XmlObject")
+        f.debug_struct("XmlNodeObject")
             .field("base", &this.base)
             .field("node", &this.node)
             .finish()
     }
 }
 
-impl<'gc> TObject<'gc> for XmlObject<'gc> {
+impl<'gc> TObject<'gc> for XmlNodeObject<'gc> {
     impl_custom_object!(base);
 
     fn create_bare_object(
@@ -80,7 +80,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(XmlObject::empty_node(
+        Ok(XmlNodeObject::empty_node(
             activation.context.gc_context,
             Some(this),
         ))

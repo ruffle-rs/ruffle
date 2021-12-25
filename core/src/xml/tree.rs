@@ -1,7 +1,7 @@
 //! XML Tree structure
 
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
-use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::{Object, TObject};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
@@ -857,7 +857,7 @@ impl<'gc> XmlNode<'gc> {
     ) -> Object<'gc> {
         let mut object = self.get_script_object();
         if object.is_none() {
-            object = Some(XmlObject::from_xml_node(gc_context, *self, prototype));
+            object = Some(XmlNodeObject::from_xml_node(gc_context, *self, prototype));
             self.introduce_script_object(gc_context, object.unwrap());
         }
 
