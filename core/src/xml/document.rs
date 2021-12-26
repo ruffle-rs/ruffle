@@ -155,31 +155,6 @@ impl<'gc> XmlDocument<'gc> {
         self.0.read().doctype
     }
 
-    /// Process events being passed into some node of the document.
-    ///
-    /// There are certain nodes which have document-wide implications if parsed
-    /// into any node within the document. These are processed here.
-    pub fn process_event(self, mc: MutationContext<'gc, '_>, event: &Event) -> Result<(), Error> {
-        if let Event::Decl(bd) = event {
-            let mut self_write = self.0.write(mc);
-
-            self_write.has_xmldecl = true;
-            self_write.version = String::from_utf8(bd.version()?.into_owned())?;
-            self_write.encoding = if let Some(encoding) = bd.encoding() {
-                Some(String::from_utf8(encoding?.into_owned())?)
-            } else {
-                None
-            };
-            self_write.standalone = if let Some(standalone) = bd.standalone() {
-                Some(String::from_utf8(standalone?.into_owned())?)
-            } else {
-                None
-            };
-        }
-
-        Ok(())
-    }
-
     /// Ensure that a newly-encountered node is added to an ongoing parsing
     /// stack, or to the document root itself if the parsing stack is empty.
     fn add_child_to_tree(
@@ -221,8 +196,6 @@ impl<'gc> XmlDocument<'gc> {
         loop {
             let event = self.log_parse_result(mc, parser.read_event(&mut buf))?;
 
-            self.process_event(mc, &event)?;
-
             match event {
                 Event::Start(bs) => {
                     let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
@@ -257,6 +230,22 @@ impl<'gc> XmlDocument<'gc> {
                     if child.node_value() != Some(AvmString::default()) {
                         self.add_child_to_tree(mc, &mut open_tags, child)?;
                     }
+                }
+                Event::Decl(bd) => {
+                    let mut self_write = self.0.write(mc);
+
+                    self_write.has_xmldecl = true;
+                    self_write.version = String::from_utf8(bd.version()?.into_owned())?;
+                    self_write.encoding = if let Some(encoding) = bd.encoding() {
+                        Some(String::from_utf8(encoding?.into_owned())?)
+                    } else {
+                        None
+                    };
+                    self_write.standalone = if let Some(standalone) = bd.standalone() {
+                        Some(String::from_utf8(standalone?.into_owned())?)
+                    } else {
+                        None
+                    };
                 }
                 Event::Eof => break,
                 _ => {}
