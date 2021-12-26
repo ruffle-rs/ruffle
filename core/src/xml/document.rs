@@ -155,23 +155,6 @@ impl<'gc> XmlDocument<'gc> {
         self.0.read().doctype
     }
 
-    /// Ensure that a newly-encountered node is added to an ongoing parsing
-    /// stack, or to the document root itself if the parsing stack is empty.
-    fn add_child_to_tree(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        open_tags: &mut Vec<XmlNode<'gc>>,
-        child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
-        if let Some(node) = open_tags.last_mut() {
-            node.append_child(mc, child)?;
-        } else {
-            self.as_node().append_child(mc, child)?;
-        }
-
-        Ok(())
-    }
-
     /// Replace the contents of this document with the result of parsing a string.
     ///
     /// This method does not yet actually remove existing node contents.
@@ -189,7 +172,7 @@ impl<'gc> XmlDocument<'gc> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
         let mut buf = Vec::new();
-        let mut open_tags: Vec<XmlNode<'gc>> = Vec::new();
+        let mut open_tags = vec![self.as_node()];
 
         self.clear_parse_error(mc);
 
@@ -200,13 +183,13 @@ impl<'gc> XmlDocument<'gc> {
                 Event::Start(bs) => {
                     let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
                     self.update_idmap(mc, child);
-                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    open_tags.last_mut().unwrap().append_child(mc, child)?;
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
                     let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
                     self.update_idmap(mc, child);
-                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    open_tags.last_mut().unwrap().append_child(mc, child)?;
                 }
                 Event::End(_) => {
                     open_tags.pop();
@@ -216,19 +199,19 @@ impl<'gc> XmlDocument<'gc> {
                     if child.node_value() != Some(AvmString::default())
                         && (!ignore_white || !child.is_whitespace_text())
                     {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                        open_tags.last_mut().unwrap().append_child(mc, child)?;
                     }
                 }
                 Event::Comment(bt) => {
                     let child = XmlNode::comment_from_text_event(mc, bt, *self)?;
                     if child.node_value() != Some(AvmString::default()) {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                        open_tags.last_mut().unwrap().append_child(mc, child)?;
                     }
                 }
                 Event::DocType(bt) => {
                     let child = XmlNode::doctype_from_text_event(mc, bt, *self)?;
                     if child.node_value() != Some(AvmString::default()) {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                        open_tags.last_mut().unwrap().append_child(mc, child)?;
                     }
                 }
                 Event::Decl(bd) => {
