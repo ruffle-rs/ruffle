@@ -79,12 +79,12 @@ fn create_element<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(document) = this.as_xml() {
+    if let Some(_document) = this.as_xml() {
         let nodename = args
             .get(0)
             .map(|v| v.coerce_to_string(activation).unwrap_or_default())
             .unwrap_or_default();
-        let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename, document);
+        let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename);
         let object = XmlNodeObject::from_xml_node(
             activation.context.gc_context,
             xml_node,
@@ -104,12 +104,12 @@ fn create_text_node<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(document) = this.as_xml() {
+    if let Some(_document) = this.as_xml() {
         let text_node = args
             .get(0)
             .map(|v| v.coerce_to_string(activation).unwrap_or_default())
             .unwrap_or_default();
-        let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node, document);
+        let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node);
         let object = XmlNodeObject::from_xml_node(
             activation.context.gc_context,
             xml_node,

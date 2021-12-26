@@ -68,7 +68,7 @@ impl<'gc> XmlDocument<'gc> {
                 last_parse_error: None,
             },
         ));
-        let root = XmlNode::new_document_root(mc, document);
+        let root = XmlNode::new_document_root(mc);
 
         document.0.write(mc).root = Some(root);
 
@@ -83,71 +83,6 @@ impl<'gc> XmlDocument<'gc> {
             .read()
             .root
             .expect("Document must always have a root node")
-    }
-
-    /// Create a duplicate copy of this document.
-    ///
-    /// The contents of the document will not be duplicated. This results in a
-    /// rootless document that is not safe to use without first linking another
-    /// root node into it. (See `link_root_node`.)
-    pub fn duplicate(self, gc_context: MutationContext<'gc, '_>) -> Self {
-        let self_read = self.0.read();
-        Self(GcCell::allocate(
-            gc_context,
-            XmlDocumentData {
-                root: None,
-                has_xmldecl: self_read.has_xmldecl,
-                version: self_read.version.clone(),
-                encoding: self_read.encoding.clone(),
-                standalone: self_read.standalone.clone(),
-                doctype: None,
-                idmap: BTreeMap::new(),
-                idmap_script_object: None,
-                last_parse_error: None,
-            },
-        ))
-    }
-
-    /// Set the root node of the document, if possible.
-    ///
-    /// If the proposed root is not an `XMLNode::DocumentRoot`, then a fresh
-    /// document root node will be created and the root will be adopted into
-    /// it.
-    ///
-    /// If the document already has a root node, nothing happens.
-    pub fn link_root_node(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        proposed_root: XmlNode<'gc>,
-    ) {
-        match (
-            &mut *self.0.write(gc_context),
-            proposed_root.is_document_root(),
-        ) {
-            (XmlDocumentData { root, .. }, true) if root.is_none() => {
-                *root = Some(proposed_root);
-            }
-            (XmlDocumentData { root, .. }, false) if root.is_none() => {
-                *root = Some(XmlNode::new_document_root(gc_context, *self));
-            }
-            _ => {}
-        }
-    }
-
-    /// Set the DOCTYPE of the document, if possible.
-    ///
-    /// If the proposed doctype is not an `XMLNode::DocType`, or the document
-    /// already has a doctype, nothing happens.
-    pub fn link_doctype(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        proposed_doctype: XmlNode<'gc>,
-    ) {
-        let mut self_write = self.0.write(gc_context);
-
-        if self_write.doctype.is_none() && proposed_doctype.is_doctype() {
-            self_write.doctype = Some(proposed_doctype);
-        }
     }
 
     /// Retrieve the first DocType node in the document.
@@ -181,13 +116,13 @@ impl<'gc> XmlDocument<'gc> {
 
             match event {
                 Event::Start(bs) => {
-                    let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
+                    let child = XmlNode::from_start_event(mc, bs, process_entity)?;
                     self.update_idmap(mc, child);
                     open_tags.last_mut().unwrap().append_child(mc, child)?;
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
+                    let child = XmlNode::from_start_event(mc, bs, process_entity)?;
                     self.update_idmap(mc, child);
                     open_tags.last_mut().unwrap().append_child(mc, child)?;
                 }
@@ -195,7 +130,7 @@ impl<'gc> XmlDocument<'gc> {
                     open_tags.pop();
                 }
                 Event::Text(bt) | Event::CData(bt) => {
-                    let child = XmlNode::text_from_text_event(mc, bt, *self, process_entity)?;
+                    let child = XmlNode::text_from_text_event(mc, bt, process_entity)?;
                     if child.node_value() != Some(AvmString::default())
                         && (!ignore_white || !child.is_whitespace_text())
                     {
@@ -203,15 +138,16 @@ impl<'gc> XmlDocument<'gc> {
                     }
                 }
                 Event::Comment(bt) => {
-                    let child = XmlNode::comment_from_text_event(mc, bt, *self)?;
+                    let child = XmlNode::comment_from_text_event(mc, bt)?;
                     if child.node_value() != Some(AvmString::default()) {
                         open_tags.last_mut().unwrap().append_child(mc, child)?;
                     }
                 }
                 Event::DocType(bt) => {
-                    let child = XmlNode::doctype_from_text_event(mc, bt, *self)?;
+                    let child = XmlNode::doctype_from_text_event(mc, bt)?;
                     if child.node_value() != Some(AvmString::default()) {
                         open_tags.last_mut().unwrap().append_child(mc, child)?;
+                        self.0.write(mc).doctype = Some(child);
                     }
                 }
                 Event::Decl(bd) => {
