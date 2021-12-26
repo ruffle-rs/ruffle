@@ -9,7 +9,7 @@ use crate::xml::{Error, XmlDocument};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
-use quick_xml::{Reader, Writer};
+use quick_xml::Writer;
 use smallvec::alloc::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -194,96 +194,6 @@ impl<'gc> XmlNode<'gc> {
                 children: Vec::new(),
             },
         ))
-    }
-
-    /// Ensure that a newly-encountered node is added to an ongoing parsing
-    /// stack, or to the document root itself if the parsing stack is empty.
-    fn add_child_to_tree(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        open_tags: &mut Vec<XmlNode<'gc>>,
-        child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
-        if let Some(node) = open_tags.last_mut() {
-            node.append_child(mc, child)?;
-        } else {
-            self.append_child(mc, child)?;
-        }
-
-        Ok(())
-    }
-
-    /// Replace the contents of this node with the result of parsing a string.
-    ///
-    /// Node replacements are only supported on document root nodes; elements
-    /// may work but will be incorrect.
-    ///
-    /// Also, this method does not yet actually remove existing node contents.
-    ///
-    /// If `process_entity` is `true`, then entities will be processed by this
-    /// function. Invalid or unrecognized entities will cause parsing to fail
-    /// with an `Err`.
-    pub fn replace_with_str(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        data: &WStr,
-        process_entity: bool,
-        ignore_white: bool,
-    ) -> Result<(), Error> {
-        let data_utf8 = data.to_utf8_lossy();
-        let mut parser = Reader::from_str(&data_utf8);
-        let mut buf = Vec::new();
-        let document = self.document();
-        let mut open_tags: Vec<XmlNode<'gc>> = Vec::new();
-
-        document.clear_parse_error(mc);
-
-        loop {
-            let event = document.log_parse_result(mc, parser.read_event(&mut buf))?;
-
-            document.process_event(mc, &event)?;
-
-            match event {
-                Event::Start(bs) => {
-                    let child = XmlNode::from_start_event(mc, bs, document, process_entity)?;
-                    self.document().update_idmap(mc, child);
-                    self.add_child_to_tree(mc, &mut open_tags, child)?;
-                    open_tags.push(child);
-                }
-                Event::Empty(bs) => {
-                    let child = XmlNode::from_start_event(mc, bs, document, process_entity)?;
-                    self.document().update_idmap(mc, child);
-                    self.add_child_to_tree(mc, &mut open_tags, child)?;
-                }
-                Event::End(_) => {
-                    open_tags.pop();
-                }
-                Event::Text(bt) | Event::CData(bt) => {
-                    let child = XmlNode::text_from_text_event(mc, bt, document, process_entity)?;
-                    if child.node_value() != Some(AvmString::default())
-                        && (!ignore_white || !child.is_whitespace_text())
-                    {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
-                    }
-                }
-                Event::Comment(bt) => {
-                    let child = XmlNode::comment_from_text_event(mc, bt, document)?;
-                    if child.node_value() != Some(AvmString::default()) {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
-                    }
-                }
-                Event::DocType(bt) => {
-                    let child = XmlNode::doctype_from_text_event(mc, bt, document)?;
-                    if child.node_value() != Some(AvmString::default()) {
-                        self.add_child_to_tree(mc, &mut open_tags, child)?;
-                    }
-                }
-                Event::Eof => break,
-                _ => {}
-            }
-        }
-
-        Ok(())
     }
 
     /// Construct an XML Element node from a `quick_xml` `BytesStart` event.

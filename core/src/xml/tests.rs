@@ -9,9 +9,8 @@ use gc_arena::rootless_arena;
 #[test]
 fn parse_single_element() {
     rootless_arena(|mc| {
-        let xml = XmlDocument::new(mc);
-        xml.as_node()
-            .replace_with_str(mc, WStr::from_units(b"<test></test>"), true, false)
+        let mut xml = XmlDocument::new(mc);
+        xml.replace_with_str(mc, WStr::from_units(b"<test></test>"), true, false)
             .expect("Parsed document");
         let mut roots = xml.as_node().children();
 
@@ -30,17 +29,16 @@ fn parse_single_element() {
 #[test]
 fn double_ended_children() {
     rootless_arena(|mc| {
-        let xml = XmlDocument::new(mc);
-        xml.as_node()
-            .replace_with_str(
-                mc,
-                WStr::from_units(
-                    b"<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
-                ),
-                true,
-                false,
-            )
-            .expect("Parsed document");
+        let mut xml = XmlDocument::new(mc);
+        xml.replace_with_str(
+            mc,
+            WStr::from_units(
+                b"<test></test><test2></test2><test3></test3><test4></test4><test5></test5>",
+            ),
+            true,
+            false,
+        )
+        .expect("Parsed document");
 
         let mut roots = xml.as_node().children();
 
@@ -75,9 +73,8 @@ fn round_trip_tostring() {
     let test_string = b"<test><!-- Comment -->This is a text node</test>";
 
     rootless_arena(|mc| {
-        let xml = XmlDocument::new(mc);
-        xml.as_node()
-            .replace_with_str(mc, WStr::from_units(test_string), true, false)
+        let mut xml = XmlDocument::new(mc);
+        xml.replace_with_str(mc, WStr::from_units(test_string), true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -95,9 +92,8 @@ fn round_trip_filtered_tostring() {
     let test_string = b"<test><!-- Comment -->This is a text node</test>";
 
     rootless_arena(|mc| {
-        let xml = XmlDocument::new(mc);
-        xml.as_node()
-            .replace_with_str(mc, WStr::from_units(test_string), true, false)
+        let mut xml = XmlDocument::new(mc);
+        xml.replace_with_str(mc, WStr::from_units(test_string), true, false)
             .expect("Parsed document");
 
         let result = xml
@@ -113,15 +109,14 @@ fn round_trip_filtered_tostring() {
 #[test]
 fn ignore_white() {
     rootless_arena(|mc| {
-        let xml = XmlDocument::new(mc);
-        xml.as_node()
-            .replace_with_str(
-                mc,
-                WStr::from_units(b"<test>   <test2>   <test3> foo </test3>   </test2>   </test>"),
-                true,
-                true,
-            )
-            .expect("Parsed document");
+        let mut xml = XmlDocument::new(mc);
+        xml.replace_with_str(
+            mc,
+            WStr::from_units(b"<test>   <test2>   <test3> foo </test3>   </test2>   </test>"),
+            true,
+            true,
+        )
+        .expect("Parsed document");
 
         let mut root = xml.as_node().children();
 

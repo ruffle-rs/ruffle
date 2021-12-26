@@ -6,7 +6,7 @@ use crate::string::{AvmString, WStr};
 use crate::xml::{Error, ParseError, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
-use quick_xml::{Error as QXError, Writer};
+use quick_xml::{Error as QXError, Reader, Writer};
 use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::io::Cursor;
@@ -175,6 +175,92 @@ impl<'gc> XmlDocument<'gc> {
             } else {
                 None
             };
+        }
+
+        Ok(())
+    }
+
+    /// Ensure that a newly-encountered node is added to an ongoing parsing
+    /// stack, or to the document root itself if the parsing stack is empty.
+    fn add_child_to_tree(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        open_tags: &mut Vec<XmlNode<'gc>>,
+        child: XmlNode<'gc>,
+    ) -> Result<(), Error> {
+        if let Some(node) = open_tags.last_mut() {
+            node.append_child(mc, child)?;
+        } else {
+            self.as_node().append_child(mc, child)?;
+        }
+
+        Ok(())
+    }
+
+    /// Replace the contents of this document with the result of parsing a string.
+    ///
+    /// This method does not yet actually remove existing node contents.
+    ///
+    /// If `process_entity` is `true`, then entities will be processed by this
+    /// function. Invalid or unrecognized entities will cause parsing to fail
+    /// with an `Err`.
+    pub fn replace_with_str(
+        &mut self,
+        mc: MutationContext<'gc, '_>,
+        data: &WStr,
+        process_entity: bool,
+        ignore_white: bool,
+    ) -> Result<(), Error> {
+        let data_utf8 = data.to_utf8_lossy();
+        let mut parser = Reader::from_str(&data_utf8);
+        let mut buf = Vec::new();
+        let mut open_tags: Vec<XmlNode<'gc>> = Vec::new();
+
+        self.clear_parse_error(mc);
+
+        loop {
+            let event = self.log_parse_result(mc, parser.read_event(&mut buf))?;
+
+            self.process_event(mc, &event)?;
+
+            match event {
+                Event::Start(bs) => {
+                    let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
+                    self.update_idmap(mc, child);
+                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    open_tags.push(child);
+                }
+                Event::Empty(bs) => {
+                    let child = XmlNode::from_start_event(mc, bs, *self, process_entity)?;
+                    self.update_idmap(mc, child);
+                    self.add_child_to_tree(mc, &mut open_tags, child)?;
+                }
+                Event::End(_) => {
+                    open_tags.pop();
+                }
+                Event::Text(bt) | Event::CData(bt) => {
+                    let child = XmlNode::text_from_text_event(mc, bt, *self, process_entity)?;
+                    if child.node_value() != Some(AvmString::default())
+                        && (!ignore_white || !child.is_whitespace_text())
+                    {
+                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
+                }
+                Event::Comment(bt) => {
+                    let child = XmlNode::comment_from_text_event(mc, bt, *self)?;
+                    if child.node_value() != Some(AvmString::default()) {
+                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
+                }
+                Event::DocType(bt) => {
+                    let child = XmlNode::doctype_from_text_event(mc, bt, *self)?;
+                    if child.node_value() != Some(AvmString::default()) {
+                        self.add_child_to_tree(mc, &mut open_tags, child)?;
+                    }
+                }
+                Event::Eof => break,
+                _ => {}
+            }
         }
 
         Ok(())
