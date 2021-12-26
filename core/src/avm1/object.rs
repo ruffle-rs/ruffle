@@ -26,9 +26,10 @@ use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
+use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
-use crate::xml::XmlNode;
+use crate::xml::{XmlDocument, XmlNode};
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
@@ -58,6 +59,7 @@ pub mod value_object;
 pub mod xml_attributes_object;
 pub mod xml_idmap_object;
 pub mod xml_node_object;
+pub mod xml_object;
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -71,6 +73,7 @@ pub mod xml_node_object;
         SoundObject(SoundObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
+        XmlObject(XmlObject<'gc>),
         XmlNodeObject(XmlNodeObject<'gc>),
         XmlAttributesObject(XmlAttributesObject<'gc>),
         XmlIdMapObject(XmlIdMapObject<'gc>),
@@ -528,6 +531,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying executable for this object, if it exists.
     fn as_executable(&self) -> Option<Executable<'gc>> {
+        None
+    }
+
+    /// Get the underlying XML document for this object, if it exists.
+    fn as_xml(&self) -> Option<XmlDocument<'gc>> {
         None
     }
 
