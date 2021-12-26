@@ -3,12 +3,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
+use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::string::{AvmString, WStr};
-use crate::xml::{XmlDocument, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::MutationContext;
 use quick_xml::Error as ParseError;
 
@@ -48,41 +49,27 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match (
+    if let (Some(Ok(ref string)), Some(ref mut document)) = (
         args.get(0).map(|v| v.coerce_to_string(activation)),
-        this.as_xml_node(),
+        this.as_xml(),
     ) {
-        (Some(Ok(ref string)), Some(ref mut this_node)) => {
-            let xmldoc = XmlDocument::new(activation.context.gc_context);
-            let mut xmlnode = xmldoc.as_node();
-            xmlnode.introduce_script_object(activation.context.gc_context, this);
-            this_node.swap(activation.context.gc_context, xmlnode);
-            let ignore_whitespace = this
-                .get("ignoreWhite", activation)?
-                .as_bool(activation.swf_version());
+        let ignore_whitespace = this
+            .get("ignoreWhite", activation)?
+            .as_bool(activation.swf_version());
 
-            if let Err(e) = this_node.replace_with_str(
-                activation.context.gc_context,
-                string,
-                true,
-                ignore_whitespace,
-            ) {
-                avm_warn!(
-                    activation,
-                    "Couldn't replace_with_str inside of XML constructor: {}",
-                    e
-                );
-            }
+        if let Err(e) = document.as_node().replace_with_str(
+            activation.context.gc_context,
+            string,
+            true,
+            ignore_whitespace,
+        ) {
+            avm_warn!(
+                activation,
+                "Couldn't replace_with_str inside of XML constructor: {}",
+                e
+            );
         }
-        (None, Some(ref mut this_node)) => {
-            let xmldoc = XmlDocument::new(activation.context.gc_context);
-            let mut xmlnode = xmldoc.as_node();
-            xmlnode.introduce_script_object(activation.context.gc_context, this);
-            this_node.swap(activation.context.gc_context, xmlnode);
-        }
-        //Non-string argument or not an XML document
-        _ => {}
-    };
+    }
 
     Ok(this.into())
 }
@@ -92,26 +79,24 @@ fn create_element<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let document = if let Some(node) = this.as_xml_node() {
-        node.document()
-    } else {
-        XmlDocument::new(activation.context.gc_context)
-    };
+    if let Some(document) = this.as_xml() {
+        let nodename = args
+            .get(0)
+            .map(|v| v.coerce_to_string(activation).unwrap_or_default())
+            .unwrap_or_default();
+        let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename, document);
+        let object = XmlNodeObject::from_xml_node(
+            activation.context.gc_context,
+            xml_node,
+            Some(activation.context.avm1.prototypes().xml_node),
+        );
 
-    let nodename = args
-        .get(0)
-        .map(|v| v.coerce_to_string(activation).unwrap_or_default())
-        .unwrap_or_default();
-    let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename, document);
-    let object = XmlNodeObject::from_xml_node(
-        activation.context.gc_context,
-        xml_node,
-        Some(activation.context.avm1.prototypes().xml_node),
-    );
+        xml_node.introduce_script_object(activation.context.gc_context, object);
 
-    xml_node.introduce_script_object(activation.context.gc_context, object);
+        return Ok(object.into());
+    }
 
-    Ok(object.into())
+    Ok(Value::Undefined)
 }
 
 fn create_text_node<'gc>(
@@ -119,26 +104,24 @@ fn create_text_node<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let document = if let Some(node) = this.as_xml_node() {
-        node.document()
-    } else {
-        XmlDocument::new(activation.context.gc_context)
-    };
+    if let Some(document) = this.as_xml() {
+        let text_node = args
+            .get(0)
+            .map(|v| v.coerce_to_string(activation).unwrap_or_default())
+            .unwrap_or_default();
+        let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node, document);
+        let object = XmlNodeObject::from_xml_node(
+            activation.context.gc_context,
+            xml_node,
+            Some(activation.context.avm1.prototypes().xml_node),
+        );
 
-    let text_node = args
-        .get(0)
-        .map(|v| v.coerce_to_string(activation).unwrap_or_default())
-        .unwrap_or_default();
-    let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node, document);
-    let object = XmlNodeObject::from_xml_node(
-        activation.context.gc_context,
-        xml_node,
-        Some(activation.context.avm1.prototypes().xml_node),
-    );
+        xml_node.introduce_script_object(activation.context.gc_context, object);
 
-    xml_node.introduce_script_object(activation.context.gc_context, object);
+        return Ok(object.into());
+    }
 
-    Ok(object.into())
+    Ok(Value::Undefined)
 }
 
 fn parse_xml<'gc>(
@@ -146,7 +129,8 @@ fn parse_xml<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut node) = this.as_xml_node() {
+    if let Some(document) = this.as_xml() {
+        let mut node = document.as_node();
         let xmlstring =
             if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(activation)) {
                 xmlstring
@@ -200,9 +184,9 @@ fn send_and_load<'gc>(
         _ => return Ok(Value::Undefined),
     };
 
-    if let Some(node) = this.as_xml_node() {
+    if let Some(document) = this.as_xml() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, &url, Some(node))?;
+        spawn_xml_fetch(activation, this, target, &url, Some(document.as_node()))?;
     }
     Ok(Value::Undefined)
 }
@@ -218,7 +202,7 @@ fn load<'gc>(
         return Ok(false.into());
     }
 
-    if let Some(_node) = this.as_xml_node() {
+    if let Some(_document) = this.as_xml() {
         let url = url_val.coerce_to_string(activation)?;
         spawn_xml_fetch(activation, this, this, &url, None)?;
 
@@ -254,8 +238,8 @@ fn doc_type_decl<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(node) = this.as_xml_node() {
-        if let Some(doctype) = node.document().doctype() {
+    if let Some(document) = this.as_xml() {
+        if let Some(doctype) = document.doctype() {
             let result = doctype.into_string(&|_| true);
 
             return Ok(AvmString::new_utf8(
@@ -277,8 +261,8 @@ fn xml_decl<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(node) = this.as_xml_node() {
-        let result = node.document().xmldecl_string();
+    if let Some(document) = this.as_xml() {
+        let result = document.xmldecl_string();
 
         if let Err(e) = result {
             avm_warn!(
@@ -299,9 +283,8 @@ fn id_map<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(node) = this.as_xml_node() {
-        return Ok(node
-            .document()
+    if let Some(mut document) = this.as_xml() {
+        return Ok(document
             .idmap_script_object(activation.context.gc_context)
             .into());
     }
@@ -314,8 +297,8 @@ fn status<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(node) = this.as_xml_node() {
-        let status = match node.document().last_parse_error() {
+    if let Some(document) = this.as_xml() {
+        let status = match document.last_parse_error() {
             None => XML_NO_ERROR,
             Some(err) => match err.ref_error() {
                 ParseError::UnexpectedEof(_) => XML_ELEMENT_MALFORMED,
@@ -367,10 +350,10 @@ fn spawn_xml_fetch<'gc>(
         .fetch(&url.to_utf8_lossy(), request_options);
     let target_clip = activation.target_clip_or_root()?;
     // given any defined loader object, sends the request. Will load into LoadVars if given.
-    let process = if let Some(node) = loader_object.as_xml_node() {
+    let process = if let Some(document) = loader_object.as_xml() {
         activation.context.load_manager.load_xml_into_node(
             activation.context.player.clone().unwrap(),
-            node,
+            document.as_node(),
             target_clip,
             fetch,
         )
@@ -393,8 +376,8 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_proto = XmlNodeObject::empty_node(gc_context, Some(proto));
+    let xml_proto = XmlObject::empty(gc_context, Some(proto));
     let object = xml_proto.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
-    xml_proto
+    xml_proto.into()
 }
