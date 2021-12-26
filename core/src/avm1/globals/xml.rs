@@ -57,7 +57,7 @@ pub fn constructor<'gc>(
             .get("ignoreWhite", activation)?
             .as_bool(activation.swf_version());
 
-        if let Err(e) = document.as_node().replace_with_str(
+        if let Err(e) = document.replace_with_str(
             activation.context.gc_context,
             string,
             true,
@@ -129,8 +129,7 @@ fn parse_xml<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(document) = this.as_xml() {
-        let mut node = document.as_node();
+    if let Some(mut document) = this.as_xml() {
         let xmlstring =
             if let Some(Ok(xmlstring)) = args.get(0).map(|s| s.coerce_to_string(activation)) {
                 xmlstring
@@ -138,6 +137,7 @@ fn parse_xml<'gc>(
                 "".into()
             };
 
+        let mut node = document.as_node();
         for child in node.children().rev() {
             let result = node.remove_child(activation.context.gc_context, child);
             if let Err(e) = result {
@@ -154,7 +154,7 @@ fn parse_xml<'gc>(
             .get("ignoreWhite", activation)?
             .as_bool(activation.swf_version());
 
-        let result = node.replace_with_str(
+        let result = document.replace_with_str(
             activation.context.gc_context,
             &xmlstring,
             true,
