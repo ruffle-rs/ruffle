@@ -20,7 +20,7 @@ pub struct XmlDocument<'gc>(GcCell<'gc, XmlDocumentData<'gc>>);
 #[collect(no_drop)]
 pub struct XmlDocumentData<'gc> {
     /// The root node of the XML document.
-    root: Option<XmlNode<'gc>>,
+    root: XmlNode<'gc>,
 
     /// Whether or not the document has a document declaration.
     has_xmldecl: bool,
@@ -54,10 +54,10 @@ pub struct XmlDocumentData<'gc> {
 impl<'gc> XmlDocument<'gc> {
     /// Construct a new, empty XML document.
     pub fn new(mc: MutationContext<'gc, '_>) -> Self {
-        let document = Self(GcCell::allocate(
+        Self(GcCell::allocate(
             mc,
             XmlDocumentData {
-                root: None,
+                root: XmlNode::new_document_root(mc),
                 has_xmldecl: false,
                 version: "1.0".to_string(),
                 encoding: None,
@@ -67,22 +67,14 @@ impl<'gc> XmlDocument<'gc> {
                 idmap_script_object: None,
                 last_parse_error: None,
             },
-        ));
-        let root = XmlNode::new_document_root(mc);
-
-        document.0.write(mc).root = Some(root);
-
-        document
+        ))
     }
 
     /// Yield the document in node form.
     ///
     /// If the document does not have a node, then this function will panic.
     pub fn as_node(self) -> XmlNode<'gc> {
-        self.0
-            .read()
-            .root
-            .expect("Document must always have a root node")
+        self.0.read().root
     }
 
     /// Retrieve the first DocType node in the document.
