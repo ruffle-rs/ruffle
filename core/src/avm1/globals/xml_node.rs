@@ -8,7 +8,7 @@ use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::avm_warn;
 use crate::string::AvmString;
 use crate::xml;
-use crate::xml::{XmlDocument, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -41,8 +41,6 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let blank_document = XmlDocument::new(activation.context.gc_context);
-
     match (
         args.get(0)
             .map(|v| v.coerce_to_f64(activation).map(|v| v as u32)),
@@ -50,14 +48,12 @@ pub fn constructor<'gc>(
         this.as_xml_node(),
     ) {
         (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement =
-                XmlNode::new_element(activation.context.gc_context, *strval, blank_document);
+            let mut xmlelement = XmlNode::new_element(activation.context.gc_context, *strval);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }
         (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement =
-                XmlNode::new_text(activation.context.gc_context, *strval, blank_document);
+            let mut xmlelement = XmlNode::new_text(activation.context.gc_context, *strval);
             xmlelement.introduce_script_object(activation.context.gc_context, this);
             this_node.swap(activation.context.gc_context, xmlelement);
         }

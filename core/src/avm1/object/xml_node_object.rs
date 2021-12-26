@@ -6,7 +6,7 @@ use crate::avm1::object::TObject;
 use crate::avm1::{Object, ScriptObject};
 use crate::impl_custom_object;
 use crate::string::AvmString;
-use crate::xml::{XmlDocument, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
@@ -28,8 +28,7 @@ impl<'gc> XmlNodeObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        let empty_document = XmlDocument::new(gc_context);
-        let mut xml_node = XmlNode::new_text(gc_context, AvmString::default(), empty_document);
+        let mut xml_node = XmlNode::new_text(gc_context, AvmString::default());
         let base_object = ScriptObject::object(gc_context, proto);
         let object = XmlNodeObject(GcCell::allocate(
             gc_context,
