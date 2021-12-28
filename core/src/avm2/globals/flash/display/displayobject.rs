@@ -8,6 +8,7 @@ use crate::avm2::object::{stage_allocator, LoaderInfoObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
+use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
@@ -52,7 +53,7 @@ pub fn native_instance_init<'gc>(
                 child.set_object2(activation.context.gc_context, this);
 
                 child.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-                child.construct_frame(&mut activation.context);
+                catchup_display_object_to_frame(&mut activation.context, child);
             }
         }
     }

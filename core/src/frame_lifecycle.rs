@@ -12,7 +12,8 @@
 //! inline in the order that clips were originally created.
 
 use crate::context::UpdateContext;
-use crate::display_object::TDisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::vminterface::AvmType;
 
 /// Which phase of the frame we're currently in.
 ///
@@ -123,4 +124,34 @@ pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     stage.exit_frame(context);
 
     *context.frame_phase = FramePhase::Idle;
+}
+
+/// Run all previously-executed frame phases on a newly-constructed display
+/// object.
+///
+/// This is a no-op on AVM1, which has it's own catch-up logic.
+pub fn catchup_display_object_to_frame<'gc>(
+    context: &mut UpdateContext<'_, 'gc, '_>,
+    dobj: DisplayObject<'gc>,
+) {
+    match (*context.frame_phase, context.avm_type()) {
+        (_, AvmType::Avm1) => {}
+        //NOTE: We currently do not have test coverage to justify `Enter`
+        //running `construct_frame`. However, `Idle` *does* need frame
+        //construction to happen, because event handlers expect to be able to
+        //construct new movie clips and see their grandchildren. So I suspect
+        //that constructing symbols in `enterFrame` works the same way.
+        (FramePhase::Enter, AvmType::Avm2) | (FramePhase::Construct, AvmType::Avm2) => {
+            dobj.enter_frame(context);
+            dobj.construct_frame(context);
+        }
+        (FramePhase::Update, AvmType::Avm2)
+        | (FramePhase::FrameScripts, AvmType::Avm2)
+        | (FramePhase::Exit, AvmType::Avm2)
+        | (FramePhase::Idle, AvmType::Avm2) => {
+            dobj.enter_frame(context);
+            dobj.construct_frame(context);
+            dobj.run_frame_avm2(context);
+        }
+    }
 }
