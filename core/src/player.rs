@@ -27,6 +27,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseBut
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
+use crate::frame_lifecycle::{run_all_phases_avm1, run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::locale::get_current_date_time;
@@ -194,6 +195,8 @@ pub struct Player {
 
     frame_rate: f64,
     actions_since_timeout_check: u16,
+
+    frame_phase: FramePhase,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -1257,31 +1260,9 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|context| {
-            if context.is_action_script_3() {
-                let stage = context.stage;
-                stage.enter_frame(context);
-                stage.construct_frame(context);
-                stage.frame_constructed(context);
-                stage.run_frame_avm2(context);
-                stage.run_frame_scripts(context);
-                stage.exit_frame(context);
-            } else {
-                // AVM1 execution order is determined by the global execution list, based on instantiation order.
-                for clip in context.avm1.clip_exec_iter() {
-                    if clip.removed() {
-                        // Clean up removed objects from this frame or a previous frame.
-                        // Can be safely removed while iterating here, because the iterator advances
-                        // to the next node before returning the current node.
-                        context.avm1.remove_from_exec_list(context.gc_context, clip);
-                    } else {
-                        clip.run_frame(context);
-                    }
-                }
-
-                // Fire "onLoadInit" events.
-                context
-                    .load_manager
-                    .movie_clip_on_load(context.action_queue);
+            match context.swf.avm_type() {
+                AvmType::Avm1 => run_all_phases_avm1(context),
+                AvmType::Avm2 => run_all_phases_avm2(context),
             }
             context.update_sounds();
         });
@@ -1539,6 +1520,7 @@ impl Player {
                 audio_manager,
                 frame_rate: &mut self.frame_rate,
                 actions_since_timeout_check: &mut self.actions_since_timeout_check,
+                frame_phase: &mut self.frame_phase,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -1894,6 +1876,7 @@ impl PlayerBuilder {
 
                 // Timing
                 frame_rate,
+                frame_phase: FramePhase::Enter,
                 frame_accumulator: 0.0,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
