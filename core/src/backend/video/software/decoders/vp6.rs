@@ -48,8 +48,13 @@ impl VideoDecoder for Vp6Decoder {
     fn preload_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<FrameDependency, Error> {
         // Luckily the very first bit of the encoded frames is exactly this flag,
         // so we don't have to bother asking any "proper" decoder or parser.
+        // The first 24 bits are the alpha offset in VP6A, those need to be skipped.
+        let flag_index = if self.with_alpha { 3 } else { 0 };
         Ok(
-            if !encoded_frame.data.is_empty() && (encoded_frame.data[0] & 0b_1000_0000) == 0 {
+            // Empty frames are allowed, but they also can't be seeked to
+            if encoded_frame.data.len() > flag_index
+                && (encoded_frame.data[flag_index] & 0b_1000_0000) == 0
+            {
                 FrameDependency::None
             } else {
                 FrameDependency::Past
