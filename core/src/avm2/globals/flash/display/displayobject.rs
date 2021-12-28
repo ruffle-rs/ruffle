@@ -10,6 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
+use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
@@ -57,7 +58,7 @@ pub fn native_instance_init<'gc>(
                 child.set_object2(activation.context.gc_context, this);
 
                 child.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-                child.construct_frame(&mut activation.context);
+                catchup_display_object_to_frame(&mut activation.context, child);
             }
         }
     }

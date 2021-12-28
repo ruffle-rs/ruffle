@@ -12,6 +12,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip, TDisplayObject};
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
@@ -224,7 +225,7 @@ impl<'gc> Avm2Button<'gc> {
 
             child.set_parent(context.gc_context, Some(self.into()));
             child.post_instantiation(context, None, Instantiator::Movie, false);
-            child.construct_frame(context);
+            catchup_display_object_to_frame(context, child);
 
             (child, false)
         } else {
@@ -232,7 +233,7 @@ impl<'gc> Avm2Button<'gc> {
 
             state_sprite.set_avm2_class(context.gc_context, Some(sprite_class));
             state_sprite.set_parent(context.gc_context, Some(self.into()));
-            state_sprite.construct_frame(context);
+            catchup_display_object_to_frame(context, state_sprite.into());
 
             for (child, depth) in children {
                 // `parent` returns `null` for these grandchildren during construction time, even though
@@ -242,7 +243,7 @@ impl<'gc> Avm2Button<'gc> {
                 state_sprite.replace_at_depth(context, child, depth.into());
                 child.set_parent(context.gc_context, Some(self.into()));
                 child.post_instantiation(context, None, Instantiator::Movie, false);
-                child.construct_frame(context);
+                catchup_display_object_to_frame(context, child);
                 child.set_parent(context.gc_context, Some(state_sprite.into()));
             }
 
