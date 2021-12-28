@@ -15,6 +15,7 @@ use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
+use crate::frame_lifecycle::FramePhase;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
@@ -168,6 +169,11 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// Amount of actions performed since the last timeout check
     pub actions_since_timeout_check: &'a mut u16,
+
+    /// The current frame processing phase.
+    ///
+    /// If we are not doing frame processing, then this is `FramePhase::Enter`.
+    pub frame_phase: &'a mut FramePhase,
 }
 
 /// Convenience methods for controlling audio.
@@ -327,6 +333,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,
             actions_since_timeout_check: self.actions_since_timeout_check,
+            frame_phase: self.frame_phase,
         }
     }
 
