@@ -63,3 +63,21 @@ orange (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false e
 green (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 //MainTimeline frame 5
 //End MainTimeline frame 5
+//MainTimeline Frame 6
+purple constructed
+purple (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+purple (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+purple (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline Frame 7
+//this.purple.gotoAndPlay(5)
+purple (frame 5):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+purple (frame 5):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+purple (frame 5):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+purple (frame 5):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+purple (frame 5):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+purple (frame 5):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+//this.purple.gotoAndPlay(3)
+purple (frame 3):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+purple (frame 3):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+purple (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+purple (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
