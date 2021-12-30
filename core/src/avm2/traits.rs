@@ -359,12 +359,23 @@ impl<'gc> Trait<'gc> {
     }
 
     /// Get the method contained within this trait, if it has one.
-    pub fn as_method(&self) -> Option<Method<'gc>> {
+    pub fn as_method(&self) -> Option<&Method<'gc>> {
         match &self.kind {
-            TraitKind::Method { method, .. } => Some(method.clone()),
-            TraitKind::Getter { method, .. } => Some(method.clone()),
-            TraitKind::Setter { method, .. } => Some(method.clone()),
-            TraitKind::Function { function, .. } => Some(function.clone()),
+            TraitKind::Method { method, .. } => Some(method),
+            TraitKind::Getter { method, .. } => Some(method),
+            TraitKind::Setter { method, .. } => Some(method),
+            TraitKind::Function { function, .. } => Some(function),
+            _ => None,
+        }
+    }
+
+    /// Get the method contained within this trait as mutable, if it has one.
+    pub fn as_method_mut(&mut self) -> Option<&mut Method<'gc>> {
+        match &mut self.kind {
+            TraitKind::Method { method, .. } => Some(method),
+            TraitKind::Getter { method, .. } => Some(method),
+            TraitKind::Setter { method, .. } => Some(method),
+            TraitKind::Function { function, .. } => Some(function),
             _ => None,
         }
     }

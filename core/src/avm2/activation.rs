@@ -178,7 +178,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let num_locals = match method {
             Method::Native { .. } => 0,
-            Method::Bytecode(bytecode) => {
+            Method::Bytecode(bytecode, _) => {
                 let body: Result<_, Error> = bytecode.body().ok_or_else(|| {
                     "Cannot execute non-native method (for script) without body".into()
                 });

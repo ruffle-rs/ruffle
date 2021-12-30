@@ -1,10 +1,11 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{BytecodeMethod, Method, NativeMethod};
+use crate::avm2::method::{
+    BytecodeMethod, Method, MethodKind, MethodMetadata, MethodPosition, NativeMethod,
+};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
-use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
@@ -34,6 +35,8 @@ pub struct BytecodeExecutable<'gc> {
     /// then there is no defining superclass and `super` operations should fall
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
+
+    meta: Option<MethodMetadata<'gc>>,
 }
 
 #[derive(Clone, Collect)]
@@ -54,6 +57,8 @@ pub struct NativeExecutable<'gc> {
     /// then there is no defining superclass and `super` operations should fall
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
+
+    meta: Option<MethodMetadata<'gc>>,
 }
 
 /// Represents code that can be executed by some means.
@@ -76,17 +81,19 @@ impl<'gc> Executable<'gc> {
         superclass: Option<ClassObject<'gc>>,
     ) -> Self {
         match method {
-            Method::Native(method) => Self::Native(NativeExecutable {
+            Method::Native(method, meta) => Self::Native(NativeExecutable {
                 method,
                 scope,
                 bound_receiver: receiver,
                 bound_superclass: superclass,
+                meta,
             }),
-            Method::Bytecode(method) => Self::Action(BytecodeExecutable {
+            Method::Bytecode(method, meta) => Self::Action(BytecodeExecutable {
                 method,
                 scope,
                 receiver,
                 bound_superclass: superclass,
+                meta,
             }),
         }
     }
@@ -180,74 +187,50 @@ impl<'gc> Executable<'gc> {
         }
     }
 
+    pub fn meta(&self) -> Option<MethodMetadata<'gc>> {
+        match self {
+            Executable::Native(NativeExecutable { meta, .. }) => meta.clone(),
+            Executable::Action(BytecodeExecutable { meta, .. }) => meta.clone(),
+        }
+    }
+
     pub fn write_full_name(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
-        let class_def = self.bound_superclass().map(|superclass| {
+        if let Some(superclass) = self.bound_superclass() {
             let class_def = superclass.inner_class_definition();
             let name = class_def.read().name().to_qualified_name(mc);
             output.push_str(&name);
-            class_def
-        });
-        match self {
-            Executable::Native(NativeExecutable { method, .. }) => output.push_utf8(method.name),
-            Executable::Action(BytecodeExecutable { method, .. }) => {
-                // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
-                // rather than the name of the method itself.
-                if let Some(class_def) = class_def {
-                    if Gc::ptr_eq(
-                        class_def.read().class_init().into_bytecode().unwrap(),
-                        *method,
-                    ) {
-                        output.push_utf8("$cinit");
-                    } else if !Gc::ptr_eq(
-                        class_def.read().instance_init().into_bytecode().unwrap(),
-                        *method,
-                    ) {
-                        // TODO: Ideally, the declaring trait of this executable should already be attached here, that way
-                        // we can avoid needing to lookup the trait like this.
-                        let class_def = class_def.read();
-                        let mut method_trait = None;
-                        // First search instance traits for the method
-                        for t in class_def.instance_traits() {
-                            if let Some(m) = t.as_method() {
-                                let bytecode = m.into_bytecode().unwrap();
-                                if Gc::ptr_eq(bytecode, *method) {
-                                    method_trait = Some(t);
-                                    break;
-                                }
-                            }
-                        }
-                        if method_trait.is_none() {
-                            // If we can't find it in instance traits, search class traits instead
-                            for t in class_def.class_traits() {
-                                if let Some(m) = t.as_method() {
-                                    let bytecode = m.into_bytecode().unwrap();
-                                    if Gc::ptr_eq(bytecode, *method) {
-                                        // Class traits always start with $
-                                        output.push_char('$');
-                                        method_trait = Some(t);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if let Some(method_trait) = method_trait {
-                            output.push_char('/');
-                            match method_trait.kind() {
-                                TraitKind::Setter { .. } => output.push_utf8("set "),
-                                TraitKind::Getter { .. } => output.push_utf8("get "),
-                                _ => (),
-                            }
-                            output.push_str(&method_trait.name().local_name());
-                        }
-                        // TODO: What happens if we can't find the trait?
+        }
+        if let Some(meta) = self.meta() {
+            if meta.position() == MethodPosition::ClassTrait {
+                output.push_char('$');
+            }
+
+            let prefix = match meta.kind() {
+                MethodKind::Initializer if meta.position() == MethodPosition::ClassTrait => "cinit",
+                MethodKind::Setter => "/set ",
+                MethodKind::Getter => "/get ",
+                MethodKind::Regular => "/",
+                _ => "",
+            };
+            output.push_utf8(prefix);
+            output.push_str(&meta.name());
+        } else {
+            match self {
+                Executable::Native(NativeExecutable { method, .. }) => {
+                    output.push_utf8(method.name)
+                }
+                Executable::Action(BytecodeExecutable { method, .. }) => {
+                    let name = method.method_name();
+                    if name.is_empty() {
+                        output.push_utf8("MethodInfo-");
+                        output.push_utf8(&method.abc_method.to_string());
+                    } else {
+                        output.push_utf8(name)
                     }
-                    // We purposely do nothing for instance initializers
-                } else {
-                    output.push_utf8("MethodInfo-");
-                    output.push_utf8(&method.abc_method.to_string());
                 }
             }
         }
+
         output.push_utf8("()");
     }
 }

@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::names::Multiname;
 use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -300,21 +301,87 @@ impl<'gc> fmt::Debug for NativeMethod<'gc> {
     }
 }
 
+#[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
+#[collect(no_drop)]
+pub enum MethodPosition {
+    ClassTrait,
+    InstanceTrait,
+}
+
+#[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
+#[collect(no_drop)]
+pub enum MethodKind {
+    Initializer,
+    Setter,
+    Getter,
+    Regular,
+}
+
+#[derive(Clone, Collect, Debug, Copy)]
+#[collect(no_drop)]
+pub struct MethodMetadata<'gc> {
+    name: AvmString<'gc>,
+    position: MethodPosition,
+    kind: MethodKind,
+}
+
+impl<'gc> MethodMetadata<'gc> {
+    pub fn from_trait(my_trait: &Trait<'gc>, position: MethodPosition) -> Self {
+        Self {
+            name: my_trait.name().local_name(),
+            position,
+            kind: match my_trait.kind() {
+                TraitKind::Getter { .. } => MethodKind::Getter,
+                TraitKind::Setter { .. } => MethodKind::Setter,
+                _ => MethodKind::Regular,
+            },
+        }
+    }
+
+    pub fn new_class_init() -> Self {
+        Self {
+            name: AvmString::default(),
+            position: MethodPosition::ClassTrait,
+            kind: MethodKind::Initializer,
+        }
+    }
+
+    pub fn new_instance_init() -> Self {
+        Self {
+            name: AvmString::default(),
+            position: MethodPosition::InstanceTrait,
+            kind: MethodKind::Initializer,
+        }
+    }
+
+    pub fn name(&self) -> AvmString<'gc> {
+        self.name
+    }
+
+    pub fn position(&self) -> MethodPosition {
+        self.position
+    }
+
+    pub fn kind(&self) -> MethodKind {
+        self.kind
+    }
+}
+
 /// An uninstantiated method that can either be natively implemented or sourced
 /// from an ABC file.
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Method<'gc> {
     /// A native method.
-    Native(Gc<'gc, NativeMethod<'gc>>),
+    Native(Gc<'gc, NativeMethod<'gc>>, Option<MethodMetadata<'gc>>),
 
     /// An ABC-provided method entry.
-    Bytecode(Gc<'gc, BytecodeMethod<'gc>>),
+    Bytecode(Gc<'gc, BytecodeMethod<'gc>>, Option<MethodMetadata<'gc>>),
 }
 
 impl<'gc> From<Gc<'gc, BytecodeMethod<'gc>>> for Method<'gc> {
     fn from(bm: Gc<'gc, BytecodeMethod<'gc>>) -> Self {
-        Self::Bytecode(bm)
+        Self::Bytecode(bm, None)
     }
 }
 
@@ -327,15 +394,18 @@ impl<'gc> Method<'gc> {
         is_variadic: bool,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
-            mc,
-            NativeMethod {
-                method,
-                name,
-                signature,
-                is_variadic,
-            },
-        ))
+        Self::Native(
+            Gc::allocate(
+                mc,
+                NativeMethod {
+                    method,
+                    name,
+                    signature,
+                    is_variadic,
+                },
+            ),
+            None,
+        )
     }
 
     /// Define a builtin with no parameter constraints.
@@ -344,15 +414,18 @@ impl<'gc> Method<'gc> {
         name: &'static str,
         mc: MutationContext<'gc, '_>,
     ) -> Self {
-        Self::Native(Gc::allocate(
-            mc,
-            NativeMethod {
-                method,
-                name,
-                signature: Vec::new(),
-                is_variadic: true,
-            },
-        ))
+        Self::Native(
+            Gc::allocate(
+                mc,
+                NativeMethod {
+                    method,
+                    name,
+                    signature: Vec::new(),
+                    is_variadic: true,
+                },
+            ),
+            None,
+        )
     }
 
     /// Access the bytecode of this method.
@@ -363,7 +436,7 @@ impl<'gc> Method<'gc> {
             Method::Native { .. } => {
                 Err("Attempted to unwrap a native method as a user-defined one".into())
             }
-            Method::Bytecode(bm) => Ok(bm),
+            Method::Bytecode(bm, _) => Ok(bm),
         }
     }
 
@@ -371,7 +444,14 @@ impl<'gc> Method<'gc> {
     pub fn needs_arguments_object(&self) -> bool {
         match self {
             Method::Native { .. } => false,
-            Method::Bytecode(bm) => bm.method().needs_arguments_object,
+            Method::Bytecode(bm, _) => bm.method().needs_arguments_object,
+        }
+    }
+
+    pub fn set_meta(&mut self, meta: MethodMetadata<'gc>) {
+        match self {
+            Method::Native(_, m) => *m = Some(meta),
+            Method::Bytecode(_, m) => *m = Some(meta),
         }
     }
 }

@@ -1,7 +1,7 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::{Method, MethodMetadata, MethodPosition, NativeMethodImpl};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -345,9 +345,11 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
+        let mut instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
+        instance_init.set_meta(MethodMetadata::new_instance_init());
         let native_instance_init = instance_init.clone();
-        let class_init = unit.load_method(abc_class.init_method, false, activation)?;
+        let mut class_init = unit.load_method(abc_class.init_method, false, activation)?;
+        class_init.set_meta(MethodMetadata::new_class_init());
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -414,13 +416,11 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc_instance?;
 
         for abc_trait in abc_instance.traits.iter() {
-            self.instance_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
+            self.define_instance_trait(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
 
         for abc_trait in abc_class.traits.iter() {
-            self.class_traits
-                .push(Trait::from_abc_trait(unit, abc_trait, activation)?);
+            self.define_class_trait(Trait::from_abc_trait(unit, abc_trait, activation)?);
         }
 
         Ok(())
@@ -787,7 +787,11 @@ impl<'gc> Class<'gc> {
     /// Define a trait on the class.
     ///
     /// Class traits will be accessible as properties on the class object.
-    pub fn define_class_trait(&mut self, my_trait: Trait<'gc>) {
+    pub fn define_class_trait(&mut self, mut my_trait: Trait<'gc>) {
+        let meta = MethodMetadata::from_trait(&my_trait, MethodPosition::ClassTrait);
+        if let Some(ref mut method) = my_trait.as_method_mut() {
+            method.set_meta(meta);
+        }
         self.class_traits.push(my_trait);
     }
 
@@ -801,7 +805,11 @@ impl<'gc> Class<'gc> {
     /// Instance traits will be accessible as properties on instances of the
     /// class. They will not be accessible on the class prototype, and any
     /// properties defined on the prototype will be shadowed by these traits.
-    pub fn define_instance_trait(&mut self, my_trait: Trait<'gc>) {
+    pub fn define_instance_trait(&mut self, mut my_trait: Trait<'gc>) {
+        let meta = MethodMetadata::from_trait(&my_trait, MethodPosition::InstanceTrait);
+        if let Some(ref mut method) = my_trait.as_method_mut() {
+            method.set_meta(meta);
+        }
         self.instance_traits.push(my_trait);
     }
 
@@ -834,7 +842,8 @@ impl<'gc> Class<'gc> {
     }
 
     /// Set a native-code instance initializer for this class.
-    pub fn set_native_instance_init(&mut self, new_native_init: Method<'gc>) {
+    pub fn set_native_instance_init(&mut self, mut new_native_init: Method<'gc>) {
+        new_native_init.set_meta(MethodMetadata::new_instance_init());
         self.native_instance_init = new_native_init;
     }
 
@@ -864,7 +873,8 @@ impl<'gc> Class<'gc> {
     }
 
     /// Set the class initializer for specializations of this class.
-    pub fn set_specialized_init(&mut self, specialized_init: Method<'gc>) {
+    pub fn set_specialized_init(&mut self, mut specialized_init: Method<'gc>) {
+        specialized_init.set_meta(MethodMetadata::new_class_init());
         self.specialized_class_init = specialized_init;
     }
 
