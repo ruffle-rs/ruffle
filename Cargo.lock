@@ -1580,7 +1580,7 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=03dcd486e88381635647a7386105cb802921b69c#03dcd486e88381635647a7386105cb802921b69c"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=b810e8c3fdb8ea5df0b7808891076e774bee40a9#b810e8c3fdb8ea5df0b7808891076e774bee40a9"
 dependencies = [
  "bitflags",
  "lazy_static",
@@ -1591,9 +1591,10 @@ dependencies = [
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=03dcd486e88381635647a7386105cb802921b69c#03dcd486e88381635647a7386105cb802921b69c"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=b810e8c3fdb8ea5df0b7808891076e774bee40a9#b810e8c3fdb8ea5df0b7808891076e774bee40a9"
 dependencies = [
- "lazy_static",
+ "bytemuck",
+ "wide",
 ]
 
 [[package]]
@@ -3171,6 +3172,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c9613b5a66ab9ba26415184cfc41156594925a9cf3a2057e57f31ff145f6568"
 
 [[package]]
+name = "safe_arch"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "794821e4ccb0d9f979512f9c1973480123f9bd62a90d74ab0f9426fcf8f4a529"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4024,6 +4034,16 @@ dependencies = [
  "bitflags",
  "bitflags_serde_shim",
  "serde",
+]
+
+[[package]]
+name = "wide"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "476da2f1d225632b1fffe638ff979a4bc03907e29b0ab596efca7624014f8b62"
+dependencies = [
+ "bytemuck",
+ "safe_arch",
 ]
 
 [[package]]
