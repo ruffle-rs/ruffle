@@ -193,8 +193,8 @@ impl<'gc> Executable<'gc> {
 
     pub fn meta(&self) -> Option<MethodMetadata<'gc>> {
         match self {
-            Executable::Native(NativeExecutable { meta, .. }) => meta.clone(),
-            Executable::Action(BytecodeExecutable { meta, .. }) => meta.clone(),
+            Executable::Native(NativeExecutable { meta, .. }) => *meta,
+            Executable::Action(BytecodeExecutable { meta, .. }) => *meta,
         }
     }
 
