@@ -36,6 +36,8 @@ pub struct BytecodeExecutable<'gc> {
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
 
+    /// The metadata of this method. A value of None indicates that this is an
+    /// anonymous function.
     meta: Option<MethodMetadata<'gc>>,
 }
 
@@ -58,6 +60,8 @@ pub struct NativeExecutable<'gc> {
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
 
+    /// The metadata of this method. A value of None indicates that this is an
+    /// anonymous function.
     meta: Option<MethodMetadata<'gc>>,
 }
 
