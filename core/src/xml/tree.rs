@@ -88,24 +88,6 @@ pub enum XmlNodeData<'gc> {
         contents: AvmString<'gc>,
     },
 
-    /// A comment node in the XML tree.
-    Comment {
-        /// The script object associated with this XML node, if any.
-        script_object: Option<Object<'gc>>,
-
-        /// The parent node of this one.
-        parent: Option<XmlNode<'gc>>,
-
-        /// The previous sibling node to this one.
-        prev_sibling: Option<XmlNode<'gc>>,
-
-        /// The next sibling node to this one.
-        next_sibling: Option<XmlNode<'gc>>,
-
-        /// The string representation of the comment.
-        contents: AvmString<'gc>,
-    },
-
     /// A DOCTYPE node in the XML tree.
     DocType {
         /// The script object associated with this XML node, if any.
@@ -238,26 +220,6 @@ impl<'gc> XmlNode<'gc> {
         )))
     }
 
-    /// Construct an XML Comment node from a `quick_xml` `BytesText` event.
-    ///
-    /// The returned node will always be `Comment`, and it must only contain
-    /// valid encoded UTF-8 data. (Other encoding support is planned later.)
-    pub fn comment_from_text_event<'a>(
-        mc: MutationContext<'gc, '_>,
-        bt: BytesText<'a>,
-    ) -> Result<Self, Error> {
-        Ok(XmlNode(GcCell::allocate(
-            mc,
-            XmlNodeData::Comment {
-                script_object: None,
-                parent: None,
-                prev_sibling: None,
-                next_sibling: None,
-                contents: AvmString::new_utf8_bytes(mc, bt.unescaped()?)?,
-            },
-        )))
-    }
-
     /// Construct an XML DocType node from a `quick_xml` `BytesText` event.
     ///
     /// The returned node will always be `DocType`, and it must only contain
@@ -305,7 +267,6 @@ impl<'gc> XmlNode<'gc> {
                 let child_parent = match &mut *write {
                     XmlNodeData::Element { parent, .. }
                     | XmlNodeData::Text { parent, .. }
-                    | XmlNodeData::Comment { parent, .. }
                     | XmlNodeData::DocType { parent, .. } => parent,
                     XmlNodeData::DocumentRoot { .. } => return Err(Error::CannotAdoptRoot),
                 };
@@ -343,7 +304,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => None,
             XmlNodeData::Element { parent, .. }
             | XmlNodeData::Text { parent, .. }
-            | XmlNodeData::Comment { parent, .. }
             | XmlNodeData::DocType { parent, .. } => parent,
         }
     }
@@ -354,7 +314,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => None,
             XmlNodeData::Element { prev_sibling, .. }
             | XmlNodeData::Text { prev_sibling, .. }
-            | XmlNodeData::Comment { prev_sibling, .. }
             | XmlNodeData::DocType { prev_sibling, .. } => prev_sibling,
         }
     }
@@ -369,7 +328,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
             XmlNodeData::Element { prev_sibling, .. }
             | XmlNodeData::Text { prev_sibling, .. }
-            | XmlNodeData::Comment { prev_sibling, .. }
             | XmlNodeData::DocType { prev_sibling, .. } => *prev_sibling = new_prev,
         };
 
@@ -382,7 +340,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => None,
             XmlNodeData::Element { next_sibling, .. }
             | XmlNodeData::Text { next_sibling, .. }
-            | XmlNodeData::Comment { next_sibling, .. }
             | XmlNodeData::DocType { next_sibling, .. } => next_sibling,
         }
     }
@@ -397,7 +354,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
             XmlNodeData::Element { next_sibling, .. }
             | XmlNodeData::Text { next_sibling, .. }
-            | XmlNodeData::Comment { next_sibling, .. }
             | XmlNodeData::DocType { next_sibling, .. } => *next_sibling = new_next,
         };
 
@@ -435,7 +391,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveParent),
             XmlNodeData::Element { parent, .. }
             | XmlNodeData::Text { parent, .. }
-            | XmlNodeData::Comment { parent, .. }
             | XmlNodeData::DocType { parent, .. } => *parent = None,
         };
 
@@ -482,7 +437,6 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::DocumentRoot { children, .. }
                 | XmlNodeData::Element { children, .. } => children.remove(position),
                 XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
-                XmlNodeData::Comment { .. } => return Err(Error::CommentNodeCantHaveChildren),
                 XmlNodeData::DocType { .. } => return Err(Error::DocTypeCantHaveChildren),
             };
         }
@@ -553,7 +507,6 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::Element { children, .. }
                 | XmlNodeData::DocumentRoot { children, .. } => children.remove(position),
                 XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
-                XmlNodeData::Comment { .. } => return Err(Error::CommentNodeCantHaveChildren),
                 XmlNodeData::DocType { .. } => return Err(Error::DocTypeCantHaveChildren),
             };
 
@@ -575,7 +528,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { .. } => xml::DOCUMENT_NODE,
             XmlNodeData::Element { .. } => xml::ELEMENT_NODE,
             XmlNodeData::Text { .. } => xml::TEXT_NODE,
-            XmlNodeData::Comment { .. } => xml::COMMENT_NODE,
             XmlNodeData::DocType { .. } => xml::DOCUMENT_TYPE_NODE,
         }
     }
@@ -605,9 +557,9 @@ impl<'gc> XmlNode<'gc> {
     /// Returns the string contents of the node, if the element has them.
     pub fn node_value(self) -> Option<AvmString<'gc>> {
         match &*self.0.read() {
-            XmlNodeData::Text { ref contents, .. }
-            | XmlNodeData::Comment { ref contents, .. }
-            | XmlNodeData::DocType { ref contents, .. } => Some(*contents),
+            XmlNodeData::Text { ref contents, .. } | XmlNodeData::DocType { ref contents, .. } => {
+                Some(*contents)
+            }
             _ => None,
         }
     }
@@ -680,7 +632,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { script_object, .. }
             | XmlNodeData::Element { script_object, .. }
             | XmlNodeData::Text { script_object, .. }
-            | XmlNodeData::Comment { script_object, .. }
             | XmlNodeData::DocType { script_object, .. } => *script_object,
         }
     }
@@ -701,7 +652,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::DocumentRoot { script_object, .. }
             | XmlNodeData::Element { script_object, .. }
             | XmlNodeData::Text { script_object, .. }
-            | XmlNodeData::Comment { script_object, .. }
             | XmlNodeData::DocType { script_object, .. } => *script_object = Some(new_object),
         }
     }
@@ -788,12 +738,6 @@ impl<'gc> XmlNode<'gc> {
         matches!(&*self.0.read(), XmlNodeData::Text { contents, .. } if contents.iter().all(|c| WHITESPACE_CHARS.contains(&c)))
     }
 
-    /// Check if this XML node constitutes text.
-    #[allow(dead_code)]
-    pub fn is_comment(self) -> bool {
-        matches!(*self.0.read(), XmlNodeData::Comment { .. })
-    }
-
     /// Check if this XML node constitutes a DOCTYPE declaration
     pub fn is_doctype(self) -> bool {
         matches!(*self.0.read(), XmlNodeData::DocType { .. })
@@ -829,13 +773,6 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::Text { contents, .. } => XmlNodeData::Text {
                     script_object: None,
                     attributes_script_object: None,
-                    parent: None,
-                    prev_sibling: None,
-                    next_sibling: None,
-                    contents: *contents,
-                },
-                XmlNodeData::Comment { contents, .. } => XmlNodeData::Comment {
-                    script_object: None,
                     parent: None,
                     prev_sibling: None,
                     next_sibling: None,
@@ -1038,9 +975,6 @@ impl<'gc> XmlNode<'gc> {
             XmlNodeData::Text { contents, .. } => writer.write_event(&Event::Text(
                 BytesText::from_plain_str(&contents.to_utf8_lossy()),
             )),
-            XmlNodeData::Comment { contents, .. } => writer.write_event(&Event::Comment(
-                BytesText::from_plain_str(&contents.to_utf8_lossy()),
-            )),
             XmlNodeData::DocType { contents, .. } => writer.write_event(&Event::DocType(
                 BytesText::from_plain_str(&contents.to_utf8_lossy()),
             )),
@@ -1064,7 +998,6 @@ impl<'gc> XmlNode<'gc> {
                 }
             }
             XmlNodeData::Text { .. } => Ok(()),
-            XmlNodeData::Comment { .. } => Ok(()),
             XmlNodeData::DocType { .. } => Ok(()),
         }?;
 
@@ -1133,28 +1066,6 @@ impl<'gc> fmt::Debug for XmlNode<'gc> {
                 ..
             } => f
                 .debug_struct("XmlNodeData::Text")
-                .field("0", &self.0.as_ptr())
-                .field(
-                    "script_object",
-                    &script_object
-                        .map(|p| format!("{:p}", p.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field(
-                    "parent",
-                    &parent
-                        .map(|p| format!("{:p}", p.0.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field("contents", contents)
-                .finish(),
-            XmlNodeData::Comment {
-                script_object,
-                contents,
-                parent,
-                ..
-            } => f
-                .debug_struct("XmlNodeData::Comment")
                 .field("0", &self.0.as_ptr())
                 .field(
                     "script_object",

@@ -33,9 +33,6 @@ pub enum Error {
     #[error("Text node has no child nodes!")]
     TextNodeCantHaveChildren,
 
-    #[error("Comment node has no child nodes!")]
-    CommentNodeCantHaveChildren,
-
     #[error("DocType node has no child nodes!")]
     DocTypeCantHaveChildren,
 
