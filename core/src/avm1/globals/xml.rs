@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
@@ -85,15 +84,7 @@ fn create_element<'gc>(
             .map(|v| v.coerce_to_string(activation).unwrap_or_default())
             .unwrap_or_default();
         let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename);
-        let object = XmlNodeObject::from_xml_node(
-            activation.context.gc_context,
-            xml_node,
-            Some(activation.context.avm1.prototypes().xml_node),
-        );
-
-        xml_node.introduce_script_object(activation.context.gc_context, object);
-
-        return Ok(object.into());
+        return Ok(xml_node.script_object(activation).into());
     }
 
     Ok(Value::Undefined)
@@ -110,15 +101,7 @@ fn create_text_node<'gc>(
             .map(|v| v.coerce_to_string(activation).unwrap_or_default())
             .unwrap_or_default();
         let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node);
-        let object = XmlNodeObject::from_xml_node(
-            activation.context.gc_context,
-            xml_node,
-            Some(activation.context.avm1.prototypes().xml_node),
-        );
-
-        xml_node.introduce_script_object(activation.context.gc_context, object);
-
-        return Ok(object.into());
+        return Ok(xml_node.script_object(activation).into());
     }
 
     Ok(Value::Undefined)
