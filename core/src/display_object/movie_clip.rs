@@ -1764,6 +1764,19 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
+
+                // AVM2 roots work exactly the same as any other timeline- or
+                // script-constructed object in terms of events received on
+                // them. However, because roots are added by the player itself,
+                // we can't fire the events until we run our first frame, so we
+                // have to actually check if we've just built the root and act
+                // like it just got added to the timeline.
+                let root = self.avm2_root(context);
+                let self_dobj: DisplayObject<'gc> = (*self).into();
+                if DisplayObject::option_ptr_eq(Some(self_dobj), root) {
+                    dispatch_added_event_only(self_dobj, context);
+                    dispatch_added_to_stage_event_only(self_dobj, context);
+                }
             }
         }
     }
