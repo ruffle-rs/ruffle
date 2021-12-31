@@ -323,9 +323,7 @@ fn spawn_xml_fetch<'gc>(
     let request_options = if let Some(node) = send_object {
         // Send `node` as string
         RequestOptions::post(Some((
-            node.into_string(&XmlNode::is_as2_compatible)
-                .unwrap_or_default()
-                .into_bytes(),
+            node.into_string().unwrap_or_default().into_bytes(),
             "application/x-www-form-urlencoded".to_string(),
         )))
     } else {

@@ -217,7 +217,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let result = node.into_string(&XmlNode::is_as2_compatible);
+        let result = node.into_string();
 
         return Ok(AvmString::new_utf8(
             activation.context.gc_context,
@@ -305,16 +305,14 @@ fn child_nodes<'gc>(
         return Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            node.children()
-                .filter(XmlNode::is_as2_compatible)
-                .map(|mut child| {
-                    child
-                        .script_object(
-                            activation.context.gc_context,
-                            Some(activation.context.avm1.prototypes.xml_node),
-                        )
-                        .into()
-                }),
+            node.children().map(|mut child| {
+                child
+                    .script_object(
+                        activation.context.gc_context,
+                        Some(activation.context.avm1.prototypes.xml_node),
+                    )
+                    .into()
+            }),
         )
         .into());
     }
@@ -328,17 +326,9 @@ fn first_child<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut children = node.children();
-        let mut next = children.next();
-        while let Some(my_next) = next {
-            if my_next.is_as2_compatible() {
-                break;
-            }
-
-            next = my_next.next_sibling();
-        }
-
-        return Ok(next
+        return Ok(node
+            .children()
+            .next()
             .map(|mut child| {
                 child
                     .script_object(
@@ -359,16 +349,9 @@ fn last_child<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut children = node.children();
-        let mut prev = children.next_back();
-        while let Some(my_prev) = prev {
-            if my_prev.is_as2_compatible() {
-                break;
-            }
-
-            prev = my_prev.prev_sibling();
-        }
-        return Ok(prev
+        return Ok(node
+            .children()
+            .next_back()
             .map(|mut child| {
                 child
                     .script_object(
@@ -411,16 +394,8 @@ fn previous_sibling<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut prev = node.prev_sibling();
-        while let Some(my_prev) = prev {
-            if my_prev.is_as2_compatible() {
-                break;
-            }
-
-            prev = my_prev.prev_sibling();
-        }
-
-        return Ok(prev
+        return Ok(node
+            .prev_sibling()
             .map(|mut prev| {
                 prev.script_object(
                     activation.context.gc_context,
@@ -440,16 +415,8 @@ fn next_sibling<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let mut next = node.next_sibling();
-        while let Some(my_next) = next {
-            if my_next.is_as2_compatible() {
-                break;
-            }
-
-            next = my_next.next_sibling();
-        }
-
-        return Ok(next
+        return Ok(node
+            .next_sibling()
             .map(|mut next| {
                 next.script_object(
                     activation.context.gc_context,

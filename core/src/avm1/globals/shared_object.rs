@@ -82,7 +82,7 @@ fn serialize_value<'gc>(
                 Some(AmfValue::ECMAArray(vec![], values, length as u32))
             } else if let Some(xml_node) = o.as_xml_node() {
                 xml_node
-                    .into_string(&|_| true)
+                    .into_string()
                     .map(|xml_string| AmfValue::XML(xml_string, true))
                     .ok()
             } else if let Some(date) = o.as_date_object() {
