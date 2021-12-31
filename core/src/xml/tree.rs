@@ -1,5 +1,6 @@
 //! XML Tree structure
 
+use crate::avm1::activation::Activation;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::{Object, TObject};
@@ -611,18 +612,15 @@ impl<'gc> XmlNode<'gc> {
 
     /// Obtain the script object for a given XML tree node, constructing a new
     /// script object if one does not exist.
-    pub fn script_object(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        prototype: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        let mut object = self.get_script_object();
-        if object.is_none() {
-            object = Some(XmlNodeObject::from_xml_node(gc_context, *self, prototype));
-            self.introduce_script_object(gc_context, object.unwrap());
+    pub fn script_object(&mut self, activation: &mut Activation<'_, 'gc, '_>) -> Object<'gc> {
+        match self.get_script_object() {
+            Some(object) => object,
+            None => {
+                let object = XmlNodeObject::from_xml_node(activation, *self);
+                self.introduce_script_object(activation.context.gc_context, object);
+                object
+            }
         }
-
-        object.unwrap()
     }
 
     /// Obtain the script object for a given XML tree node's attributes,

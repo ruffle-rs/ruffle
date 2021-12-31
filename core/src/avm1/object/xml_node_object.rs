@@ -46,14 +46,14 @@ impl<'gc> XmlNodeObject<'gc> {
 
     /// Construct an XmlNodeObject for an already existing node.
     pub fn from_xml_node(
-        gc_context: MutationContext<'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
         xml_node: XmlNode<'gc>,
-        proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        XmlNodeObject(GcCell::allocate(
-            gc_context,
+        let proto = activation.context.avm1.prototypes.xml_node;
+        Self(GcCell::allocate(
+            activation.context.gc_context,
             XmlNodeObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::object(activation.context.gc_context, Some(proto)),
                 node: xml_node,
             },
         ))
