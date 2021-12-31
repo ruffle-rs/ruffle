@@ -10,11 +10,9 @@ use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
-use crate::xml::XmlNode;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
-use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex, Weak};
 use thiserror::Error;
 use url::form_urlencoded;
@@ -38,17 +36,11 @@ pub enum Error {
     #[error("Non-load vars loader spawned as load vars loader")]
     NotLoadVarsLoader,
 
-    #[error("Non-XML loader spawned as XML loader")]
-    NotXmlLoader,
-
     #[error("Could not fetch movie {0}")]
     FetchError(String),
 
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
-
-    #[error("Invalid XML encoding")]
-    InvalidXmlEncoding(#[from] FromUtf8Error),
 
     #[error("Network error")]
     NetworkError(#[from] std::io::Error),
@@ -228,29 +220,6 @@ impl<'gc> LoadManager<'gc> {
 
         loader.load_vars_loader(player, fetch)
     }
-
-    /// Kick off an XML data load into an XML node.
-    ///
-    /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_xml_into_node(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_node: XmlNode<'gc>,
-        active_clip: DisplayObject<'gc>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::Xml {
-            self_handle: None,
-            active_clip,
-            target_node,
-        };
-        let handle = self.add_loader(loader);
-
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.introduce_loader_handle(handle);
-
-        loader.xml_loader(player, fetch)
-    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -325,24 +294,6 @@ pub enum Loader<'gc> {
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
     },
-
-    /// Loader that is loading XML data into an XML tree.
-    Xml {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<Handle>,
-
-        /// The active movie clip at the time of load invocation.
-        ///
-        /// This property is a technicality: Under normal circumstances, it's
-        /// not supposed to be a load factor, and only exists so that the
-        /// runtime can do *something* in really contrived scenarios where we
-        /// actually need an active clip.
-        active_clip: DisplayObject<'gc>,
-
-        /// The target node whose contents will be replaced with the parsed XML.
-        target_node: XmlNode<'gc>,
-    },
 }
 
 impl<'gc> Loader<'gc> {
@@ -356,7 +307,6 @@ impl<'gc> Loader<'gc> {
             Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
             Loader::Form { self_handle, .. } => *self_handle = Some(handle),
             Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
-            Loader::Xml { self_handle, .. } => *self_handle = Some(handle),
         }
     }
 
@@ -685,13 +635,14 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotLoadVarsLoader),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[Form Loader]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
 
                 match data {
                     Ok(data) => {
+                        let _ =
+                            that.call_method("onHTTPStatus".into(), &[200.into()], &mut activation);
+
                         // Fire the onData method with the loaded string.
                         let string_data = AvmString::new_utf8(
                             activation.context.gc_context,
@@ -767,102 +718,5 @@ impl<'gc> Loader<'gc> {
                 true
             }
         }
-    }
-
-    pub fn xml_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
-    ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::Xml { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(Error::NotXmlLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
-        Box::pin(async move {
-            let data = fetch.await;
-            if let Ok(data) = data {
-                let xmlstring = String::from_utf8(data)?;
-
-                player.lock().expect("Could not lock player!!").update(
-                    |uc| -> Result<(), Error> {
-                        let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::Xml {
-                                target_node,
-                                active_clip,
-                                ..
-                            }) => (*target_node, *active_clip),
-                            None => return Err(Error::Cancelled),
-                            _ => unreachable!(),
-                        };
-
-                        let object =
-                            node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
-                        Avm1::run_stack_frame_for_method(
-                            active_clip,
-                            object,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "onHTTPStatus".into(),
-                            &[200.into()],
-                        );
-
-                        Avm1::run_stack_frame_for_method(
-                            active_clip,
-                            object,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "onData".into(),
-                            &[AvmString::new_utf8(uc.gc_context, xmlstring).into()],
-                        );
-
-                        Ok(())
-                    },
-                )?;
-            } else {
-                player.lock().expect("Could not lock player!!").update(
-                    |uc| -> Result<(), Error> {
-                        let (mut node, active_clip) = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::Xml {
-                                target_node,
-                                active_clip,
-                                ..
-                            }) => (*target_node, *active_clip),
-                            None => return Err(Error::Cancelled),
-                            _ => unreachable!(),
-                        };
-
-                        let object =
-                            node.script_object(uc.gc_context, Some(uc.avm1.prototypes().xml_node));
-
-                        Avm1::run_stack_frame_for_method(
-                            active_clip,
-                            object,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "onHTTPStatus".into(),
-                            &[404.into()],
-                        );
-
-                        Avm1::run_stack_frame_for_method(
-                            active_clip,
-                            object,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "onData".into(),
-                            &[],
-                        );
-
-                        Ok(())
-                    },
-                )?;
-            }
-
-            Ok(())
-        })
     }
 }

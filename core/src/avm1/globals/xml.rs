@@ -321,7 +321,7 @@ fn spawn_xml_fetch<'gc>(
     send_object: Option<XmlNode<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request_options = if let Some(node) = send_object {
-        // Send `node` as string
+        // Send `node` as string.
         RequestOptions::post(Some((
             node.into_string().unwrap_or_default().into_bytes(),
             "application/x-www-form-urlencoded".to_string(),
@@ -337,22 +337,11 @@ fn spawn_xml_fetch<'gc>(
         .context
         .navigator
         .fetch(&url.to_utf8_lossy(), request_options);
-    let target_clip = activation.target_clip_or_root()?;
-    // given any defined loader object, sends the request. Will load into LoadVars if given.
-    let process = if let Some(document) = loader_object.as_xml() {
-        activation.context.load_manager.load_xml_into_node(
-            activation.context.player.clone().unwrap(),
-            document.as_node(),
-            target_clip,
-            fetch,
-        )
-    } else {
-        activation.context.load_manager.load_form_into_load_vars(
-            activation.context.player.clone().unwrap(),
-            loader_object,
-            fetch,
-        )
-    };
+    let process = activation.context.load_manager.load_form_into_load_vars(
+        activation.context.player.clone().unwrap(),
+        loader_object,
+        fetch,
+    );
 
     activation.context.navigator.spawn_future(process);
 
