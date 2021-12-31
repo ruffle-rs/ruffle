@@ -234,22 +234,13 @@ fn on_data<'gc>(
 }
 
 fn doc_type_decl<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(document) = this.as_xml() {
         if let Some(doctype) = document.doctype() {
-            let result = doctype.into_string(&|_| true);
-
-            return Ok(AvmString::new_utf8(
-                activation.context.gc_context,
-                result.unwrap_or_else(|e| {
-                    avm_warn!(activation, "Error occurred when serializing DOCTYPE: {}", e);
-                    "".to_string()
-                }),
-            )
-            .into());
+            return Ok(doctype.into());
         }
     }
 

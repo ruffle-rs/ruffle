@@ -33,9 +33,6 @@ pub enum Error {
     #[error("Text node has no child nodes!")]
     TextNodeCantHaveChildren,
 
-    #[error("DocType node has no child nodes!")]
-    DocTypeCantHaveChildren,
-
     #[error("Cannot insert child into itself")]
     CannotInsertIntoSelf,
 

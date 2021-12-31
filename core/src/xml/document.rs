@@ -2,7 +2,7 @@
 
 use crate::avm1::object::xml_idmap_object::XmlIdMapObject;
 use crate::avm1::Object;
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, WStr, WString};
 use crate::xml::{Error, ParseError, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
@@ -35,7 +35,7 @@ pub struct XmlDocumentData<'gc> {
     standalone: Option<String>,
 
     /// The XML doctype, if set.
-    doctype: Option<XmlNode<'gc>>,
+    doctype: Option<AvmString<'gc>>,
 
     /// The document's ID map.
     ///
@@ -78,7 +78,7 @@ impl<'gc> XmlDocument<'gc> {
     }
 
     /// Retrieve the first DocType node in the document.
-    pub fn doctype(self) -> Option<XmlNode<'gc>> {
+    pub fn doctype(self) -> Option<AvmString<'gc>> {
         self.0.read().doctype
     }
 
@@ -130,11 +130,14 @@ impl<'gc> XmlDocument<'gc> {
                     }
                 }
                 Event::DocType(bt) => {
-                    let child = XmlNode::doctype_from_text_event(mc, bt)?;
-                    if child.node_value() != Some(AvmString::default()) {
-                        open_tags.last_mut().unwrap().append_child(mc, child)?;
-                        self.0.write(mc).doctype = Some(child);
-                    }
+                    // TODO: `quick-xml` is case-insensitive for DOCTYPE declarations,
+                    // but it doesn't expose the whole tag, only the inner portion of it.
+                    // Flash is also case-insensitive for DOCTYPE declarations. However,
+                    // the `.docTypeDecl` property preserves the original case.
+                    let mut doctype = WString::from_buf(b"<!DOCTYPE".to_vec());
+                    doctype.push_str(WStr::from_units(bt.escaped()));
+                    doctype.push_byte(b'>');
+                    self.0.write(mc).doctype = Some(AvmString::new(mc, doctype));
                 }
                 Event::Decl(bd) => {
                     let mut self_write = self.0.write(mc);
