@@ -133,13 +133,7 @@ fn clone_node<'gc>(
             .unwrap_or(false),
     ) {
         let mut clone_node = xmlnode.duplicate(activation.context.gc_context, deep);
-
-        return Ok(clone_node
-            .script_object(
-                activation.context.gc_context,
-                Some(activation.context.avm1.prototypes.xml_node),
-            )
-            .into());
+        return Ok(clone_node.script_object(activation).into());
     }
 
     Ok(Value::Undefined)
@@ -305,14 +299,8 @@ fn child_nodes<'gc>(
         return Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            node.children().map(|mut child| {
-                child
-                    .script_object(
-                        activation.context.gc_context,
-                        Some(activation.context.avm1.prototypes.xml_node),
-                    )
-                    .into()
-            }),
+            node.children()
+                .map(|mut child| child.script_object(activation).into()),
         )
         .into());
     }
@@ -329,14 +317,7 @@ fn first_child<'gc>(
         return Ok(node
             .children()
             .next()
-            .map(|mut child| {
-                child
-                    .script_object(
-                        activation.context.gc_context,
-                        Some(activation.context.avm1.prototypes.xml_node),
-                    )
-                    .into()
-            })
+            .map(|mut child| child.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -352,14 +333,7 @@ fn last_child<'gc>(
         return Ok(node
             .children()
             .next_back()
-            .map(|mut child| {
-                child
-                    .script_object(
-                        activation.context.gc_context,
-                        Some(activation.context.avm1.prototypes.xml_node),
-                    )
-                    .into()
-            })
+            .map(|mut child| child.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -374,14 +348,7 @@ fn parent_node<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .parent()
-            .map(|mut parent| {
-                parent
-                    .script_object(
-                        activation.context.gc_context,
-                        Some(activation.context.avm1.prototypes.xml_node),
-                    )
-                    .into()
-            })
+            .map(|mut parent| parent.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -396,13 +363,7 @@ fn previous_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .prev_sibling()
-            .map(|mut prev| {
-                prev.script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes.xml_node),
-                )
-                .into()
-            })
+            .map(|mut prev| prev.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 
@@ -417,13 +378,7 @@ fn next_sibling<'gc>(
     if let Some(node) = this.as_xml_node() {
         return Ok(node
             .next_sibling()
-            .map(|mut next| {
-                next.script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes.xml_node),
-                )
-                .into()
-            })
+            .map(|mut next| next.script_object(activation).into())
             .unwrap_or_else(|| Value::Null));
     }
 

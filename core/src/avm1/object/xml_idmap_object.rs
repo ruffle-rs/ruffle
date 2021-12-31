@@ -62,13 +62,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
     ) -> Option<Value<'gc>> {
         let name = name.into();
         if let Some(mut node) = self.document().get_node_by_id(name) {
-            Some(
-                node.script_object(
-                    activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes().xml_node),
-                )
-                .into(),
-            )
+            Some(node.script_object(activation).into())
         } else {
             self.base().get_local_stored(name, activation)
         }
