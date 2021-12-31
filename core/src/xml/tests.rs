@@ -77,29 +77,7 @@ fn round_trip_tostring() {
         xml.replace_with_str(mc, WStr::from_units(test_string), true, false)
             .expect("Parsed document");
 
-        let result = xml
-            .as_node()
-            .into_string(&|_| true)
-            .expect("Successful toString");
-
-        assert_eq!(std::str::from_utf8(test_string).unwrap(), result);
-    })
-}
-
-/// Tests filtered XML writing behavior.
-#[test]
-fn round_trip_filtered_tostring() {
-    let test_string = b"<test><!-- Comment -->This is a text node</test>";
-
-    rootless_arena(|mc| {
-        let mut xml = XmlDocument::new(mc);
-        xml.replace_with_str(mc, WStr::from_units(test_string), true, false)
-            .expect("Parsed document");
-
-        let result = xml
-            .as_node()
-            .into_string(&|node| !node.is_comment())
-            .expect("Successful toString");
+        let result = xml.as_node().into_string().expect("Successful toString");
 
         assert_eq!("<test>This is a text node</test>", result);
     })

@@ -669,21 +669,6 @@ impl<'gc> XmlNode<'gc> {
         }
     }
 
-    /// Check if this XML node constitutes the root of a whole document.
-    pub fn is_document_root(self) -> bool {
-        matches!(*self.0.read(), XmlNodeData::DocumentRoot { .. })
-    }
-
-    /// Check if this XML node constitutes an element.
-    pub fn is_element(self) -> bool {
-        matches!(*self.0.read(), XmlNodeData::Element { .. })
-    }
-
-    /// Check if this XML node constitutes text.
-    pub fn is_text(self) -> bool {
-        matches!(*self.0.read(), XmlNodeData::Text { .. })
-    }
-
     // Check if this XML node is constitutes text and only contains whitespace.
     pub fn is_whitespace_text(self) -> bool {
         const WHITESPACE_CHARS: &[u16] = &[b' ' as u16, b'\t' as u16, b'\r' as u16, b'\n' as u16];
@@ -845,41 +830,22 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Convert the given node to a string of UTF-8 encoded XML.
-    ///
-    /// The given filter function allows filtering specific children out of the
-    /// resulting string. It will be called at least once for each node
-    /// encountered in the tree (other than this one) if specified; only nodes
-    /// that yield `true` shall be printed.
-    pub fn into_string<F>(self, filter: &F) -> Result<String, Error>
-    where
-        F: Fn(&XmlNode<'gc>) -> bool,
-    {
+    pub fn into_string(self) -> Result<String, Error> {
         let mut buf = Vec::new();
         let mut writer = Writer::new(Cursor::new(&mut buf));
-        self.write_node_to_event_writer(&mut writer, filter)?;
+        self.write_node_to_event_writer(&mut writer)?;
         Ok(String::from_utf8(buf)?)
     }
 
-    /// Write the contents of this node, including its children, to the given
-    /// writer.
-    ///
-    /// The given filter function allows filtering specific children out of the
-    /// resulting write stream. It will be called at least once for each node
-    /// encountered in the tree (other than this one) if specified; only nodes
-    /// that yield `true` shall be printed.
-    fn write_node_to_event_writer<W, F>(
-        self,
-        writer: &mut Writer<W>,
-        filter: &F,
-    ) -> Result<(), Error>
+    /// Write the contents of this node, including its children, to the given writer.
+    fn write_node_to_event_writer<W>(self, writer: &mut Writer<W>) -> Result<(), Error>
     where
         W: Write,
-        F: Fn(&XmlNode<'gc>) -> bool,
     {
         // TODO: we convert all strings to utf8, replacing unpaired surrogates by the replacement char.
         // It is correct?
 
-        let children: Vec<_> = self.children().filter(|child| filter(child)).collect();
+        let children: Vec<_> = self.children().collect();
         let children_len = children.len();
 
         match &*self.0.read() {
@@ -918,7 +884,7 @@ impl<'gc> XmlNode<'gc> {
         }?;
 
         for child in children {
-            child.write_node_to_event_writer(writer, filter)?;
+            child.write_node_to_event_writer(writer)?;
         }
 
         match &*self.0.read() {
@@ -938,16 +904,6 @@ impl<'gc> XmlNode<'gc> {
         }?;
 
         Ok(())
-    }
-
-    /// Returns whether this node can be exposed to AVM1 or not.
-    ///
-    /// Our internal XML tree representation supports node types that AVM1 XML did
-    /// not. Those nodes are filtered from all attributes that return XML nodes to
-    /// act as if those nodes did not exist. For example, `prevSibling` skips
-    /// past incompatible nodes, etc.
-    pub fn is_as2_compatible(&self) -> bool {
-        self.is_document_root() || self.is_element() || self.is_text()
     }
 }
 
