@@ -129,12 +129,6 @@ impl<'gc> XmlDocument<'gc> {
                         open_tags.last_mut().unwrap().append_child(mc, child)?;
                     }
                 }
-                Event::Comment(bt) => {
-                    let child = XmlNode::comment_from_text_event(mc, bt)?;
-                    if child.node_value() != Some(AvmString::default()) {
-                        open_tags.last_mut().unwrap().append_child(mc, child)?;
-                    }
-                }
                 Event::DocType(bt) => {
                     let child = XmlNode::doctype_from_text_event(mc, bt)?;
                     if child.node_value() != Some(AvmString::default()) {
