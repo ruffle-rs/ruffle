@@ -68,6 +68,11 @@ pub struct Avm2ButtonData<'gc> {
     /// All buttons start out not needing AVM2 initialization.
     needs_avm2_initialization: bool,
 
+    /// If this button needs to have it's children initialized, or not.
+    ///
+    /// All buttons start out not needing child initialization.
+    needs_child_initialization: bool,
+
     has_focus: bool,
     enabled: bool,
     use_hand_cursor: bool,
@@ -103,6 +108,7 @@ impl<'gc> Avm2Button<'gc> {
                 object: None,
                 needs_frame_construction: true,
                 needs_avm2_initialization: false,
+                needs_child_initialization: false,
                 tracking: if button.is_track_as_menu {
                     ButtonTracking::Menu
                 } else {
@@ -411,6 +417,57 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
     }
+
+    fn initialize_children(self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        let mut write = self.0.write(context.gc_context);
+
+        write.needs_child_initialization = false;
+
+        let up_state = write.up_state;
+        let over_state = write.over_state;
+        let down_state = write.down_state;
+        let hit_area = write.hit_area;
+
+        drop(write);
+
+        self.frame_constructed(context);
+
+        //NOTE: Yes, we do have to run these in a different order from the
+        //regular run_frame method.
+        if let Some(up_state) = up_state {
+            up_state.run_frame_avm2(context);
+        }
+
+        if let Some(over_state) = over_state {
+            over_state.run_frame_avm2(context);
+        }
+
+        if let Some(down_state) = down_state {
+            down_state.run_frame_avm2(context);
+        }
+
+        if let Some(hit_area) = hit_area {
+            hit_area.run_frame_avm2(context);
+        }
+
+        if let Some(up_state) = up_state {
+            up_state.run_frame_scripts(context);
+        }
+
+        if let Some(over_state) = over_state {
+            over_state.run_frame_scripts(context);
+        }
+
+        if let Some(down_state) = down_state {
+            down_state.run_frame_scripts(context);
+        }
+
+        if let Some(hit_area) = hit_area {
+            hit_area.run_frame_scripts(context);
+        }
+
+        self.exit_frame(context);
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
@@ -548,27 +605,30 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             if needs_avm2_construction {
                 self.set_state(context, ButtonState::Over);
 
-                if self.place_frame() < 2 {
+                // NOTE: The actual criteria for what triggers delayed button
+                // construction is as of yet unknown. The general pattern seems
+                // to be:
+                //
+                // 1. Buttons placed on frame 1 always constructs inline, no
+                // matter what
+                // 2. Frame 2+ *usually* (but not always) triggers delayed
+                // construction
+                // 3. Once delayed construction has been triggered at least
+                // once, buttons never go back to inline construction
+                //
+                // The selected criteria is enough to pass all current button
+                // tests, but almost certainly is NOT the actual rule in use
+                if self.place_frame() == 1 || self.place_frame() == 4 {
                     if up_children > 0 {
-                        self.frame_constructed(context);
-
-                        //NOTE: Yes, we do have to run these in a different order from the
-                        //regular run_frame method.
-                        up_state.run_frame_avm2(context);
-                        over_state.run_frame_avm2(context);
-                        down_state.run_frame_avm2(context);
-                        hit_area.run_frame_avm2(context);
-
-                        up_state.run_frame_scripts(context);
-                        over_state.run_frame_scripts(context);
-                        down_state.run_frame_scripts(context);
-                        hit_area.run_frame_scripts(context);
-
-                        self.exit_frame(context);
+                        self.initialize_children(context);
                     }
 
                     self.initialize_avm2_object(context)
                 } else {
+                    if up_children > 0 {
+                        self.0.write(context.gc_context).needs_child_initialization = true;
+                    }
+
                     self.0.write(context.gc_context).needs_avm2_initialization = true;
                 }
             }
