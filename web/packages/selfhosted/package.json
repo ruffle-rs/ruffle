@@ -22,6 +22,6 @@
         "@wdio/cli": "^7.16.10",
         "webpack": "^5.64.4",
         "webpack-cli": "^4.9.1",
-        "webpack-dev-server": "^4.6.0"
+        "webpack-dev-server": "^4.7.2"
     }
 }
