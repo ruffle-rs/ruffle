@@ -17,7 +17,7 @@
         "chromedriver": "^96.0.0",
         "copy-webpack-plugin": "^10.0.0",
         "cross-env": "^7.0.3",
-        "eslint": "^8.4.0",
+        "eslint": "^8.6.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^4.0.0",
         "lerna": "^4.0.0",
