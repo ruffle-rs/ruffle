@@ -142,10 +142,10 @@ impl Drawing {
     }
 
     pub fn draw_command(&mut self, command: DrawCommand) {
-        let add_to_bounds = if let DrawCommand::MoveTo { .. } = command {
+        let add_to_bounds = if let DrawCommand::MoveTo { x, y } = command {
             // Close any pending fills before moving.
             self.close_path();
-            self.fill_start = self.cursor;
+            self.fill_start = (x, y);
             false
         } else {
             true
