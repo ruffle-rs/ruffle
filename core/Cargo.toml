@@ -33,7 +33,7 @@ chrono = "0.4"
 instant = "0.1"
 encoding_rs = "0.8.30"
 rand = { version = "0.8.4", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.132", features = ["derive"], optional = true }
+serde = { version = "1.0.133", features = ["derive"], optional = true }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b810e8c3fdb8ea5df0b7808891076e774bee40a9", optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b810e8c3fdb8ea5df0b7808891076e774bee40a9", optional = true }
