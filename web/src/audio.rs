@@ -43,6 +43,11 @@ struct StreamData {
 
     /// The last frame we received a `StreamSoundBlock` from.
     last_clip_frame: u16,
+
+    /// The number of audio samples for use in future animation frames.
+    ///
+    /// Only used in MP3 encoding to properly handle gaps in the audio track.
+    mp3_samples_buffered: i32,
 }
 
 type AudioBufferPtr = Rc<RefCell<web_sys::AudioBuffer>>;
@@ -356,6 +361,7 @@ impl WebAudioBackend {
         &mut self,
         handle: SoundHandle,
         settings: Option<&swf::SoundInfo>,
+        is_stream: bool,
     ) -> Result<SoundInstanceHandle, Error> {
         let sound = self.sounds.get(handle).unwrap();
         let handle = match &sound.source {
@@ -438,8 +444,12 @@ impl WebAudioBackend {
                     handle: Some(handle),
                     format: sound.format.clone(),
                     start_time: self.context.current_time(),
-                    loop_start,
-                    loop_end,
+                    loop_start: if is_stream { 0.0 } else { loop_start },
+                    loop_end: if is_stream {
+                        loop_end - loop_start
+                    } else {
+                        loop_end
+                    },
                     num_loops,
                     instance_type: SoundInstanceType::AudioBuffer(AudioBufferInstance {
                         envelope_node: node.clone(),
@@ -866,6 +876,7 @@ impl AudioBackend for WebAudioBackend {
                 adpcm_block_offsets: vec![],
                 stream_segments: vec![],
                 last_clip_frame: 0,
+                mp3_samples_buffered: 0,
             });
         Some(stream_id)
     }
@@ -874,54 +885,63 @@ impl AudioBackend for WebAudioBackend {
         &mut self,
         stream_id: PreloadStreamHandle,
         clip_frame: u16,
-        audio_data: &[u8],
+        mut audio_data: &[u8],
     ) {
         if let Some(stream) = self.preload_stream_data.get_mut(&stream_id) {
-            // Handle gaps in streaming audio. Store the offsets for each stream segment.
-            if stream.audio_data.is_empty() || stream.last_clip_frame + 1 != clip_frame {
-                let sample_mult = 44100 / stream.format.sample_rate;
-                let start_sample = stream.num_sample_frames * u32::from(sample_mult);
-                stream.stream_segments.push((clip_frame, start_sample));
-            }
-            stream.last_clip_frame = clip_frame;
-
-            match stream.format.compression {
+            let num_samples = match stream.format.compression {
                 AudioCompression::Uncompressed | AudioCompression::UncompressedUnknownEndian => {
                     let frame_len = if stream.format.is_stereo { 2 } else { 1 }
                         * if stream.format.is_16_bit { 2 } else { 1 };
-                    stream.num_sample_frames += (audio_data.len() as u32) / frame_len;
-                    stream.audio_data.extend_from_slice(audio_data);
+                    (audio_data.len() as u32) / frame_len
                 }
                 AudioCompression::Mp3 => {
-                    // Sometimes you may get blocks with zero samples; this may be because
-                    // previous blocks had more samples than necessary, or because the stream
-                    // is stopping (silence).
                     if audio_data.len() >= 4 {
-                        let num_sample_frames: u32 =
-                            u16::from_le_bytes([audio_data[0], audio_data[1]]).into();
-                        stream.num_sample_frames += num_sample_frames;
-                        // MP3 streaming data:
-                        // First two bytes = number of samples
-                        // Second two bytes = 'latency seek' (amount to skip when seeking to this frame)
-                        stream.audio_data.extend_from_slice(&audio_data[4..]);
+                        // Read number of samples from SWF MP3 header.
+                        let num_samples = u16::from_le_bytes([audio_data[0], audio_data[1]]);
+                        // MP3 audio stream can sometimes has SoundStreamBlock with 0 samples, or
+                        // sometimes even has frames wihout a SoundStreamBlock tag, so keep a
+                        // running tally of how many samples are waiting.
+                        // When a new block is encountered, subtract the number of samples consumed by
+                        // the prior timeline frames.
+                        stream.mp3_samples_buffered += i32::from(num_samples);
+                        stream.mp3_samples_buffered -=
+                            i32::from(clip_frame - stream.last_clip_frame)
+                                * stream.samples_per_block as i32;
+                        audio_data = &audio_data[4..];
+                        u32::from(num_samples)
+                    } else {
+                        0
                     }
                 }
                 AudioCompression::Adpcm => {
                     // For ADPCM data, we must keep track of where each block starts,
                     // so that we read the header in each block.
-                    stream.num_sample_frames += stream.samples_per_block;
                     stream.adpcm_block_offsets.push(stream.audio_data.len());
-                    stream.audio_data.extend_from_slice(audio_data);
-                }
-                AudioCompression::Nellymoser => {
-                    stream.num_sample_frames += stream.samples_per_block;
-                    stream.audio_data.extend_from_slice(audio_data);
+                    stream.samples_per_block
                 }
                 _ => {
-                    // TODO: This is a guess and will vary slightly from block to block!
-                    stream.num_sample_frames += stream.samples_per_block;
+                    // TODO: This is a guess and may vary slightly from block to block?
+                    stream.samples_per_block
                 }
+            };
+
+            // Handle gaps in streaming audio by storing each continuous segment of the stream.
+            let mut new_stream_segment = stream.last_clip_frame + 1 != clip_frame;
+            if stream.format.compression == AudioCompression::Mp3 {
+                new_stream_segment =
+                    new_stream_segment && stream.mp3_samples_buffered <= 0 && num_samples > 0;
             }
+
+            // Store the starting offsets for each stream segment.
+            if stream.audio_data.is_empty() || new_stream_segment {
+                let sample_mult = 44100 / stream.format.sample_rate;
+                let start_sample = stream.num_sample_frames * u32::from(sample_mult);
+                stream.stream_segments.push((clip_frame, start_sample));
+                stream.mp3_samples_buffered = num_samples as i32;
+            }
+            stream.num_sample_frames += num_samples;
+            stream.audio_data.extend_from_slice(audio_data);
+            stream.last_clip_frame = clip_frame;
         }
     }
 
@@ -962,7 +982,7 @@ impl AudioBackend for WebAudioBackend {
         sound: SoundHandle,
         sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, Error> {
-        let handle = self.start_sound_internal(sound, Some(sound_info))?;
+        let handle = self.start_sound_internal(sound, Some(sound_info), false)?;
         Ok(handle)
     }
 
@@ -975,36 +995,48 @@ impl AudioBackend for WebAudioBackend {
     ) -> Result<SoundInstanceHandle, Error> {
         if let Some(stream) = stream_handle {
             let mut sound_info = None;
-            if clip_frame > 1 {
-                if let Some(sound) = self.sounds.get(stream) {
-                    // Figure out the frame and sample where this stream segment first starts.
-                    let start_pos = match sound
-                        .stream_segments
-                        .binary_search_by(|(f, _)| f.cmp(&clip_frame))
-                    {
-                        Ok(i) => sound.stream_segments[i].1,
-                        Err(i) => {
-                            if i > 0 {
-                                let (segment_frame, segment_sample) = sound.stream_segments[i - 1];
-                                let frames_skipped = clip_frame.saturating_sub(segment_frame);
-                                let samples_per_frame = 44100.0 / self.frame_rate;
-                                segment_sample
-                                    + u32::from(frames_skipped) * (samples_per_frame as u32)
-                            } else {
-                                0
-                            }
-                        }
-                    };
-                    sound_info = Some(swf::SoundInfo {
-                        event: swf::SoundEvent::Event,
-                        in_sample: Some(start_pos),
-                        out_sample: None,
-                        num_loops: 1,
-                        envelope: None,
-                    });
-                }
+            if let Some(sound) = self.sounds.get(stream) {
+                // Figure out the frame and sample where this stream segment first starts.
+                let (start_pos, end_pos) = match sound
+                    .stream_segments
+                    .binary_search_by(|(f, _)| f.cmp(&clip_frame))
+                {
+                    Ok(i) => (
+                        sound.stream_segments[i].1,
+                        sound.stream_segments.get(i + 1).map(|s| s.1),
+                    ),
+                    Err(i) => {
+                        let (segment_frame, segment_sample) = sound
+                            .stream_segments
+                            .get(i.saturating_sub(1))
+                            .copied()
+                            .unwrap_or_default();
+                        let frames_skipped = u32::from(clip_frame.saturating_sub(segment_frame));
+                        let samples_per_frame = 44100.0 / self.frame_rate;
+                        let start_pos =
+                            segment_sample + (f64::from(frames_skipped) * samples_per_frame) as u32;
+                        let end_pos = if let Some(next_segment) = sound.stream_segments.get(i) {
+                            Some(next_segment.1)
+                        } else if start_pos
+                            < sound.num_sample_frames
+                                * (44100 / u32::from(sound.format.sample_rate))
+                        {
+                            None
+                        } else {
+                            return Err("Stream sound out of range".into());
+                        };
+                        (start_pos, end_pos)
+                    }
+                };
+                sound_info = Some(swf::SoundInfo {
+                    event: swf::SoundEvent::Event,
+                    in_sample: Some(start_pos),
+                    out_sample: end_pos,
+                    num_loops: 1,
+                    envelope: None,
+                });
             }
-            let instance = self.start_sound_internal(stream, sound_info.as_ref())?;
+            let instance = self.start_sound_internal(stream, sound_info.as_ref(), true)?;
             Ok(instance)
         } else {
             let msg = format!("Missing stream for sound ID {:?}", stream_handle);
