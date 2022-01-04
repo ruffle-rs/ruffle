@@ -213,11 +213,10 @@ impl<'gc> Executable<'gc> {
             }
 
             let prefix = match meta.kind() {
-                MethodKind::Initializer if meta.position() == MethodPosition::ClassTrait => "cinit",
                 MethodKind::Setter => "/set ",
                 MethodKind::Getter => "/get ",
                 MethodKind::Regular => "/",
-                _ => "",
+                MethodKind::Initializer => "",
             };
             output.push_utf8(prefix);
             output.push_str(&meta.name());

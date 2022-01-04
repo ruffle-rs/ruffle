@@ -340,7 +340,7 @@ impl<'gc> MethodMetadata<'gc> {
 
     pub fn new_class_init() -> Self {
         Self {
-            name: AvmString::default(),
+            name: "cinit".into(),
             position: MethodPosition::ClassTrait,
             kind: MethodKind::Initializer,
         }
