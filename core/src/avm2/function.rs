@@ -70,10 +70,10 @@ pub struct NativeExecutable<'gc> {
 #[collect(no_drop)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
-    Native(NativeExecutable<'gc>),
+    Native(Gc<'gc, NativeExecutable<'gc>>),
 
     /// Code defined in a loaded ABC file.
-    Action(BytecodeExecutable<'gc>),
+    Action(Gc<'gc, BytecodeExecutable<'gc>>),
 }
 
 impl<'gc> Executable<'gc> {
@@ -83,22 +83,29 @@ impl<'gc> Executable<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
         superclass: Option<ClassObject<'gc>>,
+        mc: MutationContext<'gc, '_>,
     ) -> Self {
         match method {
-            Method::Native(method, meta) => Self::Native(NativeExecutable {
-                method,
-                scope,
-                bound_receiver: receiver,
-                bound_superclass: superclass,
-                meta,
-            }),
-            Method::Bytecode(method, meta) => Self::Action(BytecodeExecutable {
-                method,
-                scope,
-                receiver,
-                bound_superclass: superclass,
-                meta,
-            }),
+            Method::Native(method, meta) => Self::Native(Gc::allocate(
+                mc,
+                NativeExecutable {
+                    method,
+                    scope,
+                    bound_receiver: receiver,
+                    bound_superclass: superclass,
+                    meta,
+                },
+            )),
+            Method::Bytecode(method, meta) => Self::Action(Gc::allocate(
+                mc,
+                BytecodeExecutable {
+                    method,
+                    scope,
+                    receiver,
+                    bound_superclass: superclass,
+                    meta,
+                },
+            )),
         }
     }
 
@@ -182,19 +189,15 @@ impl<'gc> Executable<'gc> {
 
     pub fn bound_superclass(&self) -> Option<ClassObject<'gc>> {
         match self {
-            Executable::Native(NativeExecutable {
-                bound_superclass, ..
-            }) => *bound_superclass,
-            Executable::Action(BytecodeExecutable {
-                bound_superclass, ..
-            }) => *bound_superclass,
+            Executable::Native(ne) => ne.bound_superclass,
+            Executable::Action(be) => be.bound_superclass,
         }
     }
 
     pub fn meta(&self) -> Option<MethodMetadata<'gc>> {
         match self {
-            Executable::Native(NativeExecutable { meta, .. }) => *meta,
-            Executable::Action(BytecodeExecutable { meta, .. }) => *meta,
+            Executable::Native(ne) => ne.meta,
+            Executable::Action(be) => be.meta,
         }
     }
 
@@ -220,14 +223,12 @@ impl<'gc> Executable<'gc> {
             output.push_str(&meta.name());
         } else {
             match self {
-                Executable::Native(NativeExecutable { method, .. }) => {
-                    output.push_utf8(method.name)
-                }
-                Executable::Action(BytecodeExecutable { method, .. }) => {
-                    let name = method.method_name();
+                Executable::Native(ne) => output.push_utf8(ne.method.name),
+                Executable::Action(be) => {
+                    let name = be.method.method_name();
                     if name.is_empty() {
                         output.push_utf8("MethodInfo-");
-                        output.push_utf8(&method.abc_method.to_string());
+                        output.push_utf8(&be.method.abc_method.to_string());
                     } else {
                         output.push_utf8(name)
                     }

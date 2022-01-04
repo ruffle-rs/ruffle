@@ -324,7 +324,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }) = vtable.get_full_method(disp_id)
                 {
                     if !method.needs_arguments_object() {
-                        Executable::from_method(method, scope, None, Some(class)).exec(
+                        Executable::from_method(
+                            method,
+                            scope,
+                            None,
+                            Some(class),
+                            activation.context.gc_context,
+                        )
+                        .exec(
                             Some(self.into()),
                             arguments,
                             activation,

@@ -474,8 +474,13 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         let scope = self.0.read().instance_scope;
-        let constructor =
-            Executable::from_method(self.0.read().constructor.clone(), scope, None, Some(self));
+        let constructor = Executable::from_method(
+            self.0.read().constructor.clone(),
+            scope,
+            None,
+            Some(self),
+            activation.context.gc_context,
+        );
 
         constructor.exec(receiver, arguments, activation, self.into())
     }
@@ -497,6 +502,7 @@ impl<'gc> ClassObject<'gc> {
             scope,
             None,
             Some(self),
+            activation.context.gc_context,
         );
 
         constructor.exec(receiver, arguments, activation, self.into())
@@ -691,7 +697,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        if let Method::Bytecode(bc) = self.0.read().constructor {
+        if let Method::Bytecode(bc, _) = self.0.read().constructor {
             Some(bc.txunit)
         } else {
             None
@@ -776,7 +782,13 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         if let Some(call_handler) = self.0.read().call_handler.clone() {
             let scope = self.0.read().class_scope;
-            let func = Executable::from_method(call_handler, scope, None, Some(self));
+            let func = Executable::from_method(
+                call_handler,
+                scope,
+                None,
+                Some(self),
+                activation.context.gc_context,
+            );
 
             func.exec(receiver, arguments, activation, self.into())
         } else {

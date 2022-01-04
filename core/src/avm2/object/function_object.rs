@@ -65,7 +65,13 @@ impl<'gc> FunctionObject<'gc> {
         subclass_object: Option<ClassObject<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
-        let exec = Executable::from_method(method, scope, receiver, subclass_object);
+        let exec = Executable::from_method(
+            method,
+            scope,
+            receiver,
+            subclass_object,
+            activation.context.gc_context,
+        );
 
         FunctionObject(GcCell::allocate(
             activation.context.gc_context,
