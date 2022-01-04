@@ -16,3 +16,6 @@ root exitframe 2
 root enterframe
 root enterframe 2
 mc enterframe
+mc exitframe
+root exitframe
+root exitframe 2
