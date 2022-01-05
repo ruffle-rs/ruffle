@@ -138,13 +138,13 @@ impl<'gc> Avm2<'gc> {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
                 init_activation.resolve_parameters(method.name, &[], &method.signature)?;
-                init_activation.context.avm2.push_global_init();
+                init_activation.context.avm2.push_global_init()?;
                 let r = (method.method)(&mut init_activation, Some(scope), &[]);
                 init_activation.context.avm2.pop_call();
                 r?;
             }
             Method::Bytecode(_, _) => {
-                init_activation.context.avm2.push_global_init();
+                init_activation.context.avm2.push_global_init()?;
                 let r = init_activation.run_stack_frame_for_script(script);
                 init_activation.context.avm2.pop_call();
                 r?;
@@ -325,12 +325,12 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(&mut self, calling: Executable<'gc>) {
+    pub fn push_call(&mut self, calling: Executable<'gc>) -> Result<(), Error> {
         self.call_stack.push(calling)
     }
 
     /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&mut self) {
+    pub fn push_global_init(&mut self) -> Result<(), Error> {
         self.call_stack.push_global_init()
     }
 

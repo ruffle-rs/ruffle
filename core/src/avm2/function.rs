@@ -156,7 +156,7 @@ impl<'gc> Executable<'gc> {
                     arguments,
                     &bm.method.signature,
                 )?;
-                activation.context.avm2.push_call(self.clone());
+                activation.context.avm2.push_call(self.clone())?;
                 method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
@@ -179,7 +179,7 @@ impl<'gc> Executable<'gc> {
                     subclass_object,
                     callee,
                 )?;
-                activation.context.avm2.push_call(self.clone());
+                activation.context.avm2.push_call(self.clone())?;
                 activation.run_actions(bm.method)
             }
         };

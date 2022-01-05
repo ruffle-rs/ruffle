@@ -1,6 +1,9 @@
 use crate::avm2::function::Executable;
+use crate::avm2::Error;
 use crate::string::WString;
 use gc_arena::{Collect, MutationContext};
+
+const MAX_CALLSTACK: usize = 64;
 
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
@@ -20,12 +23,20 @@ impl<'gc> CallStack<'gc> {
         Self { stack: Vec::new() }
     }
 
-    pub fn push(&mut self, exec: Executable<'gc>) {
-        self.stack.push(CallNode::Method(exec))
+    pub fn push(&mut self, exec: Executable<'gc>) -> Result<(), Error> {
+        self.push_node(CallNode::Method(exec))
     }
 
-    pub fn push_global_init(&mut self) {
-        self.stack.push(CallNode::GlobalInit)
+    pub fn push_global_init(&mut self) -> Result<(), Error> {
+        self.push_node(CallNode::GlobalInit)
+    }
+
+    fn push_node(&mut self, node: CallNode<'gc>) -> Result<(), Error> {
+        if self.stack.len() >= MAX_CALLSTACK {
+            return Err("Error: Error #1023: Stack overflow occurred.".into());
+        }
+        self.stack.push(node);
+        Ok(())
     }
 
     pub fn pop(&mut self) -> Option<CallNode<'gc>> {
