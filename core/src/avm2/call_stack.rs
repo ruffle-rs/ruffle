@@ -20,7 +20,9 @@ pub struct CallStack<'gc> {
 
 impl<'gc> CallStack<'gc> {
     pub fn new() -> Self {
-        Self { stack: Vec::new() }
+        Self {
+            stack: Vec::with_capacity(MAX_CALLSTACK),
+        }
     }
 
     pub fn push(&mut self, exec: Executable<'gc>) -> Result<(), Error> {
