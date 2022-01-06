@@ -84,17 +84,17 @@ impl<'gc> LoadManager<'gc> {
 
     /// Add a new loader to the `LoadManager`.
     ///
-    /// This function returns the loader handle for later inspection. A loader
-    /// handle is valid for as long as the load operation. Once the load
-    /// finishes, the handle will be invalidated (and the underlying loader
-    /// deleted).
+    /// Returns the loader handle for later inspection. A loader handle is
+    /// valid for as long as the load operation. Once the load finishes,
+    /// the handle will be invalidated (and the underlying loader deleted).
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> Handle {
         let handle = self.0.insert(loader);
-        self.0
-            .get_mut(handle)
-            .unwrap()
-            .introduce_loader_handle(handle);
-
+        match self.get_loader_mut(handle).unwrap() {
+            Loader::RootMovie { self_handle, .. }
+            | Loader::Movie { self_handle, .. }
+            | Loader::Form { self_handle, .. }
+            | Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
+        }
         handle
     }
 
@@ -124,9 +124,7 @@ impl<'gc> LoadManager<'gc> {
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
         let handle = self.add_loader(loader);
-
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.introduce_loader_handle(handle);
 
         loader.root_movie_loader(player, fetch, url, parameters, on_metadata)
     }
@@ -150,9 +148,7 @@ impl<'gc> LoadManager<'gc> {
             loader_status: LoaderStatus::Pending,
         };
         let handle = self.add_loader(loader);
-
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.introduce_loader_handle(handle);
 
         loader.movie_loader(player, fetch, url, loader_url)
     }
@@ -193,9 +189,7 @@ impl<'gc> LoadManager<'gc> {
             target_object,
         };
         let handle = self.add_loader(loader);
-
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.introduce_loader_handle(handle);
 
         loader.form_loader(player, fetch)
     }
@@ -214,9 +208,7 @@ impl<'gc> LoadManager<'gc> {
             target_object,
         };
         let handle = self.add_loader(loader);
-
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.introduce_loader_handle(handle);
 
         loader.load_vars_loader(player, fetch)
     }
@@ -297,19 +289,6 @@ pub enum Loader<'gc> {
 }
 
 impl<'gc> Loader<'gc> {
-    /// Set the loader handle for this loader.
-    ///
-    /// An active loader handle is required before asynchronous loader code can
-    /// run.
-    pub fn introduce_loader_handle(&mut self, handle: Handle) {
-        match self {
-            Loader::RootMovie { self_handle, .. } => *self_handle = Some(handle),
-            Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
-            Loader::Form { self_handle, .. } => *self_handle = Some(handle),
-            Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
-        }
-    }
-
     /// Construct a future for the root movie loader.
     pub fn root_movie_loader(
         &mut self,
