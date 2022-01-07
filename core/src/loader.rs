@@ -399,7 +399,7 @@ impl<'gc> Loader<'gc> {
                             NEWEST_PLAYER_VERSION,
                             uc,
                             "broadcastMessage".into(),
-                            &["onLoadStart".into(), Value::Object(broadcaster)],
+                            &["onLoadStart".into(), clip.object()],
                         );
                     }
 
@@ -449,7 +449,7 @@ impl<'gc> Loader<'gc> {
                                 "broadcastMessage".into(),
                                 &[
                                     "onLoadProgress".into(),
-                                    Value::Object(broadcaster),
+                                    clip.object(),
                                     length.into(),
                                     length.into(),
                                 ],
@@ -484,7 +484,8 @@ impl<'gc> Loader<'gc> {
                                 NEWEST_PLAYER_VERSION,
                                 uc,
                                 "broadcastMessage".into(),
-                                &["onLoadComplete".into(), Value::Object(broadcaster)],
+                                // TODO: Pass an actual httpStatus argument instead of 0.
+                                &["onLoadComplete".into(), clip.object(), 0.into()],
                             );
                         }
 
@@ -525,7 +526,7 @@ impl<'gc> Loader<'gc> {
                                 "broadcastMessage".into(),
                                 &[
                                     "onLoadError".into(),
-                                    Value::Object(broadcaster),
+                                    clip.object(),
                                     "LoadNeverCompleted".into(),
                                 ],
                             );
