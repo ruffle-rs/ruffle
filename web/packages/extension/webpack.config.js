@@ -14,7 +14,7 @@ function transformManifest(content, env) {
     const buildDate = new Date().toISOString().substring(0, 10);
 
     // The extension marketplaces require the version to monotonically increase,
-    // so append the build date onto the end of the manifest version.
+    // so append the build number onto the end of the manifest version.
     manifest.version = process.env.BUILD_ID
         ? `${packageVersion}.${process.env.BUILD_ID}`
         : packageVersion;
