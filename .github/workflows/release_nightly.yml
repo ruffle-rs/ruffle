@@ -156,7 +156,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
-          cd package/
+          # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
+          cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
 
       - name: Upload package
@@ -203,6 +204,7 @@ jobs:
 
       - name: Package macOS
         run: |
+          # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
 
@@ -236,9 +238,10 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Setup Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: "16"
+          registry-url: https://registry.npmjs.org
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
@@ -285,9 +288,8 @@ jobs:
 
       - name: Package selfhosted
         if: ${{ !matrix.demo }}
-        run: |
-          cd web/packages/selfhosted/dist/
-          zip -r release.zip .
+        run: zip -r release.zip .
+        working-directory: web/packages/selfhosted/dist
 
       - name: Upload selfhosted
         if: ${{ !matrix.demo }}
@@ -299,6 +301,13 @@ jobs:
           asset_path: ./web/packages/selfhosted/dist/release.zip
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip
           asset_content_type: application/zip
+
+      - name: Publish npm package
+        if: ${{ !matrix.demo }}
+        run: npm publish
+        working-directory: web/packages/selfhosted/dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload generic extension
         if: ${{ !matrix.demo }}
@@ -346,8 +355,6 @@ jobs:
       - name: Update web demo
         if: matrix.demo
         run: |
-          cd demo/
-
           # Delete the old build.
           rm -f *.js *.wasm *.html
 
@@ -359,6 +366,7 @@ jobs:
           git config user.email "ruffle@ruffle.rs"
           git add -A
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
+        working-directory: demo
 
       - name: Push web demo
         if: github.repository == 'ruffle-rs/ruffle' && matrix.demo
@@ -382,8 +390,6 @@ jobs:
       - name: Update JS docs
         if: ${{ !matrix.demo }}
         run: |
-          cd js-docs/
-
           # Delete the old docs
           rm -rf master/
 
@@ -395,6 +401,7 @@ jobs:
           git config user.email "ruffle@ruffle.rs"
           git add -A
           git commit --amend -m "Nightly build ${{ needs.create-nightly-release.outputs.date }}"
+        working-directory: js-docs
 
       - name: Push JS docs
         if: github.repository == 'ruffle-rs/ruffle' && !matrix.demo
