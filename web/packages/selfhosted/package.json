@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "Putting Flash back on the web. Ruffle will polyfill all Flash content and replace it with the Ruffle flash player.",
     "license": "(MIT OR Apache-2.0)",
+    "private": true,
     "keywords": [
         "flash",
         "swf"
