@@ -1,5 +1,23 @@
-Event: onLoadStart
-Event: onLoadProgress
-Event: onLoadComplete
+In loader.onLoadStart
+// mc
+_level0.clip
+
+In loader.onLoadProgress
+// mc
+_level0.clip
+// loadedBytes
+68
+// totalBytes
+68
+
+In loader.onLoadComplete
+// mc
+_level0.clip
+// httpStatus
+0
+
 Child movie loaded!
-Event: onLoadInit
+In loader.onLoadInit
+// mc
+_level0.clip
+
