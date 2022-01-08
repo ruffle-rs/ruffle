@@ -268,7 +268,7 @@ jobs:
         shell: bash -l {0}
         run: |
           npm ci
-          npm run build
+          npm run build:dual-wasm
           npm run docs
 
       - name: Sign Firefox extension
