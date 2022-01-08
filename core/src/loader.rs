@@ -381,11 +381,10 @@ impl<'gc> Loader<'gc> {
 
                     replacing_root_movie = DisplayObject::ptr_eq(clip, uc.stage.root_clip());
 
-                    clip.as_movie_clip().unwrap().unload(uc);
-
-                    clip.as_movie_clip()
-                        .unwrap()
-                        .replace_with_movie(uc.gc_context, None);
+                    if let Some(mut mc) = clip.as_movie_clip() {
+                        mc.unload(uc);
+                        mc.replace_with_movie(uc.gc_context, None);
+                    }
 
                     if let Some(broadcaster) = broadcaster {
                         Avm1::run_stack_frame_for_method(
@@ -451,25 +450,23 @@ impl<'gc> Loader<'gc> {
                             );
                         }
 
-                        let mut mc = clip
-                            .as_movie_clip()
-                            .expect("Attempted to load movie into not movie clip");
+                        if let Some(mut mc) = clip.as_movie_clip() {
+                            mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
+                            mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
 
-                        mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
+                            let mut morph_shapes = fnv::FnvHashMap::default();
+                            mc.preload(uc, &mut morph_shapes);
 
-                        let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
-
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                            uc.library
-                                .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
-                                );
+                            // Finalize morph shapes.
+                            for (id, static_data) in morph_shapes {
+                                let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                                uc.library
+                                    .library_for_movie_mut(movie.clone())
+                                    .register_character(
+                                        id,
+                                        crate::character::Character::MorphShape(morph_shape),
+                                    );
+                            }
                         }
 
                         if let Some(broadcaster) = broadcaster {

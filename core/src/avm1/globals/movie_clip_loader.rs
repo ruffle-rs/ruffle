@@ -9,7 +9,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::RequestOptions;
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -37,40 +37,49 @@ pub fn constructor<'gc>(
     Ok(this.into())
 }
 
-pub fn load_clip<'gc>(
+fn load_clip<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let url_val = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let url = url_val.coerce_to_string(activation)?;
-    let target = args.get(1).cloned().unwrap_or(Value::Undefined);
+    if let [url, target, ..] = args {
+        if let Value::String(url) = url {
+            let target = match target {
+                Value::String(_) => {
+                    let start_clip = activation.target_clip_or_root()?;
+                    activation.resolve_target_display_object(start_clip, *target, true)?
+                }
+                Value::Number(level_id) => {
+                    // Levels are rounded down.
+                    // TODO: What happens with negative levels?
+                    Some(activation.resolve_level(*level_id as i32))
+                }
+                Value::Object(object) => object.as_display_object(),
+                _ => None,
+            };
+            if let Some(target) = target {
+                let fetch = activation
+                    .context
+                    .navigator
+                    .fetch(&url.to_utf8_lossy(), RequestOptions::get());
+                let process = activation.context.load_manager.load_movie_into_clip(
+                    activation.context.player.clone().unwrap(),
+                    target,
+                    fetch,
+                    url.to_string(),
+                    None,
+                    Some(this),
+                );
+                activation.context.navigator.spawn_future(process);
 
-    if let Value::Object(target) = target {
-        if let Some(mc) = target
-            .as_display_object()
-            .and_then(|dobj| dobj.as_movie_clip())
-        {
-            let fetch = activation
-                .context
-                .navigator
-                .fetch(&url.to_utf8_lossy(), RequestOptions::get());
-            let process = activation.context.load_manager.load_movie_into_clip(
-                activation.context.player.clone().unwrap(),
-                DisplayObject::MovieClip(mc),
-                fetch,
-                url.to_string(),
-                None,
-                Some(this),
-            );
-
-            activation.context.navigator.spawn_future(process);
+                return Ok(true.into());
+            }
         }
 
-        Ok(true.into())
-    } else {
-        Ok(false.into())
+        return Ok(false.into());
     }
+
+    Ok(Value::Undefined)
 }
 
 pub fn unload_clip<'gc>(
