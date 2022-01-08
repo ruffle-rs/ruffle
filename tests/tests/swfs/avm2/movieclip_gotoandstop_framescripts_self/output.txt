@@ -1,0 +1,7 @@
+/// this.gotoAndStop(1)
+///MainTimeline frame 1
+/// this.gotoAndStop(2)
+///MainTimeline frame 2
+/// this.gotoAndStop(1)
+///MainTimeline frame 1
+/// this.stop()
