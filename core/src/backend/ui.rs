@@ -65,22 +65,32 @@ impl InputManager {
         }
     }
 
+    fn add_key(&mut self, key_code: KeyCode) {
+        self.last_key = key_code;
+        if key_code != KeyCode::Unknown {
+            self.keys_down.insert(key_code);
+        }
+    }
+
+    fn remove_key(&mut self, key_code: KeyCode) {
+        self.last_key = key_code;
+        if key_code != KeyCode::Unknown {
+            self.keys_down.remove(&key_code);
+        }
+    }
+
     pub fn handle_event(&mut self, event: &PlayerEvent) {
         match *event {
             PlayerEvent::KeyDown { key_code, key_char } => {
-                self.last_key = key_code;
                 self.last_char = key_char;
-                if key_code != KeyCode::Unknown {
-                    self.keys_down.insert(key_code);
-                }
+                self.add_key(key_code);
             }
             PlayerEvent::KeyUp { key_code, key_char } => {
-                self.last_key = key_code;
                 self.last_char = key_char;
-                if key_code != KeyCode::Unknown {
-                    self.keys_down.remove(&key_code);
-                }
+                self.remove_key(key_code);
             }
+            PlayerEvent::MouseDown { button, .. } => self.add_key(button.into()),
+            PlayerEvent::MouseUp { button, .. } => self.remove_key(button.into()),
             _ => {}
         }
     }
