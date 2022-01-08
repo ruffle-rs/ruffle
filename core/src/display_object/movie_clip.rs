@@ -1065,7 +1065,12 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).natural_playhead_action = playhead_action;
 
         match playhead_action {
-            NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
+            NextFrame::Next => {
+                let mut write = self.0.write(context.gc_context);
+
+                write.queued_script_frame = Some(write.current_frame + 1);
+                write.current_frame += 1;
+            }
             NextFrame::First => self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         };
@@ -1134,9 +1139,6 @@ impl<'gc> MovieClip<'gc> {
                 write.audio_stream = None;
             }
         }
-
-        let frame_id = write.current_frame;
-        write.queued_script_frame = Some(frame_id);
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
@@ -1456,6 +1458,7 @@ impl<'gc> MovieClip<'gc> {
                 // AVM2 gets the final frame because run_frame_internal does
                 // NOT advance to the next frame.
                 self.0.write(context.gc_context).tag_stream_pos = frame_pos;
+                self.0.write(context.gc_context).queued_script_frame = Some(clamped_frame);
 
                 // `run_frame_internal` is a no-op when looping. On AVM1, this
                 // didn't matter, because we'd conveniently set the frame back
