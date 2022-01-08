@@ -1,0 +1,12 @@
+///Parent frame 1
+///this.gotoAndStop(2);
+///this.child.gotoAndStop(3);
+///Child frame 3
+///this.gotoAndStop(2);
+///this.parent.gotoAndStop(5);
+///End child frame 3
+///End parent frame 1
+///Parent frame 5
+///this.child.gotoAndStop(5);
+///Child frame 5
+///End parent frame 5
