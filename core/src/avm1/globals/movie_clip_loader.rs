@@ -82,26 +82,37 @@ fn load_clip<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn unload_clip<'gc>(
+fn unload_clip<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let target = args.get(0).cloned().unwrap_or(Value::Undefined);
-
-    if let Value::Object(target) = target {
-        if let Some(mut mc) = target
-            .as_display_object()
-            .and_then(|dobj| dobj.as_movie_clip())
-        {
-            mc.unload(&mut activation.context);
-            mc.replace_with_movie(activation.context.gc_context, None);
-
+    if let [target, ..] = args {
+        let target = match target {
+            Value::String(_) => {
+                let start_clip = activation.target_clip_or_root()?;
+                activation.resolve_target_display_object(start_clip, *target, true)?
+            }
+            Value::Number(level_id) => {
+                // Levels are rounded down.
+                // TODO: What happens with negative levels?
+                activation.context.stage.child_by_depth(*level_id as i32)
+            }
+            Value::Object(object) => object.as_display_object(),
+            _ => None,
+        };
+        if let Some(target) = target {
+            target.unload(&mut activation.context);
+            if let Some(mut mc) = target.as_movie_clip() {
+                mc.replace_with_movie(activation.context.gc_context, None);
+            }
             return Ok(true.into());
         }
+
+        return Ok(false.into());
     }
 
-    Ok(false.into())
+    Ok(Value::Undefined)
 }
 
 pub fn get_progress<'gc>(
