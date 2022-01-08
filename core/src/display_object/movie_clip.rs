@@ -788,19 +788,17 @@ impl<'gc> MovieClip<'gc> {
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
-        if frame != self.current_frame() {
-            if self
-                .0
-                .read()
-                .flags
-                .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-            {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
-                self.0.write(context.gc_context).queued_goto_frame = Some(frame);
-            } else {
-                self.run_goto(context, frame, false);
-            }
+        if self
+            .0
+            .read()
+            .flags
+            .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+        {
+            // AVM2 does not allow a clip to see while it is executing a frame script.
+            // The goto is instead queued and run once the frame script is completed.
+            self.0.write(context.gc_context).queued_goto_frame = Some(frame);
+        } else {
+            self.run_goto(context, frame, false);
         }
     }
 
