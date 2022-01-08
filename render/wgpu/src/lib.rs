@@ -536,6 +536,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         Descriptors::new(device, queue, info, surface_format)
     }
 
+    pub fn adapter_name(&self) -> &str {
+        &self.descriptors.info.name
+    }
+
     pub fn descriptors(self) -> Descriptors {
         self.descriptors
     }

@@ -1,6 +1,7 @@
+use downcast_rs::{impl_downcast, Downcast};
 use std::collections::HashMap;
 
-pub trait StorageBackend {
+pub trait StorageBackend: Downcast {
     fn get(&self, name: &str) -> Option<Vec<u8>>;
 
     fn put(&mut self, name: &str, value: &[u8]) -> bool;
@@ -12,7 +13,9 @@ pub trait StorageBackend {
     fn remove_key(&mut self, name: &str);
 }
 
-#[derive(Default)]
+impl_downcast!(StorageBackend);
+
+#[derive(Default, Clone)]
 pub struct MemoryStorageBackend {
     map: HashMap<String, Vec<u8>>,
 }

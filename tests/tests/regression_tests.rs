@@ -3,33 +3,14 @@
 //! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
-use ruffle_core::backend::{
-    log::LogBackend,
-    navigator::{NullExecutor, NullNavigatorBackend},
-    storage::{MemoryStorageBackend, StorageBackend},
-};
+use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
-use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
-use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
-use ruffle_render_wgpu::target::TextureTarget;
-use ruffle_render_wgpu::wgpu;
-use ruffle_render_wgpu::WgpuRenderBackend;
-use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::path::PathBuf;
 use std::time::Duration;
-
-fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
-    format!("{}-{}", std::env::consts::OS, info.name)
-}
-
-const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
+use tests::{TestBuilder, TestResult};
 
 fn set_logger() {
     let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -830,52 +811,49 @@ fn external_interface_avm1() -> Result<(), Error> {
         1,
         "tests/swfs/avm1/external_interface/input.json",
         "tests/swfs/avm1/external_interface/output.txt",
-        |player| {
-            player
-                .lock()
-                .unwrap()
-                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
-            Ok(())
+        |builder| {
+            builder
+                .with_external_interface(ExternalInterfaceTestProvider::new())
+                .before_end_fn(|player| {
+                    let mut player_locked = player.lock().unwrap();
+                    let parroted = player_locked
+                        .call_internal_interface("parrot", vec!["Hello World!".into()]);
+                    player_locked.log_backend().avm_trace(&format!(
+                        "After calling `parrot` with a string: {:?}",
+                        parroted
+                    ));
+
+                    let mut nested = BTreeMap::new();
+                    nested.insert(
+                        "list".to_string(),
+                        vec![
+                            "string".into(),
+                            100.into(),
+                            false.into(),
+                            ExternalValue::Object(BTreeMap::new()),
+                        ]
+                        .into(),
+                    );
+
+                    let mut root = BTreeMap::new();
+                    root.insert("number".to_string(), (-500.1).into());
+                    root.insert("string".to_string(), "A string!".into());
+                    root.insert("true".to_string(), true.into());
+                    root.insert("false".to_string(), false.into());
+                    root.insert("null".to_string(), ExternalValue::Null);
+                    root.insert("nested".to_string(), nested.into());
+                    let result = player_locked
+                        .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
+                    player_locked.log_backend().avm_trace(&format!(
+                        "After calling `callWith` with a complex payload: {:?}",
+                        result
+                    ));
+                    Ok(())
+                })
         },
-        |player| {
-            let mut player_locked = player.lock().unwrap();
+    )?;
 
-            let parroted =
-                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
-            player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
-            ));
-
-            let mut nested = BTreeMap::new();
-            nested.insert(
-                "list".to_string(),
-                vec![
-                    "string".into(),
-                    100.into(),
-                    false.into(),
-                    ExternalValue::Object(BTreeMap::new()),
-                ]
-                .into(),
-            );
-
-            let mut root = BTreeMap::new();
-            root.insert("number".to_string(), (-500.1).into());
-            root.insert("string".to_string(), "A string!".into());
-            root.insert("true".to_string(), true.into());
-            root.insert("false".to_string(), false.into());
-            root.insert("null".to_string(), ExternalValue::Null);
-            root.insert("nested".to_string(), nested.into());
-            let result = player_locked
-                .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
-            player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
-            ));
-            Ok(())
-        },
-        false,
-    )
+    Ok(())
 }
 
 #[test]
@@ -886,43 +864,42 @@ fn external_interface_avm2() -> Result<(), Error> {
         1,
         "tests/swfs/avm2/external_interface/input.json",
         "tests/swfs/avm2/external_interface/output.txt",
-        |player| {
-            player
-                .lock()
-                .unwrap()
-                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
-            Ok(())
+        |builder| {
+            builder
+                .with_external_interface(ExternalInterfaceTestProvider::new())
+                .before_end_fn(|player| {
+                    let mut player_locked = player.lock().unwrap();
+
+                    let parroted = player_locked
+                        .call_internal_interface("parrot", vec!["Hello World!".into()]);
+                    player_locked.log_backend().avm_trace(&format!(
+                        "After calling `parrot` with a string: {:?}",
+                        parroted
+                    ));
+
+                    player_locked
+                        .call_internal_interface("freestanding", vec!["Hello World!".into()]);
+
+                    let root: ExternalValue = vec![
+                        "string".into(),
+                        100.into(),
+                        ExternalValue::Null,
+                        false.into(),
+                    ]
+                    .into();
+
+                    let result = player_locked
+                        .call_internal_interface("callWith", vec!["trace".into(), root]);
+                    player_locked.log_backend().avm_trace(&format!(
+                        "After calling `callWith` with a complex payload: {:?}",
+                        result
+                    ));
+                    Ok(())
+                })
         },
-        |player| {
-            let mut player_locked = player.lock().unwrap();
+    )?;
 
-            let parroted =
-                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
-            player_locked.log_backend().avm_trace(&format!(
-                "After calling `parrot` with a string: {:?}",
-                parroted
-            ));
-
-            player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);
-
-            let root: ExternalValue = vec![
-                "string".into(),
-                100.into(),
-                ExternalValue::Null,
-                false.into(),
-            ]
-            .into();
-
-            let result =
-                player_locked.call_internal_interface("callWith", vec!["trace".into(), root]);
-            player_locked.log_backend().avm_trace(&format!(
-                "After calling `callWith` with a complex payload: {:?}",
-                result
-            ));
-            Ok(())
-        },
-        false,
-    )
+    Ok(())
 }
 
 #[test]
@@ -930,32 +907,28 @@ fn shared_object_avm1() -> Result<(), Error> {
     set_logger();
     // Test SharedObject persistence. Run an SWF that saves data
     // to a shared object twice and verify that the data is saved.
-    let mut memory_storage_backend: Box<dyn StorageBackend> =
-        Box::new(MemoryStorageBackend::default());
-
     // Initial run; no shared object data.
-    test_swf_with_hooks(
+    let result = test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
         1,
         "tests/swfs/avm1/shared_object/input1.json",
         "tests/swfs/avm1/shared_object/output1.txt",
-        |_player| Ok(()),
-        |player| {
-            // Save the storage backend for next run.
-            let mut player = player.lock().unwrap();
-            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
-            Ok(())
-        },
-        false,
+        |builder| builder,
     )?;
+
+    // Save the storage backend for next run.
+    let mut player = result.player.lock().unwrap();
+    let storage = player
+        .storage_mut()
+        .downcast_ref::<MemoryStorageBackend>()
+        .unwrap()
+        .clone();
 
     // Verify that the flash cookie matches the expected one
     let expected = std::fs::read("tests/swfs/avm1/shared_object/RuffleTest.sol")?;
     assert_eq!(
         expected,
-        memory_storage_backend
-            .get("localhost//RuffleTest")
-            .unwrap_or_default()
+        storage.get("localhost//RuffleTest").unwrap_or_default()
     );
 
     // Re-run the SWF, verifying that the shared object persists.
@@ -964,14 +937,7 @@ fn shared_object_avm1() -> Result<(), Error> {
         1,
         "tests/swfs/avm1/shared_object/input2.json",
         "tests/swfs/avm1/shared_object/output2.txt",
-        |player| {
-            // Swap in the previous storage backend.
-            let mut player = player.lock().unwrap();
-            std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
-            Ok(())
-        },
-        |_player| Ok(()),
-        false,
+        |builder| builder.with_storage(storage),
     )?;
 
     Ok(())
@@ -985,16 +951,9 @@ fn timeout_avm1() -> Result<(), Error> {
         1,
         "tests/swfs/avm1/timeout/input.json",
         "tests/swfs/avm1/timeout/output.txt",
-        |player| {
-            player
-                .lock()
-                .unwrap()
-                .set_max_execution_duration(Duration::from_secs(5));
-            Ok(())
-        },
-        |_| Ok(()),
-        false,
-    )
+        |builder| builder.with_max_execution_duration(Duration::from_secs(5)),
+    )?;
+    Ok(())
 }
 
 #[test]
@@ -1005,17 +964,9 @@ fn stage_scale_mode() -> Result<(), Error> {
         1,
         "tests/swfs/avm1/stage_scale_mode/input.json",
         "tests/swfs/avm1/stage_scale_mode/output.txt",
-        |player| {
-            // Simulate a large viewport to test stage size.
-            player
-                .lock()
-                .unwrap()
-                .set_viewport_dimensions(900, 900, 1.0);
-            Ok(())
-        },
-        |_| Ok(()),
-        false,
-    )
+        |builder| builder.with_viewport_dimensions(900, 900),
+    )?;
+    Ok(())
 }
 
 /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
@@ -1060,10 +1011,12 @@ fn test_swf(
         num_frames,
         simulated_input_path,
         expected_output_path,
-        |_| Ok(()),
-        |_| Ok(()),
-        check_img,
-    )
+        |builder| {
+            // Only output images if `imgtests` feature is enabled.
+            builder.with_output_image(check_img && cfg!(feature = "imgtests"))
+        },
+    )?;
+    Ok(())
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
@@ -1073,33 +1026,27 @@ fn test_swf_with_hooks(
     num_frames: u32,
     simulated_input_path: &str,
     expected_output_path: &str,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    check_img: bool,
-) -> Result<(), Error> {
-    let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+    player_config: impl FnOnce(TestBuilder) -> TestBuilder,
+) -> Result<TestResult, Error> {
+    let expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
+    let result = run_swf(swf_path, num_frames, simulated_input_path, player_config)?;
 
-    // Strip a trailing newline if it has one.
-    if expected_output.ends_with('\n') {
-        expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
-    }
-
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        before_start,
-        injector,
-        before_end,
-        check_img,
-    )?;
+    // Strip trailing newlines if present.
+    let trace_log = result
+        .trace_log
+        .strip_suffix('\n')
+        .unwrap_or(&result.trace_log)
+        .to_string();
+    let expected_output = expected_output
+        .strip_suffix('\n')
+        .unwrap_or(&expected_output)
+        .to_string();
     assert_eq!(
         trace_log, expected_output,
         "ruffle output != flash player output"
     );
 
-    Ok(())
+    Ok(result)
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
@@ -1112,22 +1059,15 @@ fn test_swf_approx(
     expected_output_path: &str,
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<(), Error> {
-    let injector =
-        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
-    let trace_log = run_swf(
-        swf_path,
-        num_frames,
-        |_| Ok(()),
-        injector,
-        |_| Ok(()),
-        false,
-    )?;
-    let mut expected_data = std::fs::read_to_string(expected_output_path)?;
+    let result = run_swf(swf_path, num_frames, simulated_input_path, |builder| {
+        builder
+    })?;
+    let trace_log = result.trace_log;
+    let expected_data = std::fs::read_to_string(expected_output_path)?;
 
-    // Strip a trailing newline if it has one.
-    if expected_data.ends_with('\n') {
-        expected_data = expected_data[0..expected_data.len() - "\n".len()].to_string();
-    }
+    // Strip trailing newlines if present.
+    let trace_log = trace_log.strip_suffix('\n').unwrap_or(&trace_log);
+    let expected_data = expected_data.strip_suffix('\n').unwrap_or(&expected_data);
 
     std::assert_eq!(
         trace_log.lines().count(),
@@ -1164,112 +1104,26 @@ fn test_swf_approx(
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
-fn run_swf(
+pub fn run_swf(
     swf_path: &str,
     num_frames: u32,
-    before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    mut injector: InputInjector,
-    before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    mut check_img: bool,
-) -> Result<String, Error> {
-    check_img &= RUN_IMG_TESTS;
+    simulated_input_path: &str,
+    player_config: impl FnOnce(TestBuilder) -> TestBuilder,
+) -> Result<TestResult, Error> {
+    let mut builder = TestBuilder::new()
+        .with_swf_path(swf_path)
+        .with_simulated_input_path(simulated_input_path);
+    builder = player_config(builder);
+    let result = builder.run(num_frames)?;
 
-    let base_path = Path::new(swf_path).parent().unwrap();
-    let mut executor = NullExecutor::new();
-    let movie = SwfMovie::from_path(swf_path, None)?;
-    let frame_time = 1000.0 / movie.frame_rate().to_f64();
-    let trace_output = Rc::new(RefCell::new(Vec::new()));
-
-    let mut platform_id = None;
-    let backend_bit = wgpu::Backends::PRIMARY;
-
-    let mut builder = PlayerBuilder::new();
-    if check_img {
-        let instance = wgpu::Instance::new(backend_bit);
-
-        let descriptors =
-            futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
-                backend_bit,
-                instance,
-                None,
-                Default::default(),
-                None,
-            ))?;
-
-        platform_id = Some(get_img_platform_suffix(&descriptors.info));
-
-        let target = TextureTarget::new(
-            &descriptors.device,
-            (
-                movie.width().to_pixels() as u32,
-                movie.height().to_pixels() as u32,
-            ),
-        );
-
-        builder = builder
-            .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
-            .with_software_video();
-    };
-    let player = builder
-        .with_log(TestLogBackend::new(trace_output.clone()))
-        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
-        .with_max_execution_duration(Duration::from_secs(300))
-        .with_movie(movie)
-        .build();
-
-    before_start(player.clone())?;
-
-    for _ in 0..num_frames {
-        player.lock().unwrap().run_frame();
-        player.lock().unwrap().update_timers(frame_time);
-        executor.run();
-
-        injector.next(|evt, _btns_down| {
-            player.lock().unwrap().handle_event(match evt {
-                AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
-                    x: pos.0,
-                    y: pos.1,
-                    button: match btn {
-                        InputMouseButton::Left => RuffleMouseButton::Left,
-                        InputMouseButton::Middle => RuffleMouseButton::Middle,
-                        InputMouseButton::Right => RuffleMouseButton::Right,
-                    },
-                },
-                AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
-                AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {
-                    x: pos.0,
-                    y: pos.1,
-                    button: match btn {
-                        InputMouseButton::Left => RuffleMouseButton::Left,
-                        InputMouseButton::Middle => RuffleMouseButton::Middle,
-                        InputMouseButton::Right => RuffleMouseButton::Right,
-                    },
-                },
-                AutomatedEvent::Wait => unreachable!(),
-            });
-        });
-    }
-
-    // Render the image to disk
-    // FIXME: Determine how we want to compare against on on-disk image
-    if check_img {
-        player.lock().unwrap().render();
-        let mut player_lock = player.lock().unwrap();
-        let renderer = player_lock
-            .renderer_mut()
-            .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-            .unwrap();
-        let target = renderer.target();
-        let image = target
-            .capture(renderer.device())
-            .expect("Failed to capture image");
-
+    // Write screenshot to disk if requested.
+    if let Some(image) = &result.image {
         // The swf path ends in '<swf_name>/test.swf' - extract `swf_name`
         let mut swf_path_buf = PathBuf::from(swf_path);
         swf_path_buf.pop();
 
         let swf_name = swf_path_buf.file_name().unwrap().to_string_lossy();
-        let img_name = format!("{}-{}.png", swf_name, platform_id.unwrap());
+        let img_name = format!("{}-{}.png", swf_name, result.platform_id);
 
         let mut img_path = swf_path_buf.clone();
         img_path.push(&img_name);
@@ -1306,28 +1160,7 @@ fn run_swf(
         }
     }
 
-    before_end(player)?;
-
-    executor.run();
-
-    let trace = trace_output.borrow().join("\n");
-    Ok(trace)
-}
-
-struct TestLogBackend {
-    trace_output: Rc<RefCell<Vec<String>>>,
-}
-
-impl TestLogBackend {
-    pub fn new(trace_output: Rc<RefCell<Vec<String>>>) -> Self {
-        Self { trace_output }
-    }
-}
-
-impl LogBackend for TestLogBackend {
-    fn avm_trace(&self, message: &str) {
-        self.trace_output.borrow_mut().push(message.to_string());
-    }
+    Ok(result)
 }
 
 #[derive(Default)]
