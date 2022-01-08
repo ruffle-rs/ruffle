@@ -19,7 +19,7 @@ use crate::vminterface::AvmType;
 ///
 /// Each part of the frame phase is the phase we're going to execute *next*;
 /// e.g. we don't go from `Enter` to `Construct`
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum FramePhase {
     /// We're about to enter the next frame.
     ///

@@ -1,0 +1,4 @@
+/// this.child.gotoAndStop(2)
+/// (Grandchildren of this.child...)
+Child: grandchild_a
+Child: grandchild_b
