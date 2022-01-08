@@ -115,38 +115,49 @@ fn unload_clip<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn get_progress<'gc>(
+fn get_progress<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let target = args.get(0).cloned().unwrap_or(Value::Undefined);
-
-    if let Value::Object(target) = target {
-        if let Some(mc) = target
-            .as_display_object()
-            .and_then(|dobj| dobj.as_movie_clip())
-        {
-            let ret_obj = ScriptObject::object(activation.context.gc_context, None);
-            ret_obj.define_value(
-                activation.context.gc_context,
-                "bytesLoaded",
-                mc.movie()
-                    .map(|mv| (mv.uncompressed_len()).into())
-                    .unwrap_or(Value::Undefined),
-                Attribute::empty(),
-            );
-            ret_obj.define_value(
-                activation.context.gc_context,
-                "bytesTotal",
-                mc.movie()
-                    .map(|mv| (mv.uncompressed_len()).into())
-                    .unwrap_or(Value::Undefined),
-                Attribute::empty(),
-            );
-
-            return Ok(ret_obj.into());
+    if let [target, ..] = args {
+        let target = match target {
+            Value::String(_) => {
+                let start_clip = activation.target_clip_or_root()?;
+                activation.resolve_target_display_object(start_clip, *target, true)?
+            }
+            Value::Number(level_id) => {
+                // Levels are rounded down.
+                // TODO: What happens with negative levels?
+                activation.context.stage.child_by_depth(*level_id as i32)
+            }
+            Value::Object(object) => {
+                if let Some(object) = object.as_display_object() {
+                    Some(object)
+                } else {
+                    return Ok(Value::Undefined);
+                }
+            }
+            _ => return Ok(Value::Undefined),
+        };
+        let result = ScriptObject::bare_object(activation.context.gc_context);
+        if let Some(target) = target {
+            if let Some(movie) = target.movie() {
+                result.define_value(
+                    activation.context.gc_context,
+                    "bytesLoaded",
+                    movie.compressed_len().into(),
+                    Attribute::empty(),
+                );
+                result.define_value(
+                    activation.context.gc_context,
+                    "bytesTotal",
+                    movie.compressed_len().into(),
+                    Attribute::empty(),
+                );
+            }
         }
+        return Ok(result.into());
     }
 
     Ok(Value::Undefined)
