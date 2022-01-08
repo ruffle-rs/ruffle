@@ -1,0 +1,4 @@
+/// this.child.gotoAndStop(1)
+///MainTimeline frame 1
+///Child Frame 1
+/// this.stop()
