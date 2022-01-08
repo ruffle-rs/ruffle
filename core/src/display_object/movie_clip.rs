@@ -1798,37 +1798,52 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         if let Some(avm2_object) = avm2_object {
             if let Some(frame_id) = write.queued_script_frame {
-                let is_fresh_frame = write.queued_script_frame != write.last_queued_script_frame;
-
-                write.last_queued_script_frame = Some(frame_id);
-                write.queued_script_frame = None;
-                write
+                // If we are already executing frame scripts, then we shouldn't
+                // run frame scripts recursively. This is because AVM2 can run
+                // gotos, which will both queue and run frame scripts for the
+                // whole movie again. If a goto is attempting to queue frame
+                // scripts on us AGAIN, we should allow the current stack to
+                // wind down before handling that.
+                if !write
                     .flags
-                    .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                    .contains(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+                {
+                    let is_fresh_frame =
+                        write.queued_script_frame != write.last_queued_script_frame;
 
-                if is_fresh_frame {
-                    while let Some(fs) = write.frame_scripts.get(index) {
-                        if fs.frame_id == frame_id {
-                            let callable = fs.callable;
-                            drop(write);
-                            if let Err(e) = Avm2::run_stack_frame_for_callable(
-                                callable,
-                                Some(avm2_object),
-                                &[],
-                                context,
-                            ) {
-                                log::error!("Error occured when running AVM2 frame script: {}", e);
+                    write.last_queued_script_frame = Some(frame_id);
+                    write.queued_script_frame = None;
+                    write
+                        .flags
+                        .insert(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+
+                    if is_fresh_frame {
+                        while let Some(fs) = write.frame_scripts.get(index) {
+                            if fs.frame_id == frame_id {
+                                let callable = fs.callable;
+                                drop(write);
+                                if let Err(e) = Avm2::run_stack_frame_for_callable(
+                                    callable,
+                                    Some(avm2_object),
+                                    &[],
+                                    context,
+                                ) {
+                                    log::error!(
+                                        "Error occured when running AVM2 frame script: {}",
+                                        e
+                                    );
+                                }
+                                write = self.0.write(context.gc_context);
                             }
-                            write = self.0.write(context.gc_context);
+
+                            index += 1;
                         }
-
-                        index += 1;
                     }
-                }
 
-                write
-                    .flags
-                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                    write
+                        .flags
+                        .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
+                }
             }
         }
 
