@@ -427,7 +427,11 @@ export class RufflePlayer extends HTMLElement {
             this,
             config
         );
-        console.log("New Ruffle instance created.");
+        console.log(
+            "New Ruffle instance created (WebAssembly extensions: " +
+                (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
+                ")"
+        );
 
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
         // It may change by itself to "running" some milliseconds later. So we need to wait a little

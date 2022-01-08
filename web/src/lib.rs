@@ -454,6 +454,15 @@ impl Ruffle {
         })
         .unwrap_or_default()
     }
+
+    /// Returns whether the `simd128` target feature was enabled at build time.
+    /// This is intended to discriminate between the two WebAssembly module
+    /// versions, one of which uses WebAssembly extensions, and the other one
+    /// being "vanilla". `simd128` is used as proxy for most extensions, since
+    /// no other WebAssembly target feature is exposed to `cfg!`.
+    pub fn is_wasm_simd_used() -> bool {
+        cfg!(target_feature = "simd128")
+    }
 }
 
 impl Ruffle {
