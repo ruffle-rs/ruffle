@@ -1820,14 +1820,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                                 log::error!("Error occured when running AVM2 frame script: {}", e);
                             }
                             write = self.0.write(context.gc_context);
-                            write
-                                .flags
-                                .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
                         }
 
                         index += 1;
                     }
                 }
+
+                write
+                    .flags
+                    .remove(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT);
             }
         }
 
