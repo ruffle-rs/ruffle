@@ -58,10 +58,6 @@ impl<'gc> TextFormatObject<'gc> {
     pub fn text_format_mut(&self, gc_context: MutationContext<'gc, '_>) -> RefMut<TextFormat> {
         RefMut::map(self.0.write(gc_context), |o| &mut o.text_format)
     }
-
-    pub fn set_text_format(&self, gc_context: MutationContext<'gc, '_>, text_format: TextFormat) {
-        self.0.write(gc_context).text_format = text_format
-    }
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {

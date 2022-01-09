@@ -471,7 +471,7 @@ pub fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_text_format_object() {
-        let mut text_format = TextFormat::default();
+        let mut text_format = this.text_format_mut(activation.context.gc_context);
         set_font(
             activation,
             &mut text_format,
@@ -537,7 +537,6 @@ pub fn constructor<'gc>(
             &mut text_format,
             args.get(12).unwrap_or(&Value::Undefined),
         )?;
-        this.set_text_format(activation.context.gc_context, text_format);
     }
 
     Ok(this.into())
