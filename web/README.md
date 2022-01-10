@@ -48,9 +48,11 @@ For the compiler to be able to output WebAssembly, an additional target has to b
 
 #### Node.js
 
-Follow the instructions [to install node.js](https://nodejs.org/en/) on your machine.
+Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
 
 We recommend using the currently active LTS 16, but we do also run tests with maintenance LTS 14.
+
+Note that npm 7 or newer is required. It should come bundled with Node.js 15 or newer, but can be upgraded with older Node.js versions using `npm install -g npm` as root/Administrator.
 
 #### wasm-bindgen
 
@@ -75,7 +77,7 @@ Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 
 In this project, you may run the following commands to build all packages:
 
--   `npm run bootstrap`
+-   `npm install`
     -   This will install every dependency for every package.
     -   Run this every time you pull in new changes, otherwise you may be missing a package and the build will fail.
 -   `npm run build`
