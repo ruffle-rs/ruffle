@@ -267,7 +267,7 @@ jobs:
         working-directory: web
         shell: bash -l {0}
         run: |
-          npm run bootstrap
+          npm ci
           npm run build
           npm run docs
 

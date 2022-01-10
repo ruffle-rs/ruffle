@@ -6,8 +6,8 @@ _logs/
 anonymous-cli-metrics.json
 
 /npm-debug.log*
-/lerna-debug.log*
 
-/package.json.lerna_backup
-
+# npm workspaces should not have a `package-lock.json`,
+# but it's still generated when doing `npm install` inside
+# of them.
 /packages/**/package-lock.json

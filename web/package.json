@@ -4,6 +4,12 @@
     "description": "Root project of ruffle web",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
+    "workspaces": [
+        "./packages/*"
+    ],
+    "engines": {
+        "npm": ">=7"
+    },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^5.8.1",
         "@typescript-eslint/parser": "^5.8.1",
@@ -20,7 +26,6 @@
         "eslint": "^8.6.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-prettier": "^4.0.0",
-        "lerna": "^4.0.0",
         "mocha": "^9.1.3",
         "prettier": "^2.5.1",
         "stylelint": "^14.1.0",
@@ -32,12 +37,11 @@
         "webpack-cli": "^4.9.1"
     },
     "scripts": {
-        "bootstrap": "npm install && lerna bootstrap --hoist",
-        "build": "lerna run build --stream",
+        "build": "npm run build --workspaces",
         "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm_debug npm run build",
-        "demo": "lerna run --scope ruffle-demo serve --stream",
-        "test": "lerna run test --stream",
-        "docs": "lerna run docs --stream",
+        "demo": "npm run serve --workspace ruffle-demo",
+        "test": "npm run test --workspaces --if-present",
+        "docs": "npm run docs --workspaces --if-present",
         "lint": "eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css"
     }
