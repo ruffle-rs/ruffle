@@ -20,7 +20,7 @@ url = "2.2.2"
 clipboard = "0.5.0"
 dirs = "4.0"
 isahc = "1.6.0"
-tinyfiledialogs = "3.8.3"
+tinyfiledialogs = "3.9.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
