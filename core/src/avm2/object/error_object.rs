@@ -79,18 +79,9 @@ impl<'gc> ErrorObject<'gc> {
         AvmString::new(mc, output)
     }
 
-    pub fn display_to(&self, output: &mut WString) {
-        let read = self.0.read();
-        output.push_str(&read.name);
-        if !read.message.is_empty() {
-            output.push_utf8(": ");
-            output.push_str(&read.message);
-        }
-    }
-
     pub fn display_full(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let mut output = WString::new();
-        self.display_to(&mut output);
+        output.push_str(&self.display(mc));
         self.stack_trace().display(mc, &mut output);
         AvmString::new(mc, output)
     }
