@@ -66,7 +66,7 @@ pub struct NativeExecutable<'gc> {
 }
 
 /// Represents code that can be executed by some means.
-#[derive(Clone, Collect)]
+#[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub enum Executable<'gc> {
     /// Code defined in Ruffle's binary.
@@ -156,7 +156,7 @@ impl<'gc> Executable<'gc> {
                     arguments,
                     &bm.method.signature,
                 )?;
-                activation.context.avm2.push_call(self.clone())?;
+                activation.context.avm2.push_call(*self)?;
                 method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
@@ -179,7 +179,7 @@ impl<'gc> Executable<'gc> {
                     subclass_object,
                     callee,
                 )?;
-                activation.context.avm2.push_call(self.clone())?;
+                activation.context.avm2.push_call(*self)?;
                 activation.run_actions(bm.method)
             }
         };
