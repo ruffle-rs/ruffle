@@ -85,10 +85,6 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
         Err("Cannot construct internal event dispatcher structures.".into())
     }
 
-    fn derive(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        Err("Cannot subclass internal event dispatcher structures.".into())
-    }
-
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Err("Cannot subclass internal event dispatcher structures.".into())
     }

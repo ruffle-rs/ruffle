@@ -73,11 +73,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ScriptObject(*self);
-        Ok(ScriptObject::object(activation.context.gc_context, this))
-    }
-
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }

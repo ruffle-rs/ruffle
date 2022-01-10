@@ -136,20 +136,6 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         }
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::LoaderInfoObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(LoaderInfoObject(GcCell::allocate(
-            activation.context.gc_context,
-            LoaderInfoObjectData {
-                base,
-                loaded_stream: None,
-            },
-        ))
-        .into())
-    }
-
     /// Unwrap this object's loader stream
     fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
         if self.0.read().loaded_stream.is_some() {

@@ -247,18 +247,4 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
     ) -> Option<RefMut<ArrayStorage<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |aod| &mut aod.array))
     }
-
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ArrayObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(ArrayObject(GcCell::allocate(
-            activation.context.gc_context,
-            ArrayObjectData {
-                base,
-                array: ArrayStorage::new(0),
-            },
-        ))
-        .into())
-    }
 }

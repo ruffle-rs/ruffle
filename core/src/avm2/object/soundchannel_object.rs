@@ -104,20 +104,6 @@ impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), None);
-
-        Ok(SoundChannelObject(GcCell::allocate(
-            activation.context.gc_context,
-            SoundChannelObjectData {
-                base,
-                sound: None,
-                position: 0.0,
-            },
-        ))
-        .into())
-    }
-
     fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
         Some(self)
     }

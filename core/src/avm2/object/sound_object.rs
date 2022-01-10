@@ -86,16 +86,6 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
         Ok(Object::from(*self).into())
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), None);
-
-        Ok(SoundObject(GcCell::allocate(
-            activation.context.gc_context,
-            SoundObjectData { base, sound: None },
-        ))
-        .into())
-    }
-
     fn as_sound(self) -> Option<SoundHandle> {
         self.0.read().sound
     }

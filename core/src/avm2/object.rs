@@ -649,12 +649,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         ctor.construct(activation, args)
     }
 
-    /// Construct a host object prototype of some kind and return it.
-    ///
-    /// This is called specifically to allocate old-style ES3 instances. The
-    /// returned object should have no properties upon it.
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error>;
-
     /// Construct a parameterization of this particular type and return it.
     ///
     /// This is called specifically to parameterize generic types, of which

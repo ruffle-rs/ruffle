@@ -136,27 +136,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let prototype = self.prototype().unwrap();
 
-        let instance = prototype.derive(activation)?;
+        let instance = ScriptObject::object(activation.context.gc_context, prototype);
 
         self.call(Some(instance), arguments, activation)?;
 
         Ok(instance)
-    }
-
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::FunctionObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-        let exec = self.0.read().exec.clone();
-
-        Ok(FunctionObject(GcCell::allocate(
-            activation.context.gc_context,
-            // todo: should this be None?
-            FunctionObjectData {
-                base,
-                exec,
-                prototype: None,
-            },
-        ))
-        .into())
     }
 }

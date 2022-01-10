@@ -94,19 +94,6 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Ok(Object::from(*self).into())
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), None);
-
-        Ok(DictionaryObject(GcCell::allocate(
-            activation.context.gc_context,
-            DictionaryObjectData {
-                base,
-                object_space: Default::default(),
-            },
-        ))
-        .into())
-    }
-
     fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
         Some(self)
     }

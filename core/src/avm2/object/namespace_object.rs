@@ -89,18 +89,4 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
         Some(Ref::map(self.0.read(), |s| &s.namespace))
     }
-
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::NamespaceObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(NamespaceObject(GcCell::allocate(
-            activation.context.gc_context,
-            NamespaceObjectData {
-                base,
-                namespace: Namespace::public(),
-            },
-        ))
-        .into())
-    }
 }

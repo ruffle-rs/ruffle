@@ -244,23 +244,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::VectorObject(*self);
-
-        //TODO: Pull the parameter out of the class object
-        let param_type = activation.avm2().classes().object;
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(VectorObject(GcCell::allocate(
-            activation.context.gc_context,
-            VectorObjectData {
-                base,
-                vector: VectorStorage::new(0, false, param_type, activation),
-            },
-        ))
-        .into())
-    }
-
     fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
         Some(Ref::map(self.0.read(), |vod| &vod.vector))
     }

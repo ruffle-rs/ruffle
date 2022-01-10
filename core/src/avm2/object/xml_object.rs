@@ -47,17 +47,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::XmlObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(XmlObject(GcCell::allocate(
-            activation.context.gc_context,
-            XmlObjectData { base },
-        ))
-        .into())
-    }
-
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }

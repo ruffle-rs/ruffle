@@ -134,20 +134,6 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         Ok(self.0.read().primitive)
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::PrimitiveObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(PrimitiveObject(GcCell::allocate(
-            activation.context.gc_context,
-            PrimitiveObjectData {
-                base,
-                primitive: Value::Undefined,
-            },
-        ))
-        .into())
-    }
-
     fn as_primitive_mut(&self, mc: MutationContext<'gc, '_>) -> Option<RefMut<Value<'gc>>> {
         Some(RefMut::map(self.0.write(mc), |pod| &mut pod.primitive))
     }
