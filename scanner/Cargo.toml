@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-clap = "3.0.1"
+clap = "3.0.5"
 ruffle_core = { path = "../core" }
 log = "0.4"
 walkdir = "2.3.2"
