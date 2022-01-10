@@ -777,14 +777,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         Ok(instance)
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        Ok(ClassObject(GcCell::allocate(
-            activation.context.gc_context,
-            self.0.read().clone(),
-        ))
-        .into())
-    }
-
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         let read = self.0.read();
 

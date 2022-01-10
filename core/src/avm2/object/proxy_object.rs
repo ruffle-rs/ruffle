@@ -53,16 +53,6 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         Ok(Object::from(*self).into())
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), None);
-
-        Ok(ProxyObject(GcCell::allocate(
-            activation.context.gc_context,
-            ProxyObjectData { base },
-        ))
-        .into())
-    }
-
     fn get_property_local(
         self,
         multiname: &Multiname<'gc>,

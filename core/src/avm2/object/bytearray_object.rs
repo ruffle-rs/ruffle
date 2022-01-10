@@ -181,19 +181,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.0.read().base.has_own_property(name)
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::ByteArrayObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(ByteArrayObject(GcCell::allocate(
-            activation.context.gc_context,
-            ByteArrayObjectData {
-                base,
-                storage: ByteArrayStorage::new(),
-            },
-        ))
-        .into())
-    }
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
     }

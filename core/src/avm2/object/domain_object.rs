@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
@@ -86,19 +85,5 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
         let this: Object<'gc> = Object::DomainObject(*self);
 
         Ok(this.into())
-    }
-
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::DomainObject(*self);
-        let constr = this
-            .get_property(
-                &QName::new(Namespace::public(), "constructor").into(),
-                activation,
-            )?
-            .coerce_to_object(activation)?;
-
-        let constr = constr.as_class_object().unwrap(); // XXXXX TODO
-
-        appdomain_allocator(constr, this, activation)
     }
 }

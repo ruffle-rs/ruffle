@@ -96,15 +96,4 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn as_qname_object(self) -> Option<QNameObject<'gc>> {
         Some(self)
     }
-
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let this: Object<'gc> = Object::QNameObject(*self);
-        let base = ScriptObjectData::base_new(Some(this), None);
-
-        Ok(QNameObject(GcCell::allocate(
-            activation.context.gc_context,
-            QNameObjectData { base, qname: None },
-        ))
-        .into())
-    }
 }

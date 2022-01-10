@@ -82,19 +82,6 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn derive(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
-        let base = ScriptObjectData::base_new(Some((*self).into()), None);
-
-        Ok(EventObject(GcCell::allocate(
-            activation.context.gc_context,
-            EventObjectData {
-                base,
-                event: Event::new(""),
-            },
-        ))
-        .into())
-    }
-
     fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         let read = self.0.read();
         let event_type = read.event.event_type();
