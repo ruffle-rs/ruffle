@@ -17,7 +17,8 @@ use crate::display_object::TDisplayObject;
 /// Which phase of the frame we're currently in.
 ///
 /// AVM2 frames exist in one of five phases: `Enter`, `Construct`, `Update`,
-/// `FrameScripts`, or `Exit`.
+/// `FrameScripts`, or `Exit`. An additional `Idle` phase covers rendering and
+/// event processing.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum FramePhase {
     /// We're entering the next frame.
@@ -60,6 +61,12 @@ pub enum FramePhase {
     /// When we exit a completed frame, we fire `exitFrame` on the broadcast
     /// list.
     Exit,
+
+    /// We're not currently executing any frame code.
+    ///
+    /// At this point in time, event handlers are expected to run. No frame
+    /// catch-up work should execute.
+    Idle,
 }
 
 /// Run one frame according to AVM1 frame order.
@@ -86,7 +93,7 @@ pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         .load_manager
         .movie_clip_on_load(context.action_queue);
 
-    *context.frame_phase = FramePhase::Enter;
+    *context.frame_phase = FramePhase::Idle;
 }
 
 /// Run one frame according to AVM2 frame order.
@@ -109,5 +116,5 @@ pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     *context.frame_phase = FramePhase::Exit;
     stage.exit_frame(context);
 
-    *context.frame_phase = FramePhase::Enter;
+    *context.frame_phase = FramePhase::Idle;
 }
