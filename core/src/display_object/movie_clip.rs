@@ -1463,10 +1463,16 @@ impl<'gc> MovieClip<'gc> {
                 // by one and everything worked out. We can't do this on AVM2,
                 // because it won't move it forward, so instead we have to lie
                 // and say we're moving to the next frame.
-                let old_npa = self.0.read().natural_playhead_action;
-                self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
-                self.run_frame_internal(context, false);
-                self.0.write(context.gc_context).natural_playhead_action = old_npa;
+                //
+                // Also, gotos triggered by intializers need to *not* run
+                // internal frames, otherwise the tag stream pointer will be
+                // advanced twice per frame.
+                if *context.frame_phase != FramePhase::Construct {
+                    let old_npa = self.0.read().natural_playhead_action;
+                    self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
+                    self.run_frame_internal(context, false);
+                    self.0.write(context.gc_context).natural_playhead_action = old_npa;
+                }
             } else {
                 // AVM1 gets current_frame - 1 because we expect it to be
                 // incremented again in run_frame_internal.
