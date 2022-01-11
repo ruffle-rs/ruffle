@@ -19,6 +19,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 /// Available cpu architectures
+#[allow(dead_code)]
 pub enum CpuArchitecture {
     PowerPc,
     X86,
@@ -38,6 +39,7 @@ impl fmt::Display for CpuArchitecture {
 }
 
 /// Available type of sandbox for a given SWF
+#[allow(dead_code)]
 pub enum SandboxType {
     Remote,
     LocalWithFile,
@@ -57,6 +59,7 @@ impl fmt::Display for SandboxType {
 }
 
 /// The available host operating systems
+#[allow(dead_code)]
 pub enum OperatingSystem {
     WindowsXp,
     Windows2k,
@@ -86,6 +89,7 @@ impl fmt::Display for OperatingSystem {
 }
 
 /// The available player manufacturers
+#[allow(dead_code)]
 pub enum Manufacturer {
     Windows,
     Macintosh,
@@ -120,6 +124,7 @@ impl Manufacturer {
 }
 
 /// The language of the host os
+#[allow(dead_code)]
 pub enum Language {
     Czech,
     Danish,
@@ -179,6 +184,7 @@ impl Language {
 }
 
 /// The supported colors of the screen
+#[allow(dead_code)]
 pub enum ScreenColor {
     Color,
     Gray,
@@ -195,6 +201,7 @@ impl fmt::Display for ScreenColor {
     }
 }
 /// The type of the player
+#[allow(dead_code)]
 pub enum PlayerType {
     StandAlone,
     External,
