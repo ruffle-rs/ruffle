@@ -19,7 +19,7 @@ use crate::vminterface::AvmType;
 ///
 /// Each part of the frame phase is the phase we're going to execute *next*;
 /// e.g. we don't go from `Enter` to `Construct`
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum FramePhase {
     /// We're about to enter the next frame.
     ///
@@ -62,6 +62,12 @@ pub enum FramePhase {
     ///
     /// All `RemoveObject` tags should execute at this time.
     Destroy,
+
+    /// We're not currently executing any frame code.
+    ///
+    /// At this point in time, event handlers are expected to run. No frame
+    /// catch-up work should execute.
+    Idle,
 }
 
 /// Run one frame according to AVM1 frame order.
@@ -88,7 +94,7 @@ pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         .load_manager
         .movie_clip_on_load(context.action_queue);
 
-    *context.frame_phase = FramePhase::Enter;
+    *context.frame_phase = FramePhase::Idle;
 }
 
 /// Run one frame according to AVM2 frame order.
@@ -114,7 +120,7 @@ pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     *context.frame_phase = FramePhase::Destroy;
     stage.destroy_frame(context);
 
-    *context.frame_phase = FramePhase::Enter;
+    *context.frame_phase = FramePhase::Idle;
 }
 
 /// Run all previously-executed frame phases on a newly-constructed display
@@ -158,5 +164,6 @@ pub fn catchup_display_object_to_frame<'gc>(
             dobj.exit_frame(context);
             dobj.destroy_frame(context);
         }
+        (FramePhase::Idle, _) => {}
     }
 }
