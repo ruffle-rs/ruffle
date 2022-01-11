@@ -1260,9 +1260,10 @@ impl Player {
 
     pub fn run_frame(&mut self) {
         self.update(|context| {
-            match context.swf.avm_type() {
-                AvmType::Avm1 => run_all_phases_avm1(context),
-                AvmType::Avm2 => run_all_phases_avm2(context),
+            if context.is_action_script_3() {
+                run_all_phases_avm2(context);
+            } else {
+                run_all_phases_avm1(context);
             }
             context.update_sounds();
         });
