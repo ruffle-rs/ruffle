@@ -44,6 +44,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node_version }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       # Node.js 14 comes with npm 6, but we need npm 7 or newer.
       - name: Upgrade npm
