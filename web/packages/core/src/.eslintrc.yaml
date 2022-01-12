@@ -1,0 +1,25 @@
+env:
+  browser: true
+parser: '@typescript-eslint/parser'
+plugins:
+  - '@typescript-eslint'
+  - jsdoc
+extends:
+  - plugin:@typescript-eslint/recommended
+  - plugin:jsdoc/recommended
+rules:
+  '@typescript-eslint/no-non-null-assertion': 'off'
+  '@typescript-eslint/no-unused-vars':
+    - error
+    - argsIgnorePattern: ^_
+  jsdoc/no-types: error
+  jsdoc/require-returns-type: 'off'
+  jsdoc/require-param-type: 'off'
+  jsdoc/check-tag-names:
+    - warn
+    - definedTags:
+        - internal
+settings:
+  jsdoc:
+    ignorePrivate: true
+    ignoreInternal: true
