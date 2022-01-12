@@ -30,6 +30,15 @@ function transformManifest(content, env) {
             versionChannel === "nightly"
                 ? `${packageVersion} nightly ${buildDate}`
                 : packageVersion;
+
+        // Add `wasm-eval` to the `script-src` directive in the Content Security Policy.
+        // This setting is required by Chrome to allow Wasm in the extension.
+        // Eventually this may change to `wasm-unsafe-eval`, and we may need this for all browsers.
+        manifest.content_security_policy =
+            manifest.content_security_policy.replace(
+                /(script-src\s+[^;]*)(;|$)/i,
+                "$1 'wasm-eval'$2"
+            );
     }
 
     return JSON.stringify(manifest);
