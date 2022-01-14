@@ -1772,10 +1772,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Run my load/enterFrame clip event.
-        let mc = self.0.write(context.gc_context);
-        let is_load_frame = !mc.initialized();
-        drop(mc);
-
+        let is_load_frame = !self.0.read().initialized();
         if is_load_frame {
             self.event_dispatch(context, ClipEvent::Load);
             self.0.write(context.gc_context).set_initialized(true);
@@ -1786,14 +1783,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // Run my SWF tags.
         if self.playing() {
             self.run_frame_internal(context, true);
-        }
-
-        if is_load_frame {
-            self.0.write(context.gc_context).run_clip_postevent(
-                (*self).into(),
-                context,
-                ClipEvent::Load,
-            );
         }
     }
 
@@ -2307,32 +2296,6 @@ impl<'gc> MovieClipData<'gc> {
         }
 
         Ok(())
-    }
-
-    /// Run clip actions that trigger after the clip's own actions.
-    ///
-    /// Currently, this is purely limited to `MovieClipLoader`'s `onLoadInit`
-    /// event, delivered via the `LoadManager`. We need to be called here so
-    /// that external init code runs after the event.
-    ///
-    /// TODO: If it turns out other `Load` events need to be delayed, perhaps
-    /// we should change which frame triggers a `Load` event, rather than
-    /// making sure our actions run after the clip's.
-    fn run_clip_postevent(
-        &self,
-        self_display_object: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        event: ClipEvent,
-    ) {
-        // Finally, queue any loaders that may be waiting for this event.
-        if let ClipEvent::Load = event {
-            context.load_manager.movie_clip_on_load(
-                self_display_object,
-                //TODO: This should have an AVM2 onload path.
-                self.object.and_then(|o| o.as_avm1_object().ok()),
-                context.action_queue,
-            );
-        }
     }
 
     pub fn clip_event_handlers(&self) -> &[ClipEventHandler] {

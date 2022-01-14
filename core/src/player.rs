@@ -1275,6 +1275,11 @@ impl Player {
                             clip.run_frame(context);
                         }
                     }
+
+                    // Fire "onLoadInit" events.
+                    context
+                        .load_manager
+                        .movie_clip_on_load(context.action_queue);
                 }
                 AvmType::Avm2 => {
                     stage.exit_frame(context);

@@ -156,16 +156,11 @@ impl<'gc> LoadManager<'gc> {
     /// Indicates that a movie clip has initialized (ran its first frame).
     ///
     /// Interested loaders will be invoked from here.
-    pub fn movie_clip_on_load(
-        &mut self,
-        loaded_clip: DisplayObject<'gc>,
-        clip_object: Option<Object<'gc>>,
-        queue: &mut ActionQueue<'gc>,
-    ) {
+    pub fn movie_clip_on_load(&mut self, queue: &mut ActionQueue<'gc>) {
         let mut invalidated_loaders = vec![];
 
-        for (index, loader) in self.0.iter_mut() {
-            if loader.movie_clip_loaded(loaded_clip, clip_object, queue) {
+        for (index, loader) in self.0.iter_mut().rev() {
+            if loader.movie_clip_loaded(queue) {
                 invalidated_loaders.push(index);
             }
         }
@@ -657,12 +652,7 @@ impl<'gc> Loader<'gc> {
     /// Returns `true` if the loader has completed and should be removed.
     ///
     /// Used to fire listener events on clips and terminate completed loaders.
-    pub fn movie_clip_loaded(
-        &mut self,
-        loaded_clip: DisplayObject<'gc>,
-        clip_object: Option<Object<'gc>>,
-        queue: &mut ActionQueue<'gc>,
-    ) -> bool {
+    fn movie_clip_loaded(&mut self, queue: &mut ActionQueue<'gc>) -> bool {
         let (clip, broadcaster, loader_status) = match self {
             Loader::Movie {
                 target_clip,
@@ -672,10 +662,6 @@ impl<'gc> Loader<'gc> {
             } => (*target_clip, *target_broadcaster, *loader_status),
             _ => return false,
         };
-
-        if !DisplayObject::ptr_eq(loaded_clip, clip) {
-            return false;
-        }
 
         match loader_status {
             LoaderStatus::Pending => false,
@@ -687,10 +673,7 @@ impl<'gc> Loader<'gc> {
                         ActionType::Method {
                             object: broadcaster,
                             name: "broadcastMessage",
-                            args: vec![
-                                "onLoadInit".into(),
-                                clip_object.map(|co| co.into()).unwrap_or(Value::Undefined),
-                            ],
+                            args: vec!["onLoadInit".into(), clip.object()],
                         },
                         false,
                     );
