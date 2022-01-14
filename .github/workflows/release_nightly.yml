@@ -304,7 +304,9 @@ jobs:
 
       - name: Publish npm package
         if: ${{ !matrix.demo }}
-        run: npm publish
+        # npm scoped packages are private by default, explicitly make public
+        run: npm publish --access public
+        continue-on-error: true
         working-directory: web/packages/selfhosted/dist
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
