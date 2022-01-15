@@ -596,13 +596,24 @@ impl FormatSpans {
             }
         };
 
+        // Flash ignores mismatched end tags (i.e. end tags with a missing/different corresponding
+        // start tag). `quick-xml` checks end tag mismatches by default, but it cannot recover after
+        // encountering one. Thus, we disable `quick-xml`'s check and do it ourselves in a similar
+        // manner, but in a recoverable way.
+        let mut opened_buffer: Vec<u8> = Vec::new();
+        let mut opened_starts = Vec::new();
+
         let mut reader = Reader::from_reader(&raw_bytes[..]);
         reader.expand_empty_elements(true);
         reader.check_end_names(false);
         let mut buf = Vec::new();
         loop {
+            buf.clear();
             match reader.read_event(&mut buf) {
                 Ok(Event::Start(ref e)) => {
+                    opened_starts.push(opened_buffer.len());
+                    opened_buffer.extend(e.name());
+
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
                         Ok(attributes) => attributes,
@@ -758,6 +769,19 @@ impl FormatSpans {
                     spans.push(TextSpan::with_length_and_format(e.len(), format));
                 }
                 Ok(Event::End(e)) => {
+                    // Check for a mismatch.
+                    match opened_starts.last() {
+                        Some(start) => {
+                            if e.name() != &opened_buffer[*start..] {
+                                continue;
+                            } else {
+                                opened_buffer.truncate(*start);
+                                opened_starts.pop();
+                            }
+                        }
+                        None => continue,
+                    }
+
                     match &e.name().to_ascii_lowercase()[..] {
                         b"br" | b"sbr" => {
                             // Skip pop from `format_stack`.
@@ -780,8 +804,6 @@ impl FormatSpans {
                 }
                 _ => {}
             }
-
-            buf.clear();
         }
 
         Self {
