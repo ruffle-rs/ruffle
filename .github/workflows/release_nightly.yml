@@ -286,6 +286,15 @@ jobs:
         shell: bash -l {0}
         run: npm run sign-firefox
 
+      - name: Publish npm package
+        if: ${{ !matrix.demo }}
+        # npm scoped packages are private by default, explicitly make public
+        run: npm publish --access public
+        continue-on-error: true
+        working-directory: web/packages/selfhosted/dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Package selfhosted
         if: ${{ !matrix.demo }}
         run: zip -r release.zip .
@@ -301,15 +310,6 @@ jobs:
           asset_path: ./web/packages/selfhosted/dist/release.zip
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip
           asset_content_type: application/zip
-
-      - name: Publish npm package
-        if: ${{ !matrix.demo }}
-        # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public
-        continue-on-error: true
-        working-directory: web/packages/selfhosted/dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Upload generic extension
         if: ${{ !matrix.demo }}
