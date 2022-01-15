@@ -10,7 +10,15 @@ try {
         "src" in document.currentScript &&
         document.currentScript.src !== ""
     ) {
-        currentScriptURL = new URL(".", document.currentScript.src).href;
+        let src = document.currentScript.src;
+
+        // CDNs allow omitting the filename. If it's omitted, append a slash to
+        // prevent the last component from being dropped.
+        if (!src.endsWith(".js") && !src.endsWith("/")) {
+            src += "/";
+        }
+
+        currentScriptURL = new URL(".", src).href;
     }
 } catch (e) {
     console.warn("Unable to get currentScript URL");
