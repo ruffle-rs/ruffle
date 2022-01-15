@@ -2864,6 +2864,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Check if a particular property in the scope chain is defined.
+    #[allow(clippy::wrong_self_convention)]
     pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
         if &name == b"this" {
             return true;
