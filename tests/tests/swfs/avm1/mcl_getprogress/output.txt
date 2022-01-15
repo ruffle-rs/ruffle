@@ -1,3 +1,31 @@
 Child movie loaded!
-68
-68
+// loader.getProgress()
+undefined
+
+// loader.getProgress(obj)
+undefined
+
+// loader.getProgress("clip")
+{ bytesLoaded: 68, bytesTotal: 68 }
+
+// loader.getProgress("doesNotExist")
+{ bytesLoaded: undefined, bytesTotal: undefined }
+
+// loader.getProgress(0)
+{ bytesLoaded: 502, bytesTotal: 502 }
+
+// loader.getProgress(0.9)
+{ bytesLoaded: 502, bytesTotal: 502 }
+
+// loader.getProgress(1)
+{ bytesLoaded: undefined, bytesTotal: undefined }
+
+// loader.getProgress(clip)
+{ bytesLoaded: 68, bytesTotal: 68 }
+
+// loader.getProgress({})
+undefined
+
+// loader.getProgress(null)
+undefined
+
