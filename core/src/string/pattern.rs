@@ -14,7 +14,7 @@ use super::{AvmString, Units, WStr, WString};
 /// - `u16` searches for a single UCS2 code unit.
 /// - `&[u8]` searches for any of the given LATIN1 code units.
 /// - `&[u16]` searches for any of the given UCS2 code units.
-/// - `FnMut(u16) -> bool` searches for code units matching the predicate.
+/// - `Fn(u16) -> bool` searches for code units matching the predicate.
 pub trait Pattern<'a> {
     type Searcher: Searcher<'a>;
 
@@ -123,7 +123,7 @@ impl<'a> Pattern<'a> for &'a [u16] {
     }
 }
 
-impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
+impl<'a, F: Fn(u16) -> bool> Pattern<'a> for F {
     type Searcher = Either<PredSearcher<'a, u8, FnPred<F>>, PredSearcher<'a, u16, FnPred<F>>>;
 
     fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
@@ -262,11 +262,11 @@ pub struct PredSearcher<'a, T, P> {
 }
 
 pub trait Predicate<T> {
-    fn is_match(&mut self, c: T) -> bool;
+    fn is_match(&self, c: T) -> bool;
 }
 
 impl<T: Copy + Eq> Predicate<T> for T {
-    fn is_match(&mut self, c: T) -> bool {
+    fn is_match(&self, c: T) -> bool {
         *self == c
     }
 }
@@ -274,15 +274,15 @@ impl<T: Copy + Eq> Predicate<T> for T {
 pub struct AnyOf<'a, T>(&'a [T]);
 
 impl<'a, T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'a, U> {
-    fn is_match(&mut self, c: T) -> bool {
+    fn is_match(&self, c: T) -> bool {
         self.0.iter().any(|m| U::try_from(c).ok() == Some(*m))
     }
 }
 
 pub struct FnPred<F>(F);
 
-impl<'a, T: Into<u16>, F: FnMut(u16) -> bool> Predicate<T> for FnPred<F> {
-    fn is_match(&mut self, c: T) -> bool {
+impl<'a, T: Into<u16>, F: Fn(u16) -> bool> Predicate<T> for FnPred<F> {
+    fn is_match(&self, c: T) -> bool {
         (self.0)(c.into())
     }
 }
