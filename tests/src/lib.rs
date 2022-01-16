@@ -35,6 +35,10 @@ pub struct TestPlayer {
 }
 
 impl TestPlayer {
+    pub fn player(&self) -> &Arc<Mutex<Player>> {
+        &self.player
+    }
+
     /// Runs the player for the spcified number of frames.
     pub fn run(&mut self, num_frames: u32) -> Result<(), Error> {
         let frame_time = 1000.0 / self.player.lock().unwrap().frame_rate();
@@ -73,6 +77,10 @@ impl TestPlayer {
             });
         }
         Ok(())
+    }
+
+    pub fn run_avm1_bench(&mut self) {
+        self.player.lock().unwrap().run_avm1_bench();
     }
 
     fn finish(self) -> TestResult {
@@ -115,6 +123,7 @@ pub struct TestBuilder<'a> {
     simulated_input_path: PathBuf,
     external_interfaces: Vec<Box<dyn ExternalInterfaceProvider>>,
     output_image: bool,
+    is_avm_bench: bool,
     before_end_fn: Option<BeforeEndFn<'a>>,
 }
 
@@ -130,6 +139,7 @@ impl<'a> TestBuilder<'a> {
             simulated_input_path: PathBuf::new(),
             external_interfaces: vec![],
             before_end_fn: None,
+            is_avm_bench: false,
             output_image: false,
         }
     }
@@ -195,6 +205,12 @@ impl<'a> TestBuilder<'a> {
         self
     }
 
+    /// Sets whether this test is an AVM benchmark.
+    pub fn is_avm_bench(mut self, is_avm_bench: bool) -> Self {
+        self.is_avm_bench = is_avm_bench;
+        self
+    }
+
     /// Sets the initial viewport dimensions of the player.
     ///
     /// 550x400 is the default viewport size.
@@ -253,6 +269,10 @@ impl<'a> TestBuilder<'a> {
             let mut player = player.lock().unwrap();
             for external_interface in self.external_interfaces {
                 player.add_external_interface(external_interface);
+            }
+            // Prime the action queue is this is an AVM1 benchmark.
+            if self.is_avm_bench {
+                player.init_avm1_bench()?;
             }
         }
 

@@ -1640,6 +1640,44 @@ impl Player {
     }
 }
 
+#[cfg(feature = "bench")]
+impl Player {
+    pub fn init_avm1_bench(&mut self) -> Result<(), Error> {
+        self.mutate_with_update_context(|context| {
+            use crate::tag_utils::{decode_tags, SwfSlice, SwfStream};
+            use swf::TagCode;
+            let root = context.stage.root_clip();
+            let data = SwfSlice::from(root.movie().unwrap());
+            let mut found_action = false;
+            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+                if tag_code == swf::TagCode::DoAction {
+                    found_action = true;
+                    let bytecode = data.resize_to_reader(reader, tag_len).unwrap();
+                    context.action_queue.queue_actions(
+                        context.stage.root_clip(),
+                        ActionType::Normal { bytecode },
+                        false,
+                    );
+                }
+                Ok(())
+            };
+            let mut reader = data.read_from(0);
+            decode_tags(&mut reader, tag_callback, TagCode::DoAction)?;
+            if !found_action {
+                return Err("No DoAction tag found in benchmark SWF".into());
+            }
+            Ok(())
+        })
+    }
+
+    /// Runs the queued bytecode. Called after `Player::init_avm1_bench`.
+    pub fn run_avm1_bench(&mut self) {
+        self.mutate_with_update_context(|context| {
+            Self::run_actions(context);
+        });
+    }
+}
+
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
 pub struct PlayerBuilder {
     movie: Option<SwfMovie>,
