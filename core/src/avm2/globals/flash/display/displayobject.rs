@@ -565,14 +565,12 @@ pub fn loader_info<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         if let Some(root) = dobj.avm2_root(&mut activation.context) {
-            if DisplayObject::ptr_eq(root, dobj) {
-                let movie = dobj.movie();
+            let movie = dobj.movie();
 
-                if let Some(movie) = movie {
-                    let obj = LoaderInfoObject::from_movie(activation, movie, root)?;
+            if let Some(movie) = movie {
+                let obj = LoaderInfoObject::from_movie(activation, movie, root)?;
 
-                    return Ok(obj.into());
-                }
+                return Ok(obj.into());
             }
         }
 
