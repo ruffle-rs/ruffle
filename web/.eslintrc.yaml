@@ -8,3 +8,17 @@ rules:
   no-unused-vars:
     - error
     - argsIgnorePattern: ^_
+overrides:
+  # TypeScript rules.
+  - files:
+      - '*.ts'
+    parser: '@typescript-eslint/parser'
+    plugins:
+      - '@typescript-eslint'
+    extends:
+      - plugin:@typescript-eslint/recommended
+    rules:
+      '@typescript-eslint/no-non-null-assertion': 'off'
+      '@typescript-eslint/no-unused-vars':
+        - error
+        - argsIgnorePattern: ^_
