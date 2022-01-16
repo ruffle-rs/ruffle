@@ -128,7 +128,7 @@ impl<'gc> Avm1Function<'gc> {
         gc_context: MutationContext<'gc, '_>,
         swf_version: u8,
         actions: SwfSlice,
-        swf_function: &swf::avm1::types::Function,
+        swf_function: &swf::avm1::types::DefineFunction2,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
