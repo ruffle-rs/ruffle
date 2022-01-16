@@ -2648,55 +2648,61 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (4, Action::GetTime, vec![0x34]),
         (
             3,
-            Action::GetUrl {
+            Action::GetUrl(GetUrl {
                 url: SwfStr::from_str_with_encoding("a", WINDOWS_1252).unwrap(),
                 target: SwfStr::from_str_with_encoding("b", WINDOWS_1252).unwrap(),
-            },
+            }),
             vec![0x83, 4, 0, 97, 0, 98, 0],
         ),
         (
             4,
-            Action::GetUrl2 {
+            Action::GetUrl2(GetUrl2 {
                 send_vars_method: SendVarsMethod::Post,
                 is_target_sprite: true,
                 is_load_vars: false,
-            },
+            }),
             vec![0x9A, 1, 0, 0b01_0000_10],
         ),
         (
             4,
-            Action::GetUrl2 {
+            Action::GetUrl2(GetUrl2 {
                 send_vars_method: SendVarsMethod::None,
                 is_target_sprite: true,
                 is_load_vars: false,
-            },
+            }),
             vec![0x9A, 1, 0, 0b01_0000_00],
         ),
         (4, Action::GetVariable, vec![0x1C]),
-        (3, Action::GotoFrame(11), vec![0x81, 2, 0, 11, 0]),
+        (
+            3,
+            Action::GotoFrame(GotoFrame { frame: 11 }),
+            vec![0x81, 2, 0, 11, 0],
+        ),
         (
             4,
-            Action::GotoFrame2 {
+            Action::GotoFrame2(GotoFrame2 {
                 set_playing: false,
                 scene_offset: 0,
-            },
+            }),
             vec![0x9F, 1, 0, 0],
         ),
         (
             4,
-            Action::GotoFrame2 {
+            Action::GotoFrame2(GotoFrame2 {
                 set_playing: true,
                 scene_offset: 259,
-            },
+            }),
             vec![0x9F, 3, 0, 0b11, 3, 1],
         ),
         (
             3,
-            Action::GotoLabel(SwfStr::from_str_with_encoding("testb", WINDOWS_1252).unwrap()),
+            Action::GotoLabel(GotoLabel {
+                label: SwfStr::from_str_with_encoding("testb", WINDOWS_1252).unwrap(),
+            }),
             vec![0x8C, 6, 0, 116, 101, 115, 116, 98, 0],
         ),
-        (4, Action::If { offset: 1 }, vec![0x9D, 2, 0, 1, 0]),
-        (4, Action::Jump { offset: 1 }, vec![0x99, 2, 0, 1, 0]),
+        (4, Action::If(If { offset: 1 }), vec![0x9D, 2, 0, 1, 0]),
+        (4, Action::Jump(Jump { offset: 1 }), vec![0x99, 2, 0, 1, 0]),
         (4, Action::Less, vec![0x0F]),
         (4, Action::MBAsciiToChar, vec![0x37]),
         (4, Action::MBCharToAscii, vec![0x36]),
@@ -2712,72 +2718,110 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (3, Action::PreviousFrame, vec![0x05]),
         (
             4,
-            Action::Push(vec![Value::Str(
-                SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap(),
-            )]),
+            Action::Push(Push {
+                values: vec![Value::Str(
+                    SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap(),
+                )],
+            }),
             vec![0x96, 6, 0, 0, 116, 101, 115, 116, 0],
         ),
         (
             4,
-            Action::Push(vec![Value::Float(0.0)]),
+            Action::Push(Push {
+                values: vec![Value::Float(0.0)],
+            }),
             vec![0x96, 5, 0, 1, 0, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Double(1.5)]),
+            Action::Push(Push {
+                values: vec![Value::Double(1.5)],
+            }),
             vec![0x96, 9, 0, 6, 0, 0, 248, 63, 0, 0, 0, 0],
         ),
-        (5, Action::Push(vec![Value::Null]), vec![0x96, 1, 0, 2]),
-        (5, Action::Push(vec![Value::Undefined]), vec![0x96, 1, 0, 3]),
         (
             5,
-            Action::Push(vec![Value::Null, Value::Undefined]),
+            Action::Push(Push {
+                values: vec![Value::Null],
+            }),
+            vec![0x96, 1, 0, 2],
+        ),
+        (
+            5,
+            Action::Push(Push {
+                values: vec![Value::Undefined],
+            }),
+            vec![0x96, 1, 0, 3],
+        ),
+        (
+            5,
+            Action::Push(Push {
+                values: vec![Value::Null, Value::Undefined],
+            }),
             vec![0x96, 2, 0, 2, 3],
         ),
         (
             5,
-            Action::Push(vec![Value::Register(1)]),
+            Action::Push(Push {
+                values: vec![Value::Register(1)],
+            }),
             vec![0x96, 2, 0, 4, 1],
         ),
         (
             5,
-            Action::Push(vec![Value::Bool(false)]),
+            Action::Push(Push {
+                values: vec![Value::Bool(false)],
+            }),
             vec![0x96, 2, 0, 5, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Bool(true)]),
+            Action::Push(Push {
+                values: vec![Value::Bool(true)],
+            }),
             vec![0x96, 2, 0, 5, 1],
         ),
         (
             5,
-            Action::Push(vec![Value::Double(0.0)]),
+            Action::Push(Push {
+                values: vec![Value::Double(0.0)],
+            }),
             vec![0x96, 9, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Int(31)]),
+            Action::Push(Push {
+                values: vec![Value::Int(31)],
+            }),
             vec![0x96, 5, 0, 7, 31, 0, 0, 0],
         ),
         (
             5,
-            Action::Push(vec![Value::Int(-50)]),
+            Action::Push(Push {
+                values: vec![Value::Int(-50)],
+            }),
             vec![0x96, 5, 0, 7, 206, 255, 255, 255],
         ),
         (
             5,
-            Action::Push(vec![Value::ConstantPool(77)]),
+            Action::Push(Push {
+                values: vec![Value::ConstantPool(77)],
+            }),
             vec![0x96, 2, 0, 8, 77],
         ),
         (
             5,
-            Action::Push(vec![Value::ConstantPool(257)]),
+            Action::Push(Push {
+                values: vec![Value::ConstantPool(257)],
+            }),
             vec![0x96, 3, 0, 9, 1, 1],
         ),
         (4, Action::RandomNumber, vec![0x30]),
         (
             3,
-            Action::SetTarget(SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap()),
+            Action::SetTarget(SetTarget {
+                target: SwfStr::from_str_with_encoding("test", WINDOWS_1252).unwrap(),
+            }),
             vec![0x8B, 5, 0, 116, 101, 115, 116, 0],
         ),
         (4, Action::SetVariable, vec![0x1D]),
@@ -2794,38 +2838,38 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         (4, Action::Trace, vec![0x26]),
         (
             3,
-            Action::WaitForFrame {
+            Action::WaitForFrame(WaitForFrame {
                 frame: 4,
                 num_actions_to_skip: 10,
-            },
+            }),
             vec![0x8A, 3, 0, 4, 0, 10],
         ),
         (
             4,
-            Action::WaitForFrame2 {
+            Action::WaitForFrame2(WaitForFrame2 {
                 num_actions_to_skip: 34,
-            },
+            }),
             vec![0x8D, 1, 0, 34],
         ),
         (
             1,
-            Action::Unknown {
+            Action::Unknown(Unknown {
                 opcode: 0x79,
                 data: &[],
-            },
+            }),
             vec![0x79],
         ),
         (
             1,
-            Action::Unknown {
+            Action::Unknown(Unknown {
                 opcode: 0xA0,
                 data: &[2, 3],
-            },
+            }),
             vec![0xA0, 2, 0, 2, 3],
         ),
         (
             5,
-            Action::DefineFunction {
+            Action::DefineFunction(DefineFunction {
                 name: SwfStr::from_str_with_encoding("cliche", WINDOWS_1252).unwrap(),
                 params: vec![
                     SwfStr::from_str_with_encoding("greeting", WINDOWS_1252).unwrap(),
@@ -2836,7 +2880,7 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
                     0x1c, 0x96, 0x03, 0x00, 0x00, 0x20, 0x00, 0x47, 0x96, 0x06, 0x00, 0x00, 0x6e,
                     0x61, 0x6d, 0x65, 0x00, 0x1c, 0x47, 0x3e,
                 ],
-            },
+            }),
             vec![
                 0x9b, 0x19, 0x00, 0x63, 0x6c, 0x69, 0x63, 0x68, 0x65, 0x00, 0x02, 0x00, 0x67, 0x72,
                 0x65, 0x65, 0x74, 0x69, 0x6e, 0x67, 0x00, 0x6e, 0x61, 0x6d, 0x65, 0x00, 0x21, 0x00,
@@ -2854,7 +2898,7 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
         AbcFile {
             major_version: 46,
             minor_version: 16,
-            constant_pool: ConstantPool {
+            constant_pool: crate::avm2::types::ConstantPool {
                 ints: vec![],
                 uints: vec![],
                 doubles: vec![],

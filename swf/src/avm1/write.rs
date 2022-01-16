@@ -77,7 +77,7 @@ impl<W: Write> Writer<W> {
     }
 
     pub fn write_action(&mut self, action: &Action) -> Result<()> {
-        match *action {
+        match action {
             Action::Add => self.write_action_header(OpCode::Add, 0)?,
             Action::Add2 => self.write_action_header(OpCode::Add2, 0)?,
             Action::And => self.write_action_header(OpCode::And, 0)?,
@@ -94,59 +94,10 @@ impl<W: Write> Writer<W> {
             Action::CastOp => self.write_action_header(OpCode::CastOp, 0)?,
             Action::CharToAscii => self.write_action_header(OpCode::CharToAscii, 0)?,
             Action::CloneSprite => self.write_action_header(OpCode::CloneSprite, 0)?,
-            Action::ConstantPool(ref constants) => {
-                let len = 2 + constants.iter().map(|c| c.len() + 1).sum::<usize>();
-                self.write_action_header(OpCode::ConstantPool, len)?;
-                self.write_u16(constants.len() as u16)?;
-                for constant in constants {
-                    self.write_string(*constant)?;
-                }
-            }
+            Action::ConstantPool(action) => self.write_constant_pool(action)?,
             Action::Decrement => self.write_action_header(OpCode::Decrement, 0)?,
-            Action::DefineFunction {
-                name,
-                ref params,
-                actions,
-            } => {
-                // 1 zero byte for string name, 1 zero byte per param, 2 bytes for # of params,
-                // 2 bytes for code length
-                let len =
-                    name.len() + 1 + 2 + params.iter().map(|p| p.len() + 1).sum::<usize>() + 2;
-                self.write_action_header(OpCode::DefineFunction, len)?;
-                self.write_string(name)?;
-                self.write_u16(params.len() as u16)?;
-                for param in params {
-                    self.write_string(*param)?;
-                }
-                self.write_u16(actions.len() as u16)?;
-                self.output.write_all(actions)?;
-            }
-            Action::DefineFunction2(ref function) => {
-                let len = function.name.len()
-                    + 1
-                    + 3
-                    + function
-                        .params
-                        .iter()
-                        .map(|p| p.name.len() + 2)
-                        .sum::<usize>()
-                    + 4;
-                self.write_action_header(OpCode::DefineFunction2, len)?;
-                self.write_string(function.name)?;
-                self.write_u16(function.params.len() as u16)?;
-                self.write_u8(function.register_count)?;
-                self.write_u16(function.flags.bits())?;
-                for param in &function.params {
-                    self.write_u8(if let Some(n) = param.register_index {
-                        n
-                    } else {
-                        0
-                    })?;
-                    self.write_string(param.name)?;
-                }
-                self.write_u16(function.actions.len() as u16)?;
-                self.output.write_all(function.actions)?;
-            }
+            Action::DefineFunction(action) => self.write_define_function(action)?,
+            Action::DefineFunction2(action) => self.write_define_function_2(action)?,
             Action::DefineLocal => self.write_action_header(OpCode::DefineLocal, 0)?,
             Action::DefineLocal2 => self.write_action_header(OpCode::DefineLocal2, 0)?,
             Action::Divide => self.write_action_header(OpCode::Divide, 0)?,
@@ -161,61 +112,20 @@ impl<W: Write> Writer<W> {
             Action::GetMember => self.write_action_header(OpCode::GetMember, 0)?,
             Action::GetProperty => self.write_action_header(OpCode::GetProperty, 0)?,
             Action::GetTime => self.write_action_header(OpCode::GetTime, 0)?,
-            Action::GetUrl { url, target } => {
-                self.write_action_header(OpCode::GetUrl, url.len() + target.len() + 2)?;
-                self.write_string(url)?;
-                self.write_string(target)?;
-            }
-            Action::GetUrl2 {
-                send_vars_method,
-                is_target_sprite,
-                is_load_vars,
-            } => {
-                self.write_action_header(OpCode::GetUrl2, 1)?;
-                let flags = (match send_vars_method {
-                    SendVarsMethod::None => 0,
-                    SendVarsMethod::Get => 1,
-                    SendVarsMethod::Post => 2,
-                }) | if is_target_sprite { 0b01_0000_00 } else { 0 }
-                    | if is_load_vars { 0b10_0000_00 } else { 0 };
-                self.write_u8(flags)?;
-            }
+            Action::GetUrl(action) => self.write_get_url(action)?,
+            Action::GetUrl2(action) => self.write_get_url_2(action)?,
             Action::GetVariable => self.write_action_header(OpCode::GetVariable, 0)?,
-            Action::GotoFrame(frame) => {
-                self.write_action_header(OpCode::GotoFrame, 2)?;
-                self.write_u16(frame)?;
-            }
-            Action::GotoFrame2 {
-                set_playing,
-                scene_offset,
-            } => {
-                if scene_offset != 0 {
-                    self.write_action_header(OpCode::GotoFrame2, 3)?;
-                    self.write_u8(if set_playing { 0b11 } else { 0b01 })?;
-                    self.write_u16(scene_offset)?;
-                } else {
-                    self.write_action_header(OpCode::GotoFrame2, 1)?;
-                    self.write_u8(if set_playing { 0b10 } else { 0b00 })?;
-                }
-            }
-            Action::GotoLabel(label) => {
-                self.write_action_header(OpCode::GotoLabel, label.len() + 1)?;
-                self.write_string(label)?;
-            }
+            Action::GotoFrame(action) => self.write_goto_frame(action)?,
+            Action::GotoFrame2(action) => self.write_goto_frame_2(action)?,
+            Action::GotoLabel(action) => self.write_goto_label(action)?,
             Action::Greater => self.write_action_header(OpCode::Greater, 0)?,
-            Action::If { offset } => {
-                self.write_action_header(OpCode::If, 2)?;
-                self.write_i16(offset)?;
-            }
+            Action::If(action) => self.write_if(action)?,
             Action::ImplementsOp => self.write_action_header(OpCode::ImplementsOp, 0)?,
             Action::Increment => self.write_action_header(OpCode::Increment, 0)?,
             Action::InitArray => self.write_action_header(OpCode::InitArray, 0)?,
             Action::InitObject => self.write_action_header(OpCode::InitObject, 0)?,
             Action::InstanceOf => self.write_action_header(OpCode::InstanceOf, 0)?,
-            Action::Jump { offset } => {
-                self.write_action_header(OpCode::Jump, 2)?;
-                self.write_i16(offset)?;
-            }
+            Action::Jump(action) => self.write_jump(action)?,
             Action::Less => self.write_action_header(OpCode::Less, 0)?,
             Action::Less2 => self.write_action_header(OpCode::Less2, 0)?,
             Action::MBAsciiToChar => self.write_action_header(OpCode::MBAsciiToChar, 0)?,
@@ -232,49 +142,21 @@ impl<W: Write> Writer<W> {
             Action::Play => self.write_action_header(OpCode::Play, 0)?,
             Action::Pop => self.write_action_header(OpCode::Pop, 0)?,
             Action::PreviousFrame => self.write_action_header(OpCode::PreviousFrame, 0)?,
-            Action::Push(ref values) => {
-                let len = values
-                    .iter()
-                    .map(|v| match *v {
-                        Value::Str(string) => string.len() + 2,
-                        Value::Null | Value::Undefined => 1,
-                        Value::Register(_) | Value::Bool(_) => 2,
-                        Value::Double(_) => 9,
-                        Value::Float(_) | Value::Int(_) => 5,
-                        Value::ConstantPool(v) => {
-                            if v < 256 {
-                                2
-                            } else {
-                                3
-                            }
-                        }
-                    })
-                    .sum();
-                self.write_action_header(OpCode::Push, len)?;
-                for value in values {
-                    self.write_push_value(value)?;
-                }
-            }
+            Action::Push(action) => self.write_push(action)?,
             Action::PushDuplicate => self.write_action_header(OpCode::PushDuplicate, 0)?,
             Action::RandomNumber => self.write_action_header(OpCode::RandomNumber, 0)?,
             Action::RemoveSprite => self.write_action_header(OpCode::RemoveSprite, 0)?,
             Action::Return => self.write_action_header(OpCode::Return, 0)?,
             Action::SetMember => self.write_action_header(OpCode::SetMember, 0)?,
             Action::SetProperty => self.write_action_header(OpCode::SetProperty, 0)?,
-            Action::SetTarget(target) => {
-                self.write_action_header(OpCode::SetTarget, target.len() + 1)?;
-                self.write_string(target)?;
-            }
+            Action::SetTarget(action) => self.write_set_target(action)?,
             Action::SetTarget2 => self.write_action_header(OpCode::SetTarget2, 0)?,
             Action::SetVariable => self.write_action_header(OpCode::SetVariable, 0)?,
             Action::StackSwap => self.write_action_header(OpCode::StackSwap, 0)?,
             Action::StartDrag => self.write_action_header(OpCode::StartDrag, 0)?,
             Action::Stop => self.write_action_header(OpCode::Stop, 0)?,
             Action::StopSounds => self.write_action_header(OpCode::StopSounds, 0)?,
-            Action::StoreRegister(register) => {
-                self.write_action_header(OpCode::StoreRegister, 1)?;
-                self.write_u8(register)?;
-            }
+            Action::StoreRegister(action) => self.write_store_register(action)?,
             Action::StrictEquals => self.write_action_header(OpCode::StrictEquals, 0)?,
             Action::StringAdd => self.write_action_header(OpCode::StringAdd, 0)?,
             Action::StringEquals => self.write_action_header(OpCode::StringEquals, 0)?,
@@ -290,77 +172,12 @@ impl<W: Write> Writer<W> {
             Action::ToNumber => self.write_action_header(OpCode::ToNumber, 0)?,
             Action::ToString => self.write_action_header(OpCode::ToString, 0)?,
             Action::Trace => self.write_action_header(OpCode::Trace, 0)?,
-            Action::Try(ref try_block) => {
-                let len = 7 + if let Some((CatchVar::Var(name), _)) = try_block.catch_body {
-                    name.len() + 1
-                } else {
-                    1
-                };
-                self.write_action_header(OpCode::Try, len)?;
-
-                let mut flags = TryFlags::empty();
-                flags.set(TryFlags::CATCH_BLOCK, try_block.catch_body.is_some());
-                flags.set(TryFlags::FINALLY_BLOCK, try_block.finally_body.is_some());
-                flags.set(
-                    TryFlags::CATCH_IN_REGISTER,
-                    matches!(try_block.catch_body, Some((CatchVar::Register(_), _))),
-                );
-                self.write_u8(flags.bits())?;
-
-                let try_size = try_block.try_body.len();
-                self.write_u16(try_size as u16)?;
-
-                let catch_size = try_block
-                    .catch_body
-                    .as_ref()
-                    .map_or(0, |(_, catch_body)| catch_body.len());
-                self.write_u16(catch_size as u16)?;
-
-                let finally_size = try_block
-                    .finally_body
-                    .map_or(0, |finally_body| finally_body.len());
-                self.write_u16(finally_size as u16)?;
-
-                match try_block.catch_body {
-                    Some((CatchVar::Var(name), _)) => self.write_string(name)?,
-                    Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
-                    None => self.write_u8(0)?,
-                }
-
-                self.output.write_all(try_block.try_body)?;
-
-                if let Some((_, catch_body)) = try_block.catch_body {
-                    self.output.write_all(catch_body)?;
-                }
-
-                if let Some(finally_body) = try_block.finally_body {
-                    self.output.write_all(finally_body)?;
-                }
-            }
+            Action::Try(action) => self.write_try(action)?,
             Action::TypeOf => self.write_action_header(OpCode::TypeOf, 0)?,
-            Action::WaitForFrame {
-                frame,
-                num_actions_to_skip,
-            } => {
-                self.write_action_header(OpCode::WaitForFrame, 3)?;
-                self.write_u16(frame)?;
-                self.write_u8(num_actions_to_skip)?;
-            }
-            Action::WaitForFrame2 {
-                num_actions_to_skip,
-            } => {
-                self.write_action_header(OpCode::WaitForFrame2, 1)?;
-                self.write_u8(num_actions_to_skip)?;
-            }
-            Action::With { actions } => {
-                self.write_action_header(OpCode::With, 2)?;
-                self.write_u16(actions.len() as u16)?;
-                self.output.write_all(actions)?;
-            }
-            Action::Unknown { opcode, data } => {
-                self.write_opcode_and_length(opcode, data.len())?;
-                self.output.write_all(data)?;
-            }
+            Action::WaitForFrame(action) => self.write_wait_for_frame(action)?,
+            Action::WaitForFrame2(action) => self.write_wait_for_frame_2(action)?,
+            Action::With(action) => self.write_with(action)?,
+            Action::Unknown(action) => self.write_unknown(action)?,
         }
 
         Ok(())
@@ -378,6 +195,147 @@ impl<W: Write> Writer<W> {
         );
         if opcode >= 0x80 {
             self.write_u16(length as u16)?;
+        }
+        Ok(())
+    }
+
+    fn write_constant_pool(&mut self, action: &ConstantPool) -> Result<()> {
+        let len = 2 + action.strings.iter().map(|c| c.len() + 1).sum::<usize>();
+        self.write_action_header(OpCode::ConstantPool, len)?;
+        self.write_u16(action.strings.len() as u16)?;
+        for string in &action.strings {
+            self.write_string(string)?;
+        }
+        Ok(())
+    }
+
+    fn write_define_function(&mut self, action: &DefineFunction) -> Result<()> {
+        // 1 zero byte for string name, 1 zero byte per param, 2 bytes for # of params,
+        // 2 bytes for code length
+        let len = action.name.len()
+            + 1
+            + 2
+            + action.params.iter().map(|p| p.len() + 1).sum::<usize>()
+            + 2;
+        self.write_action_header(OpCode::DefineFunction, len)?;
+        self.write_string(action.name)?;
+        self.write_u16(action.params.len() as u16)?;
+        for param in &action.params {
+            self.write_string(param)?;
+        }
+        self.write_u16(action.actions.len() as u16)?;
+        self.output.write_all(action.actions)?;
+        Ok(())
+    }
+
+    fn write_define_function_2(&mut self, action: &DefineFunction2) -> Result<()> {
+        let len = action.name.len()
+            + 1
+            + 3
+            + action
+                .params
+                .iter()
+                .map(|p| p.name.len() + 2)
+                .sum::<usize>()
+            + 4;
+        self.write_action_header(OpCode::DefineFunction2, len)?;
+        self.write_string(action.name)?;
+        self.write_u16(action.params.len() as u16)?;
+        self.write_u8(action.register_count)?;
+        self.write_u16(action.flags.bits())?;
+        for param in &action.params {
+            self.write_u8(if let Some(n) = param.register_index {
+                n
+            } else {
+                0
+            })?;
+            self.write_string(param.name)?;
+        }
+        self.write_u16(action.actions.len() as u16)?;
+        self.output.write_all(action.actions)?;
+        Ok(())
+    }
+
+    fn write_get_url(&mut self, action: &GetUrl) -> Result<()> {
+        self.write_action_header(OpCode::GetUrl, action.url.len() + action.target.len() + 2)?;
+        self.write_string(action.url)?;
+        self.write_string(action.target)?;
+        Ok(())
+    }
+
+    fn write_get_url_2(&mut self, action: &GetUrl2) -> Result<()> {
+        self.write_action_header(OpCode::GetUrl2, 1)?;
+        let flags = (match action.send_vars_method {
+            SendVarsMethod::None => 0,
+            SendVarsMethod::Get => 1,
+            SendVarsMethod::Post => 2,
+        }) | if action.is_target_sprite {
+            0b01_0000_00
+        } else {
+            0
+        } | if action.is_load_vars { 0b10_0000_00 } else { 0 };
+        self.write_u8(flags)?;
+        Ok(())
+    }
+
+    fn write_goto_frame(&mut self, action: &GotoFrame) -> Result<()> {
+        self.write_action_header(OpCode::GotoFrame, 2)?;
+        self.write_u16(action.frame)?;
+        Ok(())
+    }
+
+    fn write_goto_frame_2(&mut self, action: &GotoFrame2) -> Result<()> {
+        if action.scene_offset != 0 {
+            self.write_action_header(OpCode::GotoFrame2, 3)?;
+            self.write_u8(if action.set_playing { 0b11 } else { 0b01 })?;
+            self.write_u16(action.scene_offset)?;
+        } else {
+            self.write_action_header(OpCode::GotoFrame2, 1)?;
+            self.write_u8(if action.set_playing { 0b10 } else { 0b00 })?;
+        }
+        Ok(())
+    }
+
+    fn write_goto_label(&mut self, action: &GotoLabel) -> Result<()> {
+        self.write_action_header(OpCode::GotoLabel, action.label.len() + 1)?;
+        self.write_string(action.label)?;
+        Ok(())
+    }
+
+    fn write_if(&mut self, action: &If) -> Result<()> {
+        self.write_action_header(OpCode::If, 2)?;
+        self.write_i16(action.offset)?;
+        Ok(())
+    }
+
+    fn write_jump(&mut self, action: &Jump) -> Result<()> {
+        self.write_action_header(OpCode::Jump, 2)?;
+        self.write_i16(action.offset)?;
+        Ok(())
+    }
+
+    fn write_push(&mut self, action: &Push) -> Result<()> {
+        let len = action
+            .values
+            .iter()
+            .map(|v| match *v {
+                Value::Str(string) => string.len() + 2,
+                Value::Null | Value::Undefined => 1,
+                Value::Register(_) | Value::Bool(_) => 2,
+                Value::Double(_) => 9,
+                Value::Float(_) | Value::Int(_) => 5,
+                Value::ConstantPool(v) => {
+                    if v < 256 {
+                        2
+                    } else {
+                        3
+                    }
+                }
+            })
+            .sum();
+        self.write_action_header(OpCode::Push, len)?;
+        for value in &action.values {
+            self.write_push_value(value)?;
         }
         Ok(())
     }
@@ -424,6 +382,93 @@ impl<W: Write> Writer<W> {
                 }
             }
         };
+        Ok(())
+    }
+
+    fn write_set_target(&mut self, action: &SetTarget) -> Result<()> {
+        self.write_action_header(OpCode::SetTarget, action.target.len() + 1)?;
+        self.write_string(action.target)?;
+        Ok(())
+    }
+
+    fn write_store_register(&mut self, action: &StoreRegister) -> Result<()> {
+        self.write_action_header(OpCode::StoreRegister, 1)?;
+        self.write_u8(action.register)?;
+        Ok(())
+    }
+
+    fn write_try(&mut self, action: &Try) -> Result<()> {
+        let len = 7 + if let Some((CatchVar::Var(name), _)) = action.catch_body {
+            name.len() + 1
+        } else {
+            1
+        };
+        self.write_action_header(OpCode::Try, len)?;
+
+        let mut flags = TryFlags::empty();
+        flags.set(TryFlags::CATCH_BLOCK, action.catch_body.is_some());
+        flags.set(TryFlags::FINALLY_BLOCK, action.finally_body.is_some());
+        flags.set(
+            TryFlags::CATCH_IN_REGISTER,
+            matches!(action.catch_body, Some((CatchVar::Register(_), _))),
+        );
+        self.write_u8(flags.bits())?;
+
+        let try_size = action.try_body.len();
+        self.write_u16(try_size as u16)?;
+
+        let catch_size = action
+            .catch_body
+            .as_ref()
+            .map_or(0, |(_, catch_body)| catch_body.len());
+        self.write_u16(catch_size as u16)?;
+
+        let finally_size = action
+            .finally_body
+            .map_or(0, |finally_body| finally_body.len());
+        self.write_u16(finally_size as u16)?;
+
+        match action.catch_body {
+            Some((CatchVar::Var(name), _)) => self.write_string(name)?,
+            Some((CatchVar::Register(i), _)) => self.write_u8(i)?,
+            None => self.write_u8(0)?,
+        }
+
+        self.output.write_all(action.try_body)?;
+
+        if let Some((_, catch_body)) = action.catch_body {
+            self.output.write_all(catch_body)?;
+        }
+
+        if let Some(finally_body) = action.finally_body {
+            self.output.write_all(finally_body)?;
+        }
+        Ok(())
+    }
+
+    fn write_wait_for_frame(&mut self, action: &WaitForFrame) -> Result<()> {
+        self.write_action_header(OpCode::WaitForFrame, 3)?;
+        self.write_u16(action.frame)?;
+        self.write_u8(action.num_actions_to_skip)?;
+        Ok(())
+    }
+
+    fn write_wait_for_frame_2(&mut self, action: &WaitForFrame2) -> Result<()> {
+        self.write_action_header(OpCode::WaitForFrame2, 1)?;
+        self.write_u8(action.num_actions_to_skip)?;
+        Ok(())
+    }
+
+    fn write_with(&mut self, action: &With) -> Result<()> {
+        self.write_action_header(OpCode::With, 2)?;
+        self.write_u16(action.actions.len() as u16)?;
+        self.output.write_all(action.actions)?;
+        Ok(())
+    }
+
+    fn write_unknown(&mut self, action: &Unknown) -> Result<()> {
+        self.write_opcode_and_length(action.opcode, action.data.len())?;
+        self.output.write_all(action.data)?;
         Ok(())
     }
 }
