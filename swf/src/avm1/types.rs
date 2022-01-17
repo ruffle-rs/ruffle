@@ -182,17 +182,83 @@ pub struct GetUrl<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct GetUrl2 {
-    pub send_vars_method: SendVarsMethod,
-    pub is_target_sprite: bool,
-    pub is_load_vars: bool,
+pub struct GetUrl2(pub(crate) GetUrlFlags);
+
+impl GetUrl2 {
+    /// Returns the flags for an AVM1 `loadMovie` call.
+    #[inline]
+    pub fn for_load_movie(method: SendVarsMethod) -> Self {
+        let mut flags = Self(GetUrlFlags::LOAD_TARGET);
+        flags.set_send_vars_method(method);
+        flags
+    }
+
+    /// Returns the flags for an AVM1 `getURL` call.
+    #[inline]
+    pub fn for_get_url(method: SendVarsMethod) -> Self {
+        let mut flags = Self(GetUrlFlags::empty());
+        flags.set_send_vars_method(method);
+        flags
+    }
+
+    /// Returns the flags for an AVM1 `loadVariables` or `LoadVars.load` call.
+    #[inline]
+    pub fn for_load_vars(method: SendVarsMethod) -> Self {
+        let mut flags = Self(GetUrlFlags::LOAD_VARIABLES);
+        flags.set_send_vars_method(method);
+        flags
+    }
+
+    /// The HTTP method used for sending data.
+    #[inline]
+    pub fn send_vars_method(&self) -> SendVarsMethod {
+        match self.0 & GetUrlFlags::METHOD_MASK {
+            GetUrlFlags::METHOD_NONE => SendVarsMethod::None,
+            GetUrlFlags::METHOD_GET => SendVarsMethod::Get,
+            GetUrlFlags::METHOD_POST => SendVarsMethod::Post,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Sets the HTTP method used for sending data.
+    #[inline]
+    pub fn set_send_vars_method(&mut self, method: SendVarsMethod) {
+        self.0 -= GetUrlFlags::METHOD_MASK;
+        self.0 |= GetUrlFlags::from_bits(method as u8).unwrap();
+    }
+
+    /// Whether this action will load a movie or image into a display object.
+    #[inline]
+    pub fn is_target_sprite(&self) -> bool {
+        self.0.contains(GetUrlFlags::LOAD_TARGET)
+    }
+
+    /// Whether this action will load variables into an ActionScript object.
+    #[inline]
+    pub fn is_load_vars(&self) -> bool {
+        self.0.contains(GetUrlFlags::LOAD_VARIABLES)
+    }
+}
+
+bitflags! {
+    // NOTE: The GetURL2 flag layout is listed backwards in the SWF19 specs.
+    pub(crate) struct GetUrlFlags: u8 {
+        const METHOD_NONE = 0;
+        const METHOD_GET = 1;
+        const METHOD_POST = 2;
+        const METHOD_MASK = 3;
+
+        const LOAD_TARGET = 1 << 6;
+        const LOAD_VARIABLES = 1 << 7;
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
 pub enum SendVarsMethod {
-    None,
-    Get,
-    Post,
+    None = 0,
+    Get = 1,
+    Post = 2,
 }
 
 #[derive(Clone, Debug, PartialEq)]
