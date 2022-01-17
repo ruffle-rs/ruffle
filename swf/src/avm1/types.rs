@@ -1,5 +1,6 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
+use std::num::NonZeroU8;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Action<'a> {
@@ -127,10 +128,31 @@ pub struct DefineFunction2<'a> {
     pub actions: &'a [u8],
 }
 
+impl<'a> From<DefineFunction<'a>> for DefineFunction2<'a> {
+    #[inline]
+    fn from(function: DefineFunction<'a>) -> Self {
+        let params = function
+            .params
+            .into_iter()
+            .map(|param| FunctionParam {
+                name: param,
+                register_index: None,
+            })
+            .collect();
+        Self {
+            name: function.name,
+            register_count: 0,
+            params,
+            flags: FunctionFlags::default(),
+            actions: function.actions,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FunctionParam<'a> {
     pub name: &'a SwfStr,
-    pub register_index: Option<u8>,
+    pub register_index: Option<NonZeroU8>,
 }
 
 bitflags! {
@@ -144,6 +166,12 @@ bitflags! {
         const PRELOAD_ROOT = 1 << 6;
         const PRELOAD_PARENT = 1 << 7;
         const PRELOAD_GLOBAL = 1 << 8;
+    }
+}
+
+impl Default for FunctionFlags {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 

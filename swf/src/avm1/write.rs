@@ -248,11 +248,7 @@ impl<W: Write> Writer<W> {
         self.write_u8(action.register_count)?;
         self.write_u16(action.flags.bits())?;
         for param in &action.params {
-            self.write_u8(if let Some(n) = param.register_index {
-                n
-            } else {
-                0
-            })?;
+            self.write_u8(param.register_index.map(|n| n.get()).unwrap_or_default())?;
             self.write_string(param.name)?;
         }
         self.write_u16(action.actions.len() as u16)?;
