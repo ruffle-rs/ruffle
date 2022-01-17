@@ -458,7 +458,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if reader.get_ref().as_ptr() as usize >= data.as_ref().as_ptr_range().end as usize {
             //Executing beyond the end of a function constitutes an implicit return.
             Ok(FrameControl::Return(ReturnType::Implicit))
-        } else if let Some(action) = reader.read_action()? {
+        } else {
+            let action = reader.read_action()?;
             avm_debug!(
                 self.context.avm1,
                 "({}) Action: {:?}",
@@ -492,6 +493,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::Delete => self.action_delete(),
                 Action::Delete2 => self.action_delete_2(),
                 Action::Divide => self.action_divide(),
+                Action::End => self.action_end(),
                 Action::EndDrag => self.action_end_drag(),
                 Action::Enumerate => self.action_enumerate(),
                 Action::Enumerate2 => self.action_enumerate_2(),
@@ -568,9 +570,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::With(action) => self.action_with(action, data),
                 _ => self.unknown_op(action),
             }
-        } else {
-            //The explicit end opcode was encountered so return here
-            Ok(FrameControl::Return(ReturnType::Implicit))
         }
     }
 
@@ -1013,6 +1012,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
+    }
+
+    fn action_end(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        Ok(FrameControl::Return(ReturnType::Implicit))
     }
 
     fn action_end_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {

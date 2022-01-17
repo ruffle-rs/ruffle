@@ -49,7 +49,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn read_action(&mut self) -> Result<Option<Action<'a>>> {
+    pub fn read_action(&mut self) -> Result<Action<'a>> {
         let (opcode, mut length) = self.read_opcode_and_length()?;
         let start = self.input;
 
@@ -87,11 +87,9 @@ impl<'a> Reader<'a> {
     /// The `length` passed in should be the length excluding any sub-blocks.
     /// The final `length` returned will be total length of the action, including sub-blocks.
     #[inline]
-    fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Option<Action<'a>>> {
+    fn read_op(&mut self, opcode: u8, length: &mut usize) -> Result<Action<'a>> {
         let action = if let Some(op) = OpCode::from_u8(opcode) {
             match op {
-                OpCode::End => return Ok(None),
-
                 OpCode::Add => Action::Add,
                 OpCode::Add2 => Action::Add2,
                 OpCode::And => Action::And,
@@ -124,6 +122,7 @@ impl<'a> Reader<'a> {
                 OpCode::EndDrag => Action::EndDrag,
                 OpCode::Enumerate => Action::Enumerate,
                 OpCode::Enumerate2 => Action::Enumerate2,
+                OpCode::End => Action::End,
                 OpCode::Equals => Action::Equals,
                 OpCode::Equals2 => Action::Equals2,
                 OpCode::Extends => Action::Extends,
@@ -200,7 +199,7 @@ impl<'a> Reader<'a> {
             Action::Unknown(self.read_unknown_action(opcode, *length)?)
         };
 
-        Ok(Some(action))
+        Ok(action)
     }
 
     fn read_constant_pool(&mut self) -> Result<ConstantPool<'a>> {
@@ -420,7 +419,7 @@ pub mod tests {
     fn read_action() {
         for (swf_version, expected_action, action_bytes) in test_data::avm1_tests() {
             let mut reader = Reader::new(&action_bytes[..], swf_version);
-            let parsed_action = reader.read_action().unwrap().unwrap();
+            let parsed_action = reader.read_action().unwrap();
             assert_eq!(
                 parsed_action, expected_action,
                 "Incorrectly parsed action.\nRead:\n{:?}\n\nExpected:\n{:?}",
@@ -450,7 +449,7 @@ pub mod tests {
             0x00, 0x74, 0x65, 0x73, 0x74, 0x00, 0x26, 0x00,
         ];
         let mut reader = Reader::new(&action_bytes[..], 5);
-        let action = reader.read_action().unwrap().unwrap();
+        let action = reader.read_action().unwrap();
         assert_eq!(
             action,
             Action::DefineFunction(DefineFunction {
@@ -462,7 +461,7 @@ pub mod tests {
 
         if let Action::DefineFunction(DefineFunction { actions, .. }) = action {
             let mut reader = Reader::new(actions, 5);
-            let action = reader.read_action().unwrap().unwrap();
+            let action = reader.read_action().unwrap();
             assert_eq!(
                 action,
                 Action::Push(Push {
@@ -480,7 +479,7 @@ pub mod tests {
         // until the end of the action. Ensure we don't read extra values.
         let action_bytes = [0x96, 2, 0, 2, 3, 3]; // Extra 3 at the end shouldn't be read.
         let mut reader = Reader::new(&action_bytes[..], 5);
-        let action = reader.read_action().unwrap().unwrap();
+        let action = reader.read_action().unwrap();
         assert_eq!(
             action,
             Action::Push(Push {
@@ -504,7 +503,7 @@ pub mod tests {
         ];
         let mut reader = Reader::new(&action_bytes[..], 5);
 
-        let action = reader.read_action().unwrap().unwrap();
+        let action = reader.read_action().unwrap();
         assert_eq!(
             action,
             Action::ConstantPool(ConstantPool {
@@ -512,7 +511,7 @@ pub mod tests {
             })
         );
 
-        let action = reader.read_action().unwrap().unwrap();
+        let action = reader.read_action().unwrap();
         assert_eq!(action, Action::Subtract);
     }
 }

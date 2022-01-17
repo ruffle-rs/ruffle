@@ -103,6 +103,7 @@ impl<W: Write> Writer<W> {
             Action::Divide => self.write_small_action(OpCode::Divide),
             Action::Delete => self.write_small_action(OpCode::Delete),
             Action::Delete2 => self.write_small_action(OpCode::Delete2),
+            Action::End => self.write_small_action(OpCode::End),
             Action::EndDrag => self.write_small_action(OpCode::EndDrag),
             Action::Enumerate => self.write_small_action(OpCode::Enumerate),
             Action::Enumerate2 => self.write_small_action(OpCode::Enumerate2),
