@@ -568,17 +568,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::WaitForFrame(action) => self.action_wait_for_frame(action, reader),
                 Action::WaitForFrame2(action) => self.action_wait_for_frame_2(action, reader),
                 Action::With(action) => self.action_with(action, data),
-                _ => self.unknown_op(action),
+                Action::Unknown(action) => self.action_unknown(action),
             }
         }
-    }
-
-    fn unknown_op(
-        &mut self,
-        action: swf::avm1::types::Action,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        avm_error!(self, "Unknown AVM1 opcode: {:?}", action);
-        Ok(FrameControl::Continue)
     }
 
     fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -2269,6 +2261,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             }
         }
+    }
+
+    fn action_unknown(
+        &mut self,
+        unknown: swf::avm1::types::Unknown,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        avm_error!(self, "Unknown AVM1 opcode: {:?}", unknown);
+        Ok(FrameControl::Continue)
     }
 
     /// Retrieve a given register value.
