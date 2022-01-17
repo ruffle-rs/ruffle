@@ -8,7 +8,7 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{loaderinfo_allocator, DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
-use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
 use swf::{write_swf, Compression};
 
@@ -243,18 +243,12 @@ pub fn url<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             let root = match &*loader_stream {
-                LoaderStream::Stage => activation
-                    .context
-                    .stage
-                    .child_by_index(0)
-                    .and_then(|c| c.movie()),
-                LoaderStream::Swf(root, _) => Some(root.clone()),
+                LoaderStream::Stage => activation.context.swf,
+                LoaderStream::Swf(root, _) => root,
             };
 
-            if let Some(root) = root {
-                let url = root.url().unwrap_or("");
-                return Ok(AvmString::new_utf8(activation.context.gc_context, url).into());
-            }
+            let url = root.url().unwrap_or("");
+            return Ok(AvmString::new_utf8(activation.context.gc_context, url).into());
         }
     }
 
@@ -292,47 +286,41 @@ pub fn bytes<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             let root = match &*loader_stream {
-                LoaderStream::Stage => activation
-                    .context
-                    .stage
-                    .child_by_index(0)
-                    .and_then(|c| c.movie()),
-                LoaderStream::Swf(root, _) => Some(root.clone()),
+                LoaderStream::Stage => activation.context.swf,
+                LoaderStream::Swf(root, _) => root,
             };
 
-            if let Some(root) = root {
-                let ba_class = activation.context.avm2.classes().bytearray;
+            let ba_class = activation.context.avm2.classes().bytearray;
 
-                let ba = ba_class.construct(activation, &[])?;
-                let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
+            let ba = ba_class.construct(activation, &[])?;
+            let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
 
-                // First, write a fake header corresponding to an
-                // uncompressed SWF
-                let mut header = root.header().swf_header().clone();
-                header.compression = Compression::None;
+            // First, write a fake header corresponding to an
+            // uncompressed SWF
+            let mut header = root.header().swf_header().clone();
+            header.compression = Compression::None;
 
-                write_swf(&header, &[], &mut *ba_write).unwrap();
+            write_swf(&header, &[], &mut *ba_write).unwrap();
 
-                // `swf` always writes an implicit end tag, let's cut that
-                // off. We scroll back 2 bytes before writing the actual
-                // datastream as it is guaranteed to at least be as long as
-                // the implicit end tag we want to get rid of.
-                let correct_header_length = ba_write.len() - 2;
-                ba_write.set_position(correct_header_length);
-                ba_write.write_bytes(root.data())?;
+            // `swf` always writes an implicit end tag, let's cut that
+            // off. We scroll back 2 bytes before writing the actual
+            // datastream as it is guaranteed to at least be as long as
+            // the implicit end tag we want to get rid of.
+            let correct_header_length = ba_write.len() - 2;
+            ba_write.set_position(correct_header_length);
+            ba_write.write_bytes(root.data())?;
 
-                // `swf` wrote the wrong length (since we wrote the data
-                // ourselves), so we need to overwrite it ourselves.
-                ba_write.set_position(4);
-                ba_write.set_endian(Endian::Little);
-                ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
+            // `swf` wrote the wrong length (since we wrote the data
+            // ourselves), so we need to overwrite it ourselves.
+            ba_write.set_position(4);
+            ba_write.set_endian(Endian::Little);
+            ba_write.write_unsigned_int((root.data().len() + correct_header_length) as u32)?;
 
-                // Finally, reset the array to the correct state.
-                ba_write.set_position(0);
-                ba_write.set_endian(Endian::Big);
+            // Finally, reset the array to the correct state.
+            ba_write.set_position(0);
+            ba_write.set_endian(Endian::Big);
 
-                return Ok(ba.into());
-            }
+            return Ok(ba.into());
         }
     }
 
@@ -373,34 +361,28 @@ pub fn parameters<'gc>(
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
             let root = match &*loader_stream {
-                LoaderStream::Stage => activation
-                    .context
-                    .stage
-                    .child_by_index(0)
-                    .and_then(|c| c.movie()),
-                LoaderStream::Swf(root, _) => Some(root.clone()),
+                LoaderStream::Stage => activation.context.swf,
+                LoaderStream::Swf(root, _) => root,
             };
 
-            if let Some(root) = root {
-                let mut params_obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
-                let parameters = root.parameters();
+            let mut params_obj = activation
+                .avm2()
+                .classes()
+                .object
+                .construct(activation, &[])?;
+            let parameters = root.parameters();
 
-                for (k, v) in parameters.iter() {
-                    let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
-                    let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
-                    params_obj.set_property(
-                        &QName::new(Namespace::public(), avm_k).into(),
-                        avm_v.into(),
-                        activation,
-                    )?;
-                }
-
-                return Ok(params_obj.into());
+            for (k, v) in parameters.iter() {
+                let avm_k = AvmString::new_utf8(activation.context.gc_context, k);
+                let avm_v = AvmString::new_utf8(activation.context.gc_context, v);
+                params_obj.set_property(
+                    &QName::new(Namespace::public(), avm_k).into(),
+                    avm_v.into(),
+                    activation,
+                )?;
             }
+
+            return Ok(params_obj.into());
         }
     }
 
