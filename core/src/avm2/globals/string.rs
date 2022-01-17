@@ -279,6 +279,82 @@ fn match_s<'gc>(
     Ok(Value::Null)
 }
 
+/// Implements `String.replace`
+fn replace<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let this = Value::from(this).coerce_to_string(activation)?;
+
+        let pattern = args.get(0).unwrap_or(&Value::Undefined);
+        let replacement = args.get(1).unwrap_or(&Value::Undefined);
+
+        if replacement
+            .coerce_to_object(activation)?
+            .as_function_object()
+            .is_some()
+        {
+            log::warn!("string.replace(_, function) - not implemented");
+            return Err("NotImplemented".into());
+        }
+        let replacement = replacement.coerce_to_string(activation)?;
+
+        if replacement.find(b'$').is_some() {
+            log::warn!("string.replace(_, \"...$...\") - not implemented");
+            return Err("NotImplemented".into());
+        }
+
+        if let Some(mut regexp) = pattern
+            .coerce_to_object(activation)?
+            .as_regexp_mut(activation.context.gc_context)
+        {
+            let mut ret = WString::new();
+            let mut start = 0;
+
+            let old = regexp.last_index();
+            regexp.set_last_index(0);
+
+            while let Some(result) = regexp.exec(this) {
+                ret.push_str(&this[start..result.start()]);
+                ret.push_str(&replacement);
+
+                start = regexp.last_index();
+
+                if result.range().is_empty() {
+                    let last_index = regexp.last_index();
+                    if last_index == this.len() {
+                        break;
+                    }
+                    regexp.set_last_index(last_index + 1);
+                }
+
+                if !regexp.flags().contains(RegExpFlags::GLOBAL) {
+                    break;
+                }
+            }
+
+            regexp.set_last_index(old);
+
+            ret.push_str(&this[start..]);
+
+            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        } else {
+            let pattern = pattern.coerce_to_string(activation)?;
+            if let Some(position) = this.find(&pattern) {
+                let mut ret = WString::from(&this[..position]);
+                ret.push_str(&replacement);
+                ret.push_str(&this[position + pattern.len()..]);
+                return Ok(AvmString::new(activation.context.gc_context, ret).into());
+            } else {
+                return Ok(this.into());
+            }
+        }
+    }
+    Ok(Value::Undefined)
+}
+
 /// Implements `String.slice`
 fn slice<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -474,6 +550,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("indexOf", index_of),
         ("lastIndexOf", last_index_of),
         ("match", match_s),
+        ("replace", replace),
         ("slice", slice),
         ("split", split),
         ("substr", substr),
