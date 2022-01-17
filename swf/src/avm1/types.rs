@@ -28,6 +28,7 @@ pub enum Action<'a> {
     Delete,
     Delete2,
     Divide,
+    End,
     EndDrag,
     Enumerate,
     Enumerate2,
