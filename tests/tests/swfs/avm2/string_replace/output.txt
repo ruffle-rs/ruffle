@@ -1,0 +1,17 @@
+// string replacements
+ a a
+b a a
+aaa
+xa a a
+// regex
+  x
+x  
+  x  
+123x123
+x  x
+xx
+// empty regex
+xaxaxax
+// lastIndex should not be modified
+xxxx
+1

@@ -435,6 +435,7 @@ swf_tests! {
     (as3_string_indexof_lastindexof, "avm2/string_indexof_lastindexof", 1),
     (as3_string_length, "avm2/string_length", 1),
     (as3_string_match, "avm2/string_match", 1),
+    (as3_string_replace, "avm2/string_replace", 1),
     (as3_string_slice_substr_substring, "avm2/string_slice_substr_substring", 1),
     (as3_string_split, "avm2/string_split", 1),
     (as3_subtract, "avm2/subtract", 1),
