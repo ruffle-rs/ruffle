@@ -1184,7 +1184,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         let window_target = target.coerce_to_string(self)?;
-        let clip_target: Option<DisplayObject<'gc>> = if action.is_target_sprite {
+        let clip_target: Option<DisplayObject<'gc>> = if action.is_target_sprite() {
             if let Value::Object(target) = target {
                 target.as_display_object()
             } else {
@@ -1195,7 +1195,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             Some(self.target_clip_or_root()?)
         };
 
-        if action.is_load_vars {
+        if action.is_load_vars() {
             if let Some(clip_target) = clip_target {
                 let target_obj = clip_target
                     .as_movie_clip()
@@ -1204,7 +1204,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .coerce_to_object(self);
                 let (url, opts) = self.locals_into_request_options(
                     &url,
-                    NavigationMethod::from_send_vars_method(action.send_vars_method),
+                    NavigationMethod::from_send_vars_method(action.send_vars_method()),
                 );
                 let fetch = self.context.navigator.fetch(&url, opts);
                 let process = self.context.load_manager.load_form_into_object(
@@ -1217,11 +1217,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             }
 
             return Ok(FrameControl::Continue);
-        } else if action.is_target_sprite {
+        } else if action.is_target_sprite() {
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
                     &url,
-                    NavigationMethod::from_send_vars_method(action.send_vars_method),
+                    NavigationMethod::from_send_vars_method(action.send_vars_method()),
                 );
 
                 if url.is_empty() {
@@ -1274,7 +1274,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             return Ok(FrameControl::Continue);
         } else {
-            let vars = match NavigationMethod::from_send_vars_method(action.send_vars_method) {
+            let vars = match NavigationMethod::from_send_vars_method(action.send_vars_method()) {
                 Some(method) => Some((method, self.locals_into_form_values())),
                 None => None,
             };

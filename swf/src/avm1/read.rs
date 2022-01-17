@@ -261,19 +261,13 @@ impl<'a> Reader<'a> {
     }
 
     fn read_get_url_2(&mut self) -> Result<GetUrl2> {
-        let flags = self.read_u8()?;
-        Ok(GetUrl2 {
-            is_load_vars: flags & 0b10_0000_00 != 0,
-            is_target_sprite: flags & 0b01_0000_00 != 0,
-            send_vars_method: match flags & 0b11 {
-                0 => SendVarsMethod::None,
-                1 => SendVarsMethod::Get,
-                2 => SendVarsMethod::Post,
-                _ => {
-                    return Err(Error::invalid_data("Invalid HTTP method in ActionGetUrl2"));
-                }
-            },
-        })
+        let mut flags = GetUrlFlags::from_bits_truncate(self.read_u8()?);
+        if flags.contains(GetUrlFlags::METHOD_MASK) {
+            // Flash treats an invalid method the same as "none".
+            log::warn!("Invalid SendVarsMethod in GetUrl2, defaulting to None");
+            flags.set(GetUrlFlags::METHOD_MASK, false);
+        }
+        Ok(GetUrl2(flags))
     }
 
     fn read_goto_frame(&mut self) -> Result<GotoFrame> {

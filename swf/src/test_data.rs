@@ -2656,20 +2656,12 @@ pub fn avm1_tests() -> Vec<Avm1TestData> {
         ),
         (
             4,
-            Action::GetUrl2(GetUrl2 {
-                send_vars_method: SendVarsMethod::Post,
-                is_target_sprite: true,
-                is_load_vars: false,
-            }),
+            Action::GetUrl2(GetUrl2::for_load_movie(SendVarsMethod::Post)),
             vec![0x9A, 1, 0, 0b01_0000_10],
         ),
         (
             4,
-            Action::GetUrl2(GetUrl2 {
-                send_vars_method: SendVarsMethod::None,
-                is_target_sprite: true,
-                is_load_vars: false,
-            }),
+            Action::GetUrl2(GetUrl2::for_load_movie(SendVarsMethod::None)),
             vec![0x9A, 1, 0, 0b01_0000_00],
         ),
         (4, Action::GetVariable, vec![0x1C]),

@@ -265,16 +265,7 @@ impl<W: Write> Writer<W> {
 
     fn write_get_url_2(&mut self, action: &GetUrl2) -> Result<()> {
         self.write_action_header(OpCode::GetUrl2, 1)?;
-        let flags = (match action.send_vars_method {
-            SendVarsMethod::None => 0,
-            SendVarsMethod::Get => 1,
-            SendVarsMethod::Post => 2,
-        }) | if action.is_target_sprite {
-            0b01_0000_00
-        } else {
-            0
-        } | if action.is_load_vars { 0b10_0000_00 } else { 0 };
-        self.write_u8(flags)?;
+        self.write_u8(action.0.bits())?;
         Ok(())
     }
 
