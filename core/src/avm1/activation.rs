@@ -486,8 +486,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Action::CloneSprite => self.action_clone_sprite(),
                 Action::ConstantPool(action) => self.action_constant_pool(action),
                 Action::Decrement => self.action_decrement(),
-                Action::DefineFunction(action) => self.action_define_function(action, data),
-                Action::DefineFunction2(action) => self.action_define_function_2(action, data),
+                Action::DefineFunction(action) => self.action_define_function(action.into(), data),
+                Action::DefineFunction2(action) => self.action_define_function(action, data),
                 Action::DefineLocal => self.action_define_local(),
                 Action::DefineLocal2 => self.action_define_local_2(),
                 Action::Delete => self.action_delete(),
@@ -863,23 +863,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_define_function(
         &mut self,
-        action: DefineFunction,
+        action: DefineFunction2,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let name = action.name.to_str_lossy(self.encoding());
-        let name = name.as_ref();
         let swf_version = self.swf_version();
+        let func_data = parent_data.to_unbounded_subslice(action.actions).unwrap();
         let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
-        let func = Avm1Function::from_df1(
+        let func = Avm1Function::from_swf_function(
             self.context.gc_context,
             swf_version,
-            parent_data.to_unbounded_subslice(action.actions).unwrap(),
-            name,
-            &action.params[..],
+            func_data,
+            action,
             scope,
             constant_pool,
-            self.target_clip_or_root()?,
+            self.base_clip(),
         );
         let name = func.name();
         let prototype = ScriptObject::object(
@@ -897,46 +895,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.define_local(name, func_obj.into())?;
         } else {
             self.context.avm1.push(func_obj.into());
-        }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn action_define_function_2(
-        &mut self,
-        action: DefineFunction2,
-        parent_data: &SwfSlice,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let swf_version = self.swf_version();
-        let func_data = parent_data.to_unbounded_subslice(action.actions).unwrap();
-        let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
-        let constant_pool = self.constant_pool();
-        let func = Avm1Function::from_df2(
-            self.context.gc_context,
-            swf_version,
-            func_data,
-            &action,
-            scope,
-            constant_pool,
-            self.base_clip(),
-        );
-        let prototype = ScriptObject::object(
-            self.context.gc_context,
-            Some(self.context.avm1.prototypes.object),
-        )
-        .into();
-        let func_obj = FunctionObject::function(
-            self.context.gc_context,
-            Gc::allocate(self.context.gc_context, func),
-            Some(self.context.avm1.prototypes.function),
-            prototype,
-        );
-        if action.name.is_empty() {
-            self.context.avm1.push(func_obj.into());
-        } else {
-            let name = action.name.to_str_lossy(self.encoding());
-            let name = AvmString::new_utf8(self.context.gc_context, name);
-            self.define_local(name, func_obj.into())?;
         }
 
         Ok(FrameControl::Continue)

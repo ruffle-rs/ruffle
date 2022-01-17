@@ -10,8 +10,7 @@ use crate::avm1::{ArrayObject, AvmString, Object, ObjectPtr, ScriptObject, TObje
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
-use std::borrow::Cow;
-use std::fmt;
+use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 
 /// Represents a function defined in Ruffle's code.
@@ -62,10 +61,8 @@ pub struct Avm1Function<'gc> {
     /// set. Any register beyond this ID will be served from the global one.
     register_count: u8,
 
-    /// The names of the function parameters and their register mappings.
-    /// r0 indicates that no register shall be written and the parameter stored
-    /// as a Variable instead.
-    params: Vec<(Option<u8>, AvmString<'gc>)>,
+    /// The parameters of the function.
+    params: Vec<Param<'gc>>,
 
     /// The scope the function was born into.
     scope: GcCell<'gc, Scope<'gc>>,
@@ -83,62 +80,21 @@ pub struct Avm1Function<'gc> {
 }
 
 impl<'gc> Avm1Function<'gc> {
-    /// Construct a function from a DefineFunction action.
-    ///
-    /// Parameters not specified in DefineFunction are filled with reasonable
-    /// defaults.
-    #[allow(clippy::too_many_arguments)]
-    pub fn from_df1(
-        gc_context: MutationContext<'gc, '_>,
-        swf_version: u8,
-        actions: SwfSlice,
-        name: &str,
-        params: &[&'_ SwfStr],
-        scope: GcCell<'gc, Scope<'gc>>,
-        constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
-        base_clip: DisplayObject<'gc>,
-    ) -> Self {
-        let name = if name.is_empty() {
-            None
-        } else {
-            Some(AvmString::new_utf8(gc_context, name))
-        };
-
-        Avm1Function {
-            swf_version,
-            data: actions,
-            name,
-            register_count: 0,
-            params: params
-                .iter()
-                .map(|&s| {
-                    let name = s.to_str_lossy(SwfStr::encoding_for_version(swf_version));
-                    (None, AvmString::new_utf8(gc_context, name))
-                })
-                .collect(),
-            scope,
-            constant_pool,
-            base_clip,
-            flags: FunctionFlags::empty(),
-        }
-    }
-
     /// Construct a function from a DefineFunction2 action.
-    pub fn from_df2(
+    pub fn from_swf_function(
         gc_context: MutationContext<'gc, '_>,
         swf_version: u8,
         actions: SwfSlice,
-        swf_function: &swf::avm1::types::DefineFunction2,
+        swf_function: swf::avm1::types::DefineFunction2,
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
+        let encoding = SwfStr::encoding_for_version(swf_version);
         let name = if swf_function.name.is_empty() {
             None
         } else {
-            let name = swf_function
-                .name
-                .to_str_lossy(SwfStr::encoding_for_version(swf_version));
+            let name = swf_function.name.to_str_lossy(encoding);
             Some(AvmString::new_utf8(gc_context, name))
         };
 
@@ -146,10 +102,11 @@ impl<'gc> Avm1Function<'gc> {
             .params
             .iter()
             .map(|p| {
-                let name = p
-                    .name
-                    .to_str_lossy(SwfStr::encoding_for_version(swf_version));
-                (p.register_index, AvmString::new_utf8(gc_context, name))
+                let name = p.name.to_str_lossy(encoding);
+                Param {
+                    register: p.register_index,
+                    name: AvmString::new_utf8(gc_context, name),
+                }
             })
             .collect();
 
@@ -185,6 +142,22 @@ impl<'gc> Avm1Function<'gc> {
     pub fn register_count(&self) -> u8 {
         self.register_count
     }
+}
+
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
+struct Param<'gc> {
+    /// The register the argument will be preloaded into.
+    ///
+    /// If `register` is `None`, then this parameter will be stored in a named variable in the
+    /// function activation and can be accessed using `GetVariable`/`SetVariable`.
+    /// Otherwise, the parameter is loaded into a register and must be accessed with
+    /// `Push`/`StoreRegister`.
+    #[collect(require_static)]
+    register: Option<NonZeroU8>,
+
+    /// The name of the parameter.
+    name: AvmString<'gc>,
 }
 
 /// Represents a function that can be defined in the Ruffle runtime or by the
@@ -394,9 +367,10 @@ impl<'gc> Executable<'gc> {
                 //TODO: What happens if the argument registers clash with the
                 //preloaded registers? What gets done last?
                 for (param, value) in af.params.iter().zip(args_iter) {
-                    match param {
-                        (Some(argreg), _argname) => frame.set_local_register(*argreg, value),
-                        (None, argname) => frame.force_define_local(*argname, value),
+                    if let Some(register) = param.register {
+                        frame.set_local_register(register.get(), value);
+                    } else {
+                        frame.force_define_local(param.name, value);
                     }
                 }
 

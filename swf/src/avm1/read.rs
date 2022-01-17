@@ -1,6 +1,7 @@
 use crate::avm1::{opcode::OpCode, types::*};
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
+use std::num::NonZeroU8;
 
 pub struct Reader<'a> {
     input: &'a [u8],
@@ -235,10 +236,9 @@ impl<'a> Reader<'a> {
         let flags = FunctionFlags::from_bits_truncate(self.read_u16()?);
         let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
-            let register = self.read_u8()?;
             params.push(FunctionParam {
+                register_index: NonZeroU8::new(self.read_u8()?),
                 name: self.read_str()?,
-                register_index: if register == 0 { None } else { Some(register) },
             });
         }
         // code_length isn't included in the DefineFunction's length.
