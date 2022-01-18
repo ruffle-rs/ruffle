@@ -133,8 +133,9 @@ pub fn catchup_display_object_to_frame<'gc>(
 ) {
     match (*context.frame_phase, context.avm_type()) {
         (_, AvmType::Avm1) => {}
-        (FramePhase::Enter, AvmType::Avm2) => dobj.enter_frame(context),
-        (FramePhase::Construct, AvmType::Avm2) => {
+        (FramePhase::Enter, AvmType::Avm2)
+        | (FramePhase::Construct, AvmType::Avm2)
+        | (FramePhase::Idle, AvmType::Avm2) => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
         }
@@ -164,6 +165,5 @@ pub fn catchup_display_object_to_frame<'gc>(
             dobj.exit_frame(context);
             dobj.destroy_frame(context);
         }
-        (FramePhase::Idle, _) => {}
     }
 }
