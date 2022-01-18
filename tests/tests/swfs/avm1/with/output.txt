@@ -37,6 +37,10 @@ getter
 // prop
 1
 
+// with(o) { f() }
+object
+root
+
 // with(undefined)
 Error: A 'with' action failed because the specified object did not exist.
 

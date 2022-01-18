@@ -868,14 +868,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions).unwrap();
-        let scope = Scope::new_closure_scope(self.scope_cell(), self.context.gc_context);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_swf_function(
             self.context.gc_context,
             swf_version,
             func_data,
             action,
-            scope,
+            self.scope_cell(),
             constant_pool,
             self.base_clip(),
         );

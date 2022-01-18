@@ -56,61 +56,6 @@ impl<'gc> Scope<'gc> {
         }
     }
 
-    /// Construct a closure scope to be used as the parent of all local scopes
-    /// when invoking a function.
-    ///
-    /// This function filters With scopes from the scope chain. If all scopes
-    /// are filtered (somehow), this function constructs and returns a new,
-    /// single global scope with a bare object.
-    pub fn new_closure_scope(
-        mut parent: GcCell<'gc, Self>,
-        mc: MutationContext<'gc, '_>,
-    ) -> GcCell<'gc, Self> {
-        let mut bottom_scope = None;
-        let mut top_scope: Option<GcCell<'gc, Self>> = None;
-
-        loop {
-            if parent.read().class != ScopeClass::With {
-                let next_scope = GcCell::allocate(
-                    mc,
-                    Self {
-                        parent: None,
-                        class: parent.read().class,
-                        values: parent.read().values,
-                    },
-                );
-
-                if bottom_scope.is_none() {
-                    bottom_scope = Some(next_scope);
-                }
-
-                if let Some(ref scope) = top_scope {
-                    scope.write(mc).parent = Some(next_scope);
-                }
-
-                top_scope = Some(next_scope);
-            }
-
-            let grandparent = parent.read().parent;
-            if let Some(grandparent) = grandparent {
-                parent = grandparent;
-            } else {
-                break;
-            }
-        }
-
-        bottom_scope.unwrap_or_else(|| {
-            GcCell::allocate(
-                mc,
-                Self {
-                    parent: None,
-                    class: ScopeClass::Global,
-                    values: ScriptObject::object_cell(mc, None),
-                },
-            )
-        })
-    }
-
     /// Construct a scope for use with `tellTarget` code where the timeline
     /// scope has been replaced with another given object.
     pub fn new_target_scope(
