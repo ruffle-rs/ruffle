@@ -1827,6 +1827,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     ) -> Option<InteractiveObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
         if self.visible()
+            && self.mouse_enabled()
             && self.is_selectable()
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {

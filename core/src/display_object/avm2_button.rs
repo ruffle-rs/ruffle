@@ -779,7 +779,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
         // The button is hovered if the mouse is over any child nodes.
-        if self.visible() {
+        if self.visible() && self.mouse_enabled() {
             let state = self.0.read().state;
             let state_child = self.get_state_child(state.into());
 
