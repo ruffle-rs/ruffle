@@ -4,17 +4,14 @@
 //! `benches/swfs` directory.
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
-use std::time::Duration;
 use tests::*;
 
-pub fn avm1_benches(c: &mut Criterion) {
-    let mut group = c.benchmark_group("avm1");
-    group.measurement_time(Duration::from_secs(10));
-
-    // Iterate over every directory in the `benches/swfs`.
-    let bench_dir =
-        std::fs::read_dir("benches/swfs/avm1").expect("Unable to open benches/swfs/avm1 directory");
-    for entry in bench_dir {
+fn bench_dir(c: &mut Criterion, directory: &str, bench_fn: fn(&mut TestPlayer)) {
+    let mut group = c.benchmark_group(directory);
+    let bench_dir = format!("benches/swfs/{}", directory);
+    let dir_iter =
+        std::fs::read_dir(&bench_dir).expect("Unable to open benches/swfs/avm1 directory");
+    for entry in dir_iter {
         let entry = entry.unwrap();
         let metadata = entry.metadata().unwrap();
         if metadata.is_dir() {
@@ -24,12 +21,12 @@ pub fn avm1_benches(c: &mut Criterion) {
                 b.iter_batched_ref(
                     || {
                         TestBuilder::new()
-                            .with_swf_path(&format!("benches/swfs/avm1/{}/bench.swf", bench_name))
+                            .with_swf_path(&format!("{}/{}/bench.swf", bench_dir, bench_name))
                             .is_avm_bench(true)
                             .build()
                             .expect("Unable to build player")
                     },
-                    |player| player.run_avm1_bench(),
+                    bench_fn,
                     BatchSize::PerIteration,
                 )
             });
@@ -37,5 +34,13 @@ pub fn avm1_benches(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, avm1_benches);
+pub fn avm1_benches(c: &mut Criterion) {
+    bench_dir(c, "avm1", TestPlayer::run_avm1_bench);
+}
+
+pub fn avm2_benches(c: &mut Criterion) {
+    bench_dir(c, "avm2", TestPlayer::run_avm2_bench);
+}
+
+criterion_group!(benches, avm1_benches, avm2_benches);
 criterion_main!(benches);

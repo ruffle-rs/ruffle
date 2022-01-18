@@ -79,8 +79,14 @@ impl TestPlayer {
         Ok(())
     }
 
+    #[inline]
     pub fn run_avm1_bench(&mut self) {
         self.player.lock().unwrap().run_avm1_bench();
+    }
+
+    #[inline]
+    pub fn run_avm2_bench(&mut self) {
+        self.player.lock().unwrap().run_avm2_bench();
     }
 
     fn finish(self) -> TestResult {
@@ -272,7 +278,7 @@ impl<'a> TestBuilder<'a> {
             }
             // Prime the action queue is this is an AVM1 benchmark.
             if self.is_avm_bench {
-                player.init_avm1_bench()?;
+                player.init_avm_bench()?;
             }
         }
 

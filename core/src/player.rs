@@ -1642,7 +1642,15 @@ impl Player {
 
 #[cfg(feature = "bench")]
 impl Player {
-    pub fn init_avm1_bench(&mut self) -> Result<(), Error> {
+    /// Primes the action queue with the first `DoAction` tag in the movie.
+    ///
+    /// Call during benchmark setup, before timing starts.
+    pub fn init_avm_bench(&mut self) -> Result<(), Error> {
+        if self.swf.avm_type() == AvmType::Avm2 {
+            // We call ABC methods directly in AVM2 benchmarks.
+            return Ok(());
+        }
+
         self.mutate_with_update_context(|context| {
             use crate::tag_utils::{decode_tags, SwfSlice, SwfStream};
             use swf::TagCode;
@@ -1670,10 +1678,36 @@ impl Player {
         })
     }
 
-    /// Runs the queued bytecode. Called after `Player::init_avm1_bench`.
+    /// Runs the queued bytecode. Called after `Player::init_avm_bench`.
+    #[inline]
     pub fn run_avm1_bench(&mut self) {
         self.mutate_with_update_context(|context| {
             Self::run_actions(context);
+        });
+    }
+
+    #[inline]
+    pub fn run_avm2_bench(&mut self) {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::TObject;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let library = activation
+                .context
+                .library
+                .library_for_movie(activation.context.swf.clone())
+                .unwrap();
+            let domain = library.avm2_domain();
+            let name = crate::avm2::QName::from_qualified_name(
+                crate::string::AvmString::new_utf8(activation.context.gc_context, "Bench"),
+                activation.context.gc_context,
+            );
+            let class_object = domain
+                .get_defined_value(&mut activation, name)
+                .and_then(|v| v.coerce_to_object(&mut activation))
+                .and_then(|v| v.as_class_object().ok_or_else(|| "Expected class".into()))
+                .unwrap();
+            let method_name = crate::avm2::QName::new(crate::avm2::Namespace::public(), "bench");
+            let _ = class_object.call_property(&method_name.into(), &[], &mut activation);
         });
     }
 }
