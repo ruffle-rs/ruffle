@@ -2151,7 +2151,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         point: (Twips, Twips),
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
-        if self.visible() {
+        if self.visible() && self.mouse_enabled() {
             let this: InteractiveObject<'gc> = (*self).into();
 
             if let Some(masker) = self.masker() {
