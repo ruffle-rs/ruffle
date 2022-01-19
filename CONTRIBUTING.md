@@ -135,7 +135,7 @@ Specific warnings and clippy lints can be allowed when appropriate using attribu
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
-Most tests are swf-based, with the swfs stored in `core/tests/swfs`. They are configured in `core/tests/regression_tests.rs`.
+Most tests are swf-based, with the swfs stored in `tests/tests/swfs`. They are configured in `tests/tests/regression_tests.rs`.
 
 To add a test here, create a .swf file that runs `trace()` statements. You can do this by:
 * creating a .fla file in a Flash authoring tool
@@ -151,7 +151,7 @@ To add a test here, create a .swf file that runs `trace()` statements. You can d
     	* Once you have modified your bytecode, you must reassemble and inject it into the movie with `rabcasm` and `abcreplace`.
     	* If you are adding a new test, commit both your SWF source (.fla and/or .as files) as well as the modified bytecode (.abc files and test-0 folder).
 
-Run the .swf in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `core/tests/swfs/avm1` (or `avm2`) named after what your test tests, and add a line in `regression_tests.rs` to have Ruffle run it.
+Run the .swf in Flash Player and create a file `output.txt` with the contents of the trace statements. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests, and add a line in `regression_tests.rs` to have Ruffle run it.
 
 Running `cargo test [your test]` will run the .swf in Ruffle and check the `trace()` output against `output.txt`.
 
