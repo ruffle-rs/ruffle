@@ -101,6 +101,9 @@ pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
 pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     let stage = context.stage;
 
+    *context.frame_phase = FramePhase::Destroy;
+    stage.destroy_frame(context);
+
     *context.frame_phase = FramePhase::Enter;
     stage.enter_frame(context);
 
@@ -116,9 +119,6 @@ pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
 
     *context.frame_phase = FramePhase::Exit;
     stage.exit_frame(context);
-
-    *context.frame_phase = FramePhase::Destroy;
-    stage.destroy_frame(context);
 
     *context.frame_phase = FramePhase::Idle;
 }
