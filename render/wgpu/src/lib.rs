@@ -212,6 +212,7 @@ struct GradientUniforms {
     repeat_mode: i32,
     interpolation: i32,
     focal_point: f32,
+    _padding: [f32; 3],
 }
 
 impl From<TessGradient> for GradientUniforms {
@@ -237,6 +238,7 @@ impl From<TessGradient> for GradientUniforms {
             },
             interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
             focal_point: gradient.focal_point.to_f32(),
+            _padding: Default::default(),
         }
     }
 }
