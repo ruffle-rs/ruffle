@@ -2,14 +2,12 @@
 /// Ruffle prepends this file onto every shader at runtime.
 
 /// Global uniforms that are constant throughout a frame.
-[[block]]
 struct Globals {
     // The view matrix determined by the viewport and stage.
     view_matrix: mat4x4<f32>;
 };
 
 /// Transform uniforms that are changed per object.
-[[block]]
 struct Transforms {
     /// The world matrix that transforms this object into stage space.
     world_matrix: mat4x4<f32>;
@@ -22,7 +20,6 @@ struct Transforms {
 };
 
 /// Uniforms used by texture draws (bitmaps and gradients).
-[[block]]
 struct TextureTransforms {
     /// The transform matrix of the gradient or texture.
     /// Transforms from object space to UV space.

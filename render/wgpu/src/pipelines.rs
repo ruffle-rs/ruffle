@@ -226,7 +226,7 @@ fn create_pipeline_descriptor<'a>(
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: None,
             polygon_mode: wgpu::PolygonMode::default(),
-            clamp_depth: false,
+            unclipped_depth: false,
             conservative: false,
         },
         depth_stencil: depth_stencil_state,
@@ -235,6 +235,7 @@ fn create_pipeline_descriptor<'a>(
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
+        multiview: None,
     }
 }
 

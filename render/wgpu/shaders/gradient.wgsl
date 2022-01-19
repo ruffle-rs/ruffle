@@ -1,6 +1,5 @@
 /// Shader used for drawing all flavors of gradients.
 
-[[block]]
 struct Gradient {
     colors: array<vec4<f32>,16u>;
     ratios: array<f32,16u>;
