@@ -239,7 +239,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.0.read().base.call(name, activation, this, args)

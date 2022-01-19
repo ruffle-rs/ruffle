@@ -670,10 +670,6 @@ impl Player {
             root_clip,
         );
 
-        // TODO: `this` is undefined, but our VM
-        // currently doesn't allow `this` to be a Value (#843).
-        let undefined = Value::Undefined.coerce_to_object(&mut activation);
-
         // TODO: Remember to also change the first arg
         // when we support contextmenu on non-root-movie
         let params = vec![root_clip.object(), Value::Object(item)];
@@ -681,7 +677,7 @@ impl Player {
         let _ = callback.call(
             "[Context Menu Callback]".into(),
             &mut activation,
-            undefined,
+            Value::Undefined,
             &params,
         );
     }

@@ -214,7 +214,7 @@ impl<'gc> Callback<'gc> {
                     .collect();
                 let name = AvmString::new_utf8(activation.context.gc_context, name);
                 if let Ok(result) = method
-                    .call(name, &mut activation, this, &args)
+                    .call(name, &mut activation, this.into(), &args)
                     .and_then(|value| Value::from_avm1(&mut activation, value))
                 {
                     result

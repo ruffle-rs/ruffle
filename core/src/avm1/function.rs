@@ -211,14 +211,18 @@ impl<'gc> Executable<'gc> {
         &self,
         name: ExecutionName<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         depth: u8,
         args: &[Value<'gc>],
         reason: ExecutionReason,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
-            Executable::Native(nf) => nf(activation, this, args),
+            Executable::Native(nf) => {
+                // TODO: Change NativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object(activation);
+                nf(activation, this, args)
+            }
             Executable::Action(af) => {
                 let child_scope = GcCell::allocate(
                     activation.context.gc_context,
@@ -248,12 +252,20 @@ impl<'gc> Executable<'gc> {
                     Attribute::DONT_ENUM,
                 );
 
-                let super_object: Option<Object<'gc>> =
+                let this_obj = match this {
+                    Value::Object(obj) => Some(obj),
+                    _ => None,
+                };
+
+                // TODO: `super` should only be defined if this was a method call (depth > 0?)
+                // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
+                let super_object: Option<Object<'gc>> = this_obj.and_then(|this| {
                     if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
                         Some(SuperObject::new(activation, this, depth).into())
                     } else {
                         None
-                    };
+                    }
+                });
 
                 let effective_version = if activation.swf_version() > 5 {
                     if !af.base_clip.removed() {
@@ -262,7 +274,8 @@ impl<'gc> Executable<'gc> {
                         af.swf_version()
                     }
                 } else {
-                    this.as_display_object()
+                    this_obj
+                        .and_then(|this| this.as_display_object())
                         .map(|dn| dn.swf_version())
                         .unwrap_or(activation.context.player_version)
                 };
@@ -291,7 +304,8 @@ impl<'gc> Executable<'gc> {
                 let base_clip = if effective_version > 5 && !af.base_clip.removed() {
                     af.base_clip
                 } else {
-                    this.as_display_object()
+                    this_obj
+                        .and_then(|this| this.as_display_object())
                         .unwrap_or_else(|| activation.base_clip())
                 };
                 let mut frame = Activation::from_action(
@@ -313,7 +327,7 @@ impl<'gc> Executable<'gc> {
                 if af.flags.contains(FunctionFlags::PRELOAD_THIS) {
                     //TODO: What happens if you specify both suppress and
                     //preload for this?
-                    frame.set_local_register(preload_r, this.into());
+                    frame.set_local_register(preload_r, this);
                     preload_r += 1;
                 }
 
@@ -525,7 +539,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_executable() {
@@ -567,7 +581,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
-                this,
+                this.into(),
                 1,
                 args,
                 ExecutionReason::FunctionCall,
@@ -577,7 +591,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
-                this,
+                this.into(),
                 1,
                 args,
                 ExecutionReason::FunctionCall,
@@ -618,7 +632,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             let this = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
-                this,
+                this.into(),
                 1,
                 args,
                 ExecutionReason::FunctionCall,
@@ -629,7 +643,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
-                this,
+                this.into(),
                 1,
                 args,
                 ExecutionReason::FunctionCall,

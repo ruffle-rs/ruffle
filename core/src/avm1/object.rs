@@ -190,7 +190,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                             let _ = exec.exec(
                                 ExecutionName::Static("[Setter]"),
                                 activation,
-                                this,
+                                this.into(),
                                 1,
                                 &[value],
                                 ExecutionReason::Special,
@@ -218,7 +218,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>>;
 
@@ -269,13 +269,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,
-                this,
+                this.into(),
                 depth,
                 args,
                 ExecutionReason::FunctionCall,
                 method,
             ),
-            None => method.call(name, activation, this, args),
+            None => method.call(name, activation, this.into(), args),
         }
     }
 
@@ -707,7 +707,7 @@ pub fn search_prototype<'gc>(
                 let result = exec.exec(
                     ExecutionName::Static("[Getter]"),
                     activation,
-                    this,
+                    this.into(),
                     1,
                     &[],
                     ExecutionReason::Special,

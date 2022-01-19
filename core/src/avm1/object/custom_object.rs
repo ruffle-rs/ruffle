@@ -49,7 +49,7 @@ macro_rules! impl_custom_object {
             &self,
             name: crate::avm1::AvmString<'gc>,
             activation: &mut crate::avm1::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
+            this: crate::avm1::Value<'gc>,
             args: &[crate::avm1::Value<'gc>],
         ) -> Result<crate::avm1::Value<'gc>, crate::avm1::Error<'gc>> {
             self.0

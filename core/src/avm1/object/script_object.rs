@@ -38,7 +38,7 @@ impl<'gc> Watcher<'gc> {
         exec.exec(
             ExecutionName::Dynamic(name),
             activation,
-            this,
+            this.into(),
             0,
             &args,
             ExecutionReason::Special,
@@ -196,7 +196,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
                 if let Err(Error::ThrownValue(e)) = exec.exec(
                     ExecutionName::Static("[Setter]"),
                     activation,
-                    this,
+                    this.into(),
                     1,
                     &[value],
                     ExecutionReason::Special,
@@ -219,7 +219,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         &self,
         _name: AvmString<'gc>,
         _activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        _this: Value<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)

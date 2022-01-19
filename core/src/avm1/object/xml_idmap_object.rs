@@ -88,7 +88,7 @@ impl<'gc> TObject<'gc> for XmlIdMapObject<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().call(name, activation, this, args)
