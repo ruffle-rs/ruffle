@@ -193,7 +193,7 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The immutable value of `this`.
-    this: Object<'gc>,
+    this: Value<'gc>,
 
     /// The function object being called.
     pub callee: Option<Object<'gc>>,
@@ -251,7 +251,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         scope: GcCell<'gc, Scope<'gc>>,
         constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
         base_clip: DisplayObject<'gc>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         callee: Option<Object<'gc>>,
         arguments: Option<Object<'gc>>,
     ) -> Self {
@@ -326,7 +326,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             base_clip,
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.removed(),
-            this: globals,
+            this: globals.into(),
             callee: None,
             arguments: None,
             local_registers: None,
@@ -383,7 +383,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             child_scope,
             constant_pool,
             active_clip,
-            clip_obj,
+            clip_obj.into(),
             None,
             None,
         );
@@ -421,7 +421,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             child_scope,
             constant_pool,
             active_clip,
-            clip_obj,
+            clip_obj.into(),
             None,
             None,
         );
@@ -816,9 +816,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let result = if method_name.is_empty() {
             // Undefined/empty method name; call `this` as a function.
-            // TODO: Pass primitive value instead of boxing (#843).
-            let this = Value::Undefined.coerce_to_object(self);
-            object.call("[Anonymous]".into(), self, this, &args)?
+            object.call("[Anonymous]".into(), self, Value::Undefined, &args)?
         } else {
             // Call `this[method_name]`.
             object.call_method(method_name, &args, self)?
@@ -2475,7 +2473,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 path = path.slice(pos + 1..).unwrap_or_default();
 
                 if first_element && name == b"this" {
-                    self.this_cell().into()
+                    self.this_cell()
                 } else if first_element && name == b"_root" {
                     self.root_object()?
                 } else {
@@ -2736,7 +2734,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// still apply here.
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
         if &name == b"this" {
-            return Ok(CallableValue::UnCallable(Value::Object(self.this_cell())));
+            return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 
         if &name == b"arguments" && self.arguments.is_some() {
@@ -2844,7 +2842,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Returns value of `this` as a reference.
-    pub fn this_cell(&self) -> Object<'gc> {
+    pub fn this_cell(&self) -> Value<'gc> {
         self.this
     }
 

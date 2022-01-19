@@ -180,7 +180,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Option<Object<'gc>>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
             return self
@@ -224,7 +224,7 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
             // Value found on this object, so overwrite it.

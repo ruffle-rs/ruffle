@@ -56,7 +56,7 @@ pub fn call<'gc>(
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
             activation,
-            this,
+            this.into(),
             1,
             args,
             ExecutionReason::FunctionCall,
@@ -99,7 +99,7 @@ pub fn apply<'gc>(
         Some(exec) => exec.exec(
             ExecutionName::Static("[Anonymous]"),
             activation,
-            this,
+            this.into(),
             1,
             &child_args,
             ExecutionReason::FunctionCall,

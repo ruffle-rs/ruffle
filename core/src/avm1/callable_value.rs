@@ -29,10 +29,10 @@ impl<'gc> CallableValue<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {
             CallableValue::Callable(this, Value::Object(val)) => {
-                val.call(name, activation, this, args)
+                val.call(name, activation, this.into(), args)
             }
             CallableValue::UnCallable(Value::Object(val)) => {
-                val.call(name, activation, default_this, args)
+                val.call(name, activation, default_this.into(), args)
             }
             _ => Ok(Value::Undefined),
         }

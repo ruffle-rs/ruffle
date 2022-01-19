@@ -77,7 +77,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        _this: Object<'gc>,
+        _this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let constructor = self
@@ -88,7 +88,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,
-                self.0.read().this,
+                self.0.read().this.into(),
                 self.0.read().depth + 1,
                 args,
                 ExecutionReason::FunctionCall,
@@ -115,13 +115,13 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,
-                this,
+                this.into(),
                 self.0.read().depth + depth + 1,
                 args,
                 ExecutionReason::FunctionCall,
                 method,
             ),
-            None => method.call(name, activation, this, args),
+            None => method.call(name, activation, this.into(), args),
         }
     }
 

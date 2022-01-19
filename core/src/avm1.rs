@@ -201,7 +201,7 @@ impl<'gc> Avm1<'gc> {
             child_scope,
             constant_pool,
             active_clip,
-            clip_obj,
+            clip_obj.into(),
             None,
             None,
         );
@@ -242,7 +242,7 @@ impl<'gc> Avm1<'gc> {
             child_scope,
             constant_pool,
             active_clip,
-            clip_obj,
+            clip_obj.into(),
             None,
             None,
         );
@@ -294,7 +294,7 @@ impl<'gc> Avm1<'gc> {
             child_scope,
             constant_pool,
             active_clip,
-            clip_obj,
+            clip_obj.into(),
             None,
             None,
         );

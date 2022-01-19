@@ -99,7 +99,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Object<'gc>,
+        this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.0.read().call(name, activation, this, args)
