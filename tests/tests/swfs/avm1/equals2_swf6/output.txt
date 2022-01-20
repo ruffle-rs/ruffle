@@ -901,3 +901,27 @@ false
 // -Infinity == -Infinity:
 true
 
+// "NaN" == NaN:
+false
+
+// {valueOf:NaN} == NaN:
+true
+
+// Object == Object (same):
+true
+
+// Object == Object (different):
+false
+
+// 1 (boxed) == 1:
+true
+
+// 1 == true (boxed):
+true
+
+// 1 (boxed) == 1 (boxed):
+false
+
+// Bare Object == undefined:
+true
+

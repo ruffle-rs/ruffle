@@ -1022,7 +1022,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Version >=5 equality
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = b.abstract_eq(a, self, false)?;
+        let result = b.abstract_eq(a, self)?;
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
