@@ -2678,9 +2678,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // Set using scope chain, as normal.
         // This will overwrite the value if the property exists somewhere
         // in the scope chain, otherwise it is created on the top-level object.
-        let this = self.this_cell();
         let scope = self.scope_cell();
-        scope.read().set(path, value, self, this)?;
+        scope.read().set(path, value, self)?;
         Ok(())
     }
 
@@ -2743,9 +2742,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             )));
         }
 
-        self.scope_cell()
-            .read()
-            .resolve(name, self, self.this_cell())
+        self.scope_cell().read().resolve(name, self)
     }
 
     /// Check if a particular property in the scope chain is defined.

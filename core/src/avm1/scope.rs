@@ -180,7 +180,6 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Option<Object<'gc>>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
             return self
@@ -189,10 +188,9 @@ impl<'gc> Scope<'gc> {
                 .map(|v| CallableValue::Callable(self.locals_cell(), v));
         }
         if let Some(scope) = self.parent() {
-            return scope.resolve(name, activation, this);
+            return scope.resolve(name, activation);
         }
 
-        //TODO: Should undefined variables halt execution?
         Ok(CallableValue::UnCallable(Value::Undefined))
     }
 
@@ -224,7 +222,6 @@ impl<'gc> Scope<'gc> {
         name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        this: Option<Object<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
             // Value found on this object, so overwrite it.
@@ -232,7 +229,7 @@ impl<'gc> Scope<'gc> {
             self.locals().set(name, value, activation)
         } else if let Some(scope) = self.parent() {
             // Traverse the scope chain in search of the value.
-            scope.set(name, value, activation, this)
+            scope.set(name, value, activation)
         } else {
             // This probably shouldn't happen -- all AVM1 code runs in reference to some MovieClip,
             // so we should always have a MovieClip scope.
