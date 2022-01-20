@@ -246,92 +246,42 @@ impl<'gc> Value<'gc> {
 
     /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
     pub fn abstract_eq(
-        &self,
+        self,
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-        coerced: bool,
     ) -> Result<bool, Error<'gc>> {
-        match (self, &other) {
-            (Value::Undefined, Value::Undefined) => Ok(true),
-            (Value::Null, Value::Null) => Ok(true),
+        let result = match (self, other) {
+            (Value::Undefined | Value::Null, Value::Undefined | Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(a, b),
             (Value::Number(a), Value::Number(b)) => {
-                if !coerced && a.is_nan() && b.is_nan() {
-                    return Ok(true);
-                }
-
-                if a == b {
-                    return Ok(true);
-                }
-
-                if *a == 0.0 && *b == -0.0 || *a == -0.0 && *b == 0.0 {
-                    return Ok(true);
-                }
-
-                Ok(false)
+                // PLAYER-SPECIFIC: NaN == NaN returns true in Flash Player 7+ AVM1, but returns false in Flash Player 6 and lower.
+                // We choose to return true.
+                a == b || (a.is_nan() && b.is_nan())
             }
-            (Value::String(a), Value::String(b)) => Ok(*a == *b),
-            (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
-            (Value::Object(a), Value::Object(b)) => Ok(Object::ptr_eq(*a, *b)),
-            (Value::Object(a), Value::Undefined | Value::Null) => Ok(Object::ptr_eq(
-                *a,
-                activation.context.avm1.global_object_cell(),
-            )),
-            (Value::Undefined | Value::Null, Value::Object(b)) => Ok(Object::ptr_eq(
-                *b,
-                activation.context.avm1.global_object_cell(),
-            )),
-            (Value::Undefined, Value::Null) => Ok(true),
-            (Value::Null, Value::Undefined) => Ok(true),
-            (Value::Number(_), Value::String(_)) => Ok(self.abstract_eq(
-                Value::Number(other.coerce_to_f64(activation)?),
-                activation,
-                true,
-            )?),
-            (Value::String(_), Value::Number(_)) => {
-                Ok(Value::Number(self.coerce_to_f64(activation)?)
-                    .abstract_eq(other, activation, true)?)
-            }
-            (Value::Bool(_), _) => Ok(Value::Number(self.coerce_to_f64(activation)?)
-                .abstract_eq(other, activation, true)?),
-            (_, Value::Bool(_)) => Ok(self.abstract_eq(
-                Value::Number(other.coerce_to_f64(activation)?),
-                activation,
-                true,
-            )?),
-            (Value::String(_), Value::Object(_)) => {
-                let non_obj_other = other.to_primitive_num(activation)?;
-                if !non_obj_other.is_primitive() {
-                    return Ok(false);
-                }
 
-                Ok(self.abstract_eq(non_obj_other, activation, true)?)
+            // Bool-to-value-comparison: Coerce bool to 0/1 and compare.
+            (Value::Bool(bool), val) | (val, Value::Bool(bool)) => {
+                val.abstract_eq(Value::Number(bool as i64 as f64), activation)?
             }
-            (Value::Number(_), Value::Object(_)) => {
-                let non_obj_other = other.to_primitive_num(activation)?;
-                if !non_obj_other.is_primitive() {
-                    return Ok(false);
-                }
 
-                Ok(self.abstract_eq(non_obj_other, activation, true)?)
+            // Number-to-value comparison: Coerce value to f64 and compare.
+            // Note that "NaN" == NaN returns false.
+            (Value::Number(num), string @ Value::String(_))
+            | (string @ Value::String(_), Value::Number(num)) => {
+                num == string.primitive_as_number(activation)
             }
-            (Value::Object(_), Value::String(_)) => {
-                let non_obj_self = self.to_primitive_num(activation)?;
-                if !non_obj_self.is_primitive() {
-                    return Ok(false);
-                }
 
-                Ok(non_obj_self.abstract_eq(other, activation, true)?)
+            // Object-to-value comparison: Call `obj.valueOf` and compare.
+            (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
+                let obj_val = obj.to_primitive_num(activation)?;
+                obj_val.is_primitive() && val.abstract_eq(obj_val, activation)?
             }
-            (Value::Object(_), Value::Number(_)) => {
-                let non_obj_self = self.to_primitive_num(activation)?;
-                if !non_obj_self.is_primitive() {
-                    return Ok(false);
-                }
 
-                Ok(non_obj_self.abstract_eq(other, activation, true)?)
-            }
-            _ => Ok(false),
-        }
+            _ => false,
+        };
+        Ok(result)
     }
 
     /// Converts a bool value into the appropriate value for the platform.
