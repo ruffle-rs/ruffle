@@ -250,7 +250,18 @@ impl<'gc> Value<'gc> {
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<bool, Error<'gc>> {
-        let result = match (self, other) {
+        let (a, b) = if activation.swf_version() > 5 {
+            (other, self)
+        } else {
+            // SWFv5 always calls `valueOf` even in Object-Object comparisons.
+            // Object.prototype.valueOf returns `this`, which will do pointer comparison below.
+            // In Object-primitive comparisons, `valueOf` will be called a second time below.
+            (
+                other.to_primitive_num(activation)?,
+                self.to_primitive_num(activation)?,
+            )
+        };
+        let result = match (a, b) {
             (Value::Undefined | Value::Null, Value::Undefined | Value::Null) => true,
             (Value::Bool(a), Value::Bool(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
