@@ -4,7 +4,6 @@ on:
   # Run nightly
   schedule:
     - cron: "0 0 * * *"
-
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
 
@@ -19,6 +18,7 @@ jobs:
       package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
     steps:
       - name: Activity check
+        id: activity_check
         run: |
           :
           # Based off https://github.community/t/trigger-workflow-if-there-is-commit-in-last-24-hours/17074/3
@@ -31,7 +31,7 @@ jobs:
           rm -f $HOME/commit.json
           echo "Repository activity: $timestamp $author $url"
           alive=0
-          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "[WARNING] Ignoring activity check: workflow triggered manually."
             alive=1
           elif [[ $days < 1 ]]; then
@@ -274,7 +274,7 @@ jobs:
           npm run build:dual-wasm
           npm run docs
 
-      - name: Sign Firefox extension
+      - name: Publish Firefox extension
         if: env.FIREFOX_EXTENSION_ID != '' && !matrix.demo
         id: sign-firefox
         continue-on-error: true
@@ -322,17 +322,6 @@ jobs:
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
           asset_content_type: application/zip
 
-      - name: Upload Firefox extension (signed)
-        if: steps.sign-firefox.outcome == 'success' && !matrix.demo
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-nightly-release.outputs.upload_url }}
-          asset_path: ./web/packages/extension/dist/firefox.xpi
-          asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox.xpi
-          asset_content_type: application/x-xpinstall
-
       - name: Upload Firefox extension (unsigned)
         if: steps.sign-firefox.outcome != 'success' && !matrix.demo
         uses: actions/upload-release-asset@v1
@@ -343,6 +332,19 @@ jobs:
           asset_path: ./web/packages/extension/dist/firefox_unsigned.xpi
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi
           asset_content_type: application/x-xpinstall
+
+      - name: Publish Chrome extension
+        if: env.CHROME_EXTENSION_ID != '' && !matrix.demo
+        id: publish-chrome-extension
+        continue-on-error: true
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+        uses: mnao305/chrome-extension-upload@2.2.0
+        with:
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Clone web demo
         if: matrix.demo
