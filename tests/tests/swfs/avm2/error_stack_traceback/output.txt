@@ -3,8 +3,8 @@ Error
 	at global$init()
 	at test_fla::MainTimeline/frame1()
 Error
-	at MethodInfo-0()
 	at MethodInfo-1()
+	at MethodInfo-2()
 	at global$init()
 	at test_fla::MainTimeline/frame1()
 100
@@ -15,6 +15,10 @@ Test: test message
 	at global$init()
 	at test_fla::MainTimeline/frame1()
 Error
+	at Test()
+	at test_fla::MainTimeline/frame1()
+Error
+	at Test/uri::f()
 	at Test()
 	at test_fla::MainTimeline/frame1()
 Error

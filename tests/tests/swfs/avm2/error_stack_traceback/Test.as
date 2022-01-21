@@ -1,5 +1,4 @@
 ﻿package  {
-	
 	public class Test {
 		{
 				trace(new Error().getStackTrace())
@@ -9,7 +8,8 @@
 			trace(new Error().getStackTrace())
 		}
 		public function Test() {
-				trace(new Error().getStackTrace())
+				trace(new Error().getStackTrace());
+				this.my_namespace::f();
 				this.getter
 				this.setter = 10;
 				class_method();
@@ -24,7 +24,8 @@
 				trace(new Error().getStackTrace())
 				class_method();
 		}
-
+	
+		my_namespace function f(){ trace(new Error().getStackTrace())}
 	}
 	
 }
