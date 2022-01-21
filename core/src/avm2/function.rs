@@ -219,7 +219,12 @@ impl<'gc> Executable<'gc> {
                 MethodKind::Initializer => "",
             };
             output.push_utf8(prefix);
-            output.push_str(&meta.name());
+            if meta.name().namespace().is_namespace() {
+                output.push_str(&meta.name().to_qualified_name(mc));
+            } else {
+                output.push_str(&meta.name().local_name());
+            }
+            
         } else {
             match self {
                 Executable::Native(ne) => output.push_utf8(ne.method.name),

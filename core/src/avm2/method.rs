@@ -1,7 +1,7 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Multiname;
+use crate::avm2::names::{QName, Multiname};
 use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -320,7 +320,7 @@ pub enum MethodKind {
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct MethodMetadata<'gc> {
-    name: AvmString<'gc>,
+    name: QName<'gc>,
     position: MethodPosition,
     kind: MethodKind,
 }
@@ -328,7 +328,7 @@ pub struct MethodMetadata<'gc> {
 impl<'gc> MethodMetadata<'gc> {
     pub fn from_trait(my_trait: &Trait<'gc>, position: MethodPosition) -> Self {
         Self {
-            name: my_trait.name().local_name(),
+            name: my_trait.name(),
             position,
             kind: match my_trait.kind() {
                 TraitKind::Getter { .. } => MethodKind::Getter,
@@ -340,7 +340,7 @@ impl<'gc> MethodMetadata<'gc> {
 
     pub fn new_class_init() -> Self {
         Self {
-            name: "cinit".into(),
+            name: QName::dynamic_name("cinit"),
             position: MethodPosition::ClassTrait,
             kind: MethodKind::Initializer,
         }
@@ -348,13 +348,13 @@ impl<'gc> MethodMetadata<'gc> {
 
     pub fn new_instance_init() -> Self {
         Self {
-            name: AvmString::default(),
+            name: QName::dynamic_name(AvmString::default()),
             position: MethodPosition::InstanceTrait,
             kind: MethodKind::Initializer,
         }
     }
 
-    pub fn name(&self) -> AvmString<'gc> {
+    pub fn name(&self) -> QName<'gc> {
         self.name
     }
 
