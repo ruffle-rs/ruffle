@@ -3,7 +3,11 @@ use crate::avm2::Error;
 use crate::string::WString;
 use gc_arena::{Collect, MutationContext};
 
+#[cfg(debug_assertions)]
 const MAX_CALLSTACK: usize = 500;
+
+#[cfg(not(debug_assertions))]
+const MAX_CALLSTACK: usize = 1000;
 
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
