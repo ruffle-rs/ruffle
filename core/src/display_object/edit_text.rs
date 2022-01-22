@@ -1399,17 +1399,12 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Construct the text field's AVM1 representation.
-    fn construct_as_avm1_object(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
-        run_frame: bool,
-    ) {
+    fn construct_as_avm1_object(&self, context: &mut UpdateContext<'_, 'gc, '_>, run_frame: bool) {
         let mut text = self.0.write(context.gc_context);
         if text.object.is_none() {
             let object: Avm1Object<'gc> = Avm1StageObject::for_display_object(
                 context.gc_context,
-                display_object,
+                (*self).into(),
                 Some(context.avm1.prototypes().text_field),
             )
             .into();
@@ -1512,7 +1507,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -1530,7 +1524,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let vm_type = library.avm_type();
 
         if vm_type == AvmType::Avm1 {
-            self.construct_as_avm1_object(context, display_object, run_frame);
+            self.construct_as_avm1_object(context, run_frame);
         }
     }
 

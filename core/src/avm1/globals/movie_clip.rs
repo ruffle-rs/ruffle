@@ -221,7 +221,6 @@ fn attach_bitmap<'gc>(
                     );
                     display_object.post_instantiation(
                         &mut activation.context,
-                        display_object.into(),
                         None,
                         Instantiator::Avm1,
                         true,
@@ -649,7 +648,6 @@ fn attach_movie<'gc>(
         };
         new_clip.post_instantiation(
             &mut activation.context,
-            new_clip,
             init_object,
             Instantiator::Avm1,
             true,
@@ -693,13 +691,7 @@ fn create_empty_movie_clip<'gc>(
     // Set name and attach to parent.
     new_clip.set_name(activation.context.gc_context, new_instance_name);
     movie_clip.replace_at_depth(&mut activation.context, new_clip.into(), depth);
-    new_clip.post_instantiation(
-        &mut activation.context,
-        new_clip.into(),
-        None,
-        Instantiator::Avm1,
-        true,
-    );
+    new_clip.post_instantiation(&mut activation.context, None, Instantiator::Avm1, true);
 
     Ok(new_clip.object())
 }
@@ -748,13 +740,7 @@ fn create_text_field<'gc>(
         text_field,
         (depth as Depth).wrapping_add(AVM_DEPTH_BIAS),
     );
-    text_field.post_instantiation(
-        &mut activation.context,
-        text_field,
-        None,
-        Instantiator::Avm1,
-        false,
-    );
+    text_field.post_instantiation(&mut activation.context, None, Instantiator::Avm1, false);
 
     if activation.swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
@@ -850,7 +836,6 @@ pub fn duplicate_movie_clip_with_bias<'gc>(
         let init_object = init_object.map(|v| v.coerce_to_object(activation));
         new_clip.post_instantiation(
             &mut activation.context,
-            new_clip,
             init_object,
             Instantiator::Avm1,
             true,

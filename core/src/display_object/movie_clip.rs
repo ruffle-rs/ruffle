@@ -1168,7 +1168,7 @@ impl<'gc> MovieClip<'gc> {
                     // Run first frame.
                     child.apply_place_object(context, self.movie(), place_object);
                     child.construct_frame(context);
-                    child.post_instantiation(context, child, None, Instantiator::Movie, false);
+                    child.post_instantiation(context, None, Instantiator::Movie, false);
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
@@ -1413,7 +1413,6 @@ impl<'gc> MovieClip<'gc> {
     fn construct_as_avm1_object(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,
         instantiated_by: Instantiator,
         run_frame: bool,
@@ -1466,7 +1465,7 @@ impl<'gc> MovieClip<'gc> {
 
             let object: Avm1Object<'gc> = StageObject::for_display_object(
                 context.gc_context,
-                display_object,
+                self.into(),
                 Some(context.avm1.prototypes().movie_clip),
             )
             .into();
@@ -1502,7 +1501,7 @@ impl<'gc> MovieClip<'gc> {
             {
                 if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
                     context.action_queue.queue_actions(
-                        display_object,
+                        self.into(),
                         ActionType::Initialize {
                             bytecode: event_handler.action_data.clone(),
                         },
@@ -1515,7 +1514,7 @@ impl<'gc> MovieClip<'gc> {
             }
 
             context.action_queue.queue_actions(
-                display_object,
+                self.into(),
                 ActionType::Construct {
                     constructor: avm1_constructor,
                     events,
@@ -1997,7 +1996,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
         init_object: Option<Avm1Object<'gc>>,
         instantiated_by: Instantiator,
         run_frame: bool,
@@ -2009,13 +2007,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
 
-            self.construct_as_avm1_object(
-                context,
-                display_object,
-                init_object,
-                instantiated_by,
-                run_frame,
-            );
+            self.construct_as_avm1_object(context, init_object, instantiated_by, run_frame);
         }
     }
 

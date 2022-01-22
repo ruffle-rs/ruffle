@@ -301,7 +301,6 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -379,7 +378,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             if vm_type == AvmType::Avm1 {
                 let object: Avm1Object<'_> = Avm1StageObject::for_display_object(
                     context.gc_context,
-                    display_object,
+                    (*self).into(),
                     Some(context.avm1.prototypes().video),
                 )
                 .into();

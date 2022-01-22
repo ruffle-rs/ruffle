@@ -51,13 +51,7 @@ pub fn native_instance_init<'gc>(
                 this.init_display_object(activation.context.gc_context, child);
                 child.set_object2(activation.context.gc_context, this);
 
-                child.post_instantiation(
-                    &mut activation.context,
-                    child,
-                    None,
-                    Instantiator::Avm2,
-                    false,
-                );
+                child.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
                 child.construct_frame(&mut activation.context);
             }
         }

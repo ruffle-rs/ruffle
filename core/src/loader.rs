@@ -452,7 +452,7 @@ impl<'gc> Loader<'gc> {
 
                         if let Some(mut mc) = clip.as_movie_clip() {
                             mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                            mc.post_instantiation(uc, clip, None, Instantiator::Movie, false);
+                            mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
                             let mut morph_shapes = fnv::FnvHashMap::default();
                             mc.preload(uc, &mut morph_shapes);

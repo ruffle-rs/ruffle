@@ -86,7 +86,7 @@ where
         };
         context.stage.replace_at_depth(&mut context, root, 0);
 
-        root.post_instantiation(&mut context, root, None, Instantiator::Movie, false);
+        root.post_instantiation(&mut context, None, Instantiator::Movie, false);
         root.set_name(context.gc_context, "".into());
 
         fn run_test<'a, 'gc: 'a, F>(
