@@ -649,6 +649,8 @@ swf_tests! {
     (object_constructor, "avm1/object_constructor", 1),
     (object_function, "avm1/object_function", 1),
     (object_prototypes, "avm1/object_prototypes", 1),
+    (object_string_coerce_swf5, "avm1/object_string_coerce_swf5", 1),
+    (object_string_coerce_swf6, "avm1/object_string_coerce_swf6", 1),
     (on_construct, "avm1/on_construct", 1),
     (parse_int, "avm1/parse_int", 1),
     (path_string, "avm1/path_string", 1),
