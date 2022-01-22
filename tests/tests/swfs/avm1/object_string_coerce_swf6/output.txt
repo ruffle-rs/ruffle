@@ -1,0 +1,69 @@
+Object.valueOf -> String, toString -> String
+toString called
+toString
+
+valueOf called
+valueOf
+
+Object.valueOf -> undefined, toString -> String
+toString called
+toString
+
+undefined
+
+Object.valueOf -> {}, toString -> String
+toString called
+toString
+
+valueOf called
+toString called
+toString
+
+Object.valueOf -> {}, toString -> undefined
+[type Object]
+
+valueOf called
+[type Object]
+
+Object.valueOf -> {}, toString -> {}
+[type Object]
+
+toString called
+[type Object]
+
+Date.toString -> String, toValue -> String
+toString called
+toString
+
+toString called
+toString
+
+Date.toString -> undefined, toValue -> String
+[type Object]
+
+undefined
+
+Date.toString -> {}, valueOf -> String
+toString called
+[type Object]
+
+toString called
+toString called
+[type Object]
+
+Date.toString -> {}, valueOf -> undefined
+toString called
+[type Object]
+
+toString called
+toString called
+[type Object]
+
+Date.toString -> {}, valueOf -> {}
+toString called
+[type Object]
+
+toString called
+toString called
+[type Object]
+
