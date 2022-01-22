@@ -219,7 +219,6 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        _display_object: DisplayObject<'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,

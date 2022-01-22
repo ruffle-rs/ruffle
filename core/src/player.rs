@@ -320,19 +320,13 @@ impl Player {
         player.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
             let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
-            fake_root.post_instantiation(
-                context,
-                fake_root.into(),
-                None,
-                Instantiator::Movie,
-                false,
-            );
+            fake_root.post_instantiation(context, None, Instantiator::Movie, false);
             context.stage.replace_at_depth(context, fake_root.into(), 0);
 
             let result = Avm2::load_player_globals(context);
 
             let stage = context.stage;
-            stage.post_instantiation(context, stage.into(), None, Instantiator::Movie, false);
+            stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
 
             result
@@ -427,7 +421,7 @@ impl Player {
                 None
             };
 
-            root.post_instantiation(context, root, flashvars, Instantiator::Movie, false);
+            root.post_instantiation(context, flashvars, Instantiator::Movie, false);
             root.set_default_root_name(context);
             context.stage.replace_at_depth(context, root, 0);
 

@@ -2691,7 +2691,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.context
                 .stage
                 .replace_at_depth(&mut self.context, level, level_id);
-            level.post_instantiation(&mut self.context, level, None, Instantiator::Movie, false);
+            level.post_instantiation(&mut self.context, None, Instantiator::Movie, false);
 
             level
         }

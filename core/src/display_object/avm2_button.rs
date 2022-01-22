@@ -223,7 +223,7 @@ impl<'gc> Avm2Button<'gc> {
             let child = children.first().cloned().unwrap().0;
 
             child.set_parent(context.gc_context, Some(self.into()));
-            child.post_instantiation(context, child, None, Instantiator::Movie, false);
+            child.post_instantiation(context, None, Instantiator::Movie, false);
             child.construct_frame(context);
 
             (child, false)
@@ -241,7 +241,7 @@ impl<'gc> Avm2Button<'gc> {
                 // and then properly set the parent to the state Sprite afterwards.
                 state_sprite.replace_at_depth(context, child, depth.into());
                 child.set_parent(context.gc_context, Some(self.into()));
-                child.post_instantiation(context, child, None, Instantiator::Movie, false);
+                child.post_instantiation(context, None, Instantiator::Movie, false);
                 child.construct_frame(context);
                 child.set_parent(context.gc_context, Some(state_sprite.into()));
             }
@@ -415,7 +415,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        _display_object: DisplayObject<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -479,7 +478,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             drop(write);
 
             if up_should_fire {
-                up_state.post_instantiation(context, up_state, None, Instantiator::Movie, false);
+                up_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(up_container) = up_state.as_container() {
                     for (_depth, child) in up_container.iter_depth_list() {
@@ -489,13 +488,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if over_should_fire {
-                over_state.post_instantiation(
-                    context,
-                    over_state,
-                    None,
-                    Instantiator::Movie,
-                    false,
-                );
+                over_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(over_container) = over_state.as_container() {
                     for (_depth, child) in over_container.iter_depth_list() {
@@ -505,13 +498,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if down_should_fire {
-                down_state.post_instantiation(
-                    context,
-                    down_state,
-                    None,
-                    Instantiator::Movie,
-                    false,
-                );
+                down_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(down_container) = down_state.as_container() {
                     for (_depth, child) in down_container.iter_depth_list() {
@@ -521,7 +508,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             }
 
             if hit_should_fire {
-                hit_area.post_instantiation(context, hit_area, None, Instantiator::Movie, false);
+                hit_area.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(hit_container) = hit_area.as_container() {
                     for (_depth, child) in hit_container.iter_depth_list() {

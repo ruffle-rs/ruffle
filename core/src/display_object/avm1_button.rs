@@ -193,7 +193,7 @@ impl<'gc> Avm1Button<'gc> {
 
         for (child, depth) in children {
             // Initialize new child.
-            child.post_instantiation(context, child, None, Instantiator::Movie, false);
+            child.post_instantiation(context, None, Instantiator::Movie, false);
             child.run_frame(context);
             let removed_child = self.replace_at_depth(context, child, depth.into());
             dispatch_added_event(self.into(), child, false, context);
@@ -255,7 +255,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     fn post_instantiation(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        display_object: DisplayObject<'gc>,
         _init_object: Option<Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -272,7 +271,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         if mc.object.is_none() {
             let object = StageObject::for_display_object(
                 context.gc_context,
-                display_object,
+                (*self).into(),
                 Some(context.avm1.prototypes().button),
             );
             mc.object = Some(object.into());
@@ -326,7 +325,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             drop(read);
 
             for (child, depth) in new_children {
-                child.post_instantiation(context, child, None, Instantiator::Movie, false);
+                child.post_instantiation(context, None, Instantiator::Movie, false);
                 self.0
                     .write(context.gc_context)
                     .hit_area
