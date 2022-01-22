@@ -17,21 +17,30 @@ use crate::vminterface::AvmType;
 
 /// Which phase of the frame we're currently in.
 ///
-/// Each part of the frame phase is the phase we're going to execute *next*;
-/// e.g. we don't go from `Enter` to `Construct`
+/// AVM2 frames exist in one of six phases: `Destroy`, `Enter`, `Construct`,
+/// `Update`, `FrameScripts`, or `Exit`.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum FramePhase {
-    /// We're about to enter the next frame.
+    /// We're destroying children of existing display objects.
+    ///
+    /// All `RemoveObject` tags should execute at this time.
+    ///
+    /// NOTE: Strictly speaking, this should occur at the end of the prior
+    /// frame after rendering. However, our current frame architecture does not
+    /// allow us to create a separate phase for rendering. Hence, we run the
+    /// prior frame's `Destroy` phase on the next frame. In practice, the only
+    /// code that might be able to see this would be code that runs in the
+    /// `Idle` phase.
+    Destroy,
+
+    /// We're entering the next frame.
     ///
     /// When we enter a new frame, movie clips increment their current frame
     /// number. Once this phase ends, we fire `enterFrame` on the broadcast
     /// list.
-    ///
-    /// When the player is not executing a frame advancing update, it should be
-    /// in this phase.
     Enter,
 
-    /// We're about to construct children of existing display objects.
+    /// We're constructing children of existing display objects.
     ///
     /// All `PlaceObject` tags should execute at this time.
     ///
@@ -39,34 +48,35 @@ pub enum FramePhase {
     /// broadcast list.
     Construct,
 
-    /// We're about to update all display objects on the stage.
+    /// We're updating all display objects on the stage.
     ///
     /// This roughly corresponds to `run_frame`; and should encompass all time
     /// based display object changes that are not encompassed by the other
     /// phases.
+    ///
+    /// This frame phase also exists in AVM1 frames. In AVM1, it does the work
+    /// of `Destroy`, `Enter`, `FrameScripts` (`DoAction` tags), and
+    /// `Construct`.
     Update,
 
-    /// We're about to run all queued frame scripts.
+    /// We're running all queued frame scripts.
     ///
     /// Frame scripts are the AS3 equivalent of old-style `DoAction` tags. They
-    /// run when a movie clip enters a given timeline frame.
+    /// are queued in the `Update` phase if the current timeline frame number
+    /// differs from the prior frame's one.
     FrameScripts,
 
-    /// We're about to finish frame processing.
+    /// We're finishing frame processing.
     ///
     /// When we exit a completed frame, we fire `exitFrame` on the broadcast
     /// list.
     Exit,
 
-    /// We're about to destroy children of existing display objects.
-    ///
-    /// All `RemoveObject` tags should execute at this time.
-    Destroy,
-
     /// We're not currently executing any frame code.
     ///
-    /// At this point in time, event handlers are expected to run. No frame
-    /// catch-up work should execute.
+    /// This frame phase exists in both AVM1 and AVM2. It encompasses all
+    /// non-update processing, such as handling and dispatching events or
+    /// rendering the stage. It is also the default frame phase.
     Idle,
 }
 
@@ -107,6 +117,11 @@ pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
 pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     let stage = context.stage;
 
+    //As mentioned in the doc comment for `Destroy`, because frame rendering
+    //happens during `Idle`, we have to wait until the next frame to remove the
+    //prior frame's display objects. Otherwise, if we `Destroy` later on in the
+    //frame, then we'll accidentally run the next frame's `RemoveObject` tags
+    //too early and timeline animations will visibly flicker.
     *context.frame_phase = FramePhase::Destroy;
     stage.destroy_frame(context);
 
@@ -139,6 +154,11 @@ pub fn catchup_display_object_to_frame<'gc>(
 ) {
     match (*context.frame_phase, context.avm_type()) {
         (_, AvmType::Avm1) => {}
+        //NOTE: We currently do not have test coverage to justify `Enter`
+        //running `construct_frame`. However, `Idle` *does* need frame
+        //construction to happen, because event handlers expect to be able to
+        //construct new movie clips and see their grandchildren. So I suspect
+        //that constructing symbols in `enterFrame` works the same way.
         (FramePhase::Enter, AvmType::Avm2)
         | (FramePhase::Construct, AvmType::Avm2)
         | (FramePhase::Idle, AvmType::Avm2) => {
