@@ -223,6 +223,43 @@ impl<'gc> Value<'gc> {
         })
     }
 
+    /// Attempts to coerce a value to a primitive type.
+    /// This will coerce to Number except for Date objects, which get coerced to String.
+    /// If `valueOf` or `toString` do not return a primitive, the original object is returned.
+    /// Used by the Add2 action when concatenating to a String, such as `"a" + {}`.
+    ///
+    /// Loosely based on `ToPrimitive` with no type hint in the ECMAScript spec s.9.1.
+    /// Differences from ECMA spec:
+    /// * This is only used by the `Add2` action in AVM1, not the `Equals2` action.
+    /// * `valueOf`/`toString` are called even if they aren't functions, resulting in `undefined`.
+    /// * Date objects will not fall back to `valueOf` if `toString` does not return a primitive.
+    /// * Date objects coerce to Number in SWFv5.
+    pub fn to_primitive(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let result = match self {
+            Value::Object(object) => {
+                let val = if activation.swf_version() > 5 && object.as_date_object().is_some() {
+                    // In SWFv6 and higher, Date objects call `toString`.
+                    object.call_method("toString".into(), &[], activation)?
+                } else {
+                    // Other objects call `valueOf`.
+                    object.call_method("valueOf".into(), &[], activation)?
+                };
+
+                if val.is_primitive() {
+                    val
+                } else {
+                    // If the above coercion yields an object, the coercion failed, fall back to the object itself.
+                    self
+                }
+            }
+            _ => self,
+        };
+        Ok(result)
+    }
+
     /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
     pub fn abstract_lt(
         &self,
