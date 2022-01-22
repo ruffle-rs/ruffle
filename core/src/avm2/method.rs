@@ -1,7 +1,7 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{QName, Multiname};
+use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};

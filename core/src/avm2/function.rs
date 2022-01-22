@@ -224,7 +224,6 @@ impl<'gc> Executable<'gc> {
             } else {
                 output.push_str(&meta.name().local_name());
             }
-            
         } else {
             match self {
                 Executable::Native(ne) => output.push_utf8(ne.method.name),
