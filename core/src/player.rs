@@ -1877,7 +1877,7 @@ impl PlayerBuilder {
 
                 // Timing
                 frame_rate,
-                frame_phase: FramePhase::Enter,
+                frame_phase: Default::default(),
                 frame_accumulator: 0.0,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
