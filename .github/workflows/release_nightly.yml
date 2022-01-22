@@ -120,18 +120,6 @@ jobs:
           sudo apt-get update
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
-      # We need macOS SDK 11.0 to build for aarch64.
-      # GitHub Actions runners have the 11.0 SDK installed, but are still stuck on macOS 10.15.
-      # Various efforts of changing SDKPATH, CFLAGS, etc. to use the proper SDK have not compiled or linked correctly.
-      # This hack deletes all other SDKs which forces the build tools to use the proper version.
-      # Remove this hack when macOS 11 is publicly available on GitHub Actions.
-      # From https://github.com/actions/virtual-environments/issues/2211
-      - name: Set SDK for macOS aarch64
-        if: matrix.target == 'aarch64-apple-darwin'
-        run: |
-          sudo xcode-select -s "/Applications/Xcode_12.4.app"
-          sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/*
-
       - name: Cargo build
         uses: actions-rs/cargo@v1
         with:
