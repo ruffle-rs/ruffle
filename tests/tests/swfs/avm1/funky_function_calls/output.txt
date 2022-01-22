@@ -1,52 +1,52 @@
-true
+This: _level0.instance1
 Is it the global object: false
 Argument 0: Natural function call
 Argument 1: undefined
-false
+This: undefined
 Is it the global object: true
 Argument 0: Apply w/ Undefined
 Argument 1: undefined
-false
+This: undefined
 Is it the global object: true
 Argument 0: Apply w/ Global
 Argument 1: 3
-false
+This: _level0
 Is it the global object: false
 Argument 0: Apply w/ Parent
 Argument 1: undefined
-false
+This: _level0
 Is it the global object: false
 Argument 0: Apply w/ Root
 Argument 1: undefined
-false
+This: 123
 Is it the global object: false
 Argument 0: Apply w/ Primitive
 Argument 1: undefined
-false
+This: undefined
 Is it the global object: true
 Argument 0: Call w/ Undefined
 Argument 1: undefined
-false
+This: undefined
 Is it the global object: true
 Argument 0: Call w/ Global
 Argument 1: undefined
-false
+This: _level0
 Is it the global object: false
 Argument 0: Call w/ Parent
 Argument 1: undefined
-false
+This: _level0
 Is it the global object: false
 Argument 0: Call w/ Root
 Argument 1: 2
-false
+This: 123
 Is it the global object: false
 Argument 0: Call w/ Primitive
 Argument 1: undefined
-false
+This: undefined
 Is it the global object: true
 Argument 0: Fake arguments object
 Argument 1: 5
-false
+This: undefined
 Is it the global object: false
 Argument 0: undefined
 Argument 1: undefined
