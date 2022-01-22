@@ -69,6 +69,12 @@ pub enum FramePhase {
     Idle,
 }
 
+impl Default for FramePhase {
+    fn default() -> Self {
+        FramePhase::Idle
+    }
+}
+
 /// Run one frame according to AVM1 frame order.
 pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     // In AVM1, we only ever execute the update phase, and all the work that
