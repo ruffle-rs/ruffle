@@ -35,12 +35,6 @@ fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.
     var t: f32;
     switch( gradient.gradient_type ){
-        // Linear gradient
-        default: {
-            t = in.uv.x;
-            break;
-        }
-
         // Radial gradient
         case 1: {
             t = length(in.uv * 2.0 - 1.0);
@@ -56,16 +50,16 @@ fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
             t = l / (sqrt(1.0 - gradient.focal_point * gradient.focal_point * d.y * d.y) + gradient.focal_point * d.x);
             break;
         }
+
+        // Linear gradient
+        default: {
+            t = in.uv.x;
+            break;
+        }
     }
 
     // Tweak out-of-bounds `t` based on the repeat mode.
     switch( gradient.repeat_mode ){
-        // Clamp
-        default: {
-            t = clamp(t, 0.0, 1.0);
-            break;
-        }
-
         // Repeat
         case 1: {
             t = fract(t);
@@ -83,6 +77,12 @@ fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
             } else {
                 t = 1.0 - fract(t);
             }
+            break;
+        }
+
+        // Clamp
+        default: {
+            t = clamp(t, 0.0, 1.0);
             break;
         }
     }
