@@ -221,6 +221,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         only_line: bool,
         final_line_of_para: bool,
+        empty_text_line: Option<bool>,
     ) {
         if self.boxes.get_mut(self.current_line..).is_none() {
             return;
@@ -278,8 +279,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         } else {
             self.font_leading_adjustment()
         };
-
-        if self.current_line_span.bullet && self.is_first_line {
+        if self.current_line_span.bullet && self.is_first_line && empty_text_line.unwrap_or(false) {
             self.append_bullet(context, &self.current_line_span.clone());
         }
 
@@ -322,8 +322,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ///
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
-    fn explicit_newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.fixup_line(context, false, true);
+    fn explicit_newline(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        empty_text_line: Option<bool>,
+    ) {
+        self.fixup_line(context, false, true, empty_text_line);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -341,7 +345,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function will also adjust any layout boxes on the current line to
     /// their correct alignment and indentation.
     fn newline(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.fixup_line(context, false, false);
+        self.fixup_line(context, false, false, None);
 
         self.cursor.set_x(Twips::from_pixels(0.0));
         self.cursor += (
@@ -538,7 +542,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        self.fixup_line(context, !self.has_line_break, true);
+        self.fixup_line(context, !self.has_line_break, true, None);
 
         (self.boxes, self.exterior_bounds.unwrap_or_default())
     }
@@ -694,7 +698,9 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some(b'\n' | b'\r') => layout_context.explicit_newline(context),
+                        Some(b'\n' | b'\r') => {
+                            layout_context.explicit_newline(context, Some(text.is_empty()))
+                        }
                         Some(b'\t') => layout_context.tab(),
                         _ => {}
                     }
