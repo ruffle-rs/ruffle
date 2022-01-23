@@ -1058,8 +1058,13 @@ impl<'gc> MovieClip<'gc> {
     /// Advance playhead to the next frame in the clip.
     ///
     /// This supports three different actions as stated in `NextFrame`. The
-    /// selected action is stored in `natural_playhead_action` and can be
-    /// referenced at different parts during frame execution.
+    /// selected playhead action will be returned and should be used if the
+    /// caller needs to know what action was taken (e.g. to return early if a
+    /// loop goto was run).
+    ///
+    /// This function also updates `natural_playhead_action`. That value should
+    /// only be referenced if you have *not* already called `advance_playhead`
+    /// as it can be overwritten by the looping goto we may trigger.
     fn advance_playhead(self, context: &mut UpdateContext<'_, 'gc, '_>) -> NextFrame {
         let playhead_action = self.determine_next_frame();
         self.0.write(context.gc_context).natural_playhead_action = playhead_action;
@@ -1084,14 +1089,15 @@ impl<'gc> MovieClip<'gc> {
     ) {
         let vm_type = context.avm_type();
         let action = if vm_type == AvmType::Avm1 {
+            //NOTE: This can trigger recursive frames via implicit/loop gotos,
+            //which overwrites `natural_playhead_action`. If we don't use the
+            //'old' `NextFrame` value here, we will run an extra frame on this
+            //clip when we loop.
             self.advance_playhead(context)
         } else {
             self.0.read().natural_playhead_action
         };
 
-        //NOTE: For some reason, we actually have to use the playhead action
-        //that `advance_playhead` returns. If you pull `natural_playhead_action`
-        //out of the clip, you get some weird miscompile and AVM1 breaks
         if action == NextFrame::First {
             return;
         }
