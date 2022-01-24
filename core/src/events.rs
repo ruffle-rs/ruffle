@@ -286,7 +286,7 @@ impl<'gc> ClipEvent<'gc> {
     /// Indicates whether this is an event type used by Buttons (i.e., on that can be used in an `on` handler in Flash).
     pub const fn is_button_event(self) -> bool {
         if let Some(flag) = self.flag() {
-            flag.contains(Self::BUTTON_EVENT_FLAGS)
+            flag.intersects(Self::BUTTON_EVENT_FLAGS)
         } else {
             false
         }
