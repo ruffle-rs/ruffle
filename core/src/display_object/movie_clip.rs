@@ -1076,6 +1076,11 @@ impl<'gc> MovieClip<'gc> {
                 write.queued_script_frame = Some(write.current_frame + 1);
                 write.current_frame += 1;
             }
+            // Looping gotos in AVM2 happen during frame construction.
+            // Despite this, AS3 code still expects to see frame 1 in here.
+            NextFrame::First if context.avm_type() == AvmType::Avm2 => {
+                self.0.write(context.gc_context).current_frame = 1;
+            }
             NextFrame::First => self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         };
@@ -1866,23 +1871,35 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.playing_at_frame_advance()
-                && self.0.read().natural_playhead_action != NextFrame::First
-            {
-                let mc = self.0.read();
-                let data = mc.static_data.swf.clone();
-                let mut reader = data.read_from(mc.tag_stream_pos);
-                drop(mc);
+            if self.playing_at_frame_advance() {
+                if self.0.read().natural_playhead_action == NextFrame::First {
+                    // We had to lie about the current frame up in `enterFrame`,
+                    // so we have to set it back here. Otherwise, the goto
+                    // becomes a no-op.
+                    {
+                        let mut write = self.0.write(context.gc_context);
+                        let total_frames = write.total_frames();
+                        write.current_frame = total_frames;
+                    }
 
-                use swf::TagCode;
-                let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
-                    TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
-                    TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
-                    TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
-                    _ => Ok(()),
-                };
-                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                    self.run_goto(context, 1, true);
+                } else {
+                    let mc = self.0.read();
+                    let data = mc.static_data.swf.clone();
+                    let mut reader = data.read_from(mc.tag_stream_pos);
+                    drop(mc);
+
+                    use swf::TagCode;
+                    let tag_callback =
+                        |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
+                            TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
+                            TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
+                            TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
+                            TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
+                            _ => Ok(()),
+                        };
+                    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                }
             }
 
             if needs_construction {
