@@ -1870,7 +1870,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.playing() && self.0.read().natural_playhead_action != NextFrame::First {
+            if self.playing_at_frame_advance()
+                && self.0.read().natural_playhead_action != NextFrame::First
+            {
                 let mc = self.0.read();
                 let data = mc.static_data.swf.clone();
                 let mut reader = data.read_from(mc.tag_stream_pos);
@@ -1944,7 +1946,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Run my SWF tags.
-        if self.playing() {
+        if context.avm_type() == AvmType::Avm1 && self.playing() || self.playing_at_frame_advance()
+        {
             self.run_frame_internal(context, true);
         }
     }
