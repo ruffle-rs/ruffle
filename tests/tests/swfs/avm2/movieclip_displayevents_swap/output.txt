@@ -1,0 +1,96 @@
+//MainTimeline frame 1
+//var ew = new EventWatcher('ew');
+//this.addChild(ew);
+ew (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+ew (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//End MainTimeline frame 1
+ew (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+ew (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+//this.removeChild(ew);
+ew (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+ew (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+//ew.destroy();
+//System.gc();
+//End MainTimeline frame 3
+//MainTimeline frame 4
+//ew = new EventWatcher('parent');
+//var ew2 = new EventWatcher('child');
+//ew.addChild(ew2);
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+//End MainTimeline frame 4
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 5
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 6
+//this.addChild(ew);
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//End MainTimeline frame 6
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 7
+//ew.removeChild(ew2);
+child (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+//End MainTimeline frame 7
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 8
+//ew.addChild(ew2);
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//End MainTimeline frame 8
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 9
+//this.removeChild(ew);
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(ew);
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(ew2);
+child (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(ew2);
+//ew.destroy();
+//ew2.destroy();
+//System.gc();
+//End MainTimeline frame 9
