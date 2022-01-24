@@ -16,17 +16,17 @@
 			switch (this.invocation) {
 				case 0:
 				default:
-					trace("/// (Stopping root clip in frameConstructed...)");
+					trace("/// (Stopping root clip in exitFrame...)");
 					this.stop();
 					break;
 				case 1:
 				case 3:
 				case 4:
-					trace("/// (Playing root clip in frameConstructed...)");
+					trace("/// (Playing root clip in exitFrame...)");
 					this.play();
 					break;
 				case 5:
-					trace("/// (Stopping root clip in frameConstructed and removing event handlers...)");
+					trace("/// (Stopping root clip in exitFrame and removing event handlers...)");
 					this.stop();
 					this.destroy_me = true;
 					break;
