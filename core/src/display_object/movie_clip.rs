@@ -683,6 +683,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().programmatically_played()
     }
 
+    pub fn playing_at_frame_advance(self) -> bool {
+        self.0.read().playing_at_frame_advance()
+    }
+
     pub fn drop_target(self) -> Option<DisplayObject<'gc>> {
         self.0.read().drop_target
     }
@@ -1835,8 +1839,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             child.enter_frame(context);
         }
 
-        if context.avm_type() == AvmType::Avm2 && self.playing() {
-            self.advance_playhead(context);
+        if context.avm_type() == AvmType::Avm2 {
+            let is_playing = self.playing();
+            self.0
+                .write(context.gc_context)
+                .set_playing_at_frame_advance(is_playing);
+
+            if is_playing {
+                self.advance_playhead(context);
+            }
         }
     }
 
@@ -2422,6 +2433,16 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_programmatically_played(&mut self) {
         self.flags |= MovieClipFlags::PROGRAMMATICALLY_PLAYED;
+    }
+
+    fn playing_at_frame_advance(&self) -> bool {
+        self.flags
+            .contains(MovieClipFlags::PLAYING_AT_FRAME_ADVANCE)
+    }
+
+    fn set_playing_at_frame_advance(&mut self, value: bool) {
+        self.flags
+            .set(MovieClipFlags::PLAYING_AT_FRAME_ADVANCE, value);
     }
 
     fn play(&mut self) {
@@ -3569,6 +3590,14 @@ bitflags! {
         ///
         /// This causes any goto action to be queued and executed at the end of the script.
         const EXECUTING_AVM2_FRAME_SCRIPT = 1 << 3;
+
+        /// Whether this `MovieClip` was playing at the start of the frame.
+        ///
+        /// This flag is used in AVM2 to ensure that user code cannot pause a
+        /// frame-advancing update between phases of the update. It is not
+        /// necessary in AVM1, as the flag is only checked once per frame
+        /// update and thus torn updates cannot occur.
+        const PLAYING_AT_FRAME_ADVANCE = 1 << 4;
     }
 }
 
