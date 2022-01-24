@@ -1048,17 +1048,6 @@ impl<'gc> MovieClip<'gc> {
         actions.into_iter()
     }
 
-    /// Determine what the clip's next frame should be.
-    fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
-            NextFrame::Next
-        } else if self.total_frames() > 1 {
-            NextFrame::First
-        } else {
-            NextFrame::Same
-        }
-    }
-
     /// Advance playhead to the next frame in the clip.
     ///
     /// This supports three different actions as stated in `NextFrame`. The
@@ -1070,7 +1059,14 @@ impl<'gc> MovieClip<'gc> {
     /// only be referenced if you have *not* already called `advance_playhead`
     /// as it can be overwritten by the looping goto we may trigger.
     fn advance_playhead(self, context: &mut UpdateContext<'_, 'gc, '_>) -> NextFrame {
-        let playhead_action = self.determine_next_frame();
+        let playhead_action = if self.current_frame() < self.total_frames() {
+            NextFrame::Next
+        } else if self.total_frames() > 1 {
+            NextFrame::First
+        } else {
+            NextFrame::Same
+        };
+
         self.0.write(context.gc_context).natural_playhead_action = playhead_action;
 
         match playhead_action {
@@ -1918,7 +1914,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // it's exempted from frame destruction.
         if context.avm_type() == AvmType::Avm2
             && self.playing()
-            && self.determine_next_frame() != NextFrame::First
+            && self.0.read().natural_playhead_action != NextFrame::First
         {
             let mc = self.0.read();
             let data = mc.static_data.swf.clone();
