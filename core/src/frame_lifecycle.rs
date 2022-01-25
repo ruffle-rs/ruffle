@@ -159,9 +159,7 @@ pub fn catchup_display_object_to_frame<'gc>(
         //construction to happen, because event handlers expect to be able to
         //construct new movie clips and see their grandchildren. So I suspect
         //that constructing symbols in `enterFrame` works the same way.
-        (FramePhase::Enter, AvmType::Avm2)
-        | (FramePhase::Construct, AvmType::Avm2)
-        | (FramePhase::Idle, AvmType::Avm2) => {
+        (FramePhase::Enter, AvmType::Avm2) | (FramePhase::Construct, AvmType::Avm2) => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
         }
@@ -176,7 +174,7 @@ pub fn catchup_display_object_to_frame<'gc>(
             dobj.run_frame_avm2(context);
             dobj.run_frame_scripts(context);
         }
-        (FramePhase::Exit, AvmType::Avm2) => {
+        (FramePhase::Exit, AvmType::Avm2) | (FramePhase::Idle, AvmType::Avm2) => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
             dobj.run_frame_avm2(context);
