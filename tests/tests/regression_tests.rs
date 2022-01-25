@@ -81,7 +81,6 @@ macro_rules! swf_tests_approx {
     ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, $opt:ident = $val:expr)*),)*) => {
         $(
         #[test]
-        #[allow(clippy::if_then_panic)] // TODO: Remove when https://github.com/brendanzab/approx/pull/72 is merged.
         $(#[$attr])*
         fn $name() -> Result<(), Error> {
             set_logger();
