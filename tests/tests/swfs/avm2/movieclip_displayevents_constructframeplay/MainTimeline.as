@@ -12,6 +12,19 @@
 			this.addEventListener(Event.FRAME_CONSTRUCTED, this.construct_frame_controller);
 			this.addEventListener(Event.EXIT_FRAME, this.exit_frame_controller);
 		}
+		
+		function inspect() {
+			var children = "", child;
+			
+			for (var i = 0; i < this.numChildren; i += 1) {
+				child = this.getChildAt(i);
+				if (child) {
+					children += child.name + " ";
+				}
+			}
+		
+			trace("///Children:", children);
+		}
 	
 		function construct_frame_controller(evt: Event) {
 			switch (this.invocation) {
@@ -34,9 +47,12 @@
 			}
 			
 			this.invocation++;
+			this.inspect();
 		}
 		
 		function exit_frame_controller(evt: Event) {
+			this.inspect();
+			
 			if (this.destroy_me) {
 				this.stop();
 				this.destroy();
