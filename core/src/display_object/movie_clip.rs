@@ -1080,6 +1080,12 @@ impl<'gc> MovieClip<'gc> {
             // Despite this, AS3 code still expects to see frame 1 in here.
             NextFrame::First if context.avm_type() == AvmType::Avm2 => {
                 self.0.write(context.gc_context).current_frame = 1;
+
+                //When looping, AVM2 removes children during frame destruction,
+                //as if the movie had implicit `RemoveObject` tags for all
+                //children not present in frame 1. We run this part of the goto
+                //early.
+                self.rewind_children(context, 1);
             }
             NextFrame::First => self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
@@ -1257,8 +1263,44 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Remove children that were created after the destination frame.
+    ///
+    /// This function should be called during gotos that rewind to a prior
+    /// frame. It should also be performed after the clip timeline has been
+    /// totally read to prevent script code from observing or interfering with
+    /// the rewind process, especially in AS3.
+    ///
+    /// TODO: We want to do something like self.children.retain here, but
+    /// BTreeMap::retain does not exist.
+    ///
+    /// TODO: AS3 children don't live on the depth list. Do they respect or
+    /// ignore GOTOs?
+    fn rewind_children(mut self, context: &mut UpdateContext<'_, 'gc, '_>, frame: FrameNumber) {
+        let children: SmallVec<[_; 16]> = self
+            .0
+            .read()
+            .container
+            .iter_children_by_depth()
+            .filter_map(|(depth, clip)| {
+                if clip.place_frame() > frame {
+                    Some((depth, clip))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for (_depth, child) in children {
+            if !child.placed_by_script() {
+                self.remove_child(context, child, Lists::all());
+            } else {
+                self.remove_child(context, child, Lists::DEPTH);
+            }
+        }
+    }
+
     pub fn run_goto(
-        mut self,
+        self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         is_implicit: bool,
@@ -1414,36 +1456,7 @@ impl<'gc> MovieClip<'gc> {
         };
 
         if is_rewind {
-            // Remove all display objects that were created after the
-            // destination frame.
-            //
-            // We do this after reading the clip timeline so that AS3 can't
-            // observe side effects of the rewinding process.
-            //
-            // TODO: We want to do something like self.children.retain here,
-            // but BTreeMap::retain does not exist.
-            // TODO: AS3 children don't live on the depth list. Do they respect
-            // or ignore GOTOs?
-            let children: SmallVec<[_; 16]> = self
-                .0
-                .read()
-                .container
-                .iter_children_by_depth()
-                .filter_map(|(depth, clip)| {
-                    if clip.place_frame() > frame {
-                        Some((depth, clip))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            for (_depth, child) in children {
-                if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::all());
-                } else {
-                    self.remove_child(context, child, Lists::DEPTH);
-                }
-            }
+            self.rewind_children(context, frame);
         }
 
         // We have to be sure that queued actions are generated in the same order
