@@ -4,10 +4,12 @@ root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false ev
 //MainTimeline frame 1
 // symbol_a frame 1
 root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_a 
 /// (Stopping root clip in exitFrame...)
 root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_a 
 /// (Playing root clip in exitFrame...)
 root1 (frame 1):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
 root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
@@ -17,15 +19,18 @@ root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false ev
 //MainTimeline frame 2
 // symbol_b frame 1
 root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_b 
 /// (Stopping root clip in exitFrame...)
 root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_b 
 /// (Playing root clip in exitFrame...)
 root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
 root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
 //MainTimeline frame 3
 root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_b 
 /// (Playing root clip in exitFrame...)
 root1 (frame 1):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
 root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
@@ -35,4 +40,5 @@ root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false ev
 //MainTimeline frame 1
 // symbol_a frame 1
 root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: symbol_a 
 /// (Stopping root clip in exitFrame and removing event handlers...)
