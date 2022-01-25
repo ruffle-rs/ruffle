@@ -375,12 +375,9 @@ impl App {
                                         ..
                                     },
                                 ..
-                            } => {
-                                player.lock().unwrap().update(|uc| {
-                                    uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                                });
-                                return;
-                            }
+                            } => player.lock().unwrap().update(|uc| {
+                                uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                            }),
                             _ => (),
                         },
                         _ => (),
