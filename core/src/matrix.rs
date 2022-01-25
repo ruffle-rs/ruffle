@@ -191,7 +191,6 @@ impl std::ops::MulAssign for Matrix {
 }
 
 #[cfg(test)]
-#[allow(clippy::if_then_panic)] // TODO: Remove when https://github.com/brendanzab/approx/pull/72 is merged.
 mod tests {
     use super::*;
     use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
