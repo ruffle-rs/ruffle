@@ -18,6 +18,7 @@ pub struct Drawing {
     bitmaps: Vec<BitmapInfo>,
     current_fill: Option<DrawingFill>,
     current_line: Option<DrawingLine>,
+    pending_lines: Vec<DrawingLine>,
     cursor: (Twips, Twips),
     fill_start: (Twips, Twips),
 }
@@ -40,6 +41,7 @@ impl Drawing {
             bitmaps: Vec::new(),
             current_fill: None,
             current_line: None,
+            pending_lines: Vec::new(),
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
         }
@@ -56,6 +58,7 @@ impl Drawing {
             bitmaps: Vec::new(),
             current_fill: None,
             current_line: None,
+            pending_lines: Vec::new(),
             cursor: (Twips::ZERO, Twips::ZERO),
             fill_start: (Twips::ZERO, Twips::ZERO),
         };
@@ -280,6 +283,17 @@ impl Drawing {
         // The pending fill will auto-close.
         if let Some(fill) = &self.current_fill {
             if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+                return true;
+            }
+        }
+
+        for line in &self.pending_lines {
+            if shape_utils::draw_command_stroke_hit_test(
+                &line.commands,
+                line.style.width,
+                point,
+                local_matrix,
+            ) {
                 return true;
             }
         }
