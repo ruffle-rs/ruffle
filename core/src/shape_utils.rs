@@ -1,7 +1,5 @@
 use crate::{bounding_box::BoundingBox, matrix::Matrix};
-use fnv::FnvHashMap;
 use smallvec::SmallVec;
-use std::num::NonZeroU32;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
@@ -134,10 +132,10 @@ struct Point {
     is_bezier_control: bool,
 }
 
-/// A path segment is a series of edges linked togerther.
-/// Fill paths are directed, because the winding determines the fill-rule.
-/// Stroke paths are undirected.
-#[derive(Debug)]
+/// A continuous series of edges in a path.
+/// Fill segments are directed, because the winding determines the fill-rule.
+/// Stroke segments are undirected.
+#[derive(Clone, Debug)]
 struct PathSegment {
     pub points: Vec<Point>,
 }
@@ -151,6 +149,15 @@ impl PathSegment {
                 is_bezier_control: false,
             }],
         }
+    }
+
+    fn reset(&mut self, start: (Twips, Twips)) {
+        self.points.clear();
+        self.points.push(Point {
+            x: start.0,
+            y: start.1,
+            is_bezier_control: false,
+        });
     }
 
     /// Flips the direction of the path segment.
@@ -184,47 +191,21 @@ impl PathSegment {
         self.start() == self.end()
     }
 
-    /// Attempts to merge another path segment.
-    /// One path's start must meet the other path's end.
-    /// Returns true if the merge is successful.
-    fn try_merge(&mut self, other: &mut PathSegment, directed: bool) -> bool {
-        // Note that the merge point will be duplicated, so we want to slice it off one end. [1..]
-        if other.end() == self.start() {
-            std::mem::swap(&mut self.points, &mut other.points);
-            self.points.extend_from_slice(&other.points[1..]);
-            true
-        } else if self.end() == other.start() {
-            self.points.extend_from_slice(&other.points[1..]);
-            true
-        } else if !directed && self.end() == other.end() {
-            other.flip();
-            self.points.extend_from_slice(&other.points[1..]);
-            true
-        } else if !directed && self.start() == other.start() {
-            other.flip();
-            std::mem::swap(&mut self.points, &mut other.points);
-            self.points.extend_from_slice(&other.points[1..]);
-            true
-        } else {
-            false
-        }
-    }
-
-    fn into_draw_commands(self) -> impl Iterator<Item = DrawCommand> {
-        assert!(self.points.len() > 1);
-        let mut i = self.points.into_iter();
+    fn to_draw_commands(&self) -> impl '_ + Iterator<Item = DrawCommand> {
+        assert!(!self.is_empty());
+        let mut i = self.points.iter();
         let first = i.next().unwrap();
         std::iter::once(DrawCommand::MoveTo {
             x: first.x,
             y: first.y,
         })
         .chain(std::iter::from_fn(move || match i.next() {
-            Some(Point {
+            Some(&Point {
                 is_bezier_control: false,
                 x,
                 y,
             }) => Some(DrawCommand::LineTo { x, y }),
-            Some(Point {
+            Some(&Point {
                 is_bezier_control: true,
                 x,
                 y,
@@ -249,7 +230,7 @@ impl PathSegment {
 /// We have to link the edges together for each path. This structure contains
 /// a list of path segment, and each time a path segment is added, it will try
 /// to merge it with an existing segment.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct PendingPath {
     /// The list of path segments for this fill/stroke.
     /// For fills, this should turn into a list of closed paths when the shape is complete.
@@ -262,57 +243,54 @@ impl PendingPath {
         Self { segments: vec![] }
     }
 
-    fn merge_path(&mut self, mut new_segment: PathSegment, directed: bool) {
+    /// Adds a path segment to the path, attempting to link it to existing segments.
+    fn add_segment(&mut self, mut new_segment: PathSegment) {
         if !new_segment.is_empty() {
-            if let Some(i) = self
-                .segments
-                .iter_mut()
-                .position(|segment| segment.try_merge(&mut new_segment, directed))
-            {
-                new_segment = self.segments.swap_remove(i);
-                self.merge_path(new_segment, directed);
-            } else {
-                // Couldn't merge the segment any further to an existing segment. Add it to list.
-                self.segments.push(new_segment);
+            // Try to link this segment onto existing segments with a matching endpoint.
+            // Both the start and the end points of the new segment can be linked.
+            let mut start_open = true;
+            let mut end_open = true;
+            let mut i = 0;
+            while (start_open || end_open) && i < self.segments.len() {
+                let other = &mut self.segments[i];
+                if start_open && other.end() == new_segment.start() {
+                    other.points.extend_from_slice(&new_segment.points[1..]);
+                    new_segment = self.segments.swap_remove(i);
+                    start_open = false;
+                } else if end_open && new_segment.end() == other.start() {
+                    std::mem::swap(&mut other.points, &mut new_segment.points);
+                    other.points.extend_from_slice(&new_segment.points[1..]);
+                    new_segment = self.segments.swap_remove(i);
+                    end_open = false;
+                } else {
+                    i += 1;
+                }
             }
+            // The segment can't link to any further segments. Add it to list.
+            self.segments.push(new_segment);
         }
     }
 
-    fn into_draw_commands(self) -> impl Iterator<Item = DrawCommand> {
-        self.segments
-            .into_iter()
-            .flat_map(PathSegment::into_draw_commands)
+    fn push_path(&mut self, segment: PathSegment) {
+        self.segments.push(segment);
+    }
+
+    fn to_draw_commands(&self) -> impl '_ + Iterator<Item = DrawCommand> {
+        self.segments.iter().flat_map(PathSegment::to_draw_commands)
     }
 }
 
-/// `PendingPathMap` maps from style IDs to the path associated with that style.
-/// Each path is uniquely identified by its style ID (until the style list changes).
-/// Style IDs tend to be sequential, so we just use a `Vec`.
-#[derive(Debug)]
-pub struct PendingPathMap(FnvHashMap<NonZeroU32, PendingPath>);
-
-impl PendingPathMap {
-    fn new() -> Self {
-        Self(FnvHashMap::default())
-    }
-
-    fn merge_path(&mut self, path: ActivePath, directed: bool) {
-        let pending_path = self.0.entry(path.style_id).or_insert_with(PendingPath::new);
-        pending_path.merge_path(path.segment, directed);
-    }
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ActivePath {
-    style_id: NonZeroU32,
+    style_id: u32,
     segment: PathSegment,
 }
 
 impl ActivePath {
-    fn new(style_id: NonZeroU32, start: (Twips, Twips)) -> Self {
+    fn new() -> Self {
         Self {
-            style_id,
-            segment: PathSegment::new(start),
+            style_id: 0,
+            segment: PathSegment::new(Default::default()),
         }
     }
 
@@ -320,8 +298,21 @@ impl ActivePath {
         self.segment.add_point(point)
     }
 
-    fn flip(&mut self) {
-        self.segment.flip()
+    fn flush_fill(&mut self, start: (Twips, Twips), pending: &mut [PendingPath], flip: bool) {
+        if self.style_id > 0 && !self.segment.is_empty() {
+            if flip {
+                self.segment.flip();
+            }
+            pending[self.style_id as usize - 1].add_segment(self.segment.clone());
+        }
+        self.segment.reset(start);
+    }
+
+    fn flush_stroke(&mut self, start: (Twips, Twips), pending: &mut [PendingPath]) {
+        if self.style_id > 0 && !self.segment.is_empty() {
+            pending[self.style_id as usize - 1].push_path(self.segment.clone());
+        }
+        self.segment.reset(start);
     }
 }
 
@@ -338,14 +329,13 @@ pub struct ShapeConverter<'a> {
     fill_styles: &'a [swf::FillStyle],
     line_styles: &'a [swf::LineStyle],
 
-    fill_style0: Option<ActivePath>,
-    fill_style1: Option<ActivePath>,
-    line_style: Option<ActivePath>,
+    fill_style0: ActivePath,
+    fill_style1: ActivePath,
+    line_style: ActivePath,
 
-    // Paths. These get flushed when the shape is complete
-    // and for each new layer.
-    fills: PendingPathMap,
-    strokes: PendingPathMap,
+    // Paths. These get flushed for each new layer.
+    fills: Vec<PendingPath>,
+    strokes: Vec<PendingPath>,
 
     // Output.
     commands: Vec<DrawPath<'a>>,
@@ -364,12 +354,12 @@ impl<'a> ShapeConverter<'a> {
             fill_styles: &shape.styles.fill_styles,
             line_styles: &shape.styles.line_styles,
 
-            fill_style0: None,
-            fill_style1: None,
-            line_style: None,
+            fill_style0: ActivePath::new(),
+            fill_style1: ActivePath::new(),
+            line_style: ActivePath::new(),
 
-            fills: PendingPathMap::new(),
-            strokes: PendingPathMap::new(),
+            fills: vec![PendingPath::new(); shape.styles.fill_styles.len()],
+            strokes: vec![PendingPath::new(); shape.styles.line_styles.len()],
 
             commands: Vec::with_capacity(Self::DEFAULT_CAPACITY),
         }
@@ -390,52 +380,48 @@ impl<'a> ShapeConverter<'a> {
                         self.flush_paths();
                     }
 
-                    if let Some(ref styles) = style_change.new_styles {
+                    if let Some(styles) = &style_change.new_styles {
                         // A new style list is also used to indicate a new drawing layer.
                         self.flush_layer();
                         self.fill_styles = &styles.fill_styles[..];
                         self.line_styles = &styles.line_styles[..];
+                        self.fills
+                            .resize_with(self.fill_styles.len(), PendingPath::new);
+                        self.strokes
+                            .resize_with(self.line_styles.len(), PendingPath::new);
                         num_fill_styles = self.fill_styles.len() as u32;
                         num_line_styles = self.line_styles.len() as u32;
                     }
 
-                    if let Some(fs) = style_change.fill_style_1 {
-                        if let Some(path) = self.fill_style1.take() {
-                            self.fills.merge_path(path, true);
-                        }
-
-                        // <= because fill ID 0 (no fill) is not included in fill style array
-                        self.fill_style1 = if fs <= num_fill_styles {
-                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
+                    if let Some(new_style_id) = style_change.fill_style_1 {
+                        self.fill_style1
+                            .flush_fill((self.x, self.y), &mut self.fills[..], false);
+                        // Validate in case we index an invalid fill style.
+                        // <= because fill ID 0 (no fill) is implicit, so the array is actually 1-based
+                        self.fill_style1.style_id = if new_style_id <= num_fill_styles {
+                            new_style_id
                         } else {
-                            None
+                            0
+                        };
+                    }
+
+                    if let Some(new_style_id) = style_change.fill_style_0 {
+                        self.fill_style0
+                            .flush_fill((self.x, self.y), &mut self.fills[..], true);
+                        self.fill_style0.style_id = if new_style_id <= num_fill_styles {
+                            new_style_id
+                        } else {
+                            0
                         }
                     }
 
-                    if let Some(fs) = style_change.fill_style_0 {
-                        if let Some(mut path) = self.fill_style0.take() {
-                            if !path.segment.is_empty() {
-                                path.flip();
-                                self.fills.merge_path(path, true);
-                            }
-                        }
-
-                        self.fill_style0 = if fs <= num_fill_styles {
-                            NonZeroU32::new(fs).map(|id| ActivePath::new(id, (self.x, self.y)))
+                    if let Some(new_style_id) = style_change.line_style {
+                        self.line_style
+                            .flush_stroke((self.x, self.y), &mut self.strokes[..]);
+                        self.line_style.style_id = if new_style_id <= num_line_styles {
+                            new_style_id
                         } else {
-                            None
-                        }
-                    }
-
-                    if let Some(ls) = style_change.line_style {
-                        if let Some(path) = self.line_style.take() {
-                            self.strokes.merge_path(path, false);
-                        }
-
-                        self.line_style = if ls <= num_line_styles {
-                            NonZeroU32::new(ls).map(|id| ActivePath::new(id, (self.x, self.y)))
-                        } else {
-                            None
+                            0
                         }
                     }
                 }
@@ -488,76 +474,65 @@ impl<'a> ShapeConverter<'a> {
 
     /// Adds a point to the current path for the active fills/strokes.
     fn visit_point(&mut self, point: Point) {
-        if let Some(path) = &mut self.fill_style0 {
-            path.add_point(point)
+        if self.fill_style1.style_id > 0 {
+            self.fill_style1.add_point(point);
         }
-
-        if let Some(path) = &mut self.fill_style1 {
-            path.add_point(point)
+        if self.fill_style0.style_id > 0 {
+            self.fill_style0.add_point(point);
         }
-
-        if let Some(path) = &mut self.line_style {
-            path.add_point(point)
+        if self.line_style.style_id > 0 {
+            self.line_style.add_point(point);
         }
     }
 
     /// When the pen jumps to a new position, we reset the active path.
     fn flush_paths(&mut self) {
         // Move the current paths to the active list.
-        if let Some(path) = self.fill_style1.take() {
-            self.fill_style1 = Some(ActivePath::new(path.style_id, (self.x, self.y)));
-            self.fills.merge_path(path, true);
-        }
-
-        if let Some(mut path) = self.fill_style0.take() {
-            self.fill_style0 = Some(ActivePath::new(path.style_id, (self.x, self.y)));
-            if !path.segment.is_empty() {
-                path.flip();
-                self.fills.merge_path(path, true);
-            }
-        }
-
-        if let Some(path) = self.line_style.take() {
-            self.line_style = Some(ActivePath::new(path.style_id, (self.x, self.y)));
-            self.strokes.merge_path(path, false);
-        }
+        self.fill_style1
+            .flush_fill((self.x, self.y), &mut self.fills, false);
+        self.fill_style0
+            .flush_fill((self.x, self.y), &mut self.fills, true);
+        self.line_style
+            .flush_stroke((self.x, self.y), &mut self.strokes);
     }
 
     /// When a new layer starts, all paths are flushed and turned into drawing commands.
     fn flush_layer(&mut self) {
         self.flush_paths();
-        self.fill_style0 = None;
-        self.fill_style1 = None;
-        self.line_style = None;
-
-        //let fills = std::mem::replace(&mut self.fills.0, FnvHashMap::default());
-        //let strokes = std::mem::replace(&mut self.strokes.0, FnvHashMap::default());
 
         // Draw fills, and then strokes.
-        for (style_id, path) in self.fills.0.drain() {
+        // Paths are drawn in order of style id, not based on the order of the draw commands.
+        for (i, path) in self.fills.iter_mut().enumerate() {
             // These invariants are checked above (any invalid/empty fill ID should not have been added).
-            assert!(style_id.get() > 0 && style_id.get() as usize <= self.fill_styles.len());
-            let style = unsafe { self.fill_styles.get_unchecked(style_id.get() as usize - 1) };
+            debug_assert!(i < self.fill_styles.len());
+            if path.segments.is_empty() {
+                continue;
+            }
+            let style = unsafe { self.fill_styles.get_unchecked(i) };
             self.commands.push(DrawPath::Fill {
                 style,
-                commands: path.into_draw_commands().collect(),
+                commands: path.to_draw_commands().collect(),
             });
+            path.segments.clear();
         }
 
         // Strokes are drawn last because they always appear on top of fills in the same layer.
         // Because path segments can either be open or closed, we convert each stroke segment into
         // a separate draw command.
-        // TODO(Herschel): Open strokes could be grouped together into a single path.
-        for (style_id, path) in self.strokes.0.drain() {
-            assert!(style_id.get() > 0 && style_id.get() as usize <= self.line_styles.len());
-            let style = unsafe { self.line_styles.get_unchecked(style_id.get() as usize - 1) };
-            for segment in path.segments {
+        for (i, path) in self.strokes.iter_mut().enumerate() {
+            debug_assert!(i < self.line_styles.len());
+            let style = unsafe { self.line_styles.get_unchecked(i) };
+            for segment in &path.segments {
+                if segment.is_empty() {
+                    continue;
+                }
                 self.commands.push(DrawPath::Stroke {
                     style,
                     is_closed: segment.is_closed(),
-                    commands: segment.into_draw_commands().collect(),
+                    commands: segment.to_draw_commands().collect(),
                 });
             }
+            path.segments.clear();
         }
     }
 }
@@ -692,10 +667,6 @@ mod tests {
             commands: vec![
                 DrawCommand::MoveTo {
                     x: Twips::from_pixels(100.0),
-                    y: Twips::from_pixels(200.0),
-                },
-                DrawCommand::LineTo {
-                    x: Twips::from_pixels(100.0),
                     y: Twips::from_pixels(100.0),
                 },
                 DrawCommand::LineTo {
@@ -709,6 +680,10 @@ mod tests {
                 DrawCommand::LineTo {
                     x: Twips::from_pixels(100.0),
                     y: Twips::from_pixels(200.0),
+                },
+                DrawCommand::LineTo {
+                    x: Twips::from_pixels(100.0),
+                    y: Twips::from_pixels(100.0),
                 },
             ],
         }];
