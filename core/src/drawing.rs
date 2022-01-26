@@ -13,8 +13,7 @@ pub struct Drawing {
     shape_bounds: BoundingBox,
     edge_bounds: BoundingBox,
     dirty: Cell<bool>,
-    fills: Vec<DrawingFill>,
-    lines: Vec<DrawingLine>,
+    paths: Vec<DrawingPath>,
     bitmaps: Vec<BitmapInfo>,
     current_fill: Option<DrawingFill>,
     current_line: Option<DrawingLine>,
@@ -36,8 +35,7 @@ impl Drawing {
             shape_bounds: BoundingBox::default(),
             edge_bounds: BoundingBox::default(),
             dirty: Cell::new(false),
-            fills: Vec::new(),
-            lines: Vec::new(),
+            paths: Vec::new(),
             bitmaps: Vec::new(),
             current_fill: None,
             current_line: None,
@@ -53,8 +51,7 @@ impl Drawing {
             shape_bounds: shape.shape_bounds.clone().into(),
             edge_bounds: shape.edge_bounds.clone().into(),
             dirty: Cell::new(true),
-            fills: Vec::new(),
-            lines: Vec::new(),
+            paths: Vec::new(),
             bitmaps: Vec::new(),
             current_fill: None,
             current_line: None,
@@ -97,7 +94,22 @@ impl Drawing {
     pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
         self.close_path();
         if let Some(existing) = self.current_fill.take() {
-            self.fills.push(existing);
+            self.paths.push(DrawingPath::Fill(existing));
+        }
+        self.paths
+            .extend(self.pending_lines.drain(..).map(DrawingPath::Line));
+        if let Some(mut existing) = self.current_line.take() {
+            existing.is_closed = self.cursor == self.fill_start;
+            let style = existing.style.clone();
+            self.paths.push(DrawingPath::Line(existing));
+            self.current_line = Some(DrawingLine {
+                style,
+                commands: vec![DrawCommand::MoveTo {
+                    x: self.cursor.0,
+                    y: self.cursor.1,
+                }],
+                is_closed: false,
+            });
         }
         if let Some(style) = style {
             self.current_fill = Some(DrawingFill {
@@ -115,8 +127,8 @@ impl Drawing {
     pub fn clear(&mut self) {
         self.current_fill = None;
         self.current_line = None;
-        self.fills.clear();
-        self.lines.clear();
+        self.pending_lines.clear();
+        self.paths.clear();
         self.bitmaps.clear();
         self.edge_bounds = BoundingBox::default();
         self.shape_bounds = BoundingBox::default();
@@ -128,7 +140,11 @@ impl Drawing {
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
         if let Some(mut existing) = self.current_line.take() {
             existing.is_closed = self.cursor == self.fill_start;
-            self.lines.push(existing);
+            if self.current_fill.is_some() {
+                self.pending_lines.push(existing);
+            } else {
+                self.paths.push(DrawingPath::Line(existing));
+            }
         }
         if let Some(style) = style {
             self.current_line = Some(DrawingLine {
@@ -194,13 +210,24 @@ impl Drawing {
     pub fn render(&self, context: &mut RenderContext) {
         if self.dirty.get() {
             self.dirty.set(false);
-            let mut paths = Vec::new();
+            let mut paths = Vec::with_capacity(self.paths.len());
 
-            for fill in &self.fills {
-                paths.push(DrawPath::Fill {
-                    style: &fill.style,
-                    commands: fill.commands.to_owned(),
-                })
+            for path in &self.paths {
+                match path {
+                    DrawingPath::Fill(fill) => {
+                        paths.push(DrawPath::Fill {
+                            style: &fill.style,
+                            commands: fill.commands.to_owned(),
+                        });
+                    }
+                    DrawingPath::Line(line) => {
+                        paths.push(DrawPath::Stroke {
+                            style: &line.style,
+                            commands: line.commands.to_owned(),
+                            is_closed: line.is_closed,
+                        });
+                    }
+                }
             }
 
             if let Some(fill) = &self.current_fill {
@@ -210,11 +237,21 @@ impl Drawing {
                 })
             }
 
-            for line in &self.lines {
+            for line in &self.pending_lines {
+                let mut commands = line.commands.to_owned();
+                let is_closed = if self.current_fill.is_some() {
+                    commands.push(DrawCommand::LineTo {
+                        x: self.fill_start.0,
+                        y: self.fill_start.1,
+                    });
+                    true
+                } else {
+                    self.cursor == self.fill_start
+                };
                 paths.push(DrawPath::Stroke {
                     style: &line.style,
-                    commands: line.commands.to_owned(),
-                    is_closed: line.is_closed,
+                    commands,
+                    is_closed,
                 })
             }
 
@@ -263,20 +300,23 @@ impl Drawing {
 
     pub fn hit_test(&self, point: (Twips, Twips), local_matrix: &crate::matrix::Matrix) -> bool {
         use crate::shape_utils;
-        for fill in &self.fills {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
-                return true;
-            }
-        }
-
-        for line in &self.lines {
-            if shape_utils::draw_command_stroke_hit_test(
-                &line.commands,
-                line.style.width,
-                point,
-                local_matrix,
-            ) {
-                return true;
+        for path in &self.paths {
+            match path {
+                DrawingPath::Fill(fill) => {
+                    if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+                        return true;
+                    }
+                }
+                DrawingPath::Line(line) => {
+                    if shape_utils::draw_command_stroke_hit_test(
+                        &line.commands,
+                        line.style.width,
+                        point,
+                        local_matrix,
+                    ) {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -372,6 +412,12 @@ struct DrawingLine {
     style: LineStyle,
     commands: Vec<DrawCommand>,
     is_closed: bool,
+}
+
+#[derive(Debug, Clone)]
+enum DrawingPath {
+    Fill(DrawingFill),
+    Line(DrawingLine),
 }
 
 fn stretch_bounding_box(
