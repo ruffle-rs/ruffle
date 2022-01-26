@@ -18,7 +18,7 @@ to get up and running. If you'd prefer to use Ruffle through npm and a bundler, 
 
 Before you can get started with using Ruffle on your website, you must host its files yourself.
 Either take the [latest build](https://github.com/ruffle-rs/ruffle/releases)
-or [build it yourself](../../README.md), and make these files accessible by your web server.
+or [build it yourself](https://github.com/ruffle-rs/ruffle/blob/master/web/README.md), and make these files accessible by your web server.
 
 Please note that the `.wasm` file must be served properly, and some web servers may not do that
 correctly out of the box. Please see [our wiki](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-mime-type)
@@ -54,4 +54,4 @@ If you want to control the Ruffle player, you may use our Javascript API.
 
 ## Building, testing or contributing
 
-Please see [the ruffle-web README](../../README.md).
+Please see [the ruffle-web README](https://github.com/ruffle-rs/ruffle/blob/master/web/README.md).
