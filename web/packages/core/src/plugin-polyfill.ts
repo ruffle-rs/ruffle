@@ -138,6 +138,10 @@ class RufflePluginArray {
         return this.__named_plugins[name];
     }
 
+    refresh(): void {
+        // Nothing to do, we just need to define the method.
+    }
+
     [index: number]: Plugin;
 
     [name: string]: unknown;
