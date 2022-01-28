@@ -508,7 +508,7 @@ impl TextSpan {
             leading: Some(self.leading),
             letter_spacing: Some(self.letter_spacing),
             tab_stops: Some(self.tab_stops.clone()),
-            bullet: Some(self.bold),
+            bullet: Some(self.bullet),
             url: Some(self.url.clone()),
             target: Some(self.target.clone()),
         }
