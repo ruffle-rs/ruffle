@@ -1324,6 +1324,19 @@ impl<'gc> MovieClip<'gc> {
 
         self.0.write(context.gc_context).stop_audio_stream(context);
 
+        //Implicit AVM2 gotos require us to lie about our current frame number.
+        //If we did so, we have to commit to the lie by pretending that the
+        //prior implicit goto already completed.
+        if context.avm_type() == AvmType::Avm2
+            && (*context.frame_phase == FramePhase::Enter
+                || *context.frame_phase == FramePhase::Construct)
+            && self.0.read().natural_playhead_action == NextFrame::First
+            && !is_implicit
+        {
+            self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
+            self.0.write(context.gc_context).tag_stream_pos = 0;
+        }
+
         let is_rewind = if frame < self.current_frame() {
             // Because we can only step forward, we have to start at frame 1
             // when rewinding. We don't actually remove children yet because
