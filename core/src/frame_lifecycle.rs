@@ -168,25 +168,19 @@ pub fn catchup_display_object_to_frame<'gc>(
             dobj.construct_frame(context);
             dobj.run_frame_avm2(context);
         }
-        (FramePhase::FrameScripts, AvmType::Avm2) => {
+        (FramePhase::FrameScripts, AvmType::Avm2)
+        | (FramePhase::Exit, AvmType::Avm2)
+        | (FramePhase::Idle, AvmType::Avm2) => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
             dobj.run_frame_avm2(context);
             dobj.run_frame_scripts(context);
-        }
-        (FramePhase::Exit, AvmType::Avm2) | (FramePhase::Idle, AvmType::Avm2) => {
-            dobj.enter_frame(context);
-            dobj.construct_frame(context);
-            dobj.run_frame_avm2(context);
-            dobj.run_frame_scripts(context);
-            dobj.exit_frame(context);
         }
         (FramePhase::Destroy, AvmType::Avm2) => {
             dobj.enter_frame(context);
             dobj.construct_frame(context);
             dobj.run_frame_avm2(context);
             dobj.run_frame_scripts(context);
-            dobj.exit_frame(context);
             dobj.destroy_frame(context);
         }
     }
