@@ -427,9 +427,6 @@ struct FunctionObjectData<'gc> {
     function: Option<Executable<'gc>>,
     /// The code that will be invoked when this object is constructed.
     constructor: Option<Executable<'gc>>,
-
-    /// The value to be returned by `toString` and `valueOf`.
-    primitive: Value<'gc>,
 }
 
 impl<'gc> FunctionObject<'gc> {
@@ -448,7 +445,6 @@ impl<'gc> FunctionObject<'gc> {
                 gc_context,
                 FunctionObjectData {
                     function,
-                    primitive: "[type Function]".into(),
                     constructor,
                 },
             ),
@@ -683,7 +679,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 activation.context.gc_context,
                 FunctionObjectData {
                     function: None,
-                    primitive: "[type Function]".into(),
                     constructor: None,
                 },
             ),
