@@ -51,7 +51,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           sudo add-apt-repository ppa:kisak/kisak-mesa -y
           sudo apt-get update
@@ -71,7 +71,7 @@ jobs:
           args: --all --tests -- -D warnings
 
       - name: Run tests with image tests
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest'
+        if: runner.os == 'Linux' || runner.os == 'Windows'
         uses: actions-rs/cargo@v1
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
@@ -80,7 +80,7 @@ jobs:
           args: --features imgtests
 
       - name: Run tests without image tests
-        if: ${{ !(matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest') }}
+        if: ${{ !(runner.os == 'Linux' || runner.os == 'Windows') }}
         uses: actions-rs/cargo@v1
         with:
           command: test
