@@ -1,14 +1,3 @@
-#![allow(
-    renamed_and_removed_lints,
-    unknown_lints,
-    clippy::unknown_clippy_lints,
-    clippy::inconsistent_struct_constructor,
-    clippy::manual_map,
-    clippy::manual_range_contains,
-    clippy::same_item_push,
-    clippy::unnecessary_wraps
-)]
-
 #[macro_use]
 mod display_object;
 pub use display_object::StageDisplayState;
