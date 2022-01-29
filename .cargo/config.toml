@@ -1,0 +1,19 @@
+[target.'cfg(all())']
+rustflags = [
+    # CLIPPY LINT SETTINGS
+    # This is a workaround to configure lints for the entire workspace, pending the ability to configure this via TOML.
+    # See: https://github.com/rust-lang/cargo/issues/5034
+    #      https://github.com/EmbarkStudios/rust-ecosystem/issues/22#issuecomment-947011395
+
+    # Clippy nightly often adds new/buggy lints that we want to ignore.
+    # Don't warn about these new lints on stable.
+    "-Arenamed_and_removed_lints", 
+    "-Aunknown_lints",
+
+    # LONG-TERM: These lints are unhelpful.
+    "-Aclippy::manual_map",                  # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
+    "-Aclippy::manual_range_contains",       # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
+
+    # TEMPORARY: Buggy lints that will hopefully be fixed soon.
+    "-Aclippy::needless_borrow",             # https://github.com/rust-lang/rust-clippy/pull/8355
+]

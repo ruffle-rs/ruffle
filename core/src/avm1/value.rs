@@ -455,6 +455,7 @@ impl<'gc> Value<'gc> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
     use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
@@ -637,7 +638,6 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::unreadable_literal)]
 
     fn wrapping_u16() {
         use super::f64_to_wrapping_u16;
@@ -654,7 +654,6 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::unreadable_literal)]
 
     fn wrapping_i16() {
         use super::f64_to_wrapping_i16;
@@ -672,7 +671,6 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::unreadable_literal)]
     fn wrapping_u32() {
         use super::f64_to_wrapping_u32;
         assert_eq!(f64_to_wrapping_u32(0.0), 0);
@@ -688,7 +686,6 @@ mod test {
     }
 
     #[test]
-    #[allow(clippy::unreadable_literal)]
     fn wrapping_i32() {
         use super::f64_to_wrapping_i32;
         assert_eq!(f64_to_wrapping_i32(0.0), 0);

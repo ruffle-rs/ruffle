@@ -269,7 +269,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     Ok(())
 }
 
-#[allow(unknown_lints, clippy::branches_sharing_code)]
+#[allow(clippy::branches_sharing_code)]
 fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);

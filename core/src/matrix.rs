@@ -1,8 +1,4 @@
-#![allow(
-    renamed_and_removed_lints,
-    clippy::unknown_clippy_lints,
-    clippy::suspicious_operation_groupings
-)]
+#![allow(clippy::suspicious_operation_groupings)]
 
 use swf::{Fixed16, Twips};
 

@@ -45,7 +45,7 @@ pub mod minimp3 {
         type Item = [i16; 2];
 
         #[inline]
-        #[allow(unknown_lints, clippy::branches_sharing_code)]
+        #[allow(clippy::branches_sharing_code)]
         fn next(&mut self) -> Option<Self::Item> {
             if self.cur_sample >= self.frame.data.len() {
                 self.next_frame();

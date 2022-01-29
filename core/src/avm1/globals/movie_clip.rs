@@ -1242,7 +1242,6 @@ fn get_rect<'gc>(
     get_bounds(movie_clip, activation, args)
 }
 
-#[allow(unused_must_use)] //can't use errors yet
 pub fn get_url<'gc>(
     _movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
@@ -1256,7 +1255,7 @@ pub fn get_url<'gc>(
         if let Some(fscommand) = fscommand::parse(&url) {
             let fsargs_val = args.get(1).cloned().unwrap_or(Value::Undefined);
             let fsargs = fsargs_val.coerce_to_string(activation)?;
-            fscommand::handle(fscommand, &fsargs, activation);
+            let _ = fscommand::handle(fscommand, &fsargs, activation);
             return Ok(Value::Undefined);
         }
 
