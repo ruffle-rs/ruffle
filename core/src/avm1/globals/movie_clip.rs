@@ -1193,12 +1193,7 @@ fn get_bounds<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let target = match args.get(0) {
-        Some(Value::String(s)) if s.is_empty() => None,
-        Some(Value::Object(o)) if o.as_display_object().is_some() => o.as_display_object(),
-        Some(val) => {
-            let path = val.coerce_to_string(activation)?;
-            activation.resolve_target_display_object(movie_clip.into(), path.into(), false)?
-        }
+        Some(val) => activation.resolve_target_display_object(movie_clip.into(), *val, false)?,
         None => Some(movie_clip.into()),
     };
 
