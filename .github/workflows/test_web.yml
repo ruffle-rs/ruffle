@@ -32,10 +32,13 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ["14", "16"]
-        # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        rust_version: [stable]
-        # MIKE: Turning off macOS-latest for now (flaky tests on CI).
+        rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         os: [ubuntu-latest, windows-latest]
+        # TODO: Temporarily disable Node 14 on windows pending this issue:
+        # https://github.com/actions/setup-node/issues/411
+        exclude:
+          - os: windows-latest
+            node_version: "14"
 
     steps:
       - uses: actions/checkout@v2
