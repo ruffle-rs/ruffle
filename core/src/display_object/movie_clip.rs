@@ -1072,7 +1072,6 @@ impl<'gc> MovieClip<'gc> {
         match playhead_action {
             NextFrame::Next => {
                 let mut write = self.0.write(context.gc_context);
-
                 write.queued_script_frame = Some(write.current_frame + 1);
                 write.current_frame += 1;
             }
@@ -1506,12 +1505,10 @@ impl<'gc> MovieClip<'gc> {
                 // Also, gotos triggered by intializers need to *not* run
                 // internal frames, otherwise the tag stream pointer will be
                 // advanced twice per frame.
-                if *context.frame_phase != FramePhase::Construct {
-                    let old_npa = self.0.read().natural_playhead_action;
-                    self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
-                    self.run_frame_internal(context, false);
-                    self.0.write(context.gc_context).natural_playhead_action = old_npa;
-                }
+                let old_npa = self.0.read().natural_playhead_action;
+                self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
+                self.run_frame_internal(context, false);
+                self.0.write(context.gc_context).natural_playhead_action = old_npa;
             } else {
                 // AVM1 gets current_frame - 1 because we expect it to be
                 // incremented again in run_frame_internal.
@@ -1955,10 +1952,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame destruction.
-        if context.avm_type() == AvmType::Avm2
-            && self.playing()
-            && self.0.read().natural_playhead_action != NextFrame::First
-        {
+        if context.avm_type() == AvmType::Avm2 && self.playing() {
             let mc = self.0.read();
             let data = mc.static_data.swf.clone();
             let mut reader = data.read_from(mc.tag_stream_pos);
