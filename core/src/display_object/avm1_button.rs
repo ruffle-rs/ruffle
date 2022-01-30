@@ -423,7 +423,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
-        if !self.visible() {
+        if !self.visible() && !matches!(event, ClipEvent::ReleaseOutside) {
             return ClipEventResult::NotHandled;
         }
 
