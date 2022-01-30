@@ -6,9 +6,7 @@ use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
-use crate::display_object::{
-    Bitmap, DisplayObject, MorphShape, TDisplayObject, TDisplayObjectContainer,
-};
+use crate::display_object::{Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -472,22 +470,9 @@ impl<'gc> Loader<'gc> {
                                 .set_avm2_domain(domain);
 
                             if let Some(mut mc) = clip.as_movie_clip() {
-                                mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
+                                mc.replace_with_movie(uc.gc_context, Some(movie));
                                 mc.post_instantiation(uc, None, Instantiator::Movie, false);
-
-                                let mut morph_shapes = fnv::FnvHashMap::default();
-                                mc.preload(uc, &mut morph_shapes);
-
-                                // Finalize morph shapes.
-                                for (id, static_data) in morph_shapes {
-                                    let morph_shape = MorphShape::new(uc.gc_context, static_data);
-                                    uc.library
-                                        .library_for_movie_mut(movie.clone())
-                                        .register_character(
-                                            id,
-                                            crate::character::Character::MorphShape(morph_shape),
-                                        );
-                                }
+                                mc.preload(uc);
                             }
                         }
                         ContentType::Gif | ContentType::Jpeg | ContentType::Png => {

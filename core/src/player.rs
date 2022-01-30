@@ -18,8 +18,8 @@ use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
-    EditText, InteractiveObject, MorphShape, MovieClip, Stage, StageAlign, StageDisplayState,
-    StageQuality, StageScaleMode, TInteractiveObject,
+    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
+    StageScaleMode, TInteractiveObject,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -1318,21 +1318,8 @@ impl Player {
     /// specific `MovieClip` referenced.
     fn preload(&mut self) {
         self.mutate_with_update_context(|context| {
-            let mut morph_shapes = fnv::FnvHashMap::default();
             let root = context.stage.root_clip();
-            root.as_movie_clip()
-                .unwrap()
-                .preload(context, &mut morph_shapes);
-
-            let lib = context
-                .library
-                .library_for_movie_mut(root.as_movie_clip().unwrap().movie().unwrap());
-
-            // Finalize morph shapes.
-            for (id, static_data) in morph_shapes {
-                let morph_shape = MorphShape::new(context.gc_context, static_data);
-                lib.register_character(id, crate::character::Character::MorphShape(morph_shape));
-            }
+            root.as_movie_clip().unwrap().preload(context);
         });
         if self.swf.avm_type() == AvmType::Avm2 && self.warn_on_unsupported_content {
             self.ui.display_unsupported_message();

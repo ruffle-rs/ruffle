@@ -25,7 +25,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{
     Avm1Button, Avm2Button, Bitmap, DisplayObjectBase, DisplayObjectPtr, EditText, Graphic,
-    MorphShapeStatic, TDisplayObject, Text, Video,
+    MorphShape, TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -256,11 +256,7 @@ impl<'gc> MovieClip<'gc> {
             .replace_with_movie(gc_context, movie)
     }
 
-    pub fn preload(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-    ) {
+    pub fn preload(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         use swf::TagCode;
         // TODO: Re-creating static data because preload step occurs after construction.
         // Should be able to hoist this up somewhere, or use MaybeUninit.
@@ -268,7 +264,6 @@ impl<'gc> MovieClip<'gc> {
         let data = self.0.read().static_data.swf.clone();
         let mut reader = data.read_from(0);
         let mut cur_frame = 1;
-        let mut ids = fnv::FnvHashMap::default();
         let mut preload_stream_handle = None;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::CsmTextSettings => self
@@ -335,18 +330,14 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .define_font_4(context, reader),
-            TagCode::DefineMorphShape => self.0.write(context.gc_context).define_morph_shape(
-                context,
-                reader,
-                morph_shapes,
-                1,
-            ),
-            TagCode::DefineMorphShape2 => self.0.write(context.gc_context).define_morph_shape(
-                context,
-                reader,
-                morph_shapes,
-                2,
-            ),
+            TagCode::DefineMorphShape => self
+                .0
+                .write(context.gc_context)
+                .define_morph_shape(context, reader, 1),
+            TagCode::DefineMorphShape2 => self
+                .0
+                .write(context.gc_context)
+                .define_morph_shape(context, reader, 2),
             TagCode::DefineShape => self
                 .0
                 .write(context.gc_context)
@@ -371,12 +362,10 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .define_video_stream(context, reader),
-            TagCode::DefineSprite => self.0.write(context.gc_context).define_sprite(
-                context,
-                reader,
-                tag_len,
-                morph_shapes,
-            ),
+            TagCode::DefineSprite => self
+                .0
+                .write(context.gc_context)
+                .define_sprite(context, reader, tag_len),
             TagCode::DefineText => self
                 .0
                 .write(context.gc_context)
@@ -406,46 +395,6 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .jpeg_tables(context, reader, tag_len),
-            TagCode::PlaceObject => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                1,
-            ),
-            TagCode::PlaceObject2 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                2,
-            ),
-            TagCode::PlaceObject3 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                3,
-            ),
-            TagCode::PlaceObject4 => self.0.write(context.gc_context).preload_place_object(
-                context,
-                reader,
-                tag_len,
-                &mut ids,
-                morph_shapes,
-                4,
-            ),
-            TagCode::RemoveObject => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 1),
-            TagCode::RemoveObject2 => self
-                .0
-                .write(context.gc_context)
-                .preload_remove_object(context, reader, &mut ids, 2),
             TagCode::ShowFrame => {
                 self.0
                     .write(context.gc_context)
@@ -2406,13 +2355,16 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
         version: u8,
     ) -> DecodeResult {
-        // Certain backends may have to preload morph shape frames, so defer registering until the end.
-        let swf_shape = reader.read_define_morph_shape(version)?;
-        let morph_shape = MorphShapeStatic::from_swf_tag(context, &swf_shape, self.movie());
-        morph_shapes.insert(swf_shape.id, morph_shape);
+        let movie = self.movie();
+        let tag = reader.read_define_morph_shape(version)?;
+        let id = tag.id;
+        let morph_shape = MorphShape::from_swf_tag(context.gc_context, tag, movie.clone());
+        context
+            .library
+            .library_for_movie_mut(movie)
+            .register_character(id, Character::MorphShape(morph_shape));
         Ok(())
     }
 
@@ -2431,56 +2383,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .register_character(id, Character::Graphic(graphic));
-        Ok(())
-    }
-
-    #[inline]
-    fn preload_place_object(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        tag_len: usize,
-        ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
-        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
-        version: u8,
-    ) -> DecodeResult {
-        use swf::PlaceObjectAction;
-        let place_object = if version == 1 {
-            reader.read_place_object(tag_len)
-        } else {
-            reader.read_place_object_2_or_3(version)
-        }?;
-        match place_object.action {
-            PlaceObjectAction::Place(id) => {
-                if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth.into(), id);
-                    if let Some(ratio) = place_object.ratio {
-                        morph_shape.register_ratio(context, ratio);
-                    }
-                }
-            }
-            PlaceObjectAction::Modify => {
-                if let Some(&id) = ids.get(&place_object.depth.into()) {
-                    if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                        ids.insert(place_object.depth.into(), id);
-                        if let Some(ratio) = place_object.ratio {
-                            morph_shape.register_ratio(context, ratio);
-                        }
-                    }
-                }
-            }
-            PlaceObjectAction::Replace(id) => {
-                if let Some(morph_shape) = morph_shapes.get_mut(&id) {
-                    ids.insert(place_object.depth.into(), id);
-                    if let Some(ratio) = place_object.ratio {
-                        morph_shape.register_ratio(context, ratio);
-                    }
-                } else {
-                    ids.remove(&place_object.depth.into());
-                }
-            }
-        };
-
         Ok(())
     }
 
@@ -2947,7 +2849,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
         tag_len: usize,
-        morph_shapes: &mut fnv::FnvHashMap<CharacterId, MorphShapeStatic>,
     ) -> DecodeResult {
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
@@ -2966,7 +2867,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             num_frames,
         );
 
-        movie_clip.preload(context, morph_shapes);
+        movie_clip.preload(context);
 
         context
             .library
@@ -3087,23 +2988,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
             .library
             .library_for_movie_mut(self.movie())
             .set_jpeg_tables(jpeg_data);
-        Ok(())
-    }
-
-    #[inline]
-    fn preload_remove_object(
-        &mut self,
-        _context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        ids: &mut fnv::FnvHashMap<Depth, CharacterId>,
-        version: u8,
-    ) -> DecodeResult {
-        let remove_object = if version == 1 {
-            reader.read_remove_object_1()
-        } else {
-            reader.read_remove_object_2()
-        }?;
-        ids.remove(&remove_object.depth.into());
         Ok(())
     }
 
