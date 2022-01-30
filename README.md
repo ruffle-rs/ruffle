@@ -41,7 +41,7 @@ For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs
 
 ### Desktop
 
-- `cargo run --package=ruffle_desktop -- test.swf`
+- `cargo run --release --package=ruffle_desktop -- test.swf`
 
 ### Web or Extension
 
@@ -54,15 +54,15 @@ If you have a collection of "real world" SWFs to test against, the scanner may b
 ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
 all of the flash files and report on the success of such a task.
 
-- `cargo run --package=ruffle_scanner -- folder/with/swfs/ results.csv`
+- `cargo run --release --package=ruffle_scanner -- folder/with/swfs/ results.csv`
 
 ### Exporter
 
 If you have a swf and would like to capture an image of it, you may use the exporter tool.
 This currently requires hardware acceleration, but can be run headless (with no window).
 
-- `cargo run --package=exporter -- path/to/file.swf`
-- `cargo run --package=exporter -- path/to/file.swf path/to/screenshots --frames 5`
+- `cargo run --release --package=exporter -- path/to/file.swf`
+- `cargo run --release --package=exporter -- path/to/file.swf path/to/screenshots --frames 5`
 
 ## Structure
 
