@@ -1493,8 +1493,13 @@ impl<'gc> MovieClip<'gc> {
             if matches!(context.avm_type(), AvmType::Avm2) {
                 // AVM2 gets the final frame because run_frame_internal does
                 // NOT advance to the next frame.
-                self.0.write(context.gc_context).tag_stream_pos = frame_pos;
-                self.0.write(context.gc_context).queued_script_frame = Some(clamped_frame);
+
+                {
+                    let mut write = self.0.write(context.gc_context);
+                    write.tag_stream_pos = frame_pos;
+                    write.queued_script_frame = Some(clamped_frame);
+                    write.last_queued_script_frame = None;
+                }
 
                 // `run_frame_internal` is a no-op when looping. On AVM1, this
                 // didn't matter, because we'd conveniently set the frame back
@@ -1517,8 +1522,11 @@ impl<'gc> MovieClip<'gc> {
                 self.run_frame_internal(context, false);
             }
         } else {
-            self.0.write(context.gc_context).queued_script_frame = Some(clamped_frame);
-            self.0.write(context.gc_context).current_frame = clamped_frame;
+            let mut write = self.0.write(context.gc_context);
+
+            write.queued_script_frame = Some(clamped_frame);
+            write.last_queued_script_frame = None;
+            write.current_frame = clamped_frame;
         }
 
         // Finally, run frames for children that are placed on this frame.
