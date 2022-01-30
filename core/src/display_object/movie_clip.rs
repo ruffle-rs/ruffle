@@ -2043,7 +2043,8 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn filter_clip_event(self, event: ClipEvent) -> ClipEventResult {
-        if event.is_button_event() && !self.visible() {
+        if event.is_button_event() && !self.visible() && !matches!(event, ClipEvent::ReleaseOutside)
+        {
             return ClipEventResult::NotHandled;
         }
 
