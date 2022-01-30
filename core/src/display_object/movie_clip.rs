@@ -1608,6 +1608,12 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame < frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
+        if context.is_action_script_3() {
+            let mut write = self.0.write(context.gc_context);
+            write.queued_script_frame = Some(clamped_frame);
+            write.last_queued_script_frame = None;
+        }
+
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
         // Note that this only happens if the frame exists and is loaded;
