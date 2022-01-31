@@ -2363,10 +2363,10 @@ impl<'gc> MovieClipData<'gc> {
     ) -> Option<Avm1Object<'gc>> {
         let symbol_name = self.static_data.exported_name.read();
         let symbol_name = symbol_name.as_ref()?;
-        let library = context.library.library_for_movie_mut(self.movie());
-        let registry = library.avm1_constructor_registry()?;
-        let ctor = registry.get(*symbol_name)?;
-        Some(Avm1Object::FunctionObject(ctor))
+        let constructor = context
+            .avm1
+            .get_registered_constructor(self.movie().version(), *symbol_name)?;
+        Some((*constructor).into())
     }
 
     pub fn movie(&self) -> Arc<SwfMovie> {

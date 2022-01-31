@@ -271,7 +271,7 @@ impl Player {
                 GcRoot(GcCell::allocate(
                     gc_context,
                     GcRootData {
-                        library: Library::empty(gc_context),
+                        library: Library::empty(),
                         stage: Stage::empty(gc_context, movie_width, movie_height),
                         mouse_hovered_object: None,
                         mouse_pressed_object: None,

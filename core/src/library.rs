@@ -1,4 +1,3 @@
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::{audio::SoundHandle, render};
@@ -9,50 +8,11 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
-use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use gc_arena::{Collect, MutationContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::CharacterId;
 use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
-
-/// The mappings between symbol names and constructors registered
-/// with `Object.registerClass`.
-#[derive(Collect)]
-#[collect(no_drop)]
-pub struct Avm1ConstructorRegistry<'gc> {
-    symbol_map: GcCell<'gc, Avm1PropertyMap<'gc, FunctionObject<'gc>>>,
-    is_case_sensitive: bool,
-}
-
-impl<'gc> Avm1ConstructorRegistry<'gc> {
-    pub fn new(is_case_sensitive: bool, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self {
-            symbol_map: GcCell::allocate(gc_context, Avm1PropertyMap::new()),
-            is_case_sensitive,
-        }
-    }
-
-    pub fn get(&self, symbol: AvmString<'gc>) -> Option<FunctionObject<'gc>> {
-        self.symbol_map
-            .read()
-            .get(symbol, self.is_case_sensitive)
-            .copied()
-    }
-
-    pub fn set(
-        &self,
-        symbol: AvmString<'gc>,
-        constructor: Option<FunctionObject<'gc>>,
-        gc_context: MutationContext<'gc, '_>,
-    ) {
-        let mut map = self.symbol_map.write(gc_context);
-        if let Some(ctor) = constructor {
-            map.insert(symbol, ctor, self.is_case_sensitive);
-        } else {
-            map.remove(symbol, self.is_case_sensitive);
-        };
-    }
-}
 
 #[derive(Clone)]
 struct MovieSymbol(Arc<SwfMovie>, CharacterId);
@@ -141,22 +101,17 @@ pub struct MovieLibrary<'gc> {
     fonts: HashMap<FontDescriptor, Font<'gc>>,
     avm_type: AvmType,
     avm2_domain: Option<Avm2Domain<'gc>>,
-
-    /// Shared reference to the constructor registry used for this movie.
-    /// Should be `None` if this is an AVM2 movie.
-    avm1_constructor_registry: Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
     pub fn new(avm_type: AvmType) -> Self {
-        MovieLibrary {
+        Self {
             characters: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
             fonts: HashMap::new(),
             avm_type,
             avm2_domain: None,
-            avm1_constructor_registry: None,
         }
     }
 
@@ -204,10 +159,6 @@ impl<'gc> MovieLibrary<'gc> {
 
     pub fn character_by_export_name(&self, name: AvmString<'gc>) -> Option<&Character<'gc>> {
         self.export_characters.get(name, false)
-    }
-
-    pub fn avm1_constructor_registry(&self) -> Option<Gc<'gc, Avm1ConstructorRegistry<'gc>>> {
-        self.avm1_constructor_registry
     }
 
     /// Instantiates the library item with the given character ID into a display object.
@@ -399,9 +350,6 @@ pub struct Library<'gc> {
     /// The embedded device font.
     device_font: Option<Font<'gc>>,
 
-    constructor_registry_case_insensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
-    constructor_registry_case_sensitive: Gc<'gc, Avm1ConstructorRegistry<'gc>>,
-
     /// A list of the symbols associated with specific AVM2 constructor
     /// prototypes.
     avm2_class_registry: Avm2ClassRegistry<'gc>,
@@ -414,25 +362,15 @@ unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
             val.trace(cc);
         }
         self.device_font.trace(cc);
-        self.constructor_registry_case_insensitive.trace(cc);
-        self.constructor_registry_case_sensitive.trace(cc);
         self.avm2_class_registry.trace(cc);
     }
 }
 
 impl<'gc> Library<'gc> {
-    pub fn empty(gc_context: MutationContext<'gc, '_>) -> Self {
+    pub fn empty() -> Self {
         Self {
             movie_libraries: PtrWeakKeyHashMap::new(),
             device_font: None,
-            constructor_registry_case_insensitive: Gc::allocate(
-                gc_context,
-                Avm1ConstructorRegistry::new(false, gc_context),
-            ),
-            constructor_registry_case_sensitive: Gc::allocate(
-                gc_context,
-                Avm1ConstructorRegistry::new(true, gc_context),
-            ),
             avm2_class_registry: Default::default(),
         }
     }
@@ -442,18 +380,10 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        if !self.movie_libraries.contains_key(&movie) {
-            let avm_type = movie.avm_type();
-            let mut movie_library = MovieLibrary::new(avm_type);
-            if avm_type == AvmType::Avm1 {
-                movie_library.avm1_constructor_registry =
-                    Some(self.get_avm1_constructor_registry(movie.version()));
-            }
-
-            self.movie_libraries.insert(movie.clone(), movie_library);
-        };
-
-        self.movie_libraries.get_mut(&movie).unwrap()
+        let avm_type = movie.avm_type();
+        self.movie_libraries
+            .entry(movie)
+            .or_insert_with(|| MovieLibrary::new(avm_type))
     }
 
     /// Returns the device font for use when a font is unavailable.
@@ -464,20 +394,6 @@ impl<'gc> Library<'gc> {
     /// Sets the device font.
     pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
         self.device_font = font;
-    }
-
-    /// Gets the constructor registry to use for the given SWF version.
-    /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
-    /// keeps two separate registries, one case-sensitive, the other not.
-    fn get_avm1_constructor_registry(
-        &mut self,
-        swf_version: u8,
-    ) -> Gc<'gc, Avm1ConstructorRegistry<'gc>> {
-        if swf_version < 7 {
-            self.constructor_registry_case_insensitive
-        } else {
-            self.constructor_registry_case_sensitive
-        }
     }
 
     /// Get the AVM2 class registry.
