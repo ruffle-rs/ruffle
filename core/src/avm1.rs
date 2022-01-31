@@ -1,5 +1,7 @@
+use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::stage_object;
+use crate::avm1::property_map::PropertyMap;
 use crate::context::UpdateContext;
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -124,6 +126,13 @@ pub struct Avm1<'gc> {
     /// The list of all movie clips in execution order.
     pub clip_exec_list: Option<DisplayObject<'gc>>,
 
+    /// The mappings between symbol names and constructors registered
+    /// with `Object.registerClass()`.
+    /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
+    /// keeps two separate registries, one case-sensitive, the other not.
+    constructor_registry_case_insensitive: PropertyMap<'gc, FunctionObject<'gc>>,
+    constructor_registry_case_sensitive: PropertyMap<'gc, FunctionObject<'gc>>,
+
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
 }
@@ -150,6 +159,8 @@ impl<'gc> Avm1<'gc> {
             max_recursion_depth: 255,
             has_mouse_listener: false,
             clip_exec_list: None,
+            constructor_registry_case_insensitive: PropertyMap::new(),
+            constructor_registry_case_sensitive: PropertyMap::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -482,6 +493,39 @@ impl<'gc> Avm1<'gc> {
         clip.set_next_avm1_clip(gc_context, None);
 
         present_on_execution_list
+    }
+
+    pub fn get_registered_constructor(
+        &self,
+        swf_version: u8,
+        symbol: AvmString<'gc>,
+    ) -> Option<&FunctionObject<'gc>> {
+        let is_case_sensitive = swf_version >= 7;
+        let registry = if is_case_sensitive {
+            &self.constructor_registry_case_sensitive
+        } else {
+            &self.constructor_registry_case_insensitive
+        };
+        registry.get(symbol, is_case_sensitive)
+    }
+
+    pub fn register_constructor(
+        &mut self,
+        swf_version: u8,
+        symbol: AvmString<'gc>,
+        constructor: Option<FunctionObject<'gc>>,
+    ) {
+        let is_case_sensitive = swf_version >= 7;
+        let registry = if is_case_sensitive {
+            &mut self.constructor_registry_case_sensitive
+        } else {
+            &mut self.constructor_registry_case_insensitive
+        };
+        if let Some(constructor) = constructor {
+            registry.insert(symbol, constructor, is_case_sensitive);
+        } else {
+            registry.remove(symbol, is_case_sensitive);
+        }
     }
 
     #[cfg(feature = "avm_debug")]

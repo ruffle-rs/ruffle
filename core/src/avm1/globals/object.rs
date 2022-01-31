@@ -178,22 +178,12 @@ pub fn register_class<'gc>(
 
     let class_name = class_name.coerce_to_string(activation)?;
 
-    let registry = activation
-        .base_clip()
-        .movie()
-        .map(|movie| activation.context.library.library_for_movie_mut(movie))
-        .and_then(|library| library.avm1_constructor_registry());
-
-    match registry {
-        Some(registry) => {
-            registry.set(class_name, constructor, activation.context.gc_context);
-            Ok(true.into())
-        }
-        None => {
-            log::warn!("Can't register_class without a constructor registry");
-            Ok(false.into())
-        }
-    }
+    activation.context.avm1.register_constructor(
+        activation.base_clip().movie().unwrap().version(),
+        class_name,
+        constructor,
+    );
+    Ok(true.into())
 }
 
 /// Implements `Object.prototype.watch`

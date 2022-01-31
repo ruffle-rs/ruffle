@@ -52,7 +52,7 @@ where
             audio: &mut NullAudioBackend::new(),
             ui: &mut NullUiBackend::new(),
             action_queue: &mut ActionQueue::new(),
-            library: &mut Library::empty(gc_context),
+            library: &mut Library::empty(),
             navigator: &mut NullNavigatorBackend::new(),
             renderer: &mut NullRenderer::new(),
             locale: &mut NullLocaleBackend::new(),
