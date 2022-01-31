@@ -34,11 +34,6 @@ jobs:
         node_version: ["14", "16"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         os: [ubuntu-latest, windows-latest]
-        # TODO: Temporarily disable Node 14 on windows pending this issue:
-        # https://github.com/actions/setup-node/issues/411
-        exclude:
-          - os: windows-latest
-            node_version: "14"
 
     steps:
       - uses: actions/checkout@v2
@@ -52,7 +47,8 @@ jobs:
 
       # Node.js 14 comes with npm 6, but we need npm 7 or newer.
       - name: Upgrade npm
-        run: npm install -g npm
+        # TODO: Temporarily avoid 8.4 due to: https://github.com/npm/cli/issues/4341
+        run: npm install -g npm@8.3
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
