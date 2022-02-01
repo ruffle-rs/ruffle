@@ -47,6 +47,14 @@
 				case 13:
 					trace("/// (gotoAndStop(2) in frameConstructed...)");
 					this.gotoAndStop(2);
+					break;
+				case 15:
+					trace("/// (gotoAndPlay(1) in frameConstructed...)");
+					this.gotoAndPlay(1);
+					break;
+				case 17:
+					trace("/// (gotoAndPlay(3) in frameConstructed...)");
+					this.gotoAndPlay(3);
 					this.destroy_me = true;
 					break;
 			}

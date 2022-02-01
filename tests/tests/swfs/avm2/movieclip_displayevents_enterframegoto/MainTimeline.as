@@ -45,6 +45,14 @@
 				case 10:
 					trace("/// (gotoAndStop(2) in enterFrame...)");
 					this.gotoAndStop(2);
+					break;
+				case 12:
+					trace("/// (gotoAndPlay(1) in enterFrame...)");
+					this.gotoAndPlay(1);
+					break;
+				case 13:
+					trace("/// (gotoAndPlay(3) in enterFrame...)");
+					this.gotoAndPlay(3);
 					this.destroy_me = true;
 					break;
 			}
