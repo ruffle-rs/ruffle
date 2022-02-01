@@ -1351,26 +1351,33 @@ impl<'gc> MovieClip<'gc> {
         } else {
             // During the Enter/Construct frame phases, we have advanced to the
             // next frame, but the tag stream pos currently points to the
-            // current frame's tags. This is a technically invalid state, so if
-            // AVM2 catches us in a lie, we need to move up the tag stream to
-            // the next frame.
+            // current frame's tags. This is invalid state which we have to
+            // correct before running the goto.
             //
             // This code does NOT run in AVM1, as we never enter this invalid
             // state in AVM1.
-            if context.avm_type() == AvmType::Avm2
-                && (*context.frame_phase == FramePhase::Enter
-                    || *context.frame_phase == FramePhase::Construct)
-            {
-                let mut mc = self.0.write(context.gc_context);
-                let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
-                let frame_pos = mc.tag_stream_pos;
-                let data = mc.static_data.swf.clone();
-                let mut reader = data.read_from(frame_pos);
+            if context.avm_type() == AvmType::Avm2 {
+                if *context.frame_phase == FramePhase::Enter {
+                    // No tags have run yet, so we roll back the frame number
+                    // to allow the goto to pick up this frame's tags.
+                    self.0.write(context.gc_context).current_frame -= 1;
+                } else if *context.frame_phase == FramePhase::Construct {
+                    // `PlaceObject` tags have already run, so we cannot roll
+                    // back the frame number (otherwise, we will duplicate
+                    // objects). Instead we move up the tag stream position as
+                    // if the goto had happened later on.
+                    let mut mc = self.0.write(context.gc_context);
+                    let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
+                    let frame_pos = mc.tag_stream_pos;
+                    let data = mc.static_data.swf.clone();
+                    let mut reader = data.read_from(frame_pos);
 
-                use swf::TagCode;
-                let _ = tag_utils::decode_tags(&mut reader, |_, _, _| Ok(()), TagCode::ShowFrame);
+                    use swf::TagCode;
+                    let _ =
+                        tag_utils::decode_tags(&mut reader, |_, _, _| Ok(()), TagCode::ShowFrame);
 
-                mc.tag_stream_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+                    mc.tag_stream_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+                }
             }
 
             false
