@@ -687,6 +687,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().playing_at_frame_advance()
     }
 
+    pub fn frame_construction_pending(self) -> bool {
+        self.0.read().frame_construction_pending()
+    }
+
     pub fn drop_target(self) -> Option<DisplayObject<'gc>> {
         self.0.read().drop_target
     }
@@ -1873,9 +1877,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         if context.avm_type() == AvmType::Avm2 {
             let is_playing = self.playing();
-            self.0
-                .write(context.gc_context)
-                .set_playing_at_frame_advance(is_playing);
+
+            {
+                let mut write = self.0.write(context.gc_context);
+                write.set_playing_at_frame_advance(is_playing);
+                write.set_frame_construction_pending(true);
+            }
 
             if is_playing {
                 self.advance_playhead(context);
@@ -1902,7 +1909,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.playing_at_frame_advance() {
+            if self.playing_at_frame_advance() && self.frame_construction_pending() {
                 if self.0.read().natural_playhead_action == NextFrame::First {
                     // We had to lie about the current frame up in `enterFrame`,
                     // so we have to set it back here. Otherwise, the goto
@@ -1932,6 +1939,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
                 }
             }
+
+            self.0
+                .write(context.gc_context)
+                .set_frame_construction_pending(false);
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
@@ -2487,6 +2498,16 @@ impl<'gc> MovieClipData<'gc> {
     fn set_playing_at_frame_advance(&mut self, value: bool) {
         self.flags
             .set(MovieClipFlags::PLAYING_AT_FRAME_ADVANCE, value);
+    }
+
+    fn frame_construction_pending(&self) -> bool {
+        self.flags
+            .contains(MovieClipFlags::FRAME_CONSTRUCTION_PENDING)
+    }
+
+    fn set_frame_construction_pending(&mut self, value: bool) {
+        self.flags
+            .set(MovieClipFlags::FRAME_CONSTRUCTION_PENDING, value);
     }
 
     fn play(&mut self) {
@@ -3642,6 +3663,9 @@ bitflags! {
         /// necessary in AVM1, as the flag is only checked once per frame
         /// update and thus torn updates cannot occur.
         const PLAYING_AT_FRAME_ADVANCE = 1 << 4;
+
+        /// Whether this `MovieClip` needs frame construction.
+        const FRAME_CONSTRUCTION_PENDING = 1 << 5;
     }
 }
 
