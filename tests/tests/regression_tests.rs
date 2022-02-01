@@ -376,7 +376,7 @@ swf_tests! {
     (as3_movieclip_displayevents_constructframegoto, "avm2/movieclip_displayevents_constructframegoto", 12),
     (as3_movieclip_displayevents_constructframeplay, "avm2/movieclip_displayevents_constructframeplay", 6),
     (as3_movieclip_displayevents_dblhandler, "avm2/movieclip_displayevents_dblhandler", 4),
-    (as3_movieclip_displayevents_enterframegoto, "avm2/movieclip_displayevents_enterframegoto", 12),
+    (as3_movieclip_displayevents_enterframegoto, "avm2/movieclip_displayevents_enterframegoto", 15),
     (as3_movieclip_displayevents_enterframeplay, "avm2/movieclip_displayevents_enterframeplay", 6),
     (as3_movieclip_displayevents_exitframegoto, "avm2/movieclip_displayevents_exitframegoto", 12),
     (as3_movieclip_displayevents_exitframeplay, "avm2/movieclip_displayevents_exitframeplay", 6),
