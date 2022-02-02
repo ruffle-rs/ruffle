@@ -65,7 +65,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<Namespace native instance initializer>",
         mc,
     ));
-    write.set_call_handler(Method::from_builtin(class_call, "<Namespace call handler>", mc));
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<Namespace call handler>",
+        mc,
+    ));
 
     class
 }

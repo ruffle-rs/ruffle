@@ -56,7 +56,6 @@ fn class_call<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-
     let this_class = activation.subclass_object().unwrap();
 
     if args.len() == 1 {
@@ -295,7 +294,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
     write.set_instance_allocator(regexp_allocator);
-    write.set_call_handler(Method::from_builtin(class_call, "<RegExp call handler>", mc));
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<RegExp call handler>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

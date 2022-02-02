@@ -573,7 +573,7 @@ impl<'gc> Value<'gc> {
     pub fn as_object(&self) -> Option<Object<'gc>> {
         match self {
             Value::Object(o) => Some(*o),
-            _ => None
+            _ => None,
         }
     }
 

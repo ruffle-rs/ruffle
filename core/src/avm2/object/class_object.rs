@@ -760,8 +760,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error> {
         if let Some(call_handler) = self.0.read().call_handler.clone() {
             let scope = self.0.read().class_scope;
-            let func =
-                Executable::from_method(call_handler, scope, None, Some(self));
+            let func = Executable::from_method(call_handler, scope, None, Some(self));
 
             func.exec(receiver, arguments, activation, self.into())
         } else {
