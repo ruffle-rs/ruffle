@@ -1,0 +1,23 @@
+//Vector.<int>([1, 2, 3])
+1,2,3
+//Vector.<int>(vec)
+1,2,3
+//Vector.<int>(bytearray)
+66,246,233,121
+
+//Object()
+[object Object]
+
+//Object("asdf")
+asdf
+
+//String(123)
+123
+string
+
+//RegExp("asdf")
+/asdf/
+//RegExp("asdf", "gi")
+/asdf/gi
+//RegExp(regexp)
+/asdf/gi
