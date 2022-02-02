@@ -1383,6 +1383,8 @@ impl<'gc> MovieClip<'gc> {
             false
         };
 
+        let from_frame = self.current_frame();
+
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mc = self.0.read();
         let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
@@ -1509,7 +1511,10 @@ impl<'gc> MovieClip<'gc> {
                     let mut write = self.0.write(context.gc_context);
                     write.tag_stream_pos = frame_pos;
                     write.queued_script_frame = Some(clamped_frame);
-                    write.last_queued_script_frame = None;
+
+                    if write.current_frame != from_frame {
+                        write.last_queued_script_frame = None;
+                    }
                 }
 
                 // `run_frame_internal` is a no-op when looping. On AVM1, this
