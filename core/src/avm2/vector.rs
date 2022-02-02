@@ -88,6 +88,10 @@ impl<'gc> VectorStorage<'gc> {
         self.storage.len()
     }
 
+    pub fn reserve_exact(&mut self, length: usize) {
+        self.storage.reserve_exact(length);
+    }
+
     pub fn resize(
         &mut self,
         new_length: usize,

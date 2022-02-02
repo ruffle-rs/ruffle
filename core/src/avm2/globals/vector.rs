@@ -8,7 +8,7 @@ use crate::avm2::globals::array::{
 };
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Namespace, QName, Multiname};
 use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
@@ -44,6 +44,46 @@ pub fn instance_init<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if args.len() != 1 {
+        return Err("Argument count mismatch on class coercion".into());
+    }
+
+    let this_class = activation.subclass_object().unwrap();
+    let value_type = this_class
+        .as_class_params()
+        .ok_or("Cannot convert to Vector")? // note: ideally, an untyped Vector shouldn't have a call handler at all
+        .unwrap_or(activation.avm2().classes().object);
+
+    let arg = args.get(0).cloned().unwrap();
+    let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
+
+    if arg.instance_of() == Some(this_class) {
+        return Ok(arg.into());
+    }
+
+    let length = arg
+        .get_property(&Multiname::public("length"), activation)?
+        .coerce_to_i32(activation)?;
+
+    let mut new_storage = VectorStorage::new(0, false, value_type, activation);
+    new_storage.reserve_exact(length as usize);
+
+    let mut iter = ArrayIter::new(activation, arg)?;
+
+    while let Some(r) = iter.next(activation) {
+        let (_, item) = r?;
+        let coerced_item = item.coerce_to_type(activation, value_type)?;
+        new_storage.push(coerced_item)?;
+    }
+
+    Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }
 
 /// Implements `Vector`'s class constructor.
@@ -1006,6 +1046,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<Vector specialized class initializer>",
         mc,
     ));
+    write.set_call_handler(Method::from_builtin(class_call, "<Vector call handler>", mc));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

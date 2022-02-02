@@ -570,6 +570,13 @@ impl<'gc> Value<'gc> {
         PrimitiveObject::from_primitive(*self, activation)
     }
 
+    pub fn as_object(&self) -> Option<Object<'gc>> {
+        match self {
+            Value::Object(o) => Some(*o),
+            _ => None
+        }
+    }
+
     /// Coerce the value to another value by type name.
     ///
     /// This function implements a handful of coercion rules that appear to be
