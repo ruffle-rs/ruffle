@@ -19,6 +19,23 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
+fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let this_class = activation.subclass_object().unwrap();
+
+    if args.len() == 0 {
+        return this_class.construct(activation, args).map(|o| o.into());
+    }
+    let arg = args.get(0).cloned().unwrap();
+    if matches!(arg, Value::Undefined) || matches!(arg, Value::Null) {
+        return this_class.construct(activation, args).map(|o| o.into());
+    }
+    Ok(arg)
+}
+
 /// Implements `Object`'s class initializer
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -257,6 +274,7 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         gc_context,
     );
     let mut write = object_class.write(gc_context);
+    write.set_call_handler(Method::from_builtin(class_call, "<Object call handler>", gc_context));
 
     write.define_class_trait(Trait::from_const(
         QName::new(Namespace::public(), "length"),
