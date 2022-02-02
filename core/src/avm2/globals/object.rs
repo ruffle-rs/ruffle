@@ -274,7 +274,11 @@ pub fn create_class<'gc>(gc_context: MutationContext<'gc, '_>) -> GcCell<'gc, Cl
         gc_context,
     );
     let mut write = object_class.write(gc_context);
-    write.set_call_handler(Method::from_builtin(class_call, "<Object call handler>", gc_context));
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<Object call handler>",
+        gc_context,
+    ));
 
     write.define_class_trait(Trait::from_const(
         QName::new(Namespace::public(), "length"),

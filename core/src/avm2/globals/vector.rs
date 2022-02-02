@@ -8,7 +8,7 @@ use crate::avm2::globals::array::{
 };
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName, Multiname};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
@@ -1046,7 +1046,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         "<Vector specialized class initializer>",
         mc,
     ));
-    write.set_call_handler(Method::from_builtin(class_call, "<Vector call handler>", mc));
+    write.set_call_handler(Method::from_builtin(
+        class_call,
+        "<Vector call handler>",
+        mc,
+    ));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
