@@ -949,6 +949,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object as a regexp.
+    fn as_regexp_object(&self) -> Option<RegExpObject<'gc>> {
+        None
+    }
+
+    /// Unwrap this object as a regexp.
     fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
         None
     }
