@@ -1364,6 +1364,8 @@ impl<'gc> MovieClip<'gc> {
             self.assert_expected_tag_start();
         }
 
+        let from_frame = self.current_frame();
+
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
         //    backward to a frame.
@@ -1438,12 +1440,22 @@ impl<'gc> MovieClip<'gc> {
 
                     mc.goto_place_object(reader, tag_len, 4, &mut goto_commands, is_rewind, index)
                 }
-                TagCode::RemoveObject => {
-                    self.goto_remove_object(reader, 1, context, &mut goto_commands, is_rewind)
-                }
-                TagCode::RemoveObject2 => {
-                    self.goto_remove_object(reader, 2, context, &mut goto_commands, is_rewind)
-                }
+                TagCode::RemoveObject => self.goto_remove_object(
+                    reader,
+                    1,
+                    context,
+                    &mut goto_commands,
+                    is_rewind,
+                    from_frame,
+                ),
+                TagCode::RemoveObject2 => self.goto_remove_object(
+                    reader,
+                    2,
+                    context,
+                    &mut goto_commands,
+                    is_rewind,
+                    from_frame,
+                ),
                 _ => Ok(()),
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
@@ -1791,6 +1803,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         goto_commands: &mut Vec<GotoPlaceObject<'a>>,
         is_rewind: bool,
+        from_frame: FrameNumber,
     ) -> DecodeResult {
         let remove_object = if version == 1 {
             reader.read_remove_object_1()
@@ -1807,15 +1820,19 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
-            let read = self.0.read();
-            if let Some(child) = read.container.get_depth(depth) {
-                drop(read);
+            let to_frame = self.current_frame();
+            self.0.write(context.gc_context).current_frame = from_frame;
+
+            let child = self.0.read().container.get_depth(depth);
+            if let Some(child) = child {
                 if !child.placed_by_script() {
                     self.remove_child(context, child, Lists::all());
                 } else {
                     self.remove_child(context, child, Lists::DEPTH);
                 }
             }
+
+            self.0.write(context.gc_context).current_frame = to_frame;
         }
         Ok(())
     }
