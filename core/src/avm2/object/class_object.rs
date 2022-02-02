@@ -58,6 +58,10 @@ pub struct ClassObjectData<'gc> {
     /// The native instance constructor function
     native_constructor: Method<'gc>,
 
+    /// The customization point for `Class(args...)` without `new`
+    /// If None, a simple coercion is done.
+    call_handler: Option<Method<'gc>>,
+
     /// The parameters of this specialized class.
     ///
     /// None flags that this class has not been specialized.
@@ -190,6 +194,7 @@ impl<'gc> ClassObject<'gc> {
                 instance_allocator: Allocator(instance_allocator),
                 constructor: class.read().instance_init(),
                 native_constructor: class.read().native_instance_init(),
+                call_handler: class.read().call_handler(),
                 params: None,
                 applications: Default::default(),
                 interfaces: Vec::new(),
@@ -749,15 +754,23 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn call(
         self,
-        _receiver: Option<Object<'gc>>,
+        receiver: Option<Object<'gc>>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
-        arguments
-            .get(0)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_type(activation, self)
+        if let Some(call_handler) = self.0.read().call_handler.clone() {
+            let scope = self.0.read().class_scope;
+            let func =
+                Executable::from_method(call_handler, scope, None, Some(self));
+
+            func.exec(receiver, arguments, activation, self.into())
+        } else {
+            arguments
+                .get(0)
+                .cloned()
+                .unwrap_or(Value::Undefined)
+                .coerce_to_type(activation, self)
+        }
     }
 
     fn construct(
@@ -862,6 +875,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         let constructor = self.0.read().constructor.clone();
         let native_constructor = self.0.read().native_constructor.clone();
+        let call_handler = self.0.read().call_handler.clone();
 
         let mut class_object = ClassObject(GcCell::allocate(
             activation.context.gc_context,
@@ -875,6 +889,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                 instance_allocator,
                 constructor,
                 native_constructor,
+                call_handler,
                 params: Some(object_param),
                 applications: Default::default(),
                 interfaces: Vec::new(),

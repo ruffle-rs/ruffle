@@ -130,6 +130,10 @@ pub struct Class<'gc> {
     /// Whether or not the class initializer has already been called.
     class_initializer_called: bool,
 
+    /// The customization point for `Class(args...)` without `new`
+    /// If None, a simple coercion is done.
+    call_handler: Option<Method<'gc>>,
+
     /// The class initializer for specializations of this class.
     ///
     /// Only applies for generic classes. Must be called once and only once
@@ -184,6 +188,7 @@ impl<'gc> Class<'gc> {
                 instance_traits: Vec::new(),
                 class_init,
                 class_initializer_called: false,
+                call_handler: None,
                 class_traits: Vec::new(),
                 specialized_class_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -298,6 +303,7 @@ impl<'gc> Class<'gc> {
                 instance_traits: Vec::new(),
                 class_init,
                 class_initializer_called: false,
+                call_handler: None,
                 class_traits: Vec::new(),
                 specialized_class_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -473,6 +479,7 @@ impl<'gc> Class<'gc> {
                     activation.context.gc_context,
                 ),
                 class_initializer_called: false,
+                call_handler: None,
                 class_traits: Vec::new(),
                 traits_loaded: true,
                 is_system: false,
@@ -739,6 +746,16 @@ impl<'gc> Class<'gc> {
     /// Get this class's class initializer.
     pub fn class_init(&self) -> Method<'gc> {
         self.class_init.clone()
+    }
+
+    /// Set a call handler for this class.
+    pub fn set_call_handler(&mut self, new_call_handler: Method<'gc>) {
+        self.call_handler = Some(new_call_handler);
+    }
+
+    /// Get this class's call handler.
+    pub fn call_handler(&self) -> Option<Method<'gc>> {
+        self.call_handler.clone()
     }
 
     /// Check if the class has already been initialized.
