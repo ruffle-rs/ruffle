@@ -108,6 +108,11 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
         Ok(AvmString::new(mc, s).into())
     }
 
+    /// Unwrap this object as a regexp.
+    fn as_regexp_object(&self) -> Option<RegExpObject<'gc>> {
+        Some(*self)
+    }
+
     fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
         Some(Ref::map(self.0.read(), |d| &d.regexp))
     }

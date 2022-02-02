@@ -51,6 +51,23 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
+fn class_call<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+
+    let this_class = activation.subclass_object().unwrap();
+
+    if args.len() == 1 {
+        let arg = args.get(0).cloned().unwrap();
+        if let Some(_) = arg.as_object().and_then(|o| o.as_regexp_object()) {
+            return Ok(arg.into());
+        }
+    }
+    return this_class.construct(activation, args).map(|o| o.into());
+}
+
 /// Implements `RegExp`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -278,6 +295,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
     write.set_instance_allocator(regexp_allocator);
+    write.set_call_handler(Method::from_builtin(class_call, "<RegExp call handler>", mc));
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
