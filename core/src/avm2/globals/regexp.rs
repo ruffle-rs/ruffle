@@ -53,15 +53,15 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let this_class = activation.subclass_object().unwrap();
 
     if args.len() == 1 {
         let arg = args.get(0).cloned().unwrap();
-        if let Some(_) = arg.as_object().and_then(|o| o.as_regexp_object()) {
-            return Ok(arg.into());
+        if arg.as_object().and_then(|o| o.as_regexp_object()).is_some() {
+            return Ok(arg);
         }
     }
     return this_class.construct(activation, args).map(|o| o.into());
