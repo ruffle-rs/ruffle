@@ -1,0 +1,144 @@
+root1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.ew = new EventWatcher();
+//this.ew.name = "ew";
+//this.addChild(this.ew);
+ew (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+ew (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+///Children: ew 
+//MainTimeline frame 1
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: ew 
+ew (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+///Children: ew 
+ew (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: ew 
+ew (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+ew (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.removeChild(this.ew);
+ew (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+ew (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+//this.ew.destroy();
+//System.gc();
+///Children: 
+//MainTimeline frame 3
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: 
+root1 (frame 4):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 4):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.ew = new EventWatcher();
+//this.ew.name = 'parent';
+//this.ew2 = new EventWatcher();
+//this.ew2.name = 'child';
+//this.ew.addChild(this.ew2);
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+///Children: 
+//MainTimeline frame 4
+root1 (frame 4):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: 
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 5):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 5):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+///Children: 
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 5
+root1 (frame 5):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: 
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 6):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 6):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(this.ew);
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 6):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+parent (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 6
+root1 (frame 6):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 7):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 7):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.ew.removeChild(this.ew2);
+child (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+root1 (frame 7):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 7
+root1 (frame 7):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 8):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 8):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.ew.addChild(this.ew2);
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+root1 (frame 8):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 8
+root1 (frame 8):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: parent 
+parent (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 9):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+parent (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 9):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//this.removeChild(this.ew);
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 9):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+parent (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(this.ew);
+parent (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 9):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+parent (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(this.ew2);
+child (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+parent (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+root1 (frame 9):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+child (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 9):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+child (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//this.addChild(this.ew2);
+//this.ew.destroy();
+//this.ew2.destroy();
+//System.gc();
+///Children: parent child 
+//MainTimeline frame 9
+root1 (frame 9):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///Children: parent child 
