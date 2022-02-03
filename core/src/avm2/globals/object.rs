@@ -21,12 +21,12 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let this_class = activation.subclass_object().unwrap();
 
-    if args.len() == 0 {
+    if args.is_empty() {
         return this_class.construct(activation, args).map(|o| o.into());
     }
     let arg = args.get(0).cloned().unwrap();

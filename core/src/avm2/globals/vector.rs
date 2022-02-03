@@ -48,7 +48,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
+    _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if args.len() != 1 {
