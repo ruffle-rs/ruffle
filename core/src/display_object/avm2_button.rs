@@ -805,6 +805,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     }
 
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
+        // TODO: Should we also need to check for the `enabled` property like AVM1 buttons?
         if self.use_hand_cursor() {
             MouseCursor::Hand
         } else {

@@ -1235,6 +1235,7 @@ impl Player {
                     if released_inside {
                         // Released inside the clicked object.
                         if let Some(down_object) = context.mouse_down_object {
+                            new_cursor = down_object.mouse_cursor(context);
                             events.push((down_object, ClipEvent::Release));
                         } else {
                             events.push((context.stage.into(), ClipEvent::Release));
