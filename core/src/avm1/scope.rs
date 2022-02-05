@@ -194,23 +194,6 @@ impl<'gc> Scope<'gc> {
         Ok(CallableValue::UnCallable(Value::Undefined))
     }
 
-    /// Check if a particular property in the scope chain is defined.
-    pub fn is_defined(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        name: AvmString<'gc>,
-    ) -> bool {
-        if self.locals().has_property(activation, name) {
-            return true;
-        }
-
-        if let Some(scope) = self.parent() {
-            return scope.is_defined(activation, name);
-        }
-
-        false
-    }
-
     /// Update a particular value in the scope chain.
     ///
     /// Traverses the scope chain in search of a value. If it's found, it's overwritten.

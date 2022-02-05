@@ -2745,20 +2745,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.scope_cell().read().resolve(name, self)
     }
 
-    /// Check if a particular property in the scope chain is defined.
-    #[allow(clippy::wrong_self_convention)]
-    pub fn is_defined(&mut self, name: AvmString<'gc>) -> bool {
-        if &name == b"this" {
-            return true;
-        }
-
-        if &name == b"arguments" && self.arguments.is_some() {
-            return true;
-        }
-
-        self.scope_cell().read().is_defined(self, name)
-    }
-
     /// Returns the suggested string encoding for actions.
     /// For SWF version 6 and higher, this is always UTF-8.
     /// For SWF version 5 and lower, this is locale-dependent,
