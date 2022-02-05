@@ -1,1 +1,38 @@
-Foo
+In child
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In child_swf6
+In CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+In CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildSwf6CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildSwf6CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
