@@ -13,9 +13,9 @@ use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "loadClip" => method(load_clip);
-    "unloadClip" => method(unload_clip);
-    "getProgress" => method(get_progress);
+    "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
+    "unloadClip" => method(unload_clip; DONT_ENUM | DONT_DELETE);
+    "getProgress" => method(get_progress; DONT_ENUM | DONT_DELETE);
 };
 
 pub fn constructor<'gc>(

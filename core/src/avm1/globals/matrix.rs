@@ -1,4 +1,4 @@
-//! flash.geom.Matrix
+//! flash.geom.Matrix object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

@@ -1,4 +1,4 @@
-//! flash.filter.ConvolutionFilter object
+//! flash.filters.ConvolutionFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

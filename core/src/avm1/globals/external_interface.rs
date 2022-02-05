@@ -1,3 +1,5 @@
+//! flash.external.ExternalInterface object
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};

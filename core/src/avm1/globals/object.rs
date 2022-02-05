@@ -1,4 +1,5 @@
 //! Object prototype
+
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;

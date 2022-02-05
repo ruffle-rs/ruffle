@@ -1,4 +1,4 @@
-//! flash.filter.ColorMatrixFilter object
+//! flash.filters.ColorMatrixFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

@@ -1,4 +1,4 @@
-//! flash.filter.BlurFilter object
+//! flash.filters.BlurFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
