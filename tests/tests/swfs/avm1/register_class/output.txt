@@ -1,18 +1,67 @@
-Custom movieclip!
-// typeof custom_movieclip
+// typeof mc
 movieclip
-// custom_movieclip.__proto__ == custom_mc.prototype
-true
-// custom_movieclip.__proto__ == MovieClip.prototype
-false
-// custom_movieclip.isCustom()
-true
+Prototype check passed
 
-// typeof normal_movieclip
+In CustomClass constructor
+// typeof mc
 movieclip
-// normal_movieclip.__proto__ == custom_mc.prototype
-false
-// normal_movieclip.__proto__ == MovieClip.prototype
-true
-// normal_movieclip.isCustom()
-undefined
+Prototype check passed
+
+In CustomClass2 constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+object
+Prototype check passed
+
+In child
+In CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildCustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In child_swf6
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildCustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
