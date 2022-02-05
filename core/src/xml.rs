@@ -5,9 +5,6 @@ mod error;
 mod iterators;
 mod tree;
 
-#[cfg(test)]
-mod tests;
-
 pub use document::XmlDocument;
 pub use error::Error;
 pub use error::ParseError;
