@@ -545,7 +545,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     }
 
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        if self.use_hand_cursor() {
+        if self.use_hand_cursor() && self.enabled() {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow

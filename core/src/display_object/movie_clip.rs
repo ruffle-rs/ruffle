@@ -2211,7 +2211,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'_, 'gc, '_>) -> MouseCursor {
-        if self.use_hand_cursor() && self.is_button_mode(context) {
+        if self.use_hand_cursor() && self.enabled() && self.is_button_mode(context) {
             MouseCursor::Hand
         } else {
             MouseCursor::Arrow
