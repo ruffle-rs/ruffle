@@ -1,4 +1,4 @@
-//! Button/SimpleButton prototype
+//! Button prototype
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
@@ -7,6 +7,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{Avm1Button, TDisplayObject};
 use gc_arena::MutationContext;
+
 macro_rules! button_getter {
     ($name:ident) => {
         |activation, this, _args| {
@@ -35,8 +36,8 @@ macro_rules! button_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "enabled" => property(button_getter!(enabled), button_setter!(set_enabled); DONT_ENUM | DONT_DELETE);
-    "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor); DONT_ENUM | DONT_DELETE);
+    "enabled" => property(button_getter!(enabled), button_setter!(set_enabled));
+    "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
 };
 
 pub fn create_proto<'gc>(

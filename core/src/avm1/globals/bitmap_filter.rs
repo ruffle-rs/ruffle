@@ -1,4 +1,4 @@
-//! flash.filter.BitmapFilter object
+//! flash.filters.BitmapFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

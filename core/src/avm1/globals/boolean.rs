@@ -10,8 +10,8 @@ use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "valueOf" => method(value_of);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
+    "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
 };
 
 /// `Boolean` constructor

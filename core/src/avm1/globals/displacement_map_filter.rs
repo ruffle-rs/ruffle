@@ -1,4 +1,4 @@
-//! flash.filter.DisplacementMapFilter object
+//! flash.filters.DisplacementMapFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

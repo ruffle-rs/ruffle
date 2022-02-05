@@ -1,4 +1,4 @@
-//! flash.filter.GlowFilter object
+//! flash.filters.GlowFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

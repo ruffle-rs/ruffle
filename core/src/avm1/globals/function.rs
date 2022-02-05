@@ -8,8 +8,8 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "call" => method(call);
-    "apply" => method(apply);
+    "call" => method(call; DONT_ENUM | DONT_DELETE);
+    "apply" => method(apply; DONT_ENUM | DONT_DELETE);
 };
 
 /// Implements `new Function()`

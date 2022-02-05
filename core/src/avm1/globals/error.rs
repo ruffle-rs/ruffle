@@ -9,7 +9,7 @@ use gc_arena::MutationContext;
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "message" => string("Error");
     "name" => string("Error");
-    "toString" => method(to_string; DONT_DELETE);
+    "toString" => method(to_string);
 };
 
 pub fn constructor<'gc>(

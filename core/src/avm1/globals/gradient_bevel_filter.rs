@@ -1,4 +1,4 @@
-//! flash.filter.GradientBevelFilter object
+//! flash.filters.GradientBevelFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

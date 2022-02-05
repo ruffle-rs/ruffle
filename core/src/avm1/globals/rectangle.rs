@@ -25,13 +25,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "offsetPoint" => method(offset_point);
     "intersection" => method(intersection);
     "equals" => method(equals);
-    "left" => property(get_left, set_left; DONT_ENUM | DONT_DELETE);
-    "top" => property(get_top, set_top; DONT_ENUM | DONT_DELETE);
-    "right" => property(get_right, set_right; DONT_ENUM | DONT_DELETE);
-    "bottom" => property(get_bottom, set_bottom; DONT_ENUM | DONT_DELETE);
-    "size" => property(get_size, set_size; DONT_ENUM | DONT_DELETE);
-    "topLeft" => property(get_top_left, set_top_left; DONT_ENUM | DONT_DELETE);
-    "bottomRight" => property(get_bottom_right, set_bottom_right; DONT_ENUM | DONT_DELETE);
+    "left" => property(get_left, set_left);
+    "top" => property(get_top, set_top);
+    "right" => property(get_right, set_right);
+    "bottom" => property(get_bottom, set_bottom);
+    "size" => property(get_size, set_size);
+    "topLeft" => property(get_top_left, set_top_left);
+    "bottomRight" => property(get_bottom_right, set_bottom_right);
 };
 
 fn constructor<'gc>(

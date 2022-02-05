@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
@@ -14,22 +12,23 @@ use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
 use json::JsonValue;
+use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "clear" => method(clear);
-    "close" => method(close);
-    "connect" => method(connect);
-    "flush" => method(flush);
-    "getSize" => method(get_size);
-    "send" => method(send);
-    "setFps" => method(set_fps);
-    "onStatus" => method(on_status);
-    "onSync" => method(on_sync);
+    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "connect" => method(connect; DONT_ENUM | DONT_DELETE);
+    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
+    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
+    "send" => method(send; DONT_ENUM | DONT_DELETE);
+    "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
+    "onStatus" => method(on_status; DONT_ENUM | DONT_DELETE);
+    "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "deleteAll" => method(delete_all);
-    "getDiskUsage" => method(get_disk_usage);
+    "deleteAll" => method(delete_all; DONT_ENUM);
+    "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
     "getLocal" => method(get_local);
     "getRemote" => method(get_remote);
     "getMaxSize" => method(get_max_size);

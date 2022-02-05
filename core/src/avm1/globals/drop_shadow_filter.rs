@@ -1,4 +1,4 @@
-//! flash.filter.DropShadowFilter object
+//! flash.filters.DropShadowFilter object
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;

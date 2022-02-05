@@ -1,6 +1,7 @@
 //! Stage object
 //!
 //! TODO: This is a very rough stub with not much implementation.
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
@@ -11,12 +12,12 @@ use crate::string::{AvmString, WStr, WString};
 use gc_arena::MutationContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "align" => property(align, set_align; DONT_ENUM | DONT_DELETE);
-    "height" => property(height; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "scaleMode" => property(scale_mode, set_scale_mode; DONT_ENUM | DONT_DELETE);
-    "displayState" => property(display_state, set_display_state; DONT_ENUM | DONT_DELETE);
-    "showMenu" => property(show_menu, set_show_menu; DONT_ENUM | DONT_DELETE);
-    "width" => property(width; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "align" => property(align, set_align);
+    "height" => property(height);
+    "scaleMode" => property(scale_mode, set_scale_mode);
+    "displayState" => property(display_state, set_display_state);
+    "showMenu" => property(show_menu, set_show_menu);
+    "width" => property(width);
 };
 
 pub fn create_stage_object<'gc>(
