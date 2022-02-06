@@ -1,9 +1,9 @@
 //Creating left aligned text w/ wordwrap, multiline & long text
-388.1
+388.45
 54.4
 //Creating left aligned text w/ wordwrap, multiline, 5px leading & long text
-388.1
+388.45
 69.4
 //Creating left aligned text w/ wordwrap, multiline, 12px leading & long text
-388.1
+388.45
 90.4
