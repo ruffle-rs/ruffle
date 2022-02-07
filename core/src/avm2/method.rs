@@ -491,17 +491,14 @@ impl<'gc> Method<'gc> {
         position: MethodPosition,
         kind: MethodKind,
     ) {
-        match self {
-            Method::Native(nm, None) => {
-                let meta = MethodMetadata {
-                    class_name,
-                    name: QName::dynamic_name(nm.name),
-                    position,
-                    kind,
-                };
-                self.set_meta(meta);
-            }
-            _ => (),
+        if let Method::Native(nm, None) = self {
+            let meta = MethodMetadata {
+                class_name,
+                name: QName::dynamic_name(nm.name),
+                position,
+                kind,
+            };
+            self.set_meta(meta);
         }
     }
 }

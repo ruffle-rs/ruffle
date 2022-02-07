@@ -420,6 +420,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Construct an activation for the execution of a particular bytecode
     /// method.
+    #[allow(clippy::too_many_arguments)]
     pub fn from_method(
         mut context: UpdateContext<'a, 'gc, 'gc_context>,
         method: Gc<'gc, BytecodeMethod<'gc>>,
