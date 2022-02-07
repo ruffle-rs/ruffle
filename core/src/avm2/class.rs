@@ -1,7 +1,7 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{Method, MethodMetadata, MethodPosition, NativeMethodImpl};
+use crate::avm2::method::{Method, MethodKind, MethodMetadata, MethodPosition, NativeMethodImpl};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -233,10 +233,16 @@ impl<'gc> Class<'gc> {
     pub fn new(
         name: QName<'gc>,
         super_class: Option<Multiname<'gc>>,
-        instance_init: Method<'gc>,
-        class_init: Method<'gc>,
+        mut instance_init: Method<'gc>,
+        mut class_init: Method<'gc>,
         mc: MutationContext<'gc, '_>,
     ) -> GcCell<'gc, Self> {
+        instance_init.set_builtin_meta(
+            name,
+            MethodPosition::InstanceTrait,
+            MethodKind::Initializer,
+        );
+        class_init.set_builtin_meta(name, MethodPosition::ClassTrait, MethodKind::Initializer);
         let native_instance_init = instance_init.clone();
 
         GcCell::allocate(
@@ -346,10 +352,10 @@ impl<'gc> Class<'gc> {
         }
 
         let mut instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        instance_init.set_meta(MethodMetadata::new_instance_init());
+        instance_init.set_meta(MethodMetadata::new_instance_init(name));
         let native_instance_init = instance_init.clone();
         let mut class_init = unit.load_method(abc_class.init_method, false, activation)?;
-        class_init.set_meta(MethodMetadata::new_class_init());
+        class_init.set_meta(MethodMetadata::new_class_init(name));
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -512,6 +518,28 @@ impl<'gc> Class<'gc> {
                 activation,
             )?);
         }
+        let mut instance_init = Method::from_builtin(
+            |_, _, _| Ok(Value::Undefined),
+            "<Activation object constructor>",
+            activation.context.gc_context,
+        );
+        let mut class_init = Method::from_builtin(
+            |_, _, _| Ok(Value::Undefined),
+            "<Activation object class constructor>",
+            activation.context.gc_context,
+        );
+        instance_init.set_builtin_meta(
+            QName::dynamic_name("activation"),
+            MethodPosition::InstanceTrait,
+            MethodKind::Initializer,
+        );
+        class_init.set_builtin_meta(
+            QName::dynamic_name("activation"),
+            MethodPosition::ClassTrait,
+            MethodKind::Initializer,
+        );
+        let native_instance_init = instance_init.clone();
+        let specialized_class_init = class_init.clone();
 
         Ok(GcCell::allocate(
             activation.context.gc_context,
@@ -523,27 +551,11 @@ impl<'gc> Class<'gc> {
                 protected_namespace: None,
                 interfaces: Vec::new(),
                 instance_allocator: None,
-                instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object constructor>",
-                    activation.context.gc_context,
-                ),
-                native_instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object constructor>",
-                    activation.context.gc_context,
-                ),
+                instance_init,
+                native_instance_init,
                 instance_traits: traits,
-                class_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object class constructor>",
-                    activation.context.gc_context,
-                ),
-                specialized_class_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object specialization constructor>",
-                    activation.context.gc_context,
-                ),
+                class_init,
+                specialized_class_init,
                 class_initializer_called: false,
                 call_handler: None,
                 class_traits: Vec::new(),
@@ -788,7 +800,7 @@ impl<'gc> Class<'gc> {
     ///
     /// Class traits will be accessible as properties on the class object.
     pub fn define_class_trait(&mut self, mut my_trait: Trait<'gc>) {
-        let meta = MethodMetadata::from_trait(&my_trait, MethodPosition::ClassTrait);
+        let meta = MethodMetadata::from_trait(self.name, &my_trait, MethodPosition::ClassTrait);
         if let Some(ref mut method) = my_trait.as_method_mut() {
             method.set_meta(meta);
         }
@@ -806,7 +818,7 @@ impl<'gc> Class<'gc> {
     /// class. They will not be accessible on the class prototype, and any
     /// properties defined on the prototype will be shadowed by these traits.
     pub fn define_instance_trait(&mut self, mut my_trait: Trait<'gc>) {
-        let meta = MethodMetadata::from_trait(&my_trait, MethodPosition::InstanceTrait);
+        let meta = MethodMetadata::from_trait(self.name, &my_trait, MethodPosition::InstanceTrait);
         if let Some(ref mut method) = my_trait.as_method_mut() {
             method.set_meta(meta);
         }
@@ -843,7 +855,7 @@ impl<'gc> Class<'gc> {
 
     /// Set a native-code instance initializer for this class.
     pub fn set_native_instance_init(&mut self, mut new_native_init: Method<'gc>) {
-        new_native_init.set_meta(MethodMetadata::new_instance_init());
+        new_native_init.set_meta(MethodMetadata::new_instance_init(self.name));
         self.native_instance_init = new_native_init;
     }
 
@@ -874,7 +886,7 @@ impl<'gc> Class<'gc> {
 
     /// Set the class initializer for specializations of this class.
     pub fn set_specialized_init(&mut self, mut specialized_init: Method<'gc>) {
-        specialized_init.set_meta(MethodMetadata::new_class_init());
+        specialized_init.set_meta(MethodMetadata::new_class_init(self.name));
         self.specialized_class_init = specialized_init;
     }
 

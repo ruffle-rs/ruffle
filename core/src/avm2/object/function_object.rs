@@ -2,7 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, MethodMetadata};
+use crate::avm2::names::QName;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
@@ -59,11 +60,21 @@ impl<'gc> FunctionObject<'gc> {
     /// `this` parameter.
     pub fn from_method(
         activation: &mut Activation<'_, 'gc, '_>,
-        method: Method<'gc>,
+        mut method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
         subclass_object: Option<ClassObject<'gc>>,
     ) -> FunctionObject<'gc> {
+        method = match (&method, subclass_object) {
+            // Native methods without metadata get a default implementation
+            (Method::Native(nm, None), Some(subclass)) => {
+                let class_name = subclass.inner_class_definition().read().name();
+                let meta =
+                    MethodMetadata::new_instance_trait(class_name, QName::dynamic_name(nm.name));
+                Method::Native(*nm, Some(meta))
+            }
+            _ => method,
+        };
         let fn_class = activation.avm2().classes().function;
         let exec = Executable::from_method(
             method,

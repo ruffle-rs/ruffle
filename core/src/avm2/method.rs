@@ -320,14 +320,20 @@ pub enum MethodKind {
 #[derive(Clone, Collect, Debug, Copy)]
 #[collect(no_drop)]
 pub struct MethodMetadata<'gc> {
+    class_name: QName<'gc>,
     name: QName<'gc>,
     position: MethodPosition,
     kind: MethodKind,
 }
 
 impl<'gc> MethodMetadata<'gc> {
-    pub fn from_trait(my_trait: &Trait<'gc>, position: MethodPosition) -> Self {
+    pub fn from_trait(
+        class_name: QName<'gc>,
+        my_trait: &Trait<'gc>,
+        position: MethodPosition,
+    ) -> Self {
         Self {
+            class_name,
             name: my_trait.name(),
             position,
             kind: match my_trait.kind() {
@@ -338,24 +344,48 @@ impl<'gc> MethodMetadata<'gc> {
         }
     }
 
-    pub fn new_class_init() -> Self {
+    pub fn new_class_init(class_name: QName<'gc>) -> Self {
         Self {
+            class_name,
             name: QName::dynamic_name("cinit"),
             position: MethodPosition::ClassTrait,
             kind: MethodKind::Initializer,
         }
     }
 
-    pub fn new_instance_init() -> Self {
+    pub fn new_instance_init(class_name: QName<'gc>) -> Self {
         Self {
+            class_name,
             name: QName::dynamic_name(AvmString::default()),
             position: MethodPosition::InstanceTrait,
             kind: MethodKind::Initializer,
         }
     }
 
+    pub fn new_instance_trait(class_name: QName<'gc>, name: QName<'gc>) -> Self {
+        Self {
+            class_name,
+            name,
+            position: MethodPosition::InstanceTrait,
+            kind: MethodKind::Initializer,
+        }
+    }
+
+    pub fn new_script_init() -> Self {
+        Self {
+            class_name: QName::dynamic_name("global"),
+            name: QName::dynamic_name("init"),
+            position: MethodPosition::ClassTrait,
+            kind: MethodKind::Initializer,
+        }
+    }
+
     pub fn name(&self) -> QName<'gc> {
         self.name
+    }
+
+    pub fn class_name(&self) -> QName<'gc> {
+        self.class_name
     }
 
     pub fn position(&self) -> MethodPosition {
@@ -452,6 +482,26 @@ impl<'gc> Method<'gc> {
         match self {
             Method::Native(_, m) => *m = Some(meta),
             Method::Bytecode(_, m) => *m = Some(meta),
+        }
+    }
+
+    pub fn set_builtin_meta(
+        &mut self,
+        class_name: QName<'gc>,
+        position: MethodPosition,
+        kind: MethodKind,
+    ) {
+        match self {
+            Method::Native(nm, None) => {
+                let meta = MethodMetadata {
+                    class_name,
+                    name: QName::dynamic_name(nm.name),
+                    position,
+                    kind,
+                };
+                self.set_meta(meta);
+            }
+            _ => (),
         }
     }
 }

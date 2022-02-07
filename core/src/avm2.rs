@@ -1,8 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, MethodMetadata};
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
@@ -48,7 +47,7 @@ mod vtable;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
-pub use crate::avm2::call_stack::{CallNode, CallStack};
+pub use crate::avm2::call_stack::CallStack;
 pub use crate::avm2::domain::Domain;
 pub use crate::avm2::events::{Event, EventData};
 pub use crate::avm2::names::{Namespace, QName};
@@ -71,9 +70,6 @@ pub type Error = Box<dyn std::error::Error>;
 pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
-
-    /// The current call stack of the player.
-    call_stack: CallStack<'gc>,
 
     /// Global scope object.
     globals: Domain<'gc>,
@@ -102,7 +98,6 @@ impl<'gc> Avm2<'gc> {
 
         Self {
             stack: Vec::new(),
-            call_stack: CallStack::new(),
             globals,
             system_classes: None,
             broadcast_list: Default::default(),
@@ -128,9 +123,13 @@ impl<'gc> Avm2<'gc> {
     /// Run a script's initializer method.
     pub fn run_script_initializer(
         script: Script<'gc>,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
-        let mut init_activation = Activation::from_script(context.reborrow(), script)?;
+        let id = activation
+            .id
+            .child(Some(MethodMetadata::new_script_init()), None);
+        let mut init_activation =
+            Activation::from_script(activation.context.reborrow(), script, id)?;
 
         let (method, scope, _domain) = script.init();
         match method {
@@ -138,16 +137,10 @@ impl<'gc> Avm2<'gc> {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
                 init_activation.resolve_parameters(method.name, &[], &method.signature)?;
-                init_activation.context.avm2.push_global_init()?;
-                let r = (method.method)(&mut init_activation, Some(scope), &[]);
-                init_activation.context.avm2.pop_call();
-                r?;
+                (method.method)(&mut init_activation, Some(scope), &[])?;
             }
             Method::Bytecode(_, _) => {
-                init_activation.context.avm2.push_global_init()?;
-                let r = init_activation.run_stack_frame_for_script(script);
-                init_activation.context.avm2.pop_call();
-                r?;
+                init_activation.run_stack_frame_for_script(script)?;
             }
         };
 
@@ -311,9 +304,9 @@ impl<'gc> Avm2<'gc> {
 
         for i in (0..abc_file.scripts.len()).rev() {
             let mut script = tunit.load_script(i as u32, context)?;
-
+            let mut activation = Activation::from_nothing(context.reborrow());
             if !lazy_init {
-                script.globals(context)?;
+                script.globals(&mut activation)?;
             }
         }
 
@@ -322,25 +315,6 @@ impl<'gc> Avm2<'gc> {
 
     pub fn global_domain(&self) -> Domain<'gc> {
         self.globals
-    }
-
-    /// Pushes an executable on the call stack
-    pub fn push_call(&mut self, calling: Executable<'gc>) -> Result<(), Error> {
-        self.call_stack.push(calling)
-    }
-
-    /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&mut self) -> Result<(), Error> {
-        self.call_stack.push_global_init()
-    }
-
-    /// Pops an executable off the call stack
-    pub fn pop_call(&mut self) -> Option<CallNode<'gc>> {
-        self.call_stack.pop()
-    }
-
-    pub fn call_stack(&self) -> &CallStack<'gc> {
-        &self.call_stack
     }
 
     /// Push a value onto the operand stack.

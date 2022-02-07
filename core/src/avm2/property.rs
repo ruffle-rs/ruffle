@@ -115,7 +115,7 @@ fn resolve_class_private<'gc>(
         // the top-level `Domain`
         let domain = unit.map_or(activation.avm2().globals, |u| u.domain());
         let globals = if let Some((_, mut script)) = domain.get_defining_script(name)? {
-            script.globals(&mut activation.context)?
+            script.globals(activation)?
         } else if let Some(txunit) = unit {
             // If we couldn't find an exported symbol, then check for a
             // private trait in the translation unit. This kind of trait
@@ -134,7 +134,7 @@ fn resolve_class_private<'gc>(
                 .ok_or_else(|| {
                     Error::from(format!("Could not find script for class trait {:?}", name))
                 })?
-                .globals(&mut activation.context)?
+                .globals(activation)?
         } else {
             return Err(format!("Missing script and translation unit for class {:?}", name).into());
         };

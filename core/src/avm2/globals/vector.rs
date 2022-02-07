@@ -178,6 +178,7 @@ pub fn specialized_class_init<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
+        let this_class = this.as_class_object().unwrap();
         let mut proto = this
             .get_property(&QName::dynamic_name("prototype").into(), activation)?
             .as_object()
@@ -213,11 +214,13 @@ pub fn specialized_class_init<'gc>(
         for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
             proto.set_property(
                 &QName::dynamic_name(*pubname).into(),
-                FunctionObject::from_function(
+                FunctionObject::from_method(
                     activation,
                     Method::from_builtin(*func, pubname, activation.context.gc_context),
                     scope,
-                )?
+                    None,
+                    Some(this_class),
+                )
                 .into(),
                 activation,
             )?;

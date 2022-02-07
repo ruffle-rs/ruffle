@@ -22,7 +22,7 @@ pub fn error_allocator<'gc>(
             id: 0,
             message: AvmString::default(),
             name: "Error".into(),
-            stack_trace: activation.context.avm2.call_stack().clone(),
+            stack_trace: activation.id.to_stack_trace(),
         },
     ))
     .into())

@@ -144,7 +144,7 @@ impl<'gc> ScopeChain<'gc> {
         }
         // That didn't work... let's try searching the domain now.
         if let Some((_qname, mut script)) = self.domain.get_defining_script(multiname)? {
-            return Ok(Some(script.globals(&mut activation.context)?));
+            return Ok(Some(script.globals(activation)?));
         }
         Ok(None)
     }

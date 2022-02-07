@@ -1,9 +1,10 @@
 //! Activation frames
 
 use crate::avm2::array::ArrayStorage;
+use crate::avm2::call_stack::{CallStack, CallStackNode};
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
+use crate::avm2::method::{BytecodeMethod, Method, MethodMetadata, ParamConfig};
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
@@ -25,6 +26,40 @@ use swf::avm2::types::{
     Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
     Namespace as AbcNamespace, Op,
 };
+
+pub struct ActivationIdentifier<'a, 'gc: 'a> {
+    parent: Option<&'a Self>,
+    node: CallStackNode<'gc>,
+    depth: u16,
+}
+
+impl<'a, 'gc> ActivationIdentifier<'a, 'gc> {
+    pub fn root(node: CallStackNode<'gc>) -> Self {
+        Self {
+            parent: None,
+            node,
+            depth: 0,
+        }
+    }
+
+    pub fn child(&'a self, meta: Option<MethodMetadata<'gc>>, method_id: Option<u32>) -> Self {
+        Self {
+            parent: Some(self),
+            node: CallStackNode::new(meta, method_id),
+            depth: self.depth + 1,
+        }
+    }
+
+    pub fn to_stack_trace(&self) -> CallStack<'gc> {
+        let mut stack = Vec::with_capacity(self.depth as usize);
+        let mut current_id = Some(self);
+        while let Some(id) = current_id {
+            stack.push(id.node);
+            current_id = id.parent;
+        }
+        CallStack::new(stack)
+    }
+}
 
 /// Represents a particular register set.
 ///
@@ -137,6 +172,8 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// and we will not allocate a class for one.
     activation_class: Option<ClassObject<'gc>>,
 
+    pub id: ActivationIdentifier<'a, 'gc>,
+
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
 
@@ -164,6 +201,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: context.avm2.globals,
             subclass_object: None,
             activation_class: None,
+            id: ActivationIdentifier::root(CallStackNode::empty()),
             context,
         }
     }
@@ -173,6 +211,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn from_script(
         context: UpdateContext<'a, 'gc, 'gc_context>,
         script: Script<'gc>,
+        id: ActivationIdentifier<'a, 'gc>,
     ) -> Result<Self, Error> {
         let (method, global_object, domain) = script.init();
 
@@ -205,6 +244,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: domain,
             subclass_object: None,
             activation_class: None,
+            id,
             context,
         })
     }
@@ -375,6 +415,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         user_arguments: &[Value<'gc>],
         subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
+        id: ActivationIdentifier<'a, 'gc>,
     ) -> Result<Self, Error> {
         let body: Result<_, Error> = method
             .body()
@@ -436,6 +477,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain: outer.domain(),
             subclass_object,
             activation_class,
+            id,
             context,
         };
 
@@ -497,6 +539,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Domain<'gc>,
+        id: ActivationIdentifier<'a, 'gc>,
     ) -> Result<Self, Error> {
         let local_registers = GcCell::allocate(context.gc_context, RegisterSet::new(0));
 
@@ -512,6 +555,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             caller_domain,
             subclass_object,
             activation_class: None,
+            id,
             context,
         })
     }

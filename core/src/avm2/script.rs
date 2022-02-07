@@ -402,15 +402,14 @@ impl<'gc> Script<'gc> {
     /// the same stack.
     pub fn globals(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(activation.context.gc_context);
 
         if !write.initialized {
             write.initialized = true;
 
             let mut globals = write.globals;
-            let mut null_activation = Activation::from_nothing(context.reborrow());
             let domain = write.domain;
 
             drop(write);
@@ -422,11 +421,11 @@ impl<'gc> Script<'gc> {
                 &self.traits()?,
                 scope,
                 None,
-                &mut null_activation,
+                activation,
             )?;
-            globals.install_instance_slots(&mut null_activation);
+            globals.install_instance_slots(activation);
 
-            Avm2::run_script_initializer(*self, context)?;
+            Avm2::run_script_initializer(*self, activation)?;
 
             Ok(globals)
         } else {

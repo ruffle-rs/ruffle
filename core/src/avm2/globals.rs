@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::method::MethodMetadata;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
@@ -176,8 +177,13 @@ fn function<'gc>(
     let (_, mut global, mut domain) = script.init();
     let mc = activation.context.gc_context;
     let scope = activation.create_scopechain();
+    let package = package.into();
     let qname = QName::new(Namespace::package(package), name);
-    let method = Method::from_builtin(nf, name, mc);
+    let mut method = Method::from_builtin(nf, name, mc);
+    method.set_meta(MethodMetadata::new_instance_trait(
+        QName::from_qualified_name(package, mc),
+        QName::dynamic_name(name),
+    ));
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
     domain.export_definition(qname, script, mc)?;
     global.install_const_late(mc, qname, as3fn, activation.avm2().classes().function);

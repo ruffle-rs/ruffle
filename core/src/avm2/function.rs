@@ -1,14 +1,11 @@
 //! AVM2 executables.
 
 use crate::avm2::activation::Activation;
-use crate::avm2::method::{
-    BytecodeMethod, Method, MethodKind, MethodMetadata, MethodPosition, NativeMethod,
-};
+use crate::avm2::method::{BytecodeMethod, Method, MethodMetadata, NativeMethod};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::WString;
 use gc_arena::{Collect, Gc, MutationContext};
 use std::fmt;
 
@@ -60,9 +57,8 @@ pub struct NativeExecutable<'gc> {
     /// back to the `receiver`.
     bound_superclass: Option<ClassObject<'gc>>,
 
-    /// The metadata of this method. A value of None indicates that this is an
-    /// anonymous function.
-    meta: Option<MethodMetadata<'gc>>,
+    /// The metadata of this method.
+    meta: MethodMetadata<'gc>,
 }
 
 /// Represents code that can be executed by some means.
@@ -93,7 +89,7 @@ impl<'gc> Executable<'gc> {
                     scope,
                     bound_receiver: receiver,
                     bound_superclass: superclass,
-                    meta,
+                    meta: meta.expect("Native methods should always have metadata"),
                 },
             )),
             Method::Bytecode(method, meta) => Self::Action(Gc::allocate(
@@ -127,18 +123,20 @@ impl<'gc> Executable<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error> {
-        let ret = match self {
+        match self {
             Executable::Native(bm) => {
                 let method = bm.method.method;
                 let receiver = bm.bound_receiver.or(unbound_receiver);
                 let caller_domain = activation.caller_domain();
                 let subclass_object = bm.bound_superclass;
+                let id = activation.id.child(Some(bm.meta), None);
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     receiver,
                     subclass_object,
                     bm.scope,
                     caller_domain,
+                    id,
                 )?;
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {
@@ -156,7 +154,6 @@ impl<'gc> Executable<'gc> {
                     arguments,
                     &bm.method.signature,
                 )?;
-                activation.context.avm2.push_call(*self)?;
                 method(&mut activation, receiver, &arguments)
             }
             Executable::Action(bm) => {
@@ -169,6 +166,7 @@ impl<'gc> Executable<'gc> {
 
                 let receiver = bm.receiver.or(unbound_receiver);
                 let subclass_object = bm.bound_superclass;
+                let id = activation.id.child(bm.meta, Some(bm.method.abc_method));
 
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
@@ -178,68 +176,11 @@ impl<'gc> Executable<'gc> {
                     arguments,
                     subclass_object,
                     callee,
+                    id,
                 )?;
-                activation.context.avm2.push_call(*self)?;
                 activation.run_actions(bm.method)
             }
-        };
-        activation.context.avm2.pop_call();
-        ret
-    }
-
-    pub fn bound_superclass(&self) -> Option<ClassObject<'gc>> {
-        match self {
-            Executable::Native(ne) => ne.bound_superclass,
-            Executable::Action(be) => be.bound_superclass,
         }
-    }
-
-    pub fn meta(&self) -> Option<MethodMetadata<'gc>> {
-        match self {
-            Executable::Native(ne) => ne.meta,
-            Executable::Action(be) => be.meta,
-        }
-    }
-
-    pub fn write_full_name(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
-        if let Some(superclass) = self.bound_superclass() {
-            let class_def = superclass.inner_class_definition();
-            let name = class_def.read().name().to_qualified_name(mc);
-            output.push_str(&name);
-        }
-        if let Some(meta) = self.meta() {
-            if meta.position() == MethodPosition::ClassTrait {
-                output.push_char('$');
-            }
-
-            let prefix = match meta.kind() {
-                MethodKind::Setter => "/set ",
-                MethodKind::Getter => "/get ",
-                MethodKind::Regular => "/",
-                MethodKind::Initializer => "",
-            };
-            output.push_utf8(prefix);
-            if meta.name().namespace().is_namespace() {
-                output.push_str(&meta.name().to_qualified_name(mc));
-            } else {
-                output.push_str(&meta.name().local_name());
-            }
-        } else {
-            match self {
-                Executable::Native(ne) => output.push_utf8(ne.method.name),
-                Executable::Action(be) => {
-                    let name = be.method.method_name();
-                    if name.is_empty() {
-                        output.push_utf8("MethodInfo-");
-                        output.push_utf8(&be.method.abc_method.to_string());
-                    } else {
-                        output.push_utf8(name)
-                    }
-                }
-            }
-        }
-
-        output.push_utf8("()");
     }
 }
 
