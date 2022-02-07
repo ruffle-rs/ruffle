@@ -28,7 +28,7 @@ use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
-use crate::xml::{XmlDocument, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
@@ -532,7 +532,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get the underlying XML document for this object, if it exists.
-    fn as_xml(&self) -> Option<XmlDocument<'gc>> {
+    fn as_xml(&self) -> Option<XmlObject<'gc>> {
         None
     }
 

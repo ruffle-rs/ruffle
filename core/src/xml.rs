@@ -1,11 +1,9 @@
 //! Garbage-collectable XML DOM impl
 
-mod document;
 mod error;
 mod iterators;
 mod tree;
 
-pub use document::XmlDocument;
 pub use error::Error;
 pub use error::ParseError;
 pub use tree::XmlNode;
