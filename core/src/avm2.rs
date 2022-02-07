@@ -127,7 +127,7 @@ impl<'gc> Avm2<'gc> {
     ) -> Result<(), Error> {
         let id = activation
             .id
-            .child(Some(MethodMetadata::new_script_init()), None);
+            .child(Some(MethodMetadata::new_script_init()), None)?;
         let mut init_activation =
             Activation::from_script(activation.context.reborrow(), script, id)?;
 

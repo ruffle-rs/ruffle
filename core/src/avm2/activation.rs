@@ -27,6 +27,12 @@ use swf::avm2::types::{
     Namespace as AbcNamespace, Op,
 };
 
+#[cfg(debug_assertions)]
+const MAX_CALL_DEPTH: u16 = 500;
+
+#[cfg(not(debug_assertions))]
+const MAX_CALL_DEPTH: u16 = 1000;
+
 pub struct ActivationIdentifier<'a, 'gc: 'a> {
     parent: Option<&'a Self>,
     node: CallStackNode<'gc>,
@@ -42,12 +48,19 @@ impl<'a, 'gc> ActivationIdentifier<'a, 'gc> {
         }
     }
 
-    pub fn child(&'a self, meta: Option<MethodMetadata<'gc>>, method_id: Option<u32>) -> Self {
-        Self {
+    pub fn child(
+        &'a self,
+        meta: Option<MethodMetadata<'gc>>,
+        method_id: Option<u32>,
+    ) -> Result<Self, Error> {
+        if self.depth >= MAX_CALL_DEPTH {
+            return Err("Error: Error #1023: Stack overflow occurred.".into());
+        }
+        Ok(Self {
             parent: Some(self),
             node: CallStackNode::new(meta, method_id),
             depth: self.depth + 1,
-        }
+        })
     }
 
     pub fn to_stack_trace(&self) -> CallStack<'gc> {

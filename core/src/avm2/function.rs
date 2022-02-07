@@ -129,7 +129,7 @@ impl<'gc> Executable<'gc> {
                 let receiver = bm.bound_receiver.or(unbound_receiver);
                 let caller_domain = activation.caller_domain();
                 let subclass_object = bm.bound_superclass;
-                let id = activation.id.child(Some(bm.meta), None);
+                let id = activation.id.child(Some(bm.meta), None)?;
                 let mut activation = Activation::from_builtin(
                     activation.context.reborrow(),
                     receiver,
@@ -166,7 +166,7 @@ impl<'gc> Executable<'gc> {
 
                 let receiver = bm.receiver.or(unbound_receiver);
                 let subclass_object = bm.bound_superclass;
-                let id = activation.id.child(bm.meta, Some(bm.method.abc_method));
+                let id = activation.id.child(bm.meta, Some(bm.method.abc_method))?;
 
                 let mut activation = Activation::from_method(
                     activation.context.reborrow(),
