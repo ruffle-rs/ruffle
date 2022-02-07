@@ -865,7 +865,12 @@ impl<'gc> Class<'gc> {
     }
 
     /// Set a call handler for this class.
-    pub fn set_call_handler(&mut self, new_call_handler: Method<'gc>) {
+    pub fn set_call_handler(&mut self, mut new_call_handler: Method<'gc>) {
+        new_call_handler.set_builtin_meta(
+            self.name,
+            MethodPosition::InstanceTrait,
+            MethodKind::Regular,
+        );
         self.call_handler = Some(new_call_handler);
     }
 
