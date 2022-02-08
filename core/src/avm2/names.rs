@@ -602,6 +602,39 @@ impl<'gc> Multiname<'gc> {
     pub fn params(&self) -> &[Multiname<'gc>] {
         &self.params[..]
     }
+
+    pub fn to_qualified_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        let mut uri = WString::new();
+        let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
+            Some(Namespace::Any) => "*".into(),
+            Some(ns) => ns.as_uri(),
+            None => "".into(),
+        };
+
+        uri.push_str(&ns);
+
+        if let Some(name) = self.name {
+            uri.push_str(WStr::from_units(b"::"));
+            uri.push_str(&name);
+        } else {
+            uri.push_str(WStr::from_units(b"::*"));
+        }
+
+        if !self.params.is_empty() {
+            uri.push_str(WStr::from_units(b"<"));
+
+            for (i, param) in self.params.iter().enumerate() {
+                uri.push_str(&param.to_qualified_name(mc));
+                if i < self.params.len() - 1 {
+                    uri.push_str(WStr::from_units(b","));
+                }
+            }
+
+            uri.push_str(WStr::from_units(b">"));
+        }
+
+        AvmString::new(mc, uri)
+    }
 }
 
 impl<'gc> From<QName<'gc>> for Multiname<'gc> {
