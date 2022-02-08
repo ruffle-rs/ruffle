@@ -378,7 +378,7 @@ impl<'gc> MethodMetadata<'gc> {
             class_name,
             name,
             position: MethodPosition::InstanceTrait,
-            kind: MethodKind::Initializer,
+            kind: MethodKind::Regular,
         }
     }
 
