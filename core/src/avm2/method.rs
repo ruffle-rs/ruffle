@@ -326,6 +326,17 @@ pub struct MethodMetadata<'gc> {
     kind: MethodKind,
 }
 
+impl<'gc> Default for MethodMetadata<'gc> {
+    fn default() -> Self {
+        Self {
+            class_name: QName::dynamic_name("Function"),
+            name: QName::dynamic_name("<anonymous>"),
+            position: MethodPosition::InstanceTrait,
+            kind: MethodKind::Regular,
+        }
+    }
+}
+
 impl<'gc> MethodMetadata<'gc> {
     pub fn from_trait(
         class_name: QName<'gc>,

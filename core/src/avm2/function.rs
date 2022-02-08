@@ -89,7 +89,7 @@ impl<'gc> Executable<'gc> {
                     scope,
                     bound_receiver: receiver,
                     bound_superclass: superclass,
-                    meta: meta.expect("Native methods should always have metadata"),
+                    meta: meta.unwrap_or_default(),
                 },
             )),
             Method::Bytecode(method, meta) => Self::Action(Gc::allocate(

@@ -3,12 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::function::Executable;
 use crate::avm2::method::{Method, MethodMetadata};
-use crate::avm2::names::QName;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 
