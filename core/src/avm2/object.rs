@@ -815,6 +815,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.instance_of().map(|cls| cls.inner_class_definition())
     }
 
+    /// Get this object's class's name, formatted for debug output.
+    fn instance_of_class_name(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        self.instance_of_class_definition()
+            .map(|r| r.read().name().to_qualified_name(mc))
+            .unwrap_or_else(|| "<Unknown type>".into())
+    }
+
     fn set_instance_of(&self, mc: MutationContext<'gc, '_>, instance_of: ClassObject<'gc>) {
         let instance_vtable = instance_of.instance_vtable();
 
