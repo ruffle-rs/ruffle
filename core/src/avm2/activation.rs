@@ -1,7 +1,7 @@
 //! Activation frames
 
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::call_stack::{CallStack, CallStackNode};
+use crate::avm2::call_stack::{CallStackNode, StackTrace};
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method, MethodMetadata, ParamConfig};
@@ -63,14 +63,14 @@ impl<'a, 'gc> ActivationIdentifier<'a, 'gc> {
         })
     }
 
-    pub fn to_stack_trace(&self) -> CallStack<'gc> {
+    pub fn to_stack_trace(&self) -> StackTrace<'gc> {
         let mut stack = Vec::with_capacity(self.depth as usize);
         let mut current_id = Some(self);
         while let Some(id) = current_id {
             stack.push(id.node);
             current_id = id.parent;
         }
-        CallStack::new(stack)
+        StackTrace::new(stack)
     }
 }
 

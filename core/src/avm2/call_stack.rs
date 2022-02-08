@@ -69,11 +69,11 @@ impl<'gc> CallStackNode<'gc> {
 
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
-pub struct CallStack<'gc> {
+pub struct StackTrace<'gc> {
     stack: Vec<CallStackNode<'gc>>,
 }
 
-impl<'gc> CallStack<'gc> {
+impl<'gc> StackTrace<'gc> {
     pub fn new(stack: Vec<CallStackNode<'gc>>) -> Self {
         Self { stack }
     }

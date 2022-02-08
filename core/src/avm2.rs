@@ -47,7 +47,7 @@ mod vtable;
 
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
-pub use crate::avm2::call_stack::CallStack;
+pub use crate::avm2::call_stack::StackTrace;
 pub use crate::avm2::domain::Domain;
 pub use crate::avm2::events::{Event, EventData};
 pub use crate::avm2::names::{Namespace, QName};
