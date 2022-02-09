@@ -552,7 +552,7 @@ pub fn hit_test_point<'gc>(
 
 /// Implements `hitTestObject`.
 pub fn hit_test_object<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -561,8 +561,8 @@ pub fn hit_test_object<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
+            .as_object()
+            .and_then(|o| o.as_display_object())
         {
             return Ok(dobj.hit_test_object(rhs_dobj).into());
         }
