@@ -193,8 +193,8 @@ pub fn add_child<'gc>(
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?
-                .as_display_object()
+                .as_object()
+                .and_then(|o| o.as_display_object())
                 .ok_or("ArgumentError: Child not a valid display object")?;
             let target_index = ctr.num_children();
 
@@ -219,8 +219,8 @@ pub fn add_child_at<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
+            .as_object()
+            .and_then(|o| o.as_display_object())
             .ok_or("ArgumentError: Child not a valid display object")?;
         let target_index = args
             .get(1)
@@ -248,8 +248,8 @@ pub fn remove_child<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
+            .as_object()
+            .and_then(|o| o.as_display_object())
             .ok_or("ArgumentError: Child not a valid display object")?;
 
         validate_remove_operation(parent, child)?;
@@ -279,7 +279,7 @@ pub fn num_children<'gc>(
 
 /// Implements `DisplayObjectContainer.contains`
 pub fn contains<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -289,8 +289,8 @@ pub fn contains<'gc>(
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?
-                .as_display_object()
+                .as_object()
+                .and_then(|o| o.as_display_object())
             {
                 let mut maybe_child_parent = Some(child);
                 while let Some(child_parent) = maybe_child_parent {
@@ -309,7 +309,7 @@ pub fn contains<'gc>(
 
 /// Implements `DisplayObjectContainer.getChildIndex`
 pub fn get_child_index<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -319,8 +319,8 @@ pub fn get_child_index<'gc>(
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?
-                .as_display_object();
+                .as_object()
+                .and_then(|o| o.as_display_object());
 
             if let Some(target_child) = target_child {
                 for (i, child) in ctr.iter_render_list().enumerate() {
@@ -431,8 +431,8 @@ pub fn set_child_index<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?
-            .as_display_object()
+            .as_object()
+            .and_then(|o| o.as_display_object())
             .ok_or("ArgumentError: Child not a valid display object")?;
         let target_index = args
             .get(1)
@@ -507,15 +507,15 @@ pub fn swap_children<'gc>(
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?
-                .as_display_object()
+                .as_object()
+                .and_then(|o| o.as_display_object())
                 .ok_or("ArgumentError: Child is not a display object")?;
             let child1 = args
                 .get(1)
                 .cloned()
                 .unwrap_or(Value::Undefined)
-                .coerce_to_object(activation)?
-                .as_display_object()
+                .as_object()
+                .and_then(|o| o.as_display_object())
                 .ok_or("ArgumentError: Child is not a display object")?;
 
             let index0 = ctr
@@ -551,8 +551,8 @@ pub fn stop_all_movie_clips<'gc>(
         if let Some(ctr) = parent.as_container() {
             for child in ctr.iter_render_list() {
                 if child.as_container().is_some() {
-                    let child_this = child.object2().coerce_to_object(activation)?;
-                    stop_all_movie_clips(activation, Some(child_this), &[])?;
+                    let child_this = child.object2().as_object();
+                    stop_all_movie_clips(activation, child_this, &[])?;
                 }
             }
         }
