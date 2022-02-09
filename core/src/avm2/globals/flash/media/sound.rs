@@ -125,12 +125,7 @@ pub fn play<'gc>(
             .cloned()
             .unwrap_or_else(|| 0.into())
             .coerce_to_i32(activation)?;
-        let sound_transform = args
-            .get(2)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+        let sound_transform = args.get(2).cloned().unwrap_or(Value::Null).as_object();
 
         if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
             if position > duration {
