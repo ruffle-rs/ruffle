@@ -23,8 +23,7 @@ pub fn instance_init<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|bd| bd.as_bitmap_data());
         //TODO: Pixel snapping is not supported
         let _pixel_snapping = args
@@ -132,8 +131,7 @@ pub fn set_bitmap_data<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|bd| bd.as_bitmap_data());
 
         bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
