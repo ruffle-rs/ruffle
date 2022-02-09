@@ -33,8 +33,7 @@ pub fn instance_init<'gc>(
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|o| o.as_display_object());
             new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
 
@@ -42,8 +41,7 @@ pub fn instance_init<'gc>(
                 .get(1)
                 .cloned()
                 .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|o| o.as_display_object());
             new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
 
@@ -51,8 +49,7 @@ pub fn instance_init<'gc>(
                 .get(2)
                 .cloned()
                 .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|o| o.as_display_object());
             new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
 
@@ -60,8 +57,7 @@ pub fn instance_init<'gc>(
                 .get(3)
                 .cloned()
                 .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|o| o.as_display_object());
             new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
         }
@@ -112,8 +108,7 @@ pub fn set_down_state<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(&mut activation.context, ButtonState::DOWN, new_state);
@@ -155,8 +150,7 @@ pub fn set_over_state<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(&mut activation.context, ButtonState::OVER, new_state);
@@ -198,8 +192,7 @@ pub fn set_hit_test_state<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(&mut activation.context, ButtonState::HIT_TEST, new_state);
@@ -241,8 +234,7 @@ pub fn set_up_state<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(&mut activation.context, ButtonState::UP, new_state);
