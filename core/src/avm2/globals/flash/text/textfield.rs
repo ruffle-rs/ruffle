@@ -230,13 +230,13 @@ pub fn set_default_text_format<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let new_text_format = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
-        if let Some(new_text_format) = new_text_format.as_text_format() {
-            this.set_new_text_format(new_text_format.clone(), &mut activation.context);
-        };
+        let new_text_format = args.get(0).unwrap_or(&Value::Undefined).as_object();
+
+        if let Some(new_text_format) = new_text_format {
+            if let Some(new_text_format) = new_text_format.as_text_format() {
+                this.set_new_text_format(new_text_format.clone(), &mut activation.context);
+            }
+        }
     }
 
     Ok(Value::Undefined)
@@ -804,43 +804,42 @@ pub fn set_text_format<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_edit_text())
     {
-        let tf = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
-        if let Some(tf) = tf.as_text_format() {
-            let mut begin_index = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)?;
-            let mut end_index = args
-                .get(2)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_i32(activation)?;
+        let tf = args.get(0).unwrap_or(&Value::Undefined).as_object();
+        if let Some(tf) = tf {
+            if let Some(tf) = tf.as_text_format() {
+                let mut begin_index = args
+                    .get(1)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_i32(activation)?;
+                let mut end_index = args
+                    .get(2)
+                    .unwrap_or(&Value::Undefined)
+                    .coerce_to_i32(activation)?;
 
-            if begin_index < 0 {
-                begin_index = 0;
+                if begin_index < 0 {
+                    begin_index = 0;
+                }
+
+                if begin_index as usize > this.text_length() {
+                    return Err("RangeError: The supplied index is out of bounds.".into());
+                }
+
+                if end_index < 0 {
+                    end_index = this.text_length() as i32;
+                }
+
+                if end_index as usize > this.text_length() {
+                    return Err("RangeError: The supplied index is out of bounds.".into());
+                }
+
+                this.set_text_format(
+                    begin_index as usize,
+                    end_index as usize,
+                    tf.clone(),
+                    &mut activation.context,
+                );
             }
-
-            if begin_index as usize > this.text_length() {
-                return Err("RangeError: The supplied index is out of bounds.".into());
-            }
-
-            if end_index < 0 {
-                end_index = this.text_length() as i32;
-            }
-
-            if end_index as usize > this.text_length() {
-                return Err("RangeError: The supplied index is out of bounds.".into());
-            }
-
-            this.set_text_format(
-                begin_index as usize,
-                end_index as usize,
-                tf.clone(),
-                &mut activation.context,
-            );
-        };
+        }
     }
 
     Ok(Value::Undefined)
