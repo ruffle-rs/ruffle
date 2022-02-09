@@ -120,14 +120,13 @@ impl<'gc> AvmSerializer<'gc> {
         let (eval_key, value) = if value.is_primitive() {
             (None, value)
         } else {
-            let obj = value.coerce_to_object(activation)?;
+            let obj = value.as_object().unwrap();
             let to_json = obj
                 .get_property(
                     &QName::new(Namespace::public(), "toJSON").into(),
                     activation,
                 )?
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|obj| obj.as_function_object());
             if let Some(to_json) = to_json {
                 let key = key();
@@ -286,11 +285,7 @@ pub fn parse<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let reviver = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)
-        .ok();
+    let reviver = args.get(1).unwrap_or(&Value::Undefined).as_object();
     let parsed = serde_json::from_str(&input.to_utf8_lossy())
         .map_err(|_| "SyntaxError: Error #1132: Invalid JSON parse input.")?;
     deserialize_json(activation, parsed, reviver)
@@ -303,11 +298,7 @@ pub fn stringify<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let val = args.get(0).unwrap_or(&Value::Undefined);
-    let replacer = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)
-        .ok();
+    let replacer = args.get(1).unwrap_or(&Value::Undefined).as_object();
     let spaces = args.get(2).unwrap_or(&Value::Undefined);
     let replacer = replacer.map(|replacer| {
         if let Some(func) = replacer.as_function_object() {
