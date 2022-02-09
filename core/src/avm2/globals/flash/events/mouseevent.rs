@@ -56,8 +56,7 @@ pub fn instance_init<'gc>(
                 .get(5)
                 .cloned()
                 .unwrap_or(Value::Null)
-                .coerce_to_object(activation)
-                .ok()
+                .as_object()
                 .and_then(|o| o.as_display_object())
                 .and_then(|o| o.as_interactive());
             let ctrl_key = args
@@ -580,7 +579,7 @@ pub fn set_related_object<'gc>(
                 let value = args
                     .get(0)
                     .cloned()
-                    .and_then(|o| o.coerce_to_object(activation).ok())
+                    .and_then(|o| o.as_object())
                     .and_then(|o| o.as_display_object())
                     .and_then(|o| o.as_interactive());
 
@@ -675,12 +674,9 @@ pub fn to_string<'gc>(
                         (local_x * 0.0, local_y * 0.0)
                     };
 
-                let related_object = if let Some(related_object) = related_object.and_then(|ro| {
-                    ro.as_displayobject()
-                        .object2()
-                        .coerce_to_object(activation)
-                        .ok()
-                }) {
+                let related_object = if let Some(related_object) =
+                    related_object.and_then(|ro| ro.as_displayobject().object2().as_object())
+                {
                     related_object
                         .to_string(activation.context.gc_context)?
                         .coerce_to_string(activation)?
