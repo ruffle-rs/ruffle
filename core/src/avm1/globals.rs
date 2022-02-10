@@ -7,7 +7,6 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
 use gc_arena::MutationContext;
-use rand::Rng;
 use std::str;
 
 mod array;
@@ -66,7 +65,6 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "isNaN" => method(is_nan; DONT_ENUM);
     "parseInt" => method(parse_int; DONT_ENUM);
     "parseFloat" => method(parse_float; DONT_ENUM);
-    "random" => method(random; DONT_ENUM);
     "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM);
     "clearInterval" => method(clear_interval; DONT_ENUM);
     "setInterval" => method(set_interval; DONT_ENUM);
@@ -78,17 +76,6 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
 };
-
-pub fn random<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    match args.get(0) {
-        Some(&Value::Number(max)) => Ok(activation.context.rng.gen_range(0.0..max).floor().into()),
-        _ => Ok(Value::Undefined), //TODO: Shouldn't this be an error condition?
-    }
-}
 
 pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
