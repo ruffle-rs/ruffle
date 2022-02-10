@@ -439,10 +439,9 @@ fn sort<'gc>(
     };
 
     let compare_fn: CompareFn<'_, 'gc> = if let Some(f) = compare_fn {
-        let this = Value::Undefined.coerce_to_object(activation);
-        // this is undefined in the compare function
         Box::new(move |activation, a: &Value<'gc>, b: &Value<'gc>| {
-            sort_compare_custom(activation, this, a, b, f)
+            // this is undefined in the compare function.
+            sort_compare_custom(activation, Value::Undefined, a, b, f)
         })
     } else if flags.contains(SortFlags::NUMERIC) {
         Box::new(sort_compare_numeric(
@@ -673,7 +672,7 @@ fn sort_compare_fields<'a, 'gc: 'a>(
 // Returning an impl Trait here doesn't work yet because of https://github.com/rust-lang/rust/issues/65805 (?)
 fn sort_compare_custom<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     a: &Value<'gc>,
     b: &Value<'gc>,
     compare_fn: &Object<'gc>,
@@ -681,7 +680,7 @@ fn sort_compare_custom<'gc>(
     // TODO: Handle errors.
     let args = [*a, *b];
     let ret = compare_fn
-        .call("[Compare]".into(), activation, this.into(), &args)
+        .call("[Compare]".into(), activation, this, &args)
         .unwrap_or(Value::Undefined);
     match ret {
         Value::Number(n) if n > 0.0 => Ordering::Greater,
