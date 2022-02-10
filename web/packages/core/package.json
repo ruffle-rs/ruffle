@@ -48,7 +48,7 @@
         "mocha": "^9.2.0",
         "replace-in-file": "^6.3.2",
         "shx": "^0.3.3",
-        "ts-node": "^10.4.0",
+        "ts-node": "^10.5.0",
         "typedoc": "^0.22.10",
         "typescript": "^4.5.5"
     }
