@@ -444,9 +444,7 @@ fn sort<'gc>(
             sort_compare_custom(activation, Value::Undefined, a, b, f)
         })
     } else if flags.contains(SortFlags::NUMERIC) {
-        Box::new(sort_compare_numeric(
-            flags.contains(SortFlags::CASE_INSENSITIVE),
-        ))
+        sort_compare_numeric(flags.contains(SortFlags::CASE_INSENSITIVE))
     } else {
         Box::new(string_compare_fn)
     };
@@ -531,11 +529,9 @@ fn sort_on<'gc>(
             };
 
             if flags.contains(SortFlags::NUMERIC) {
-                Box::new(sort_compare_numeric(
-                    flags.contains(SortFlags::CASE_INSENSITIVE),
-                ))
+                sort_compare_numeric(flags.contains(SortFlags::CASE_INSENSITIVE))
             } else {
-                Box::new(string_compare_fn) as CompareFn<'_, 'gc>
+                Box::new(string_compare_fn)
             }
         })
         .collect();
@@ -634,10 +630,8 @@ fn sort_compare_string_ignore_case<'gc>(
     }
 }
 
-fn sort_compare_numeric<'gc>(
-    case_insensitive: bool,
-) -> impl FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering {
-    move |activation, a, b| {
+fn sort_compare_numeric<'a, 'gc: 'a>(case_insensitive: bool) -> CompareFn<'a, 'gc> {
+    Box::new(move |activation, a, b| {
         if let (Value::Number(a), Value::Number(b)) = (a, b) {
             a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
         } else if case_insensitive {
@@ -645,7 +639,7 @@ fn sort_compare_numeric<'gc>(
         } else {
             sort_compare_string(activation, a, b)
         }
-    }
+    })
 }
 
 fn sort_compare_fields<'a, 'gc: 'a>(
