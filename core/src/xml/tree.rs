@@ -614,9 +614,9 @@ impl<'gc> XmlNode<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
-                let object = XmlNodeObject::from_xml_node(activation, *self);
-                self.introduce_script_object(activation.context.gc_context, object);
-                object
+                let proto = activation.context.avm1.prototypes().xml_node;
+                XmlNodeObject::from_xml_node(activation.context.gc_context, *self, Some(proto))
+                    .into()
             }
         }
     }
