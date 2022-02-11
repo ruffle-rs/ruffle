@@ -175,7 +175,13 @@ pub fn specialized_class_init<'gc>(
     if let Some(this) = this {
         let mut proto = this
             .get_property(&QName::dynamic_name("prototype").into(), activation)?
-            .coerce_to_object(activation)?;
+            .as_object()
+            .ok_or_else(|| {
+                format!(
+                    "Specialization {} has a prototype of null or undefined",
+                    this.instance_of_class_name(activation.context.gc_context)
+                )
+            })?;
         let scope = activation.create_scopechain();
 
         const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
@@ -312,7 +318,9 @@ pub fn concat<'gc>(
         let val_class = new_vector_storage.value_type();
 
         for arg in args {
-            let arg_obj = arg.coerce_to_object(activation)?;
+            let arg_obj = arg
+                .as_object()
+                .ok_or("Cannot concat Vector with null or undefined")?;
             let arg_class = arg_obj
                 .instance_of_class_definition()
                 .ok_or("TypeError: Tried to concat from a bare object")?;
@@ -444,13 +452,8 @@ pub fn every<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -482,13 +485,8 @@ pub fn some<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -520,13 +518,8 @@ pub fn filter<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
 
         let value_type = this
             .instance_of()
@@ -566,13 +559,8 @@ pub fn for_each<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -676,13 +664,8 @@ pub fn map<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
 
         let value_type = this
             .instance_of()
@@ -900,13 +883,11 @@ pub fn sort<'gc>(
             let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
             let (compare_fnc, options) = if fn_or_options
-                .coerce_to_object(activation)
-                .ok()
-                .map(|o| o.as_executable().is_some())
-                .unwrap_or(false)
+                .as_callable(activation, None, None)
+                .is_ok()
             {
                 (
-                    Some(fn_or_options.coerce_to_object(activation)?),
+                    Some(fn_or_options.as_object().unwrap()),
                     SortOptions::empty(),
                 )
             } else {
