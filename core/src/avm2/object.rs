@@ -274,7 +274,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let result = self
             .base()
             .get_property_local(multiname, activation)?
-            .coerce_to_object(activation)?;
+            .as_callable(activation, Some(multiname), Some(self.into()))?;
+
         result.call(Some(self.into()), arguments, activation)
     }
 
@@ -292,10 +293,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let obj = self
-                    .base()
-                    .get_slot(slot_id)?
-                    .coerce_to_object(activation)?;
+                let obj = self.base().get_slot(slot_id)?.as_callable(
+                    activation,
+                    Some(multiname),
+                    Some(self.into()),
+                )?;
+
                 obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Method { disp_id }) => {
@@ -328,9 +331,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 }
             }
             Some(Property::Virtual { get: Some(get), .. }) => {
-                let obj = self
-                    .call_method(get, &[], activation)?
-                    .coerce_to_object(activation)?;
+                let obj = self.call_method(get, &[], activation)?.as_callable(
+                    activation,
+                    Some(multiname),
+                    Some(self.into()),
+                )?;
+
                 obj.call(Some(self.into()), arguments, activation)
             }
             Some(Property::Virtual { get: None, .. }) => {
@@ -642,9 +648,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Object<'gc>, Error> {
-        let ctor = self
-            .get_property(multiname, activation)?
-            .coerce_to_object(activation)?;
+        let ctor = self.get_property(multiname, activation)?.as_callable(
+            activation,
+            Some(multiname),
+            Some(self.into()),
+        )?;
 
         ctor.construct(activation, args)
     }
@@ -739,9 +747,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<bool, Error> {
         let type_proto = class
             .get_property(&QName::dynamic_name("prototype").into(), activation)?
-            .coerce_to_object(activation)?;
+            .as_object();
 
-        self.has_prototype_in_chain(type_proto)
+        if let Some(type_proto) = type_proto {
+            self.has_prototype_in_chain(type_proto)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Determine if this object has a given prototype in its prototype chain.

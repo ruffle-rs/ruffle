@@ -138,13 +138,21 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !multiname.contains_public_namespace() {
-            return Err(
-                format!("Non-public property `{:?}` not found on Object", multiname).into(),
-            );
+            return Err(format!(
+                "Non-public property {} not found on Object",
+                multiname.to_qualified_name(activation.context.gc_context)
+            )
+            .into());
         }
 
         let local_name = match multiname.local_name() {
-            None => return Err("Unnamed property not found on Object".into()),
+            None => {
+                return Err(format!(
+                    "Unnamed property {} not found on Object",
+                    multiname.to_qualified_name(activation.context.gc_context)
+                )
+                .into())
+            }
             Some(name) => name,
         };
 
@@ -174,24 +182,36 @@ impl<'gc> ScriptObjectData<'gc> {
         &mut self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc, '_>,
+        activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         if self
             .instance_of()
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            return Err(
-                format!("Cannot set undefined property {:?}", multiname.local_name()).into(),
-            );
+            return Err(format!(
+                "Cannot set undefined property {}",
+                multiname.to_qualified_name(activation.context.gc_context)
+            )
+            .into());
         }
 
         if !multiname.contains_public_namespace() {
-            return Err("Non-public property not found on Object".into());
+            return Err(format!(
+                "Non-public property {} not found on Object",
+                multiname.to_qualified_name(activation.context.gc_context)
+            )
+            .into());
         }
 
         let local_name = match multiname.local_name() {
-            None => return Err("Unnamed property not found on Object".into()),
+            None => {
+                return Err(format!(
+                    "Unnamed property {} not found on Object",
+                    multiname.to_qualified_name(activation.context.gc_context)
+                )
+                .into())
+            }
             Some(name) => name,
         };
 
