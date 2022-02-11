@@ -1,8 +1,7 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Namespace;
-use crate::avm2::names::QName;
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
@@ -570,11 +569,81 @@ impl<'gc> Value<'gc> {
         PrimitiveObject::from_primitive(*self, activation)
     }
 
+    /// Coerce the value to an object, and report an error relating to object
+    /// receivers being null or undefined otherwise.
+    ///
+    /// If the `name` parameter is provided, the error will indicate the object
+    /// property being interacted with.
+    pub fn coerce_to_receiver(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: Option<&Multiname<'gc>>,
+    ) -> Result<Object<'gc>, Error> {
+        self.coerce_to_object(activation).map_err(|_| {
+            if let Some(name) = name {
+                format!(
+                    "Cannot access property {} of null or undefined",
+                    name.to_qualified_name(activation.context.gc_context)
+                )
+                .into()
+            } else {
+                "Cannot access properties of null or undefined".into()
+            }
+        })
+    }
+
     pub fn as_object(&self) -> Option<Object<'gc>> {
         match self {
             Value::Object(o) => Some(*o),
             _ => None,
         }
+    }
+
+    /// Unwrap the value's object, if present, and otherwise report an error
+    /// if the value is not a callable object (class or function).
+    ///
+    /// This is also suitable for constructors (with the exception of
+    /// `DispatchObject`, which user code shouldn't be able to access).
+    ///
+    /// The `name` parameter allows inclusion of the name used to look up the
+    /// callable in the resulting error, if provided.
+    ///
+    /// The `receiver` parameter allows inclusion of the type of the receiver
+    /// in the error message, if provided.
+    pub fn as_callable(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        name: Option<&Multiname<'gc>>,
+        receiver: Option<Object<'gc>>,
+    ) -> Result<Object<'gc>, Error> {
+        self.as_object()
+            .filter(|o| o.as_class_object().is_some() || o.as_executable().is_some())
+            .ok_or_else(|| {
+                if let Some(receiver) = receiver {
+                    if let Some(name) = name {
+                        format!(
+                            "Cannot call null or undefined method {} of class {}",
+                            name.to_qualified_name(activation.context.gc_context),
+                            receiver.instance_of_class_name(activation.context.gc_context)
+                        )
+                        .into()
+                    } else {
+                        format!(
+                            "Cannot call null or undefined method of class {}",
+                            receiver.instance_of_class_name(activation.context.gc_context)
+                        )
+                        .into()
+                    }
+                } else if let Some(name) = name {
+                    format!(
+                        "Cannot call null or undefined function {}",
+                        name.to_qualified_name(activation.context.gc_context)
+                    )
+                    .into()
+                } else {
+                    "Cannot call null or undefined function".into()
+                }
+            })
     }
 
     /// Coerce the value to another value by type name.

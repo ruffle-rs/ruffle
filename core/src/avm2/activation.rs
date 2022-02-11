@@ -238,6 +238,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
+    /// Resolves a class definition as per `resolve_definition`, and yield an
+    /// error relating to types if the class does not exist.
+    pub fn resolve_class(&mut self, name: &Multiname<'gc>) -> Result<ClassObject<'gc>, Error> {
+        self.resolve_definition(name)?
+            .and_then(|maybe| maybe.as_object())
+            .and_then(|o| o.as_class_object())
+            .ok_or_else(|| format!("Attempted to resolve nonexistent type {:?}", name).into())
+    }
+
     /// Resolve a type name to a class.
     ///
     /// This returns an error if a type is named but does not exist; or if the
@@ -626,6 +635,25 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// this yields `None`.
     pub fn subclass_object(&self) -> Option<ClassObject<'gc>> {
         self.subclass_object
+    }
+
+    /// Get the superclass of the class that defined the currently-executing
+    /// method, if it exists.
+    ///
+    /// If the currently-executing method is not part of an ES4 class, or the
+    /// class does not have a superclass, then this yields an error. The `name`
+    /// parameter allows you to provide the name of a property you were
+    /// attempting to access on the object.
+    pub fn superclass_object(&self, name: &Multiname<'gc>) -> Result<ClassObject<'gc>, Error> {
+        self.subclass_object
+            .and_then(|bc| bc.superclass_object())
+            .ok_or_else(|| {
+                format!(
+                    "Cannot call supermethod (void) {} without a superclass",
+                    name.to_qualified_name(self.context.gc_context)
+                )
+                .into()
+            })
     }
 
     /// Retrieve a int from the current constant pool.
