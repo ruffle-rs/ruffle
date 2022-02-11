@@ -61,6 +61,7 @@ mod xml;
 mod xml_node;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
+    "trace" => method(trace; DONT_ENUM);
     "isFinite" => method(is_finite; DONT_ENUM);
     "isNaN" => method(is_nan; DONT_ENUM);
     "parseInt" => method(parse_int; DONT_ENUM);
@@ -76,6 +77,22 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
 };
+
+pub fn trace<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // Unlike `Action::Trace`, `_global.trace` always coerces
+    // undefined to "" in SWF6 and below. It also doesn't log
+    // anything outside of the Flash editor's trace window.
+    let out = args
+        .get(0)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
+    activation.context.avm_trace(&out.to_utf8_lossy());
+    Ok(Value::Undefined)
+}
 
 pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
