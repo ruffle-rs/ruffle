@@ -23,41 +23,21 @@ pub struct XmlNodeObjectData<'gc> {
 }
 
 impl<'gc> XmlNodeObject<'gc> {
-    /// Construct a new XML node and object pair.
-    pub fn empty_node(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        let mut xml_node = XmlNode::new_text(gc_context, AvmString::default());
-        let base_object = ScriptObject::object(gc_context, proto);
-        let object = XmlNodeObject(GcCell::allocate(
-            gc_context,
-            XmlNodeObjectData {
-                base: base_object,
-                node: xml_node,
-            },
-        ))
-        .into();
-
-        xml_node.introduce_script_object(gc_context, object);
-
-        object
-    }
-
     /// Construct an XmlNodeObject for an already existing node.
     pub fn from_xml_node(
-        activation: &mut Activation<'_, 'gc, '_>,
-        xml_node: XmlNode<'gc>,
-    ) -> Object<'gc> {
-        let proto = activation.context.avm1.prototypes.xml_node;
-        Self(GcCell::allocate(
-            activation.context.gc_context,
+        gc_context: MutationContext<'gc, '_>,
+        mut node: XmlNode<'gc>,
+        proto: Option<Object<'gc>>,
+    ) -> Self {
+        let object = Self(GcCell::allocate(
+            gc_context,
             XmlNodeObjectData {
-                base: ScriptObject::object(activation.context.gc_context, Some(proto)),
-                node: xml_node,
+                base: ScriptObject::object(gc_context, proto),
+                node,
             },
-        ))
-        .into()
+        ));
+        node.introduce_script_object(gc_context, object.into());
+        object
     }
 }
 
@@ -79,10 +59,12 @@ impl<'gc> TObject<'gc> for XmlNodeObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(XmlNodeObject::empty_node(
+        Ok(Self::from_xml_node(
             activation.context.gc_context,
+            XmlNode::new_text(activation.context.gc_context, AvmString::default()),
             Some(this),
-        ))
+        )
+        .into())
     }
 
     fn as_xml_node(&self) -> Option<XmlNode<'gc>> {

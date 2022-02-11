@@ -416,8 +416,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xmlnode_proto = XmlNodeObject::empty_node(gc_context, Some(proto));
-    let object = xmlnode_proto.as_script_object().unwrap();
+    let node = XmlNode::new_text(gc_context, AvmString::default());
+    let xml_node_proto = XmlNodeObject::from_xml_node(gc_context, node, Some(proto));
+    let object = xml_node_proto.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
-    xmlnode_proto
+    xml_node_proto.into()
 }
