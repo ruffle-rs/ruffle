@@ -209,13 +209,15 @@ pub fn to_locale_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     join_inner(act, this, &[",".into()], |v, activation| {
-        let o = v.coerce_to_object(activation)?;
-
-        o.call_property(
-            &QName::new(Namespace::public(), "toLocaleString").into(),
-            &[],
-            activation,
-        )
+        if let Ok(o) = v.coerce_to_object(activation) {
+            o.call_property(
+                &QName::new(Namespace::public(), "toLocaleString").into(),
+                &[],
+                activation,
+            )
+        } else {
+            Ok(v)
+        }
     })
 }
 
@@ -354,13 +356,8 @@ pub fn for_each<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -384,13 +381,8 @@ pub fn map<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -418,13 +410,8 @@ pub fn filter<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut new_array = ArrayStorage::new(0);
         let mut iter = ArrayIter::new(activation, this)?;
 
@@ -456,13 +443,8 @@ pub fn every<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -494,13 +476,8 @@ pub fn some<'gc>(
             .get(0)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
-        let receiver = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Null)
-            .coerce_to_object(activation)
-            .ok();
+            .as_callable(activation, None, None)?;
+        let receiver = args.get(1).cloned().unwrap_or(Value::Null).as_object();
         let mut iter = ArrayIter::new(activation, this)?;
 
         while let Some(r) = iter.next(activation) {
@@ -970,7 +947,7 @@ fn extract_array_values<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<Option<Vec<Value<'gc>>>, Error> {
-    let object = value.coerce_to_object(activation).ok();
+    let object = value.as_object();
     let holey_vec = if let Some(object) = object {
         if let Some(field_array) = object.as_array_storage() {
             field_array.clone()
@@ -1002,7 +979,7 @@ pub fn sort<'gc>(
                     args.get(0)
                         .cloned()
                         .unwrap_or(Value::Undefined)
-                        .coerce_to_object(activation)?,
+                        .as_callable(activation, None, None)?,
                 ),
                 SortOptions::from_bits_truncate(
                     args.get(1)
@@ -1167,13 +1144,13 @@ pub fn sort_on<'gc>(
                 first_option,
                 constrain(|activation, a, b| {
                     for (field_name, options) in field_names.iter().zip(options.iter()) {
-                        let a_object = a.coerce_to_object(activation)?;
+                        let a_object = a.coerce_to_receiver(activation, None)?;
                         let a_field = a_object.get_property(
                             &QName::new(Namespace::public(), *field_name).into(),
                             activation,
                         )?;
 
-                        let b_object = b.coerce_to_object(activation)?;
+                        let b_object = b.coerce_to_receiver(activation, None)?;
                         let b_field = b_object.get_property(
                             &QName::new(Namespace::public(), *field_name).into(),
                             activation,
