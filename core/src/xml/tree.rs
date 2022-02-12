@@ -8,13 +8,11 @@ use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use crate::xml::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
-use quick_xml::events::attributes::Attribute;
-use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
-use quick_xml::Writer;
+use quick_xml::escape::escape;
+use quick_xml::events::{BytesStart, BytesText};
 use smallvec::alloc::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
-use std::io::{Cursor, Write};
 use std::mem::swap;
 
 /// Represents a node in the XML tree.
@@ -828,80 +826,67 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Convert the given node to a string of UTF-8 encoded XML.
-    pub fn into_string(self) -> Result<String, Error> {
-        let mut buf = Vec::new();
-        let mut writer = Writer::new(Cursor::new(&mut buf));
-        self.write_node_to_event_writer(&mut writer)?;
-        Ok(String::from_utf8(buf)?)
+    pub fn into_string(self) -> WString {
+        let mut result = WString::new();
+        self.write_node_to_string(&mut result);
+        result
     }
 
-    /// Write the contents of this node, including its children, to the given writer.
-    fn write_node_to_event_writer<W>(self, writer: &mut Writer<W>) -> Result<(), Error>
-    where
-        W: Write,
-    {
-        // TODO: we convert all strings to utf8, replacing unpaired surrogates by the replacement char.
+    /// Write the contents of this node, including its children, to the given string.
+    fn write_node_to_string(self, result: &mut WString) {
+        // TODO: we convert some strings to utf8, replacing unpaired surrogates by the replacement char.
         // It is correct?
 
         let children: Vec<_> = self.children().collect();
-        let children_len = children.len();
 
         match &*self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => Ok(()),
+            XmlNodeData::DocumentRoot { .. } => {}
             XmlNodeData::Element {
                 tag_name,
                 attributes,
                 ..
             } => {
-                let mut node_name = tag_name.to_utf8_lossy();
-                if children_len == 0 {
-                    let mut n = node_name.into_owned();
-                    n.push(' ');
-                    node_name = n.into();
-                }
-                let mut bs = match node_name {
-                    Cow::Borrowed(name) => BytesStart::borrowed_name(name.as_bytes()),
-                    Cow::Owned(name) => BytesStart::owned_name(name),
-                };
+                result.push_byte(b'<');
+                result.push_str(tag_name);
+
                 for (key, value) in attributes {
-                    bs.push_attribute(Attribute::from((
-                        key.to_utf8_lossy().as_ref(),
-                        value.to_utf8_lossy().as_ref(),
-                    )));
+                    result.push_byte(b' ');
+                    result.push_str(key);
+                    result.push_str(WStr::from_units(b"=\""));
+                    let encoded_value = value.to_utf8_lossy();
+                    let escaped_value = escape(encoded_value.as_bytes());
+                    result.push_str(WStr::from_units(&*escaped_value));
+                    result.push_byte(b'"');
                 }
 
-                if children_len > 0 {
-                    writer.write_event(&Event::Start(bs))
+                if children.is_empty() {
+                    result.push_str(WStr::from_units(b" />"));
                 } else {
-                    writer.write_event(&Event::Empty(bs))
+                    result.push_byte(b'>');
                 }
             }
-            XmlNodeData::Text { contents, .. } => writer.write_event(&Event::Text(
-                BytesText::from_plain_str(&contents.to_utf8_lossy()),
-            )),
-        }?;
+            XmlNodeData::Text { contents, .. } => {
+                let encoded = contents.to_utf8_lossy();
+                let escaped = escape(encoded.as_bytes());
+                result.push_str(WStr::from_units(&*escaped));
+            }
+        }
 
-        for child in children {
-            child.write_node_to_event_writer(writer)?;
+        for child in &children {
+            child.write_node_to_string(result);
         }
 
         match &*self.0.read() {
-            XmlNodeData::DocumentRoot { .. } => Ok(()),
+            XmlNodeData::DocumentRoot { .. } => {}
             XmlNodeData::Element { tag_name, .. } => {
-                if children_len > 0 {
-                    let bs = match tag_name.to_utf8_lossy() {
-                        Cow::Borrowed(name) => BytesEnd::borrowed(name.as_bytes()),
-                        Cow::Owned(name) => BytesEnd::owned(name.into()),
-                    };
-                    writer.write_event(&Event::End(bs))
-                } else {
-                    Ok(())
+                if !children.is_empty() {
+                    result.push_str(WStr::from_units(b"</"));
+                    result.push_str(tag_name);
+                    result.push_byte(b'>');
                 }
             }
-            XmlNodeData::Text { .. } => Ok(()),
-        }?;
-
-        Ok(())
+            XmlNodeData::Text { .. } => {}
+        }
     }
 }
 
