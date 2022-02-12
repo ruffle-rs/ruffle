@@ -106,12 +106,8 @@ fn apply<'gc>(
         .or_else(|| activation.global_scope());
 
     if let Some(func) = func {
-        let arg_array = args
-            .get(1)
-            .cloned()
-            .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation);
-        let resolved_args = if let Ok(arg_array) = arg_array {
+        let arg_array = args.get(1).cloned().unwrap_or(Value::Undefined).as_object();
+        let resolved_args = if let Some(arg_array) = arg_array {
             let arg_storage: Vec<Option<Value<'gc>>> = arg_array
                 .as_array_storage()
                 .map(|a| a.iter().collect())
@@ -162,7 +158,8 @@ fn set_prototype<'gc>(
             let new_proto = args
                 .get(0)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation)?;
+                .as_object()
+                .ok_or("Cannot set prototype of class to null or undefined")?;
             function.set_prototype(new_proto, activation.context.gc_context);
         }
     }
