@@ -781,7 +781,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         let instruction_start = reader.pos(full_data);
         let op = reader.read_op();
-        if let Ok(Some(op)) = op {
+        if let Ok(op) = op {
             avm_debug!(self.avm2(), "Opcode: {:?}", op);
 
             let result = match op {
@@ -971,9 +971,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 return Err(e);
             }
             result
-        } else if let Ok(None) = op {
-            log::error!("Unknown opcode!");
-            Err("Unknown opcode!".into())
         } else if let Err(e) = op {
             log::error!("Parse error: {:?}", e);
             Err(e.into())

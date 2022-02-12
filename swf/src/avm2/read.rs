@@ -501,7 +501,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_op(&mut self) -> Result<Option<Op>> {
+    pub fn read_op(&mut self) -> Result<Op> {
         use crate::avm2::opcode::OpCode;
         use num_traits::FromPrimitive;
 
@@ -858,7 +858,7 @@ impl<'a> Reader<'a> {
             OpCode::URShift => Op::URShift,
         };
 
-        Ok(Some(op))
+        Ok(op)
     }
 
     fn read_exception(&mut self) -> Result<Exception> {
