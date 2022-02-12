@@ -211,16 +211,7 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        let result = node.into_string();
-
-        return Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            result.unwrap_or_else(|e| {
-                avm_warn!(activation, "XMLNode toString failed: {}", e);
-                "".to_string()
-            }),
-        )
-        .into());
+        return Ok(AvmString::new(activation.context.gc_context, node.into_string()).into());
     }
 
     Ok("".into())

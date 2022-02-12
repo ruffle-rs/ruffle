@@ -80,10 +80,10 @@ fn serialize_value<'gc>(
                 let length = o.length(activation).unwrap();
                 Some(AmfValue::ECMAArray(vec![], values, length as u32))
             } else if let Some(xml_node) = o.as_xml_node() {
-                xml_node
-                    .into_string()
-                    .map(|xml_string| AmfValue::XML(xml_string, true))
-                    .ok()
+                Some(AmfValue::XML(
+                    xml_node.into_string().to_utf8_lossy().into_owned(),
+                    true,
+                ))
             } else if let Some(date) = o.as_date_object() {
                 date.date_time()
                     .map(|date_time| AmfValue::Date(date_time.timestamp_millis() as f64, None))
