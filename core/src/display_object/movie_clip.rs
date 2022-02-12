@@ -555,13 +555,17 @@ impl<'gc> MovieClip<'gc> {
             let domain = library.avm2_domain();
             let class_object = domain
                 .get_defined_value(&mut activation, name)
-                .and_then(|v| v.coerce_to_object(&mut activation))
                 .and_then(|v| {
-                    v.as_class_object().ok_or_else(|| {
-                        "Attempted to assign a non-class to symbol"
-                            .to_string()
+                    v.as_object()
+                        .and_then(|o| o.as_class_object())
+                        .ok_or_else(|| {
+                            format!(
+                                "Attempted to assign a non-class {} to symbol {}",
+                                class_name,
+                                name.to_qualified_name(activation.context.gc_context)
+                            )
                             .into()
-                    })
+                        })
                 });
 
             match class_object {
