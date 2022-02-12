@@ -63,7 +63,7 @@ pub fn add_event_listener<'gc>(
             .get(1)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
+            .as_callable(activation, None, None)?;
         let use_capture = args
             .get(2)
             .cloned()
@@ -109,7 +109,7 @@ pub fn remove_event_listener<'gc>(
             .get(1)
             .cloned()
             .unwrap_or(Value::Undefined)
-            .coerce_to_object(activation)?;
+            .as_callable(activation, None, None)?;
         let use_capture = args
             .get(2)
             .cloned()
@@ -186,8 +186,7 @@ pub fn will_trigger<'gc>(
                 &QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target").into(),
                 activation,
             )?
-            .coerce_to_object(activation)
-            .ok()
+            .as_object()
             .unwrap_or(this);
 
         if let Some(parent) = parent_of(target) {
@@ -204,18 +203,14 @@ pub fn dispatch_event<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let event = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_object(activation)?;
+    let event = args.get(0).cloned().unwrap_or(Value::Undefined).as_object();
 
-    if event.as_event().is_none() {
+    if event.map(|o| o.as_event().is_none()).unwrap_or(true) {
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
     if let Some(this) = this {
-        Ok(dispatch_event_internal(activation, this, event)?.into())
+        Ok(dispatch_event_internal(activation, this, event.unwrap())?.into())
     } else {
         Ok(false.into())
     }
@@ -240,9 +235,10 @@ pub fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     let object_proto = activation.avm2().prototypes().object;
+    let name = QName::dynamic_name("toString").into();
     object_proto
-        .get_property(&QName::dynamic_name("toString").into(), activation)?
-        .coerce_to_object(activation)?
+        .get_property(&name, activation)?
+        .as_callable(activation, Some(&name), Some(object_proto))?
         .call(this, args, activation)
 }
 
