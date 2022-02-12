@@ -292,8 +292,8 @@ fn replace<'gc>(
         let replacement = args.get(1).unwrap_or(&Value::Undefined);
 
         if replacement
-            .coerce_to_object(activation)?
-            .as_function_object()
+            .as_object()
+            .and_then(|o| o.as_function_object())
             .is_some()
         {
             log::warn!("string.replace(_, function) - not implemented");
@@ -306,10 +306,15 @@ fn replace<'gc>(
             return Err("NotImplemented".into());
         }
 
-        if let Some(mut regexp) = pattern
-            .coerce_to_object(activation)?
-            .as_regexp_mut(activation.context.gc_context)
+        if pattern
+            .as_object()
+            .map(|o| o.as_regexp().is_some())
+            .unwrap_or(false)
         {
+            let regexp_object = pattern.as_object().unwrap();
+            let mut regexp = regexp_object
+                .as_regexp_mut(activation.context.gc_context)
+                .unwrap();
             let mut ret = WString::new();
             let mut start = 0;
 
@@ -404,9 +409,9 @@ fn split<'gc>(
             );
         }
         if delimiter
-            .coerce_to_object(activation)?
-            .as_regexp()
-            .is_some()
+            .as_object()
+            .map(|o| o.as_regexp().is_some())
+            .unwrap_or(false)
         {
             log::warn!("string.split(regex) - not implemented");
         }
