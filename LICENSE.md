@@ -504,6 +504,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [regex](https://github.com/rust-lang/regex) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 The Rust Project Developers  | 
 | [regex-automata](https://github.com/BurntSushi/regex-automata) | [MIT](#MIT)/[Unlicense](#Unlicense) | Copyright (c) 2015 Andrew Gallant  | 
 | [regex-syntax](https://github.com/rust-lang/regex) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 The Rust Project Developers  | 
+| [rfd](https://github.com/PolyMeilex/rfd) | [MIT](#MIT) | Copyright (c) 2022 Bartłomiej Maryńczak  | 
 | [ring](https://github.com/briansmith/ring) |  | Copyright 2015-2016 Brian Smith. | 
 | [rle-decode-fast](https://github.com/WanzenBug/rle-decode-helper) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright 2019 Moritz "WanzenBug" Wanzenböck  | 
 | [rust-argon2](https://github.com/sru-systems/rust-argon2) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Martijn Rijkeboer <mrr@sru-systems.com>  | 
