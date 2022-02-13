@@ -16,7 +16,7 @@ enum-map = "2.0.1"
 
 # desktop
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures]
-version = "0.3.19"
+version = "0.3.21"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.image]
 version = "0.23.14"
