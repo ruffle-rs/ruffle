@@ -18,6 +18,7 @@ use crate::custom_event::RuffleEvent;
 use crate::executor::GlutinAsyncExecutor;
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
+use rfd::FileDialog;
 use ruffle_core::{
     backend::{
         audio::{AudioBackend, NullAudioBackend},
@@ -39,7 +40,6 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tinyfiledialogs::open_file_dialog;
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
@@ -163,10 +163,13 @@ fn load_movie_from_path(
 }
 
 fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn std::error::Error>> {
-    let result = open_file_dialog("Load a Flash File", "", Some((&["*.swf"], ".swf")));
+    let result = FileDialog::new()
+        .add_filter(".swf", &["swf"])
+        .set_title("Load a Flash File")
+        .pick_file();
 
     let selected: PathBuf = match result {
-        Some(file_path) => file_path.into(),
+        Some(file_path) => file_path,
         None => return Ok(None),
     };
 
