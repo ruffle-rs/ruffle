@@ -565,7 +565,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [time](https://github.com/time-rs/time) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2019 Jacob Pratt  | 
 | [time-macros](https://github.com/time-rs/time) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2019 Jacob Pratt  | 
 | [time-macros-impl](https://github.com/time-rs/time) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2019 Jacob Pratt  | 
-| [tinyfiledialogs](https://github.com/jdm/tinyfiledialogs-rs) | zlib-acknowledgement | Copyright (c) Guillaume Vareille <vareille@users.sourceforge.net>, Josh Matthews <josh@joshmatthews.net> | 
 | [tinyvec](https://github.com/Lokathor/tinyvec) | [Apache-2.0](#Apache-20)/[MIT](#MIT)/[Zlib](#Zlib) | Copyright (c) Lokathor <zefria@gmail.com> | 
 | [tinyvec_macros](https://github.com/Soveu/tinyvec_macros) | [Apache-2.0](#Apache-20)/[MIT](#MIT)/[Zlib](#Zlib) | Copyright (c) 2020 Soveu  | 
 | [toml](https://github.com/alexcrichton/toml-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
