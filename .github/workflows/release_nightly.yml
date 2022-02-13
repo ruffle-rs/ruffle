@@ -118,7 +118,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev
 
       - name: Cargo build
         uses: actions-rs/cargo@v1
