@@ -12,7 +12,7 @@ ruffle_render_common_tess = { path = "../common_tess" }
 bytemuck = { version = "1.7.3", features = ["derive"] }
 raw-window-handle = "0.4"
 clap = { version = "3.0.6", features = ["derive"], optional = true }
-enum-map = "2.0.0"
+enum-map = "2.0.1"
 
 # desktop
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures]
