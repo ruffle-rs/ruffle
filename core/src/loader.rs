@@ -4,8 +4,11 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
+use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType};
-use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
+use crate::display_object::{
+    Bitmap, DisplayObject, MorphShape, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -14,10 +17,44 @@ use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use std::sync::{Arc, Mutex, Weak};
+use swf::read::read_compression_type;
 use thiserror::Error;
 use url::form_urlencoded;
 
 pub type Handle = Index;
+
+/// Enumeration of all content types that `Loader` can handle.
+///
+/// This is a superset of `JpegTagFormat`.
+#[derive(PartialEq)]
+pub enum ContentType {
+    Swf,
+    Jpeg,
+    Png,
+    Gif,
+    Unknown,
+}
+
+impl From<JpegTagFormat> for ContentType {
+    fn from(jtf: JpegTagFormat) -> Self {
+        match jtf {
+            JpegTagFormat::Jpeg => Self::Jpeg,
+            JpegTagFormat::Png => Self::Png,
+            JpegTagFormat::Gif => Self::Gif,
+            JpegTagFormat::Unknown => Self::Unknown,
+        }
+    }
+}
+
+impl ContentType {
+    fn sniff(data: &[u8]) -> ContentType {
+        if read_compression_type(data).is_ok() {
+            ContentType::Swf
+        } else {
+            determine_jpeg_tag_format(data).into()
+        }
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -41,6 +78,9 @@ pub enum Error {
 
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
+
+    #[error("Invalid data")]
+    InvalidData,
 
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?
@@ -389,12 +429,15 @@ impl<'gc> Loader<'gc> {
             })?;
 
             if let Ok(data) = fetch.await {
-                let movie = Arc::new(SwfMovie::from_data(
-                    &data,
-                    Some(url.into_owned()),
-                    loader_url,
-                )?);
-                if replacing_root_movie {
+                let sniffed_type = ContentType::sniff(&data);
+                let length = data.len();
+
+                //TODO: Does replacing the root movie with an image require any
+                //special work?
+                if replacing_root_movie && sniffed_type == ContentType::Swf {
+                    let movie =
+                        SwfMovie::from_data(&data, Some(url.into_owned()), loader_url.clone())?;
+                    let movie = Arc::new(movie);
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
                 }
@@ -410,46 +453,83 @@ impl<'gc> Loader<'gc> {
                         _ => unreachable!(),
                     };
 
-                    let mut activation = Avm2Activation::from_nothing(uc.reborrow());
-                    let parent_domain = activation.avm2().global_domain();
-                    let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
-                    uc.library
-                        .library_for_movie_mut(movie.clone())
-                        .set_avm2_domain(domain);
+                    match sniffed_type {
+                        ContentType::Swf => {
+                            let movie = Arc::new(SwfMovie::from_data(
+                                &data,
+                                Some(url.into_owned()),
+                                loader_url,
+                            )?);
 
-                    if let Some(broadcaster) = broadcaster {
-                        Avm1::run_stack_frame_for_method(
-                            clip,
-                            broadcaster,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "broadcastMessage".into(),
-                            &[
-                                "onLoadProgress".into(),
-                                clip.object(),
-                                data.len().into(),
-                                data.len().into(),
-                            ],
-                        );
-                    }
-
-                    if let Some(mut mc) = clip.as_movie_clip() {
-                        mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
-                        mc.post_instantiation(uc, None, Instantiator::Movie, false);
-
-                        let mut morph_shapes = fnv::FnvHashMap::default();
-                        mc.preload(uc, &mut morph_shapes);
-
-                        // Finalize morph shapes.
-                        for (id, static_data) in morph_shapes {
-                            let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                            let parent_domain = activation.avm2().global_domain();
+                            let domain = Avm2Domain::movie_domain(&mut activation, parent_domain);
                             uc.library
                                 .library_for_movie_mut(movie.clone())
-                                .register_character(
-                                    id,
-                                    crate::character::Character::MorphShape(morph_shape),
+                                .set_avm2_domain(domain);
+
+                            if let Some(broadcaster) = broadcaster {
+                                Avm1::run_stack_frame_for_method(
+                                    clip,
+                                    broadcaster,
+                                    NEWEST_PLAYER_VERSION,
+                                    uc,
+                                    "broadcastMessage".into(),
+                                    &[
+                                        "onLoadProgress".into(),
+                                        clip.object(),
+                                        data.len().into(),
+                                        data.len().into(),
+                                    ],
                                 );
+                            }
+
+                            if let Some(mut mc) = clip.as_movie_clip() {
+                                mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
+                                mc.post_instantiation(uc, None, Instantiator::Movie, false);
+
+                                let mut morph_shapes = fnv::FnvHashMap::default();
+                                mc.preload(uc, &mut morph_shapes);
+
+                                // Finalize morph shapes.
+                                for (id, static_data) in morph_shapes {
+                                    let morph_shape = MorphShape::new(uc.gc_context, static_data);
+                                    uc.library
+                                        .library_for_movie_mut(movie.clone())
+                                        .register_character(
+                                            id,
+                                            crate::character::Character::MorphShape(morph_shape),
+                                        );
+                                }
+                            }
                         }
+                        ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+                            let bitmap = uc.renderer.register_bitmap_jpeg_2(&data)?;
+                            let bitmap_obj =
+                                Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
+
+                            if let Some(broadcaster) = broadcaster {
+                                Avm1::run_stack_frame_for_method(
+                                    clip,
+                                    broadcaster,
+                                    NEWEST_PLAYER_VERSION,
+                                    uc,
+                                    "broadcastMessage".into(),
+                                    &[
+                                        "onLoadProgress".into(),
+                                        clip.object(),
+                                        length.into(),
+                                        length.into(),
+                                    ],
+                                );
+                            }
+
+                            if let Some(mc) = clip.as_movie_clip() {
+                                //TODO: Somehow replace with Bitmap?
+                                mc.replace_at_depth(uc, bitmap_obj.into(), 1);
+                            }
+                        }
+                        ContentType::Unknown => return Err(Error::InvalidData),
                     }
 
                     if let Some(broadcaster) = broadcaster {
@@ -471,7 +551,7 @@ impl<'gc> Loader<'gc> {
                     };
 
                     Ok(())
-                })
+                })?; //TODO: content sniffing errors need to be reported somehow
             } else {
                 //TODO: Inspect the fetch error.
                 //This requires cooperation from the backend to send abstract
@@ -511,8 +591,10 @@ impl<'gc> Loader<'gc> {
                     };
 
                     Ok(())
-                })
+                })?;
             }
+
+            Ok(())
         })
     }
 
