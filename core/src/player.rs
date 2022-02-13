@@ -209,6 +209,7 @@ pub struct Player {
 
     /// The current mouse cursor icon.
     mouse_cursor: MouseCursor,
+    mouse_cursor_needs_check: bool,
 
     system: SystemProperties,
 
@@ -300,6 +301,7 @@ impl Player {
 
             mouse_pos: (Twips::ZERO, Twips::ZERO),
             mouse_cursor: MouseCursor::Arrow,
+            mouse_cursor_needs_check: false,
 
             renderer,
             audio,
@@ -1115,6 +1117,7 @@ impl Player {
     /// Updates the hover state of buttons.
     fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
         let mut new_cursor = self.mouse_cursor;
+        let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
 
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
@@ -1152,11 +1155,35 @@ impl Player {
                 }
             }
 
+            // Update the cursor if the object was removed from the stage.
+            if new_cursor != MouseCursor::Arrow {
+                let object_removed =
+                    context.mouse_over_object.is_none() && context.mouse_down_object.is_none();
+                if !object_removed {
+                    mouse_cursor_needs_check = false;
+                    if is_mouse_button_changed {
+                        // The object is pressed/released and may be removed immediately, we need to check
+                        // in the next frame if it still exists. If it doesn't, we'll update the cursor.
+                        mouse_cursor_needs_check = true;
+                    }
+                } else if mouse_cursor_needs_check {
+                    mouse_cursor_needs_check = false;
+                    new_cursor = MouseCursor::Arrow;
+                } else if !context.input.is_mouse_down()
+                    && (is_mouse_moved || is_mouse_button_changed)
+                {
+                    // In every other case, the cursor remains until the user interacts with the mouse again.
+                    new_cursor = MouseCursor::Arrow;
+                }
+            } else {
+                mouse_cursor_needs_check = false;
+            }
+
             let cur_over_object = context.mouse_over_object;
             // Check if a new object has been hovered over.
             if !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
-                // and fires "drag" events. Other objects are ignroed.
+                // and fires "drag" events. Other objects are ignored.
                 if context.input.is_mouse_down() {
                     context.mouse_over_object = new_over_object;
                     if let Some(down_object) = context.mouse_down_object {
@@ -1284,6 +1311,7 @@ impl Player {
             self.mouse_cursor = new_cursor;
             self.ui.set_mouse_cursor(new_cursor)
         }
+        self.mouse_cursor_needs_check = mouse_cursor_needs_check;
 
         needs_render
     }
