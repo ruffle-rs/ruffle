@@ -449,16 +449,9 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             )
             .await?;
         let info = adapter.get_info();
-        // Prefer a linear surface format, when available.
-        let surface_format = if info.backend == wgpu::Backend::Gl {
-            // GL often only supports sRGB, so use the adapter's preferred format.
-            surface
-                .and_then(|surface| surface.get_preferred_format(&adapter))
-                .unwrap_or(wgpu::TextureFormat::Bgra8Unorm)
-        } else {
-            wgpu::TextureFormat::Bgra8Unorm
-        };
-
+        let surface_format = surface
+            .and_then(|surface| surface.get_preferred_format(&adapter))
+            .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
         Descriptors::new(device, queue, info, surface_format)
     }
 

@@ -1,7 +1,5 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
-#[cfg(not(target_family = "wasm"))]
-use image::{buffer::ConvertBuffer, Bgra, ImageBuffer, RgbaImage};
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
@@ -124,9 +122,6 @@ pub struct TextureTarget {
 pub struct TextureTargetFrame(wgpu::TextureView);
 
 #[cfg(not(target_family = "wasm"))]
-type BgraImage = ImageBuffer<Bgra<u8>, Vec<u8>>;
-
-#[cfg(not(target_family = "wasm"))]
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
@@ -143,7 +138,7 @@ impl TextureTarget {
             depth_or_array_layers: 1,
         };
         let texture_label = create_debug_label!("Render target texture");
-        let format = wgpu::TextureFormat::Bgra8Unorm;
+        let format = wgpu::TextureFormat::Rgba8Unorm;
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: texture_label.as_deref(),
             size,
@@ -170,7 +165,7 @@ impl TextureTarget {
         }
     }
 
-    pub fn capture(&self, device: &wgpu::Device) -> Option<RgbaImage> {
+    pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
         let buffer_future = self.buffer.slice(..).map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
         match futures::executor::block_on(buffer_future) {
@@ -186,11 +181,10 @@ impl TextureTarget {
                         .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
                 }
 
-                let bgra = BgraImage::from_raw(self.size.width, self.size.height, buffer);
-                let ret = bgra.map(|image| image.convert());
+                let image = image::RgbaImage::from_raw(self.size.width, self.size.height, buffer);
                 drop(map);
                 self.buffer.unmap();
-                ret
+                image
             }
             Err(e) => {
                 log::error!("Unknown error reading capture buffer: {:?}", e);
