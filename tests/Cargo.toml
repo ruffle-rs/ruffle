@@ -10,7 +10,7 @@ edition = "2021"
 futures = "0.3.21"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
-image = "0.23.14"
+image = "0.24.0"
 
 [features]
 # Enable running image comparison tests. This is off by default,
