@@ -47,8 +47,7 @@ jobs:
 
       # Node.js 14 comes with npm 6, but we need npm 7 or newer.
       - name: Upgrade npm
-        # TODO: Temporarily avoid 8.4 due to: https://github.com/npm/cli/issues/4341
-        run: npm install -g npm@8.3
+        run: npm install -g npm
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
