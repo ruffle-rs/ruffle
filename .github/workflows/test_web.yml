@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["14", "16"]
+        node_version: ["16"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         os: [ubuntu-latest, windows-2022]
 
@@ -44,11 +44,6 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: npm
           cache-dependency-path: web/package-lock.json
-
-      # Node.js 14 comes with npm 6, but we need npm 7 or newer.
-      - name: Upgrade npm
-        # TODO: Temporarily avoid 8.4 due to: https://github.com/npm/cli/issues/4341
-        run: npm install -g npm@8.3
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -95,10 +90,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node_version: ["14", "16"]
-        # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        rust_version: [stable]
-        # MIKE: Turning off macOS-latest for now (flaky tests on CI).
+        node_version: ["16"]
+        rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         os: [ubuntu-latest, windows-2022]
 
     steps:
