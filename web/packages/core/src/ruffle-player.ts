@@ -144,6 +144,8 @@ export class RufflePlayer extends HTMLElement {
 
     private isExtension = false;
 
+    private isPlaying = false;
+
     /**
      * Triggered when a movie metadata has been loaded (such as movie width and height).
      *
@@ -613,6 +615,7 @@ export class RufflePlayer extends HTMLElement {
     play(): void {
         if (this.instance) {
             this.instance.play();
+            this.isPlaying = true;
             if (this.playButton) {
                 this.playButton.style.display = "none";
             }
@@ -875,6 +878,7 @@ export class RufflePlayer extends HTMLElement {
     pause(): void {
         if (this.instance) {
             this.instance.pause();
+            this.isPlaying = false;
             if (this.playButton) {
                 this.playButton.style.display = "block";
             }
