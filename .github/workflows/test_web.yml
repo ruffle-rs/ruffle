@@ -33,7 +33,7 @@ jobs:
       matrix:
         node_version: ["14", "16"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-2022]
 
     steps:
       - uses: actions/checkout@v2
@@ -99,7 +99,7 @@ jobs:
         # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         rust_version: [stable]
         # MIKE: Turning off macOS-latest for now (flaky tests on CI).
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-2022]
 
     steps:
       - name: No-op
