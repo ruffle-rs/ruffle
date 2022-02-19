@@ -1,11 +1,8 @@
 //! Garbage-collectable XML DOM impl
 
-mod error;
 mod iterators;
 mod tree;
 
-pub use error::Error;
-pub use error::ParseError;
 pub use tree::XmlNode;
 
 pub const ELEMENT_NODE: u8 = 1;

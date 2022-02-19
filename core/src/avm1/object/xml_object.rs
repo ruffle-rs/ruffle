@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use crate::string::{AvmString, WStr, WString};
-use crate::xml::{Error as XmlError, ParseError, XmlNode};
+use crate::xml::XmlNode;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
 use quick_xml::{Reader, Writer};
@@ -135,7 +135,7 @@ impl<'gc> XmlObject<'gc> {
         data: &WStr,
         process_entity: bool,
         ignore_white: bool,
-    ) -> Result<(), XmlError> {
+    ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
         let mut buf = Vec::new();
@@ -160,7 +160,7 @@ impl<'gc> XmlObject<'gc> {
                     // quick_xml::Error::TextNotFound
                     // quick_xml::Error::EscapeError(_)
                 };
-                ParseError::from_quickxml_error(error)
+                error
             })?;
 
             match event {
@@ -222,14 +222,21 @@ impl<'gc> XmlObject<'gc> {
                     let mut self_write = self.0.write(activation.context.gc_context);
 
                     self_write.has_xmldecl = true;
-                    self_write.version = String::from_utf8(bd.version()?.into_owned())?;
+                    self_write.version = String::from_utf8(bd.version()?.into_owned())
+                        .map_err(|e| quick_xml::Error::Utf8(e.utf8_error()))?;
                     self_write.encoding = if let Some(encoding) = bd.encoding() {
-                        Some(String::from_utf8(encoding?.into_owned())?)
+                        Some(
+                            String::from_utf8(encoding?.into_owned())
+                                .map_err(|e| quick_xml::Error::Utf8(e.utf8_error()))?,
+                        )
                     } else {
                         None
                     };
                     self_write.standalone = if let Some(standalone) = bd.standalone() {
-                        Some(String::from_utf8(standalone?.into_owned())?)
+                        Some(
+                            String::from_utf8(standalone?.into_owned())
+                                .map_err(|e| quick_xml::Error::Utf8(e.utf8_error()))?,
+                        )
                     } else {
                         None
                     };
@@ -244,7 +251,7 @@ impl<'gc> XmlObject<'gc> {
 
     /// Generate a string matching the XML document declaration, if there is
     /// one.
-    pub fn xmldecl_string(self) -> Result<Option<String>, XmlError> {
+    pub fn xmldecl_string(self) -> Result<Option<String>, quick_xml::Error> {
         let self_read = self.0.read();
 
         if self_read.has_xmldecl {
@@ -257,7 +264,9 @@ impl<'gc> XmlObject<'gc> {
             );
             writer.write_event(Event::Decl(bd))?;
 
-            Ok(Some(String::from_utf8(result)?))
+            Ok(Some(
+                String::from_utf8(result).map_err(|e| quick_xml::Error::Utf8(e.utf8_error()))?,
+            ))
         } else {
             Ok(None)
         }
