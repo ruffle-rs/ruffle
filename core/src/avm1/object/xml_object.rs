@@ -9,9 +9,47 @@ use crate::string::{AvmString, WStr, WString};
 use crate::xml::{Error as XmlError, ParseError, XmlNode};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
-use quick_xml::{Error as QXError, Reader, Writer};
+use quick_xml::{Reader, Writer};
 use std::fmt;
 use std::io::Cursor;
+
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+pub enum XmlStatus {
+    /// No error; parse was completed successfully.
+    NoError = 0,
+
+    /// A CDATA section was not properly terminated.
+    #[allow(dead_code)]
+    CdataNotTerminated = -2,
+
+    /// The XML declaration was not properly terminated.
+    DeclNotTerminated = -3,
+
+    /// The DOCTYPE declaration was not properly terminated.
+    #[allow(dead_code)]
+    DoctypeNotTerminated = -4,
+
+    /// A comment was not properly terminated.
+    #[allow(dead_code)]
+    CommentNotTerminated = -5,
+
+    /// An XML element was malformed.
+    ElementMalformed = -6,
+
+    /// Out of memory.
+    OutOfMemory = -7,
+
+    /// An attribute value was not properly terminated.
+    AttributeNotTerminated = -8,
+
+    /// A start-tag was not matched with an end-tag.
+    #[allow(dead_code)]
+    MismatchedStart = -9,
+
+    /// An end-tag was encountered without a matching start-tag.
+    MismatchedEnd = -10,
+}
 
 /// A ScriptObject that is inherently tied to an XML document.
 #[derive(Clone, Copy, Collect)]
@@ -49,7 +87,7 @@ pub struct XmlObjectData<'gc> {
     id_map: ScriptObject<'gc>,
 
     /// The last parse error encountered, if any.
-    last_parse_error: Option<ParseError>,
+    status: XmlStatus,
 }
 
 impl<'gc> XmlObject<'gc> {
@@ -67,7 +105,7 @@ impl<'gc> XmlObject<'gc> {
                 standalone: None,
                 doctype: None,
                 id_map: ScriptObject::bare_object(gc_context),
-                last_parse_error: None,
+                status: XmlStatus::NoError,
             },
         ));
         root.introduce_script_object(gc_context, object.into());
@@ -103,11 +141,27 @@ impl<'gc> XmlObject<'gc> {
         let mut buf = Vec::new();
         let mut open_tags = vec![self.as_node()];
 
-        self.clear_parse_error(activation.context.gc_context);
+        self.0.write(activation.context.gc_context).status = XmlStatus::NoError;
 
         loop {
-            let event =
-                self.log_parse_result(activation.context.gc_context, parser.read_event(&mut buf))?;
+            let event = parser.read_event(&mut buf).map_err(|error| {
+                self.0.write(activation.context.gc_context).status = match error {
+                    quick_xml::Error::UnexpectedEof(_)
+                    | quick_xml::Error::NameWithQuote(_)
+                    | quick_xml::Error::NoEqAfterName(_)
+                    | quick_xml::Error::DuplicatedAttribute(_, _) => XmlStatus::ElementMalformed,
+                    quick_xml::Error::EndEventMismatch { .. } => XmlStatus::MismatchedEnd,
+                    quick_xml::Error::XmlDeclWithoutVersion(_) => XmlStatus::DeclNotTerminated,
+                    quick_xml::Error::UnquotedValue(_) => XmlStatus::AttributeNotTerminated,
+                    _ => XmlStatus::OutOfMemory,
+                    // Not accounted for:
+                    // quick_xml::Error::UnexpectedToken(_)
+                    // quick_xml::Error::UnexpectedBang
+                    // quick_xml::Error::TextNotFound
+                    // quick_xml::Error::EscapeError(_)
+                };
+                ParseError::from_quickxml_error(error)
+            })?;
 
             match event {
                 Event::Start(bs) => {
@@ -229,33 +283,8 @@ impl<'gc> XmlObject<'gc> {
         }
     }
 
-    /// Log the result of an XML parse, saving the error for later inspection
-    /// if necessary.
-    fn log_parse_result<O>(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        maybe_error: Result<O, QXError>,
-    ) -> Result<O, ParseError> {
-        match maybe_error {
-            Ok(v) => Ok(v),
-            Err(e) => {
-                let new_error = ParseError::from_quickxml_error(e);
-
-                self.0.write(gc_context).last_parse_error = Some(new_error.clone());
-
-                Err(new_error)
-            }
-        }
-    }
-
-    /// Get the last parse error within this document, if any.
-    pub fn last_parse_error(self) -> Option<ParseError> {
-        self.0.read().last_parse_error.clone()
-    }
-
-    /// Clear the previous parse error.
-    fn clear_parse_error(self, gc_context: MutationContext<'gc, '_>) {
-        self.0.write(gc_context).last_parse_error = None;
+    pub fn status(self) -> XmlStatus {
+        self.0.read().status
     }
 }
 
