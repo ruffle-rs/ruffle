@@ -252,9 +252,8 @@ impl<'gc> XmlNode<'gc> {
             _ => return Err(Error::CannotAdoptHere),
         };
 
-        child.disown_siblings(mc)?;
-
-        child.adopt_siblings(mc, new_prev, new_next)?;
+        child.disown_siblings(mc);
+        child.adopt_siblings(mc, new_prev, new_next);
 
         Ok(())
     }
@@ -278,19 +277,15 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Set this node's previous sibling.
-    fn set_prev_sibling(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        new_prev: Option<XmlNode<'gc>>,
-    ) -> Result<(), Error> {
+    fn set_prev_sibling(&mut self, mc: MutationContext<'gc, '_>, new_prev: Option<XmlNode<'gc>>) {
         match &mut *self.0.write(mc) {
-            XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
+            XmlNodeData::DocumentRoot { .. } => {
+                log::warn!("Document roots cannot have siblings");
+            }
             XmlNodeData::Element { prev_sibling, .. } | XmlNodeData::Text { prev_sibling, .. } => {
                 *prev_sibling = new_prev
             }
-        };
-
-        Ok(())
+        }
     }
 
     /// Get the next sibling, if this node has one.
@@ -304,19 +299,15 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Set this node's next sibling.
-    fn set_next_sibling(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        new_next: Option<XmlNode<'gc>>,
-    ) -> Result<(), Error> {
+    fn set_next_sibling(&mut self, mc: MutationContext<'gc, '_>, new_next: Option<XmlNode<'gc>>) {
         match &mut *self.0.write(mc) {
-            XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveSiblings),
+            XmlNodeData::DocumentRoot { .. } => {
+                log::warn!("Document roots cannot have siblings");
+            }
             XmlNodeData::Element { next_sibling, .. } | XmlNodeData::Text { next_sibling, .. } => {
                 *next_sibling = new_next
             }
-        };
-
-        Ok(())
+        }
     }
 
     /// Remove node from its current siblings list.
@@ -326,22 +317,20 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// This is the opposite of `adopt_siblings` - the former adds a node to a
     /// new sibling list, and this removes it from the current one.
-    fn disown_siblings(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
+    fn disown_siblings(&mut self, mc: MutationContext<'gc, '_>) {
         let old_prev = self.prev_sibling();
         let old_next = self.next_sibling();
 
         if let Some(mut prev) = old_prev {
-            prev.set_next_sibling(mc, old_next)?;
+            prev.set_next_sibling(mc, old_next);
         }
 
         if let Some(mut next) = old_next {
-            next.set_prev_sibling(mc, old_prev)?;
+            next.set_prev_sibling(mc, old_prev);
         }
 
-        self.set_prev_sibling(mc, None)?;
-        self.set_next_sibling(mc, None)?;
-
-        Ok(())
+        self.set_prev_sibling(mc, None);
+        self.set_next_sibling(mc, None);
     }
 
     /// Unset the parent of this node.
@@ -368,19 +357,17 @@ impl<'gc> XmlNode<'gc> {
         mc: MutationContext<'gc, '_>,
         new_prev: Option<XmlNode<'gc>>,
         new_next: Option<XmlNode<'gc>>,
-    ) -> Result<(), Error> {
+    ) {
         if let Some(mut prev) = new_prev {
-            prev.set_next_sibling(mc, Some(*self))?;
+            prev.set_next_sibling(mc, Some(*self));
         }
 
         if let Some(mut next) = new_next {
-            next.set_prev_sibling(mc, Some(*self))?;
+            next.set_prev_sibling(mc, Some(*self));
         }
 
-        self.set_prev_sibling(mc, new_prev)?;
-        self.set_next_sibling(mc, new_next)?;
-
-        Ok(())
+        self.set_prev_sibling(mc, new_prev);
+        self.set_next_sibling(mc, new_next);
     }
 
     /// Remove node from this node's child list.
@@ -467,7 +454,7 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
             };
 
-            child.disown_siblings(mc)?;
+            child.disown_siblings(mc);
             child.disown_parent(mc)?;
         } else {
             return Err(Error::CantRemoveNonChild);
