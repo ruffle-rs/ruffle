@@ -129,7 +129,7 @@ impl<'gc> Scope<'gc> {
         )
     }
 
-    /// Construct an arbitrary scope
+    /// Construct an arbitrary scope.
     pub fn new(
         parent: GcCell<'gc, Self>,
         class: ScopeClass,
@@ -169,6 +169,11 @@ impl<'gc> Scope<'gc> {
     /// Returns a reference to the parent scope object.
     pub fn parent_cell(&self) -> Option<GcCell<'gc, Scope<'gc>>> {
         self.parent
+    }
+
+    /// Returns the class.
+    pub fn class(&self) -> ScopeClass {
+        self.class
     }
 
     /// Resolve a particular value in the scope chain and the object which this value would expect as its `this` parameter if called.
@@ -224,9 +229,9 @@ impl<'gc> Scope<'gc> {
 
     /// Define a named local variable on the scope.
     ///
-    /// If the property does not already exist on the local scope, it will created.
+    /// If the property does not already exist on the local scope, it will be created.
     /// Otherwise, the existing property will be set to `value`. This does not crawl the scope
-    /// chain. Any proeprties with the same name deeper in the scope chain will be shadowed.
+    /// chain. Any properties with the same name deeper in the scope chain will be shadowed.
     pub fn define_local(
         &self,
         name: AvmString<'gc>,
@@ -250,7 +255,7 @@ impl<'gc> Scope<'gc> {
             .define_value(mc, name, value, Attribute::empty());
     }
 
-    /// Delete a value from scope
+    /// Delete a value from scope.
     pub fn delete(&self, activation: &mut Activation<'_, 'gc, '_>, name: AvmString<'gc>) -> bool {
         if self.locals().has_property(activation, name) {
             return self.locals().delete(activation, name);

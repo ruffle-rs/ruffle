@@ -906,6 +906,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_define_local(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is set (including calling virtual setters).
+        // Though this isn't in the SWF19 spec, dot paths and slash paths are also supported and affect the related
+        // object in the same way as Action::SetVariable.
         let value = self.context.avm1.pop();
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
@@ -916,12 +918,22 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_define_local_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // If the property does not exist on the local object's prototype chain, it is created on the local object.
         // Otherwise, the property is unchanged.
+        // Though this isn't in the SWF19 spec, dot paths and slash paths are also supported and affect the related
+        // object in the same way as Action::SetVariable, if the variable doesn't already exist on the mentioned object.
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
-        let scope = self.scope_cell();
-        if !scope.read().locals().has_property(self, name) {
-            self.define_local(name, Value::Undefined)?;
-        }
+        if !self.in_local_scope() && name.find(b":.".as_ref()).is_some() {
+            if matches!(
+                self.get_variable(name)?,
+                CallableValue::UnCallable(Value::Undefined)
+            ) {
+                self.set_variable(name, Value::Undefined)?;
+            }
+        } else if !self.scope_cell().read().locals().has_property(self, name) {
+            let scope = self.scope;
+            let scope = scope.write(self.context.gc_context);
+            scope.define_local(name, Value::Undefined, self)?;
+        };
         Ok(FrameControl::Continue)
     }
 
@@ -2553,7 +2565,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// it a simple variable name and fall through to the variable case
     /// (i.e. "a/b/c" would be a variable named "a/b/c", not a path).
     ///
-    /// Finally, if none of the above applies, it is a normal variable name resovled via the
+    /// Finally, if none of the above applies, it is a normal variable name resolved via the
     /// scope chain.
     pub fn get_variable(&mut self, path: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
         // Resolve a variable path for a GetVariable action.
@@ -2764,6 +2776,24 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.scope = scope;
     }
 
+    /// Whether this activation operates in a local scope.
+    pub fn in_local_scope(&self) -> bool {
+        let mut current_scope = Some(self.scope);
+        while let Some(scope) = current_scope {
+            match scope.read().class() {
+                scope::ScopeClass::Local => {
+                    return true;
+                }
+                scope::ScopeClass::Target => {
+                    return false;
+                }
+                _ => (),
+            };
+            current_scope = scope.read().parent_cell();
+        }
+        false
+    }
+
     /// Gets the base clip of this stack frame.
     /// This is the movie clip that contains the executing bytecode.
     pub fn base_clip(&self) -> DisplayObject<'gc> {
@@ -2786,17 +2816,23 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Define a local property on the activation.
     ///
-    /// If the property does not already exist on the local scope, it will created.
-    /// Otherwise, the existing property will be set to `value`. This does not crawl the scope
-    /// chain. Any properties deeper in the scope chain with the same name will be shadowed.
+    /// If this activation operates in a local scope and `name` is a path string, we will resolve
+    /// as a target path and set the variable on the mentioned object to `value`.
+    /// Otherwise, we will create or set the property specified by `name` to `value` on the local
+    /// scope. This does not crawl the scope chain. Any properties deeper in the scope chain with
+    /// the same name will be shadowed.
     pub fn define_local(
         &mut self,
         name: AvmString<'gc>,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let scope = self.scope;
-        let scope = scope.write(self.context.gc_context);
-        scope.define_local(name, value, self)
+        if !self.in_local_scope() && name.find(b":.".as_ref()).is_some() {
+            self.set_variable(name, value)
+        } else {
+            let scope = self.scope;
+            let scope = scope.write(self.context.gc_context);
+            scope.define_local(name, value, self)
+        }
     }
 
     /// Create a local property on the activation.
