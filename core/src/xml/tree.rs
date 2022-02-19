@@ -6,7 +6,6 @@ use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::{Object, TObject};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
-use crate::xml::Error;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
 use quick_xml::events::{BytesStart, BytesText};
@@ -141,7 +140,7 @@ impl<'gc> XmlNode<'gc> {
         mc: MutationContext<'gc, '_>,
         bs: BytesStart<'a>,
         process_entity: bool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, quick_xml::Error> {
         let tag_name = AvmString::new_utf8_bytes(mc, bs.name())?;
         let mut attributes = BTreeMap::new();
 
@@ -181,7 +180,7 @@ impl<'gc> XmlNode<'gc> {
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
         process_entity: bool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, quick_xml::Error> {
         let contents = if process_entity {
             bt.unescaped()?
         } else {
