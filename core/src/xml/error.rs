@@ -27,9 +27,6 @@ pub enum Error {
     #[error("Document roots cannot have parents")]
     RootCantHaveParent,
 
-    #[error("Document roots cannot have siblings")]
-    RootCantHaveSiblings,
-
     #[error("Text node has no child nodes!")]
     TextNodeCantHaveChildren,
 
