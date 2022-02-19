@@ -120,7 +120,7 @@ impl<'gc> XmlObject<'gc> {
                     open_tags
                         .last_mut()
                         .unwrap()
-                        .append_child(activation.context.gc_context, child)?;
+                        .append_child(activation.context.gc_context, child);
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
@@ -133,7 +133,7 @@ impl<'gc> XmlObject<'gc> {
                     open_tags
                         .last_mut()
                         .unwrap()
-                        .append_child(activation.context.gc_context, child)?;
+                        .append_child(activation.context.gc_context, child);
                 }
                 Event::End(_) => {
                     open_tags.pop();
@@ -150,7 +150,7 @@ impl<'gc> XmlObject<'gc> {
                         open_tags
                             .last_mut()
                             .unwrap()
-                            .append_child(activation.context.gc_context, child)?;
+                            .append_child(activation.context.gc_context, child);
                     }
                 }
                 Event::DocType(bt) => {
