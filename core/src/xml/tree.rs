@@ -334,15 +334,15 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Unset the parent of this node.
-    fn disown_parent(&mut self, mc: MutationContext<'gc, '_>) -> Result<(), Error> {
+    fn disown_parent(&mut self, mc: MutationContext<'gc, '_>) {
         match &mut *self.0.write(mc) {
-            XmlNodeData::DocumentRoot { .. } => return Err(Error::RootCantHaveParent),
+            XmlNodeData::DocumentRoot { .. } => {
+                log::warn!("Document roots cannot have parents");
+            }
             XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
                 *parent = None
             }
-        };
-
-        Ok(())
+        }
     }
 
     /// Add node to a new siblings list.
@@ -455,7 +455,7 @@ impl<'gc> XmlNode<'gc> {
             };
 
             child.disown_siblings(mc);
-            child.disown_parent(mc)?;
+            child.disown_parent(mc);
         } else {
             return Err(Error::CantRemoveNonChild);
         }
