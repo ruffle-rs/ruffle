@@ -10,22 +10,6 @@ use crate::backend::navigator::RequestOptions;
 use crate::string::{AvmString, WStr};
 use crate::xml::XmlNode;
 use gc_arena::MutationContext;
-use quick_xml::Error as ParseError;
-
-const XML_NO_ERROR: i32 = 0;
-#[allow(dead_code)]
-const XML_CDATA_NOT_TERMINATED: i32 = -2;
-const XML_DECL_NOT_TERMINATED: i32 = -3;
-#[allow(dead_code)]
-const XML_DOCTYPE_NOT_TERMINATED: i32 = -4;
-#[allow(dead_code)]
-const XML_COMMENT_NOT_TERMINATED: i32 = -5;
-const XML_ELEMENT_MALFORMED: i32 = -6;
-const XML_OUT_OF_MEMORY: i32 = -7;
-const XML_ATTRIBUTE_NOT_TERMINATED: i32 = -8;
-#[allow(dead_code)]
-const XML_MISMATCHED_START: i32 = -9;
-const XML_MISMATCHED_END: i32 = -10;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "docTypeDecl" => property(doc_type_decl; READ_ONLY);
@@ -260,25 +244,7 @@ fn status<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(document) = this.as_xml() {
-        let status = match document.last_parse_error() {
-            None => XML_NO_ERROR,
-            Some(err) => match err.ref_error() {
-                ParseError::UnexpectedEof(_) => XML_ELEMENT_MALFORMED,
-                ParseError::EndEventMismatch { .. } => XML_MISMATCHED_END,
-                ParseError::XmlDeclWithoutVersion(_) => XML_DECL_NOT_TERMINATED,
-                ParseError::NameWithQuote(_) => XML_ELEMENT_MALFORMED,
-                ParseError::NoEqAfterName(_) => XML_ELEMENT_MALFORMED,
-                ParseError::UnquotedValue(_) => XML_ATTRIBUTE_NOT_TERMINATED,
-                ParseError::DuplicatedAttribute(_, _) => XML_ELEMENT_MALFORMED,
-                _ => XML_OUT_OF_MEMORY,
-                // Not accounted for:
-                // ParseError::UnexpectedToken(_)
-                // ParseError::UnexpectedBang
-                // ParseError::TextNotFound
-                // ParseError::EscapeError(_)
-            },
-        };
-        return Ok(status.into());
+        return Ok((document.status() as i8).into());
     }
 
     Ok(Value::Undefined)
