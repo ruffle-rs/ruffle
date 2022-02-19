@@ -24,9 +24,6 @@ pub enum Error {
     #[error("Cannot adopt children into non-child-bearing node")]
     CannotAdoptHere,
 
-    #[error("Document roots cannot have parents")]
-    RootCantHaveParent,
-
     #[error("Text node has no child nodes!")]
     TextNodeCantHaveChildren,
 
