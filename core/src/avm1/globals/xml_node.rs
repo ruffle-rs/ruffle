@@ -196,9 +196,7 @@ fn remove_node<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
         if let Some(mut parent) = node.parent() {
-            if let Err(e) = parent.remove_child(activation.context.gc_context, node) {
-                avm_warn!(activation, "Error in XML.removeNode: {}", e);
-            }
+            parent.remove_child(activation.context.gc_context, node);
         }
     }
 

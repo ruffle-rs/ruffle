@@ -233,7 +233,7 @@ impl<'gc> XmlNode<'gc> {
 
                 if let Some(mut parent) = old_parent {
                     if !GcCell::ptr_eq(self.0, parent.0) {
-                        parent.remove_child(mc, child)?;
+                        parent.remove_child(mc, child);
                     }
                 }
 
@@ -423,28 +423,20 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Remove `child` from this node's children list.
-    ///
-    /// If the node is not a child of this one, or this node cannot accept
-    /// children, then this function yields an error.
-    pub fn remove_child(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        mut child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
+    pub fn remove_child(&mut self, mc: MutationContext<'gc, '_>, mut child: XmlNode<'gc>) {
         if let Some(position) = self.child_position(child) {
             match &mut *self.0.write(mc) {
                 XmlNodeData::DocumentRoot { children, .. }
-                | XmlNodeData::Element { children, .. } => children.remove(position),
-                XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
-            };
-
-            child.disown_siblings(mc);
-            child.disown_parent(mc);
+                | XmlNodeData::Element { children, .. } => {
+                    children.remove(position);
+                }
+                _ => unreachable!(),
+            }
         } else {
-            return Err(Error::CantRemoveNonChild);
+            log::warn!("Target node is not a child of this one!");
         }
-
-        Ok(())
+        child.disown_siblings(mc);
+        child.disown_parent(mc);
     }
 
     /// Returns the type of this node as an integer.
