@@ -3,9 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::Object;
+use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
@@ -14,9 +15,15 @@ fn instance_init<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
+    if let Some(mut this) = this {
         log::warn!("flash.ui.ContextMenu is a stub");
         activation.super_init(this, &[])?;
+
+        this.set_property(
+            &Multiname::public("customItems"),
+            ArrayObject::empty(activation).unwrap().into(),
+            activation,
+        )?;
     }
 
     Ok(Value::Undefined)
@@ -75,6 +82,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("hideBuiltInItems", hide_built_in_items)];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+
+    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] = &[("customItems", "", "Array")];
+    write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
 
     class
 }

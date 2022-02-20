@@ -745,6 +745,21 @@ impl<'gc> Class<'gc> {
             ));
         }
     }
+
+    #[inline(never)]
+    pub fn define_public_slot_instance_traits(
+        &mut self,
+        items: &[(&'static str, &'static str, &'static str)],
+    ) {
+        for &(name, type_ns, type_name) in items {
+            self.define_instance_trait(Trait::from_slot(
+                QName::new(Namespace::public(), name),
+                QName::new(Namespace::Package(type_ns.into()), type_name).into(),
+                None,
+            ));
+        }
+    }
+
     #[inline(never)]
     pub fn define_private_slot_instance_traits(
         &mut self,
