@@ -575,6 +575,11 @@ pub fn load_player_globals<'gc>(
     );
     class(
         activation,
+        flash::events::ioerrorevent::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
         flash::events::keyboardevent::create_class(mc),
         script,
     )?;
