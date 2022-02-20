@@ -16,6 +16,7 @@ pub mod loader;
 pub mod loaderinfo;
 pub mod movieclip;
 pub mod nativemenu;
+pub mod nativemenuitem;
 pub mod pixelsnapping;
 pub mod scene;
 pub mod shape;

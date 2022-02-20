@@ -817,6 +817,11 @@ pub fn load_player_globals<'gc>(
         flash::display::nativemenu::create_class(mc),
         script
     );
+    class(
+        activation,
+        flash::display::nativemenuitem::create_class(mc),
+        script
+    )?;
 
     // package `flash.geom`
     class(activation, flash::geom::matrix::create_class(mc), script)?;
@@ -866,6 +871,7 @@ pub fn load_player_globals<'gc>(
         flash::ui::contextmenu::create_class(mc),
         script
     );
+    class(activation, flash::ui::contextmenuitem::create_class(mc), script)?;
     class(activation, flash::ui::mouse::create_class(mc), script)?;
     class(activation, flash::ui::keyboard::create_class(mc), script)?;
 
