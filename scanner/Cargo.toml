@@ -17,4 +17,4 @@ path-slash = "0.1.4"
 swf = { path = "../swf" }
 rayon = "1.5.1"
 crossbeam-channel = "0.5"
-sha2 = "0.10.1"
+sha2 = "0.10.2"
