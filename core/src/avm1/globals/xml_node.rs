@@ -194,12 +194,8 @@ fn remove_node<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(node) = this.as_xml_node() {
-        if let Some(mut parent) = node.parent() {
-            if let Err(e) = parent.remove_child(activation.context.gc_context, node) {
-                avm_warn!(activation, "Error in XML.removeNode: {}", e);
-            }
-        }
+    if let Some(mut node) = this.as_xml_node() {
+        node.remove_node(activation.context.gc_context);
     }
 
     Ok(Value::Undefined)

@@ -29,9 +29,6 @@ pub enum Error {
 
     #[error("Not an element")]
     NotAnElement,
-
-    #[error("Target node is not a child of this one!")]
-    CantRemoveNonChild,
 }
 
 impl From<FromUtf8Error> for Error {

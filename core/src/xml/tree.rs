@@ -435,32 +435,24 @@ impl<'gc> XmlNode<'gc> {
         self.insert_child(mc, self.children_len(), child)
     }
 
-    /// Remove a previously added node from this tree.
-    ///
-    /// If the node is not a child of this one, or this node cannot accept
-    /// children, then this function yields an error.
-    pub fn remove_child(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        mut child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
-        if let Some(position) = self.child_position(child) {
-            match &mut *self.0.write(mc) {
-                XmlNodeData::Element { children, .. }
-                | XmlNodeData::DocumentRoot { children, .. } => children.remove(position),
+    /// Remove this node from its parent.
+    pub fn remove_node(&mut self, mc: MutationContext<'gc, '_>) {
+        if let Some(parent) = self.parent() {
+            // This is guaranteed to succeed, as `self` is a child of `parent`.
+            let position = parent.child_position(*self).unwrap();
+
+            match &mut *parent.0.write(mc) {
+                XmlNodeData::DocumentRoot { children, .. }
+                | XmlNodeData::Element { children, .. } => children.remove(position),
                 XmlNodeData::Text { .. } => {
                     // This cannot happen, as `adopt_child` refuses to adopt children into text nodes.
                     unreachable!();
                 }
             };
 
-            child.disown_siblings(mc);
-            child.disown_parent(mc);
-        } else {
-            return Err(Error::CantRemoveNonChild);
+            self.disown_siblings(mc);
+            self.disown_parent(mc);
         }
-
-        Ok(())
     }
 
     /// Returns the type of this node as an integer.

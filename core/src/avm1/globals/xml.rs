@@ -99,17 +99,9 @@ fn parse_xml<'gc>(
                 "".into()
             };
 
-        let mut node = document.as_node();
-        for child in node.children().rev() {
-            let result = node.remove_child(activation.context.gc_context, child);
-            if let Err(e) = result {
-                avm_warn!(
-                    activation,
-                    "XML.parseXML: Error removing node contents: {}",
-                    e
-                );
-                return Ok(Value::Undefined);
-            }
+        let node = document.as_node();
+        for mut child in node.children().rev() {
+            child.remove_node(activation.context.gc_context);
         }
 
         let ignore_whitespace = this
