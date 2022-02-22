@@ -231,6 +231,12 @@ impl<'gc> EditText<'gc> {
             text_spans.hide_text();
         }
 
+        let autosize = if swf_tag.is_auto_size {
+            AutoSizeMode::Left
+        } else {
+            AutoSizeMode::None
+        };
+
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
@@ -315,7 +321,7 @@ impl<'gc> EditText<'gc> {
                 layout,
                 intrinsic_bounds,
                 bounds,
-                autosize: AutoSizeMode::None,
+                autosize,
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
                 firing_variable_binding: false,
@@ -328,7 +334,11 @@ impl<'gc> EditText<'gc> {
             },
         ));
 
-        et.redraw_border(context.gc_context);
+        if swf_tag.is_auto_size {
+            et.relayout(context);
+        } else {
+            et.redraw_border(context.gc_context);
+        }
 
         et
     }
@@ -784,7 +794,6 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
@@ -798,7 +807,6 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
@@ -810,7 +818,6 @@ impl<'gc> EditText<'gc> {
                 }
 
                 edit_text.bounds.set_height(intrinsic_bounds.height());
-                edit_text.base.base.set_transformed_by_script(true);
                 drop(edit_text);
                 self.redraw_border(context.gc_context);
             }
