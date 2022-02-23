@@ -1190,50 +1190,81 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_get_url_2(&mut self, action: GetUrl2) -> Result<FrameControl<'gc>, Error<'gc>> {
         // TODO: Support `LoadVariablesFlag`, `LoadTargetFlag`
         // TODO: What happens if there's only one string?
-        let target = self.context.avm1.pop();
+        let target_val = self.context.avm1.pop();
+        let target = target_val.coerce_to_string(self)?;
         let url_val = self.context.avm1.pop();
         let url = url_val.coerce_to_string(self)?;
 
         if let Some(fscommand) = fscommand::parse(&url) {
-            let fsargs = target.coerce_to_string(self)?;
-            fscommand::handle(fscommand, &fsargs, self)?;
+            // `target` = fscommand arguments!
+            fscommand::handle(fscommand, &target, self)?;
             return Ok(FrameControl::Continue);
         }
 
-        let window_target = target.coerce_to_string(self)?;
-        let clip_target: Option<DisplayObject<'gc>> = if action.is_target_sprite() {
-            if let Value::Object(target) = target {
+        // TODO: Use `StageObject::get_level_by_path`.
+        let level_target = if target.starts_with(WStr::from_units(b"_level")) && target.len() >= 6 {
+            match target[6..].parse::<f64>() {
+                Ok(level_id) => level_id as i32,
+                Err(_) => {
+                    if target.len() == 6 {
+                        0
+                    } else {
+                        -1
+                    }
+                }
+            }
+        } else {
+            -1
+        };
+
+        let clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
+            Some(self.resolve_level(level_target))
+        } else if action.is_load_vars() || action.is_target_sprite() {
+            if let Value::Object(target) = target_val {
                 target.as_display_object()
             } else {
                 let start = self.target_clip_or_root();
-                self.resolve_target_display_object(start, target, true)?
+                self.resolve_target_display_object(start, target_val, true)?
             }
         } else {
-            Some(self.target_clip_or_root())
+            None
         };
 
         if action.is_load_vars() {
-            if let Some(clip_target) = clip_target {
-                let target_obj = clip_target
-                    .as_movie_clip()
-                    .unwrap()
-                    .object()
-                    .coerce_to_object(self);
-                let (url, opts) = self.locals_into_request_options(
-                    &url,
-                    NavigationMethod::from_send_vars_method(action.send_vars_method()),
-                );
-                let future = self.context.load_manager.load_form_into_object(
-                    self.context.player.clone().unwrap(),
-                    target_obj,
-                    &url,
-                    opts,
-                );
-                self.context.navigator.spawn_future(future);
+            // `loadVariables` or `loadVariablesNum` call.
+            // Depending on the situation, it will open a link in the browser instead.
+            let mut is_load_vars = true;
+            if !(action.is_target_sprite() || level_target > -1) {
+                is_load_vars = false;
+                if matches!(target_val, Value::Object(_)) {
+                    if let Some(clip) = clip_target {
+                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
+                    }
+                }
             }
-
-            return Ok(FrameControl::Continue);
+            if is_load_vars {
+                if let Some(clip_target) = clip_target {
+                    let target_obj = clip_target
+                        .as_movie_clip()
+                        .unwrap()
+                        .object()
+                        .coerce_to_object(self);
+                    let (url, opts) = self.locals_into_request_options(
+                        &url,
+                        NavigationMethod::from_send_vars_method(action.send_vars_method()),
+                    );
+                    let future = self.context.load_manager.load_form_into_object(
+                        self.context.player.clone().unwrap(),
+                        target_obj,
+                        &url,
+                        opts,
+                    );
+                    self.context.navigator.spawn_future(future);
+                }
+                return Ok(FrameControl::Continue);
+            }
         } else if action.is_target_sprite() {
+            // `loadMovie`, `unloadMovie` or `unloadMovieNum` call.
             if let Some(clip_target) = clip_target {
                 let (url, opts) = self.locals_into_request_options(
                     &url,
@@ -1241,7 +1272,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 );
 
                 if url.is_empty() {
-                    //Blank URL on movie loads = unload!
+                    // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
                         mc.replace_with_movie(self.context.gc_context, None)
                     }
@@ -1258,45 +1289,32 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 }
             }
             return Ok(FrameControl::Continue);
-        } else if window_target.starts_with(WStr::from_units(b"_level")) && window_target.len() > 6
-        {
-            // TODO: Use `StageObject::get_level_by_path`.
-            // target of `_level#` indicates a `loadMovieNum` call.
-            match window_target[6..].parse::<i32>() {
-                Ok(level_id) => {
-                    let level = self.resolve_level(level_id);
-
-                    let future = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone().unwrap(),
-                        level,
-                        &url.to_utf8_lossy(),
-                        RequestOptions::get(),
-                        None,
-                        None,
-                    );
-                    self.context.navigator.spawn_future(future);
-                }
-                Err(e) => avm_warn!(
-                    self,
-                    "Couldn't parse level id {} for action_get_url_2: {}",
-                    url,
-                    e
-                ),
+        } else if level_target > -1 {
+            // `loadMovieNum` call.
+            if let Some(clip_target) = clip_target {
+                let future = self.context.load_manager.load_movie_into_clip(
+                    self.context.player.clone().unwrap(),
+                    clip_target,
+                    &url.to_utf8_lossy(),
+                    RequestOptions::get(),
+                    None,
+                    None,
+                );
+                self.context.navigator.spawn_future(future);
             }
-
             return Ok(FrameControl::Continue);
-        } else {
-            let vars = match NavigationMethod::from_send_vars_method(action.send_vars_method()) {
-                Some(method) => Some((method, self.locals_into_form_values())),
-                None => None,
-            };
-
-            self.context.navigator.navigate_to_url(
-                url.to_string(),
-                Some(window_target.to_string()),
-                vars,
-            );
         }
+
+        // `getURL` call.
+        let vars = match NavigationMethod::from_send_vars_method(action.send_vars_method()) {
+            Some(method) => Some((method, self.locals_into_form_values())),
+            None => None,
+        };
+
+        self.context
+            .navigator
+            .navigate_to_url(url.to_string(), Some(target.to_string()), vars);
+
         Ok(FrameControl::Continue)
     }
 
