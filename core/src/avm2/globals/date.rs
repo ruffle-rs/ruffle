@@ -1320,11 +1320,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("toDateString", to_date_string),
         ("toLocaleDateString", to_date_string),
     ];
-    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc), ("parse", parse)];
 
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    write.define_as3_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
 }
