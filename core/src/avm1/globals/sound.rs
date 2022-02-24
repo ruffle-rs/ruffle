@@ -38,10 +38,12 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // 1st parameter is the movie clip that "owns" all sounds started by this object.
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
-    let owner = args
-        .get(0)
-        .map(|o| o.coerce_to_object(activation))
-        .and_then(|o| o.as_display_object());
+    let owner = if let Some(owner) = args.get(0) {
+        let start_clip = activation.target_clip_or_root()?;
+        activation.resolve_target_display_object(start_clip, *owner, false)?
+    } else {
+        None
+    };
 
     if let Some(sound) = this.as_sound_object() {
         sound.set_owner(activation.context.gc_context, owner);
@@ -195,7 +197,7 @@ fn get_transform<'gc>(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.object),
         );
-        // Surprisngly `lr` means "right-to-left" and `rl` means "left-to-right".
+        // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
         obj.set("ll", transform.left_to_left.into(), activation)?;
         obj.set("lr", transform.right_to_left.into(), activation)?;
         obj.set("rl", transform.left_to_right.into(), activation)?;
@@ -307,7 +309,7 @@ fn set_transform<'gc>(
         if obj.has_own_property(activation, "ll".into()) {
             transform.left_to_left = obj.get("ll", activation)?.coerce_to_i32(activation)?;
         }
-        // Surprisngly `lr` means "right-to-left" and `rl` means "left-to-right".
+        // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
         if obj.has_own_property(activation, "rl".into()) {
             transform.left_to_right = obj.get("rl", activation)?.coerce_to_i32(activation)?;
         }
