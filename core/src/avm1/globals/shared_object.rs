@@ -11,7 +11,6 @@ use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
-use json::JsonValue;
 use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -214,90 +213,6 @@ fn deserialize_lso<'gc>(
     Ok(obj.into())
 }
 
-/// Deserialize a Json shared object element into a Value
-fn recursive_deserialize_json<'gc>(
-    json_value: &JsonValue,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    match json_value {
-        JsonValue::Null => Value::Null,
-        JsonValue::Short(s) => Value::String(AvmString::new_utf8(
-            activation.context.gc_context,
-            s.to_string(),
-        )),
-        JsonValue::String(s) => {
-            Value::String(AvmString::new_utf8(activation.context.gc_context, s))
-        }
-        JsonValue::Number(f) => Value::Number((*f).into()),
-        JsonValue::Boolean(b) => (*b).into(),
-        JsonValue::Object(o) => {
-            if o.get("__proto__").and_then(JsonValue::as_str) == Some("Array") {
-                deserialize_array_json(o, activation)
-            } else {
-                deserialize_object_json(o, activation)
-            }
-        }
-        JsonValue::Array(_) => Value::Undefined,
-    }
-}
-
-/// Deserialize an Object and any children from a JSON object
-fn deserialize_object_json<'gc>(
-    json_obj: &json::object::Object,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    // Deserialize Object
-    let obj = ScriptObject::object(
-        activation.context.gc_context,
-        Some(activation.context.avm1.prototypes.object),
-    );
-    for (name, value) in json_obj.iter() {
-        obj.define_value(
-            activation.context.gc_context,
-            AvmString::new_utf8(activation.context.gc_context, name),
-            recursive_deserialize_json(value, activation),
-            Attribute::empty(),
-        );
-    }
-    obj.into()
-}
-
-/// Deserialize an Array and any children from a JSON object
-fn deserialize_array_json<'gc>(
-    json_obj: &json::object::Object,
-    activation: &mut Activation<'_, 'gc, '_>,
-) -> Value<'gc> {
-    let array_constructor = activation.context.avm1.prototypes.array_constructor;
-    let len = json_obj
-        .get("length")
-        .and_then(JsonValue::as_i32)
-        .unwrap_or_default();
-    if let Ok(Value::Object(obj)) = array_constructor.construct(activation, &[len.into()]) {
-        for (name, value) in json_obj.iter() {
-            let value = recursive_deserialize_json(value, activation);
-            if let Ok(i) = name.parse::<i32>() {
-                obj.set_element(activation, i, value).unwrap();
-            } else {
-                // Ignore length and proto meta-properties
-                if name == "length" || name == "__proto__" {
-                    continue;
-                }
-
-                obj.define_value(
-                    activation.context.gc_context,
-                    AvmString::new_utf8(activation.context.gc_context, name),
-                    value,
-                    Attribute::empty(),
-                );
-            }
-        }
-
-        obj.into()
-    } else {
-        Value::Undefined
-    }
-}
-
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Object<'gc>,
@@ -441,16 +356,8 @@ pub fn get_local<'gc>(
 
     // Load the data object from storage if it existed prior
     if let Some(saved) = activation.context.storage.get(&full_name) {
-        // Attempt to load it as an Lso
         if let Ok(lso) = flash_lso::read::Reader::default().parse(&saved) {
             data = deserialize_lso(activation, &lso)?.into();
-        } else {
-            // Attempt to load legacy Json
-            if let Ok(saved_string) = String::from_utf8(saved) {
-                if let Ok(json_data) = json::parse(&saved_string) {
-                    data = recursive_deserialize_json(&json_data, activation);
-                }
-            }
         }
     }
 
