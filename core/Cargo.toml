@@ -33,7 +33,7 @@ chrono = "0.4"
 instant = "0.1"
 encoding_rs = "0.8.30"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { version = "1.0.136", features = ["derive"], optional = true }
+serde = { version = "1.0.136", features = ["derive"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
@@ -55,7 +55,7 @@ default-features = false # can't use rayon on web
 approx = "0.5.1"
 
 [features]
-default = ["minimp3", "serde"]
+default = ["minimp3"]
 h263 = ["h263-rs", "h263-rs-yuv"]
 vp6 = ["nihav_core", "nihav_codec_support", "nihav_duck", "h263-rs-yuv"]
 screenvideo = []

@@ -1,5 +1,4 @@
 use gc_arena::Collect;
-#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 /// Controls whether the content is letterboxed or pillarboxed when the
@@ -7,21 +6,20 @@ use serde::{Deserialize, Serialize};
 ///
 /// When letterboxed, black bars will be rendered around the exterior
 /// margins of the content.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect, Serialize, Deserialize)]
 #[collect(require_static)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename = "letterbox"))]
+#[serde(rename = "letterbox")]
 pub enum Letterbox {
     /// The content will never be letterboxed.
-    #[cfg_attr(feature = "serde", serde(rename = "off"))]
+    #[serde(rename = "off")]
     Off,
 
     /// The content will only be letterboxed if the content is running fullscreen.
-    #[cfg_attr(feature = "serde", serde(rename = "fullscreen"))]
+    #[serde(rename = "fullscreen")]
     Fullscreen,
 
     /// The content will always be letterboxed.
-    #[cfg_attr(feature = "serde", serde(rename = "on"))]
+    #[serde(rename = "on")]
     On,
 }
 
