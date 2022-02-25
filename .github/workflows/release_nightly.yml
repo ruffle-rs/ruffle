@@ -222,7 +222,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: stable-2022-01-20
           target: wasm32-unknown-unknown
 
       - name: Setup Node.js

@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ["16"]
-        rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
+        rust_version: [stable-2022-01-20] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml. However, see https://github.com/rust-lang/rust/issues/89647.
         os: [ubuntu-latest, windows-2022]
 
     steps:

@@ -41,7 +41,7 @@ Before you are able to build this project, you must first install a few dependen
 Follow the instructions [to install rust](https://www.rust-lang.org/tools/install) on your machine.
 
 We do not have a Minimum Supported Rust Version policy. If it fails to build, it's likely you may need
-to update to the latest stable version of rust. You may run `rustup update` to do this (if you installed
+to update or downgrade to version 1.58.1 of rust. You may run `rustup install 1.58.1` to do this (if you installed
 rust using the above instructions).
 
 For the compiler to be able to output WebAssembly, an additional target has to be added to it: `rustup target add wasm32-unknown-unknown`
