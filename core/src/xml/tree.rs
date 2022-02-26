@@ -234,7 +234,7 @@ impl<'gc> XmlNode<'gc> {
 
                 if let Some(parent) = child_parent {
                     if !GcCell::ptr_eq(self.0, parent.0) {
-                        parent.orphan_child(mc, child)?;
+                        parent.orphan_child(mc, child);
                     }
                 }
 
@@ -373,20 +373,17 @@ impl<'gc> XmlNode<'gc> {
     /// Remove node from this node's child list.
     ///
     /// This function yields Err if this node cannot accept child nodes.
-    fn orphan_child(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
+    fn orphan_child(&mut self, mc: MutationContext<'gc, '_>, child: XmlNode<'gc>) {
         if let Some(position) = self.child_position(child) {
             match &mut *self.0.write(mc) {
                 XmlNodeData::DocumentRoot { children, .. }
                 | XmlNodeData::Element { children, .. } => children.remove(position),
-                XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
+                XmlNodeData::Text { .. } => {
+                    // This cannot happen, as `adopt_child` refuses to adopt children into text nodes.
+                    unreachable!();
+                }
             };
         }
-
-        Ok(())
     }
 
     /// Insert a child element into the child list of an Element node.
@@ -451,7 +448,10 @@ impl<'gc> XmlNode<'gc> {
             match &mut *self.0.write(mc) {
                 XmlNodeData::Element { children, .. }
                 | XmlNodeData::DocumentRoot { children, .. } => children.remove(position),
-                XmlNodeData::Text { .. } => return Err(Error::TextNodeCantHaveChildren),
+                XmlNodeData::Text { .. } => {
+                    // This cannot happen, as `adopt_child` refuses to adopt children into text nodes.
+                    unreachable!();
+                }
             };
 
             child.disown_siblings(mc);
