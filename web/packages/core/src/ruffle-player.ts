@@ -13,6 +13,7 @@ import {
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
 import { InternalContextMenuItem } from "./context-menu";
+import { swfFileName } from "./swf-file-name";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -721,9 +722,7 @@ export class RufflePlayer extends HTMLElement {
                 const swfDownloadA = document.createElement("a");
                 swfDownloadA.style.display = "none";
                 swfDownloadA.href = blobUrl;
-                swfDownloadA.download = this.swfUrl.substring(
-                    this.swfUrl.lastIndexOf("/") + 1
-                );
+                swfDownloadA.download = swfFileName(this.swfUrl);
                 document.body.appendChild(swfDownloadA);
                 swfDownloadA.click();
                 document.body.removeChild(swfDownloadA);
