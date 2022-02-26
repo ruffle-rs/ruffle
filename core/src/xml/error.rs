@@ -24,9 +24,6 @@ pub enum Error {
     #[error("Cannot adopt children into non-child-bearing node")]
     CannotAdoptHere,
 
-    #[error("Text node has no child nodes!")]
-    TextNodeCantHaveChildren,
-
     #[error("Cannot insert child into itself")]
     CannotInsertIntoSelf,
 
