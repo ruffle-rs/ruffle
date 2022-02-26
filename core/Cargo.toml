@@ -13,7 +13,9 @@ fnv = "1.0.7"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
 gif = "0.11.3"
-indexmap = "1.8.0"
+# TODO: From some reason newer indexmap versions cause a cyclic package dependency.
+# This is a workaround from: https://github.com/tkaitchuck/aHash/issues/95#issuecomment-903560879
+indexmap = "~1.6.2"
 log = "0.4"
 minimp3 = { version = "0.5.1", optional = true }
 png = { version = "0.17.3" }
@@ -34,12 +36,12 @@ instant = "0.1"
 encoding_rs = "0.8.30"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { version = "1.0.136", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
 regress = "0.4"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "19fecd07b9888c4bdaa66771c468095783b52bed" }
-json = "0.12.4"
 lzma-rs = {version = "0.2.0", optional = true }
 dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"] }
 symphonia = { version = "0.5.0", default-features = false, features = ["mp3"], optional = true }
