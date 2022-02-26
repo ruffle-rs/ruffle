@@ -10,13 +10,11 @@ use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
-use crate::string::AvmString;
+use crate::string::{AvmString, Units};
 use gc_arena::{GcCell, MutationContext};
-use json::{
-    codegen::Generator as JsonGenerator, object::Object as JsonObject, parse as parse_json,
-    JsonValue,
-};
-use std::cmp;
+use serde::Serialize;
+use serde_json::{Map as JsonObject, Value as JsonValue};
+use std::borrow::Cow;
 use std::ops::Deref;
 
 fn deserialize_json_inner<'gc>(
@@ -26,17 +24,14 @@ fn deserialize_json_inner<'gc>(
 ) -> Result<Value<'gc>, Error> {
     Ok(match json {
         JsonValue::Null => Value::Null,
-        JsonValue::Short(s) => {
-            AvmString::new_utf8(activation.context.gc_context, s.to_string()).into()
-        }
         JsonValue::String(s) => AvmString::new_utf8(activation.context.gc_context, s).into(),
-        JsonValue::Boolean(b) => b.into(),
-        JsonValue::Number(num) => {
-            let num: f64 = num.into();
-            if num.fract() == 0.0 {
-                f64_to_wrapping_i32(num).into()
+        JsonValue::Bool(b) => b.into(),
+        JsonValue::Number(number) => {
+            let number = number.as_f64().unwrap();
+            if number.fract() == 0.0 {
+                f64_to_wrapping_i32(number).into()
             } else {
-                num.into()
+                number.into()
             }
         }
         JsonValue::Object(js_obj) => {
@@ -83,72 +78,6 @@ fn deserialize_json<'gc>(
     match reviver {
         None => Ok(val),
         Some(reviver) => reviver.call(None, &["".into(), val], activation),
-    }
-}
-
-/// This is a custom generator backend for the json crate that allows modifying the indentation character.
-/// This generator is used in `JSON.stringify` when a string is passed to the `space` parameter.
-struct FlashStrGenerator<'a> {
-    code: Vec<u8>,
-    indent_str: &'a str,
-    indent_size: u16,
-}
-
-impl<'a> FlashStrGenerator<'a> {
-    fn new(indent_str: &'a str) -> Self {
-        Self {
-            code: Vec::with_capacity(1024),
-            indent_str,
-            indent_size: 0,
-        }
-    }
-
-    pub fn consume(self) -> String {
-        // SAFETY: JSON crate should never generate invalid UTF-8
-        unsafe { String::from_utf8_unchecked(self.code) }
-    }
-}
-
-impl<'a> JsonGenerator for FlashStrGenerator<'a> {
-    type T = Vec<u8>;
-
-    #[inline(always)]
-    fn write(&mut self, slice: &[u8]) -> std::io::Result<()> {
-        self.code.extend_from_slice(slice);
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn write_char(&mut self, ch: u8) -> std::io::Result<()> {
-        self.code.push(ch);
-        Ok(())
-    }
-
-    #[inline(always)]
-    fn get_writer(&mut self) -> &mut Vec<u8> {
-        &mut self.code
-    }
-
-    #[inline(always)]
-    fn write_min(&mut self, slice: &[u8], _: u8) -> std::io::Result<()> {
-        self.code.extend_from_slice(slice);
-        Ok(())
-    }
-
-    fn new_line(&mut self) -> std::io::Result<()> {
-        self.code.push(b'\n');
-        for _ in 0..self.indent_size {
-            self.code.extend_from_slice(self.indent_str.as_bytes());
-        }
-        Ok(())
-    }
-
-    fn indent(&mut self) {
-        self.indent_size += 1;
-    }
-
-    fn dedent(&mut self) {
-        self.indent_size -= 1;
     }
 }
 
@@ -235,7 +164,7 @@ impl<'gc> AvmSerializer<'gc> {
                 let mapped = self.map_value(activation, || key, value)?;
                 if !matches!(mapped, Value::Undefined) {
                     js_obj.insert(
-                        &key.to_utf8_lossy(),
+                        key.to_utf8_lossy().into_owned(),
                         self.serialize_value(activation, mapped)?,
                     );
                 }
@@ -252,7 +181,7 @@ impl<'gc> AvmSerializer<'gc> {
                         let mapped = self.map_value(activation, || name, value)?;
                         if !matches!(mapped, Value::Undefined) {
                             js_obj.insert(
-                                &name.to_utf8_lossy(),
+                                name.to_utf8_lossy().into_owned(),
                                 self.serialize_value(activation, mapped)?,
                             );
                         }
@@ -362,7 +291,7 @@ pub fn parse<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation)
         .ok();
-    let parsed = parse_json(&input.to_utf8_lossy())
+    let parsed = serde_json::from_str(&input.to_utf8_lossy())
         .map_err(|_| "SyntaxError: Error #1132: Invalid JSON parse input.")?;
     deserialize_json(activation, parsed, reviver)
 }
@@ -390,19 +319,18 @@ pub fn stringify<'gc>(
         }
     }).transpose()?;
 
-    let mut serializer = AvmSerializer::new(replacer);
-    let result = serializer.serialize(activation, *val)?;
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
-    let output = if let Value::String(s) = spaces {
-        // If the string is empty, just use the normal dump generator.
+    let indent = if let Value::String(s) = spaces {
         if s.is_empty() {
-            result.dump()
+            None
         } else {
-            // we can only use the first 10 characters
-            let indent = s.slice(..cmp::min(s.len(), 10)).unwrap().to_utf8_lossy();
-            let mut gen = FlashStrGenerator::new(&indent);
-            gen.write_json(&result).expect("Can't fail");
-            gen.consume()
+            // We can only use the first 10 characters.
+            let indent = &s[..s.len().min(10)];
+            let indent_bytes = match indent.units() {
+                Units::Bytes(units) => Cow::Borrowed(units),
+                Units::Wide(_) => Cow::Owned(indent.to_utf8_lossy().into_owned().into_bytes()),
+            };
+            Some(indent_bytes)
         }
     } else {
         let indent_size = spaces
@@ -410,12 +338,28 @@ pub fn stringify<'gc>(
             .unwrap_or(0.0)
             .clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
-            result.dump()
+            None
         } else {
-            result.pretty(indent_size)
+            Some(Cow::Owned(b" ".repeat(indent_size.into())))
         }
     };
-    Ok(AvmString::new_utf8(activation.context.gc_context, output).into())
+
+    let mut serializer = AvmSerializer::new(replacer);
+    let json = serializer.serialize(activation, *val)?;
+    let result = match indent {
+        Some(indent) => {
+            let mut vec = Vec::with_capacity(128);
+            let formatter = serde_json::ser::PrettyFormatter::with_indent(&indent);
+            let mut serializer = serde_json::Serializer::with_formatter(&mut vec, formatter);
+            json.serialize(&mut serializer)?;
+            unsafe {
+                // `serde_json` never emits invalid UTF-8.
+                String::from_utf8_unchecked(vec)
+            }
+        }
+        None => serde_json::to_string(&json)?,
+    };
+    Ok(AvmString::new_utf8(activation.context.gc_context, result).into())
 }
 
 /// Construct `JSON`'s class.
