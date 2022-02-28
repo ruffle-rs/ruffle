@@ -201,63 +201,6 @@ impl<'gc> XmlNode<'gc> {
         )))
     }
 
-    /// Adopt a new child node into the current node.
-    ///
-    /// This does not add the node to any internal lists; it merely updates the
-    /// child to ensure that it considers this node its parent. This function
-    /// should always be called after a child node is added to this one. If
-    /// you adopt a node that is NOT already added to the children list, bad
-    /// things may happen.
-    ///
-    /// The `new_child_position` parameter is the position of the new child in
-    /// this node's child list. This is used to find and link the child's
-    /// siblings to each other.
-    fn adopt_child(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        mut child: XmlNode<'gc>,
-        new_child_position: usize,
-    ) -> Result<(), Error> {
-        if GcCell::ptr_eq(self.0, child.0) {
-            return Err(Error::CannotAdoptSelf);
-        }
-
-        let (new_prev, new_next) = match &mut *self.0.write(mc) {
-            XmlNodeData::Element { children, .. } | XmlNodeData::DocumentRoot { children, .. } => {
-                let mut write = child.0.write(mc);
-                let child_parent = match &mut *write {
-                    XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
-                        parent
-                    }
-                    XmlNodeData::DocumentRoot { .. } => return Err(Error::CannotAdoptRoot),
-                };
-
-                if let Some(parent) = child_parent {
-                    if !GcCell::ptr_eq(self.0, parent.0) {
-                        parent.orphan_child(mc, child);
-                    }
-                }
-
-                *child_parent = Some(*self);
-
-                let new_prev = new_child_position
-                    .checked_sub(1)
-                    .and_then(|p| children.get(p).cloned());
-                let new_next = new_child_position
-                    .checked_add(1)
-                    .and_then(|p| children.get(p).cloned());
-
-                (new_prev, new_next)
-            }
-            _ => return Err(Error::CannotAdoptHere),
-        };
-
-        child.disown_siblings(mc);
-        child.adopt_siblings(mc, new_prev, new_next);
-
-        Ok(())
-    }
-
     /// Get the parent, if this node has one.
     pub fn parent(self) -> Option<XmlNode<'gc>> {
         match *self.0.read() {
@@ -379,27 +322,31 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::DocumentRoot { children, .. }
                 | XmlNodeData::Element { children, .. } => children.remove(position),
                 XmlNodeData::Text { .. } => {
-                    // This cannot happen, as `adopt_child` refuses to adopt children into text nodes.
+                    // This cannot happen, as `insert_child` refuses to adopt children into text nodes.
                     unreachable!();
                 }
             };
         }
     }
 
-    /// Insert a child element into the child list of an Element node.
+    /// Insert `child` into the children list of this node.
     ///
-    /// The child will be adopted into the current tree: all child references
+    /// `child` will be adopted into the current tree: all child references
     /// to other nodes or documents will be adjusted to reflect its new
     /// position in the tree. This may remove it from any existing trees or
     /// documents.
     ///
     /// This function yields an error if appending to a Node that cannot accept
     /// children. In that case, no modification will be made to the node.
+    ///
+    /// The `position` parameter is the position of the new child in
+    /// this node's children list. This is used to find and link the child's
+    /// siblings to each other.
     pub fn insert_child(
         &mut self,
         mc: MutationContext<'gc, '_>,
         position: usize,
-        child: XmlNode<'gc>,
+        mut child: XmlNode<'gc>,
     ) -> Result<(), Error> {
         let is_cyclic = self
             .ancestors()
@@ -409,18 +356,42 @@ impl<'gc> XmlNode<'gc> {
         }
 
         match &mut *self.0.write(mc) {
-            XmlNodeData::Element {
-                ref mut children, ..
-            }
-            | XmlNodeData::DocumentRoot {
-                ref mut children, ..
-            } => {
-                children.insert(position, child);
-            }
-            _ => return Err(Error::NotAnElement),
-        };
+            XmlNodeData::DocumentRoot { children, .. } | XmlNodeData::Element { children, .. } => {
+                let old_parent = match *child.0.read() {
+                    XmlNodeData::DocumentRoot { .. } => return Err(Error::CannotAdoptRoot),
+                    XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
+                        parent
+                    }
+                };
 
-        self.adopt_child(mc, child, position)?;
+                if let Some(mut old_parent) = old_parent {
+                    if !GcCell::ptr_eq(self.0, old_parent.0) {
+                        old_parent.orphan_child(mc, child);
+                    }
+                }
+
+                match &mut *child.0.write(mc) {
+                    XmlNodeData::DocumentRoot { .. } => {
+                        // This cannot happen as we quit before.
+                        unreachable!();
+                    }
+                    XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
+                        *parent = Some(*self);
+                    }
+                }
+
+                children.insert(position, child);
+
+                let new_prev = position
+                    .checked_sub(1)
+                    .and_then(|p| children.get(p).cloned());
+                let new_next = position
+                    .checked_add(1)
+                    .and_then(|p| children.get(p).cloned());
+                child.adopt_siblings(mc, new_prev, new_next);
+            }
+            _ => return Err(Error::CannotAdoptHere),
+        }
 
         Ok(())
     }
@@ -445,7 +416,7 @@ impl<'gc> XmlNode<'gc> {
                 XmlNodeData::DocumentRoot { children, .. }
                 | XmlNodeData::Element { children, .. } => children.remove(position),
                 XmlNodeData::Text { .. } => {
-                    // This cannot happen, as `adopt_child` refuses to adopt children into text nodes.
+                    // This cannot happen, as `insert_child` refuses to adopt children into text nodes.
                     unreachable!();
                 }
             };
