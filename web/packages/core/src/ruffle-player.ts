@@ -13,6 +13,7 @@ import {
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
 import { InternalContextMenuItem } from "./context-menu";
+import { swfFileName } from "./swf-file-name";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";
 export const FUTURESPLASH_MIMETYPE = "application/futuresplash";
@@ -131,7 +132,7 @@ export class RufflePlayer extends HTMLElement {
     // Set to true when a touch event is encountered.
     private isTouch = false;
 
-    private swfUrl?: string;
+    private swfUrl?: URL;
     private instance: Ruffle | null;
     private options: BaseLoadOptions | null;
     private lastActivePlayingState: boolean;
@@ -577,14 +578,7 @@ export class RufflePlayer extends HTMLElement {
 
             if ("url" in options) {
                 console.log(`Loading SWF file ${options.url}`);
-                try {
-                    this.swfUrl = new URL(
-                        options.url,
-                        document.location.href
-                    ).href;
-                } catch {
-                    this.swfUrl = options.url;
-                }
+                this.swfUrl = new URL(options.url, document.location.href);
 
                 const parameters = {
                     ...sanitizeParameters(
@@ -593,7 +587,7 @@ export class RufflePlayer extends HTMLElement {
                     ...sanitizeParameters(options.parameters),
                 };
 
-                this.instance!.stream_from(this.swfUrl, parameters);
+                this.instance!.stream_from(this.swfUrl.href, parameters);
             } else if ("data" in options) {
                 console.log("Loading SWF data");
                 this.instance!.load_data(
@@ -723,7 +717,7 @@ export class RufflePlayer extends HTMLElement {
         try {
             if (this.swfUrl) {
                 console.log("Downloading SWF: " + this.swfUrl);
-                const response = await fetch(this.swfUrl);
+                const response = await fetch(this.swfUrl.href);
                 if (!response.ok) {
                     console.error("SWF download failed");
                     return;
@@ -733,9 +727,7 @@ export class RufflePlayer extends HTMLElement {
                 const swfDownloadA = document.createElement("a");
                 swfDownloadA.style.display = "none";
                 swfDownloadA.href = blobUrl;
-                swfDownloadA.download = this.swfUrl.substring(
-                    this.swfUrl.lastIndexOf("/") + 1
-                );
+                swfDownloadA.download = swfFileName(this.swfUrl);
                 document.body.appendChild(swfDownloadA);
                 swfDownloadA.click();
                 document.body.removeChild(swfDownloadA);
@@ -1316,9 +1308,8 @@ export class RufflePlayer extends HTMLElement {
     }
 
     displayRootMovieDownloadFailedMessage(): void {
-        const swfUrl = new URL(this.swfUrl!);
         if (
-            window.location.origin == swfUrl.origin ||
+            window.location.origin == this.swfUrl!.origin ||
             !this.isExtension ||
             !window.location.protocol.includes("http")
         ) {
