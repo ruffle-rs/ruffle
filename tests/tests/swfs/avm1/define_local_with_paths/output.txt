@@ -1,0 +1,55 @@
+// var /:abc = 'ABC'
+ABCABC
+
+// var /ruffle/:def = 'DEF'
+0
+
+_root.ruffle = {};
+
+// var /ruffle/:def = 'DEF'
+DEFDEF
+
+// var abc = 'XYZ';
+// /:abc + abc
+XYZXYZ
+
+// var /:ghi;
+// _root.hasOwnProperty('ghi')
+true
+
+// var _root.ghi = 'GHI';
+// var /:ghi
+GHIGHI
+
+// Inside with({})
+
+// var /:jkl = 'JKL'
+JKLJKL
+
+// Inside function
+
+// ghi - defined outside function
+GHIGHI
+
+// var _root.v123 = '123'
+0
+
+// Inside function -> with({})
+
+// var /:v456 = '456'
+0
+
+// Inside function -> tellTarget(_root)
+// var /:v789 = '789'
+0
+
+// Outside function - tracing all variables defined inside function
+0
+
+// _root.hasOwnProperty('mno') - defined inside function
+false
+
+// var /:pqr = 'PQR';
+// this['/:pqr']
+PQR
+
