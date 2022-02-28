@@ -16,7 +16,7 @@ log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
 svg = "0.10.0"
 percent-encoding = "2.1.0"
-png = "0.17.3"
+png = "0.17.4"
 wasm-bindgen = "=0.2.78"
 
 [dependencies.jpeg-decoder]
