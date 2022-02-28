@@ -336,9 +336,6 @@ impl<'gc> XmlNode<'gc> {
     /// position in the tree. This may remove it from any existing trees or
     /// documents.
     ///
-    /// This function yields an error if appending to a Node that cannot accept
-    /// children. In that case, no modification will be made to the node.
-    ///
     /// The `position` parameter is the position of the new child in
     /// this node's children list. This is used to find and link the child's
     /// siblings to each other.
@@ -347,18 +344,21 @@ impl<'gc> XmlNode<'gc> {
         mc: MutationContext<'gc, '_>,
         position: usize,
         mut child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
+    ) {
         let is_cyclic = self
             .ancestors()
             .any(|ancestor| GcCell::ptr_eq(ancestor.0, child.0));
         if is_cyclic {
-            return Err(Error::CannotInsertIntoSelf);
+            return;
         }
 
         match &mut *self.0.write(mc) {
             XmlNodeData::DocumentRoot { children, .. } | XmlNodeData::Element { children, .. } => {
                 let old_parent = match *child.0.read() {
-                    XmlNodeData::DocumentRoot { .. } => return Err(Error::CannotAdoptRoot),
+                    XmlNodeData::DocumentRoot { .. } => {
+                        log::warn!("Cannot adopt other document roots");
+                        return;
+                    }
                     XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
                         parent
                     }
@@ -390,20 +390,16 @@ impl<'gc> XmlNode<'gc> {
                     .and_then(|p| children.get(p).cloned());
                 child.adopt_siblings(mc, new_prev, new_next);
             }
-            _ => return Err(Error::CannotAdoptHere),
+            XmlNodeData::Text { .. } => {
+                log::warn!("Text nodes cannot have children");
+            }
         }
-
-        Ok(())
     }
 
     /// Append a child element into the end of the child list of an Element
     /// node.
-    pub fn append_child(
-        &mut self,
-        mc: MutationContext<'gc, '_>,
-        child: XmlNode<'gc>,
-    ) -> Result<(), Error> {
-        self.insert_child(mc, self.children_len(), child)
+    pub fn append_child(&mut self, mc: MutationContext<'gc, '_>, child: XmlNode<'gc>) {
+        self.insert_child(mc, self.children_len(), child);
     }
 
     /// Remove this node from its parent.
@@ -661,9 +657,7 @@ impl<'gc> XmlNode<'gc> {
 
         if deep {
             for (position, child) in self.children().enumerate() {
-                clone
-                    .insert_child(gc_context, position, child.duplicate(gc_context, deep))
-                    .expect("If I can see my children then my clone should accept children");
+                clone.insert_child(gc_context, position, child.duplicate(gc_context, deep));
             }
         }
 
