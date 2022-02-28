@@ -531,6 +531,7 @@ swf_tests! {
     (define_function2_preload_order, "avm1/define_function2_preload_order", 1),
     (define_function2_preload, "avm1/define_function2_preload", 1),
     (define_local, "avm1/define_local", 1),
+    (define_local_with_paths, "avm1/define_local_with_paths", 1),
     (delete, "avm1/delete", 3),
     (displacement_map_filter, "avm1/displacement_map_filter", 1),
     (do_init_action, "avm1/do_init_action", 3),
