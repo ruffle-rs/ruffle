@@ -18,7 +18,7 @@ gif = "0.11.3"
 indexmap = "~1.6.2"
 log = "0.4"
 minimp3 = { version = "0.5.1", optional = true }
-png = { version = "0.17.3" }
+png = { version = "0.17.4" }
 ruffle_macros = { path = "macros" }
 swf = { path = "../swf" }
 bitflags = "1.3.2"
