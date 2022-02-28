@@ -15,9 +15,6 @@ pub enum Error {
     #[error("Invalid XML")]
     InvalidXml(#[from] ParseError),
 
-    #[error("Cannot adopt child into itself")]
-    CannotAdoptSelf,
-
     #[error("Cannot adopt other document roots")]
     CannotAdoptRoot,
 
@@ -26,9 +23,6 @@ pub enum Error {
 
     #[error("Cannot insert child into itself")]
     CannotInsertIntoSelf,
-
-    #[error("Not an element")]
-    NotAnElement,
 }
 
 impl From<FromUtf8Error> for Error {
