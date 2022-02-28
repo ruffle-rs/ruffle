@@ -5,7 +5,6 @@ use crate::avm1::error::Error;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::avm_warn;
 use crate::string::AvmString;
 use crate::xml;
 use crate::xml::XmlNode;
@@ -76,15 +75,7 @@ fn append_child<'gc>(
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             let position = xmlnode.children_len();
-            if let Err(e) =
-                xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode)
-            {
-                avm_warn!(
-                    activation,
-                    "Couldn't insert_child inside of XMLNode.appendChild: {}",
-                    e
-                );
-            }
+            xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
         }
     }
 
@@ -105,15 +96,7 @@ fn insert_before<'gc>(
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-                if let Err(e) =
-                    xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode)
-                {
-                    avm_warn!(
-                        activation,
-                        "Couldn't insert_child inside of XMLNode.insertBefore: {}",
-                        e
-                    );
-                }
+                xmlnode.insert_child(activation.context.gc_context, position, child_xmlnode);
             }
         }
     }

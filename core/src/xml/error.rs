@@ -14,15 +14,6 @@ use thiserror::Error;
 pub enum Error {
     #[error("Invalid XML")]
     InvalidXml(#[from] ParseError),
-
-    #[error("Cannot adopt other document roots")]
-    CannotAdoptRoot,
-
-    #[error("Cannot adopt children into non-child-bearing node")]
-    CannotAdoptHere,
-
-    #[error("Cannot insert child into itself")]
-    CannotInsertIntoSelf,
 }
 
 impl From<FromUtf8Error> for Error {
