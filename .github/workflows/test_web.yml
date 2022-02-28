@@ -33,7 +33,7 @@ jobs:
       matrix:
         node_version: ["16"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        os: [ubuntu-latest, windows-2022]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -92,7 +92,7 @@ jobs:
       matrix:
         node_version: ["16"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        os: [ubuntu-latest, windows-2022]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: No-op
