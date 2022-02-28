@@ -620,6 +620,18 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Whether this player is currently playing.
+     *
+     * @returns True if this player is playing, false if it's paused or hasn't started yet.
+     */
+    get isPlaying(): boolean {
+        if (this.instance) {
+            return this.instance.is_playing();
+        }
+        return false;
+    }
+
+    /**
      * Checks if this player is allowed to be fullscreen by the browser.
      *
      * @returns True if you may call [[enterFullscreen]].
