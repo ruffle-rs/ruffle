@@ -14,7 +14,7 @@
         "@typescript-eslint/eslint-plugin": "^5.11.0",
         "@typescript-eslint/parser": "^5.13.0",
         "@wdio/cli": "^7.16.12",
-        "@wdio/local-runner": "^7.16.14",
+        "@wdio/local-runner": "^7.16.16",
         "@wdio/mocha-framework": "^7.16.14",
         "@wdio/spec-reporter": "^7.16.11",
         "@wdio/static-server-service": "^7.16.14",
