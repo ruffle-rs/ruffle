@@ -624,6 +624,8 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    class(activation, flash::utils::timer::create_class(mc), script)?;
+
     namespace(
         activation,
         "flash.utils",
@@ -744,6 +746,7 @@ pub fn load_player_globals<'gc>(
         flash::display::capsstyle::create_class(mc),
         script,
     )?;
+    class(activation, flash::display::loader::create_class(mc), script)?;
     avm2_system_class!(
         loaderinfo,
         activation,
@@ -858,6 +861,7 @@ pub fn load_player_globals<'gc>(
         script
     );
     class(activation, flash::ui::mouse::create_class(mc), script)?;
+    class(activation, flash::ui::keyboard::create_class(mc), script)?;
 
     // package `flash.net`
     avm2_system_class!(
@@ -870,6 +874,11 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::net::object_encoding::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
+        flash::net::url_request::create_class(mc),
         script,
     )?;
 
