@@ -9,6 +9,7 @@ pub mod compression_algorithm;
 pub mod dictionary;
 pub mod endian;
 pub mod proxy;
+pub mod timer;
 
 /// `flash.utils.flash_proxy` namespace
 pub const NS_FLASH_PROXY: &str = "http://www.adobe.com/2006/actionscript/flash/proxy";
