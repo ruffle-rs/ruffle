@@ -154,7 +154,12 @@ impl<'gc> Value<'gc> {
             Value::Bool(false) => return 0.0,
             Value::Bool(true) => return 1.0,
             Value::Number(v) => return *v,
-            Value::Object(_) => return f64::NAN,
+            Value::Object(v) => {
+                if activation.swf_version() < 6 && v.as_executable().is_some() {
+                    return 0.0;
+                }
+                return f64::NAN;
+            }
             Value::String(v) => v,
         };
 
