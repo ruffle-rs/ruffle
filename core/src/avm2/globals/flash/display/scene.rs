@@ -1,9 +1,9 @@
 //! `flash.display.Scene` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{define_indirect_properties, Class};
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -60,54 +60,6 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Scene.labels`.
-pub fn labels<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        this.get_property(
-            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "labels").into(),
-            activation,
-        )
-    } else {
-        Ok(Value::Undefined)
-    }
-}
-
-/// Implements `Scene.name`.
-pub fn name<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        this.get_property(
-            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "name").into(),
-            activation,
-        )
-    } else {
-        Ok(Value::Undefined)
-    }
-}
-
-/// Implements `Scene.numFrames`.
-pub fn num_frames<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error> {
-    if let Some(this) = this {
-        this.get_property(
-            &QName::new(Namespace::Private(NS_RUFFLE_INTERNAL.into()), "numFrames").into(),
-            activation,
-        )
-    } else {
-        Ok(Value::Undefined)
-    }
-}
-
 /// Construct `Scene`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -120,23 +72,15 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     let mut write = class.write(mc);
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("labels", Some(labels), None),
-        ("name", Some(name), None),
-        ("numFrames", Some(num_frames), None),
-    ];
-    write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
-
-    const PRIVATE_INSTANCE_SLOTS: &[(&str, &str, &str, &str)] = &[
-        (NS_RUFFLE_INTERNAL, "name", "", "String"),
-        (NS_RUFFLE_INTERNAL, "labels", "", "Array"),
-        (NS_RUFFLE_INTERNAL, "numFrames", "", "int"),
-    ];
-    write.define_private_slot_instance_traits(PRIVATE_INSTANCE_SLOTS);
+    define_indirect_properties!(
+        write,
+        mc,
+        [
+            ("name", "", "String"),
+            ("labels", "", "Array"),
+            ("numFrames", "", "int"),
+        ]
+    );
 
     class
 }

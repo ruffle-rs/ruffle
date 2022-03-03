@@ -35,7 +35,7 @@ mod vector;
 mod xml;
 mod xml_list;
 
-const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
+pub(crate) const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
 const NS_VECTOR: &str = "__AS3__.vec";
 
 pub use flash::utils::NS_FLASH_PROXY;
