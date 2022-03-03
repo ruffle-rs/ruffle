@@ -42,5 +42,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_attributes(ClassAttributes::SEALED);
 
+    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] = &[("enabled", "", "Boolean")];
+    write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
+
     class
 }
