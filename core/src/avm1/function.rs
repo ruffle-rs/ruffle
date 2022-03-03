@@ -350,10 +350,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 if af.flags.contains(FunctionFlags::PRELOAD_ROOT) {
-                    frame.set_local_register(
-                        preload_r,
-                        af.base_clip.avm1_root(&frame.context)?.object(),
-                    );
+                    frame.set_local_register(preload_r, af.base_clip.avm1_root().object());
                     preload_r += 1;
                 }
 

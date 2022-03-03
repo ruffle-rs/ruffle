@@ -39,7 +39,7 @@ pub fn constructor<'gc>(
     // 1st parameter is the movie clip that "owns" all sounds started by this object.
     // `Sound.setTransform`, `Sound.stop`, etc. will affect all sounds owned by this clip.
     let owner = if let Some(owner) = args.get(0) {
-        let start_clip = activation.target_clip_or_root()?;
+        let start_clip = activation.target_clip_or_root();
         activation.resolve_target_display_object(start_clip, *owner, false)?
     } else {
         None

@@ -53,7 +53,7 @@ pub fn get_root<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.root_object()
+    Ok(activation.root_object())
 }
 
 pub fn get_parent<'gc>(
