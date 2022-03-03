@@ -46,7 +46,7 @@ fn load_clip<'gc>(
         if let Value::String(url) = url {
             let target = match target {
                 Value::String(_) => {
-                    let start_clip = activation.target_clip_or_root()?;
+                    let start_clip = activation.target_clip_or_root();
                     activation.resolve_target_display_object(start_clip, *target, true)?
                 }
                 Value::Number(level_id) => {
@@ -90,7 +90,7 @@ fn unload_clip<'gc>(
     if let [target, ..] = args {
         let target = match target {
             Value::String(_) => {
-                let start_clip = activation.target_clip_or_root()?;
+                let start_clip = activation.target_clip_or_root();
                 activation.resolve_target_display_object(start_clip, *target, true)?
             }
             Value::Number(level_id) => {
@@ -123,7 +123,7 @@ fn get_progress<'gc>(
     if let [target, ..] = args {
         let target = match target {
             Value::String(_) => {
-                let start_clip = activation.target_clip_or_root()?;
+                let start_clip = activation.target_clip_or_root();
                 activation.resolve_target_display_object(start_clip, *target, true)?
             }
             Value::Number(level_id) => {

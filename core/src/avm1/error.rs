@@ -18,9 +18,6 @@ pub enum Error<'gc> {
     #[error("Couldn't parse SWF")]
     InvalidSwf(#[from] swf::error::Error),
 
-    #[error("Attempted to interact with a rootless display object in AVM1. Such objects can only be created in AS3, this is a runtime bug in Ruffle.")]
-    InvalidDisplayObjectHierarchy,
-
     #[error("A script has thrown a custom error.")]
     ThrownValue(Value<'gc>),
 }

@@ -1149,7 +1149,7 @@ pub fn load_bitmap<'gc>(
 
     let library = &*activation.context.library;
 
-    let movie = activation.target_clip_or_root()?.movie();
+    let movie = activation.target_clip_or_root().movie();
 
     let renderer = &mut activation.context.renderer;
 
