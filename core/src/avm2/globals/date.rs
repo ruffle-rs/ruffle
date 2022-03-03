@@ -3,14 +3,60 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{date_allocator, DateObject, Object, TObject};
+use crate::avm2::names::{Multiname, Namespace, QName};
+use crate::avm2::object::{date_allocator, DateObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{GcCell, MutationContext};
 use num_traits::ToPrimitive;
+
+// All of these methods will be defined as both
+// AS3 instance methods and methods on the `Date` class prototype.
+const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
+    ("getTime", time),
+    ("setTime", set_time),
+    ("getMilliseconds", milliseconds),
+    ("setMilliseconds", set_milliseconds),
+    ("getSeconds", seconds),
+    ("setSeconds", set_seconds),
+    ("getMinutes", minutes),
+    ("setMinutes", set_minutes),
+    ("getHours", hours),
+    ("setHours", set_hours),
+    ("getDate", date),
+    ("setDate", set_date),
+    ("getMonth", month),
+    ("setMonth", set_month),
+    ("getFullYear", full_year),
+    ("setFullYear", set_full_year),
+    ("getDay", day),
+    ("getUTCMilliseconds", milliseconds_utc),
+    ("setUTCMilliseconds", set_milliseconds_utc),
+    ("getUTCSeconds", seconds_utc),
+    ("setUTCSeconds", set_seconds_utc),
+    ("getUTCMinutes", minutes_utc),
+    ("setUTCMinutes", set_minutes_utc),
+    ("getUTCHours", hours_utc),
+    ("setUTCHours", set_hours_utc),
+    ("getUTCDate", date_utc),
+    ("setUTCDate", set_date_utc),
+    ("getUTCMonth", month_utc),
+    ("setUTCMonth", set_month_utc),
+    ("getUTCFullYear", full_year_utc),
+    ("setUTCFullYear", set_full_year_utc),
+    ("getUTCDay", day_utc),
+    ("getTimezoneOffset", timezone_offset),
+    ("valueOf", time),
+    ("toString", to_string),
+    ("toUTCString", to_utc_string),
+    ("toLocaleString", to_locale_string),
+    ("toTimeString", to_time_string),
+    ("toLocaleTimeString", to_locale_time_string),
+    ("toDateString", to_date_string),
+    ("toLocaleDateString", to_date_string),
+];
 
 struct DateAdjustment<
     'builder,
@@ -247,10 +293,31 @@ pub fn instance_init<'gc>(
 
 /// Implements `Date`'s class constructor.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let scope = activation.create_scopechain();
+        let gc_context = activation.context.gc_context;
+        let this_class = this.as_class_object().unwrap();
+        let date_proto = this_class.prototype();
+
+        for (name, method) in PUBLIC_INSTANCE_AND_PROTO_METHODS {
+            date_proto.set_property_local(
+                &Multiname::public(*name),
+                FunctionObject::from_method(
+                    activation,
+                    Method::from_builtin(*method, name, gc_context),
+                    scope,
+                    None,
+                    Some(this_class),
+                )
+                .into(),
+                activation,
+            )?;
+        }
+    }
     Ok(Value::Undefined)
 }
 
@@ -1277,50 +1344,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("getTime", time),
-        ("setTime", set_time),
-        ("getMilliseconds", milliseconds),
-        ("setMilliseconds", set_milliseconds),
-        ("getSeconds", seconds),
-        ("setSeconds", set_seconds),
-        ("getMinutes", minutes),
-        ("setMinutes", set_minutes),
-        ("getHours", hours),
-        ("setHours", set_hours),
-        ("getDate", date),
-        ("setDate", set_date),
-        ("getMonth", month),
-        ("setMonth", set_month),
-        ("getFullYear", full_year),
-        ("setFullYear", set_full_year),
-        ("getDay", day),
-        ("getUTCMilliseconds", milliseconds_utc),
-        ("setUTCMilliseconds", set_milliseconds_utc),
-        ("getUTCSeconds", seconds_utc),
-        ("setUTCSeconds", set_seconds_utc),
-        ("getUTCMinutes", minutes_utc),
-        ("setUTCMinutes", set_minutes_utc),
-        ("getUTCHours", hours_utc),
-        ("setUTCHours", set_hours_utc),
-        ("getUTCDate", date_utc),
-        ("setUTCDate", set_date_utc),
-        ("getUTCMonth", month_utc),
-        ("setUTCMonth", set_month_utc),
-        ("getUTCFullYear", full_year_utc),
-        ("setUTCFullYear", set_full_year_utc),
-        ("getUTCDay", day_utc),
-        ("getTimezoneOffset", timezone_offset),
-        ("valueOf", time),
-        ("toString", to_string),
-        ("toUTCString", to_utc_string),
-        ("toLocaleString", to_locale_string),
-        ("toTimeString", to_time_string),
-        ("toLocaleTimeString", to_locale_time_string),
-        ("toDateString", to_date_string),
-        ("toLocaleDateString", to_date_string),
-    ];
-    write.define_as3_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
+    write.define_as3_builtin_instance_methods(mc, PUBLIC_INSTANCE_AND_PROTO_METHODS);
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc), ("parse", parse)];
 
