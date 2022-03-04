@@ -99,12 +99,11 @@ pub fn is_finite<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ret = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(activation)?
-        .is_finite();
-    Ok(ret.into())
+    if let Some(val) = args.get(0) {
+        Ok(val.coerce_to_f64(activation)?.is_finite().into())
+    } else {
+        Ok(false.into())
+    }
 }
 
 pub fn is_nan<'gc>(
