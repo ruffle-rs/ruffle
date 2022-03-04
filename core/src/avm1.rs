@@ -124,7 +124,7 @@ pub struct Avm1<'gc> {
     has_mouse_listener: bool,
 
     /// The list of all movie clips in execution order.
-    pub clip_exec_list: Option<DisplayObject<'gc>>,
+    clip_exec_list: Option<DisplayObject<'gc>>,
 
     /// The mappings between symbol names and constructors registered
     /// with `Object.registerClass()`.
