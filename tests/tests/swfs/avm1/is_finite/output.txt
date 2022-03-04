@@ -1,0 +1,49 @@
+// isFinite(true)
+true
+// isFinite(false)
+true
+// isFinite(10)
+true
+// isFinite(-10)
+true
+// isFinite(0)
+true
+// isFinite(NaN)
+false
+// isFinite(Infinity)
+false
+// isFinite(-Infinity)
+false
+// isFinite("")
+false
+// isFinite("hello")
+false
+// isFinite(" ")
+false
+// isFinite("  5  ")
+false
+// isFinite("0")
+true
+// isFinite("NaN")
+false
+// isFinite("Infinity")
+false
+// isFinite("-Infinity")
+false
+// isFinite("100a")
+false
+// isFinite("0x10")
+true
+// isFinite("0xhello")
+false
+// isFinite("0x1999999981ffffff")
+true
+// isFinite("0xUIXUIDFKHJDF012345678")
+false
+// isFinite("123e-1")
+true
+// isFinite()
+false
+// isFinite(object)
+In valueOf
+true
