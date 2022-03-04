@@ -45,7 +45,7 @@ fn load_policy_file<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm_warn!(
         activation,
-        "System.security.allowInsecureDomain() not implemented"
+        "System.security.loadPolicyFile() not implemented"
     );
     Ok(Value::Undefined)
 }
