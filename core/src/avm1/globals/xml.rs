@@ -40,7 +40,7 @@ pub fn constructor<'gc>(
             .get("ignoreWhite", activation)?
             .as_bool(activation.swf_version());
 
-        if let Err(e) = document.replace_with_str(activation, string, true, ignore_whitespace) {
+        if let Err(e) = document.replace_with_str(activation, string, ignore_whitespace) {
             avm_warn!(
                 activation,
                 "Couldn't replace_with_str inside of XML constructor: {}",
@@ -108,7 +108,7 @@ fn parse_xml<'gc>(
             .get("ignoreWhite", activation)?
             .as_bool(activation.swf_version());
 
-        let result = document.replace_with_str(activation, &xmlstring, true, ignore_whitespace);
+        let result = document.replace_with_str(activation, &xmlstring, ignore_whitespace);
         if let Err(e) = result {
             avm_warn!(activation, "XML parsing error: {}", e);
         }

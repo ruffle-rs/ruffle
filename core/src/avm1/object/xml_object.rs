@@ -125,15 +125,10 @@ impl<'gc> XmlObject<'gc> {
     /// Replace the contents of this document with the result of parsing a string.
     ///
     /// This method does not yet actually remove existing node contents.
-    ///
-    /// If `process_entity` is `true`, then entities will be processed by this
-    /// function. Invalid or unrecognized entities will cause parsing to fail
-    /// with an `Err`.
     pub fn replace_with_str(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         data: &WStr,
-        process_entity: bool,
         ignore_white: bool,
     ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
@@ -165,11 +160,7 @@ impl<'gc> XmlObject<'gc> {
 
             match event {
                 Event::Start(bs) => {
-                    let child = XmlNode::from_start_event(
-                        activation.context.gc_context,
-                        bs,
-                        process_entity,
-                    )?;
+                    let child = XmlNode::from_start_event(activation.context.gc_context, bs)?;
                     self.update_id_map(activation, child);
                     open_tags
                         .last_mut()
@@ -178,11 +169,7 @@ impl<'gc> XmlObject<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let child = XmlNode::from_start_event(
-                        activation.context.gc_context,
-                        bs,
-                        process_entity,
-                    )?;
+                    let child = XmlNode::from_start_event(activation.context.gc_context, bs)?;
                     self.update_id_map(activation, child);
                     open_tags
                         .last_mut()
@@ -193,11 +180,7 @@ impl<'gc> XmlObject<'gc> {
                     open_tags.pop();
                 }
                 Event::Text(bt) | Event::CData(bt) => {
-                    let child = XmlNode::text_from_text_event(
-                        activation.context.gc_context,
-                        bt,
-                        process_entity,
-                    )?;
+                    let child = XmlNode::text_from_text_event(activation.context.gc_context, bt)?;
                     if child.node_value() != Some(AvmString::default())
                         && (!ignore_white || !child.is_whitespace_text())
                     {

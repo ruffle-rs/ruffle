@@ -9,7 +9,6 @@ use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
 use quick_xml::events::{BytesStart, BytesText};
-use smallvec::alloc::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::mem::swap;
@@ -90,7 +89,7 @@ pub enum XmlNodeData<'gc> {
 impl<'gc> XmlNode<'gc> {
     /// Construct a new XML text node.
     pub fn new_text(mc: MutationContext<'gc, '_>, contents: AvmString<'gc>) -> Self {
-        XmlNode(GcCell::allocate(
+        Self(GcCell::allocate(
             mc,
             XmlNodeData::Text {
                 script_object: None,
@@ -105,7 +104,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Construct a new XML element node.
     pub fn new_element(mc: MutationContext<'gc, '_>, element_name: AvmString<'gc>) -> Self {
-        XmlNode(GcCell::allocate(
+        Self(GcCell::allocate(
             mc,
             XmlNodeData::Element {
                 script_object: None,
@@ -122,7 +121,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Construct a new XML root node.
     pub fn new_document_root(mc: MutationContext<'gc, '_>) -> Self {
-        XmlNode(GcCell::allocate(
+        Self(GcCell::allocate(
             mc,
             XmlNodeData::DocumentRoot {
                 script_object: None,
@@ -139,25 +138,19 @@ impl<'gc> XmlNode<'gc> {
     pub fn from_start_event<'a>(
         mc: MutationContext<'gc, '_>,
         bs: BytesStart<'a>,
-        process_entity: bool,
     ) -> Result<Self, quick_xml::Error> {
         let tag_name = AvmString::new_utf8_bytes(mc, bs.name())?;
+
         let mut attributes = BTreeMap::new();
-
-        for a in bs.attributes() {
-            let attribute = a?;
-            let value_bytes = if process_entity {
-                attribute.unescaped_value()?
-            } else {
-                attribute.value
-            };
-
+        for attribute in bs.attributes() {
+            let attribute = attribute?;
+            let key = AvmString::new_utf8_bytes(mc, attribute.key)?;
+            let value_bytes = attribute.unescaped_value()?;
             let value = AvmString::new_utf8_bytes(mc, value_bytes)?;
-            let attr_key = AvmString::new_utf8_bytes(mc, attribute.key)?;
-            attributes.insert(attr_key, value);
+            attributes.insert(key, value);
         }
 
-        Ok(XmlNode(GcCell::allocate(
+        Ok(Self(GcCell::allocate(
             mc,
             XmlNodeData::Element {
                 script_object: None,
@@ -179,15 +172,8 @@ impl<'gc> XmlNode<'gc> {
     pub fn text_from_text_event<'a>(
         mc: MutationContext<'gc, '_>,
         bt: BytesText<'a>,
-        process_entity: bool,
     ) -> Result<Self, quick_xml::Error> {
-        let contents = if process_entity {
-            bt.unescaped()?
-        } else {
-            Cow::Borrowed(bt.escaped())
-        };
-
-        Ok(XmlNode(GcCell::allocate(
+        Ok(Self(GcCell::allocate(
             mc,
             XmlNodeData::Text {
                 script_object: None,
@@ -195,7 +181,7 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents: AvmString::new_utf8_bytes(mc, contents)?,
+                contents: AvmString::new_utf8_bytes(mc, bt.unescaped()?)?,
             },
         )))
     }
