@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use crate::string::{AvmString, WStr, WString};
@@ -160,8 +159,7 @@ impl<'gc> XmlObject<'gc> {
 
             match event {
                 Event::Start(bs) => {
-                    let child = XmlNode::from_start_event(activation.context.gc_context, bs)?;
-                    self.update_id_map(activation, child);
+                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
                     open_tags
                         .last_mut()
                         .unwrap()
@@ -169,8 +167,7 @@ impl<'gc> XmlObject<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let child = XmlNode::from_start_event(activation.context.gc_context, bs)?;
-                    self.update_id_map(activation, child);
+                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
                     open_tags
                         .last_mut()
                         .unwrap()
@@ -262,21 +259,6 @@ impl<'gc> XmlObject<'gc> {
     /// Obtain the script object for the document's `idMap` property.
     pub fn id_map(self) -> ScriptObject<'gc> {
         self.0.read().id_map
-    }
-
-    /// Update the ID map object with a given new node.
-    fn update_id_map(&mut self, activation: &mut Activation<'_, 'gc, '_>, mut node: XmlNode<'gc>) {
-        if let Some(id) = node.attribute_value(WStr::from_units(b"id")) {
-            self.0
-                .write(activation.context.gc_context)
-                .id_map
-                .define_value(
-                    activation.context.gc_context,
-                    id,
-                    node.script_object(activation).into(),
-                    Attribute::empty(),
-                );
-        }
     }
 
     pub fn status(self) -> XmlStatus {
