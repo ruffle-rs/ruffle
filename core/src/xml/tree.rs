@@ -3,7 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
-use crate::avm1::{Object, TObject};
+use crate::avm1::property::Attribute;
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -129,34 +130,31 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// The returned node will always be an `Element`, and it must only contain
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
-    pub fn from_start_event<'a>(
-        mc: MutationContext<'gc, '_>,
-        bs: BytesStart<'a>,
+    pub fn from_start_event(
+        activation: &mut Activation<'_, 'gc, '_>,
+        bs: BytesStart<'_>,
+        id_map: ScriptObject<'gc>,
     ) -> Result<Self, quick_xml::Error> {
-        let tag_name = AvmString::new_utf8_bytes(mc, bs.name())?;
-
-        let mut attributes = BTreeMap::new();
+        let tag_name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name())?;
+        let mut node = Self::new_element(activation.context.gc_context, tag_name);
         for attribute in bs.attributes() {
             let attribute = attribute?;
-            let key = AvmString::new_utf8_bytes(mc, attribute.key)?;
+            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key)?;
             let value_bytes = attribute.unescaped_value()?;
-            let value = AvmString::new_utf8_bytes(mc, value_bytes)?;
-            attributes.insert(key, value);
-        }
+            let value = AvmString::new_utf8_bytes(activation.context.gc_context, value_bytes)?;
+            node.set_attribute_value(activation.context.gc_context, key, value);
 
-        Ok(Self(GcCell::allocate(
-            mc,
-            XmlNodeData::Element {
-                script_object: None,
-                parent: None,
-                prev_sibling: None,
-                next_sibling: None,
-                tag_name: Some(tag_name),
-                attributes,
-                attributes_script_object: None,
-                children: Vec::new(),
-            },
-        )))
+            // Update the ID map.
+            if attribute.key == b"id" {
+                id_map.define_value(
+                    activation.context.gc_context,
+                    value,
+                    node.script_object(activation).into(),
+                    Attribute::empty(),
+                );
+            }
+        }
+        Ok(node)
     }
 
     /// Get the parent, if this node has one.
