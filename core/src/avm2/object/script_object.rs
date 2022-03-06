@@ -138,7 +138,9 @@ impl<'gc> ScriptObjectData<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         if !multiname.contains_public_namespace() {
-            return Err("Non-public property not found on Object".into());
+            return Err(
+                format!("Non-public property `{:?}` not found on Object", multiname).into(),
+            );
         }
 
         let local_name = match multiname.local_name() {
