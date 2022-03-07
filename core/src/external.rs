@@ -1,12 +1,17 @@
 use crate::avm1::activation::{
     Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
 };
-use crate::avm1::object::TObject;
+use crate::avm1::object::TObject as _;
 use crate::avm1::Value as Avm1Value;
 use crate::avm1::{
     ArrayObject as Avm1ArrayObject, Error as Avm1Error, Object as Avm1Object,
     ScriptObject as Avm1ScriptObject,
 };
+use crate::avm2::activation::Activation as Avm2Activation;
+use crate::avm2::object::TObject as _;
+use crate::avm2::Value as Avm2Value;
+use crate::avm2::{ArrayObject as Avm2ArrayObject, Error as Avm2Error, Object as Avm2Object};
+
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -177,6 +182,59 @@ impl Value {
             .into(),
         }
     }
+
+    pub fn from_avm2<'gc>(
+        activation: &mut Avm2Activation<'_, 'gc, '_>,
+        value: Avm2Value<'gc>,
+    ) -> Result<Value, Avm2Error> {
+        Ok(match value {
+            Avm2Value::Undefined | Avm2Value::Null => Value::Null,
+            Avm2Value::Bool(value) => value.into(),
+            Avm2Value::Number(value) => value.into(),
+            Avm2Value::Unsigned(value) => value.into(),
+            Avm2Value::Integer(value) => value.into(),
+            Avm2Value::String(value) => Value::String(value.to_string()),
+            Avm2Value::Object(object) => {
+                if let Some(array) = object.as_array_storage() {
+                    let length = array.length();
+                    let values: Result<Vec<_>, Avm2Error> = (0..length)
+                        .map(|i| {
+                            // FIXME - is this right?
+                            let element = array.get(i).unwrap_or(Avm2Value::Null);
+                            Value::from_avm2(activation, element)
+                        })
+                        .collect();
+                    Value::List(values?)
+                } else {
+                    log::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
+                    Value::Null
+                }
+            }
+        })
+    }
+
+    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc, '_>) -> Avm2Value<'gc> {
+        match self {
+            Value::Null => Avm2Value::Null,
+            Value::Bool(value) => Avm2Value::Bool(value),
+            Value::Number(value) => Avm2Value::Number(value),
+            Value::String(value) => {
+                Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
+            }
+            Value::Object(_values) => {
+                log::warn!("into_avm2 needs to be implemented for Value::Object");
+                Avm2Value::Undefined
+            }
+            Value::List(values) => {
+                let storage = values
+                    .iter()
+                    .map(|value| value.to_owned().into_avm2(activation))
+                    .collect();
+
+                Avm2Value::Object(Avm2ArrayObject::from_storage(activation, storage).unwrap())
+            }
+        }
+    }
 }
 
 #[derive(Collect, Clone)]
@@ -185,6 +243,9 @@ pub enum Callback<'gc> {
     Avm1 {
         this: Avm1Value<'gc>,
         method: Avm1Object<'gc>,
+    },
+    Avm2 {
+        method: Avm2Object<'gc>,
     },
 }
 
@@ -216,6 +277,21 @@ impl<'gc> Callback<'gc> {
                 if let Ok(result) = method
                     .call(name, &mut activation, this.into(), &args)
                     .and_then(|value| Value::from_avm1(&mut activation, value))
+                {
+                    result
+                } else {
+                    Value::Null
+                }
+            }
+            Callback::Avm2 { method } => {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let args: Vec<Avm2Value> = args
+                    .into_iter()
+                    .map(|v| v.into_avm2(&mut activation))
+                    .collect();
+                if let Ok(result) = method
+                    .call(None, &args, &mut activation)
+                    .and_then(|value| Value::from_avm2(&mut activation, value))
                 {
                     result
                 } else {

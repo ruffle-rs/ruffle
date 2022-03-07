@@ -21,7 +21,7 @@ macro_rules! avm_debug {
     )
 }
 
-mod activation;
+pub mod activation;
 mod array;
 mod bytearray;
 mod class;
@@ -31,7 +31,7 @@ mod function;
 mod globals;
 mod method;
 mod names;
-mod object;
+pub mod object;
 mod property;
 mod property_map;
 mod regexp;
