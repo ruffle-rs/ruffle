@@ -327,7 +327,7 @@ pub fn bytes<'gc>(
     Ok(Value::Undefined)
 }
 
-/// `loaderUrl` getter
+/// `loaderURL` getter
 pub fn loader_url<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
@@ -427,7 +427,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("url", Some(url), None),
         ("width", Some(width), None),
         ("bytes", Some(bytes), None),
-        ("loaderUrl", Some(loader_url), None),
+        ("loaderURL", Some(loader_url), None),
         ("parameters", Some(parameters), None),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
