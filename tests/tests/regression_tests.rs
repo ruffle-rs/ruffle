@@ -856,6 +856,52 @@ fn external_interface_avm1() -> Result<(), Error> {
 }
 
 #[test]
+fn external_interface_avm2() -> Result<(), Error> {
+    set_logger();
+    test_swf_with_hooks(
+        "tests/swfs/avm2/external_interface/test.swf",
+        1,
+        "tests/swfs/avm2/external_interface/output.txt",
+        |player| {
+            player
+                .lock()
+                .unwrap()
+                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+            Ok(())
+        },
+        |player| {
+            let mut player_locked = player.lock().unwrap();
+
+            let parroted =
+                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
+            player_locked.log_backend().avm_trace(&format!(
+                "After calling `parrot` with a string: {:?}",
+                parroted
+            ));
+
+            player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);
+
+            let root: ExternalValue = vec![
+                "string".into(),
+                100.into(),
+                ExternalValue::Null,
+                false.into(),
+            ]
+            .into();
+
+            let result =
+                player_locked.call_internal_interface("callWith", vec!["trace".into(), root]);
+            player_locked.log_backend().avm_trace(&format!(
+                "After calling `callWith` with a complex payload: {:?}",
+                result
+            ));
+            Ok(())
+        },
+        false,
+    )
+}
+
+#[test]
 fn shared_object_avm1() -> Result<(), Error> {
     set_logger();
     // Test SharedObject persistence. Run an SWF that saves data

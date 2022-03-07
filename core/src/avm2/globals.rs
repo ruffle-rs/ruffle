@@ -942,5 +942,12 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    // package `flash.external`
+    class(
+        activation,
+        flash::external::externalinterface::create_class(mc),
+        script,
+    )?;
+
     Ok(())
 }
