@@ -16,6 +16,7 @@ members = [
     "render/webgl",
 
     "tests",
+    "tests/input-format",
 ]
 resolver = "2"
 
