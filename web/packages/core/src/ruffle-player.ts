@@ -418,7 +418,10 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmDownload;
                 } else if (e.name === "TypeError") {
                     e.ruffleIndexError = PanicError.JavascriptConflict;
-                } else if (navigator.userAgent.includes("Edg")) {
+                } else if (
+                    navigator.userAgent.includes("Edg") &&
+                    message.includes("webassembly is not defined")
+                ) {
                     // Microsoft Edge detection.
                     e.ruffleIndexError = PanicError.WasmDisabledMicrosoftEdge;
                 }
