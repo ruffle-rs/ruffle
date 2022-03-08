@@ -2988,6 +2988,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle-input-format"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
