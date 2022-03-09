@@ -38,6 +38,7 @@ const enum PanicError {
     WasmDownload,
     WasmMimeType,
     WasmNotFound,
+    WasmDisabledMicrosoftEdge,
     SwfFetchError,
 }
 
@@ -417,6 +418,12 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmDownload;
                 } else if (e.name === "TypeError") {
                     e.ruffleIndexError = PanicError.JavascriptConflict;
+                } else if (
+                    navigator.userAgent.includes("Edg") &&
+                    message.includes("webassembly is not defined")
+                ) {
+                    // Microsoft Edge detection.
+                    e.ruffleIndexError = PanicError.WasmDisabledMicrosoftEdge;
                 }
             }
             this.panic(e);
@@ -1241,6 +1248,20 @@ export class RufflePlayer extends HTMLElement {
                     <p>Otherwise, please contact the website administrator.</p>
                 `;
                 errorFooter = `
+                    <li><a href="#" id="panic-view-details">View Error Details</a></li>
+                `;
+                break;
+            case PanicError.WasmDisabledMicrosoftEdge:
+                // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
+                // "Enhance your Security on the web" setting.
+                errorBody = `
+                    <p>Ruffle failed to load the required ".wasm" file component.</p>
+                    <p>To fix this, try opening your browser's settings, clicking "Privacy, search, and services", scrolling down, and turning off "Enhance your security on the web".</p>
+                    <p>This will allow your browser to load the required ".wasm" files.</p>
+                    <p>If the issue persists, you might have to use a different browser.</p>
+                `;
+                errorFooter = `
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">More Information</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
