@@ -1261,7 +1261,7 @@ export class RufflePlayer extends HTMLElement {
                     <p>If the issue persists, you might have to use a different browser.</p>
                 `;
                 errorFooter = `
-                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/issues/6395#issuecomment-1058952356">More Information</a></li>
+                    <li><a target="_top" href="https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error">More Information</a></li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
