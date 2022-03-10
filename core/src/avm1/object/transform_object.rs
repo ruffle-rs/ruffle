@@ -1,10 +1,7 @@
-use crate::avm1::error::Error;
-use crate::avm1::{Object, ScriptObject, TDisplayObject, TObject, Value};
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::display_object::MovieClip;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
-
-use crate::avm1::activation::Activation;
 use std::fmt;
 
 /// A flash.geom.Transform object
@@ -31,7 +28,7 @@ impl fmt::Debug for TransformObject<'_> {
 
 impl<'gc> TransformObject<'gc> {
     pub fn empty(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        TransformObject(GcCell::allocate(
+        Self(GcCell::allocate(
             gc_context,
             TransformData {
                 base: ScriptObject::object(gc_context, proto),
@@ -53,29 +50,4 @@ impl<'gc> TObject<'gc> for TransformObject<'gc> {
     impl_custom_object!(base {
         bare_object(as_transform_object -> TransformObject::empty);
     });
-
-    fn construct(
-        &self,
-        activation: &mut Activation<'_, 'gc, '_>,
-        args: &[Value<'gc>],
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let prototype = self
-            .get("prototype", activation)?
-            .coerce_to_object(activation);
-
-        let clip = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)
-            .as_display_object()
-            .and_then(|o| o.as_movie_clip());
-
-        if clip.is_none() {
-            return Ok(Value::Undefined);
-        }
-
-        let this = prototype.create_bare_object(activation, prototype)?;
-        self.construct_on_existing(activation, this, args)?;
-        Ok(this.into())
-    }
 }
