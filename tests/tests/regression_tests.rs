@@ -672,7 +672,6 @@ swf_tests! {
     (removed_base_clip_tell_target, "avm1/removed_base_clip_tell_target", 2),
     (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
     (root_global_parent, "avm1/root_global_parent", 3),
-    (roots_and_levels, "avm1/roots_and_levels", 1),
     (selection, "avm1/selection", 1),
     (set_interval, "avm1/set_interval", 20),
     (set_variable_scope, "avm1/set_variable_scope", 1),
