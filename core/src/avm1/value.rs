@@ -2,6 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject};
+use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
@@ -474,7 +475,17 @@ impl<'gc> Value<'gc> {
             Value::Number(_) => "number",
             Value::Bool(_) => "boolean",
             Value::String(_) => "string",
-            Value::Object(object) => object.type_of(),
+            Value::Object(object) if object.as_executable().is_some() => "function",
+            // MovieClips have a special typeof "movieclip", while others have the default "object".
+            Value::Object(object)
+                if object
+                    .as_display_object()
+                    .and_then(|o| o.as_movie_clip())
+                    .is_some() =>
+            {
+                "movieclip"
+            }
+            Value::Object(_) => "object",
         }
     }
 

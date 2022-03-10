@@ -184,10 +184,6 @@ macro_rules! impl_custom_object {
             self.0.read().$field.get_keys(activation)
         }
 
-        fn type_of(&self) -> &'static str {
-            self.0.read().$field.type_of()
-        }
-
         fn interfaces(&self) -> Vec<$crate::avm1::Object<'gc>> {
             self.0.read().$field.interfaces()
         }

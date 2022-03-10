@@ -13,9 +13,6 @@ use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
-/// The type string for MovieClip objects.
-pub const TYPE_OF_MOVIE_CLIP: &str = "movieclip";
-
 /// A ScriptObject that is inherently tied to a display node.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -43,17 +40,10 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         proto: Option<Object<'gc>>,
     ) -> Self {
-        let mut base = ScriptObject::object(gc_context, proto);
-
-        // MovieClips have a special typeof "movieclip", while others are the default "object".
-        if display_object.as_movie_clip().is_some() {
-            base.set_type_of(gc_context, TYPE_OF_MOVIE_CLIP);
-        }
-
         Self(GcCell::allocate(
             gc_context,
             StageObjectData {
-                base,
+                base: ScriptObject::object(gc_context, proto),
                 display_object,
                 text_field_bindings: Vec::new(),
             },
@@ -499,9 +489,6 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             .set_interfaces(gc_context, iface_list)
     }
 
-    fn type_of(&self) -> &'static str {
-        self.0.read().base.type_of()
-    }
     fn as_script_object(&self) -> Option<ScriptObject<'gc>> {
         Some(self.0.read().base)
     }

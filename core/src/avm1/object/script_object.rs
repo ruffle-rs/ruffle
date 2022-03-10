@@ -8,8 +8,6 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
 
-pub const TYPE_OF_OBJECT: &str = "object";
-
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Watcher<'gc> {
@@ -56,7 +54,6 @@ pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 pub struct ScriptObjectData<'gc> {
     properties: PropertyMap<'gc, Property<'gc>>,
     interfaces: Vec<Object<'gc>>,
-    type_of: &'static str,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
 }
 
@@ -74,7 +71,6 @@ impl<'gc> ScriptObject<'gc> {
         let object = Self(GcCell::allocate(
             gc_context,
             ScriptObjectData {
-                type_of: TYPE_OF_OBJECT,
                 properties: PropertyMap::new(),
                 interfaces: vec![],
                 watchers: PropertyMap::new(),
@@ -106,10 +102,6 @@ impl<'gc> ScriptObject<'gc> {
     /// friends.
     pub fn bare_object(gc_context: MutationContext<'gc, '_>) -> Self {
         Self::object(gc_context, None)
-    }
-
-    pub fn set_type_of(&mut self, gc_context: MutationContext<'gc, '_>, type_of: &'static str) {
-        self.0.write(gc_context).type_of = type_of;
     }
 
     /// Gets the value of a data property on this object.
@@ -475,10 +467,6 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         }));
 
         out_keys
-    }
-
-    fn type_of(&self) -> &'static str {
-        self.0.read().type_of
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {

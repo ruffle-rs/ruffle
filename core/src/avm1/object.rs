@@ -442,9 +442,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Enumerate the object.
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>>;
 
-    /// Get the object's type string.
-    fn type_of(&self) -> &'static str;
-
     /// Enumerate all interfaces implemented by this object.
     fn interfaces(&self) -> Vec<Object<'gc>>;
 

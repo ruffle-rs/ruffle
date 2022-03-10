@@ -3,7 +3,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::object::script_object::TYPE_OF_OBJECT;
 use crate::avm1::object::{search_prototype, ExecutionName};
 use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TObject, Value};
@@ -264,10 +263,6 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn get_keys(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         vec![]
-    }
-
-    fn type_of(&self) -> &'static str {
-        TYPE_OF_OBJECT
     }
 
     fn length(&self, _activation: &mut Activation<'_, 'gc, '_>) -> Result<i32, Error<'gc>> {
