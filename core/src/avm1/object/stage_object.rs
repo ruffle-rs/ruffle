@@ -118,26 +118,45 @@ impl<'gc> StageObject<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         case_sensitive: bool,
     ) -> Option<Value<'gc>> {
-        if let Some(slice) = name.slice(..6) {
-            let level_prefix = WStr::from_units(b"_level");
+        if let Some(prefix) = name.slice(..6) {
             let is_level = if case_sensitive {
-                slice == level_prefix
+                prefix == b"_level" || prefix == b"_flash"
             } else {
-                slice.eq_ignore_case(level_prefix)
+                prefix.eq_ignore_case(WStr::from_units(b"_level"))
+                    || prefix.eq_ignore_case(WStr::from_units(b"_flash"))
             };
             if is_level {
-                if let Some(level_id) = name.slice(6..).and_then(|v| v.parse::<i32>().ok()) {
-                    let level = context
-                        .stage
-                        .child_by_depth(level_id)
-                        .map(|o| o.object())
-                        .unwrap_or(Value::Undefined);
-                    return Some(level);
-                }
+                let level_id = Self::parse_level_id(&name[6..]);
+                let level = context
+                    .stage
+                    .child_by_depth(level_id)
+                    .map(|o| o.object())
+                    .unwrap_or(Value::Undefined);
+                return Some(level);
             }
         }
 
         None
+    }
+
+    fn parse_level_id(digits: &WStr) -> i32 {
+        // TODO: Use `split_first`?
+        let (is_negative, digits) = match digits.get(0) {
+            Some(45) => (true, &digits[1..]),
+            _ => (false, digits),
+        };
+        let mut level_id: i32 = 0;
+        for digit in digits
+            .iter()
+            .map_while(|c| char::from_u32(c.into()).and_then(|c| c.to_digit(10)))
+        {
+            level_id = level_id.wrapping_mul(10);
+            level_id = level_id.wrapping_add(digit as i32);
+        }
+        if is_negative {
+            level_id = level_id.wrapping_neg();
+        }
+        level_id
     }
 }
 

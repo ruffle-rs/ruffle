@@ -1133,6 +1133,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_get_url(&mut self, action: GetUrl) -> Result<FrameControl<'gc>, Error<'gc>> {
         let target = action.target.to_str_lossy(self.encoding());
         let url = action.url.to_string_lossy(self.encoding());
+        // TODO: Use `StageObject::get_level_by_path`.
         if target.starts_with("_level") && target.len() > 6 {
             match target[6..].parse::<i32>() {
                 Ok(level_id) => {
@@ -1253,6 +1254,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             return Ok(FrameControl::Continue);
         } else if window_target.starts_with(WStr::from_units(b"_level")) && window_target.len() > 6
         {
+            // TODO: Use `StageObject::get_level_by_path`.
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
