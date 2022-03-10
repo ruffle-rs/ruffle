@@ -230,10 +230,6 @@ impl<'gc> TObject<'gc> for XmlAttributesObject<'gc> {
         base
     }
 
-    fn type_of(&self) -> &'static str {
-        self.base().type_of()
-    }
-
     fn interfaces(&self) -> Vec<Object<'gc>> {
         self.base().interfaces()
     }

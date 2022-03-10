@@ -403,8 +403,6 @@ impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
     }
 }
 
-pub const TYPE_OF_FUNCTION: &str = "function";
-
 /// Represents an `Object` that holds executable code.
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -791,10 +789,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn get_keys(&self, activation: &mut Activation<'_, 'gc, '_>) -> Vec<AvmString<'gc>> {
         self.base.get_keys(activation)
-    }
-
-    fn type_of(&self) -> &'static str {
-        TYPE_OF_FUNCTION
     }
 
     fn interfaces(&self) -> Vec<Object<'gc>> {
