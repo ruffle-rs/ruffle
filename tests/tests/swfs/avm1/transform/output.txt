@@ -65,3 +65,7 @@ false
 // t.colorTransform == t.colorTransform
 false
 
+// t = new Transform()
+// t:
+undefined
+
