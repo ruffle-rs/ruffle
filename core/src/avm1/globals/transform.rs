@@ -49,18 +49,18 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let clip = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)
-        .as_display_object()
-        .and_then(|o| o.as_movie_clip());
-
-    if let (Some(transform), Some(clip)) = (this.as_transform_object(), clip) {
-        transform.set_clip(activation.context.gc_context, clip);
+    // `Tranform` constructor accepts exactly 1 argument.
+    if let [Value::Object(clip)] = args {
+        if let (Some(transform), Some(clip)) = (
+            this.as_transform_object(),
+            clip.as_display_object().and_then(|o| o.as_movie_clip()),
+        ) {
+            transform.set_clip(activation.context.gc_context, clip);
+            return Ok(this.into());
+        }
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn create_proto<'gc>(
