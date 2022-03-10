@@ -26,6 +26,42 @@ _level0._x
 // _root._x
 42
 
+// _root
+_level0
+// _level0
+_level0
+// _flash0
+_level0
+// _level
+_level0
+// _flash
+_level0
+// _level0a
+_level0
+// _flash0a
+_level0
+
+// _level2147483648
+undefined
+// _level4294967296
+_level0
+// _level4294967297
+undefined
+
+// _level1
+undefined
+// _flash1
+undefined
+// _level1a
+undefined
+// _flash1a
+undefined
+
+// _root['_level-1']
+undefined
+// _root['_flash-1']
+undefined
+
 // _root['_level0']
 _level0
 // _root['_level0'] = 50
