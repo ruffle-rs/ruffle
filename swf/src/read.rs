@@ -1034,38 +1034,69 @@ impl<'a> Reader<'a> {
                 let _ = self.read_u16();
             }
         } else {
+            let offsets_ref = self.get_ref();
+
             // OffsetTable
-            // We are throwing these away.
-            for _ in &mut glyphs {
-                if has_wide_offsets {
-                    self.read_u32()?;
-                } else {
-                    self.read_u16()?;
-                };
-            }
+            let offsets: Result<Vec<_>> = (0..num_glyphs)
+                .map(|_| {
+                    if has_wide_offsets {
+                        self.read_u32()
+                    } else {
+                        self.read_u16().map(u32::from)
+                    }
+                })
+                .collect();
+            let offsets = offsets?;
 
             // CodeTableOffset
-            if has_wide_offsets {
-                self.read_u32()?;
+            let code_table_offset = if has_wide_offsets {
+                self.read_u32()?
             } else {
-                self.read_u16()?;
-            }
+                self.read_u16()?.into()
+            };
 
-            // ShapeTable
-            let swf_version = self.version;
-            for glyph in &mut glyphs {
+            // GlyphShapeTable
+            for (i, glyph) in glyphs.iter_mut().enumerate() {
+                // The glyph shapes are assumed to be positioned per the offset table.
+                // Panic on debug builds if this assumption is wrong, maybe we need to
+                // seek into these offsets instead?
+                debug_assert_eq!(self.pos(offsets_ref), offsets[i] as usize);
+
+                // The glyph shapes must not overlap. Avoid exceeding to the next one.
+                // TODO: What happens on decreasing offsets?
+                let available_bytes = if i < num_glyphs as usize - 1 {
+                    offsets[i + 1] - offsets[i]
+                } else {
+                    code_table_offset - offsets[i]
+                };
+
+                if available_bytes == 0 {
+                    continue;
+                }
+
                 let num_bits = self.read_u8()?;
                 let mut shape_context = ShapeContext {
-                    swf_version,
+                    swf_version: self.version,
                     shape_version: 1,
                     num_fill_bits: num_bits >> 4,
                     num_line_bits: num_bits & 0b1111,
                 };
+
+                if available_bytes == 1 {
+                    continue;
+                }
+
+                // TODO: Avoid reading more than `available_bytes - 1`?
                 let mut bits = self.bits();
                 while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
                     glyph.shape_records.push(record);
                 }
             }
+
+            // The code table is assumed to be positioned right after the glyph shapes.
+            // Panic on debug builds if this assumption is wrong, maybe we need to seek
+            // into the code table offset instead?
+            debug_assert_eq!(self.pos(offsets_ref), code_table_offset as usize);
 
             // CodeTable
             for glyph in &mut glyphs {
