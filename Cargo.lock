@@ -2991,7 +2991,9 @@ dependencies = [
 name = "ruffle-input-format"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
