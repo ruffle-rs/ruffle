@@ -81,5 +81,7 @@ impl InputInjector {
                 event_sink(event, self.buttons);
             }
         }
+
+        self.pos = pos;
     }
 }
