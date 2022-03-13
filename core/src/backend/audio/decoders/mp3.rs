@@ -1,10 +1,7 @@
 #[cfg(feature = "minimp3")]
 pub mod minimp3 {
     use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
-    use std::{
-        convert::TryInto,
-        io::{Cursor, Read},
-    };
+    use std::io::{Cursor, Read};
 
     type Error = Box<dyn std::error::Error>;
 
@@ -99,10 +96,7 @@ pub mod minimp3 {
 #[allow(dead_code)]
 pub mod symphonia {
     use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
-    use std::{
-        convert::TryInto,
-        io::{Cursor, Read},
-    };
+    use std::io::{Cursor, Read};
     use symphonia::{
         core::{
             self, audio, codecs, errors,

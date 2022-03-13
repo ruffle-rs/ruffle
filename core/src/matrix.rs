@@ -162,7 +162,7 @@ impl std::ops::Mul<(Twips, Twips)> for Matrix {
     }
 }
 
-impl std::default::Default for Matrix {
+impl Default for Matrix {
     fn default() -> Matrix {
         Matrix::IDENTITY
     }

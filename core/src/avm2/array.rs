@@ -2,7 +2,6 @@
 
 use crate::avm2::value::Value;
 use gc_arena::Collect;
-use std::iter::{ExactSizeIterator, FromIterator};
 use std::ops::RangeBounds;
 
 /// The array storage portion of an array object.

@@ -71,7 +71,7 @@ impl ColorTransform {
     }
 }
 
-impl std::default::Default for ColorTransform {
+impl Default for ColorTransform {
     fn default() -> ColorTransform {
         ColorTransform {
             r_mult: Fixed8::ONE,

@@ -383,7 +383,7 @@ impl<'a> From<&'a WStr> for WString {
     }
 }
 
-impl std::iter::FromIterator<u16> for WString {
+impl FromIterator<u16> for WString {
     fn from_iter<T: IntoIterator<Item = u16>>(iter: T) -> Self {
         let iter = iter.into_iter();
         let (min_size, _) = iter.size_hint();
