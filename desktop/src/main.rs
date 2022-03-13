@@ -323,219 +323,214 @@ impl App {
         let mut next_frame_time = Instant::now();
         let mut minimized = false;
         let mut fullscreen_down = false;
-        loop {
-            // Poll UI events
-            self.event_loop
-                .run(move |event, _window_target, control_flow| {
-                    if movie.is_none() {
-                        *control_flow = ControlFlow::Wait;
-                    }
 
-                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                    #[allow(deprecated)]
-                    match &event {
-                        winit::event::Event::LoopDestroyed => {
-                            player.lock().unwrap().flush_shared_objects();
-                            shutdown(&Ok(()));
-                            return;
-                        }
-                        winit::event::Event::WindowEvent { event, .. } => match event {
-                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                            WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Return),
-                                        modifiers,
-                                        ..
-                                    },
-                                ..
-                            } if modifiers.alt() => {
-                                if !fullscreen_down {
-                                    player.lock().unwrap().update(|uc| {
-                                        uc.stage.toggle_display_state(uc);
-                                    });
-                                }
-                                fullscreen_down = true;
-                                return;
-                            }
-                            WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: ElementState::Released,
-                                        virtual_keycode: Some(VirtualKeyCode::Return),
-                                        ..
-                                    },
-                                ..
-                            } if fullscreen_down => {
-                                fullscreen_down = false;
-                            }
-                            WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    },
-                                ..
-                            } => player.lock().unwrap().update(|uc| {
-                                uc.stage.set_display_state(uc, StageDisplayState::Normal);
-                            }),
-                            _ => (),
-                        },
-                        _ => (),
-                    }
+        // Poll UI events
+        self.event_loop
+            .run(move |event, _window_target, control_flow| {
+                if movie.is_none() {
+                    *control_flow = ControlFlow::Wait;
+                }
 
-                    if movie.is_none() {
+                // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                #[allow(deprecated)]
+                match &event {
+                    winit::event::Event::LoopDestroyed => {
+                        player.lock().unwrap().flush_shared_objects();
+                        shutdown(&Ok(()));
                         return;
                     }
-
-                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                    #[allow(deprecated)]
-                    match event {
-                        // Core loop
-                        winit::event::Event::MainEventsCleared => {
-                            let new_time = Instant::now();
-                            let dt = new_time.duration_since(time).as_micros();
-                            if dt > 0 {
-                                time = new_time;
-                                let mut player_lock = player.lock().unwrap();
-                                player_lock.tick(dt as f64 / 1000.0);
-                                next_frame_time = new_time + player_lock.time_til_next_frame();
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
+                    winit::event::Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    modifiers,
+                                    ..
+                                },
+                            ..
+                        } if modifiers.alt() => {
+                            if !fullscreen_down {
+                                player.lock().unwrap().update(|uc| {
+                                    uc.stage.toggle_display_state(uc);
+                                });
                             }
+                            fullscreen_down = true;
+                            return;
                         }
-
-                        // Render
-                        winit::event::Event::RedrawRequested(_) => {
-                            // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
-                            if !minimized {
-                                player.lock().unwrap().render();
-                            }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Released,
+                                    virtual_keycode: Some(VirtualKeyCode::Return),
+                                    ..
+                                },
+                            ..
+                        } if fullscreen_down => {
+                            fullscreen_down = false;
                         }
+                        WindowEvent::KeyboardInput {
+                            input:
+                                KeyboardInput {
+                                    state: ElementState::Pressed,
+                                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                                    ..
+                                },
+                            ..
+                        } => player.lock().unwrap().update(|uc| {
+                            uc.stage.set_display_state(uc, StageDisplayState::Normal);
+                        }),
+                        _ => (),
+                    },
+                    _ => (),
+                }
 
-                        winit::event::Event::WindowEvent { event, .. } => match event {
-                            WindowEvent::Resized(size) => {
-                                // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
-                                minimized = size.width == 0 && size.height == 0;
+                if movie.is_none() {
+                    return;
+                }
 
-                                let viewport_scale_factor = window.scale_factor();
-                                let mut player_lock = player.lock().unwrap();
-                                player_lock.set_viewport_dimensions(
-                                    size.width,
-                                    size.height,
-                                    viewport_scale_factor,
-                                );
-                                player_lock
-                                    .renderer_mut()
-                                    .set_viewport_dimensions(size.width, size.height);
+                // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                #[allow(deprecated)]
+                match event {
+                    // Core loop
+                    winit::event::Event::MainEventsCleared => {
+                        let new_time = Instant::now();
+                        let dt = new_time.duration_since(time).as_micros();
+                        if dt > 0 {
+                            time = new_time;
+                            let mut player_lock = player.lock().unwrap();
+                            player_lock.tick(dt as f64 / 1000.0);
+                            next_frame_time = new_time + player_lock.time_til_next_frame();
+                            if player_lock.needs_render() {
                                 window.request_redraw();
                             }
-                            WindowEvent::CursorMoved { position, .. } => {
-                                let mut player_lock = player.lock().unwrap();
-                                mouse_pos = position;
-                                let event = PlayerEvent::MouseMove {
-                                    x: position.x,
-                                    y: position.y,
-                                };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
-                            }
-                            WindowEvent::MouseInput { button, state, .. } => {
-                                use ruffle_core::events::MouseButton as RuffleMouseButton;
-                                let mut player_lock = player.lock().unwrap();
-                                let x = mouse_pos.x;
-                                let y = mouse_pos.y;
-                                let button = match button {
-                                    MouseButton::Left => RuffleMouseButton::Left,
-                                    MouseButton::Right => RuffleMouseButton::Right,
-                                    MouseButton::Middle => RuffleMouseButton::Middle,
-                                    MouseButton::Other(_) => RuffleMouseButton::Unknown,
-                                };
-                                let event = match state {
-                                    ElementState::Pressed => {
-                                        PlayerEvent::MouseDown { x, y, button }
-                                    }
-                                    ElementState::Released => PlayerEvent::MouseUp { x, y, button },
-                                };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
-                            }
-                            WindowEvent::MouseWheel { delta, .. } => {
-                                use ruffle_core::events::MouseWheelDelta;
-                                let mut player_lock = player.lock().unwrap();
-                                let delta = match delta {
-                                    MouseScrollDelta::LineDelta(_, dy) => {
-                                        MouseWheelDelta::Lines(dy.into())
-                                    }
-                                    MouseScrollDelta::PixelDelta(pos) => {
-                                        MouseWheelDelta::Pixels(pos.y)
-                                    }
-                                };
-                                let event = PlayerEvent::MouseWheel { delta };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
-                            }
-                            WindowEvent::CursorLeft { .. } => {
-                                let mut player_lock = player.lock().unwrap();
-                                player_lock.handle_event(PlayerEvent::MouseLeave);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
-                            }
-                            WindowEvent::KeyboardInput { input, .. } => {
-                                let mut player_lock = player.lock().unwrap();
-                                if let Some(key) = input.virtual_keycode {
-                                    let key_code = winit_to_ruffle_key_code(key);
-                                    let key_char = winit_key_to_char(
-                                        key,
-                                        input.modifiers.contains(ModifiersState::SHIFT),
-                                    );
-                                    let event = match input.state {
-                                        ElementState::Pressed => {
-                                            PlayerEvent::KeyDown { key_code, key_char }
-                                        }
-                                        ElementState::Released => {
-                                            PlayerEvent::KeyUp { key_code, key_char }
-                                        }
-                                    };
-                                    player_lock.handle_event(event);
-                                    if player_lock.needs_render() {
-                                        window.request_redraw();
-                                    }
-                                }
-                            }
-                            WindowEvent::ReceivedCharacter(codepoint) => {
-                                let mut player_lock = player.lock().unwrap();
-                                let event = PlayerEvent::TextInput { codepoint };
-                                player_lock.handle_event(event);
-                                if player_lock.needs_render() {
-                                    window.request_redraw();
-                                }
-                            }
-                            _ => (),
-                        },
-                        winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
-                            .lock()
-                            .expect("active executor reference")
-                            .poll_all(),
-                        _ => (),
+                        }
                     }
 
-                    // After polling events, sleep the event loop until the next event or the next frame.
-                    if *control_flow != ControlFlow::Exit {
-                        *control_flow = ControlFlow::WaitUntil(next_frame_time);
+                    // Render
+                    winit::event::Event::RedrawRequested(_) => {
+                        // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
+                        if !minimized {
+                            player.lock().unwrap().render();
+                        }
                     }
-                });
-        }
+
+                    winit::event::Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::Resized(size) => {
+                            // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                            minimized = size.width == 0 && size.height == 0;
+
+                            let viewport_scale_factor = window.scale_factor();
+                            let mut player_lock = player.lock().unwrap();
+                            player_lock.set_viewport_dimensions(
+                                size.width,
+                                size.height,
+                                viewport_scale_factor,
+                            );
+                            player_lock
+                                .renderer_mut()
+                                .set_viewport_dimensions(size.width, size.height);
+                            window.request_redraw();
+                        }
+                        WindowEvent::CursorMoved { position, .. } => {
+                            let mut player_lock = player.lock().unwrap();
+                            mouse_pos = position;
+                            let event = PlayerEvent::MouseMove {
+                                x: position.x,
+                                y: position.y,
+                            };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
+                        }
+                        WindowEvent::MouseInput { button, state, .. } => {
+                            use ruffle_core::events::MouseButton as RuffleMouseButton;
+                            let mut player_lock = player.lock().unwrap();
+                            let x = mouse_pos.x;
+                            let y = mouse_pos.y;
+                            let button = match button {
+                                MouseButton::Left => RuffleMouseButton::Left,
+                                MouseButton::Right => RuffleMouseButton::Right,
+                                MouseButton::Middle => RuffleMouseButton::Middle,
+                                MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                            };
+                            let event = match state {
+                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
+                                ElementState::Released => PlayerEvent::MouseUp { x, y, button },
+                            };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
+                        }
+                        WindowEvent::MouseWheel { delta, .. } => {
+                            use ruffle_core::events::MouseWheelDelta;
+                            let mut player_lock = player.lock().unwrap();
+                            let delta = match delta {
+                                MouseScrollDelta::LineDelta(_, dy) => {
+                                    MouseWheelDelta::Lines(dy.into())
+                                }
+                                MouseScrollDelta::PixelDelta(pos) => MouseWheelDelta::Pixels(pos.y),
+                            };
+                            let event = PlayerEvent::MouseWheel { delta };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
+                        }
+                        WindowEvent::CursorLeft { .. } => {
+                            let mut player_lock = player.lock().unwrap();
+                            player_lock.handle_event(PlayerEvent::MouseLeave);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
+                        }
+                        WindowEvent::KeyboardInput { input, .. } => {
+                            let mut player_lock = player.lock().unwrap();
+                            if let Some(key) = input.virtual_keycode {
+                                let key_code = winit_to_ruffle_key_code(key);
+                                let key_char = winit_key_to_char(
+                                    key,
+                                    input.modifiers.contains(ModifiersState::SHIFT),
+                                );
+                                let event = match input.state {
+                                    ElementState::Pressed => {
+                                        PlayerEvent::KeyDown { key_code, key_char }
+                                    }
+                                    ElementState::Released => {
+                                        PlayerEvent::KeyUp { key_code, key_char }
+                                    }
+                                };
+                                player_lock.handle_event(event);
+                                if player_lock.needs_render() {
+                                    window.request_redraw();
+                                }
+                            }
+                        }
+                        WindowEvent::ReceivedCharacter(codepoint) => {
+                            let mut player_lock = player.lock().unwrap();
+                            let event = PlayerEvent::TextInput { codepoint };
+                            player_lock.handle_event(event);
+                            if player_lock.needs_render() {
+                                window.request_redraw();
+                            }
+                        }
+                        _ => (),
+                    },
+                    winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
+                        .lock()
+                        .expect("active executor reference")
+                        .poll_all(),
+                    _ => (),
+                }
+
+                // After polling events, sleep the event loop until the next event or the next frame.
+                if *control_flow != ControlFlow::Exit {
+                    *control_flow = ControlFlow::WaitUntil(next_frame_time);
+                }
+            });
     }
 }
 
