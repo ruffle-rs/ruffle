@@ -289,7 +289,8 @@ impl<'gc> Font<'gc> {
     /// The `round` flag causes the returned coordinates to be rounded down to
     /// the nearest pixel.
     pub fn measure(&self, text: &WStr, params: EvalParameters, round: bool) -> (Twips, Twips) {
-        let mut size = (Twips::ZERO, Twips::ZERO);
+        let mut width = Twips::ZERO;
+        let mut height = Twips::ZERO;
 
         self.evaluate(
             text,
@@ -300,16 +301,16 @@ impl<'gc> Font<'gc> {
                 let ty = transform.matrix.ty;
 
                 if round {
-                    size.0 = std::cmp::max(size.0, round_down_to_pixel(tx + advance));
-                    size.1 = std::cmp::max(size.1, round_down_to_pixel(ty));
+                    width = width.max(round_down_to_pixel(tx + advance));
+                    height = height.max(round_down_to_pixel(ty));
                 } else {
-                    size.0 = std::cmp::max(size.0, tx + advance);
-                    size.1 = std::cmp::max(size.1, ty);
+                    width = width.max(tx + advance);
+                    height = height.max(ty);
                 }
             },
         );
 
-        size
+        (width, height)
     }
 
     /// Given a line of text, find the first breakpoint within the text.
