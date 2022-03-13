@@ -1,5 +1,5 @@
 use bytemuck::Pod;
-use std::{convert::TryInto, marker::PhantomData, mem};
+use std::{marker::PhantomData, mem};
 use wgpu::util::StagingBelt;
 
 /// A simple chunked bump allacator for managing dynamic uniforms that change per-draw.
