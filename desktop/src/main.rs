@@ -185,10 +185,10 @@ impl App {
             Some(path) => Some(std::borrow::Cow::Borrowed(path)),
             None => pick_file().map(std::borrow::Cow::Owned),
         };
-        let movie = if let Some(path) = path {
+        let (movie, movie_url) = if let Some(path) = path {
             let movie_url = parse_url(&path)?;
             let movie = load_movie(&movie_url, &opt)?;
-            Some((movie, movie_url))
+            (Some(movie), Some(movie_url))
         } else {
             shutdown(&Ok(()));
             std::process::exit(0);
@@ -199,7 +199,7 @@ impl App {
 
         let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
 
-        let (title, movie_size) = if let Some((movie, movie_url)) = &movie {
+        let (title, movie_size) = if let (Some(movie), Some(movie_url)) = (&movie, &movie_url) {
             let filename = movie_url
                 .path_segments()
                 .and_then(|segments| segments.last())
@@ -259,7 +259,7 @@ impl App {
         };
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
-            movie.as_ref().unwrap().1.clone(), // TODO: Get rid of this parameter.
+            movie_url.unwrap(),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
@@ -272,13 +272,13 @@ impl App {
         let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
         let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
 
-        let movie = movie.map(|(movie, _)| Arc::new(movie));
+        let loaded = movie.is_some();
 
         {
             let mut player_lock = player.lock().unwrap();
             player_lock.set_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content);
-            if let Some(movie) = &movie {
-                player_lock.set_root_movie(movie.to_owned());
+            if let Some(movie) = movie {
+                player_lock.set_root_movie(Arc::new(movie));
                 player_lock.set_is_playing(true); // Desktop player will auto-play.
             }
             player_lock.set_letterbox(Letterbox::On);
@@ -295,7 +295,7 @@ impl App {
             event_loop,
             executor,
             player,
-            loaded: movie.is_some(),
+            loaded,
         })
     }
 
