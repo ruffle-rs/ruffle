@@ -311,8 +311,7 @@ impl App {
         })
     }
 
-    // TODO: Change return type to ! once it's stable.
-    fn run(self) {
+    fn run(self) -> ! {
         let window = self.window;
         let player = self.player;
         let executor = self.executor;
