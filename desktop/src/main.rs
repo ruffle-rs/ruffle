@@ -174,7 +174,7 @@ struct App {
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     player: Arc<Mutex<Player>>,
-    movie: Option<Arc<SwfMovie>>,
+    loaded: bool,
 }
 
 impl App {
@@ -295,7 +295,7 @@ impl App {
             event_loop,
             executor,
             player,
-            movie,
+            loaded: movie.is_some(),
         })
     }
 
@@ -303,7 +303,6 @@ impl App {
         let window = self.window;
         let player = self.player;
         let executor = self.executor;
-        let movie = self.movie;
 
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
@@ -314,7 +313,7 @@ impl App {
         // Poll UI events
         self.event_loop
             .run(move |event, _window_target, control_flow| {
-                if movie.is_none() {
+                if !self.loaded {
                     *control_flow = ControlFlow::Wait;
                 }
 
@@ -373,7 +372,7 @@ impl App {
                     _ => (),
                 }
 
-                if movie.is_none() {
+                if !self.loaded {
                     return;
                 }
 
