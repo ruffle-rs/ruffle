@@ -131,6 +131,13 @@ fn parse_url(path: &Path) -> Result<Url, Box<dyn std::error::Error>> {
     })
 }
 
+fn pick_file() -> Option<PathBuf> {
+    FileDialog::new()
+        .add_filter(".swf", &["swf"])
+        .set_title("Load a Flash File")
+        .pick_file()
+}
+
 fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Error>> {
     let mut movie = if url.scheme() == "file" {
         SwfMovie::from_path(url.to_file_path().unwrap(), None)?
@@ -160,26 +167,6 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Erro
     Ok(movie)
 }
 
-fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn std::error::Error>> {
-    let result = FileDialog::new()
-        .add_filter(".swf", &["swf"])
-        .set_title("Load a Flash File")
-        .pick_file();
-
-    let selected: PathBuf = match result {
-        Some(file_path) => file_path,
-        None => return Ok(None),
-    };
-
-    let absolute_path = selected
-        .canonicalize()
-        .unwrap_or_else(|_| selected.to_owned());
-
-    let movie_url = parse_url(&absolute_path)?;
-    let movie = load_movie(&movie_url, opt)?;
-    Ok(Some((movie, movie_url)))
-}
-
 struct App {
     #[allow(dead_code)]
     opt: Opt,
@@ -194,18 +181,17 @@ impl App {
     const DEFAULT_WINDOW_SIZE: LogicalSize<f64> = LogicalSize::new(1280.0, 720.0);
 
     fn new(opt: Opt) -> Result<Self, Box<dyn std::error::Error>> {
-        let movie = if let Some(path) = opt.input_path.as_ref() {
-            let movie_url = parse_url(path)?;
+        let path = match opt.input_path.as_ref() {
+            Some(path) => Some(std::borrow::Cow::Borrowed(path)),
+            None => pick_file().map(std::borrow::Cow::Owned),
+        };
+        let movie = if let Some(path) = path {
+            let movie_url = parse_url(&path)?;
             let movie = load_movie(&movie_url, &opt)?;
             Some((movie, movie_url))
         } else {
-            match load_from_file_dialog(&opt)? {
-                Some(movie) => Some(movie),
-                None => {
-                    shutdown(&Ok(()));
-                    std::process::exit(0);
-                }
-            }
+            shutdown(&Ok(()));
+            std::process::exit(0);
         };
 
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
