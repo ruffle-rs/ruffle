@@ -118,12 +118,8 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }
 
-// TODO: Return just `SwfMovie` by making it hold `Url`?
-fn load_movie_from_path(
-    path: &Path,
-    opt: &Opt,
-) -> Result<(SwfMovie, Url), Box<dyn std::error::Error>> {
-    let movie_url = if path.exists() {
+fn parse_url(path: &Path) -> Result<Url, Box<dyn std::error::Error>> {
+    Ok(if path.exists() {
         let absolute_path = path.canonicalize().unwrap_or_else(|_| path.to_owned());
         Url::from_file_path(absolute_path)
             .map_err(|_| "Path must be absolute and cannot be a URL")?
@@ -132,21 +128,23 @@ fn load_movie_from_path(
             .ok()
             .filter(|url| url.host().is_some())
             .ok_or("Input path is not a file and could not be parsed as a URL.")?
-    };
+    })
+}
 
-    let mut movie = if movie_url.scheme() == "file" {
-        SwfMovie::from_path(movie_url.to_file_path().unwrap(), None)?
+fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Error>> {
+    let mut movie = if url.scheme() == "file" {
+        SwfMovie::from_path(url.to_file_path().unwrap(), None)?
     } else {
         let proxy = opt.proxy.as_ref().and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
             .proxy(proxy)
             .redirect_policy(RedirectPolicy::Follow);
         let client = builder.build()?;
-        let response = client.get(movie_url.to_string())?;
+        let response = client.get(url.to_string())?;
         let mut buffer: Vec<u8> = Vec::new();
         response.into_body().read_to_end(&mut buffer)?;
 
-        SwfMovie::from_data(&buffer, Some(movie_url.to_string()), None)?
+        SwfMovie::from_data(&buffer, Some(url.to_string()), None)?
     };
 
     let parameters = opt.parameters.iter().map(|parameter| {
@@ -159,7 +157,7 @@ fn load_movie_from_path(
     });
     movie.append_parameters(parameters);
 
-    Ok((movie, movie_url))
+    Ok(movie)
 }
 
 fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn std::error::Error>> {
@@ -177,7 +175,9 @@ fn load_from_file_dialog(opt: &Opt) -> Result<Option<(SwfMovie, Url)>, Box<dyn s
         .canonicalize()
         .unwrap_or_else(|_| selected.to_owned());
 
-    Ok(Some(load_movie_from_path(&absolute_path, opt)?))
+    let movie_url = parse_url(&absolute_path)?;
+    let movie = load_movie(&movie_url, opt)?;
+    Ok(Some((movie, movie_url)))
 }
 
 struct App {
@@ -194,8 +194,10 @@ impl App {
     const DEFAULT_WINDOW_SIZE: LogicalSize<f64> = LogicalSize::new(1280.0, 720.0);
 
     fn new(opt: Opt) -> Result<Self, Box<dyn std::error::Error>> {
-        let movie = if let Some(path) = opt.input_path.to_owned() {
-            Some(load_movie_from_path(&path, &opt)?)
+        let movie = if let Some(path) = opt.input_path.as_ref() {
+            let movie_url = parse_url(path)?;
+            let movie = load_movie(&movie_url, &opt)?;
+            Some((movie, movie_url))
         } else {
             match load_from_file_dialog(&opt)? {
                 Some(movie) => Some(movie),
@@ -756,7 +758,8 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         .input_path
         .as_ref()
         .ok_or("Input file necessary for timedemo")?;
-    let (movie, _) = load_movie_from_path(path, &opt)?;
+    let movie_url = parse_url(path)?;
+    let movie = load_movie(&movie_url, &opt)?;
     let movie_frames = Some(movie.num_frames());
 
     let viewport_width = 1920;
