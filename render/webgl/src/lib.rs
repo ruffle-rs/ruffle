@@ -353,7 +353,7 @@ impl WebGlRenderBackend {
         Ok(shader)
     }
 
-    fn build_msaa_buffers(&mut self, width: i32, height: i32) -> Result<(), Error> {
+    fn build_msaa_buffers(&mut self) -> Result<(), Error> {
         if self.gl2.is_none() || self.msaa_sample_count <= 1 {
             self.gl.bind_framebuffer(Gl::FRAMEBUFFER, None);
             self.gl.bind_renderbuffer(Gl::RENDERBUFFER, None);
@@ -391,8 +391,8 @@ impl WebGlRenderBackend {
             Gl2::RENDERBUFFER,
             self.msaa_sample_count as i32,
             Gl2::RGB8,
-            width,
-            height,
+            self.renderbuffer_width,
+            self.renderbuffer_height,
         );
         gl.check_error("renderbuffer_storage_multisample (color)")?;
 
@@ -404,8 +404,8 @@ impl WebGlRenderBackend {
             Gl2::RENDERBUFFER,
             self.msaa_sample_count as i32,
             Gl2::STENCIL_INDEX8,
-            width,
-            height,
+            self.renderbuffer_width,
+            self.renderbuffer_height,
         );
         gl.check_error("renderbuffer_storage_multisample (stencil)")?;
 
@@ -441,8 +441,8 @@ impl WebGlRenderBackend {
             Gl2::TEXTURE_2D,
             0,
             Gl2::RGB as i32,
-            width,
-            height,
+            self.renderbuffer_width,
+            self.renderbuffer_height,
             0,
             Gl2::RGB,
             Gl2::UNSIGNED_BYTE,
@@ -705,7 +705,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.renderbuffer_height = (height as i32).clamp(1, self.gl.drawing_buffer_height());
 
         // Recreate framebuffers with the new size.
-        let _ = self.build_msaa_buffers(self.renderbuffer_width, self.renderbuffer_height);
+        let _ = self.build_msaa_buffers();
         self.gl
             .viewport(0, 0, self.renderbuffer_width, self.renderbuffer_height);
     }
