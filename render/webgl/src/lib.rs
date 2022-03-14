@@ -701,8 +701,8 @@ impl RenderBackend for WebGlRenderBackend {
         ];
 
         // Setup GL viewport and renderbuffers clamped to reasonable sizes.
-        self.renderbuffer_width = (width as i32).clamp(1, self.gl.drawing_buffer_width());
-        self.renderbuffer_height = (height as i32).clamp(1, self.gl.drawing_buffer_height());
+        self.renderbuffer_width = (width as i32).min(self.gl.drawing_buffer_width());
+        self.renderbuffer_height = (height as i32).min(self.gl.drawing_buffer_height());
 
         // Recreate framebuffers with the new size.
         let _ = self.build_msaa_buffers();
