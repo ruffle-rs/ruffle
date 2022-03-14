@@ -92,8 +92,6 @@ pub struct WebGlRenderBackend {
 
     renderbuffer_width: i32,
     renderbuffer_height: i32,
-    view_width: i32,
-    view_height: i32,
     view_matrix: [[f32; 4]; 4],
 
     bitmap_registry: HashMap<BitmapHandle, Bitmap>,
@@ -229,8 +227,6 @@ impl WebGlRenderBackend {
             textures: vec![],
             renderbuffer_width: 1,
             renderbuffer_height: 1,
-            view_width: 1,
-            view_height: 1,
             view_matrix: [[0.0; 4]; 4],
 
             mask_state: MaskState::NoMask,
@@ -586,15 +582,6 @@ impl WebGlRenderBackend {
         Mesh { draws }
     }
 
-    fn build_matrices(&mut self) {
-        self.view_matrix = [
-            [1.0 / (self.view_width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (self.view_height as f32 / 2.0), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [-1.0, 1.0, 0.0, 1.0],
-        ];
-    }
-
     /// Creates and binds a new VAO.
     fn create_vertex_array(&self) -> Result<WebGlVertexArrayObject, Error> {
         let vao = if let Some(gl2) = &self.gl2 {
@@ -705,15 +692,17 @@ impl WebGlRenderBackend {
 
 impl RenderBackend for WebGlRenderBackend {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.view_width = width as i32;
-        self.view_height = height as i32;
-
         // Build view matrix based on canvas size.
-        self.build_matrices();
+        self.view_matrix = [
+            [1.0 / (width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (height as f32 / 2.0), 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [-1.0, 1.0, 0.0, 1.0],
+        ];
 
         // Setup GL viewport and renderbuffers clamped to reasonable sizes.
-        self.renderbuffer_width = self.view_width.clamp(1, self.gl.drawing_buffer_width());
-        self.renderbuffer_height = self.view_height.clamp(1, self.gl.drawing_buffer_height());
+        self.renderbuffer_width = (width as i32).clamp(1, self.gl.drawing_buffer_width());
+        self.renderbuffer_height = (height as i32).clamp(1, self.gl.drawing_buffer_height());
 
         // Recreate framebuffers with the new size.
         let _ = self.build_msaa_buffers(self.renderbuffer_width, self.renderbuffer_height);
