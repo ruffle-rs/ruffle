@@ -24,5 +24,7 @@
     <array>
         <string>MacOSX</string>
     </array>
+    <key>NSAccentColorName</key>
+    <string>RuffleOrange</string>
 </dict>
 </plist>

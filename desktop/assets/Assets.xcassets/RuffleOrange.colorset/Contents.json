@@ -1,0 +1,21 @@
+{
+    "info": {
+        "author": "rs.ruffle.ruffle",
+        "version": 1
+    },
+    "colors": [
+        {
+            "display-gamut": "sRGB",
+            "idiom": "universal",
+            "color": {
+                "components": {
+                    "red": 0.94921875,
+                    "green": 0.69140625,
+                    "blue": 0.30859375,
+                    "alpha": 1.0
+                },
+                "color-space": "srgb"
+            }
+        }
+    ]
+}
