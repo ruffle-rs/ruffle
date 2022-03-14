@@ -21,11 +21,9 @@ impl<'gc> ArrayStorage<'gc> {
     /// The length parameter indicates how big the array storage should start
     /// out as. All array storage consists of holes.
     pub fn new(length: usize) -> Self {
-        let mut storage = Vec::new();
-
-        storage.resize(length, None);
-
-        Self { storage }
+        Self {
+            storage: vec![None; length],
+        }
     }
 
     /// Convert a set of arguments into array storage.
