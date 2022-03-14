@@ -1,5 +1,5 @@
 [package]
-name = "ruffle-input-format"
+name = "ruffle_input_format"
 version = "0.1.0"
 edition = "2021"
 
