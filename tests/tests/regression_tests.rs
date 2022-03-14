@@ -16,10 +16,12 @@ use ruffle_core::backend::{
     video::NullVideoBackend,
 };
 use ruffle_core::context::UpdateContext;
+use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::Player;
+use ruffle_core::{Player, PlayerEvent};
+use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use ruffle_render_wgpu::WgpuRenderBackend;
@@ -67,6 +69,7 @@ macro_rules! swf_tests {
             test_swf(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
+                concat!("tests/swfs/", $path, "/input.json"),
                 concat!("tests/swfs/", $path, "/output.txt"),
                 val_or_false!($($img)?)
             )
@@ -86,6 +89,7 @@ macro_rules! swf_tests_approx {
             test_swf_approx(
                 concat!("tests/swfs/", $path, "/test.swf"),
                 $num_frames,
+                concat!("tests/swfs/", $path, "/input.json"),
                 concat!("tests/swfs/", $path, "/output.txt"),
                 |actual, expected| assert_relative_eq!(actual, expected $(, $opt = $val)*),
             )
@@ -821,6 +825,7 @@ fn external_interface_avm1() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm1/external_interface/test.swf",
         1,
+        "tests/swfs/avm1/external_interface/input.json",
         "tests/swfs/avm1/external_interface/output.txt",
         |player| {
             player
@@ -876,6 +881,7 @@ fn external_interface_avm2() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm2/external_interface/test.swf",
         1,
+        "tests/swfs/avm2/external_interface/input.json",
         "tests/swfs/avm2/external_interface/output.txt",
         |player| {
             player
@@ -928,6 +934,7 @@ fn shared_object_avm1() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
         1,
+        "tests/swfs/avm1/shared_object/input1.json",
         "tests/swfs/avm1/shared_object/output1.txt",
         |_player| Ok(()),
         |player| {
@@ -952,6 +959,7 @@ fn shared_object_avm1() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm1/shared_object/test.swf",
         1,
+        "tests/swfs/avm1/shared_object/input2.json",
         "tests/swfs/avm1/shared_object/output2.txt",
         |player| {
             // Swap in the previous storage backend.
@@ -972,6 +980,7 @@ fn timeout_avm1() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm1/timeout/test.swf",
         1,
+        "tests/swfs/avm1/timeout/input.json",
         "tests/swfs/avm1/timeout/output.txt",
         |player| {
             player
@@ -991,6 +1000,7 @@ fn stage_scale_mode() -> Result<(), Error> {
     test_swf_with_hooks(
         "tests/swfs/avm1/stage_scale_mode/test.swf",
         1,
+        "tests/swfs/avm1/stage_scale_mode/input.json",
         "tests/swfs/avm1/stage_scale_mode/output.txt",
         |player| {
             // Simulate a large viewport to test stage size.
@@ -1038,12 +1048,14 @@ macro_rules! assert_eq {
 fn test_swf(
     swf_path: &str,
     num_frames: u32,
+    simulated_input_path: &str,
     expected_output_path: &str,
     check_img: bool,
 ) -> Result<(), Error> {
     test_swf_with_hooks(
         swf_path,
         num_frames,
+        simulated_input_path,
         expected_output_path,
         |_| Ok(()),
         |_| Ok(()),
@@ -1056,11 +1068,14 @@ fn test_swf(
 fn test_swf_with_hooks(
     swf_path: &str,
     num_frames: u32,
+    simulated_input_path: &str,
     expected_output_path: &str,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     check_img: bool,
 ) -> Result<(), Error> {
+    let injector =
+        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
     let mut expected_output = std::fs::read_to_string(expected_output_path)?.replace("\r\n", "\n");
 
     // Strip a trailing newline if it has one.
@@ -1068,7 +1083,14 @@ fn test_swf_with_hooks(
         expected_output = expected_output[0..expected_output.len() - "\n".len()].to_string();
     }
 
-    let trace_log = run_swf(swf_path, num_frames, before_start, before_end, check_img)?;
+    let trace_log = run_swf(
+        swf_path,
+        num_frames,
+        before_start,
+        injector,
+        before_end,
+        check_img,
+    )?;
     assert_eq!(
         trace_log, expected_output,
         "ruffle output != flash player output"
@@ -1083,10 +1105,20 @@ fn test_swf_with_hooks(
 fn test_swf_approx(
     swf_path: &str,
     num_frames: u32,
+    simulated_input_path: &str,
     expected_output_path: &str,
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<(), Error> {
-    let trace_log = run_swf(swf_path, num_frames, |_| Ok(()), |_| Ok(()), false)?;
+    let injector =
+        InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
+    let trace_log = run_swf(
+        swf_path,
+        num_frames,
+        |_| Ok(()),
+        injector,
+        |_| Ok(()),
+        false,
+    )?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
 
     // Strip a trailing newline if it has one.
@@ -1133,6 +1165,7 @@ fn run_swf(
     swf_path: &str,
     num_frames: u32,
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
+    mut injector: InputInjector,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     mut check_img: bool,
 ) -> Result<String, Error> {
@@ -1196,6 +1229,31 @@ fn run_swf(
     before_start(player.clone())?;
 
     for _ in 0..num_frames {
+        injector.next(|evt, _btns_down| {
+            player.lock().unwrap().handle_event(match evt {
+                AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
+                    x: pos.0,
+                    y: pos.1,
+                    button: match btn {
+                        InputMouseButton::Left => RuffleMouseButton::Left,
+                        InputMouseButton::Middle => RuffleMouseButton::Middle,
+                        InputMouseButton::Right => RuffleMouseButton::Right,
+                    },
+                },
+                AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
+                AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {
+                    x: pos.0,
+                    y: pos.1,
+                    button: match btn {
+                        InputMouseButton::Left => RuffleMouseButton::Left,
+                        InputMouseButton::Middle => RuffleMouseButton::Middle,
+                        InputMouseButton::Right => RuffleMouseButton::Right,
+                    },
+                },
+                AutomatedEvent::Wait => unreachable!(),
+            });
+        });
+
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.run();

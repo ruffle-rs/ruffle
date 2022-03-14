@@ -2988,15 +2988,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruffle-input-format"
-version = "0.1.0"
-dependencies = [
- "bitflags",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
@@ -3067,6 +3058,15 @@ dependencies = [
  "webbrowser",
  "winapi",
  "winit",
+]
+
+[[package]]
+name = "ruffle_input_format"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3614,6 +3614,7 @@ dependencies = [
  "image",
  "pretty_assertions",
  "ruffle_core",
+ "ruffle_input_format",
  "ruffle_render_wgpu",
 ]
 

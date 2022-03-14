@@ -47,13 +47,25 @@ impl InputInjector {
     where
         P: AsRef<Path>,
     {
-        let file = File::open(path).unwrap();
+        let file = File::open(path)?;
 
         Ok(Self {
-            items: from_reader(file).unwrap(),
+            items: from_reader(file)?,
             pos: 0,
             buttons: MouseButtons::empty(),
         })
+    }
+
+    /// Create an empty input injector with no input to inject.
+    ///
+    /// Useful to represent a missing input file in cases where providing one
+    /// is optional.
+    pub fn empty() -> Self {
+        Self {
+            items: vec![],
+            pos: 0,
+            buttons: MouseButtons::empty(),
+        }
     }
 
     /// Run the next frame's worth of events.
