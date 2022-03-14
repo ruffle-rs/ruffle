@@ -318,12 +318,10 @@ impl<'gc> Avm2<'gc> {
     }
 
     fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = Vec::with_capacity(arg_count as usize);
-        args.resize(arg_count as usize, Value::Undefined);
+        let mut args = vec![Value::Undefined; arg_count as usize];
         for arg in args.iter_mut().rev() {
             *arg = self.pop();
         }
-
         args
     }
 

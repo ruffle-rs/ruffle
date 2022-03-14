@@ -1011,16 +1011,15 @@ impl<'a> Reader<'a> {
         let name = self.read_str_with_len(name_len.into())?;
 
         let num_glyphs = self.read_u16()? as usize;
-        let mut glyphs = Vec::with_capacity(num_glyphs);
-        glyphs.resize(
-            num_glyphs,
+        let mut glyphs = vec![
             Glyph {
                 shape_records: vec![],
                 code: 0,
                 advance: None,
                 bounds: None,
-            },
-        );
+            };
+            num_glyphs
+        ];
 
         // SWF19 p. 164 doesn't make it super clear: If there are no glyphs,
         // then the following tables are omitted. But the table offset values
