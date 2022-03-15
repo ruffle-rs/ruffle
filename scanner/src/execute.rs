@@ -13,24 +13,21 @@ use ruffle_core::swf::{decompress_swf, parse_swf};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::Player;
 use sha2::{Digest, Sha256};
-
-use std::path::Path;
-
-use std::panic::catch_unwind;
-
 use std::io::{stdout, Write};
+use std::panic::catch_unwind;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 fn execute_swf(file: &Path) {
     let base_path = file.parent().unwrap();
-    let (_executor, channel) = NullExecutor::new();
+    let executor = NullExecutor::new();
     let movie = SwfMovie::from_path(file, None).unwrap();
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let player = Player::new(
         Box::new(NullRenderer::new()),
         Box::new(NullAudioBackend::new()),
-        Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
+        Box::new(NullNavigatorBackend::with_base_path(base_path, &executor)),
         Box::new(MemoryStorageBackend::default()),
         Box::new(NullVideoBackend::new()),
         Box::new(ScanLogBackend::new()),
