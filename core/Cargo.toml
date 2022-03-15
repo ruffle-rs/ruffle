@@ -53,6 +53,12 @@ nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc
 version = "0.2.2"
 default-features = false # can't use rayon on web
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
+version = "0.3.21"
+
+[target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
+version = "0.4"
+
 [dev-dependencies]
 approx = "0.5.1"
 

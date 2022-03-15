@@ -2971,6 +2971,7 @@ dependencies = [
  "flash-lso",
  "flate2",
  "fnv",
+ "futures",
  "gc-arena",
  "generational-arena",
  "gif",
@@ -3001,6 +3002,7 @@ dependencies = [
  "symphonia",
  "thiserror",
  "url",
+ "wasm-bindgen-futures",
  "weak-table",
 ]
 

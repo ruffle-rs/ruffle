@@ -1073,7 +1073,7 @@ fn run_swf(
     check_img &= RUN_IMG_TESTS;
 
     let base_path = Path::new(swf_path).parent().unwrap();
-    let (mut executor, channel) = NullExecutor::new();
+    let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let trace_output = Rc::new(RefCell::new(Vec::new()));
@@ -1115,7 +1115,7 @@ fn run_swf(
     let player = Player::new(
         render_backend,
         Box::new(NullAudioBackend::new()),
-        Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
+        Box::new(NullNavigatorBackend::with_base_path(base_path, &executor)),
         Box::new(MemoryStorageBackend::default()),
         video_backend,
         Box::new(TestLogBackend::new(trace_output.clone())),
@@ -1132,7 +1132,7 @@ fn run_swf(
     for _ in 0..num_frames {
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
-        executor.poll_all().unwrap();
+        executor.run();
     }
 
     // Render the image to disk
@@ -1193,7 +1193,7 @@ fn run_swf(
 
     before_end(player)?;
 
-    executor.block_all().unwrap();
+    executor.run();
 
     let trace = trace_output.borrow().join("\n");
     Ok(trace)
