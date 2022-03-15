@@ -131,12 +131,8 @@ fn get_progress<'gc>(
                 // TODO: What happens with negative levels?
                 activation.context.stage.child_by_depth(*level_id as i32)
             }
-            Value::Object(object) => {
-                if let Some(object) = object.as_display_object() {
-                    Some(object)
-                } else {
-                    return Ok(Value::Undefined);
-                }
+            Value::Object(object) if object.as_display_object().is_some() => {
+                object.as_display_object()
             }
             _ => return Ok(Value::Undefined),
         };

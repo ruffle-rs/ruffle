@@ -208,7 +208,7 @@ impl WString {
     fn with_wide_buf_if<W, F, R>(&mut self, wide: W, f: F) -> R
     where
         W: FnOnce() -> bool,
-        F: FnOnce(Units<&mut Vec<u8>, &mut Vec<u16>>) -> R,
+        F: FnOnce(&mut Units<Vec<u8>, Vec<u16>>) -> R,
     {
         self.with_buf(|units| {
             if let Units::Bytes(buf) = units {
@@ -219,11 +219,7 @@ impl WString {
                 }
             }
 
-            let units_ref = match units {
-                Units::Bytes(buf) => Units::Bytes(buf),
-                Units::Wide(buf) => Units::Wide(buf),
-            };
-            f(units_ref)
+            f(units)
         })
     }
 
