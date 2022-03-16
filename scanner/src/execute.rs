@@ -4,7 +4,6 @@ use crate::cli_options::ExecuteReportOpt;
 use crate::file_results::{AvmType, FileResults, Step};
 use crate::logging::{ScanLogBackend, ThreadLocalScanLogger, LOCAL_LOGGER};
 use ruffle_core::backend::audio::NullAudioBackend;
-use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::backend::render::NullRenderer;
 use ruffle_core::backend::storage::MemoryStorageBackend;
@@ -33,7 +32,6 @@ fn execute_swf(file: &Path) {
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(MemoryStorageBackend::default()),
-        Box::new(NullLocaleBackend::new()),
         Box::new(NullVideoBackend::new()),
         Box::new(ScanLogBackend::new()),
         Box::new(NullUiBackend::new()),

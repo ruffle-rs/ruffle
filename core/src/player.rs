@@ -7,7 +7,6 @@ use crate::avm1::{Avm1, ScriptObject, TObject, Timers, Value};
 use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
-    locale::LocaleBackend,
     log::LogBackend,
     navigator::{NavigatorBackend, RequestOptions},
     render::RenderBackend,
@@ -151,7 +150,6 @@ type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
 type Renderer = Box<dyn RenderBackend>;
 type Storage = Box<dyn StorageBackend>;
-type Locale = Box<dyn LocaleBackend>;
 type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
 type Video = Box<dyn VideoBackend>;
@@ -180,7 +178,6 @@ pub struct Player {
     audio: Audio,
     navigator: Navigator,
     storage: Storage,
-    locale: Locale,
     log: Log,
     ui: Ui,
     video: Video,
@@ -236,13 +233,11 @@ pub struct Player {
 }
 
 impl Player {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
         storage: Storage,
-        locale: Locale,
         video: Video,
         log: Log,
         ui: Ui,
@@ -306,7 +301,6 @@ impl Player {
             renderer,
             audio,
             navigator,
-            locale,
             log,
             ui,
             video,
@@ -1448,10 +1442,6 @@ impl Player {
         &mut self.ui
     }
 
-    pub fn locale(&self) -> &Locale {
-        &self.locale
-    }
-
     pub fn run_actions<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(actions) = context.action_queue.pop_action() {
@@ -1622,7 +1612,6 @@ impl Player {
                 system: &mut self.system,
                 instance_counter: &mut self.instance_counter,
                 storage: self.storage.deref_mut(),
-                locale: self.locale.deref_mut(),
                 log: self.log.deref_mut(),
                 video: self.video.deref_mut(),
                 shared_objects,

@@ -2,7 +2,6 @@ use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use ruffle_core::backend::audio::NullAudioBackend;
-use ruffle_core::backend::locale::NullLocaleBackend;
 use ruffle_core::backend::log::NullLogBackend;
 use ruffle_core::backend::navigator::NullNavigatorBackend;
 use ruffle_core::backend::storage::MemoryStorageBackend;
@@ -108,7 +107,6 @@ fn take_screenshot(
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::new()),
         Box::new(MemoryStorageBackend::default()),
-        Box::new(NullLocaleBackend::new()),
         Box::new(SoftwareVideoBackend::new()),
         Box::new(NullLogBackend::new()),
         Box::new(NullUiBackend::new()),

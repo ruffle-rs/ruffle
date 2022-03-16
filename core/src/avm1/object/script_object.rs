@@ -547,7 +547,6 @@ mod tests {
     use crate::avm1::{Avm1, Timers};
     use crate::avm2::Avm2;
     use crate::backend::audio::{AudioManager, NullAudioBackend};
-    use crate::backend::locale::NullLocaleBackend;
     use crate::backend::log::NullLogBackend;
     use crate::backend::navigator::NullNavigatorBackend;
     use crate::backend::render::NullRenderer;
@@ -599,7 +598,6 @@ mod tests {
                 library: &mut Library::empty(),
                 navigator: &mut NullNavigatorBackend::new(),
                 renderer: &mut NullRenderer::new(),
-                locale: &mut NullLocaleBackend::new(),
                 log: &mut NullLogBackend::new(),
                 video: &mut NullVideoBackend::new(),
                 mouse_over_object: None,

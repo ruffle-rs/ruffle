@@ -8,7 +8,6 @@
 mod audio;
 mod custom_event;
 mod executor;
-mod locale;
 mod navigator;
 mod storage;
 mod task;
@@ -266,11 +265,10 @@ impl App {
             opt.upgrade_to_https,
         ));
         let storage = Box::new(storage::DiskStorageBackend::new());
-        let locale = Box::new(locale::DesktopLocaleBackend::new());
         let video = Box::new(video::SoftwareVideoBackend::new());
         let log = Box::new(log_backend::NullLogBackend::new());
         let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
-        let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+        let player = Player::new(renderer, audio, navigator, storage, video, log, ui)?;
 
         let loaded = movie.is_some();
 
@@ -757,11 +755,10 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let audio = Box::new(NullAudioBackend::new());
     let navigator = Box::new(NullNavigatorBackend::new());
     let storage = Box::new(MemoryStorageBackend::default());
-    let locale = Box::new(locale::DesktopLocaleBackend::new());
     let video = Box::new(video::SoftwareVideoBackend::new());
     let log = Box::new(log_backend::NullLogBackend::new());
     let ui = Box::new(NullUiBackend::new());
-    let player = Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+    let player = Player::new(renderer, audio, navigator, storage, video, log, ui)?;
 
     let mut player_lock = player.lock().unwrap();
     player_lock.set_root_movie(Arc::new(movie));
