@@ -216,6 +216,9 @@ pub struct Player {
     /// Time remaining until the next timer will fire.
     time_til_next_timer: Option<f64>,
 
+    /// The instant at which the SWF was launched.
+    start_time: Instant,
+
     /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
     /// is raised. This defaults to 15 seconds but can be changed.
     max_execution_duration: Duration,
@@ -309,6 +312,7 @@ impl Player {
             instance_counter: 0,
             time_til_next_timer: None,
             storage,
+            start_time: Instant::now(),
             max_execution_duration: Duration::from_secs(max_execution_duration),
             current_frame: None,
         };
@@ -1622,6 +1626,7 @@ impl Player {
                 avm1,
                 avm2,
                 external_interface,
+                start_time: self.start_time,
                 update_start: Instant::now(),
                 max_execution_duration: self.max_execution_duration,
                 focus_tracker,

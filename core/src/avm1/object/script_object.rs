@@ -618,6 +618,7 @@ mod tests {
                 avm1: &mut avm1,
                 avm2: &mut avm2,
                 external_interface: &mut Default::default(),
+                start_time: Instant::now(),
                 update_start: Instant::now(),
                 max_execution_duration: Duration::from_secs(15),
                 focus_tracker: FocusTracker::new(gc_context),

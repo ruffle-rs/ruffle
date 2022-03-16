@@ -58,6 +58,6 @@ features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode",
     "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
     "Element", "Event", "EventTarget", "GainNode", "Gpu", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
-    "Navigator", "Node", "Performance", "PointerEvent", "ScriptProcessorNode", "UiEvent", "Window", "Location", "HtmlFormElement",
+    "Navigator", "Node", "PointerEvent", "ScriptProcessorNode", "UiEvent", "Window", "Location", "HtmlFormElement",
     "KeyboardEvent", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement", "Response", "Request", "RequestInit",
     "Blob", "BlobPropertyBag", "Storage", "WheelEvent", "ImageData"]

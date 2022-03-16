@@ -11,7 +11,6 @@ use std::borrow::Cow;
 use std::fs;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
-use std::time::{Duration, Instant};
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 
@@ -27,9 +26,6 @@ pub struct ExternalNavigatorBackend {
     /// The url to use for all relative fetches.
     movie_url: Url,
 
-    /// The time that the SWF was launched.
-    start_time: Instant,
-
     // Client to use for network requests
     client: Option<Rc<HttpClient>>,
 
@@ -37,7 +33,6 @@ pub struct ExternalNavigatorBackend {
 }
 
 impl ExternalNavigatorBackend {
-    #[allow(dead_code)]
     /// Construct a navigator backend with fetch and async capability.
     pub fn new(
         movie_url: Url,
@@ -58,7 +53,6 @@ impl ExternalNavigatorBackend {
             event_loop,
             client,
             movie_url,
-            start_time: Instant::now(),
             upgrade_to_https,
         }
     }
@@ -163,10 +157,6 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Ok(buffer)
             }),
         }
-    }
-
-    fn time_since_launch(&mut self) -> Duration {
-        Instant::now().duration_since(self.start_time)
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
