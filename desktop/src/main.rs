@@ -300,10 +300,6 @@ impl App {
     }
 
     fn run(self) -> ! {
-        let window = self.window;
-        let player = self.player;
-        let executor = self.executor;
-
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
         let mut next_frame_time = Instant::now();
@@ -321,7 +317,7 @@ impl App {
                 #[allow(deprecated)]
                 match &event {
                     winit::event::Event::LoopDestroyed => {
-                        player.lock().unwrap().flush_shared_objects();
+                        self.player.lock().unwrap().flush_shared_objects();
                         shutdown(&Ok(()));
                         return;
                     }
@@ -338,7 +334,7 @@ impl App {
                             ..
                         } if modifiers.alt() => {
                             if !fullscreen_down {
-                                player.lock().unwrap().update(|uc| {
+                                self.player.lock().unwrap().update(|uc| {
                                     uc.stage.toggle_display_state(uc);
                                 });
                             }
@@ -364,7 +360,7 @@ impl App {
                                     ..
                                 },
                             ..
-                        } => player.lock().unwrap().update(|uc| {
+                        } => self.player.lock().unwrap().update(|uc| {
                             uc.stage.set_display_state(uc, StageDisplayState::Normal);
                         }),
                         _ => (),
@@ -385,11 +381,11 @@ impl App {
                         let dt = new_time.duration_since(time).as_micros();
                         if dt > 0 {
                             time = new_time;
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             player_lock.tick(dt as f64 / 1000.0);
                             next_frame_time = new_time + player_lock.time_til_next_frame();
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                     }
@@ -398,7 +394,7 @@ impl App {
                     winit::event::Event::RedrawRequested(_) => {
                         // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                         if !minimized {
-                            player.lock().unwrap().render();
+                            self.player.lock().unwrap().render();
                         }
                     }
 
@@ -407,8 +403,8 @@ impl App {
                             // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
                             minimized = size.width == 0 && size.height == 0;
 
-                            let viewport_scale_factor = window.scale_factor();
-                            let mut player_lock = player.lock().unwrap();
+                            let viewport_scale_factor = self.window.scale_factor();
+                            let mut player_lock = self.player.lock().unwrap();
                             player_lock.set_viewport_dimensions(
                                 size.width,
                                 size.height,
@@ -417,10 +413,10 @@ impl App {
                             player_lock
                                 .renderer_mut()
                                 .set_viewport_dimensions(size.width, size.height);
-                            window.request_redraw();
+                            self.window.request_redraw();
                         }
                         WindowEvent::CursorMoved { position, .. } => {
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             mouse_pos = position;
                             let event = PlayerEvent::MouseMove {
                                 x: position.x,
@@ -428,12 +424,12 @@ impl App {
                             };
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
                             use ruffle_core::events::MouseButton as RuffleMouseButton;
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             let x = mouse_pos.x;
                             let y = mouse_pos.y;
                             let button = match button {
@@ -448,12 +444,12 @@ impl App {
                             };
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
                             use ruffle_core::events::MouseWheelDelta;
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             let delta = match delta {
                                 MouseScrollDelta::LineDelta(_, dy) => {
                                     MouseWheelDelta::Lines(dy.into())
@@ -463,18 +459,18 @@ impl App {
                             let event = PlayerEvent::MouseWheel { delta };
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                         WindowEvent::CursorLeft { .. } => {
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             player_lock.handle_event(PlayerEvent::MouseLeave);
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                         WindowEvent::KeyboardInput { input, .. } => {
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             if let Some(key) = input.virtual_keycode {
                                 let key_code = winit_to_ruffle_key_code(key);
                                 let key_char = winit_key_to_char(
@@ -491,21 +487,22 @@ impl App {
                                 };
                                 player_lock.handle_event(event);
                                 if player_lock.needs_render() {
-                                    window.request_redraw();
+                                    self.window.request_redraw();
                                 }
                             }
                         }
                         WindowEvent::ReceivedCharacter(codepoint) => {
-                            let mut player_lock = player.lock().unwrap();
+                            let mut player_lock = self.player.lock().unwrap();
                             let event = PlayerEvent::TextInput { codepoint };
                             player_lock.handle_event(event);
                             if player_lock.needs_render() {
-                                window.request_redraw();
+                                self.window.request_redraw();
                             }
                         }
                         _ => (),
                     },
-                    winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => executor
+                    winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self
+                        .executor
                         .lock()
                         .expect("active executor reference")
                         .poll_all(),
