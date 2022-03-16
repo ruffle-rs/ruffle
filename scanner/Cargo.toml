@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 clap = { version = "3.1.6", features = ["derive"] }
-ruffle_core = { path = "../core" }
+ruffle_core = { path = "../core", features = ["deterministic"] }
 log = "0.4"
 walkdir = "2.3.2"
 serde = { version = "1.0", features = ["derive"] }

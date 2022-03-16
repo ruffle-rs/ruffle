@@ -8,7 +8,6 @@ use ruffle_core::backend::video::SoftwareVideoBackend;
 use ruffle_core::backend::video::VideoBackend;
 use ruffle_core::backend::{
     audio::NullAudioBackend,
-    locale::NullLocaleBackend,
     log::LogBackend,
     navigator::{NullExecutor, NullNavigatorBackend},
     render::NullRenderer,
@@ -1118,7 +1117,6 @@ fn run_swf(
         Box::new(NullAudioBackend::new()),
         Box::new(NullNavigatorBackend::with_base_path(base_path, channel)),
         Box::new(MemoryStorageBackend::default()),
-        Box::new(NullLocaleBackend::new()),
         video_backend,
         Box::new(TestLogBackend::new(trace_output.clone())),
         Box::new(NullUiBackend::new()),

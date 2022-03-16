@@ -29,6 +29,7 @@ mod font;
 mod html;
 mod library;
 pub mod loader;
+mod locale;
 pub mod matrix;
 mod player;
 mod prelude;
@@ -44,7 +45,6 @@ pub mod backend;
 pub mod config;
 pub mod external;
 
-pub use chrono;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use indexmap;

@@ -7,7 +7,6 @@ use crate::avm2::{
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
-    locale::LocaleBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     render::RenderBackend,
@@ -79,9 +78,6 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The storage backend, used for storing persistent state
     pub storage: &'a mut dyn StorageBackend,
-
-    /// The locale backend, used for localisation and personalisation
-    pub locale: &'a mut dyn LocaleBackend,
 
     /// The logging backend, used for trace output capturing.
     ///
@@ -297,7 +293,6 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             audio_manager: self.audio_manager,
             navigator: self.navigator,
             renderer: self.renderer,
-            locale: self.locale,
             log: self.log,
             ui: self.ui,
             video: self.video,

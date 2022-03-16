@@ -1,6 +1,5 @@
 //! Ruffle web frontend.
 mod audio;
-mod locale;
 mod log_adapter;
 mod navigator;
 mod storage;
@@ -495,14 +494,12 @@ impl Ruffle {
                 Box::new(MemoryStorageBackend::default())
             }
         };
-        let locale = Box::new(locale::WebLocaleBackend::new());
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let video = Box::new(SoftwareVideoBackend::new());
         let log = Box::new(log_adapter::WebLogBackend::new(trace_observer.clone()));
         let ui = Box::new(ui::WebUiBackend::new(js_player.clone(), &canvas));
 
-        let core =
-            ruffle_core::Player::new(renderer, audio, navigator, storage, locale, video, log, ui)?;
+        let core = ruffle_core::Player::new(renderer, audio, navigator, storage, video, log, ui)?;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
             if let Some(color) = config.background_color.and_then(parse_html_color) {
