@@ -55,9 +55,9 @@ features = ["h263", "vp6", "screenvideo", "wasm-bindgen"]
 [dependencies.web-sys]
 version = "0.3.50"
 features = [
-    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioParam", "AudioProcessingEvent", "AudioContext", "AudioDestinationNode",
-    "AudioNode", "CanvasRenderingContext2d", "ChannelMergerNode", "ChannelSplitterNode", "CssStyleDeclaration", "Document",
-    "Element", "Event", "EventTarget", "GainNode", "Gpu", "HtmlCanvasElement", "HtmlElement", "HtmlImageElement", "MouseEvent",
-    "Navigator", "Node", "PointerEvent", "ScriptProcessorNode", "UiEvent", "Window", "Location", "HtmlFormElement",
-    "KeyboardEvent", "Path2d", "CanvasGradient", "CanvasPattern", "SvgMatrix", "SvgsvgElement", "Response", "Request", "RequestInit",
-    "Blob", "BlobPropertyBag", "Storage", "WheelEvent", "ImageData"]
+    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
+    "AudioNode", "AudioParam", "AudioProcessingEvent", "Blob", "BlobPropertyBag", "ChannelMergerNode",
+    "ChannelSplitterNode", "Document", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
+    "HtmlElement", "HtmlFormElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit", "Response",
+    "ScriptProcessorNode", "Storage", "WheelEvent", "Window",
+]
