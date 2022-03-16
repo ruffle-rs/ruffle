@@ -3,6 +3,7 @@
 use crate::avm2::object::TObject;
 use crate::avm2::QName;
 use crate::avm2::{Activation, Error, Object, Value};
+use instant::Instant;
 
 pub mod bytearray;
 pub mod compression_algorithm;
@@ -20,7 +21,10 @@ pub fn get_timer<'gc>(
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Ok((activation.context.navigator.time_since_launch().as_millis() as u32).into())
+    Ok((Instant::now()
+        .duration_since(activation.context.start_time)
+        .as_millis() as u32)
+        .into())
 }
 
 /// Implements `flash.utils.getQualifiedClassName`

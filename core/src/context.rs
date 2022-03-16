@@ -146,6 +146,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     /// External interface for (for example) JavaScript <-> ActionScript interaction
     pub external_interface: &'a mut ExternalInterface<'gc>,
 
+    /// The instant at which the SWF was launched.
+    pub start_time: Instant,
+
     /// The instant at which the current update started.
     pub update_start: Instant,
 
@@ -315,6 +318,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             avm1: self.avm1,
             avm2: self.avm2,
             external_interface: self.external_interface,
+            start_time: self.start_time,
             update_start: self.update_start,
             max_execution_duration: self.max_execution_duration,
             focus_tracker: self.focus_tracker,

@@ -17,6 +17,7 @@ use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
 use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
+use instant::Instant;
 use rand::Rng;
 use smallvec::SmallVec;
 use std::borrow::Cow;
@@ -1114,7 +1115,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             *self.context.time_offset += 1;
         }
 
-        let time = self.context.navigator.time_since_launch().as_millis() as u32;
+        let time = Instant::now()
+            .duration_since(self.context.start_time)
+            .as_millis() as u32;
         let result = time.wrapping_add(*self.context.time_offset);
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
