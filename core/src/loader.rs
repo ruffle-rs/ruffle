@@ -54,11 +54,6 @@ pub enum Error {
     Avm1Error(String),
 }
 
-pub type FormLoadHandler<'gc> =
-    fn(&mut Activation<'_, 'gc, '_>, Object<'gc>, data: &[u8]) -> Result<(), Error>;
-
-pub type FormErrorHandler<'gc> = fn(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error>;
-
 impl From<crate::avm1::error::Error<'_>> for Error {
     fn from(error: crate::avm1::error::Error<'_>) -> Self {
         Error::Avm1Error(error.to_string())
