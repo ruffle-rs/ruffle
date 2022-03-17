@@ -1716,70 +1716,54 @@ impl<W: Write> Writer<W> {
         {
             // TODO: Assert version.
             let mut writer = Writer::new(&mut buf, self.version);
-            writer.write_u8(
-                if place_object.clip_actions.is_some() {
-                    0b1000_0000
-                } else {
-                    0
-                } | if place_object.clip_depth.is_some() {
-                    0b0100_0000
-                } else {
-                    0
-                } | if place_object.name.is_some() {
-                    0b0010_0000
-                } else {
-                    0
-                } | if place_object.ratio.is_some() {
-                    0b0001_0000
-                } else {
-                    0
-                } | if place_object.color_transform.is_some() {
-                    0b0000_1000
-                } else {
-                    0
-                } | if place_object.matrix.is_some() {
-                    0b0000_0100
-                } else {
-                    0
-                } | match place_object.action {
-                    PlaceObjectAction::Place(_) => 0b10,
-                    PlaceObjectAction::Modify => 0b01,
-                    PlaceObjectAction::Replace(_) => 0b11,
-                },
-            )?;
+
+            let mut flags = PlaceFlag::empty();
+            flags.set(
+                PlaceFlag::MOVE,
+                matches!(
+                    place_object.action,
+                    PlaceObjectAction::Modify | PlaceObjectAction::Replace(_)
+                ),
+            );
+            flags.set(
+                PlaceFlag::HAS_CHARACTER,
+                matches!(
+                    place_object.action,
+                    PlaceObjectAction::Place(_) | PlaceObjectAction::Replace(_)
+                ),
+            );
+            flags.set(PlaceFlag::HAS_MATRIX, place_object.matrix.is_some());
+            flags.set(
+                PlaceFlag::HAS_COLOR_TRANSFORM,
+                place_object.color_transform.is_some(),
+            );
+            flags.set(PlaceFlag::HAS_RATIO, place_object.ratio.is_some());
+            flags.set(PlaceFlag::HAS_NAME, place_object.name.is_some());
+            flags.set(PlaceFlag::HAS_CLIP_DEPTH, place_object.clip_depth.is_some());
+            flags.set(
+                PlaceFlag::HAS_CLIP_ACTIONS,
+                place_object.clip_actions.is_some(),
+            );
+
             if place_object_version >= 3 {
-                writer.write_u8(
-                    if place_object.background_color.is_some() {
-                        0b100_0000
-                    } else {
-                        0
-                    } | if place_object.is_visible.is_some() {
-                        0b10_0000
-                    } else {
-                        0
-                    } | if place_object.is_image { 0b1_0000 } else { 0 }
-                        | if place_object.class_name.is_some() {
-                            0b1000
-                        } else {
-                            0
-                        }
-                        | if place_object.is_bitmap_cached.is_some() {
-                            0b100
-                        } else {
-                            0
-                        }
-                        | if place_object.blend_mode.is_some() {
-                            0b10
-                        } else {
-                            0
-                        }
-                        | if place_object.filters.is_some() {
-                            0b1
-                        } else {
-                            0
-                        },
-                )?;
+                flags.set(PlaceFlag::HAS_FILTER_LIST, place_object.filters.is_some());
+                flags.set(PlaceFlag::HAS_BLEND_MODE, place_object.blend_mode.is_some());
+                flags.set(
+                    PlaceFlag::HAS_CACHE_AS_BITMAP,
+                    place_object.is_bitmap_cached.is_some(),
+                );
+                flags.set(PlaceFlag::HAS_CLASS_NAME, place_object.class_name.is_some());
+                flags.set(PlaceFlag::IS_IMAGE, place_object.is_image);
+                flags.set(PlaceFlag::HAS_VISIBLE, place_object.is_visible.is_some());
+                flags.set(
+                    PlaceFlag::OPAQUE_BACKGROUND,
+                    place_object.background_color.is_some(),
+                );
+                writer.write_u16(flags.bits())?;
+            } else {
+                writer.write_u8(flags.bits() as u8)?;
             }
+
             writer.write_u16(place_object.depth)?;
 
             if place_object_version >= 3 {
