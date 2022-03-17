@@ -107,8 +107,9 @@ pub trait ReadSwfExt<'a> {
     }
 
     #[inline]
-    fn read_str_with_len(&mut self, len: usize) -> Result<&'a SwfStr> {
-        let bytes = &self.read_slice(len)?;
+    fn read_str_with_len(&mut self) -> Result<&'a SwfStr> {
+        let len = self.read_u8()?;
+        let bytes = &self.read_slice(len.into())?;
         // TODO: Maybe just strip the possible trailing null char instead of looping here.
         Ok(SwfStr::from_bytes_null_terminated(bytes).unwrap_or_else(|| SwfStr::from_bytes(bytes)))
     }
