@@ -361,7 +361,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         let mut path = self.relative_base_path.clone();
         path.push(url);
 
-        Box::pin(async move { fs::read(path).map_err(Error::NetworkError) })
+        Box::pin(async move { fs::read(path).map_err(|e| Error::FetchError(e.to_string())) })
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
