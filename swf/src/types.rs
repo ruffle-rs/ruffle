@@ -608,6 +608,28 @@ pub struct PlaceObject<'a> {
     pub amf_data: Option<&'a [u8]>,
 }
 
+bitflags! {
+    pub struct PlaceFlag: u16 {
+        const MOVE = 1 << 0;
+        const HAS_CHARACTER = 1 << 1;
+        const HAS_MATRIX = 1 << 2;
+        const HAS_COLOR_TRANSFORM = 1 << 3;
+        const HAS_RATIO = 1 << 4;
+        const HAS_NAME = 1 << 5;
+        const HAS_CLIP_DEPTH = 1 << 6;
+        const HAS_CLIP_ACTIONS = 1 << 7;
+
+        // PlaceObject3
+        const HAS_FILTER_LIST = 1 << 8;
+        const HAS_BLEND_MODE = 1 << 9;
+        const HAS_CACHE_AS_BITMAP = 1 << 10;
+        const HAS_CLASS_NAME = 1 << 11;
+        const IS_IMAGE = 1 << 12;
+        const HAS_VISIBLE = 1 << 13;
+        const OPAQUE_BACKGROUND = 1 << 14;
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlaceObjectAction {
     Place(CharacterId),

@@ -1918,61 +1918,68 @@ impl<'a> Reader<'a> {
         place_object_version: u8,
     ) -> Result<PlaceObject<'a>> {
         let flags = if place_object_version >= 3 {
-            self.read_u16()?
+            PlaceFlag::from_bits_truncate(self.read_u16()?)
         } else {
-            self.read_u8()?.into()
+            PlaceFlag::from_bits_truncate(self.read_u8()?.into())
         };
 
         let depth = self.read_u16()?;
 
         // PlaceObject3
-        let is_image = (flags & 0b10000_00000000) != 0;
         // SWF19 p.40 incorrectly says class name if (HasClassNameFlag || (HasImage && HasCharacterID))
         // I think this should be if (HasClassNameFlag || (HasImage && !HasCharacterID)),
         // you use the class name only if a character ID isn't present.
         // But what is the case where we'd have an image without either HasCharacterID or HasClassName set?
-        let has_character_id = (flags & 0b10) != 0;
-        let has_class_name = (flags & 0b1000_00000000) != 0 || (is_image && !has_character_id);
+        let is_image = flags.contains(PlaceFlag::IS_IMAGE);
+        let has_character_id = flags.contains(PlaceFlag::HAS_CHARACTER);
+        let has_class_name =
+            flags.contains(PlaceFlag::HAS_CLASS_NAME) || (is_image && !has_character_id);
         let class_name = if has_class_name {
             Some(self.read_str()?)
         } else {
             None
         };
 
-        let action = match flags & 0b11 {
-            0b01 => PlaceObjectAction::Modify,
-            0b10 => PlaceObjectAction::Place(self.read_u16()?),
-            0b11 => PlaceObjectAction::Replace(self.read_u16()?),
+        let action = match (flags.contains(PlaceFlag::MOVE), has_character_id) {
+            (true, false) => PlaceObjectAction::Modify,
+            (false, true) => {
+                let id = self.read_u16()?;
+                PlaceObjectAction::Place(id)
+            }
+            (true, true) => {
+                let id = self.read_u16()?;
+                PlaceObjectAction::Replace(id)
+            }
             _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
         };
-        let matrix = if (flags & 0b100) != 0 {
+        let matrix = if flags.contains(PlaceFlag::HAS_MATRIX) {
             Some(self.read_matrix()?)
         } else {
             None
         };
-        let color_transform = if (flags & 0b1000) != 0 {
+        let color_transform = if flags.contains(PlaceFlag::HAS_COLOR_TRANSFORM) {
             Some(self.read_color_transform()?)
         } else {
             None
         };
-        let ratio = if (flags & 0b1_0000) != 0 {
+        let ratio = if flags.contains(PlaceFlag::HAS_RATIO) {
             Some(self.read_u16()?)
         } else {
             None
         };
-        let name = if (flags & 0b10_0000) != 0 {
+        let name = if flags.contains(PlaceFlag::HAS_NAME) {
             Some(self.read_str()?)
         } else {
             None
         };
-        let clip_depth = if (flags & 0b100_0000) != 0 {
+        let clip_depth = if flags.contains(PlaceFlag::HAS_CLIP_DEPTH) {
             Some(self.read_u16()?)
         } else {
             None
         };
 
         // PlaceObject3
-        let filters = if (flags & 0b1_00000000) != 0 {
+        let filters = if flags.contains(PlaceFlag::HAS_FILTER_LIST) {
             let num_filters = self.read_u8()?;
             let mut filters = Vec::with_capacity(num_filters as usize);
             for _ in 0..num_filters {
@@ -1982,37 +1989,39 @@ impl<'a> Reader<'a> {
         } else {
             None
         };
-        let blend_mode = if (flags & 0b10_00000000) != 0 {
+        let blend_mode = if flags.contains(PlaceFlag::HAS_BLEND_MODE) {
             Some(self.read_blend_mode()?)
         } else {
             None
         };
-        let is_bitmap_cached = if (flags & 0b100_00000000) != 0 {
+        let is_bitmap_cached = if flags.contains(PlaceFlag::HAS_CACHE_AS_BITMAP) {
             Some(self.read_u8()? != 0)
         } else {
             None
         };
-        let is_visible = if (flags & 0b100000_00000000) != 0 {
+        let is_visible = if flags.contains(PlaceFlag::HAS_VISIBLE) {
             Some(self.read_u8()? != 0)
         } else {
             None
         };
-        let background_color = if (flags & 0b1000000_00000000) != 0 {
+        let background_color = if flags.contains(PlaceFlag::OPAQUE_BACKGROUND) {
             Some(self.read_rgba()?)
         } else {
             None
         };
-
-        let clip_actions = if (flags & 0b1000_0000) != 0 {
+        let clip_actions = if flags.contains(PlaceFlag::HAS_CLIP_ACTIONS) {
             Some(self.read_clip_actions()?)
         } else {
             None
         };
+
+        // PlaceObject4
         let amf_data = if place_object_version >= 4 {
             Some(self.read_slice_to_end())
         } else {
             None
         };
+
         Ok(PlaceObject {
             version: place_object_version,
             action,
