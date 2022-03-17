@@ -995,10 +995,9 @@ impl<'a> Reader<'a> {
         let id = self.read_character_id()?;
         let flags = FontFlag::from_bits_truncate(self.read_u8()?);
         let language = self.read_language()?;
-        let name_len = self.read_u8()?;
         // SWF19 states that the font name should not have a terminating null byte,
         // but it often does (depends on Flash IDE version?)
-        let name = self.read_str_with_len(name_len.into())?;
+        let name = self.read_str_with_len()?;
 
         let num_glyphs = self.read_u16()? as usize;
         let mut glyphs = vec![
@@ -1212,10 +1211,7 @@ impl<'a> Reader<'a> {
 
     fn read_define_font_info(&mut self, version: u8) -> Result<Tag<'a>> {
         let id = self.read_u16()?;
-
-        let font_name_len = self.read_u8()?;
-        let font_name = self.read_str_with_len(font_name_len.into())?;
-
+        let font_name = self.read_str_with_len()?;
         let flags = self.read_u8()?;
         let use_wide_codes = flags & 0b1 != 0; // TODO(Herschel): Warn if false for version 2.
 
