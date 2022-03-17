@@ -303,14 +303,8 @@ impl<'gc> Loader<'gc> {
                     Ok(())
                 })?;
 
-            let data = (fetch.await).and_then(|data| {
-                Ok((
-                    data.len(),
-                    SwfMovie::from_data(&data, Some(url.clone()), None)?,
-                ))
-            });
-
-            if let Ok((_length, mut movie)) = data {
+            if let Ok(data) = fetch.await {
+                let mut movie = SwfMovie::from_data(&data, Some(url), None)?;
                 on_metadata(movie.header());
                 movie.append_parameters(parameters);
                 player.lock().unwrap().set_root_movie(Arc::new(movie));
@@ -389,14 +383,8 @@ impl<'gc> Loader<'gc> {
                     Ok(())
                 })?;
 
-            let data = (fetch.await).and_then(|data| {
-                Ok((
-                    data.len(),
-                    SwfMovie::from_data(&data, Some(url.clone()), loader_url.clone())?,
-                ))
-            });
-            if let Ok((length, movie)) = data {
-                let movie = Arc::new(movie);
+            if let Ok(data) = fetch.await {
+                let movie = Arc::new(SwfMovie::from_data(&data, Some(url), loader_url)?);
                 if replacing_root_movie {
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
@@ -433,8 +421,8 @@ impl<'gc> Loader<'gc> {
                                 &[
                                     "onLoadProgress".into(),
                                     clip.object(),
-                                    length.into(),
-                                    length.into(),
+                                    data.len().into(),
+                                    data.len().into(),
                                 ],
                             );
                         }
