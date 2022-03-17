@@ -36,17 +36,11 @@ pub enum Error {
     #[error("Non-load vars loader spawned as load vars loader")]
     NotLoadVarsLoader,
 
-    #[error("Could not fetch movie {0}")]
+    #[error("Could not fetch: {0}")]
     FetchError(String),
 
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
-
-    #[error("Network error")]
-    NetworkError(#[from] std::io::Error),
-
-    #[error("Network unavailable.")]
-    NetworkUnavailable,
 
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?

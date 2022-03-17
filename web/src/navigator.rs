@@ -199,16 +199,11 @@ impl NavigatorBackend for WebNavigatorBackend {
                 .map_err(|_| Error::FetchError(format!("Unable to create request for {}", url)))?;
 
             let window = web_sys::window().unwrap();
-            let fetchval = JsFuture::from(window.fetch_with_request(&request)).await;
-            if fetchval.is_err() {
-                return Err(Error::NetworkError(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Could not fetch, got JS Error",
-                )));
-            }
+            let fetchval = JsFuture::from(window.fetch_with_request(&request))
+                .await
+                .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 
-            let resp: Response = fetchval.unwrap().dyn_into().unwrap();
-
+            let resp: Response = fetchval.dyn_into().unwrap();
             if !resp.ok() {
                 return Err(Error::FetchError(format!(
                     "HTTP status is not ok, got {}",

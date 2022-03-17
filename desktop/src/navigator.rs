@@ -122,10 +122,11 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         match processed_url.scheme() {
             "file" => Box::pin(async move {
                 fs::read(processed_url.to_file_path().unwrap_or_default())
-                    .map_err(Error::NetworkError)
+                    .map_err(|e| Error::FetchError(e.to_string()))
             }),
             _ => Box::pin(async move {
-                let client = client.ok_or(Error::NetworkUnavailable)?;
+                let client =
+                    client.ok_or_else(|| Error::FetchError("Network unavailable".to_string()))?;
 
                 let request = match options.method() {
                     NavigationMethod::Get => Request::get(processed_url.to_string()),
