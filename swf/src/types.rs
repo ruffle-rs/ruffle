@@ -1279,11 +1279,20 @@ pub struct Font<'a> {
     pub language: Language,
     pub layout: Option<FontLayout>,
     pub glyphs: Vec<Glyph>,
-    pub is_small_text: bool,
-    pub is_shift_jis: bool, // TODO(Herschel): Use enum for Shift-JIS/ANSI/UCS-2
-    pub is_ansi: bool,
-    pub is_bold: bool,
-    pub is_italic: bool,
+    pub flags: FontFlag,
+}
+
+bitflags! {
+    pub struct FontFlag: u8 {
+        const IS_BOLD = 1 << 0;
+        const IS_ITALIC = 1 << 1;
+        const HAS_WIDE_CODES = 1 << 2;
+        const HAS_WIDE_OFFSETS = 1 << 3;
+        const IS_ANSI = 1 << 4;
+        const IS_SMALL_TEXT = 1 << 5;
+        const IS_SHIFT_JIS = 1 << 6;
+        const HAS_LAYOUT = 1 << 7;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
