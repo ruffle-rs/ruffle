@@ -993,17 +993,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_define_font_2(&mut self, version: u8) -> Result<Font<'a>> {
         let id = self.read_character_id()?;
-
-        let flags = self.read_u8()?;
-        let has_layout = flags & 0b10000000 != 0;
-        let is_shift_jis = flags & 0b1000000 != 0;
-        let is_small_text = flags & 0b100000 != 0;
-        let is_ansi = flags & 0b10000 != 0;
-        let has_wide_offsets = flags & 0b1000 != 0;
-        let has_wide_codes = flags & 0b100 != 0;
-        let is_italic = flags & 0b10 != 0;
-        let is_bold = flags & 0b1 != 0;
-
+        let flags = FontFlag::from_bits_truncate(self.read_u8()?);
         let language = self.read_language()?;
         let name_len = self.read_u8()?;
         // SWF19 states that the font name should not have a terminating null byte,
@@ -1027,7 +1017,7 @@ impl<'a> Reader<'a> {
         if num_glyphs == 0 {
             // Try to read the CodeTableOffset. It may or may not be present,
             // so just dump any error.
-            if has_wide_offsets {
+            if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                 let _ = self.read_u32();
             } else {
                 let _ = self.read_u16();
@@ -1038,7 +1028,7 @@ impl<'a> Reader<'a> {
             // OffsetTable
             let offsets: Result<Vec<_>> = (0..num_glyphs)
                 .map(|_| {
-                    if has_wide_offsets {
+                    if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                         self.read_u32()
                     } else {
                         self.read_u16().map(u32::from)
@@ -1048,7 +1038,7 @@ impl<'a> Reader<'a> {
             let offsets = offsets?;
 
             // CodeTableOffset
-            let code_table_offset = if has_wide_offsets {
+            let code_table_offset = if flags.contains(FontFlag::HAS_WIDE_OFFSETS) {
                 self.read_u32()?
             } else {
                 self.read_u16()?.into()
@@ -1099,7 +1089,7 @@ impl<'a> Reader<'a> {
 
             // CodeTable
             for glyph in &mut glyphs {
-                glyph.code = if has_wide_codes {
+                glyph.code = if flags.contains(FontFlag::HAS_WIDE_CODES) {
                     self.read_u16()?
                 } else {
                     self.read_u8()?.into()
@@ -1108,7 +1098,7 @@ impl<'a> Reader<'a> {
         }
 
         // TODO: Is it possible to have a layout when there are no glyphs?
-        let layout = if has_layout {
+        let layout = if flags.contains(FontFlag::HAS_LAYOUT) {
             let ascent = self.read_u16()?;
             let descent = self.read_u16()?;
             let leading = self.read_i16()?;
@@ -1129,7 +1119,8 @@ impl<'a> Reader<'a> {
 
                 let mut kerning_records = Vec::with_capacity(num_kerning_records);
                 for _ in 0..num_kerning_records {
-                    kerning_records.push(self.read_kerning_record(has_wide_codes)?);
+                    kerning_records
+                        .push(self.read_kerning_record(flags.contains(FontFlag::HAS_WIDE_CODES))?);
                 }
                 kerning_records
             } else {
@@ -1153,11 +1144,7 @@ impl<'a> Reader<'a> {
             language,
             layout,
             glyphs,
-            is_small_text,
-            is_shift_jis,
-            is_ansi,
-            is_bold,
-            is_italic,
+            flags,
         })
     }
 

@@ -2110,7 +2110,7 @@ impl<W: Write> Writer<W> {
             // so that we can calculate their offsets.
             let mut offsets = Vec::with_capacity(num_glyphs);
             let mut has_wide_offsets = false;
-            let has_wide_codes = !font.is_ansi;
+            let has_wide_codes = !font.flags.contains(FontFlag::IS_ANSI);
             let mut shape_buf = Vec::new();
             {
                 let mut shape_writer = Writer::new(&mut shape_buf, self.version);
@@ -2142,16 +2142,7 @@ impl<W: Write> Writer<W> {
 
             let mut writer = Writer::new(&mut buf, self.version);
             writer.write_character_id(font.id)?;
-            writer.write_u8(
-                if font.layout.is_some() { 0b10000000 } else { 0 }
-                    | if font.is_shift_jis { 0b1000000 } else { 0 }
-                    | if font.is_small_text { 0b100000 } else { 0 }
-                    | if font.is_ansi { 0b10000 } else { 0 }
-                    | if has_wide_offsets { 0b1000 } else { 0 }
-                    | if has_wide_codes { 0b100 } else { 0 }
-                    | if font.is_italic { 0b10 } else { 0 }
-                    | if font.is_bold { 0b1 } else { 0 },
-            )?;
+            writer.write_u8(font.flags.bits())?;
             writer.write_language(font.language)?;
             writer.write_u8(font.name.len() as u8)?;
             writer.output.write_all(font.name.as_bytes())?;

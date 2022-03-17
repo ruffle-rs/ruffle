@@ -456,8 +456,8 @@ impl FontDescriptor {
 
         Self {
             name,
-            is_bold: val.is_bold,
-            is_italic: val.is_italic,
+            is_bold: val.flags.contains(swf::FontFlag::IS_BOLD),
+            is_italic: val.flags.contains(swf::FontFlag::IS_ITALIC),
         }
     }
 

@@ -2829,11 +2829,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             glyphs,
             language: swf::Language::Unknown,
             layout: None,
-            is_small_text: false,
-            is_shift_jis: false,
-            is_ansi: false,
-            is_bold: false,
-            is_italic: false,
+            flags: swf::FontFlag::empty(),
         };
         let font_object = Font::from_swf_tag(
             context.gc_context,
