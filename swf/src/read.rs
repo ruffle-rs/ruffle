@@ -1367,24 +1367,25 @@ impl<'a> Reader<'a> {
             ))
         } else {
             // MorphLineStyle2 in DefineMorphShape2.
-            let flags0 = self.read_u8()?;
-            let flags1 = self.read_u8()?;
-            let start_cap = LineCapStyle::from_u8(flags0 >> 6)
-                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
-            let join_style_id = (flags0 >> 4) & 0b11;
-            let has_fill = (flags0 & 0b1000) != 0;
-            let allow_scale_x = (flags0 & 0b100) == 0;
-            let allow_scale_y = (flags0 & 0b10) == 0;
-            let is_pixel_hinted = (flags0 & 0b1) != 0;
-            let allow_close = (flags1 & 0b100) == 0;
-            let end_cap = LineCapStyle::from_u8(flags1 & 0b11)
-                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
-            let join_style = match join_style_id {
-                0 => LineJoinStyle::Round,
-                1 => LineJoinStyle::Bevel,
-                2 => LineJoinStyle::Miter(self.read_fixed8()?),
+            let flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let is_pixel_hinted = flags.contains(LineStyleFlag::PIXEL_HINTING);
+            let allow_scale_y = !flags.contains(LineStyleFlag::NO_V_SCALE);
+            let allow_scale_x = !flags.contains(LineStyleFlag::NO_H_SCALE);
+            let has_fill = flags.contains(LineStyleFlag::HAS_FILL);
+            let join_style = match flags & LineStyleFlag::JOIN_STYLE {
+                LineStyleFlag::ROUND => LineJoinStyle::Round,
+                LineStyleFlag::BEVEL => LineJoinStyle::Bevel,
+                LineStyleFlag::MITER => LineJoinStyle::Miter(self.read_fixed8()?),
                 _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
+            let start_cap =
+                LineCapStyle::from_u8(((flags & LineStyleFlag::START_CAP_STYLE).bits() >> 6) as u8)
+                    .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
+            let end_cap =
+                LineCapStyle::from_u8(((flags & LineStyleFlag::END_CAP_STYLE).bits() >> 8) as u8)
+                    .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
+            let allow_close = !flags.contains(LineStyleFlag::ALLOW_CLOSE);
+
             let (start_color, end_color) = if !has_fill {
                 (self.read_rgba()?, self.read_rgba()?)
             } else {
@@ -1681,37 +1682,36 @@ impl<'a> Reader<'a> {
     }
 
     fn read_line_style(&mut self, shape_version: u8) -> Result<LineStyle> {
+        let width = Twips::new(self.read_u16()?);
         if shape_version < 4 {
             // LineStyle1
-            Ok(LineStyle::new_v1(
-                Twips::new(self.read_u16()?),
-                if shape_version >= 3 {
-                    self.read_rgba()?
-                } else {
-                    self.read_rgb()?
-                },
-            ))
+            let color = if shape_version >= 3 {
+                self.read_rgba()?
+            } else {
+                self.read_rgb()?
+            };
+            Ok(LineStyle::new_v1(width, color))
         } else {
             // LineStyle2 in DefineShape4
-            let width = Twips::new(self.read_u16()?);
-            let flags0 = self.read_u8()?;
-            let flags1 = self.read_u8()?;
-            let start_cap = LineCapStyle::from_u8(flags0 >> 6)
-                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
-            let join_style_id = (flags0 >> 4) & 0b11;
-            let has_fill = (flags0 & 0b1000) != 0;
-            let allow_scale_x = (flags0 & 0b100) == 0;
-            let allow_scale_y = (flags0 & 0b10) == 0;
-            let is_pixel_hinted = (flags0 & 0b1) != 0;
-            let allow_close = (flags1 & 0b100) == 0;
-            let end_cap = LineCapStyle::from_u8(flags1 & 0b11)
-                .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
-            let join_style = match join_style_id {
-                0 => LineJoinStyle::Round,
-                1 => LineJoinStyle::Bevel,
-                2 => LineJoinStyle::Miter(self.read_fixed8()?),
+            let flags = LineStyleFlag::from_bits_truncate(self.read_u16()?);
+            let is_pixel_hinted = flags.contains(LineStyleFlag::PIXEL_HINTING);
+            let allow_scale_y = !flags.contains(LineStyleFlag::NO_V_SCALE);
+            let allow_scale_x = !flags.contains(LineStyleFlag::NO_H_SCALE);
+            let has_fill = flags.contains(LineStyleFlag::HAS_FILL);
+            let join_style = match flags & LineStyleFlag::JOIN_STYLE {
+                LineStyleFlag::ROUND => LineJoinStyle::Round,
+                LineStyleFlag::BEVEL => LineJoinStyle::Bevel,
+                LineStyleFlag::MITER => LineJoinStyle::Miter(self.read_fixed8()?),
                 _ => return Err(Error::invalid_data("Invalid line cap type.")),
             };
+            let start_cap =
+                LineCapStyle::from_u8(((flags & LineStyleFlag::START_CAP_STYLE).bits() >> 6) as u8)
+                    .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
+            let end_cap =
+                LineCapStyle::from_u8(((flags & LineStyleFlag::END_CAP_STYLE).bits() >> 8) as u8)
+                    .ok_or_else(|| Error::invalid_data("Invalid line cap type."))?;
+            let allow_close = !flags.contains(LineStyleFlag::ALLOW_CLOSE);
+
             let color = if !has_fill {
                 self.read_rgba()?
             } else {
