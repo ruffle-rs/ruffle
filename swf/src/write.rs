@@ -1,5 +1,3 @@
-#![allow(clippy::unusual_byte_groupings)]
-
 use crate::{
     error::{Error, Result},
     string::SwfStr,
@@ -484,6 +482,7 @@ impl<W: Write> Writer<W> {
                 }
             }
 
+            #[allow(clippy::unusual_byte_groupings)]
             Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
@@ -2477,6 +2476,7 @@ fn count_fbits(n: Fixed16) -> u32 {
 }
 
 #[cfg(test)]
+#[allow(clippy::unusual_byte_groupings)]
 mod tests {
     use super::Writer;
     use super::*;

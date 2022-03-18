@@ -1,5 +1,3 @@
-#![allow(clippy::unusual_byte_groupings)]
-
 use crate::extensions::ReadSwfExt;
 use crate::{
     error::{Error, Result},
@@ -142,7 +140,6 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
 }
 
 #[cfg(feature = "flate2")]
-#[allow(clippy::unnecessary_wraps)]
 fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     use flate2::read::ZlibDecoder;
     Ok(Box::new(ZlibDecoder::new(input)))
@@ -2623,6 +2620,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::tag_code::TagCode;

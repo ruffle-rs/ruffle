@@ -352,7 +352,6 @@ define_fixed!(Fixed8, i16, i32, 8, from_int(i8), into_float(f32, f64));
 define_fixed!(Fixed16, i32, i64, 16, from_int(i8, i16), into_float(f64));
 
 #[cfg(test)]
-#[allow(clippy::float_cmp, clippy::eq_op)]
 pub mod tests {
     use super::*;
 

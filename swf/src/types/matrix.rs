@@ -1,5 +1,3 @@
-#![allow(clippy::suspicious_operation_groupings)]
-
 use crate::{Fixed16, Twips};
 use std::ops;
 
