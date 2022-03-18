@@ -175,6 +175,9 @@ jobs:
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v2
+
       - name: Download aarch64 binary
         uses: actions/download-artifact@v2
         with:
