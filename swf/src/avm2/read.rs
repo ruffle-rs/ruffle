@@ -1,5 +1,3 @@
-#![allow(clippy::unusual_byte_groupings)]
-
 use crate::avm2::types::*;
 use crate::error::{Error, Result};
 use crate::extensions::ReadSwfExt;
@@ -873,6 +871,7 @@ impl<'a> Reader<'a> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;
