@@ -1145,6 +1145,27 @@ impl LineStyle {
     }
 }
 
+bitflags! {
+    pub struct LineStyleFlag: u16 {
+        // First byte.
+        const PIXEL_HINTING = 1 << 0;
+        const NO_V_SCALE = 1 << 1;
+        const NO_H_SCALE = 1 << 2;
+        const HAS_FILL = 1 << 3;
+        const JOIN_STYLE = 0b11 << 4;
+        const START_CAP_STYLE = 0b11 << 6;
+
+        // Second byte.
+        const END_CAP_STYLE = 0b11 << 8;
+        const ALLOW_CLOSE = 1 << 10;
+
+        // JOIN_STYLE mask values.
+        const ROUND = 0b00 << 4;
+        const BEVEL = 0b01 << 4;
+        const MITER = 0b10 << 4;
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
 pub enum LineCapStyle {
     Round = 0,

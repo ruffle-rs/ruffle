@@ -1622,25 +1622,22 @@ impl<W: Write> Writer<W> {
         // TODO(Herschel): Handle overflow.
         self.write_u16(line_style.width.get() as u16)?;
         if shape_version >= 4 {
-            let mut bits = self.bits();
             // LineStyle2
-            bits.write_ubits(2, line_style.start_cap as u32)?;
-            bits.write_ubits(
-                2,
-                match line_style.join_style {
-                    LineJoinStyle::Round => 0,
-                    LineJoinStyle::Bevel => 1,
-                    LineJoinStyle::Miter(_) => 2,
-                },
-            )?;
-            bits.write_bit(line_style.fill_style.is_some())?;
-            bits.write_bit(!line_style.allow_scale_x)?;
-            bits.write_bit(!line_style.allow_scale_y)?;
-            bits.write_bit(line_style.is_pixel_hinted)?;
-            bits.write_ubits(5, 0)?;
-            bits.write_bit(!line_style.allow_close)?;
-            bits.write_ubits(2, line_style.end_cap as u32)?;
-            drop(bits);
+            let mut flags = LineStyleFlag::empty();
+            flags.set(LineStyleFlag::PIXEL_HINTING, line_style.is_pixel_hinted);
+            flags.set(LineStyleFlag::NO_V_SCALE, !line_style.allow_scale_y);
+            flags.set(LineStyleFlag::NO_H_SCALE, !line_style.allow_scale_x);
+            flags.set(LineStyleFlag::HAS_FILL, line_style.fill_style.is_some());
+            flags |= match line_style.join_style {
+                LineJoinStyle::Round => LineStyleFlag::ROUND,
+                LineJoinStyle::Bevel => LineStyleFlag::BEVEL,
+                LineJoinStyle::Miter(_) => LineStyleFlag::MITER,
+            };
+            let mut flags = flags.bits();
+            flags |= (line_style.start_cap as u16) << 6;
+            flags |= (line_style.end_cap as u16) << 8;
+            self.write_u16(flags)?;
+
             if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
                 self.write_fixed8(miter_factor)?;
             }
