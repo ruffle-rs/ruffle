@@ -655,11 +655,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 id: 1,
                 version: 1,
                 name: SwfStr::from_str_with_encoding("Verdana", WINDOWS_1252).unwrap(),
-                is_small_text: false,
-                is_ansi: true,
-                is_shift_jis: false,
-                is_italic: false,
-                is_bold: false,
+                flags: FontInfoFlag::IS_ANSI,
                 language: Language::Unknown,
                 code_table: vec![45, 95],
             })),
@@ -671,11 +667,10 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 id: 1,
                 version: 2,
                 name: "Verdana".into(),
-                is_small_text: false,
-                is_ansi: true,
-                is_shift_jis: false,
-                is_italic: true,
-                is_bold: true,
+                flags: FontInfoFlag::HAS_WIDE_CODES
+                    | FontInfoFlag::IS_BOLD
+                    | FontInfoFlag::IS_ITALIC
+                    | FontInfoFlag::IS_ANSI,
                 language: Language::Latin,
                 code_table: vec![45, 95],
             })),
