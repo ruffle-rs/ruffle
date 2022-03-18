@@ -201,6 +201,7 @@ jobs:
 
       - name: Compile asset catalog
         run: |
+          mkdir package/Ruffle.app/Contents/Resources
           xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
 
       - name: Package macOS
