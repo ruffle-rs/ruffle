@@ -1211,9 +1211,8 @@ impl<'a> Reader<'a> {
 
     fn read_define_font_info(&mut self, version: u8) -> Result<Tag<'a>> {
         let id = self.read_u16()?;
-        let font_name = self.read_str_with_len()?;
-        let flags = self.read_u8()?;
-        let use_wide_codes = flags & 0b1 != 0; // TODO(Herschel): Warn if false for version 2.
+        let name = self.read_str_with_len()?;
+        let flags = FontInfoFlag::from_bits_truncate(self.read_u8()?);
 
         let language = if version >= 2 {
             self.read_language()?
@@ -1222,11 +1221,12 @@ impl<'a> Reader<'a> {
         };
 
         let mut code_table = vec![];
-        if use_wide_codes {
+        if flags.contains(FontInfoFlag::HAS_WIDE_CODES) {
             while let Ok(code) = self.read_u16() {
                 code_table.push(code);
             }
         } else {
+            // TODO(Herschel): Warn for version 2.
             while let Ok(code) = self.read_u8() {
                 code_table.push(code.into());
             }
@@ -1236,12 +1236,8 @@ impl<'a> Reader<'a> {
         Ok(Tag::DefineFontInfo(Box::new(FontInfo {
             id,
             version,
-            name: font_name,
-            is_small_text: flags & 0b100000 != 0,
-            is_ansi: flags & 0b10000 != 0,
-            is_shift_jis: flags & 0b1000 != 0,
-            is_italic: flags & 0b100 != 0,
-            is_bold: flags & 0b10 != 0,
+            name,
+            flags,
             language,
             code_table,
         })))

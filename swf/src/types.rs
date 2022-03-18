@@ -1375,13 +1375,20 @@ pub struct FontInfo<'a> {
     pub id: CharacterId,
     pub version: u8,
     pub name: &'a SwfStr,
-    pub is_small_text: bool,
-    pub is_shift_jis: bool,
-    pub is_ansi: bool,
-    pub is_bold: bool,
-    pub is_italic: bool,
+    pub flags: FontInfoFlag,
     pub language: Language,
     pub code_table: Vec<u16>,
+}
+
+bitflags! {
+    pub struct FontInfoFlag: u8 {
+        const HAS_WIDE_CODES = 1 << 0;
+        const IS_BOLD = 1 << 1;
+        const IS_ITALIC = 1 << 2;
+        const IS_SHIFT_JIS = 1 << 3;
+        const IS_ANSI = 1 << 4;
+        const IS_SMALL_TEXT = 1 << 5;
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
