@@ -8,7 +8,7 @@ use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
-use quick_xml::events::{BytesStart, BytesText};
+use quick_xml::events::BytesStart;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::mem::swap;
@@ -161,27 +161,6 @@ impl<'gc> XmlNode<'gc> {
                 attributes,
                 attributes_script_object: None,
                 children: Vec::new(),
-            },
-        )))
-    }
-
-    /// Construct an XML Text node from a `quick_xml` `BytesText` event.
-    ///
-    /// The returned node will always be `Text`, and it must only contain
-    /// valid encoded UTF-8 data. (Other encoding support is planned later.)
-    pub fn text_from_text_event<'a>(
-        mc: MutationContext<'gc, '_>,
-        bt: BytesText<'a>,
-    ) -> Result<Self, quick_xml::Error> {
-        Ok(Self(GcCell::allocate(
-            mc,
-            XmlNodeData::Text {
-                script_object: None,
-                attributes_script_object: None,
-                parent: None,
-                prev_sibling: None,
-                next_sibling: None,
-                contents: AvmString::new_utf8_bytes(mc, bt.unescaped()?)?,
             },
         )))
     }
@@ -594,12 +573,6 @@ impl<'gc> XmlNode<'gc> {
                 &mut *other.0.write(gc_context),
             );
         }
-    }
-
-    // Check if this XML node is constitutes text and only contains whitespace.
-    pub fn is_whitespace_text(self) -> bool {
-        const WHITESPACE_CHARS: &[u16] = &[b' ' as u16, b'\t' as u16, b'\r' as u16, b'\n' as u16];
-        matches!(&*self.0.read(), XmlNodeData::Text { contents, .. } if contents.iter().all(|c| WHITESPACE_CHARS.contains(&c)))
     }
 
     /// Create a duplicate copy of this node.
