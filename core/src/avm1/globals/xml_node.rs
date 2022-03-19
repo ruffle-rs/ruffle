@@ -6,7 +6,6 @@ use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
 use crate::string::AvmString;
-use crate::xml;
 use crate::xml::XmlNode;
 use gc_arena::MutationContext;
 
@@ -214,7 +213,7 @@ fn node_name<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.tag_name())
+        .and_then(|n| n.node_name())
         .map_or(Value::Null, Value::from))
 }
 
@@ -246,15 +245,7 @@ fn node_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .map(|n| {
-            match n.node_type() {
-                xml::DOCUMENT_NODE => xml::ELEMENT_NODE,
-                xml::DOCUMENT_TYPE_NODE => xml::TEXT_NODE,
-                xml::COMMENT_NODE => xml::TEXT_NODE,
-                n => n,
-            }
-            .into()
-        })
+        .map(|n| n.node_type().into())
         .unwrap_or_else(|| Value::Undefined))
 }
 
@@ -384,8 +375,7 @@ fn attributes<'gc>(
     if let Some(mut node) = this.as_xml_node() {
         return Ok(node
             .attribute_script_object(activation.context.gc_context)
-            .map(|o| o.into())
-            .unwrap_or_else(|| Value::Undefined));
+            .into());
     }
 
     Ok(Value::Undefined)
