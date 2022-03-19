@@ -12,9 +12,9 @@ use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "localName" => property(local_name);
-    "nodeName" => property(node_name);
+    "nodeName" => property(node_name, set_node_value);
     "nodeType" => property(node_type);
-    "nodeValue" => property(node_value);
+    "nodeValue" => property(node_value, set_node_value);
     "prefix" => property(prefix);
     "childNodes" => property(child_nodes);
     "firstChild" => property(first_child);
@@ -216,6 +216,27 @@ fn node_name<'gc>(
         .as_xml_node()
         .and_then(|n| n.tag_name())
         .map_or(Value::Null, Value::from))
+}
+
+/// This functions acts as a setter for both `nodeName` and `nodeValue`.
+fn set_node_value<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let [name, ..] = args {
+        if name == &Value::Undefined {
+            return Ok(Value::Undefined);
+        }
+
+        if let Some(node) = this.as_xml_node() {
+            node.set_node_value(
+                activation.context.gc_context,
+                name.coerce_to_string(activation)?,
+            );
+        }
+    }
+    Ok(Value::Undefined)
 }
 
 fn node_type<'gc>(

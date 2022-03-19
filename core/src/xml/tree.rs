@@ -399,6 +399,13 @@ impl<'gc> XmlNode<'gc> {
         }
     }
 
+    pub fn set_node_value(self, gc_context: MutationContext<'gc, '_>, value: AvmString<'gc>) {
+        match &mut *self.0.write(gc_context) {
+            XmlNodeData::Element { tag_name, .. } => *tag_name = Some(value),
+            XmlNodeData::Text { contents, .. } => *contents = value,
+        }
+    }
+
     /// Returns the number of children of the current tree node.
     ///
     /// Nodes that cannot hold children always yield `0`.
