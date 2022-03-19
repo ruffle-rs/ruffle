@@ -1,8 +1,29 @@
+// test.parentNode === my_document
 true
+// test2.parentNode === my_document
 true
-null
+// test3.parentNode === my_document
 true
+
+// test.previousSibling === null
 true
-null
+// test.nextSibling === test2
 true
+
+// test2.previousSibling === test
 true
+// test2.nextSibling === test3
+true
+
+// test3.previousSibling === test2
+true
+// test3.nextSibling === null
+true
+
+// my_document.childNodes[0] === test
+true
+// my_document.childNodes[1] === test2
+true
+// my_document.childNodes[2] === test3
+true
+
