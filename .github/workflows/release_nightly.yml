@@ -197,7 +197,7 @@ jobs:
         run: |
           cp -r desktop/packages/macOS package/Ruffle.app
           mkdir package/Ruffle.app/Contents/MacOS
-          cp package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+          mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
 
       - name: Compile asset catalog
         run: |
