@@ -14,6 +14,9 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::mem::swap;
 
+const ELEMENT_NODE: u8 = 1;
+const TEXT_NODE: u8 = 3;
+
 /// Represents a node in the XML tree.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -21,59 +24,35 @@ pub struct XmlNode<'gc>(GcCell<'gc, XmlNodeData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub enum XmlNodeData<'gc> {
-    /// An element node in the XML tree.
-    ///
-    /// Element nodes are non-leaf nodes: they can store additional data as
-    /// either attributes (for key/value pairs) or child nodes (for more
-    /// structured data).
-    Element {
-        /// The script object associated with this XML node, if any.
-        script_object: Option<Object<'gc>>,
+pub struct XmlNodeData<'gc> {
+    /// The script object associated with this XML node, if any.
+    script_object: Option<Object<'gc>>,
 
-        /// The script object associated with this XML node's attributes, if any.
-        attributes_script_object: Option<Object<'gc>>,
+    /// The script object associated with this XML node's attributes, if any.
+    attributes_script_object: Option<Object<'gc>>,
 
-        /// The parent node of this one.
-        parent: Option<XmlNode<'gc>>,
+    /// The parent node of this one.
+    parent: Option<XmlNode<'gc>>,
 
-        /// The previous sibling node to this one.
-        prev_sibling: Option<XmlNode<'gc>>,
+    /// The previous sibling node to this one.
+    prev_sibling: Option<XmlNode<'gc>>,
 
-        /// The next sibling node to this one.
-        next_sibling: Option<XmlNode<'gc>>,
+    /// The next sibling node to this one.
+    next_sibling: Option<XmlNode<'gc>>,
 
-        /// The tag name of this element.
-        /// None if this is a document root node.
-        tag_name: Option<AvmString<'gc>>,
+    /// The type of this XML node. Should either `ELEMENT_NODE` or `TEXT_NODE`,
+    /// but any other value is accepted as well.
+    node_type: u8,
 
-        /// Attributes of the element.
-        attributes: BTreeMap<AvmString<'gc>, AvmString<'gc>>,
+    /// The tag name of this element, or its text content, depending on `node_type`.
+    /// None if this is a document root node.
+    node_value: Option<AvmString<'gc>>,
 
-        /// Child nodes of this element.
-        children: Vec<XmlNode<'gc>>,
-    },
+    /// Attributes of the element.
+    attributes: BTreeMap<AvmString<'gc>, AvmString<'gc>>,
 
-    /// A text node in the XML tree.
-    Text {
-        /// The script object associated with this XML node, if any.
-        script_object: Option<Object<'gc>>,
-
-        /// The script object associated with this XML node's attributes, if any.
-        attributes_script_object: Option<Object<'gc>>,
-
-        /// The parent node of this one.
-        parent: Option<XmlNode<'gc>>,
-
-        /// The previous sibling node to this one.
-        prev_sibling: Option<XmlNode<'gc>>,
-
-        /// The next sibling node to this one.
-        next_sibling: Option<XmlNode<'gc>>,
-
-        /// The string representation of the text.
-        contents: AvmString<'gc>,
-    },
+    /// Child nodes of this element.
+    children: Vec<XmlNode<'gc>>,
 }
 
 impl<'gc> XmlNode<'gc> {
@@ -81,13 +60,16 @@ impl<'gc> XmlNode<'gc> {
     pub fn new_text(mc: MutationContext<'gc, '_>, contents: AvmString<'gc>) -> Self {
         Self(GcCell::allocate(
             mc,
-            XmlNodeData::Text {
+            XmlNodeData {
                 script_object: None,
                 attributes_script_object: None,
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                contents,
+                node_type: TEXT_NODE,
+                node_value: Some(contents),
+                attributes: BTreeMap::new(),
+                children: Vec::new(),
             },
         ))
     }
@@ -96,14 +78,15 @@ impl<'gc> XmlNode<'gc> {
     pub fn new_element(mc: MutationContext<'gc, '_>, element_name: AvmString<'gc>) -> Self {
         Self(GcCell::allocate(
             mc,
-            XmlNodeData::Element {
+            XmlNodeData {
                 script_object: None,
+                attributes_script_object: None,
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                tag_name: Some(element_name),
+                node_type: ELEMENT_NODE,
+                node_value: Some(element_name),
                 attributes: BTreeMap::new(),
-                attributes_script_object: None,
                 children: Vec::new(),
             },
         ))
@@ -113,12 +96,13 @@ impl<'gc> XmlNode<'gc> {
     pub fn new_document_root(mc: MutationContext<'gc, '_>) -> Self {
         Self(GcCell::allocate(
             mc,
-            XmlNodeData::Element {
+            XmlNodeData {
                 script_object: None,
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                tag_name: None,
+                node_type: ELEMENT_NODE,
+                node_value: None,
                 attributes: BTreeMap::new(),
                 attributes_script_object: None,
                 children: Vec::new(),
@@ -159,45 +143,27 @@ impl<'gc> XmlNode<'gc> {
 
     /// Get the parent, if this node has one.
     pub fn parent(self) -> Option<XmlNode<'gc>> {
-        match *self.0.read() {
-            XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => parent,
-        }
+        self.0.read().parent
     }
 
     /// Get the previous sibling, if this node has one.
     pub fn prev_sibling(self) -> Option<XmlNode<'gc>> {
-        match *self.0.read() {
-            XmlNodeData::Element { prev_sibling, .. } | XmlNodeData::Text { prev_sibling, .. } => {
-                prev_sibling
-            }
-        }
+        self.0.read().prev_sibling
     }
 
     /// Set this node's previous sibling.
     fn set_prev_sibling(&mut self, mc: MutationContext<'gc, '_>, new_prev: Option<XmlNode<'gc>>) {
-        match &mut *self.0.write(mc) {
-            XmlNodeData::Element { prev_sibling, .. } | XmlNodeData::Text { prev_sibling, .. } => {
-                *prev_sibling = new_prev
-            }
-        }
+        self.0.write(mc).prev_sibling = new_prev;
     }
 
     /// Get the next sibling, if this node has one.
     pub fn next_sibling(self) -> Option<XmlNode<'gc>> {
-        match *self.0.read() {
-            XmlNodeData::Element { next_sibling, .. } | XmlNodeData::Text { next_sibling, .. } => {
-                next_sibling
-            }
-        }
+        self.0.read().next_sibling
     }
 
     /// Set this node's next sibling.
     fn set_next_sibling(&mut self, mc: MutationContext<'gc, '_>, new_next: Option<XmlNode<'gc>>) {
-        match &mut *self.0.write(mc) {
-            XmlNodeData::Element { next_sibling, .. } | XmlNodeData::Text { next_sibling, .. } => {
-                *next_sibling = new_next
-            }
-        }
+        self.0.write(mc).next_sibling = new_next;
     }
 
     /// Remove node from its current siblings list.
@@ -225,11 +191,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Unset the parent of this node.
     fn disown_parent(&mut self, mc: MutationContext<'gc, '_>) {
-        match &mut *self.0.write(mc) {
-            XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
-                *parent = None
-            }
-        }
+        self.0.write(mc).parent = None;
     }
 
     /// Add node to a new siblings list.
@@ -262,13 +224,7 @@ impl<'gc> XmlNode<'gc> {
     /// This function yields Err if this node cannot accept child nodes.
     fn orphan_child(&mut self, mc: MutationContext<'gc, '_>, child: XmlNode<'gc>) {
         if let Some(position) = self.child_position(child) {
-            match &mut *self.0.write(mc) {
-                XmlNodeData::Element { children, .. } => children.remove(position),
-                XmlNodeData::Text { .. } => {
-                    // This cannot happen, as `insert_child` refuses to adopt children into text nodes.
-                    unreachable!();
-                }
-            };
+            self.0.write(mc).children.remove(position);
         }
     }
 
@@ -295,44 +251,27 @@ impl<'gc> XmlNode<'gc> {
             return;
         }
 
-        match &mut *self.0.write(mc) {
-            XmlNodeData::Element { children, .. } => {
-                let old_parent = match *child.0.read() {
-                    XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
-                        parent
-                    }
-                };
-
-                if let Some(mut old_parent) = old_parent {
-                    if !GcCell::ptr_eq(self.0, old_parent.0) {
-                        old_parent.orphan_child(mc, child);
-                    }
-                }
-
-                match &mut *child.0.write(mc) {
-                    XmlNodeData::Element { parent, .. } | XmlNodeData::Text { parent, .. } => {
-                        *parent = Some(*self);
-                    }
-                }
-
-                children.insert(position, child);
-
-                let new_prev = position
-                    .checked_sub(1)
-                    .and_then(|p| children.get(p).cloned());
-                let new_next = position
-                    .checked_add(1)
-                    .and_then(|p| children.get(p).cloned());
-                child.adopt_siblings(mc, new_prev, new_next);
-            }
-            XmlNodeData::Text { .. } => {
-                log::warn!("Text nodes cannot have children");
+        if let Some(mut old_parent) = child.0.read().parent {
+            if !GcCell::ptr_eq(self.0, old_parent.0) {
+                old_parent.orphan_child(mc, child);
             }
         }
+
+        child.0.write(mc).parent = Some(*self);
+
+        let children = &mut self.0.write(mc).children;
+        children.insert(position, child);
+
+        let new_prev = position
+            .checked_sub(1)
+            .and_then(|p| children.get(p).cloned());
+        let new_next = position
+            .checked_add(1)
+            .and_then(|p| children.get(p).cloned());
+        child.adopt_siblings(mc, new_prev, new_next);
     }
 
-    /// Append a child element into the end of the child list of an Element
-    /// node.
+    /// Append a child element into the end of the child list of an element node.
     pub fn append_child(&mut self, mc: MutationContext<'gc, '_>, child: XmlNode<'gc>) {
         self.insert_child(mc, self.children_len(), child);
     }
@@ -342,14 +281,7 @@ impl<'gc> XmlNode<'gc> {
         if let Some(parent) = self.parent() {
             // This is guaranteed to succeed, as `self` is a child of `parent`.
             let position = parent.child_position(*self).unwrap();
-
-            match &mut *parent.0.write(mc) {
-                XmlNodeData::Element { children, .. } => children.remove(position),
-                XmlNodeData::Text { .. } => {
-                    // This cannot happen, as `insert_child` refuses to adopt children into text nodes.
-                    unreachable!();
-                }
-            };
+            parent.0.write(mc).children.remove(position);
 
             self.disown_siblings(mc);
             self.disown_parent(mc);
@@ -357,61 +289,49 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Returns the type of this node as an integer.
-    ///
-    /// This is primarily intended to match W3C DOM L1 specifications and
-    /// should not be used in lieu of a proper `match` statement.
     pub fn node_type(self) -> u8 {
-        match &*self.0.read() {
-            XmlNodeData::Element { .. } => xml::ELEMENT_NODE,
-            XmlNodeData::Text { .. } => xml::TEXT_NODE,
-        }
+        self.0.read().node_type
     }
 
-    /// Returns the tagname, if the element has one.
-    pub fn tag_name(self) -> Option<AvmString<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { tag_name, .. } => *tag_name,
-            XmlNodeData::Text { .. } => None,
+    /// Returns the tag name of this element, if any.
+    pub fn node_name(self) -> Option<AvmString<'gc>> {
+        if self.0.read().node_type == ELEMENT_NODE {
+            self.0.read().node_value
+        } else {
+            None
         }
     }
 
     pub fn local_name(self, gc_context: MutationContext<'gc, '_>) -> Option<AvmString<'gc>> {
-        self.tag_name().map(|name| match name.find(b':') {
+        self.node_name().map(|name| match name.find(b':') {
             Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[i + 1..]),
             _ => name,
         })
     }
 
     pub fn prefix(self, gc_context: MutationContext<'gc, '_>) -> Option<AvmString<'gc>> {
-        self.tag_name().map(|name| match name.find(b':') {
+        self.node_name().map(|name| match name.find(b':') {
             Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[..i]),
             _ => "".into(),
         })
     }
 
-    /// Returns the string contents of the node, if the element has them.
+    /// Returns the node value of this node, if any.
     pub fn node_value(self) -> Option<AvmString<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Text { contents, .. } => Some(*contents),
-            XmlNodeData::Element { .. } => None,
+        if self.0.read().node_type == ELEMENT_NODE {
+            None
+        } else {
+            self.0.read().node_value
         }
     }
 
     pub fn set_node_value(self, gc_context: MutationContext<'gc, '_>, value: AvmString<'gc>) {
-        match &mut *self.0.write(gc_context) {
-            XmlNodeData::Element { tag_name, .. } => *tag_name = Some(value),
-            XmlNodeData::Text { contents, .. } => *contents = value,
-        }
+        self.0.write(gc_context).node_value = Some(value);
     }
 
     /// Returns the number of children of the current tree node.
-    ///
-    /// Nodes that cannot hold children always yield `0`.
     pub fn children_len(self) -> usize {
-        match &*self.0.read() {
-            XmlNodeData::Element { children, .. } => children.len(),
-            XmlNodeData::Text { .. } => 0,
-        }
+        self.0.read().children.len()
     }
 
     /// Get the position of a child of this node.
@@ -431,12 +351,9 @@ impl<'gc> XmlNode<'gc> {
             .is_some()
     }
 
-    /// Retrieve a given child by index (e.g. position in the document).
+    /// Retrieve a given child by index.
     pub fn get_child_by_index(self, index: usize) -> Option<XmlNode<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { children, .. } => children.get(index).cloned(),
-            XmlNodeData::Text { .. } => None,
-        }
+        self.0.read().children.get(index).cloned()
     }
 
     /// Returns an iterator that yields child nodes.
@@ -451,10 +368,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Get the already-instantiated script object from the current node.
     fn get_script_object(self) -> Option<Object<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { script_object, .. }
-            | XmlNodeData::Text { script_object, .. } => *script_object,
-        }
+        self.0.read().script_object
     }
 
     /// Introduce this node to a new script object.
@@ -468,11 +382,7 @@ impl<'gc> XmlNode<'gc> {
         new_object: Object<'gc>,
     ) {
         assert!(self.get_script_object().is_none(), "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
-
-        match &mut *self.0.write(gc_context) {
-            XmlNodeData::Element { script_object, .. }
-            | XmlNodeData::Text { script_object, .. } => *script_object = Some(new_object),
-        }
+        self.0.write(gc_context).script_object = Some(new_object);
     }
 
     /// Obtain the script object for a given XML tree node, constructing a new
@@ -490,27 +400,12 @@ impl<'gc> XmlNode<'gc> {
 
     /// Obtain the script object for a given XML tree node's attributes,
     /// constructing a new script object if one does not exist.
-    pub fn attribute_script_object(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-    ) -> Option<Object<'gc>> {
-        match &mut *self.0.write(gc_context) {
-            XmlNodeData::Element {
-                attributes_script_object,
-                ..
-            }
-            | XmlNodeData::Text {
-                attributes_script_object,
-                ..
-            } => {
-                if attributes_script_object.is_none() {
-                    *attributes_script_object =
-                        Some(XmlAttributesObject::from_xml_node(gc_context, *self));
-                }
-
-                *attributes_script_object
-            }
-        }
+    pub fn attribute_script_object(&mut self, gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
+        *self
+            .0
+            .write(gc_context)
+            .attributes_script_object
+            .get_or_insert_with(|| XmlAttributesObject::from_xml_node(gc_context, *self))
     }
 
     /// Swap the contents of this node with another one.
@@ -530,34 +425,20 @@ impl<'gc> XmlNode<'gc> {
 
     /// Create a duplicate copy of this node.
     ///
-    /// If the `deep` flag is set true, then the entire node tree will be
-    /// cloned.
+    /// If the `deep` flag is set true, then the entire node tree will be cloned.
     pub fn duplicate(self, gc_context: MutationContext<'gc, '_>, deep: bool) -> XmlNode<'gc> {
         let mut clone = XmlNode(GcCell::allocate(
             gc_context,
-            match &*self.0.read() {
-                XmlNodeData::Element {
-                    tag_name,
-                    attributes,
-                    ..
-                } => XmlNodeData::Element {
-                    script_object: None,
-                    parent: None,
-                    prev_sibling: None,
-                    next_sibling: None,
-                    tag_name: *tag_name,
-                    attributes: attributes.clone(),
-                    attributes_script_object: None,
-                    children: Vec::new(),
-                },
-                XmlNodeData::Text { contents, .. } => XmlNodeData::Text {
-                    script_object: None,
-                    attributes_script_object: None,
-                    parent: None,
-                    prev_sibling: None,
-                    next_sibling: None,
-                    contents: *contents,
-                },
+            XmlNodeData {
+                script_object: None,
+                attributes_script_object: None,
+                parent: None,
+                prev_sibling: None,
+                next_sibling: None,
+                node_type: self.0.read().node_type,
+                node_value: self.0.read().node_value,
+                attributes: self.0.read().attributes.clone(),
+                children: Vec::new(),
             },
         ));
 
@@ -571,47 +452,28 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Retrieve the value of a single attribute on this node.
-    ///
-    /// If the node does not contain attributes, then this function always
-    /// yields None.
     pub fn attribute_value(self, name: &WStr) -> Option<AvmString<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { attributes, .. } => attributes.get(name).copied(),
-            XmlNodeData::Text { .. } => None,
-        }
+        self.0.read().attributes.get(name).copied()
     }
 
     /// Retrieve all keys defined on this node.
     pub fn attribute_keys(self) -> Vec<AvmString<'gc>> {
-        match &*self.0.read() {
-            XmlNodeData::Element { attributes, .. } => {
-                attributes.keys().cloned().collect::<Vec<_>>()
-            }
-            XmlNodeData::Text { .. } => Vec::new(),
-        }
+        self.0.read().attributes.keys().cloned().collect()
     }
 
     /// Set the value of a single attribute on this node.
-    ///
-    /// If the node does not contain attributes, then this function silently fails.
     pub fn set_attribute_value(
         self,
         gc_context: MutationContext<'gc, '_>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
     ) {
-        if let XmlNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
-            attributes.insert(name, value);
-        }
+        self.0.write(gc_context).attributes.insert(name, value);
     }
 
     /// Delete the value of a single attribute on this node.
-    ///
-    /// If the node does not contain attributes, then this function silently fails.
     pub fn delete_attribute(self, gc_context: MutationContext<'gc, '_>, name: &WStr) {
-        if let XmlNodeData::Element { attributes, .. } = &mut *self.0.write(gc_context) {
-            attributes.remove(name);
-        }
+        self.0.write(gc_context).attributes.remove(name);
     }
 
     /// Look up the URI for the given namespace.
@@ -646,14 +508,12 @@ impl<'gc> XmlNode<'gc> {
     /// mentioned on the closest node will be returned.
     pub fn lookup_namespace_for_uri(self, uri: &WStr) -> Option<WString> {
         for node in self.ancestors() {
-            if let XmlNodeData::Element { attributes, .. } = &*node.0.read() {
-                for (attr, attr_value) in attributes.iter() {
-                    if attr_value == uri {
-                        if attr == b"xmlns" {
-                            return Some(WString::new());
-                        } else if attr.starts_with(WStr::from_units(b"xmlns:")) {
-                            return Some(attr[b"xmlns:".len()..].into());
-                        }
+            for (attr, attr_value) in node.0.read().attributes.iter() {
+                if attr_value == uri {
+                    if attr == b"xmlns" {
+                        return Some(WString::new());
+                    } else if attr.starts_with(WStr::from_units(b"xmlns:")) {
+                        return Some(attr[b"xmlns:".len()..].into());
                     }
                 }
             }
@@ -673,28 +533,15 @@ impl<'gc> XmlNode<'gc> {
     fn write_node_to_string(self, result: &mut WString) {
         // TODO: we convert some strings to utf8, replacing unpaired surrogates by the replacement char.
         // It is correct?
-        match &*self.0.read() {
-            XmlNodeData::Element {
-                tag_name: None,
-                children,
-                ..
-            } => {
-                for child in children {
-                    child.write_node_to_string(result);
-                }
-            }
-            XmlNodeData::Element {
-                tag_name: Some(tag_name),
-                attributes,
-                children,
-                ..
-            } => {
+        if self.0.read().node_type == ELEMENT_NODE {
+            let children = &self.0.read().children;
+            if let Some(tag_name) = self.0.read().node_value {
                 result.push_byte(b'<');
-                result.push_str(tag_name);
+                result.push_str(&tag_name);
 
-                for (key, value) in attributes {
+                for (key, value) in &self.0.read().attributes {
                     result.push_byte(b' ');
-                    result.push_str(key);
+                    result.push_str(&key);
                     result.push_str(WStr::from_units(b"=\""));
                     let encoded_value = value.to_utf8_lossy();
                     let escaped_value = escape(encoded_value.as_bytes());
@@ -710,70 +557,48 @@ impl<'gc> XmlNode<'gc> {
                         child.write_node_to_string(result);
                     }
                     result.push_str(WStr::from_units(b"</"));
-                    result.push_str(tag_name);
+                    result.push_str(&tag_name);
                     result.push_byte(b'>');
                 }
+            } else {
+                for child in children {
+                    child.write_node_to_string(result);
+                }
             }
-            XmlNodeData::Text { contents, .. } => {
-                let encoded = contents.to_utf8_lossy();
-                let escaped = escape(encoded.as_bytes());
-                result.push_str(WStr::from_units(&*escaped));
-            }
+        } else {
+            let value = self.0.read().node_value.unwrap();
+            let encoded = value.to_utf8_lossy();
+            let escaped = escape(encoded.as_bytes());
+            result.push_str(WStr::from_units(&*escaped));
         }
     }
 }
 
 impl<'gc> fmt::Debug for XmlNode<'gc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self.0.read() {
-            XmlNodeData::Element {
-                script_object,
-                tag_name,
-                attributes,
-                children,
-                parent,
-                ..
-            } => f
-                .debug_struct("XmlNodeData::Element")
-                .field("0", &self.0.as_ptr())
-                .field(
-                    "script_object",
-                    &script_object
-                        .map(|p| format!("{:p}", p.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field(
-                    "parent",
-                    &parent
-                        .map(|p| format!("{:p}", p.0.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field("tag_name", tag_name)
-                .field("attributes", attributes)
-                .field("children", children)
-                .finish(),
-            XmlNodeData::Text {
-                script_object,
-                contents,
-                parent,
-                ..
-            } => f
-                .debug_struct("XmlNodeData::Text")
-                .field("0", &self.0.as_ptr())
-                .field(
-                    "script_object",
-                    &script_object
-                        .map(|p| format!("{:p}", p.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field(
-                    "parent",
-                    &parent
-                        .map(|p| format!("{:p}", p.0.as_ptr()))
-                        .unwrap_or_else(|| "None".to_string()),
-                )
-                .field("contents", contents)
-                .finish(),
-        }
+        f.debug_struct("XmlNodeData")
+            .field("0", &self.0.as_ptr())
+            .field(
+                "script_object",
+                &self
+                    .0
+                    .read()
+                    .script_object
+                    .map(|p| format!("{:p}", p.as_ptr()))
+                    .unwrap_or_else(|| "None".to_string()),
+            )
+            .field(
+                "parent",
+                &self
+                    .0
+                    .read()
+                    .parent
+                    .map(|p| format!("{:p}", p.0.as_ptr()))
+                    .unwrap_or_else(|| "None".to_string()),
+            )
+            .field("node_value", &self.0.read().node_value)
+            .field("attributes", &self.0.read().attributes)
+            .field("children", &self.0.read().children)
+            .finish()
     }
 }
