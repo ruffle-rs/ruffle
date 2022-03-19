@@ -180,10 +180,14 @@ impl<'gc> XmlObject<'gc> {
                     open_tags.pop();
                 }
                 Event::Text(bt) | Event::CData(bt) => {
-                    let child = XmlNode::text_from_text_event(activation.context.gc_context, bt)?;
-                    if child.node_value() != Some(AvmString::default())
-                        && (!ignore_white || !child.is_whitespace_text())
-                    {
+                    let text = bt.unescaped()?;
+                    let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
+                    let is_whitespace_text = text.iter().all(is_whitespace_char);
+                    if !(text.is_empty() || ignore_white && is_whitespace_text) {
+                        let child = XmlNode::new_text(
+                            activation.context.gc_context,
+                            AvmString::new_utf8_bytes(activation.context.gc_context, text)?,
+                        );
                         open_tags
                             .last_mut()
                             .unwrap()
