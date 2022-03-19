@@ -36,24 +36,72 @@ impl Pipelines {
         // If the surface is sRGB, the GPU will automatically convert colors from linear to sRGB,
         // so our shader should output linear colors.
         let output_srgb = !surface_format.describe().srgb;
-        let color_shader = create_shader(
-            device,
-            "color",
-            include_str!("../shaders/color.wgsl"),
-            output_srgb,
-        );
-        let bitmap_shader = create_shader(
-            device,
-            "bitmap",
-            include_str!("../shaders/bitmap.wgsl"),
-            output_srgb,
-        );
-        let gradient_shader = create_shader(
-            device,
-            "gradient",
-            include_str!("../shaders/gradient.wgsl"),
-            output_srgb,
-        );
+
+        let color_shader;
+        let bitmap_shader;
+        let gradient_shader;
+        if cfg!(not(feature = "build_shaders")) {
+            color_shader = create_shader(
+                device,
+                "color",
+                include_str!("../shaders/color.wgsl"),
+                output_srgb,
+            );
+            bitmap_shader = create_shader(
+                device,
+                "bitmap",
+                include_str!("../shaders/bitmap.wgsl"),
+                output_srgb,
+            );
+            gradient_shader = create_shader(
+                device,
+                "gradient",
+                include_str!("../shaders/gradient.wgsl"),
+                output_srgb,
+            );
+        } else if output_srgb {
+            let label = create_debug_label!("Shader color (sRGB)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/color_srgb.spv"))),
+            };
+            color_shader = device.create_shader_module(&desc);
+
+            let label = create_debug_label!("Shader bitmap (sRGB)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/bitmap_srgb.spv"))),
+            };
+            bitmap_shader = device.create_shader_module(&desc);
+
+            let label = create_debug_label!("Shader gradient (sRGB)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/gradient_srgb.spv"))),
+            };
+            gradient_shader = device.create_shader_module(&desc);
+        } else {
+            let label = create_debug_label!("Shader color (linear)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/color_linear.spv"))),
+            };
+            color_shader = device.create_shader_module(&desc);
+
+            let label = create_debug_label!("Shader bitmap (linear)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/bitmap_linear.spv"))),
+            };
+            bitmap_shader = device.create_shader_module(&desc);
+
+            let label = create_debug_label!("Shader gradient (linear)");
+            let desc = wgpu::ShaderModuleDescriptor {
+                label: label.as_deref(),
+                source: wgpu::util::make_spirv(include_bytes!(concat!(env!("OUT_DIR"), "/gradient_linear.spv"))),
+            };
+            gradient_shader = device.create_shader_module(&desc);
+        }
 
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as u64,

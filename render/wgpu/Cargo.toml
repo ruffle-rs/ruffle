@@ -36,6 +36,10 @@ features = ["HtmlCanvasElement"]
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
 version = "0.12"
 
+[build-dependencies]
+naga = { version = "0.8.5", features = ["wgsl-in", "spv-out"], optional = true }
+
 [features]
 render_debug_labels = []
 render_trace = ["wgpu/trace"]
+build_shaders = ["naga", "wgpu/spirv"]
