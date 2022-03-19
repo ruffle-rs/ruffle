@@ -28,13 +28,12 @@ export function copyToAudioBuffer(
 }
 
 /**
- * Returns `AudioContext.getOutputTimestamp`, defaulting to `context.currentTime` if
- * `getOutputTimestamp` is unavailable. This is necessary because `web-sys` does not yet export
- * `AudioBuffer.copyToChannel`.
+ * Returns the estimated output timestamp for the audio context.
+ * This is necessary because web-sys does not export `AudioContext.baseLatency`.
  *
  * @internal
  */
 export function getAudioOutputTimestamp(context: AudioContext): number {
-    const timestamp = context.getOutputTimestamp?.();
-    return timestamp?.contextTime ?? context.currentTime - context.baseLatency;
+    // TODO: Ideally we'd use `context.getOutputTimestamp`, but this is broken as of Safari 15.4.
+    return context.currentTime - context.baseLatency;
 }
