@@ -1899,7 +1899,7 @@ impl<'a> Reader<'a> {
             background_color: None,
             blend_mode: None,
             clip_actions: None,
-            is_image: false,
+            has_image: false,
             is_bitmap_cached: None,
             is_visible: None,
             amf_data: None,
@@ -1923,10 +1923,10 @@ impl<'a> Reader<'a> {
         // I think this should be if (HasClassNameFlag || (HasImage && !HasCharacterID)),
         // you use the class name only if a character ID isn't present.
         // But what is the case where we'd have an image without either HasCharacterID or HasClassName set?
-        let is_image = flags.contains(PlaceFlag::IS_IMAGE);
+        let has_image = flags.contains(PlaceFlag::HAS_IMAGE);
         let has_character_id = flags.contains(PlaceFlag::HAS_CHARACTER);
         let has_class_name =
-            flags.contains(PlaceFlag::HAS_CLASS_NAME) || (is_image && !has_character_id);
+            flags.contains(PlaceFlag::HAS_CLASS_NAME) || (has_image && !has_character_id);
         let class_name = if has_class_name {
             Some(self.read_str()?)
         } else {
@@ -2025,7 +2025,7 @@ impl<'a> Reader<'a> {
             name,
             clip_depth,
             clip_actions,
-            is_image,
+            has_image,
             is_bitmap_cached,
             is_visible,
             class_name,
