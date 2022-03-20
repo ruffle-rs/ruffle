@@ -602,7 +602,7 @@ pub struct PlaceObject<'a> {
     pub background_color: Option<Color>,
     pub blend_mode: Option<BlendMode>,
     pub clip_actions: Option<Vec<ClipAction<'a>>>,
-    pub is_image: bool,
+    pub has_image: bool,
     pub is_bitmap_cached: Option<bool>,
     pub is_visible: Option<bool>,
     pub amf_data: Option<&'a [u8]>,
@@ -624,7 +624,7 @@ bitflags! {
         const HAS_BLEND_MODE = 1 << 9;
         const HAS_CACHE_AS_BITMAP = 1 << 10;
         const HAS_CLASS_NAME = 1 << 11;
-        const IS_IMAGE = 1 << 12;
+        const HAS_IMAGE = 1 << 12;
         const HAS_VISIBLE = 1 << 13;
         const OPAQUE_BACKGROUND = 1 << 14;
     }

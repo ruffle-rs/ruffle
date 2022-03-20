@@ -1711,7 +1711,7 @@ impl<W: Write> Writer<W> {
                     place_object.is_bitmap_cached.is_some(),
                 );
                 flags.set(PlaceFlag::HAS_CLASS_NAME, place_object.class_name.is_some());
-                flags.set(PlaceFlag::IS_IMAGE, place_object.is_image);
+                flags.set(PlaceFlag::HAS_IMAGE, place_object.has_image);
                 flags.set(PlaceFlag::HAS_VISIBLE, place_object.is_visible.is_some());
                 flags.set(
                     PlaceFlag::OPAQUE_BACKGROUND,
