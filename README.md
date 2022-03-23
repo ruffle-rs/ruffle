@@ -41,6 +41,9 @@ For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs
 
 ### Desktop
 
+If you are building for a Linux platform, make sure that the GTK 3 development packages are
+installed on your system. (Ubuntu: `libgtk-3-dev`, Fedora: `gtk3-devel`)
+
 - `cargo run --release --package=ruffle_desktop -- test.swf`
 
 ### Web or Extension
