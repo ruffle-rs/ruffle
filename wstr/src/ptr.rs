@@ -1,8 +1,6 @@
 use std::ops::Range;
 use std::ptr::slice_from_raw_parts_mut;
 
-use gc_arena::Collect;
-
 use super::Units;
 
 #[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
@@ -13,8 +11,6 @@ pub const MAX_STRING_LEN: usize = 0x7FFF_FFFF;
 const WIDE_MASK: usize = MAX_STRING_LEN + 1;
 
 /// A UCS2 string slice, analoguous to `&'a str`.
-#[derive(Collect)]
-#[collect(require_static)]
 #[repr(transparent)]
 pub struct WStr {
     /// The internal `WStr` representation.

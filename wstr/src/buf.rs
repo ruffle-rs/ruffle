@@ -2,14 +2,10 @@ use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
-use gc_arena::Collect;
-
 use super::utils::split_ascii_prefix;
 use super::{Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
-#[derive(Collect)]
-#[collect(require_static)]
 pub struct WString {
     // TODO: better packing on 64bit targets
     //
