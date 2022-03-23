@@ -131,3 +131,5 @@ impl<'gc> Borrow<WStr> for AvmString<'gc> {
         self.as_wstr()
     }
 }
+
+wstr_impl_traits!(impl['gc] for AvmString<'gc>);
