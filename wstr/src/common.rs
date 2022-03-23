@@ -1,8 +1,5 @@
-use super::{ops, ptr, AvmString, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
-use std::cmp;
-use std::fmt;
-use std::hash;
-use std::ops::{Bound, Index, IndexMut, Range, RangeBounds};
+use super::{ptr, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
+use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 #[cold]
 pub(super) fn panic_on_invalid_length(len: usize) -> ! {
@@ -244,7 +241,7 @@ impl WStr {
     #[inline]
     pub unsafe fn slice_unchecked<R: RangeBounds<usize>>(&self, range: R) -> &Self {
         self.slice(range)
-            .unwrap_or_else(|| std::hint::unreachable_unchecked())
+            .unwrap_or_else(|| core::hint::unreachable_unchecked())
     }
 
     /// Returns a mutable subslice of `self` without doing bound checks.
@@ -254,7 +251,7 @@ impl WStr {
     #[inline]
     pub unsafe fn slice_unchecked_mut<R: RangeBounds<usize>>(&mut self, range: R) -> &Self {
         self.slice_mut(range)
-            .unwrap_or_else(|| std::hint::unreachable_unchecked())
+            .unwrap_or_else(|| core::hint::unreachable_unchecked())
     }
 
     /// Iterates over the code units of `self`.
@@ -266,7 +263,7 @@ impl WStr {
     /// Iterates over the unicode characters of `self`.
     #[inline]
     pub fn chars(&self) -> super::ops::Chars<'_> {
-        std::char::decode_utf16(super::ops::str_iter(self))
+        core::char::decode_utf16(super::ops::str_iter(self))
     }
 
     /// Iterates over the unicode characters of `self`, together with their indices.
@@ -293,7 +290,7 @@ impl WStr {
     #[inline]
     /// Compares two strings, ignoring case as done by the Flash Player.
     /// Note that the case mapping is different than Rust's case mapping.
-    pub fn cmp_ignore_case(&self, other: &WStr) -> std::cmp::Ordering {
+    pub fn cmp_ignore_case(&self, other: &WStr) -> core::cmp::Ordering {
         super::ops::str_cmp_ignore_case(self, other)
     }
 
@@ -464,139 +461,131 @@ impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
     }
 }
 
-macro_rules! impl_str_eq_ord_units {
-    (impl[$($generics:tt)*] for $lhs:ty, $rhs:ty) => {
-        impl<$($generics)*> cmp::PartialEq<$rhs> for $lhs {
+macro_rules! __wstr_impl_internal {
+    (@eq_ord_units [$($generics:tt)*] for $lhs:ty, $rhs:ty) => {
+        impl<$($generics)*> ::core::cmp::PartialEq<$rhs> for $lhs {
             #[inline]
             fn eq(&self, other: &$rhs) -> bool {
-                ops::str_eq(&self[..], WStr::from_units(other))
+                $crate::ops::str_eq(&self[..], $crate::WStr::from_units(other))
             }
         }
 
-        impl<$($generics)*> cmp::PartialOrd<$rhs> for $lhs {
+        impl<$($generics)*> ::core::cmp::PartialOrd<$rhs> for $lhs {
             #[inline]
-            fn partial_cmp(&self, other: &$rhs) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(&self[..], WStr::from_units(other)))
+            fn partial_cmp(&self, other: &$rhs) -> Option<::core::cmp::Ordering> {
+                Some($crate::ops::str_cmp(&self[..], $crate::WStr::from_units(other)))
             }
         }
 
-        impl<$($generics)*> cmp::PartialEq<$lhs> for $rhs {
-            #[inline]
-            fn eq(&self, other: &$lhs) -> bool {
-                ops::str_eq(WStr::from_units(self), &other[..])
-            }
-        }
-
-        impl<$($generics)*> cmp::PartialOrd<$lhs> for $rhs {
-            #[inline]
-            fn partial_cmp(&self, other: &$lhs) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(WStr::from_units(self), &other[..]))
-            }
-        }
-    };
-}
-
-macro_rules! impl_str_eq_ord {
-    (@single [$($generics:tt)*] for $lhs:ty, $rhs:ty;) => {
-        impl<$($generics)*> cmp::PartialEq<$lhs> for $rhs {
+        impl<$($generics)*> ::core::cmp::PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool {
-                ops::str_eq(&self[..], &other[..])
+                $crate::ops::str_eq(WStr::from_units(self), &other[..])
             }
         }
 
-        impl<$($generics)*> cmp::PartialOrd<$lhs> for $rhs {
+        impl<$($generics)*> ::core::cmp::PartialOrd<$lhs> for $rhs {
             #[inline]
-            fn partial_cmp(&self, other: &$lhs) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(&self[..], &other[..]))
+            fn partial_cmp(&self, other: &$lhs) -> Option<::core::cmp::Ordering> {
+                Some($crate::ops::str_cmp(WStr::from_units(self), &other[..]))
             }
         }
     };
-    ($(impl[$($generics:tt)*] for $lhs:ty, $rhs:ty;)*) => {
-        $(
-            impl_str_eq_ord!{ @single [$($generics)*] for $lhs, $rhs; }
-            impl_str_eq_ord!{ @single [$($generics)*] for $rhs, $lhs; }
-        )*
+
+    (@eq_ord [$($generics:tt)*] for $lhs:ty, $rhs:ty) => {
+        impl<$($generics)*> ::core::cmp::PartialEq<$lhs> for $rhs {
+            #[inline]
+            fn eq(&self, other: &$lhs) -> bool {
+                $crate::ops::str_eq(&self[..], &other[..])
+            }
+        }
+
+        impl<$($generics)*> ::core::cmp::PartialOrd<$lhs> for $rhs {
+            #[inline]
+            fn partial_cmp(&self, other: &$lhs) -> Option<::core::cmp::Ordering> {
+                Some($crate::ops::str_cmp(&self[..], &other[..]))
+            }
+        }
     };
-}
 
-macro_rules! impl_str_traits {
-    (@single [$($generics:tt)*] for $ty:ty;) => {
-        impl<$($generics)*> fmt::Display for $ty {
+    (@base [$($generics:tt)*] for $ty:ty) => {
+        impl<$($generics)*> ::core::fmt::Display for $ty {
             #[inline]
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                ops::str_fmt(&self[..], f)
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                $crate::ops::str_fmt(&self[..], f)
             }
         }
 
-        impl<$($generics)*> fmt::Debug for $ty {
+        impl<$($generics)*> ::core::fmt::Debug for $ty {
             #[inline]
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                ops::str_debug_fmt(&self[..], f)
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                $crate::ops::str_debug_fmt(&self[..], f)
             }
         }
 
-        impl<$($generics)*> cmp::Eq for $ty {}
+        impl<$($generics)*> ::core::cmp::Eq for $ty {}
 
-        impl<$($generics)*> cmp::PartialEq<$ty> for $ty {
+        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
             #[inline]
             fn eq(&self, other: &$ty) -> bool {
-                ops::str_eq(&self[..], &other[..])
+                $crate::ops::str_eq(&self[..], &other[..])
             }
         }
 
-        impl<$($generics)*> cmp::Ord for $ty {
+        impl<$($generics)*> ::core::cmp::Ord for $ty {
             #[inline]
-            fn cmp(&self, other: &Self) -> cmp::Ordering {
-                ops::str_cmp(&self[..], &other[..])
+            fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+                $crate::ops::str_cmp(&self[..], &other[..])
             }
         }
 
-        impl<$($generics)*> cmp::PartialOrd<$ty> for $ty {
+        impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
             #[inline]
-            fn partial_cmp(&self, other: &$ty) -> Option<cmp::Ordering> {
-                Some(ops::str_cmp(&self[..], &other[..]))
+            fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
+                Some($crate::ops::str_cmp(&self[..], &other[..]))
             }
         }
 
-        impl_str_eq_ord_units! { impl[$($generics)* const N: usize] for $ty, [u8; N] }
-        impl_str_eq_ord_units! { impl[$($generics)* const N: usize] for $ty, [u16; N] }
-        impl_str_eq_ord_units! { impl[$($generics)*] for $ty, [u8] }
-        impl_str_eq_ord_units! { impl[$($generics)*] for $ty, [u16] }
+        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u8; N] }
+        __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
+        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
+        __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
 
-        impl<$($generics)*> hash::Hash for $ty {
+        impl<$($generics)*> ::core::hash::Hash for $ty {
             #[inline]
-            fn hash<H: hash::Hasher>(&self, state: &mut H) {
-                ops::str_hash(&self[..], state)
+            fn hash<H: ::core::hash::Hasher>(&self, state: &mut H) {
+                $crate::ops::str_hash(&self[..], state)
             }
         }
 
-        impl<'_0, $($generics)*> IntoIterator for &'_0 $ty {
+        impl<'_0, $($generics)*> ::core::iter::IntoIterator for &'_0 $ty {
             type Item = u16;
-            type IntoIter = super::Iter<'_0>;
+            type IntoIter = $crate::Iter<'_0>;
 
             #[inline]
             fn into_iter(self) -> Self::IntoIter {
-                ops::str_iter(&self[..])
+                $crate::ops::str_iter(&self[..])
             }
         }
-
     };
 
-    ($(impl[$($generics:tt)*] for $ty:ty;)*) => {
-        $(impl_str_traits!{ @single [$($generics)*] for $ty;})*
-    }
+    (@full [$($generics:tt)*] for $ty:ty) => {
+        __wstr_impl_internal!(@base [$($generics)*] for $ty);
+        __wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
+        __wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
+        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
+        __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for &'a $crate::WStr, $ty);
+    };
 }
 
-impl_str_traits! {
-    impl[] for WStr;
-    impl[] for WString;
-    impl['gc,] for AvmString<'gc>;
+macro_rules! wstr_impl_traits {
+    (impl for $ty_name:ty) => {
+        __wstr_impl_internal!(@full [] for $ty_name);
+    };
+    (impl [$($generics:tt)+] for $ty_name:ty) => {
+        __wstr_impl_internal!(@full [$($generics)*,] for $ty_name);
+    };
 }
 
-impl_str_eq_ord! {
-    impl[] for WString, WStr;
-    impl['a,] for WString, &'a WStr;
-    impl['gc,] for AvmString<'gc>, WStr;
-    impl['gc, 'a,] for AvmString<'gc>, &'a WStr;
-}
+
+__wstr_impl_internal!(@base [] for WStr);

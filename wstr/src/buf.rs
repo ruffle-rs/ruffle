@@ -412,3 +412,5 @@ impl std::fmt::Write for WString {
         Ok(())
     }
 }
+
+wstr_impl_traits!(impl for WString);
