@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
@@ -356,20 +355,6 @@ impl DerefMut for WString {
     #[inline]
     fn deref_mut(&mut self) -> &mut WStr {
         self.as_wstr_mut()
-    }
-}
-
-impl AsRef<WStr> for WString {
-    #[inline]
-    fn as_ref(&self) -> &WStr {
-        self.deref()
-    }
-}
-
-impl Borrow<WStr> for WString {
-    #[inline]
-    fn borrow(&self) -> &WStr {
-        self.deref()
     }
 }
 

@@ -461,33 +461,80 @@ impl<R: RangeBounds<usize>> IndexMut<R> for WStr {
     }
 }
 
+impl core::cmp::PartialEq<WStr> for WStr {
+    #[inline]
+    fn eq(&self, other: &WStr) -> bool {
+        super::ops::str_eq(self, other)
+    }
+}
+
+impl core::cmp::Ord for WStr {
+    #[inline]
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        super::ops::str_cmp(self, other)
+    }
+}
+
+impl core::hash::Hash for WStr {
+    #[inline]
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        super::ops::str_hash(self, state)
+    }
+}
+
+impl core::fmt::Display for WStr {
+    #[inline]
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        super::ops::str_fmt(self, f)
+    }
+}
+
+impl core::fmt::Debug for WStr {
+    #[inline]
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        super::ops::str_debug_fmt(self, f)
+    }
+}
+
+impl<'a> core::iter::IntoIterator for &'a WStr {
+    type Item = u16;
+    type IntoIter = super::Iter<'a>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        super::ops::str_iter(self)
+    }
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! __wstr_impl_internal {
     (@eq_ord_units [$($generics:tt)*] for $lhs:ty, $rhs:ty) => {
         impl<$($generics)*> ::core::cmp::PartialEq<$rhs> for $lhs {
             #[inline]
             fn eq(&self, other: &$rhs) -> bool {
-                $crate::ops::str_eq(&self[..], $crate::WStr::from_units(other))
+                ::core::cmp::PartialEq::eq(&self[..], $crate::WStr::from_units(other))
             }
         }
 
         impl<$($generics)*> ::core::cmp::PartialOrd<$rhs> for $lhs {
             #[inline]
             fn partial_cmp(&self, other: &$rhs) -> Option<::core::cmp::Ordering> {
-                Some($crate::ops::str_cmp(&self[..], $crate::WStr::from_units(other)))
+                Some(::core::cmp::Ord::cmp(&self[..], $crate::WStr::from_units(other)))
             }
         }
 
         impl<$($generics)*> ::core::cmp::PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool {
-                $crate::ops::str_eq(WStr::from_units(self), &other[..])
+                ::core::cmp::PartialEq::eq(WStr::from_units(self), &other[..])
             }
         }
 
         impl<$($generics)*> ::core::cmp::PartialOrd<$lhs> for $rhs {
             #[inline]
             fn partial_cmp(&self, other: &$lhs) -> Option<::core::cmp::Ordering> {
-                Some($crate::ops::str_cmp(WStr::from_units(self), &other[..]))
+                Some(::core::cmp::Ord::cmp(WStr::from_units(self), &other[..]))
             }
         }
     };
@@ -496,53 +543,26 @@ macro_rules! __wstr_impl_internal {
         impl<$($generics)*> ::core::cmp::PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool {
-                $crate::ops::str_eq(&self[..], &other[..])
+                ::core::cmp::PartialEq::eq(&self[..], &other[..])
             }
         }
 
         impl<$($generics)*> ::core::cmp::PartialOrd<$lhs> for $rhs {
             #[inline]
             fn partial_cmp(&self, other: &$lhs) -> Option<::core::cmp::Ordering> {
-                Some($crate::ops::str_cmp(&self[..], &other[..]))
+                Some(::core::cmp::Ord::cmp(&self[..], &other[..]))
             }
         }
     };
 
-    (@base [$($generics:tt)*] for $ty:ty) => {
-        impl<$($generics)*> ::core::fmt::Display for $ty {
-            #[inline]
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                $crate::ops::str_fmt(&self[..], f)
-            }
-        }
-
-        impl<$($generics)*> ::core::fmt::Debug for $ty {
-            #[inline]
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                $crate::ops::str_debug_fmt(&self[..], f)
-            }
-        }
+    (@eq_ord_self [$($generics:tt)*] for $ty:ty) => {
 
         impl<$($generics)*> ::core::cmp::Eq for $ty {}
-
-        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
-            #[inline]
-            fn eq(&self, other: &$ty) -> bool {
-                $crate::ops::str_eq(&self[..], &other[..])
-            }
-        }
-
-        impl<$($generics)*> ::core::cmp::Ord for $ty {
-            #[inline]
-            fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
-                $crate::ops::str_cmp(&self[..], &other[..])
-            }
-        }
 
         impl<$($generics)*> ::core::cmp::PartialOrd<$ty> for $ty {
             #[inline]
             fn partial_cmp(&self, other: &$ty) -> Option<::core::cmp::Ordering> {
-                Some($crate::ops::str_cmp(&self[..], &other[..]))
+                Some(::core::cmp::Ord::cmp(self, other))
             }
         }
 
@@ -550,11 +570,55 @@ macro_rules! __wstr_impl_internal {
         __wstr_impl_internal! { @eq_ord_units [$($generics)* const N: usize] for $ty, [u16; N] }
         __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u8] }
         __wstr_impl_internal! { @eq_ord_units [$($generics)*] for $ty, [u16] }
+    };
+
+    (@base [$($generics:tt)*] for $ty:ty) => {
+        impl<$($generics)*> ::core::convert::AsRef<$crate::WStr> for $ty {
+            #[inline]
+            fn as_ref(&self) -> &$crate::WStr {
+                ::core::ops::Deref::deref(self)
+            }
+        }
+
+        impl<$($generics)*> ::core::borrow::Borrow<$crate::WStr> for $ty {
+            #[inline]
+            fn borrow(&self) -> &$crate::WStr {
+                ::core::ops::Deref::deref(self)
+            }
+        }
+
+        impl<$($generics)*> ::core::cmp::PartialEq<$ty> for $ty {
+            #[inline]
+            fn eq(&self, other: &$ty) -> bool {
+                ::core::cmp::PartialEq::eq(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
+            }
+        }
+
+        impl<$($generics)*> ::core::cmp::Ord for $ty {
+            #[inline]
+            fn cmp(&self, other: &Self) -> ::core::cmp::Ordering {
+                ::core::cmp::Ord::cmp(::core::ops::Deref::deref(self), ::core::ops::Deref::deref(other))
+            }
+        }
 
         impl<$($generics)*> ::core::hash::Hash for $ty {
             #[inline]
             fn hash<H: ::core::hash::Hasher>(&self, state: &mut H) {
-                $crate::ops::str_hash(&self[..], state)
+                ::core::hash::Hash::hash(::core::ops::Deref::deref(self), state)
+            }
+        }
+
+        impl<$($generics)*> ::core::fmt::Display for $ty {
+            #[inline]
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::Display::fmt(::core::ops::Deref::deref(self), f)
+            }
+        }
+
+        impl<$($generics)*> ::core::fmt::Debug for $ty {
+            #[inline]
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                ::core::fmt::Debug::fmt(::core::ops::Deref::deref(self), f)
             }
         }
 
@@ -564,13 +628,23 @@ macro_rules! __wstr_impl_internal {
 
             #[inline]
             fn into_iter(self) -> Self::IntoIter {
-                $crate::ops::str_iter(&self[..])
+                ::core::iter::IntoIterator::into_iter(::core::ops::Deref::deref(self))
+            }
+        }
+
+        impl<'_0, $($generics)*> $crate::Pattern<'_0> for &'_0 $ty {
+            type Searcher = <&'_0 WStr as $crate::Pattern<'_0>>::Searcher;
+
+            #[inline]
+            fn into_searcher(self, haystack: &'_0 $crate::WStr) -> Self::Searcher {
+                $crate::Pattern::into_searcher(::core::ops::Deref::deref(self), haystack)
             }
         }
     };
 
     (@full [$($generics:tt)*] for $ty:ty) => {
         __wstr_impl_internal!(@base [$($generics)*] for $ty);
+        __wstr_impl_internal!(@eq_ord_self [$($generics)*] for $ty);
         __wstr_impl_internal!(@eq_ord [$($generics)*] for $ty, $crate::WStr);
         __wstr_impl_internal!(@eq_ord [$($generics)*] for $crate::WStr, $ty);
         __wstr_impl_internal!(@eq_ord [$($generics)* 'a,] for $ty, &'a $crate::WStr);
@@ -578,6 +652,19 @@ macro_rules! __wstr_impl_internal {
     };
 }
 
+/// Implements standard traits for `WStr`-like types.
+///
+/// This macro requires a pre-existing [`Deref<Target=WStr>`][std::ops::Deref] impl, and will emit
+/// delegating impls for the following traits:
+///
+///   - [`AsRef<WStr>`], [`Borrow<WStr>`][core::borrow::Borrow];
+///   - [`Eq`], [`PartialEq`], [`Ord`], [`PartialOrd`];
+///   - [`PartialEq<_>`], [`PartialOrd<_>`] for [`WStr`], [`&WStr`][WStr],
+///     `[u8]`, `[u16]`, `[u8; N]` and `[u16; N]`;
+///   - [`Display`][core::fmt::Display], [`Debug`][core::fmt::Debug];
+///   - [`Hash`][core::hash::Hash];
+///   - [`IntoIterator<Item=u16>`][IntoIterator].
+#[macro_export]
 macro_rules! wstr_impl_traits {
     (impl for $ty_name:ty) => {
         __wstr_impl_internal!(@full [] for $ty_name);
@@ -587,5 +674,4 @@ macro_rules! wstr_impl_traits {
     };
 }
 
-
-__wstr_impl_internal!(@base [] for WStr);
+__wstr_impl_internal!(@eq_ord_self [] for WStr);

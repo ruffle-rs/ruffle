@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::ops::Deref;
 
 use gc_arena::{Collect, Gc, MutationContext};
@@ -114,20 +113,6 @@ impl<'gc> Deref for AvmString<'gc> {
     type Target = WStr;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        self.as_wstr()
-    }
-}
-
-impl<'gc> AsRef<WStr> for AvmString<'gc> {
-    #[inline]
-    fn as_ref(&self) -> &WStr {
-        self.as_wstr()
-    }
-}
-
-impl<'gc> Borrow<WStr> for AvmString<'gc> {
-    #[inline]
-    fn borrow(&self) -> &WStr {
         self.as_wstr()
     }
 }
