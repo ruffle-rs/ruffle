@@ -5,6 +5,7 @@ members = [
     "desktop",
     "swf",
     "web",
+    "wstr",
     "scanner",
     "exporter",
 
