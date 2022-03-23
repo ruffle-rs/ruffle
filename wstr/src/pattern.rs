@@ -5,7 +5,7 @@
 //  - remove implicit bound checks?
 //  - use memchr crate?
 
-use super::{AvmString, Units, WStr, WString};
+use super::{Units, WStr};
 
 /// A pattern that can be searched in a [`WStr`].
 ///
@@ -156,24 +156,6 @@ impl<'a> Pattern<'a> for &'a WStr {
         };
 
         Either::Left(Either::Left(s))
-    }
-}
-
-impl<'a> Pattern<'a> for &'a WString {
-    type Searcher = <&'a WStr as Pattern<'a>>::Searcher;
-
-    #[inline]
-    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
-        self.as_wstr().into_searcher(haystack)
-    }
-}
-
-impl<'a> Pattern<'a> for &'a AvmString<'_> {
-    type Searcher = <&'a WStr as Pattern<'a>>::Searcher;
-
-    #[inline]
-    fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
-        self.as_wstr().into_searcher(haystack)
     }
 }
 
