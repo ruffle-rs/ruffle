@@ -3341,6 +3341,7 @@ impl Default for Scene {
 struct MovieClipStatic<'gc> {
     id: CharacterId,
     swf: SwfSlice,
+    #[collect(require_static)]
     frame_labels: HashMap<WString, FrameNumber>,
     #[collect(require_static)]
     scene_labels: HashMap<WString, Scene>,

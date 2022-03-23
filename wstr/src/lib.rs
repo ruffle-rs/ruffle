@@ -9,7 +9,6 @@
 #[macro_use]
 mod common;
 
-mod avm;
 mod buf;
 mod ops;
 mod parse;
@@ -21,7 +20,6 @@ pub mod utils;
 #[cfg(test)]
 mod tests;
 
-pub use avm::AvmString;
 pub use buf::WString;
 pub use common::Units;
 pub use ops::{CharIndices, Chars, Iter, Split, WStrToUtf8};

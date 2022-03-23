@@ -6,4 +6,3 @@ authors = ["Arthur Heuillard <arthur.heuillard<orange.fr>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
