@@ -1,3 +1,4 @@
+use std::fmt;
 use std::num::Wrapping;
 
 use super::WStr;
@@ -10,9 +11,16 @@ pub trait FromWStr: Sized {
 }
 
 /// Error returned by [`Integer::from_str_radix`].
-#[derive(Debug, thiserror::Error)]
-#[error("failed to parse integer")]
+#[derive(Debug)]
 pub struct ParseNumError(());
+
+impl fmt::Display for ParseNumError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "failed to parse integer")
+    }
+}
+
+impl std::error::Error for ParseNumError {}
 
 /// Trait implemented for all integer types that can be parsed from a [`WStr`].
 pub trait Integer: FromWStr<Err = ParseNumError> {

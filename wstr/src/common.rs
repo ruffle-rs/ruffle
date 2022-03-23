@@ -271,7 +271,7 @@ impl WStr {
 
     /// Iterates over the unicode characters of `self`, together with their indices.
     #[inline]
-    pub fn char_indices(&self) -> crate::string::ops::CharIndices<'_> {
+    pub fn char_indices(&self) -> crate::ops::CharIndices<'_> {
         super::ops::str_char_indices(self)
     }
 

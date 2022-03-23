@@ -2995,6 +2995,7 @@ dependencies = [
  "rand",
  "regress",
  "ruffle_macros",
+ "ruffle_wstr",
  "serde",
  "serde_json",
  "smallvec",
@@ -3148,6 +3149,13 @@ dependencies = [
  "log",
  "wasm-bindgen",
  "web-sys",
+]
+
+[[package]]
+name = "ruffle_wstr"
+version = "0.1.0"
+dependencies = [
+ "gc-arena",
 ]
 
 [[package]]
