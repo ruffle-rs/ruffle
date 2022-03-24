@@ -1,5 +1,7 @@
-use super::{ptr, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
+use alloc::vec::Vec;
 use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
+
+use super::{ptr, FromWStr, Pattern, WStr, WString, MAX_STRING_LEN};
 
 #[cold]
 pub(super) fn panic_on_invalid_length(len: usize) -> ! {
@@ -312,7 +314,7 @@ impl WStr {
     ///
     /// Unpaired surrogates are replaced by the replacement character.
     #[inline]
-    pub fn to_utf8_lossy(&self) -> std::borrow::Cow<'_, str> {
+    pub fn to_utf8_lossy(&self) -> alloc::borrow::Cow<'_, str> {
         super::ops::WStrToUtf8::new(self).to_utf8_lossy()
     }
 

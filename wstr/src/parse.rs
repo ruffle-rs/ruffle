@@ -1,5 +1,5 @@
-use std::fmt;
-use std::num::Wrapping;
+use core::fmt;
+use core::num::Wrapping;
 
 use super::WStr;
 
@@ -19,8 +19,6 @@ impl fmt::Display for ParseNumError {
         write!(f, "failed to parse integer")
     }
 }
-
-impl std::error::Error for ParseNumError {}
 
 /// Trait implemented for all integer types that can be parsed from a [`WStr`].
 pub trait Integer: FromWStr<Err = ParseNumError> {

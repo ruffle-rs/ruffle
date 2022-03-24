@@ -1,5 +1,5 @@
-use std::ops::Range;
-use std::ptr::slice_from_raw_parts_mut;
+use core::ops::Range;
+use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
 
 use super::Units;
 
@@ -102,7 +102,7 @@ pub unsafe fn is_wide(ptr: *mut WStr) -> bool {
 #[inline]
 pub unsafe fn from_raw_parts(data: *mut (), len: usize, is_wide: bool) -> *mut WStr {
     let raw_len = len | if is_wide { WIDE_MASK } else { 0 };
-    let slice = std::ptr::slice_from_raw_parts(data, raw_len);
+    let slice = slice_from_raw_parts(data, raw_len);
     slice as *mut WStr
 }
 

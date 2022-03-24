@@ -209,7 +209,7 @@ impl<'a, T: Searcher<'a>, U: Searcher<'a>> Searcher<'a> for Either<T, U> {
 }
 
 pub struct EmptySearcher {
-    range: std::ops::Range<usize>,
+    range: core::ops::Range<usize>,
 }
 
 impl EmptySearcher {

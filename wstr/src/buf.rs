@@ -1,6 +1,10 @@
-use std::mem::ManuallyDrop;
-use std::ops::{Deref, DerefMut};
-use std::ptr::NonNull;
+use alloc::borrow::ToOwned;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt;
+use core::mem::{self, ManuallyDrop};
+use core::ops::{Deref, DerefMut};
+use core::ptr::{self, NonNull};
 
 use super::utils::split_ascii_prefix;
 use super::{Units, WStr, MAX_STRING_LEN};
@@ -178,8 +182,8 @@ impl WString {
                 // SAFETY: we disable the Drop impl, so we can put the ManuallyDrop'd buffer back
                 unsafe {
                     let buffer = ManuallyDrop::take(&mut self.buffer);
-                    std::ptr::write(self.source, WString::from_buf(buffer));
-                    std::mem::forget(self);
+                    ptr::write(self.source, WString::from_buf(buffer));
+                    mem::forget(self);
                 }
             }
         }
@@ -188,7 +192,7 @@ impl WString {
             fn drop(&mut self) {
                 // SAFETY: something has gone wrong, replace the buffer with an empty one and drop it.
                 unsafe {
-                    std::ptr::write(self.source, WString::new());
+                    ptr::write(self.source, WString::new());
                     ManuallyDrop::drop(&mut self.buffer);
                 }
             }
@@ -209,7 +213,7 @@ impl WString {
             if let Units::Bytes(buf) = units {
                 // Convert into wide string if necessary.
                 if wide() {
-                    let buf = std::mem::take(buf);
+                    let buf = mem::take(buf);
                     *units = Units::Wide(buf.into_iter().map(|c| c.into()).collect());
                 }
             }
@@ -380,15 +384,15 @@ impl AsMut<WStr> for WString {
     }
 }
 
-impl std::fmt::Write for WString {
+impl fmt::Write for WString {
     #[inline]
-    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         self.push_utf8(s);
         Ok(())
     }
 
     #[inline]
-    fn write_char(&mut self, c: char) -> std::fmt::Result {
+    fn write_char(&mut self, c: char) -> fmt::Result {
         self.push_char(c);
         Ok(())
     }

@@ -1,7 +1,8 @@
 use super::pattern::Searcher;
 use super::*;
 
-use std::fmt::Debug;
+use alloc::vec::Vec;
+use core::fmt::Debug;
 
 macro_rules! bstr {
     ($str:literal) => {
@@ -146,7 +147,7 @@ fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
     backwards: Option<&[(usize, usize)]>,
 ) {
     let mut searcher = pattern.clone().into_searcher(haystack);
-    let mut actual: Vec<_> = std::iter::from_fn(|| searcher.next_match()).collect();
+    let mut actual: Vec<_> = core::iter::from_fn(|| searcher.next_match()).collect();
     assert_eq!(
         actual, forwards,
         "incorrect forwards matching: haystack={:?}; pattern={:?}",
@@ -154,7 +155,7 @@ fn test_pattern<'a, P: Pattern<'a> + Clone + Debug>(
     );
 
     searcher = pattern.clone().into_searcher(haystack);
-    actual = std::iter::from_fn(|| searcher.next_match_back()).collect();
+    actual = core::iter::from_fn(|| searcher.next_match_back()).collect();
     actual.reverse();
     assert_eq!(
         actual,
