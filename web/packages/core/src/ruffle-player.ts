@@ -1350,8 +1350,60 @@ export class RufflePlayer extends HTMLElement {
             </div>
         </div>`;
         this.container.prepend(div);
+        // Get the config
+        const config: BaseLoadOptions = {
+            ...(window.RufflePlayer?.config ?? {}),
+            ...this.config,
+            ...this.options,
+        };
+        // Get the URL of the "swf"
+        let swfUrl = this.swfUrl!.toString();
+        // Change http to https if it was already done for RufflePlayer
+        if (
+            config.upgradeToHttps !== false &&
+            window.location.protocol === "https:" &&
+            swfUrl.startsWith("http:")
+        ) {
+            swfUrl = swfUrl.replace("http:", "https:");
+        }
+        // Create an invisible embed to try to load content without Ruffle
+        // In Chrome, an embed with display: none doesn't fire load events
+        const embed = document.createElement("embed");
+        embed.style.position = "absolute";
+        embed.style.visibility = "hidden";
+        embed.width = "1";
+        embed.height = "1";
+        // If the content in the embed is able to load, show it and hide Ruffle content
+        embed.addEventListener("load", this.showSidestepEmbed.bind(this));
+        embed.setAttribute("src", swfUrl);
+        this.container.append(embed);
     }
 
+    private showSidestepEmbed(e: Event): void {
+        // Show the embed content
+        const embed = e.target as HTMLEmbedElement;
+        embed.style.removeProperty("position");
+        embed.style.visibility = "visible";
+        embed.width =
+            this.attributes.getNamedItem("width")?.value ||
+            String(this.clientWidth);
+        embed.height =
+            this.attributes.getNamedItem("height")?.value ||
+            String(this.clientHeight);
+        // Hide Ruffle specific content
+        const canvas_container =
+            this.container.querySelector<HTMLCanvasElement>("canvas");
+        if (canvas_container) {
+            canvas_container.style.display = "none";
+        }
+        const message_overlay =
+            this.container.querySelector<HTMLDivElement>("#message_overlay");
+        if (message_overlay) {
+            message_overlay.style.display = "none";
+        }
+        this.unmuteOverlay.style.display = "none";
+        this.playButton.style.display = "none";
+    }
     displayUnsupportedMessage(): void {
         const div = document.createElement("div");
         div.id = "message_overlay";
