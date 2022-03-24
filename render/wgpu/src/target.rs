@@ -143,7 +143,7 @@ impl TextureTarget {
             depth_or_array_layers: 1,
         };
         let texture_label = create_debug_label!("Render target texture");
-        let format = wgpu::TextureFormat::Bgra8Unorm;
+        let format = wgpu::TextureFormat::Rgba8Unorm;
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: texture_label.as_deref(),
             size,

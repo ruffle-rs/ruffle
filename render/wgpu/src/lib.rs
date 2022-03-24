@@ -454,9 +454,9 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             // GL often only supports sRGB, so use the adapter's preferred format.
             surface
                 .and_then(|surface| surface.get_preferred_format(&adapter))
-                .unwrap_or(wgpu::TextureFormat::Bgra8Unorm)
+                .unwrap_or(wgpu::TextureFormat::Rgba8Unorm)
         } else {
-            wgpu::TextureFormat::Bgra8Unorm
+            wgpu::TextureFormat::Rgba8Unorm
         };
 
         Descriptors::new(device, queue, info, surface_format)
