@@ -498,9 +498,6 @@ impl Player {
     pub fn tick(&mut self, dt: f64) {
         // Don't run until preloading is complete.
         // TODO: Eventually we want to stream content similar to the Flash player.
-        if !self.audio.is_loading_complete() {
-            return;
-        }
 
         if self.is_playing() {
             self.frame_accumulator += dt;
@@ -519,6 +516,7 @@ impl Player {
 
                 self.frame_accumulator -= frame_time;
                 frame += 1;
+                log::info!("NEXT FRAME CLAP");
                 // The script probably tried implementing an FPS limiter with a busy loop.
                 // We fooled the busy loop by pretending that more time has passed that actually did.
                 // Then we need to actually pass this time, by decreasing frame_accumulator

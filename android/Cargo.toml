@@ -12,7 +12,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 wgpu = "0.12.0"
-# we need 0.27.0 due to oboe in cpal
+# we need 0.27.0 due to oboe in cpal (ndk-glue 0.6 everywhere)
 winit = { git = "https://github.com/rust-windowing/winit.git", rev = "7369551c02c451694883fd21a050dd8d5538c927" }
 ndk-glue = { version = "0.6.1", features = ["logger"] }
 async-executor = "1.0"
@@ -22,8 +22,8 @@ android_logger = "*"
 ruffle_core = { path = "../core" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 
-#jni = "0.19.0"
-#ndk-context = "0.1.0"
+jni = "0.19.0"
+ndk-context = "0.1.0"
 
 cpal = "0.13.5"
 

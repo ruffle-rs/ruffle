@@ -68,7 +68,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     let renderer = Box::new(WgpuRenderBackend::for_window(
                         &window,
                         (1080, 1920),
-                        wgpu::Backends::VULKAN,
+                        wgpu::Backends::all(),
                         wgpu::PowerPreference::HighPerformance,
                         None,
                     ).unwrap());
@@ -176,13 +176,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     });
 }
-/*
-const GET_DEVICES_OUTPUTS: jni::sys::jint = 2;
-
-fn enumerate_audio_devices() -> Result<(), Box<dyn std::error::Error>> {
 
 
-    log::info!("-- AUDIO QUERY --");
+fn get_file_contents() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+
+
+    log::info!("-- GETTING FILE CONTENTS --");
 
 
     // Create a VM for executing Java calls
@@ -190,9 +189,70 @@ fn enumerate_audio_devices() -> Result<(), Box<dyn std::error::Error>> {
     let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
     let env = vm.attach_current_thread()?;
 
-    // Query the global Audio Service
-    let class_ctxt = env.find_class("android/content/Context")?;
-    let audio_service = env.get_static_field(class_ctxt, "AUDIO_SERVICE", "Ljava/lang/String;")?;
+/*
+    public void showFileChooser() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+
+        // Update with mime types
+        intent.setType("file/swf xx");
+
+        // Update with additional mime types here using a String[].
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+
+        // Only pick openable and local files. Theoretically we could pull files from google drive
+        // or other applications that have networked files, but that's unnecessary for this example.
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+
+        // REQUEST_CODE = <some-integer>
+        startActivityForResult(intent, REQUEST_CODE);
+    }
+*/
+
+
+
+/*************************
+
+
+    let class_intent = env.find_class("android/content/Intent")?;
+    let ACTION_GET_CONTENT = env.get_static_field(class_intent, "ACTION_GET_CONTENT", "Ljava/lang/String;")?;
+    let intent = env.new_object(class_intent, "(Ljava/lang/String;)V", &[ACTION_GET_CONTENT])?;
+
+
+    log::info!("INTENT CREATED");
+    env.call_method(intent, "setType", "(Ljava/lang/String;)Landroid/content/Intent;", &[jni::objects::JValue::Object(env.new_string("application/x-shockwave-flash")?.into())])?;
+    log::info!("TYPE SET");
+
+
+    //intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+    let activity_class = env.call_method(ctx.context() as jni::sys::jobject, "getClass", "()Ljava/lang/Class;", &[])?.l()?;
+
+    let activity_class_name = env.call_method(activity_class, "getName", "()Ljava/lang/String;", &[])?.l()?;
+
+    log::info!("activity class name: {:#?}", activity_class_name);
+    let str = env.get_string_utf_chars(activity_class_name.into())?;
+    let mut str2 = str;
+    unsafe {
+    while *str2 != 0 {
+        str2 = str2.add(1);
+    }
+    let sl = std::slice::from_raw_parts(str, str2.offset_from(str) as usize);
+    let s = String::from_utf8(sl.to_vec()).unwrap();
+    log::info!("REAL CLASS NAME: {:#?}", s);
+    }
+    env.release_string_utf_chars(activity_class_name.into(), str);
+
+
+    // here's hoping our Context is an Activity
+    env.call_method(ctx.context() as jni::sys::jobject, "startActivityForResult", "(Landroid/content/Intent;I)V", &[jni::objects::JValue::Object(intent), jni::objects::JValue::Int(0)])?;
+
+
+*************************/
+
+    Ok(vec![])
+
+/*
 
     let audio_manager = env
         .call_method(
@@ -248,12 +308,14 @@ fn enumerate_audio_devices() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+    */
 }
-*/
+
 #[cfg_attr(target_os = "android", ndk_glue::main(backtrace = "on", logger(level = "info", tag = "ruffle")))]
 fn main() {
 
-    //enumerate_audio_devices().unwrap();
+    get_file_contents().unwrap();
+    //().unwrap();
 
     log::info!("start");
     let event_loop = EventLoop::new();

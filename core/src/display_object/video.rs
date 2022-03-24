@@ -160,6 +160,10 @@ impl<'gc> Video<'gc> {
     /// from that keyframe up to the (wrapped) requested frame are decoded in
     /// order. This matches Flash Player behavior.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc, '_>, mut frame_id: u32) {
+
+
+        log::info!("SEEKYMEEKY");
+
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
@@ -236,6 +240,8 @@ impl<'gc> Video<'gc> {
             log::error!("Attempted to seek uninstantiated video stream.");
             return;
         };
+
+        log::info!("SEEK INTERNAL");
 
         let res = match &*source.read() {
             VideoSource::Swf {
