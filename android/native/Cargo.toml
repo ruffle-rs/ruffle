@@ -1,0 +1,43 @@
+[package]
+name = "wgpu-android"
+version = "0.1.0"
+authors = ["msiglreith <m.siglreith@gmail.com>"]
+edition = "2018"
+resolver = "2"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = "0.12.0"
+# we need 0.27.0 due to oboe in cpal (ndk-glue 0.6 everywhere)
+winit = { git = "https://github.com/rust-windowing/winit.git", rev = "7369551c02c451694883fd21a050dd8d5538c927" }
+ndk-glue = { version = "0.6.1", features = ["logger"] }
+async-executor = "1.0"
+pollster = "0.2"
+log = "0.4"
+android_logger = "*"
+ruffle_core = { path = "../core" }
+ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
+
+jni = "0.19.0"
+ndk-context = "0.1.0"
+
+cpal = "0.13.5"
+
+[package.metadata.android]
+# "armv7-linux-androideabi",
+build_targets = [ "aarch64-linux-android"]
+target_sdk_version = 29
+min_sdk_version = 23
+
+# See https://developer.android.com/guide/topics/manifest/application-element
+[package.metadata.android.application]
+
+
+# See https://developer.android.com/guide/topics/manifest/application-element#label
+#
+# Defaults to the compiled artifact's name.
+label = "Ruffle"
