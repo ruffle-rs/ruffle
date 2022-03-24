@@ -1,7 +1,9 @@
-use std::borrow::{Borrow, Cow};
-use std::fmt::{self, Write};
-use std::hash::Hasher;
-use std::slice::Iter as SliceIter;
+use alloc::borrow::{Borrow, Cow};
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::fmt::{self, Write};
+use core::hash::Hasher;
+use core::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
 use super::{utils, Pattern, Units, WStr, WString};
@@ -32,7 +34,7 @@ impl<'a> DoubleEndedIterator for Iter<'a> {
     }
 }
 
-pub type Chars<'a> = std::char::DecodeUtf16<Iter<'a>>;
+pub type Chars<'a> = core::char::DecodeUtf16<Iter<'a>>;
 
 pub struct CharIndices<'a> {
     chars: Chars<'a>,
@@ -40,7 +42,7 @@ pub struct CharIndices<'a> {
 }
 
 impl<'a> Iterator for CharIndices<'a> {
-    type Item = (usize, Result<char, std::char::DecodeUtf16Error>);
+    type Item = (usize, Result<char, core::char::DecodeUtf16Error>);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -85,7 +87,7 @@ pub fn str_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 pub fn str_debug_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.write_char('"')?;
 
-    for c in std::char::decode_utf16(s.iter()) {
+    for c in core::char::decode_utf16(s.iter()) {
         match c {
             Ok(c) => c.escape_debug().try_for_each(|c| f.write_char(c))?,
             Err(err) => write!(f, "\\u{{{:x}}}", err.unpaired_surrogate())?,
@@ -96,7 +98,7 @@ pub fn str_debug_fmt(s: &WStr, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 }
 
 pub fn str_eq(left: &WStr, right: &WStr) -> bool {
-    if std::ptr::eq(left, right) {
+    if core::ptr::eq(left, right) {
         return true;
     }
 
@@ -123,7 +125,7 @@ pub fn str_eq_ignore_case(left: &WStr, right: &WStr) -> bool {
     left.eq(right)
 }
 
-pub fn str_cmp(left: &WStr, right: &WStr) -> std::cmp::Ordering {
+pub fn str_cmp(left: &WStr, right: &WStr) -> core::cmp::Ordering {
     let (bytes, wide, rev) = match (left.units(), right.units()) {
         (Units::Bytes(a), Units::Bytes(b)) => return a.cmp(b),
         (Units::Wide(a), Units::Wide(b)) => return a.cmp(b),
@@ -141,7 +143,7 @@ pub fn str_cmp(left: &WStr, right: &WStr) -> std::cmp::Ordering {
     }
 }
 
-pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> std::cmp::Ordering {
+pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> core::cmp::Ordering {
     let left = left.iter().map(utils::swf_to_lowercase);
     let right = right.iter().map(utils::swf_to_lowercase);
     left.cmp(right)
@@ -168,7 +170,7 @@ pub fn str_offset_in(s: &WStr, other: &WStr) -> Option<usize> {
         }
         (Units::Wide(a), Units::Wide(b)) => (a.as_ptr() as usize)
             .checked_sub(b.as_ptr() as usize)
-            .map(|n| n / std::mem::size_of::<u16>()),
+            .map(|n| n / core::mem::size_of::<u16>()),
         _ => None,
     };
 
@@ -396,7 +398,7 @@ impl<'a, P: Pattern<'a>> Iterator for Split<'a, P> {
 
         match self.searcher.next_match() {
             Some((start, end)) => {
-                let end = std::mem::replace(&mut self.prev_end, end);
+                let end = core::mem::replace(&mut self.prev_end, end);
                 Some(&string[end..start])
             }
             None => {

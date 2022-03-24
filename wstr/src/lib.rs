@@ -1,3 +1,4 @@
+#![no_std]
 //! Provides UCS2 string types for usage in AVM1 and AVM2.
 //!
 //! Internally, these types are represeted by a sequence of 1-byte or 2-bytes (wide) code units,
@@ -5,6 +6,9 @@
 //!
 //! To match Flash behavior, the string length is limited to 2³¹-1 code units;
 //! any attempt to create a longer string will panic.
+
+#[cfg_attr(test, macro_use)]
+extern crate alloc;
 
 #[macro_use]
 mod common;
@@ -27,7 +31,7 @@ pub use parse::{FromWStr, Integer};
 pub use pattern::Pattern;
 pub use ptr::{WStr, MAX_STRING_LEN};
 
-use std::borrow::Borrow;
+use core::borrow::Borrow;
 
 use common::panic_on_invalid_length;
 
