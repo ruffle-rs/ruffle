@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Ruffle</string>
+    <string name="load_an_swf">Load an SWF</string>
+    <string name="ruffle">Ruffle</string>
+    <string name="ruffle_logo_description">Ruffle logo</string>
 </resources>

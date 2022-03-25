@@ -64,7 +64,6 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         None,
                     ).unwrap());
 
-
                     let start = std::time::Instant::now();
                     let log = Box::new(log_backend::NullLogBackend::new());
                     let audio = Box::new(CpalAudioBackend::new().unwrap());

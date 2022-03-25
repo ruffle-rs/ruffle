@@ -4,31 +4,36 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#37528C"
     tools:context=".MainActivity">
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ruffle"
-        android:textColor="#FF5722"
-        android:textSize="60sp"
-        ruffle:layout_constraintBottom_toTopOf="@+id/button"
-        ruffle:layout_constraintHorizontal_bias="0.5"
-        ruffle:layout_constraintLeft_toLeftOf="parent"
-        ruffle:layout_constraintRight_toRightOf="parent"
-        ruffle:layout_constraintTop_toTopOf="parent"
-        ruffle:layout_constraintVertical_bias="0.193" />
 
     <Button
         android:id="@+id/button"
+        style="@style/Widget.AppCompat.Button.Borderless"
         android:layout_width="136dp"
         android:layout_height="48dp"
-        android:text="Load an SWF"
+        android:background="#FFAD33"
+        android:backgroundTint="#FFAD33"
+        android:foregroundTint="#FFAD33"
+        android:text="@string/load_an_swf"
+        android:textColor="@color/black"
         ruffle:layout_constraintBottom_toBottomOf="parent"
         ruffle:layout_constraintEnd_toEndOf="parent"
         ruffle:layout_constraintHorizontal_bias="0.5"
         ruffle:layout_constraintStart_toStartOf="parent"
-        ruffle:layout_constraintTop_toBottomOf="@+id/textView" />
+        ruffle:layout_constraintTop_toBottomOf="@+id/imageView"
+        ruffle:rippleColor="#FFAD33" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="308dp"
+        android:layout_height="108dp"
+        ruffle:layout_constraintBottom_toTopOf="@+id/button"
+        ruffle:layout_constraintEnd_toEndOf="parent"
+        ruffle:layout_constraintHorizontal_bias="0.5"
+        ruffle:layout_constraintStart_toStartOf="parent"
+        ruffle:layout_constraintTop_toTopOf="parent"
+        ruffle:srcCompat="@drawable/ic_logo"
+        android:contentDescription="@string/ruffle_logo_description" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
