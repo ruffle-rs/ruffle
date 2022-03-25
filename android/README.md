@@ -15,19 +15,21 @@ Substitute the appropriate locations and ndk version in the variables set for th
 
 ```bash
 cd native
-
 ANDROID_SDK_ROOT=$HOME/Android/Sdk/ ANDROID_NDK_ROOT=$HOME/Android/Sdk/ndk/24.0.8215888/ cargo apk build --release
 cd ..
 
-cp ../target/aarch64-linux-android/release/libruffle_android.so app/app/src/main/jniLibs/arm64-v8a/libruffle_android.so
+cp -r ../target/release/apk/lib/arm64-v8a app/ruffle/src/main/jniLibs/
 
 cd app
 ./gradlew build
+cd ..
 ```
 
 The final APK should be at:
 
-`ruffle/android/app/app/build/outputs/apk/release/app-release-unsigned.apk`
+`ruffle/android/app/ruffle/build/outputs/apk/release/ruffle-release-unsigned.apk`
+
+After the first step, simply opening the `app` project in Android Studio for development also works.
 
 ---
 

@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Ruffle"
-include ':app'
+include ':ruffle'
