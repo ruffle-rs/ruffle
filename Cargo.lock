@@ -75,18 +75,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "android_logger"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b74b7ddf197de32e415d197aa21c1c0cb36e01e4794fd801302280ac7847ee02"
-dependencies = [
- "android_log-sys",
- "env_logger 0.9.0",
- "log",
- "once_cell",
-]
-
-[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2274,7 +2262,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9ffb7443daba48349d545028777ca98853b018b4c16624aa01223bc29e078da"
 dependencies = [
- "android_logger 0.10.1",
+ "android_logger",
  "lazy_static",
  "libc",
  "log",
@@ -3044,6 +3032,24 @@ dependencies = [
  "base64",
  "bitflags",
  "serde",
+]
+
+[[package]]
+name = "ruffle-android"
+version = "0.1.0"
+dependencies = [
+ "android_logger",
+ "async-executor",
+ "cpal",
+ "jni",
+ "log",
+ "ndk-context",
+ "ndk-glue 0.6.1",
+ "pollster",
+ "ruffle_core",
+ "ruffle_render_wgpu",
+ "wgpu",
+ "winit 0.26.1 (git+https://github.com/rust-windowing/winit.git?rev=7369551c02c451694883fd21a050dd8d5538c927)",
 ]
 
 [[package]]
@@ -4086,24 +4092,6 @@ dependencies = [
  "wgpu-core",
  "wgpu-hal",
  "wgpu-types",
-]
-
-[[package]]
-name = "wgpu-android"
-version = "0.1.0"
-dependencies = [
- "android_logger 0.11.0",
- "async-executor",
- "cpal",
- "jni",
- "log",
- "ndk-context",
- "ndk-glue 0.6.1",
- "pollster",
- "ruffle_core",
- "ruffle_render_wgpu",
- "wgpu",
- "winit 0.26.1 (git+https://github.com/rust-windowing/winit.git?rev=7369551c02c451694883fd21a050dd8d5538c927)",
 ]
 
 [[package]]

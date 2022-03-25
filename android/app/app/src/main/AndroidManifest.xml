@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.ruffle2">
+    package="rs.ruffle">
 
+    <!-- android:allowNativeHeapPointerTagging="false" -->
     <application
-        android:allowNativeHeapPointerTagging="false"
-
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Ruffle2">
+        android:theme="@style/Theme.Ruffle">
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-
-        <activity android:exported="true" android:configChanges="orientation|keyboardHidden|screenSize" android:name="android.app.NativeActivity">
-            <meta-data android:name="android.app.lib_name" android:value="wgpu_android" />
-
+        <activity
+            android:name="android.app.NativeActivity"
+            android:exported="true"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+            <meta-data android:name="android.app.lib_name" android:value="ruffle_android" />
+            <!--
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
+            -->
         </activity>
 
-
     </application>
-
 </manifest>

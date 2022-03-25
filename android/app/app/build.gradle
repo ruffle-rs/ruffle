@@ -8,7 +8,7 @@ android {
 
 
     defaultConfig {
-        applicationId "com.example.ruffle2"
+        applicationId "rs.ruffle"
         minSdk 28
         targetSdk 32
         versionCode 1
@@ -24,7 +24,6 @@ android {
             moduleName "wgpu_android"
             abiFilters 'arm64-v8a'
         }
-
     }
 
     buildTypes {

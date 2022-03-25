@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.18.1)
 
 # Declares and names the project.
 
-project("ruffle2")
+project("ruffle")
 
 
 # Searches for a specified prebuilt library and stores the path as a
