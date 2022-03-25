@@ -1140,7 +1140,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if target.starts_with("_level") && target.len() > 6 {
             match target[6..].parse::<i32>() {
                 Ok(level_id) => {
-                    let fetch = self.context.navigator.fetch(&url, RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
                     if url.is_empty() {
@@ -1149,15 +1148,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                             mc.replace_with_movie(self.context.gc_context, None)
                         }
                     } else {
-                        let process = self.context.load_manager.load_movie_into_clip(
+                        let future = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone().unwrap(),
                             level,
-                            fetch,
-                            url,
+                            &url,
+                            RequestOptions::get(),
                             None,
                             None,
                         );
-                        self.context.navigator.spawn_future(process);
+                        self.context.navigator.spawn_future(future);
                     }
                 }
                 Err(e) => avm_warn!(
@@ -1242,16 +1241,15 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         mc.replace_with_movie(self.context.gc_context, None)
                     }
                 } else {
-                    let fetch = self.context.navigator.fetch(&url, opts);
-                    let process = self.context.load_manager.load_movie_into_clip(
+                    let future = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone().unwrap(),
                         clip_target,
-                        fetch,
-                        url.to_string(),
+                        &url,
+                        opts,
                         None,
                         None,
                     );
-                    self.context.navigator.spawn_future(process);
+                    self.context.navigator.spawn_future(future);
                 }
             }
             return Ok(FrameControl::Continue);
@@ -1261,21 +1259,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // target of `_level#` indicates a `loadMovieNum` call.
             match window_target[6..].parse::<i32>() {
                 Ok(level_id) => {
-                    let fetch = self
-                        .context
-                        .navigator
-                        .fetch(&url.to_utf8_lossy(), RequestOptions::get());
                     let level = self.resolve_level(level_id);
 
-                    let process = self.context.load_manager.load_movie_into_clip(
+                    let future = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone().unwrap(),
                         level,
-                        fetch,
-                        url.to_string(),
+                        &url.to_utf8_lossy(),
+                        RequestOptions::get(),
                         None,
                         None,
                     );
-                    self.context.navigator.spawn_future(process);
+                    self.context.navigator.spawn_future(future);
                 }
                 Err(e) => avm_warn!(
                     self,
