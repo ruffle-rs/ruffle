@@ -6,6 +6,7 @@ Install Android Sudio with at least the Platform SDK (e.g. 28) and the NDK Tools
 Also:
 
 `cargo install cargo-apk`
+`rustup target add aarch64-linux-android`
 
 # Build Steps
 
