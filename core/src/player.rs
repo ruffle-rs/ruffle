@@ -353,16 +353,14 @@ impl Player {
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) {
         self.mutate_with_update_context(|context| {
-            let fetch = context.navigator.fetch(movie_url, RequestOptions::get());
-            let process = context.load_manager.load_root_movie(
+            let future = context.load_manager.load_root_movie(
                 context.player.clone().unwrap(),
-                fetch,
-                movie_url.to_string(),
+                movie_url,
+                RequestOptions::get(),
                 parameters,
                 on_metadata,
             );
-
-            context.navigator.spawn_future(process);
+            context.navigator.spawn_future(future);
         });
     }
 
@@ -1411,6 +1409,10 @@ impl Player {
 
     pub fn audio_mut(&mut self) -> &mut Audio {
         &mut self.audio
+    }
+
+    pub fn navigator(&self) -> &Navigator {
+        &self.navigator
     }
 
     // The frame rate of the current movie in FPS.
