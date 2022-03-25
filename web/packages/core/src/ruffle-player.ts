@@ -1390,19 +1390,8 @@ export class RufflePlayer extends HTMLElement {
         embed.height =
             this.attributes.getNamedItem("height")?.value ||
             String(this.clientHeight);
-        // Hide Ruffle specific content
-        const canvas_container =
-            this.container.querySelector<HTMLCanvasElement>("canvas");
-        if (canvas_container) {
-            canvas_container.style.display = "none";
-        }
-        const message_overlay =
-            this.container.querySelector<HTMLDivElement>("#message_overlay");
-        if (message_overlay) {
-            message_overlay.style.display = "none";
-        }
-        this.unmuteOverlay.style.display = "none";
-        this.playButton.style.display = "none";
+        // Replace RufflePlayer with sidestep embed
+        this.replaceWith(embed);
     }
     displayUnsupportedMessage(): void {
         const div = document.createElement("div");
