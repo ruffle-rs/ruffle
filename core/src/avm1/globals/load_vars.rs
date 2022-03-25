@@ -254,12 +254,13 @@ fn spawn_load_var_fetch<'gc>(
         (url.to_utf8_lossy(), RequestOptions::get())
     };
 
-    let fetch = activation.context.navigator.fetch(&url, request_options);
-    let process = activation.context.load_manager.load_form_into_load_vars(
+    let future = activation.context.load_manager.load_form_into_load_vars(
         activation.context.player.clone().unwrap(),
         loader_object,
-        fetch,
+        &url,
+        request_options,
     );
+    activation.context.navigator.spawn_future(future);
 
     // Create hidden properties on object.
     if !loader_object.has_property(activation, "_bytesLoaded".into()) {
@@ -283,8 +284,6 @@ fn spawn_load_var_fetch<'gc>(
     } else {
         loader_object.set("loaded", false.into(), activation)?;
     }
-
-    activation.context.navigator.spawn_future(process);
 
     Ok(true.into())
 }
