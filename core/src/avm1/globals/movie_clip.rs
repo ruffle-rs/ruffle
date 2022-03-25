@@ -1345,15 +1345,14 @@ fn load_variables<'gc>(
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
     let (url, opts) = activation.locals_into_request_options(&url, method);
-    let fetch = activation.context.navigator.fetch(&url, opts);
     let target = target.object().coerce_to_object(activation);
-    let process = activation.context.load_manager.load_form_into_object(
+    let future = activation.context.load_manager.load_form_into_object(
         activation.context.player.clone().unwrap(),
         target,
-        fetch,
+        &url,
+        opts,
     );
-
-    activation.context.navigator.spawn_future(process);
+    activation.context.navigator.spawn_future(future);
 
     Ok(Value::Undefined)
 }

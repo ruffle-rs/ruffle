@@ -1217,14 +1217,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     &url,
                     NavigationMethod::from_send_vars_method(action.send_vars_method()),
                 );
-                let fetch = self.context.navigator.fetch(&url, opts);
-                let process = self.context.load_manager.load_form_into_object(
+                let future = self.context.load_manager.load_form_into_object(
                     self.context.player.clone().unwrap(),
                     target_obj,
-                    fetch,
+                    &url,
+                    opts,
                 );
-
-                self.context.navigator.spawn_future(process);
+                self.context.navigator.spawn_future(future);
             }
 
             return Ok(FrameControl::Continue);
