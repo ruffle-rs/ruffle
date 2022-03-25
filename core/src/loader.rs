@@ -3,7 +3,7 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
-use crate::backend::navigator::OwnedFuture;
+use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::context::{ActionQueue, ActionType};
 use crate::display_object::{DisplayObject, MorphShape, TDisplayObject};
 use crate::player::{Player, NEWEST_PLAYER_VERSION};
@@ -106,16 +106,15 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_root_movie(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
-        url: String,
+        url: &str,
+        options: RequestOptions,
         parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::RootMovie { self_handle: None };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
-
-        loader.root_movie_loader(player, fetch, url, parameters, on_metadata)
+        loader.root_movie_loader(player, url.to_owned(), options, parameters, on_metadata)
     }
 
     /// Kick off a movie clip load.
@@ -274,11 +273,11 @@ pub enum Loader<'gc> {
 
 impl<'gc> Loader<'gc> {
     /// Construct a future for the root movie loader.
-    pub fn root_movie_loader(
+    fn root_movie_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
-        mut url: String,
+        url: String,
+        options: RequestOptions,
         parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) -> OwnedFuture<(), Error> {
@@ -294,29 +293,31 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            player
-                .lock()
-                .expect("Could not lock player!!")
-                .update(|uc| -> Result<(), Error> {
-                    url = uc.navigator.resolve_relative_url(&url).into_owned();
+            // clippy reports a false positive for explicitly dropped guards:
+            // https://github.com/rust-lang/rust-clippy/issues/6446
+            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
+            let fetch;
+            let url = {
+                let player_lock = player.lock().unwrap();
+                let url = player_lock.navigator().resolve_relative_url(&url);
+                fetch = player_lock.navigator().fetch(&url, options);
+                url
+            };
 
-                    Ok(())
-                })?;
-
-            if let Ok(data) = fetch.await {
-                let mut movie = SwfMovie::from_data(&data, Some(url), None)?;
-                on_metadata(movie.header());
-                movie.append_parameters(parameters);
-                player.lock().unwrap().set_root_movie(Arc::new(movie));
-                Ok(())
-            } else {
+            let data = fetch.await.map_err(|error| {
                 player
                     .lock()
                     .unwrap()
                     .ui()
                     .display_root_movie_download_failed_message();
-                Err(Error::FetchError(url))
-            }
+                error
+            })?;
+
+            let mut movie = SwfMovie::from_data(&data, Some(url.into_owned()), None)?;
+            on_metadata(movie.header());
+            movie.append_parameters(parameters);
+            player.lock().unwrap().set_root_movie(Arc::new(movie));
+            Ok(())
         })
     }
 
