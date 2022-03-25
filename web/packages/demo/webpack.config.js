@@ -33,6 +33,7 @@ module.exports = (_env, _argv) => {
             new CopyPlugin({
                 patterns: [
                     { from: path.resolve(__dirname, "www/index.html") },
+                    { from: "swfs.json", noErrorOnMissing: true },
                     { from: "LICENSE*" },
                     { from: "README.md" },
                 ],
