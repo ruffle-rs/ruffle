@@ -189,7 +189,8 @@ fn get_swf_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     // And finally getting the bytes into a Vec
     let elements = env.get_byte_array_elements(bytes as jbyteArray, ReleaseMode::NoCopyBack)?;
     unsafe {
-        Ok(Vec::from_raw_parts(elements.as_ptr() as *mut u8, elements.size()? as usize, elements.size()? as usize))
+        let data = std::slice::from_raw_parts(elements.as_ptr() as *mut u8, elements.size()? as usize);
+        Ok(data.to_vec())
     }
 }
 
