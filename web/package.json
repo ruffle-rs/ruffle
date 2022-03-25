@@ -42,8 +42,8 @@
         "build": "npm run build --workspaces",
         "build:debug": "cross-env NODE_ENV=development CARGO_FEATURES=avm_debug npm run build",
         "build:dual-wasm": "cross-env ENABLE_WASM_EXTENSIONS=true npm run build",
-        "demo": "npm run serve --workspace ruffle-demo",
-        "test": "npm run test --workspaces --if-present",
+        "demo": "npm start --workspace ruffle-demo",
+        "test": "npm test --workspaces --if-present",
         "docs": "npm run docs --workspaces --if-present",
         "lint": "eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css"
