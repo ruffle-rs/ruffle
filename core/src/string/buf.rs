@@ -136,7 +136,7 @@ impl WString {
     /// # Safety
     ///
     /// - any future access to `self` (including drop) will invalidate the returned buffer.
-    /// - the returned buffer shouldn't be dropped, unless self is dropped.
+    /// - the returned buffer shouldn't be dropped unless self is forgotten.
     #[inline]
     unsafe fn steal_buf(&mut self) -> ManuallyDrop<Units<Vec<u8>, Vec<u16>>> {
         let ptr = self.ptr.as_ptr();
@@ -300,7 +300,10 @@ impl WString {
 impl Drop for WString {
     fn drop(&mut self) {
         // SAFETY: `self` is gone after this line.
-        let _ = unsafe { self.steal_buf() };
+        unsafe {
+            let mut buf = self.steal_buf();
+            ManuallyDrop::drop(&mut buf);
+        };
     }
 }
 
