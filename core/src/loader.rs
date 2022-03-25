@@ -183,7 +183,8 @@ impl<'gc> LoadManager<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         target_object: Object<'gc>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
+        url: &str,
+        options: RequestOptions,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::LoadVars {
             self_handle: None,
@@ -191,8 +192,7 @@ impl<'gc> LoadManager<'gc> {
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
-
-        loader.load_vars_loader(player, fetch)
+        loader.load_vars_loader(player, url.to_owned(), options)
     }
 }
 
@@ -570,10 +570,11 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Creates a future for a LoadVars load call.
-    pub fn load_vars_loader(
+    fn load_vars_loader(
         &mut self,
         player: Weak<Mutex<Player>>,
-        fetch: OwnedFuture<Vec<u8>, Error>,
+        url: String,
+        options: RequestOptions,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::LoadVars { self_handle, .. } => {
@@ -587,6 +588,16 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
+            // clippy reports a false positive for explicitly dropped guards:
+            // https://github.com/rust-lang/rust-clippy/issues/6446
+            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
+            let fetch;
+            {
+                let player_lock = player.lock().unwrap();
+                let url = player_lock.navigator().resolve_relative_url(&url);
+                fetch = player_lock.navigator().fetch(&url, options);
+            }
+
             let data = fetch.await;
 
             // Fire the load handler.

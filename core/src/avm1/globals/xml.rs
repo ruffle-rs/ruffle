@@ -262,17 +262,13 @@ fn spawn_xml_fetch<'gc>(
 
     this.set("loaded", false.into(), activation)?;
 
-    let fetch = activation
-        .context
-        .navigator
-        .fetch(&url.to_utf8_lossy(), request_options);
-    let process = activation.context.load_manager.load_form_into_load_vars(
+    let future = activation.context.load_manager.load_form_into_load_vars(
         activation.context.player.clone().unwrap(),
         loader_object,
-        fetch,
+        &url.to_utf8_lossy(),
+        request_options,
     );
-
-    activation.context.navigator.spawn_future(process);
+    activation.context.navigator.spawn_future(future);
 
     Ok(true.into())
 }
