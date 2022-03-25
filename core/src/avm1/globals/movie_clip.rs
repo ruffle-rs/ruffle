@@ -1322,17 +1322,15 @@ fn load_movie<'gc>(
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
     let (url, opts) = activation.locals_into_request_options(&url, method);
-    let fetch = activation.context.navigator.fetch(&url, opts);
-    let process = activation.context.load_manager.load_movie_into_clip(
+    let future = activation.context.load_manager.load_movie_into_clip(
         activation.context.player.clone().unwrap(),
         DisplayObject::MovieClip(target),
-        fetch,
-        url.to_string(),
+        &url,
+        opts,
         None,
         None,
     );
-
-    activation.context.navigator.spawn_future(process);
+    activation.context.navigator.spawn_future(future);
 
     Ok(Value::Undefined)
 }

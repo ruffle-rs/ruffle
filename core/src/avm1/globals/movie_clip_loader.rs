@@ -58,19 +58,15 @@ fn load_clip<'gc>(
                 _ => None,
             };
             if let Some(target) = target {
-                let fetch = activation
-                    .context
-                    .navigator
-                    .fetch(&url.to_utf8_lossy(), RequestOptions::get());
-                let process = activation.context.load_manager.load_movie_into_clip(
+                let future = activation.context.load_manager.load_movie_into_clip(
                     activation.context.player.clone().unwrap(),
                     target,
-                    fetch,
-                    url.to_string(),
+                    &url.to_utf8_lossy(),
+                    RequestOptions::get(),
                     None,
                     Some(this),
                 );
-                activation.context.navigator.spawn_future(process);
+                activation.context.navigator.spawn_future(future);
 
                 return Ok(true.into());
             }
