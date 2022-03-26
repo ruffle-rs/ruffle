@@ -1329,27 +1329,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     displayRootMovieDownloadFailedMessage(): void {
-        if (
-            window.location.origin == this.swfUrl!.origin ||
-            !this.isExtension ||
-            !window.location.protocol.includes("http")
-        ) {
-            const error = new Error("Failed to fetch: " + this.swfUrl);
-            error.ruffleIndexError = PanicError.SwfFetchError;
-            this.panic(error);
-            return;
-        }
-
-        const div = document.createElement("div");
-        div.id = "message_overlay";
-        div.innerHTML = `<div class="message">
-            <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
-            <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
-            <div>
-                <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
-            </div>
-        </div>`;
-        this.container.prepend(div);
         // Get the config
         const config: BaseLoadOptions = {
             ...(window.RufflePlayer?.config ?? {}),
@@ -1376,7 +1355,29 @@ export class RufflePlayer extends HTMLElement {
         // If the content in the embed is able to load, show it and hide Ruffle content
         embed.addEventListener("load", this.showSidestepEmbed.bind(this));
         embed.setAttribute("src", swfUrl);
+        if (
+            window.location.origin == this.swfUrl!.origin ||
+            !this.isExtension ||
+            !window.location.protocol.includes("http")
+        ) {
+            const error = new Error("Failed to fetch: " + this.swfUrl);
+            error.ruffleIndexError = PanicError.SwfFetchError;
+            this.panic(error);
+            this.container.append(embed);
+            return;
+        }
+
+        const div = document.createElement("div");
+        div.id = "message_overlay";
+        div.innerHTML = `<div class="message">
+            <p>Ruffle wasn't able to run the Flash embedded in this page.</p>
+            <p>You can try to open the file in a separate tab, to sidestep this issue.</p>
+            <div>
+                <a target="_blank" href="${this.swfUrl}">Open in a new tab</a>
+            </div>
+        </div>`;
         this.container.append(embed);
+        this.container.prepend(div);
     }
 
     private showSidestepEmbed(e: Event): void {
