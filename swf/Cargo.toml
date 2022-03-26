@@ -2,7 +2,7 @@
 name = "swf"
 version = "0.1.2"
 edition = "2021"
-authors = ["Mike Welsh"]
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 repository = "https://github.com/ruffle-rs/ruffle"
 homepage = "https://github.com/ruffle-rs/ruffle"
 license = "MIT OR Apache-2.0"

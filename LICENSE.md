@@ -9,7 +9,7 @@ at your option.
 
 ## MIT License
 
-Copyright (c) 2018-2021 Michael R. Welsh <mwelsh@gmail.com> and Ruffle contributors
+Copyright (c) 2018-2022 Ruffle LLC <ruffle@ruffle.rs> and Ruffle contributors
                         (https://github.com/ruffle-rs/ruffle/graphs/contributors)
 
 Permission is hereby granted, free of charge, to any
@@ -551,7 +551,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [strsim](https://github.com/dguo/strsim-rs) | [MIT](#MIT) | Copyright (c) 2015 Danny Guo Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com>  | 
 | [strsim](https://github.com/dguo/strsim-rs) | [MIT](#MIT) | Copyright (c) 2015 Danny Guo Copyright (c) 2016 Titus Wormer <tituswormer@gmail.com> Copyright (c) 2018 Akash Kurdekar  | 
 | [svg](https://github.com/bodoni/svg) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright 2015–2021 The svg Developers Copyright 2015–2021 The svg Developers  | 
-| [swf](https://github.com/ruffle-rs/ruffle) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2018 Mike Welsh <mwelsh@gmail.com>  | 
+| [swf](https://github.com/ruffle-rs/ruffle) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2018 Ruffle LLC <ruffle@ruffle.rs> and Ruffle contributors | 
 | [syn](https://github.com/dtolnay/syn) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) David Tolnay <dtolnay@gmail.com> | 
 | [synstructure](https://github.com/mystor/synstructure) | [MIT](#MIT) | Copyright 2016 Nika Layzell  | 
 | [tar](https://github.com/alexcrichton/tar-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
