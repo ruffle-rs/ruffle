@@ -1,7 +1,7 @@
 [package]
 name = "ruffle_core"
 version = "0.1.0"
-authors = ["Mike Welsh <mwelsh@gmail.com>"]
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
