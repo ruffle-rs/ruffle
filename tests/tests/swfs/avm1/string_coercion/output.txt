@@ -107,3 +107,11 @@ sX
 NaN
 NaN
 NaN
+Function toString tests
+[type Function]
+[type Function]
+[type Function]
+Function string tests, toString deleted
+[type Function]
+undefined
+[type Function]
