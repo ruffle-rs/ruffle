@@ -525,7 +525,6 @@ impl<'gc> Loader<'gc> {
                             }
 
                             if let Some(mc) = clip.as_movie_clip() {
-                                //TODO: Somehow replace with Bitmap?
                                 mc.replace_at_depth(uc, bitmap_obj.into(), 1);
                             }
                         }
