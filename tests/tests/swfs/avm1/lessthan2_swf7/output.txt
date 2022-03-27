@@ -1174,3 +1174,54 @@ true
 // "A" < "A":
 false
 
+// {} < 0:
+false
+
+// {} < "0":
+false
+
+// {} < {}
+false
+
+// {valueOf} < 0
+obj.valueOf returning 1
+false
+
+// 0 < {valueOf}
+obj.valueOf returning 1
+true
+
+// {valueOf} < {}
+obj.valueOf returning 1
+false
+
+// {} < {valueOf}
+false
+
+// {valueOf} < {valueOf}
+obj.valueOf returning 1
+obj.valueOf returning 1
+false
+
+// {} < {objNoValueOf}
+false
+
+// {objNoValueOf} < {}
+obj.valueOf returning undefined
+false
+
+// {valueOf} < {objNoValueOf}
+obj.valueOf returning 1
+obj.valueOf returning undefined
+undefined
+
+// {objNoValueOf} < {valueOf}
+obj.valueOf returning undefined
+obj.valueOf returning 1
+undefined
+
+// {objNoValueOf} < {objNoValueOf}
+obj.valueOf returning undefined
+obj.valueOf returning undefined
+undefined
+
