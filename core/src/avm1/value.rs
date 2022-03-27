@@ -224,7 +224,9 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Object(object) => object.call_method("valueOf".into(), &[], activation)?,
+            Value::Object(object) if object.as_display_object().is_none() => {
+                object.call_method("valueOf".into(), &[], activation)?
+            }
             val => val.to_owned(),
         })
     }
@@ -272,19 +274,32 @@ impl<'gc> Value<'gc> {
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<bool>, Error<'gc>> {
+        // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
+        // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
+        // For example, `{} < {}` is false.
         let prim_self = self.to_primitive_num(activation)?;
+        if matches!(prim_self, Value::Object(o) if o.as_display_object().is_none()) {
+            return Ok(Some(false));
+        }
         let prim_other = other.to_primitive_num(activation)?;
-
-        if let (Value::String(a), Value::String(b)) = (&prim_self, &prim_other) {
-            return Ok(a.to_string().bytes().lt(b.to_string().bytes()).into());
+        if matches!(prim_other, Value::Object(o) if o.as_display_object().is_none()) {
+            return Ok(Some(false));
         }
 
-        let num_self = prim_self.primitive_as_number(activation);
-        let num_other = prim_other.primitive_as_number(activation);
-
-        Ok(num_self
-            .partial_cmp(&num_other)
-            .map(|o| o == std::cmp::Ordering::Less))
+        let result = match (prim_self, prim_other) {
+            (Value::String(a), Value::String(b)) => {
+                let a = a.to_string();
+                let b = b.to_string();
+                Some(a.bytes().lt(b.bytes()).into())
+            }
+            (a, b) => {
+                // Coerce to number and compare, with any NaN resulting in undefined.
+                let a = a.primitive_as_number(activation);
+                let b = b.primitive_as_number(activation);
+                a.partial_cmp(&b).map(|o| o == std::cmp::Ordering::Less)
+            }
+        };
+        Ok(result)
     }
 
     /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
