@@ -1473,9 +1473,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // ECMA-262 s. 11.8.1
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = b
-            .abstract_lt(a, self)?
-            .map_or(Value::Undefined, Value::from);
+        let result = b.abstract_lt(a, self)?;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
@@ -1484,9 +1482,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         // ECMA-262 s. 11.8.2
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = a
-            .abstract_lt(b, self)?
-            .map_or(Value::Undefined, Value::from);
+        let result = a.abstract_lt(b, self)?;
         self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }

@@ -273,30 +273,32 @@ impl<'gc> Value<'gc> {
         &self,
         other: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
-    ) -> Result<Option<bool>, Error<'gc>> {
+    ) -> Result<Value<'gc>, Error<'gc>> {
         // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
         // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
         // For example, `{} < {}` is false.
         let prim_self = self.to_primitive_num(activation)?;
         if matches!(prim_self, Value::Object(o) if o.as_display_object().is_none()) {
-            return Ok(Some(false));
+            return Ok(false.into());
         }
         let prim_other = other.to_primitive_num(activation)?;
         if matches!(prim_other, Value::Object(o) if o.as_display_object().is_none()) {
-            return Ok(Some(false));
+            return Ok(false.into());
         }
 
         let result = match (prim_self, prim_other) {
             (Value::String(a), Value::String(b)) => {
                 let a = a.to_string();
                 let b = b.to_string();
-                Some(a.bytes().lt(b.bytes()).into())
+                a.bytes().lt(b.bytes()).into()
             }
             (a, b) => {
                 // Coerce to number and compare, with any NaN resulting in undefined.
                 let a = a.primitive_as_number(activation);
                 let b = b.primitive_as_number(activation);
-                a.partial_cmp(&b).map(|o| o == std::cmp::Ordering::Less)
+                a.partial_cmp(&b).map_or(Value::Undefined, |o| {
+                    Value::Bool(o == std::cmp::Ordering::Less)
+                })
             }
         };
         Ok(result)
@@ -598,19 +600,22 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
             let nan = Value::Number(f64::NAN);
-            assert_eq!(a.abstract_lt(nan, activation).unwrap(), None);
+            assert_eq!(a.abstract_lt(nan, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(a.abstract_lt(inf, activation).unwrap(), Some(true));
+            assert_eq!(a.abstract_lt(inf, activation).unwrap(), Value::Bool(true));
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(a.abstract_lt(neg_inf, activation).unwrap(), Some(false));
+            assert_eq!(
+                a.abstract_lt(neg_inf, activation).unwrap(),
+                Value::Bool(false)
+            );
 
             let zero = Value::Number(0.0);
-            assert_eq!(a.abstract_lt(zero, activation).unwrap(), Some(false));
+            assert_eq!(a.abstract_lt(zero, activation).unwrap(), Value::Bool(false));
 
             Ok(())
         });
@@ -622,19 +627,22 @@ mod test {
             let a = Value::Number(1.0);
             let b = Value::Number(2.0);
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             let nan = Value::Number(f64::NAN);
-            assert_eq!(nan.abstract_lt(a, activation).unwrap(), None);
+            assert_eq!(nan.abstract_lt(a, activation).unwrap(), Value::Undefined);
 
             let inf = Value::Number(f64::INFINITY);
-            assert_eq!(inf.abstract_lt(a, activation).unwrap(), Some(false));
+            assert_eq!(inf.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             let neg_inf = Value::Number(f64::NEG_INFINITY);
-            assert_eq!(neg_inf.abstract_lt(a, activation).unwrap(), Some(true));
+            assert_eq!(
+                neg_inf.abstract_lt(a, activation).unwrap(),
+                Value::Bool(true)
+            );
 
             let zero = Value::Number(0.0);
-            assert_eq!(zero.abstract_lt(a, activation).unwrap(), Some(true));
+            assert_eq!(zero.abstract_lt(a, activation).unwrap(), Value::Bool(true));
 
             Ok(())
         });
@@ -646,7 +654,7 @@ mod test {
             let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
             let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
-            assert_eq!(a.abstract_lt(b, activation).unwrap(), Some(true));
+            assert_eq!(a.abstract_lt(b, activation).unwrap(), Value::Bool(true));
 
             Ok(())
         })
@@ -658,7 +666,7 @@ mod test {
             let a = Value::String(AvmString::new_utf8(activation.context.gc_context, "a"));
             let b = Value::String(AvmString::new_utf8(activation.context.gc_context, "b"));
 
-            assert_eq!(b.abstract_lt(a, activation).unwrap(), Some(false));
+            assert_eq!(b.abstract_lt(a, activation).unwrap(), Value::Bool(false));
 
             Ok(())
         })
