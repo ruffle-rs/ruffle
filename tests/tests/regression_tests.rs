@@ -688,7 +688,7 @@ swf_tests! {
     (stage_property_representation, "avm1/stage_property_representation", 1),
     (strictequals_swf6, "avm1/strictequals_swf6", 1),
     (strictly_equals, "avm1/strictly_equals", 1),
-    #[ignore] (string_coercion, "avm1/string_coercion", 1),
+    (string_coercion, "avm1/string_coercion", 1),
     (string_methods_negative_args, "avm1/string_methods_negative_args", 1),
     (string_methods, "avm1/string_methods", 1),
     (string_ops_swf6, "avm1/string_ops_swf6", 1),
