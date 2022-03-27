@@ -5,7 +5,7 @@ use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
-use crate::context::{ActionQueue, ActionType};
+use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, MorphShape, TDisplayObject, TDisplayObjectContainer,
 };
@@ -422,12 +422,8 @@ impl<'gc> Loader<'gc> {
 
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
-                    Some(Loader::Movie {
-                        target_clip,
-                        target_broadcaster,
-                        ..
-                    }) => (*target_clip, *target_broadcaster),
+                let clip = match uc.load_manager.get_loader(handle) {
+                    Some(Loader::Movie { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                     _ => unreachable!(),
                 };
@@ -439,18 +435,7 @@ impl<'gc> Loader<'gc> {
                     mc.replace_with_movie(uc.gc_context, None);
                 }
 
-                if let Some(broadcaster) = broadcaster {
-                    Avm1::run_stack_frame_for_method(
-                        clip,
-                        broadcaster,
-                        NEWEST_PLAYER_VERSION,
-                        uc,
-                        "broadcastMessage".into(),
-                        &["onLoadStart".into(), clip.object()],
-                    );
-                }
-
-                Ok(())
+                Loader::movie_loader_start(handle, uc)
             })?;
 
             if let Ok(data) = fetch.await {
@@ -468,12 +453,8 @@ impl<'gc> Loader<'gc> {
                 }
 
                 player.lock().unwrap().update(|uc| {
-                    let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
-                        Some(Loader::Movie {
-                            target_clip,
-                            target_broadcaster,
-                            ..
-                        }) => (*target_clip, *target_broadcaster),
+                    let clip = match uc.load_manager.get_loader(handle) {
+                        Some(Loader::Movie { target_clip, .. }) => *target_clip,
                         None => return Err(Error::Cancelled),
                         _ => unreachable!(),
                     };
@@ -493,21 +474,7 @@ impl<'gc> Loader<'gc> {
                                 .library_for_movie_mut(movie.clone())
                                 .set_avm2_domain(domain);
 
-                            if let Some(broadcaster) = broadcaster {
-                                Avm1::run_stack_frame_for_method(
-                                    clip,
-                                    broadcaster,
-                                    NEWEST_PLAYER_VERSION,
-                                    uc,
-                                    "broadcastMessage".into(),
-                                    &[
-                                        "onLoadProgress".into(),
-                                        clip.object(),
-                                        data.len().into(),
-                                        data.len().into(),
-                                    ],
-                                );
-                            }
+                            Loader::movie_loader_progress(handle, uc, data.len(), data.len())?;
 
                             if let Some(mut mc) = clip.as_movie_clip() {
                                 mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
@@ -533,21 +500,7 @@ impl<'gc> Loader<'gc> {
                             let bitmap_obj =
                                 Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
 
-                            if let Some(broadcaster) = broadcaster {
-                                Avm1::run_stack_frame_for_method(
-                                    clip,
-                                    broadcaster,
-                                    NEWEST_PLAYER_VERSION,
-                                    uc,
-                                    "broadcastMessage".into(),
-                                    &[
-                                        "onLoadProgress".into(),
-                                        clip.object(),
-                                        length.into(),
-                                        length.into(),
-                                    ],
-                                );
-                            }
+                            Loader::movie_loader_progress(handle, uc, length, length)?;
 
                             if let Some(mc) = clip.as_movie_clip() {
                                 mc.replace_at_depth(uc, bitmap_obj.into(), 1);
@@ -556,66 +509,15 @@ impl<'gc> Loader<'gc> {
                         ContentType::Unknown => return Err(Error::UnknownData),
                     }
 
-                    if let Some(broadcaster) = broadcaster {
-                        Avm1::run_stack_frame_for_method(
-                            clip,
-                            broadcaster,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "broadcastMessage".into(),
-                            // TODO: Pass an actual httpStatus argument instead of 0.
-                            &["onLoadComplete".into(), clip.object(), 0.into()],
-                        );
-                    }
-
-                    if let Some(Loader::Movie { loader_status, .. }) =
-                        uc.load_manager.get_loader_mut(handle)
-                    {
-                        *loader_status = LoaderStatus::Succeeded;
-                    };
+                    Loader::movie_loader_complete(handle, uc)?;
 
                     Ok(())
                 })?; //TODO: content sniffing errors need to be reported somehow
             } else {
-                //TODO: Inspect the fetch error.
-                //This requires cooperation from the backend to send abstract
-                //error types we can actually inspect.
-                //This also can get errors from decoding an invalid SWF file,
-                //too. We should distinguish those to player code.
-                player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                    let (clip, broadcaster) = match uc.load_manager.get_loader(handle) {
-                        Some(Loader::Movie {
-                            target_clip,
-                            target_broadcaster,
-                            ..
-                        }) => (*target_clip, *target_broadcaster),
-                        None => return Err(Error::Cancelled),
-                        _ => unreachable!(),
-                    };
-
-                    if let Some(broadcaster) = broadcaster {
-                        Avm1::run_stack_frame_for_method(
-                            clip,
-                            broadcaster,
-                            NEWEST_PLAYER_VERSION,
-                            uc,
-                            "broadcastMessage".into(),
-                            &[
-                                "onLoadError".into(),
-                                clip.object(),
-                                "LoadNeverCompleted".into(),
-                            ],
-                        );
-                    }
-
-                    if let Some(Loader::Movie { loader_status, .. }) =
-                        uc.load_manager.get_loader_mut(handle)
-                    {
-                        *loader_status = LoaderStatus::Failed;
-                    };
-
-                    Ok(())
-                })?;
+                player
+                    .lock()
+                    .unwrap()
+                    .update(|uc| -> Result<(), Error> { Loader::movie_loader_error(handle, uc) })?;
             }
 
             Ok(())
@@ -750,6 +652,158 @@ impl<'gc> Loader<'gc> {
                 Ok(())
             })
         })
+    }
+
+    /// Report a movie loader start event to script code.
+    fn movie_loader_start(handle: Index, uc: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        let me = uc.load_manager.get_loader_mut(handle);
+        if me.is_none() {
+            return Err(Error::Cancelled);
+        }
+
+        let me = me.unwrap();
+
+        let (clip, broadcaster) = match me {
+            Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            } => (*target_clip, *target_broadcaster),
+            _ => unreachable!(),
+        };
+
+        if let Some(broadcaster) = broadcaster {
+            Avm1::run_stack_frame_for_method(
+                clip,
+                broadcaster,
+                NEWEST_PLAYER_VERSION,
+                uc,
+                "broadcastMessage".into(),
+                &["onLoadStart".into(), clip.object()],
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Report a movie loader progress event to script code.
+    fn movie_loader_progress(
+        handle: Index,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
+        cur_len: usize,
+        total_len: usize,
+    ) -> Result<(), Error> {
+        let me = uc.load_manager.get_loader_mut(handle);
+        if me.is_none() {
+            return Err(Error::Cancelled);
+        }
+
+        let me = me.unwrap();
+
+        let (clip, broadcaster) = match me {
+            Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            } => (*target_clip, *target_broadcaster),
+            _ => unreachable!(),
+        };
+
+        if let Some(broadcaster) = broadcaster {
+            Avm1::run_stack_frame_for_method(
+                clip,
+                broadcaster,
+                NEWEST_PLAYER_VERSION,
+                uc,
+                "broadcastMessage".into(),
+                &[
+                    "onLoadProgress".into(),
+                    clip.object(),
+                    cur_len.into(),
+                    total_len.into(),
+                ],
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Report a movie loader completion to script code.
+    fn movie_loader_complete(
+        handle: Index,
+        uc: &mut UpdateContext<'_, 'gc, '_>,
+    ) -> Result<(), Error> {
+        let (clip, broadcaster) = match uc.load_manager.get_loader_mut(handle) {
+            Some(Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            }) => (*target_clip, *target_broadcaster),
+            None => return Err(Error::Cancelled),
+            _ => unreachable!(),
+        };
+
+        if let Some(broadcaster) = broadcaster {
+            Avm1::run_stack_frame_for_method(
+                clip,
+                broadcaster,
+                NEWEST_PLAYER_VERSION,
+                uc,
+                "broadcastMessage".into(),
+                // TODO: Pass an actual httpStatus argument instead of 0.
+                &["onLoadComplete".into(), clip.object(), 0.into()],
+            );
+        }
+
+        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
+        {
+            *loader_status = LoaderStatus::Succeeded;
+        };
+
+        Ok(())
+    }
+
+    /// Report a movie loader error to script code.
+    ///
+    /// This is an associated function because we cannot borrow both the update
+    /// context and one of it's loaders.
+    fn movie_loader_error(handle: Index, uc: &mut UpdateContext<'_, 'gc, '_>) -> Result<(), Error> {
+        //TODO: Inspect the fetch error.
+        //This requires cooperation from the backend to send abstract
+        //error types we can actually inspect.
+        //This also can get errors from decoding an invalid SWF file,
+        //too. We should distinguish those to player code.
+        let (clip, broadcaster) = match uc.load_manager.get_loader_mut(handle) {
+            Some(Loader::Movie {
+                target_clip,
+                target_broadcaster,
+                ..
+            }) => (*target_clip, *target_broadcaster),
+            None => return Err(Error::Cancelled),
+            _ => unreachable!(),
+        };
+
+        if let Some(broadcaster) = broadcaster {
+            Avm1::run_stack_frame_for_method(
+                clip,
+                broadcaster,
+                NEWEST_PLAYER_VERSION,
+                uc,
+                "broadcastMessage".into(),
+                &[
+                    "onLoadError".into(),
+                    clip.object(),
+                    "LoadNeverCompleted".into(),
+                ],
+            );
+        }
+
+        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
+        {
+            *loader_status = LoaderStatus::Failed;
+        };
+
+        Ok(())
     }
 
     /// Event handler morally equivalent to `onLoad` on a movie clip.
