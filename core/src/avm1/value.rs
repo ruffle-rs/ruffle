@@ -406,7 +406,13 @@ impl<'gc> Value<'gc> {
             Value::Object(object) => {
                 match object.call_method("toString".into(), &[], activation)? {
                     Value::String(s) => s,
-                    _ => "[type Object]".into(),
+                    _ => {
+                        if object.as_executable().is_some() {
+                            "[type Function]".into()
+                        } else {
+                            "[type Object]".into()
+                        }
+                    }
                 }
             }
             Value::Undefined => {
