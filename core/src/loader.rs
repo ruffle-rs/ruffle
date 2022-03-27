@@ -16,6 +16,7 @@ use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
+use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use swf::read::read_compression_type;
 use thiserror::Error;
@@ -26,7 +27,7 @@ pub type Handle = Index;
 /// Enumeration of all content types that `Loader` can handle.
 ///
 /// This is a superset of `JpegTagFormat`.
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum ContentType {
     Swf,
     Jpeg,
@@ -46,12 +47,33 @@ impl From<JpegTagFormat> for ContentType {
     }
 }
 
+impl fmt::Display for ContentType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Swf => write!(f, "SWF"),
+            Self::Jpeg => write!(f, "JPEG"),
+            Self::Png => write!(f, "PNG"),
+            Self::Gif => write!(f, "GIF"),
+            Self::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
 impl ContentType {
     fn sniff(data: &[u8]) -> ContentType {
         if read_compression_type(data).is_ok() {
             ContentType::Swf
         } else {
             determine_jpeg_tag_format(data).into()
+        }
+    }
+
+    /// Assert that content is of a given type, and error otherwise.
+    fn expect(self, expected: Self) -> Result<Self, Error> {
+        if self == expected {
+            Ok(self)
+        } else {
+            Err(Error::UnexpectedData(expected, self))
         }
     }
 }
@@ -79,8 +101,11 @@ pub enum Error {
     #[error("Invalid SWF")]
     InvalidSwf(#[from] crate::tag_utils::Error),
 
-    #[error("Invalid data")]
-    InvalidData,
+    #[error("Unexpected content of type {1}, expected {0}")]
+    UnexpectedData(ContentType, ContentType),
+
+    #[error("Unknown or corrupted data")]
+    UnknownData,
 
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?
@@ -432,9 +457,9 @@ impl<'gc> Loader<'gc> {
                 let sniffed_type = ContentType::sniff(&data);
                 let length = data.len();
 
-                //TODO: Does replacing the root movie with an image require any
-                //special work?
-                if replacing_root_movie && sniffed_type == ContentType::Swf {
+                if replacing_root_movie {
+                    sniffed_type.expect(ContentType::Swf)?;
+
                     let movie =
                         SwfMovie::from_data(&data, Some(url.into_owned()), loader_url.clone())?;
                     let movie = Arc::new(movie);
@@ -528,7 +553,7 @@ impl<'gc> Loader<'gc> {
                                 mc.replace_at_depth(uc, bitmap_obj.into(), 1);
                             }
                         }
-                        ContentType::Unknown => return Err(Error::InvalidData),
+                        ContentType::Unknown => return Err(Error::UnknownData),
                     }
 
                     if let Some(broadcaster) = broadcaster {
