@@ -51,7 +51,7 @@ nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 
 [dependencies.jpeg-decoder]
-version = "0.2.2"
+version = "0.2.3"
 default-features = false # can't use rayon on web
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
