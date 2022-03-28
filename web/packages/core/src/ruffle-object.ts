@@ -9,6 +9,7 @@ import {
     isScriptAccessAllowed,
     isSwfFilename,
     isYoutubeFlashSource,
+    workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
@@ -236,12 +237,31 @@ export class RuffleObject extends RufflePlayer {
         if (data) {
             // Don't polyfill when the file is a Youtube Flash source.
             if (isYoutubeFlashSource(data)) {
+                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
+                workaroundYoutubeMixedContent(elem, "data");
                 return false;
             }
             isSwf = isSwfFilename(data);
         } else if (params && params.movie) {
             // Don't polyfill when the file is a Youtube Flash source.
             if (isYoutubeFlashSource(params.movie)) {
+                // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
+                const movie_elem = elem.querySelector(
+                    "param[name='movie']"
+                ) as HTMLElement;
+                if (movie_elem) {
+                    const movie_src_before = movie_elem.getAttribute("value");
+                    workaroundYoutubeMixedContent(movie_elem, "value");
+                    // The data attribute needs to be set for the re-fetch to happen
+                    const movie_src_after = movie_elem.getAttribute("value");
+                    if (
+                        movie_src_before &&
+                        movie_src_after &&
+                        movie_src_before !== movie_src_after
+                    ) {
+                        elem.setAttribute("data", movie_src_after);
+                    }
+                }
                 return false;
             }
             isSwf = isSwfFilename(params.movie);
