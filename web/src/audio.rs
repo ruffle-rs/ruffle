@@ -1141,9 +1141,9 @@ impl AudioBackend for WebAudioBackend {
 
 #[wasm_bindgen(raw_module = "./ruffle-imports.js")]
 extern "C" {
-    /// Imported JS method to copy data into an `AudioBuffer`.
-    /// We'd prefer to use `AudioBuffer.copyToChannel`, but this isn't supported
-    /// on Safari.
+    // Imported JS method to copy data into an `AudioBuffer`.
+    // We'd prefer to use `AudioBuffer.copyToChannel`, but this isn't supported
+    // on Safari.
     #[wasm_bindgen(js_name = "copyToAudioBuffer")]
     fn copy_to_audio_buffer(
         audio_buffer: &web_sys::AudioBuffer,
@@ -1151,8 +1151,8 @@ extern "C" {
         right_data: Option<&[f32]>,
     );
 
-    /// Imported JS method to call `AudioContext.getOutputTimestamp` because
-    /// it is not yet available in `web_sys`.
+    // Imported JS method to call `AudioContext.getOutputTimestamp` because
+    // it is not yet available in `web_sys`.
     #[wasm_bindgen(js_name = "getAudioOutputTimestamp")]
     fn get_audio_output_timestamp(context: &web_sys::AudioContext) -> f64;
 }
