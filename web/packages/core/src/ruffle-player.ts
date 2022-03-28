@@ -1506,6 +1506,35 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
 }
 
 /**
+ * Workaround Youtube mixed content if upgradeToHttps is true.
+ *
+ * @param elem The element to change.
+ * @param attr The attribute to adjust.
+ */
+export function workaroundYoutubeMixedContent(
+    elem: HTMLElement,
+    attr: string
+): void {
+    const elem_attr = elem.getAttribute(attr);
+    const window_config = window.RufflePlayer?.config ?? {};
+    if (elem_attr) {
+        try {
+            const url = new URL(elem_attr);
+            if (
+                url.protocol === "http:" &&
+                window.location.protocol === "https:" &&
+                window_config.upgradeToHttps !== false
+            ) {
+                url.protocol = "https:";
+                elem.setAttribute(attr, url.toString());
+            }
+        } catch (err) {
+            // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
+        }
+    }
+}
+
+/**
  * Returns whether the given filename ends in a known flash extension.
  *
  * @param filename The filename to test.

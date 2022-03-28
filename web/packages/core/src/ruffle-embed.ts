@@ -8,6 +8,7 @@ import {
     isScriptAccessAllowed,
     isSwfFilename,
     isYoutubeFlashSource,
+    workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
@@ -142,6 +143,8 @@ export class RuffleEmbed extends RufflePlayer {
         }
         // Don't polyfill when the file is a Youtube Flash source.
         if (isYoutubeFlashSource(elem.getAttribute("src"))) {
+            // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
+            workaroundYoutubeMixedContent(elem, "src");
             return false;
         }
 
