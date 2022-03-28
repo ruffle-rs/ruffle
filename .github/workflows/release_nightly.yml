@@ -216,7 +216,7 @@ jobs:
           security unlock-keychain -p correct-horse-battery-staple build.keychain
           security import certificate.p12 -k build.keychain -P $APPLE_DEVELOPER_KEY_PASSWORD -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
-          codesign -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/assets/macOSEntitlements.plist package/Ruffle.app
+          codesign -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/assets/macOSEntitlements.plist --options runtime package/Ruffle.app
           codesign --verify -vvvv package/Ruffle.app
 
       - name: Package macOS
