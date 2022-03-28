@@ -8,6 +8,7 @@ import {
     isFallbackElement,
     isScriptAccessAllowed,
     isSwfFilename,
+    isYoutubeFlashSource,
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
@@ -233,8 +234,16 @@ export class RuffleObject extends RufflePlayer {
         let isSwf;
         // Check for SWF file.
         if (data) {
+            // Don't polyfill when the file is a Youtube Flash source.
+            if (isYoutubeFlashSource(data)) {
+                return false;
+            }
             isSwf = isSwfFilename(data);
         } else if (params && params.movie) {
+            // Don't polyfill when the file is a Youtube Flash source.
+            if (isYoutubeFlashSource(params.movie)) {
+                return false;
+            }
             isSwf = isSwfFilename(params.movie);
         } else {
             // Don't polyfill when no file is specified.

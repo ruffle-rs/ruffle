@@ -7,6 +7,7 @@ import {
     isFallbackElement,
     isScriptAccessAllowed,
     isSwfFilename,
+    isYoutubeFlashSource,
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
@@ -137,6 +138,10 @@ export class RuffleEmbed extends RufflePlayer {
         }
         // Don't polyfill when no file is specified.
         if (!elem.getAttribute("src")) {
+            return false;
+        }
+        // Don't polyfill when the file is a Youtube Flash source.
+        if (isYoutubeFlashSource(elem.getAttribute("src"))) {
             return false;
         }
 
