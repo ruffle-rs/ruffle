@@ -1476,6 +1476,36 @@ export function isBuiltInContextMenuVisible(menu: string | null): boolean {
 }
 
 /**
+ * Returns whether the given filename is a Youtube Flash source.
+ *
+ * @param filename The filename to test.
+ * @returns True if the filename is a Youtube Flash source.
+ */
+export function isYoutubeFlashSource(filename: string | null): boolean {
+    if (filename) {
+        let pathname = "";
+        let hostname = "";
+        try {
+            // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
+            const url = new URL(filename, RUFFLE_ORIGIN);
+            pathname = url.pathname;
+            hostname = url.hostname;
+        } catch (err) {
+            // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
+        }
+        // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
+        if (
+            pathname.startsWith("/v/") &&
+            (hostname.endsWith("youtube.com") ||
+                hostname.endsWith("youtube-nocookie.com"))
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Returns whether the given filename ends in a known flash extension.
  *
  * @param filename The filename to test.
