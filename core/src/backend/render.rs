@@ -564,6 +564,9 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
         width: info.width,
         height: info.height,
         data: if info.color_type == ColorType::Rgba {
+            // In contrast to DefineBitsLossless tags, PNGs embedded in a DefineBitsJPEG tag will not have
+            // premultiplied alpha and need to be converted before sending to the renderer.
+            premultiply_alpha_rgba(&mut data);
             BitmapFormat::Rgba(data)
         } else {
             // EXPAND expands other types to RGB.
@@ -580,11 +583,24 @@ pub fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
     decode_options.set_color_output(gif::ColorOutput::RGBA);
     let mut reader = decode_options.read_info(data)?;
     let frame = reader.read_next_frame()?.ok_or("No frames in GIF")?;
+    // GIFs embedded in a DefineBitsJPEG tag will not have premultiplied alpha and need to be converted before sending to the renderer.
+    let mut data = frame.buffer.to_vec();
+    premultiply_alpha_rgba(&mut data);
 
     Ok(Bitmap {
         width: frame.width.into(),
         height: frame.height.into(),
-        data: BitmapFormat::Rgba(frame.buffer.to_vec()),
+        data: BitmapFormat::Rgba(data),
+    })
+}
+
+/// Converts standard RBGA to premultiplied alpha.
+pub fn premultiply_alpha_rgba(rgba: &mut [u8]) {
+    rgba.chunks_exact_mut(4).for_each(|rgba| {
+        let a = f32::from(rgba[3]) / 255.0;
+        rgba[0] = (f32::from(rgba[0]) * a) as u8;
+        rgba[1] = (f32::from(rgba[1]) * a) as u8;
+        rgba[2] = (f32::from(rgba[2]) * a) as u8;
     })
 }
 
@@ -594,9 +610,9 @@ pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
     rgba.chunks_exact_mut(4).for_each(|rgba| {
         if rgba[3] > 0 {
             let a = f32::from(rgba[3]) / 255.0;
-            rgba[0] = f32::min(f32::from(rgba[0]) / a, 255.0) as u8;
-            rgba[1] = f32::min(f32::from(rgba[1]) / a, 255.0) as u8;
-            rgba[2] = f32::min(f32::from(rgba[2]) / a, 255.0) as u8;
+            rgba[0] = (f32::from(rgba[0]) / a) as u8;
+            rgba[1] = (f32::from(rgba[1]) / a) as u8;
+            rgba[2] = (f32::from(rgba[2]) / a) as u8;
         }
     })
 }
