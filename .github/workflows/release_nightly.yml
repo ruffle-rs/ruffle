@@ -218,6 +218,17 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
           codesign -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/assets/macOSEntitlements.plist --options runtime package/Ruffle.app
           codesign --verify -vvvv package/Ruffle.app
+      
+      - name: Notarize bundle
+        continue-on-error: true
+        run: |
+          xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
+          cd package
+          zip -r Ruffle.zip Ruffle.app
+          mv Ruffle.zip ..
+          cd ..
+          xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
+          xcrun stapler staple package/Ruffle.app
 
       - name: Package macOS
         run: |
