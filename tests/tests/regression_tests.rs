@@ -771,7 +771,7 @@ swf_tests_approx! {
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
     (as3_divide, "avm2/divide", 1, epsilon = 0.0), // TODO: Discrepancy in float formatting.
     (as3_edittext_align, "avm2/edittext_align", 1, epsilon = 3.0),
-    (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 5.0), // TODO AS3 has _width higher by 5.0, probably padding logic mistake
+    (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 0.1),
     (as3_edittext_bullet, "avm2/edittext_bullet", 1, epsilon = 3.0),
     (as3_edittext_font_size, "avm2/edittext_font_size", 1, epsilon = 0.1),
     (as3_edittext_leading, "avm2/edittext_leading", 1, epsilon = 0.3),
@@ -785,7 +785,7 @@ swf_tests_approx! {
     (as3_number_toprecision, "avm2/number_toprecision", 1, max_relative = 0.001),
     (as3_parse_float, "avm2/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
-    (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 4.0), // TODO Flash has _width higher by 4.0, probably padding logic mistake
+    (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 0.1),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
     (edittext_hscroll, "avm1/edittext_hscroll", 1, epsilon = 3.0),
     (edittext_letter_spacing, "avm1/edittext_letter_spacing", 1, epsilon = 15.0), // TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
