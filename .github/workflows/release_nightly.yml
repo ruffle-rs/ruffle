@@ -83,10 +83,12 @@ jobs:
           - build_name: macos-x86_64
             os: macos-latest
             target: x86_64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 10.7
 
           - build_name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 11.0
 
           - build_name: windows-x86_32
             os: windows-latest
@@ -127,6 +129,7 @@ jobs:
           args: --package ruffle_desktop --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
       - name: Package common
         run: |
