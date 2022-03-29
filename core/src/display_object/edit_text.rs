@@ -33,7 +33,7 @@ use swf::Twips;
 pub type Error = Box<dyn std::error::Error>;
 
 /// The kind of autosizing behavior an `EditText` should have, if any
-#[derive(Copy, Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
 #[collect(no_drop)]
 pub enum AutoSizeMode {
     None,
@@ -760,7 +760,7 @@ impl<'gc> EditText<'gc> {
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
-        let width = edit_text.bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0);
+        let padding = Twips::from_pixels(EditText::INTERNAL_PADDING) * 2;
 
         if edit_text.is_password {
             // If the text is a password, hide the text
@@ -774,7 +774,7 @@ impl<'gc> EditText<'gc> {
             &edit_text.text_spans,
             context,
             movie,
-            width,
+            edit_text.bounds.width() - padding,
             is_word_wrap,
             edit_text.is_device_font,
         );
@@ -786,41 +786,25 @@ impl<'gc> EditText<'gc> {
         edit_text.hscroll = 0.0;
         edit_text.scroll = 1;
 
-        match autosize {
-            AutoSizeMode::None => {}
-            AutoSizeMode::Left => {
-                if !is_word_wrap {
-                    edit_text.bounds.set_width(intrinsic_bounds.width());
+        if autosize != AutoSizeMode::None {
+            // The edit text's bounds needs to have the padding baked in.
+            let width = intrinsic_bounds.width() + padding;
+            let height = intrinsic_bounds.height() + padding;
+            let new_x = match autosize {
+                AutoSizeMode::Left => edit_text.bounds.x_min,
+                AutoSizeMode::Center => {
+                    (edit_text.bounds.x_min + edit_text.bounds.x_max - width) / 2
                 }
-
-                edit_text.bounds.set_height(intrinsic_bounds.height());
-                drop(edit_text);
-                self.redraw_border(context.gc_context);
+                AutoSizeMode::Right => edit_text.bounds.x_max - width,
+                AutoSizeMode::None => unreachable!(),
+            };
+            if !is_word_wrap {
+                edit_text.bounds.set_x(new_x);
+                edit_text.bounds.set_width(width);
             }
-            AutoSizeMode::Center => {
-                if !is_word_wrap {
-                    let center = (edit_text.bounds.x_min + edit_text.bounds.x_max) / 2;
-                    edit_text
-                        .bounds
-                        .set_x(center - intrinsic_bounds.width() / 2);
-                    edit_text.bounds.set_width(intrinsic_bounds.width());
-                }
-
-                edit_text.bounds.set_height(intrinsic_bounds.height());
-                drop(edit_text);
-                self.redraw_border(context.gc_context);
-            }
-            AutoSizeMode::Right => {
-                if !is_word_wrap {
-                    let new_x = edit_text.bounds.x_max - intrinsic_bounds.width();
-                    edit_text.bounds.set_x(new_x);
-                    edit_text.bounds.set_width(intrinsic_bounds.width());
-                }
-
-                edit_text.bounds.set_height(intrinsic_bounds.height());
-                drop(edit_text);
-                self.redraw_border(context.gc_context);
-            }
+            edit_text.bounds.set_height(height);
+            drop(edit_text);
+            self.redraw_border(context.gc_context);
         }
     }
 
