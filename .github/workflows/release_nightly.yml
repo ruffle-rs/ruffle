@@ -210,7 +210,7 @@ jobs:
           APPLE_DEVELOPER_KEY: ${{ secrets.APPLE_DEVELOPER_KEY }}
           APPLE_DEVELOPER_KEY_PASSWORD: ${{ secrets.APPLE_DEVELOPER_KEY_PASSWORD }}
         run: |
-          echo $APPLE_DEVELOPER_KEY | base64 -decode > certificate.p12
+          echo $APPLE_DEVELOPER_KEY | base64 --decode > certificate.p12
           security create-keychain -p correct-horse-battery-staple build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p correct-horse-battery-staple build.keychain
