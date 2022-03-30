@@ -1,6 +1,7 @@
 //! `flash.events` namespace
 
 pub mod activityevent;
+pub mod contextmenuevent;
 pub mod event;
 pub mod eventdispatcher;
 pub mod eventphase;
