@@ -100,6 +100,7 @@ macro_rules! swf_tests_approx {
 // Inside the folder is expected to be "test.swf" and "output.txt" with the correct output.
 swf_tests! {
     (action_to_integer, "avm1/action_to_integer", 1),
+    (add2, "avm1/add2", 1),
     (add_property, "avm1/add_property", 1),
     (arguments, "avm1/arguments", 1),
     (array_call_method, "avm1/array_call_method", 1),
