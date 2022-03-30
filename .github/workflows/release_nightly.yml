@@ -84,11 +84,13 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
+            DESKTOP_FEATURES: sandbox
 
           - build_name: macos-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
+            DESKTOP_FEATURES: sandbox
 
           - build_name: windows-x86_32
             os: windows-latest
@@ -126,7 +128,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --package ruffle_desktop --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+          args: --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
