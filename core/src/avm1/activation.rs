@@ -584,24 +584,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_add_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // ECMA-262 s. 11.6.1
-        let a = self.context.avm1.pop();
-        let b = self.context.avm1.pop();
+        let a = self.context.avm1.pop().to_primitive(self)?;
+        let b = self.context.avm1.pop().to_primitive(self)?;
         let result: Value<'_> = match (a, b) {
             (Value::String(a), Value::String(b)) => {
                 AvmString::concat(self.context.gc_context, b, a).into()
             }
-            (Value::String(a), b) => AvmString::concat(
-                self.context.gc_context,
-                b.to_primitive(self)?.coerce_to_string(self)?,
-                a,
-            )
-            .into(),
-            (a, Value::String(b)) => AvmString::concat(
-                self.context.gc_context,
-                b,
-                a.to_primitive(self)?.coerce_to_string(self)?,
-            )
-            .into(),
+            (Value::String(a), b) => {
+                AvmString::concat(self.context.gc_context, b.coerce_to_string(self)?, a).into()
+            }
+            (a, Value::String(b)) => {
+                AvmString::concat(self.context.gc_context, b, a.coerce_to_string(self)?).into()
+            }
             _ => (b.coerce_to_f64(self)? + a.coerce_to_f64(self)?).into(),
         };
         self.context.avm1.push(result);
