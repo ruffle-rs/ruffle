@@ -42,3 +42,5 @@ screenvideo =  ["ruffle_core/screenvideo"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
 render_trace = ["ruffle_render_wgpu/render_trace"]
 
+# sandboxing
+sandbox = []
