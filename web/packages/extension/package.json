@@ -18,7 +18,7 @@
         "@types/chrome": "^0.0.179",
         "@types/firefox-webext-browser": "^94.0.0",
         "archiver": "^5.3.0",
-        "json5": "^2.2.0",
+        "json5": "^2.2.1",
         "sign-addon": "^3.11.0",
         "temp-dir": "^2.0.0",
         "ts-loader": "^9.2.6",
