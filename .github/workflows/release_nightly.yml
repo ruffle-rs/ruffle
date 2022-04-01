@@ -175,7 +175,7 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-nightly-release, build]
+    needs: [create-nightly-release, build, build-web]
     runs-on: macos-latest
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
@@ -193,6 +193,11 @@ jobs:
         with:
           name: macos-x86_64
 
+      - name: Download Safari extension
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-safari
+
       - name: Make universal binary
         run: |
           lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
@@ -208,6 +213,18 @@ jobs:
         run: |
           mkdir package/Ruffle.app/Contents/Resources
           xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
+      
+      - name: Create extension bundle
+        run: |
+          mkdir package/Ruffle.app/Contents/PlugIns
+          cp -r web/packages/extension/safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex
+          mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+          mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
+          cp ./web/packages/extension/dist/ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+          cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+          unzip ruffle_extension.zip
+          rm ruffle_extension.zip
+          cd ../../../../../../..
 
       - name: Sign bundle
         continue-on-error: true
@@ -355,7 +372,13 @@ jobs:
           asset_path: ./web/packages/extension/dist/ruffle_extension.zip
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
           asset_content_type: application/zip
-
+      
+      - name: Upload Safari build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: macos-safari
+          path: ./web/packages/extension/dist/ruffle_extension.zip
+      
       - name: Upload Firefox extension (unsigned)
         if: steps.sign-firefox.outcome != 'success' && !matrix.demo
         uses: actions/upload-release-asset@v1
