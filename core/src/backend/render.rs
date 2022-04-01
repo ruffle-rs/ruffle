@@ -345,10 +345,20 @@ pub fn decode_jpeg(
 
     let decoded_data = match metadata.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => decoded_data,
-        jpeg_decoder::PixelFormat::CMYK32 => {
-            log::warn!("Unimplemented CMYK32 JPEG pixel format");
-            decoded_data
-        }
+        jpeg_decoder::PixelFormat::CMYK32 => decoded_data
+            .chunks_exact(4)
+            .flat_map(|chunk| {
+                let c = f32::from(chunk[0]);
+                let m = f32::from(chunk[1]);
+                let y = f32::from(chunk[2]);
+                let k = f32::from(chunk[3]);
+
+                let r = ((255.0 - c) * (255.0 - k) / 255.0) as u8;
+                let g = ((255.0 - m) * (255.0 - k) / 255.0) as u8;
+                let b = ((255.0 - y) * (255.0 - k) / 255.0) as u8;
+                [r, g, b]
+            })
+            .collect(),
         jpeg_decoder::PixelFormat::L8 => {
             let mut rgb = Vec::with_capacity(decoded_data.len() * 3);
             for elem in decoded_data {
