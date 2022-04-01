@@ -24,7 +24,7 @@
         "copy-webpack-plugin": "^10.2.4",
         "cross-env": "^7.0.3",
         "eslint": "^8.10.0",
-        "eslint-config-prettier": "^8.3.0",
+        "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.0.0",
         "mocha": "^9.2.1",
         "prettier": "^2.5.1",
