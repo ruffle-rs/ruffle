@@ -31,6 +31,9 @@ false
 // loader.loadClip("target.swf", null)
 false
 
+// loader.loadClip("invalid.txt", mc3)
+true
+
 In loader.onLoadStart
 // mc
 _level0.mc1
@@ -103,10 +106,32 @@ _level0.mc2
 // httpStatus
 0
 
+In loader.onLoadStart
+// mc
+_level0.mc3
+
+In loader.onLoadProgress
+// mc
+_level0.mc3
+// loadedBytes
+0
+// totalBytes
+0
+
+In loader.onLoadComplete
+// mc
+_level0.mc3
+// httpStatus
+0
+
 Child movie loaded!
 Child movie loaded!
 Child movie loaded!
 Child movie loaded!
+In loader.onLoadInit
+// mc
+_level0.mc3
+
 In loader.onLoadInit
 // mc
 _level0.mc2
