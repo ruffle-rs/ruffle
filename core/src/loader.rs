@@ -104,9 +104,6 @@ pub enum Error {
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),
 
-    #[error("Unknown or corrupted data")]
-    UnknownData,
-
     // TODO: We can't support lifetimes on this error object yet (or we'll need some backends inside
     // the GC arena). We're losing info here. How do we fix that?
     #[error("Error running avm1 script: {0}")]
@@ -440,7 +437,7 @@ impl<'gc> Loader<'gc> {
 
             if let Ok(data) = fetch.await {
                 let sniffed_type = ContentType::sniff(&data);
-                let length = data.len();
+                let mut length = data.len();
 
                 if replacing_root_movie {
                     sniffed_type.expect(ContentType::Swf)?;
@@ -474,8 +471,6 @@ impl<'gc> Loader<'gc> {
                                 .library_for_movie_mut(movie.clone())
                                 .set_avm2_domain(domain);
 
-                            Loader::movie_loader_progress(handle, uc, data.len(), data.len())?;
-
                             if let Some(mut mc) = clip.as_movie_clip() {
                                 mc.replace_with_movie(uc.gc_context, Some(movie.clone()));
                                 mc.post_instantiation(uc, None, Instantiator::Movie, false);
@@ -500,14 +495,16 @@ impl<'gc> Loader<'gc> {
                             let bitmap_obj =
                                 Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
 
-                            Loader::movie_loader_progress(handle, uc, length, length)?;
-
                             if let Some(mc) = clip.as_movie_clip() {
                                 mc.replace_at_depth(uc, bitmap_obj.into(), 1);
                             }
                         }
-                        ContentType::Unknown => return Err(Error::UnknownData),
+                        ContentType::Unknown => {
+                            length = 0;
+                        }
                     }
+
+                    Loader::movie_loader_progress(handle, uc, length, length)?;
 
                     Loader::movie_loader_complete(handle, uc)?;
 
