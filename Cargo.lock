@@ -3178,6 +3178,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_web_safari"
+version = "0.1.0"
+dependencies = [
+ "objc",
+]
+
+[[package]]
 name = "ruffle_wstr"
 version = "0.1.0"
 
