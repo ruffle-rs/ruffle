@@ -1,3 +1,5 @@
+#![cfg(target_os = "macos")]
+
 use objc::class;
 use objc::declare::ClassDecl;
 use objc::runtime::Protocol;
