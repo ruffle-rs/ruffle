@@ -217,7 +217,7 @@ jobs:
       - name: Create extension bundle
         run: |
           mkdir package/Ruffle.app/Contents/PlugIns
-          cp -r web/packages/extension/safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex
+          cp -r web/packages/extension/safari/package package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
           cp ./web/packages/extension/dist/ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources

@@ -5,6 +5,7 @@ members = [
     "desktop",
     "swf",
     "web",
+    "web/packages/extension/safari",
     "wstr",
     "scanner",
     "exporter",

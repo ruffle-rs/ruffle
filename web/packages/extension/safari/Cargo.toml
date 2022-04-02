@@ -1,0 +1,14 @@
+[package]
+name = "ruffle_web_safari"
+version = "0.1.0"
+authors = ["Mike Welsh <mwelsh@gmail.com>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Native binary for the Safari Web Extension"
+readme = "README.md"
+homepage = "https://ruffle.rs"
+repository = "https://github.com/ruffle-rs/ruffle/"
+publish = false # This crate is useless unless packaged into an appex bundle
+
+[dependencies]
+objc = "0.2.7"
