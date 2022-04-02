@@ -163,6 +163,16 @@ jobs:
           asset_path: ./${{ env.PACKAGE_FILE }}
           asset_name: ${{ env.PACKAGE_FILE }}
           asset_content_type: ${{ endsWith(env.PACKAGE_FILE, 'tar.gz') && 'application/gzip' || 'application/zip' }}
+      
+      - name: Build Safari Web Extension stub binary
+        if: runner.os == 'macOS'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        env:
+          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
       - name: Upload macOS build artifact
         if: runner.os == 'macOS'
@@ -171,6 +181,7 @@ jobs:
           name: ${{ matrix.build_name }}
           path: |
             ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop
+            ${{ env.CARGO_BUILD_DIR }}/ruffle_web_safari
             package
 
   build-mac-universal-binary:
@@ -198,10 +209,16 @@ jobs:
         with:
           name: macos-safari
 
-      - name: Make universal binary
+      - name: Make universal desktop binary
         run: |
           lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
           chmod +x package/ruffle
+
+      - name: Make universal Safari stub binary
+        continue-on-error: true
+        run: |
+          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+          chmod +x package/ruffle_web_safari
       
       - name: Create app bundle
         run: |
@@ -215,11 +232,13 @@ jobs:
           xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
       
       - name: Create extension bundle
+        continue-on-error: true
         run: |
           mkdir package/Ruffle.app/Contents/PlugIns
           cp -r web/packages/extension/safari/package package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
+          mv package/ruffle_web_safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/ruffle_web_safari
           cp ./web/packages/extension/dist/ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           unzip ruffle_extension.zip
