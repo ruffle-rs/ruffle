@@ -219,8 +219,11 @@ export class RuffleObject extends RufflePlayer {
         if (isFallbackElement(elem)) {
             return false;
         }
-        // Don't polyfill if there's already a <ruffle-embed> inside the <object>.
-        if (elem.getElementsByTagName("ruffle-embed").length > 0) {
+        // Don't polyfill if there's already a <ruffle-object> or a <ruffle-embed> inside the <object>.
+        if (
+            elem.getElementsByTagName("ruffle-object").length > 0 ||
+            elem.getElementsByTagName("ruffle-embed").length > 0
+        ) {
             return false;
         }
 
@@ -245,9 +248,15 @@ export class RuffleObject extends RufflePlayer {
         if (classid === FLASH_ACTIVEX_CLASSID.toLowerCase()) {
             // classid is an old-IE style embed that would not work on modern browsers.
             // Often there will be an <embed> inside the <object> that would take precedence.
-            // Only polyfill this <object> if it doesn't contain a polyfillable <embed>.
-            return !Array.from(elem.getElementsByTagName("embed")).some(
-                RuffleEmbed.isInterdictable
+            // Only polyfill this <object> if it doesn't contain a polyfillable <embed> or
+            // another <object> that would be supported on modern browsers.
+            return (
+                !Array.from(elem.getElementsByTagName("object")).some(
+                    RuffleObject.isInterdictable
+                ) &&
+                !Array.from(elem.getElementsByTagName("embed")).some(
+                    RuffleEmbed.isInterdictable
+                )
             );
         } else if (classid != null && classid !== "") {
             // Non-Flash classid.
