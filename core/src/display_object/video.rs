@@ -175,7 +175,11 @@ impl<'gc> Video<'gc> {
         };
 
         if let Some(num_frames) = num_frames {
-            frame_id %= num_frames as u32;
+            frame_id = if num_frames > 0 {
+                frame_id % num_frames as u32
+            } else {
+                0
+            }
         }
 
         let last_frame = read.decoded_frame.as_ref().map(|(lf, _)| *lf);
