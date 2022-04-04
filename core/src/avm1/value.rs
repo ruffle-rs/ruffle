@@ -3,13 +3,12 @@ use crate::avm1::error::Error;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject};
 use crate::ecma_conversions::{
-    f64_to_string, f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16,
-    f64_to_wrapping_u32, f64_to_wrapping_u8,
+    f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
+    f64_to_wrapping_u8,
 };
 use crate::string::{AvmString, Integer, WStr};
 use gc_arena::Collect;
-use std::borrow::Cow;
-use std::num::Wrapping;
+use std::{borrow::Cow, io::Write, num::Wrapping};
 
 #[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -496,6 +495,218 @@ impl<'gc> Value<'gc> {
     }
 }
 
+/// Converts an `f64` to a String with (hopefully) the same output as Flash AVM1.
+/// 15 digits are displayed (not including leading 0s in a decimal <1).
+/// Exponential notation is used for numbers <= 1e-5 and >= 1e15.
+/// Rounding done with ties rounded away from zero.
+/// NAN returns `"NaN"`, and infinity returns `"Infinity"`.
+#[allow(clippy::approx_constant)]
+fn f64_to_string(mut n: f64) -> Cow<'static, str> {
+    if n.is_nan() {
+        Cow::Borrowed("NaN")
+    } else if n == f64::INFINITY {
+        Cow::Borrowed("Infinity")
+    } else if n == f64::NEG_INFINITY {
+        Cow::Borrowed("-Infinity")
+    } else if n == 0.0 {
+        Cow::Borrowed("0")
+    } else if n >= -2147483648.0 && n <= 2147483647.0 && n.fract() == 0.0 {
+        // Fast path for integers.
+        (n as i32).to_string().into()
+    } else {
+        // AVM1 f64 -> String (also trying to reproduce bugs).
+        // Flash Player's AVM1 does this in a straightforward way, shifting the float into the
+        // range of [0.0, 10.0), repeatedly multiplying by 10 to extract digits, and then finally
+        // rounding the result. However, the rounding is buggy, when carrying 9.999 -> 10.
+        // For example, -9999999999999999.0 results in "-e+16".
+        let mut buf: Vec<u8> = Vec::with_capacity(25);
+        let is_negative = if n < 0.0 {
+            n = -n;
+            buf.push(b'-');
+            true
+        } else {
+            false
+        };
+
+        // Extract base-2 exponent from double-precision float (11 bits, biased by 1023).
+        const MANTISSA_BITS: u64 = 52;
+        const EXPONENT_MASK: u64 = 0x7ff;
+        const EXPONENT_BIAS: i32 = 1023;
+        let mut exp_base2: i32 =
+            ((n.to_bits() >> MANTISSA_BITS) & EXPONENT_MASK) as i32 - EXPONENT_BIAS;
+
+        if exp_base2 == -EXPONENT_BIAS {
+            // Subnormal float; scale back into normal range and retry getting the exponent.
+            const NORMAL_SCALE: f64 = 1.801439850948198e16; // 2^54
+            let n = n * NORMAL_SCALE;
+            exp_base2 =
+                ((n.to_bits() >> MANTISSA_BITS) & EXPONENT_MASK) as i32 - EXPONENT_BIAS - 54;
+        }
+
+        // Convert to base-10 exponent.
+        const LOG10_2: f64 = 0.301029995663981; // log_10(2) value (less precise than Rust's f64::LOG10_2).
+        let mut exp = f64::round(f64::from(exp_base2) * LOG10_2) as i32;
+
+        // Calculate `value * 10^exp` through repeated multiplication or division.
+        fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
+            let mut base: f64 = 10.0;
+            // The multiply and division branches are intentionally separate to match Flash's behavior.
+            if exp > 0 {
+                while exp > 0 {
+                    if (exp & 1) != 0 {
+                        value *= base;
+                    }
+                    exp >>= 1;
+                    base *= base;
+                }
+            } else {
+                exp = -exp;
+                while exp > 0 {
+                    if (exp & 1) != 0 {
+                        value /= base;
+                    }
+                    exp >>= 1;
+                    base *= base;
+                }
+            };
+            value
+        }
+
+        // Shift the decimal value so that it's in the range of [0.0, 10.0).
+        let mut mantissa: f64 = decimal_shift(n, -exp);
+
+        // The exponent calculation can be off by 1; try the next exponent if so.
+        if mantissa as i32 == 0 {
+            exp -= 1;
+            mantissa = decimal_shift(n, -exp);
+        }
+        if mantissa as i32 >= 10 {
+            exp += 1;
+            mantissa = decimal_shift(n, -exp);
+        }
+
+        // Generates the next digit character.
+        let mut digit = || {
+            let digit: i32 = mantissa as i32;
+            debug_assert!(digit >= 0 && digit < 10);
+            mantissa -= f64::from(digit);
+            mantissa *= 10.0;
+            b'0' + digit as u8
+        };
+
+        const MAX_DECIMAL_PLACES: i32 = 15;
+        match exp {
+            15.. => {
+                // 1.2345e+15
+                // This case fails to push an extra 0 to handle the rounding 9.9999 -> 10, which
+                // causes the -9999999999999999.0 -> "-e+16" bug later.
+                buf.push(digit());
+                buf.push(b'.');
+                for _ in 0..MAX_DECIMAL_PLACES - 1 {
+                    buf.push(digit());
+                }
+            }
+            0..=14 => {
+                // 12345.678901234
+                buf.push(b'0');
+                for _ in 0..=exp {
+                    buf.push(digit());
+                }
+                buf.push(b'.');
+                for _ in 0..MAX_DECIMAL_PLACES - exp - 1 {
+                    buf.push(digit());
+                }
+                exp = 0;
+            }
+            -5..=-1 => {
+                // 0.0012345678901234
+                buf.extend_from_slice(b"00.");
+                buf.resize(buf.len() + (-exp) as usize - 1, b'0');
+                for _ in 0..MAX_DECIMAL_PLACES {
+                    buf.push(digit());
+                }
+                exp = 0;
+            }
+            _ => {
+                // 1.345e-15
+                buf.push(b'0');
+                let n = digit();
+                if n != 0 {
+                    buf.push(n);
+                }
+                buf.push(b'.');
+                for _ in 0..MAX_DECIMAL_PLACES - 1 {
+                    buf.push(digit());
+                }
+            }
+        };
+
+        // Rounding: Peek at the next generated digit and round accordingly.
+        // Ties round away from zero.
+        if digit() >= b'5' {
+            // Add 1 to the right-most digit, carrying if we hit a 9.
+            for c in buf.iter_mut().rev() {
+                if *c == b'9' {
+                    *c = b'0';
+                } else if *c >= b'0' {
+                    *c += 1;
+                    break;
+                }
+            }
+        }
+
+        // Trim any trailing zeros and decimal point.
+        while buf.last() == Some(&b'0') {
+            buf.pop();
+        }
+        if buf.last() == Some(&b'.') {
+            buf.pop();
+        }
+
+        let mut start = 0;
+        if exp != 0 {
+            // Write exponent (e+###).
+
+            // Lots of band-aids here to attempt to clean up the rounding above.
+            // Negative values are not correctly handled in the Flash Player, causing several bugs.
+            // PLAYER-SPECIFIC: I think these checks were added in Flash Player 6.
+            // Trim leading zeros.
+            let pos = buf.iter().position(|&c| c != b'0').unwrap_or(buf.len());
+            if pos != 0 {
+                buf.copy_within(pos.., 0);
+                buf.truncate(buf.len() - pos);
+            }
+            if buf.is_empty() {
+                // Fix up 9.99999 being rounded to 0.00000 when there is no space for the carried 1.
+                // If we have no digits, the value was all 0s that were trimmed, so round to 1.
+                buf.push(b'1');
+                exp += 1;
+            } else {
+                // Fix up 100e15 to 1e17.
+                let pos = buf.iter().rposition(|&c| c != b'0').unwrap_or_default();
+                if pos == 0 {
+                    exp += buf.len() as i32 - 1;
+                    buf.truncate(1);
+                }
+            }
+            let _ = write!(&mut buf, "e{:+}", exp);
+        }
+
+        // One final band-aid to eliminate any leading zeros.
+        let i = if is_negative { 1 } else { 0 };
+        if buf.get(i) == Some(&b'0') && buf.get(i + 1) != Some(&b'.') {
+            if i > 0 {
+                buf[i] = buf[i - 1];
+            }
+            start = 1;
+        }
+
+        // SAFETY: Buffer is guaranteed to only contain ASCII digits.
+        let s = unsafe { std::str::from_utf8_unchecked(&buf[start..]) };
+        s.to_string().into()
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
@@ -768,5 +979,25 @@ mod test {
         assert_eq!(f64_to_string(-1e-5), "-0.00001");
         assert_eq!(f64_to_string(0.999e-5), "9.99e-6");
         assert_eq!(f64_to_string(-0.999e-5), "-9.99e-6");
+        assert_eq!(f64_to_string(0.19999999999999996), "0.2");
+        assert_eq!(f64_to_string(-0.19999999999999996), "-0.2");
+        assert_eq!(f64_to_string(100000.12345678912), "100000.123456789");
+        assert_eq!(f64_to_string(-100000.12345678912), "-100000.123456789");
+        assert_eq!(f64_to_string(0.8000000000000005), "0.800000000000001");
+        assert_eq!(f64_to_string(-0.8000000000000005), "-0.800000000000001");
+        assert_eq!(f64_to_string(0.8300000000000005), "0.83");
+        assert_eq!(f64_to_string(1e-320), "9.99988867182684e-321");
+        assert_eq!(f64_to_string(f64::MIN), "-1.79769313486231e+308");
+        assert_eq!(f64_to_string(f64::MIN_POSITIVE), "2.2250738585072e-308");
+        assert_eq!(f64_to_string(f64::MAX), "1.79769313486231e+308");
+        assert_eq!(f64_to_string(5e-324), "4.94065645841247e-324");
+        assert_eq!(f64_to_string(9.999999999999999), "10");
+        assert_eq!(f64_to_string(-9.999999999999999), "-10");
+        assert_eq!(f64_to_string(9999999999999996.0), "1e+16");
+        assert_eq!(f64_to_string(-9999999999999996.0), "-e+16"); // wat
+        assert_eq!(f64_to_string(0.000009999999999999996), "1e-5");
+        assert_eq!(f64_to_string(-0.000009999999999999996), "-10e-6");
+        assert_eq!(f64_to_string(0.00009999999999999996), "0.0001");
+        assert_eq!(f64_to_string(-0.00009999999999999996), "-0.0001");
     }
 }
