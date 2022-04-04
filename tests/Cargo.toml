@@ -18,5 +18,5 @@ imgtests = []
 
 [dev-dependencies]
 approx = "0.5.0"
-pretty_assertions = "1.2.0"
+pretty_assertions = "1.2.1"
 env_logger = "0.9.0"
