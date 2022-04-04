@@ -1,36 +1,5 @@
 //! ECMA-262 compliant numerical conversions
 
-use std::borrow::Cow;
-
-/// Converts an `f64` to a String with (hopefully) the same output as Flash.
-/// For example, NAN returns `"NaN"`, and infinity returns `"Infinity"`.
-pub fn f64_to_string(n: f64) -> Cow<'static, str> {
-    if n.is_nan() {
-        Cow::Borrowed("NaN")
-    } else if n == f64::INFINITY {
-        Cow::Borrowed("Infinity")
-    } else if n == f64::NEG_INFINITY {
-        Cow::Borrowed("-Infinity")
-    } else if n != 0.0 && (n.abs() >= 1e15 || n.abs() < 1e-5) {
-        // Exponential notation.
-        // Cheating a bit here; Flash always put a sign in front of the exponent, e.g. 1e+15.
-        // Can't do this with rust format params, so shove it in there manually.
-        let mut s = format!("{:e}", n);
-        if let Some(i) = s.find('e') {
-            if s.as_bytes().get(i + 1) != Some(&b'-') {
-                s.insert(i + 1, '+');
-            }
-        }
-        Cow::Owned(s)
-    } else if n == 0.0 {
-        // As of Rust nightly 4/13, Rust can return "-0" for f64, which Flash doesn't want.
-        Cow::Borrowed("0")
-    } else {
-        // Normal number.
-        Cow::Owned(n.to_string())
-    }
-}
-
 /// Converts an `f64` to a `u8` with ECMAScript `ToUInt8` wrapping behavior.
 /// The value will be wrapped modulo 2^8.
 pub fn f64_to_wrapping_u8(n: f64) -> u8 {
