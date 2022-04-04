@@ -236,6 +236,26 @@ pub fn set_scale_x<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `filters`'s getter.
+pub fn filters<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObject.filters getter - not yet implemented");
+    Ok(Value::Undefined)
+}
+
+/// Implements `filters`'s setter.
+pub fn set_filters<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObject.filters setter - not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Implements `x`'s getter.
 pub fn x<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -618,6 +638,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("mouseX", Some(mouse_x), None),
         ("mouseY", Some(mouse_y), None),
         ("loaderInfo", Some(loader_info), None),
+        ("filters", Some(filters), Some(set_filters)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
