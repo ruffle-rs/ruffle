@@ -828,6 +828,18 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
+    // package `flash.filters`
+    class(
+        activation,
+        flash::filters::bitmapfilter::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
+        flash::filters::glowfilter::create_class(mc),
+        script,
+    )?;
+
     // package `flash.geom`
     class(activation, flash::geom::matrix::create_class(mc), script)?;
     avm2_system_class!(
