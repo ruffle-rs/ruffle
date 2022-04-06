@@ -1,0 +1,19 @@
+Event.OPEN with:  [object URLLoader]
+Got data: undefined
+Event.COMPLETE with: [object URLLoader]
+bytesTotal: 19
+Loaded text: Fetched from disk!
+
+Event.OPEN with:  [object URLLoader]
+Got data: Fetched from disk!
+
+Event.COMPLETE with: [object URLLoader]
+bytesTotal: 4
+Loaded binary with length: 4
+0
+1
+2
+3
+IOErrorEvent.IO_ERROR: [object URLLoader]
+IOErrorEvent text: Ruffle: Failed to fetch url '"missingFile.bin"' : FetchError("No such file or directory (os error 2)")
+Old data: 
