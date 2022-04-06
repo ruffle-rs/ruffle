@@ -101,6 +101,12 @@ pub enum EventData<'gc> {
         button_down: bool,
         delta: i32,
     },
+    // FIXME - define properties from 'ErrorEvent' and 'TextEvent'
+    IOError {
+        // FIXME - this should be inherited in some way from
+        // the (currently not declared) `TextEvent`
+        text: AvmString<'gc>,
+    },
 }
 
 impl<'gc> EventData<'gc> {

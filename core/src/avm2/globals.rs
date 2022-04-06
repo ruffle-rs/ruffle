@@ -88,6 +88,7 @@ pub struct SystemPrototypes<'gc> {
     pub nativemenu: Object<'gc>,
     pub contextmenu: Object<'gc>,
     pub mouseevent: Object<'gc>,
+    pub ioerrorevent: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -150,6 +151,7 @@ impl<'gc> SystemPrototypes<'gc> {
             nativemenu: empty,
             contextmenu: empty,
             mouseevent: empty,
+            ioerrorevent: empty,
         }
     }
 }
@@ -202,6 +204,7 @@ pub struct SystemClasses<'gc> {
     pub nativemenu: ClassObject<'gc>,
     pub contextmenu: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
+    pub ioerrorevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -264,6 +267,7 @@ impl<'gc> SystemClasses<'gc> {
             nativemenu: object,
             contextmenu: object,
             mouseevent: object,
+            ioerrorevent: object,
         }
     }
 }
@@ -576,11 +580,12 @@ pub fn load_player_globals<'gc>(
         flash::events::mouseevent::create_class(mc),
         script
     );
-    class(
+    avm2_system_class!(
+        ioerrorevent,
         activation,
         flash::events::ioerrorevent::create_class(mc),
-        script,
-    )?;
+        script
+    );
     class(
         activation,
         flash::events::contextmenuevent::create_class(mc),
@@ -925,6 +930,12 @@ pub fn load_player_globals<'gc>(
     class(
         activation,
         flash::net::object_encoding::create_class(mc),
+        script,
+    )?;
+    class(activation, flash::net::url_loader::create_class(mc), script)?;
+    class(
+        activation,
+        flash::net::url_loader_data_format::create_class(mc),
         script,
     )?;
     class(

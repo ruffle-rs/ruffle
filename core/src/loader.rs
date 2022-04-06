@@ -3,7 +3,14 @@
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Avm1, Object, TObject, Value};
-use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
+use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::names::Namespace;
+use crate::avm2::object::ByteArrayObject;
+use crate::avm2::object::TObject as _;
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Event as Avm2Event,
+    EventData as Avm2EventData, Object as Avm2Object, QName, Value as Avm2Value,
+};
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -77,6 +84,14 @@ impl ContentType {
     }
 }
 
+#[derive(Collect, Copy, Clone)]
+#[collect(no_drop)]
+pub enum DataFormat {
+    Binary,
+    Text,
+    Variables,
+}
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Load cancelled")]
@@ -93,6 +108,9 @@ pub enum Error {
 
     #[error("Non-load vars loader spawned as load vars loader")]
     NotLoadVarsLoader,
+
+    #[error("Non-data loader spawned as data loader")]
+    NotLoadDataLoader,
 
     #[error("Could not fetch: {0}")]
     FetchError(String),
@@ -143,7 +161,8 @@ impl<'gc> LoadManager<'gc> {
             Loader::RootMovie { self_handle, .. }
             | Loader::Movie { self_handle, .. }
             | Loader::Form { self_handle, .. }
-            | Loader::LoadVars { self_handle, .. } => *self_handle = Some(handle),
+            | Loader::LoadVars { self_handle, .. }
+            | Loader::LoadURLLoader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -255,6 +274,27 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.load_vars_loader(player, url.to_owned(), options)
     }
+
+    /// Kick off a data load into a `URLLoader`, updating
+    /// its `data` property when the load completes.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_data_into_url_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Avm2Object<'gc>,
+        url: &str,
+        options: RequestOptions,
+        data_format: DataFormat,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::LoadURLLoader {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.load_url_loader(player, url.to_owned(), options, data_format)
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -328,6 +368,17 @@ pub enum Loader<'gc> {
 
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
+    },
+
+    /// Loader that is loading data into a `URLLoader`'s `data` property
+    /// The `data` property is only updated after the data is loaded completely
+    LoadURLLoader {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target `URLLoader` to load data into.
+        target_object: Avm2Object<'gc>,
     },
 }
 
@@ -607,6 +658,144 @@ impl<'gc> Loader<'gc> {
                             &mut activation,
                             ExecutionReason::Special,
                         );
+                    }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Creates a future for a LoadURLLoader load call.
+    fn load_url_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        url: String,
+        options: RequestOptions,
+        data_format: DataFormat,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::LoadURLLoader { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotLoadDataLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(&url, options);
+            let response = fetch.await;
+
+            player.lock().unwrap().update(|uc| {
+                let loader = uc.load_manager.get_loader(handle);
+                let target = match loader {
+                    Some(&Loader::LoadURLLoader { target_object, .. }) => target_object,
+                    // We would have already returned after the previous 'update' call
+                    _ => unreachable!(),
+                };
+
+                let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+
+                fn set_data<'a, 'gc: 'a, 'gc_context: 'a>(
+                    body: Vec<u8>,
+                    activation: &mut Avm2Activation<'a, 'gc, 'gc_context>,
+                    mut target: Avm2Object<'gc>,
+                    data_format: DataFormat,
+                ) {
+                    let data_object = match data_format {
+                        DataFormat::Binary => {
+                            let storage = ByteArrayStorage::from_vec(body);
+                            let bytearray =
+                                ByteArrayObject::from_storage(activation, storage).unwrap();
+                            bytearray.into()
+                        }
+                        DataFormat::Text => {
+                            // FIXME - what do we do if the data is not UTF-8?
+                            Avm2Value::String(
+                                AvmString::new_utf8_bytes(activation.context.gc_context, body)
+                                    .unwrap(),
+                            )
+                        }
+                        DataFormat::Variables => {
+                            log::warn!(
+                                "Support for URLLoaderDataFormat.VARIABLES not yet implemented"
+                            );
+                            Avm2Value::Undefined
+                        }
+                    };
+
+                    target
+                        .set_property(
+                            &QName::new(Namespace::public(), "data").into(),
+                            data_object,
+                            activation,
+                        )
+                        .unwrap();
+                }
+
+                match response {
+                    Ok(response) => {
+                        // FIXME - the "open" event should be fired earlier, just before
+                        // we start to fetch the data.
+                        // However, the "open" event should not be fired if an IO error
+                        // occurs opening the connection (e.g. if a file does not exist on disk).
+                        // We currently have no way of detecting this, so we settle for firing
+                        // the event after the entire fetch is complete. This causes there
+                        // to a longer delay between the initial load triggered by the script
+                        // and the "load" event firing, but it ensures that we match
+                        // the Flash behavior w.r.t when an event is fired vs not fired.
+                        let mut open_evt = Avm2Event::new("open", Avm2EventData::Empty);
+                        open_evt.set_bubbles(false);
+                        open_evt.set_cancelable(false);
+
+                        if let Err(e) =
+                            Avm2::dispatch_event(&mut activation.context, open_evt, target)
+                        {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `open` event: {}",
+                                e
+                            );
+                        }
+
+                        set_data(response.body, &mut activation, target, data_format);
+
+                        let mut complete_evt = Avm2Event::new("complete", Avm2EventData::Empty);
+                        complete_evt.set_bubbles(false);
+                        complete_evt.set_cancelable(false);
+
+                        if let Err(e) = Avm2::dispatch_event(uc, complete_evt, target) {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `complete` event: {}",
+                                e
+                            );
+                        }
+                    }
+                    Err(err) => {
+                        // Testing with Flash shoes that the 'data' property is cleared
+                        // when an error occurs
+
+                        set_data(Vec::new(), &mut activation, target, data_format);
+                        let mut io_error_evt = Avm2Event::new(
+                            "ioError",
+                            Avm2EventData::IOError {
+                                text: AvmString::new_utf8(
+                                    activation.context.gc_context,
+                                    format!("Ruffle: Failed to fetch url '{:?}' : {:?}", url, err),
+                                ),
+                            },
+                        );
+                        io_error_evt.set_bubbles(false);
+                        io_error_evt.set_cancelable(false);
+
+                        if let Err(e) = Avm2::dispatch_event(uc, io_error_evt, target) {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `ioError` event: {}",
+                                e
+                            );
+                        }
                     }
                 }
 

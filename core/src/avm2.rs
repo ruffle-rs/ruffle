@@ -23,14 +23,14 @@ macro_rules! avm_debug {
 
 pub mod activation;
 mod array;
-mod bytearray;
+pub mod bytearray;
 mod class;
 mod domain;
 mod events;
 mod function;
 mod globals;
 mod method;
-mod names;
+pub mod names;
 pub mod object;
 mod property;
 mod property_map;

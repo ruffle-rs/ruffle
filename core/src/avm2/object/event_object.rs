@@ -54,6 +54,7 @@ impl<'gc> EventObject<'gc> {
             EventData::Empty => activation.avm2().classes().event,
             EventData::FullScreen { .. } => activation.avm2().classes().fullscreenevent,
             EventData::Mouse { .. } => activation.avm2().classes().mouseevent,
+            EventData::IOError { .. } => activation.avm2().classes().ioerrorevent,
         };
 
         let proto = class.prototype();
