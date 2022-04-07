@@ -150,14 +150,14 @@ impl WStr {
     #[inline]
     pub fn is_wide(&self) -> bool {
         // SAFETY: `self` is a valid `WStr`.
-        unsafe { ptr::is_wide(ptr::ptr_mut(self)) }
+        unsafe { ptr::metadata(ptr::ptr_mut(self)).is_wide() }
     }
 
     /// Returns the number of code units.
     #[inline]
     pub fn len(&self) -> usize {
         // SAFETY: `self` is a valid `WStr`.
-        unsafe { ptr::len(ptr::ptr_mut(self)) }
+        unsafe { ptr::metadata(ptr::ptr_mut(self)).len() }
     }
 
     /// Returns `true` if `self` contains no code units.
