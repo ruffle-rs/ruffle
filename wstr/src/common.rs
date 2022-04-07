@@ -18,16 +18,6 @@ pub enum Units<T, U> {
     Wide(U),
 }
 
-impl<T: AsRef<[u8]>, U: AsRef<[u16]>> Units<T, U> {
-    #[inline]
-    pub(super) fn len(&self) -> usize {
-        match self {
-            Units::Bytes(buf) => buf.as_ref().len(),
-            Units::Wide(buf) => buf.as_ref().len(),
-        }
-    }
-}
-
 /// Generate `From` implementations for `Units` type.
 macro_rules! units_from {
     (impl[$($generics:tt)*] Units<$ty_bytes:ty, $ty_wide:ty>; $($rest:tt)*) => {
