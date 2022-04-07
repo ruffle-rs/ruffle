@@ -966,16 +966,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_divide(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // AS1 divide
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
 
-        // TODO(Herschel): SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the in SWF 5 and later.
-        // In SWF 4, the result is the string #ERROR#.""
-        // Seems to be untrue for SWF v4, I get 1.#INF.
-        let result = b / a;
+        // SWF19: "If A is zero, the result NaN, Infinity, or -Infinity is pushed to the stack in SWF 5 and later.
+        // In SWF 4, the result is the string #ERROR#."
+        let result: Value<'gc> = if a == 0.0 && self.swf_version() < 5 {
+            "#ERROR#".into()
+        } else {
+            (b / a).into()
+        };
 
-        self.context.avm1.push(result.into());
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
