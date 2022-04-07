@@ -164,14 +164,14 @@ impl WString {
     unsafe fn steal_buf(&mut self) -> ManuallyDrop<Units<Vec<u8>, Vec<u16>>> {
         let ptr = self.ptr.as_ptr();
         let data = super::ptr::data(ptr);
-        let len = super::ptr::len(ptr);
+        let meta = super::ptr::metadata(ptr);
         let cap = self.capacity;
 
         // SAFETY: we reconstruct the Vec<T> deconstructed in `Self::from_buf`.
-        let buffer = if super::ptr::is_wide(ptr) {
-            Units::Wide(Vec::from_raw_parts(data as *mut u16, len, cap))
+        let buffer = if meta.is_wide() {
+            Units::Wide(Vec::from_raw_parts(data as *mut u16, meta.len(), cap))
         } else {
-            Units::Bytes(Vec::from_raw_parts(data as *mut u8, len, cap))
+            Units::Bytes(Vec::from_raw_parts(data as *mut u8, meta.len(), cap))
         };
         ManuallyDrop::new(buffer)
     }
@@ -364,6 +364,16 @@ impl Clone for WString {
             }
             _ => unreachable!(),
         })
+    }
+}
+
+impl ToOwned for WStr {
+    type Owned = WString;
+
+    fn to_owned(&self) -> Self::Owned {
+        let mut buf = WString::new();
+        buf.push_str(self);
+        buf
     }
 }
 
