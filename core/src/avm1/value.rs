@@ -149,6 +149,15 @@ impl<'gc> Value<'gc> {
         let v = match self {
             Value::Undefined if activation.swf_version() < 7 => return 0.0,
             Value::Null if activation.swf_version() < 7 => return 0.0,
+            Value::Object(_) if activation.swf_version() < 5 => return 0.0,
+            Value::String(v) if activation.swf_version() < 5 => {
+                use crate::avm1::globals::parse_float_impl;
+                let result = parse_float_impl(v.trim_start(), true);
+                if result.is_nan() {
+                    return 0.0;
+                }
+                return result;
+            }
             Value::Undefined => return f64::NAN,
             Value::Null => return f64::NAN,
             Value::Bool(false) => return 0.0,
