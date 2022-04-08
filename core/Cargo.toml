@@ -34,7 +34,7 @@ percent-encoding = "2.1.0"
 thiserror = "1.0"
 chrono = "0.4"
 instant = "0.1"
-encoding_rs = "0.8.30"
+encoding_rs = "0.8.31"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
