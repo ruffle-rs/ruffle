@@ -122,6 +122,8 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             "file" => Box::pin(async move {
                 let path = processed_url.to_file_path().unwrap_or_default();
 
+                let url = processed_url.into();
+
                 let body = std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
@@ -145,7 +147,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     Err(e)
                 }).map_err(|e| Error::FetchError(e.to_string()))?;
 
-                Ok(Response { body })
+                Ok(Response { url, body })
             }),
             _ => Box::pin(async move {
                 let client =
@@ -173,13 +175,19 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     )));
                 }
 
+                let url = if let Some(uri) = response.effective_uri() {
+                    uri.to_string()
+                } else {
+                    processed_url.into()
+                };
+
                 let mut body = vec![];
                 response
                     .copy_to(&mut body)
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
 
-                Ok(Response { body })
+                Ok(Response { url, body })
             }),
         }
     }

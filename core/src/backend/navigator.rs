@@ -136,6 +136,9 @@ impl RequestOptions {
 
 /// A response to a fetch request.
 pub struct Response {
+    /// The final URL obtained after any redirects.
+    pub url: String,
+
     /// The contents of the response body.
     pub body: Vec<u8>,
 }
@@ -297,8 +300,18 @@ impl NullNavigatorBackend {
     pub fn with_base_path(path: &Path, executor: &NullExecutor) -> Self {
         Self {
             spawner: executor.spawner(),
-            relative_base_path: path.to_path_buf(),
+            relative_base_path: path.canonicalize().unwrap(),
         }
+    }
+
+    #[cfg(any(unix, windows, target_os = "redox"))]
+    fn url_from_file_path(path: &Path) -> Result<Url, ()> {
+        Url::from_file_path(path)
+    }
+
+    #[cfg(not(any(unix, windows, target_os = "redox")))]
+    fn url_from_file_path(path: &Path) -> Result<Url, ()> {
+        Err(())
     }
 }
 
@@ -322,8 +335,13 @@ impl NavigatorBackend for NullNavigatorBackend {
         path.push(url);
 
         Box::pin(async move {
+            let url = Self::url_from_file_path(&path)
+                .map_err(|()| Error::FetchError("Invalid URL".to_string()))?
+                .into();
+
             let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
-            Ok(Response { body })
+
+            Ok(Response { url, body })
         })
     }
 
