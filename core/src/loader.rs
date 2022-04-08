@@ -375,7 +375,7 @@ impl<'gc> Loader<'gc> {
             let mut movie = SwfMovie::from_data(&data, Some(url.into_owned()), None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
-            player.lock().unwrap().set_root_movie(Arc::new(movie));
+            player.lock().unwrap().set_root_movie(movie);
             Ok(())
         })
     }
@@ -442,7 +442,6 @@ impl<'gc> Loader<'gc> {
 
                     let movie =
                         SwfMovie::from_data(&data, Some(url.into_owned()), loader_url.clone())?;
-                    let movie = Arc::new(movie);
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
                 }
