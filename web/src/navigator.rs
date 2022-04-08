@@ -214,6 +214,8 @@ impl NavigatorBackend for WebNavigatorBackend {
                 )));
             }
 
+            let url = response.url();
+
             let body: ArrayBuffer = JsFuture::from(response.array_buffer().unwrap())
                 .await
                 .map_err(|_| {
@@ -223,7 +225,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 .unwrap();
             let body = Uint8Array::new(&body).to_vec();
 
-            Ok(Response { body })
+            Ok(Response { url, body })
         })
     }
 

@@ -355,12 +355,10 @@ impl<'gc> Loader<'gc> {
             // clippy reports a false positive for explicitly dropped guards:
             // https://github.com/rust-lang/rust-clippy/issues/6446
             // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch;
-            let url = {
+            let fetch = {
                 let player_lock = player.lock().unwrap();
                 let url = player_lock.navigator().resolve_relative_url(&url);
-                fetch = player_lock.navigator().fetch(&url, options);
-                url
+                player_lock.navigator().fetch(&url, options)
             };
 
             let response = fetch.await.map_err(|error| {
@@ -372,7 +370,7 @@ impl<'gc> Loader<'gc> {
                 error
             })?;
 
-            let mut movie = SwfMovie::from_data(&response.body, Some(url.into_owned()), None)?;
+            let mut movie = SwfMovie::from_data(&response.body, Some(response.url), None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().set_root_movie(movie);
@@ -407,12 +405,10 @@ impl<'gc> Loader<'gc> {
             // clippy reports a false positive for explicitly dropped guards:
             // https://github.com/rust-lang/rust-clippy/issues/6446
             // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch;
-            let url = {
+            let fetch = {
                 let player_lock = player.lock().unwrap();
                 let url = player_lock.navigator().resolve_relative_url(&url);
-                fetch = player_lock.navigator().fetch(&url, options);
-                url
+                player_lock.navigator().fetch(&url, options)
             };
 
             let mut replacing_root_movie = false;
@@ -441,7 +437,7 @@ impl<'gc> Loader<'gc> {
                     sniffed_type.expect(ContentType::Swf)?;
 
                     let movie =
-                        SwfMovie::from_data(&response.body, Some(url.into_owned()), loader_url)?;
+                        SwfMovie::from_data(&response.body, Some(response.url), loader_url)?;
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
                 }
@@ -457,7 +453,7 @@ impl<'gc> Loader<'gc> {
                         ContentType::Swf => {
                             let movie = Arc::new(SwfMovie::from_data(
                                 &response.body,
-                                Some(url.into_owned()),
+                                Some(response.url),
                                 loader_url,
                             )?);
 
@@ -524,12 +520,11 @@ impl<'gc> Loader<'gc> {
             // clippy reports a false positive for explicitly dropped guards:
             // https://github.com/rust-lang/rust-clippy/issues/6446
             // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch;
-            {
+            let fetch = {
                 let player_lock = player.lock().unwrap();
                 let url = player_lock.navigator().resolve_relative_url(&url);
-                fetch = player_lock.navigator().fetch(&url, options);
-            }
+                player_lock.navigator().fetch(&url, options)
+            };
 
             let response = fetch.await?;
 
@@ -580,12 +575,11 @@ impl<'gc> Loader<'gc> {
             // clippy reports a false positive for explicitly dropped guards:
             // https://github.com/rust-lang/rust-clippy/issues/6446
             // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch;
-            {
+            let fetch = {
                 let player_lock = player.lock().unwrap();
                 let url = player_lock.navigator().resolve_relative_url(&url);
-                fetch = player_lock.navigator().fetch(&url, options);
-            }
+                player_lock.navigator().fetch(&url, options)
+            };
 
             let data = fetch.await;
 
