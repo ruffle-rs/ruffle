@@ -1173,7 +1173,7 @@ fn run_swf(
         Box::new(TestLogBackend::new(trace_output.clone())),
         Box::new(NullUiBackend::new()),
     )?;
-    player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player.lock().unwrap().set_root_movie(movie);
     player
         .lock()
         .unwrap()

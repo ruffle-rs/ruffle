@@ -16,7 +16,6 @@ use sha2::{Digest, Sha256};
 use std::io::{stdout, Write};
 use std::panic::catch_unwind;
 use std::path::Path;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 fn execute_swf(file: &Path) {
@@ -35,7 +34,7 @@ fn execute_swf(file: &Path) {
     )
     .unwrap();
 
-    player.lock().unwrap().set_root_movie(Arc::new(movie));
+    player.lock().unwrap().set_root_movie(movie);
     player
         .lock()
         .unwrap()

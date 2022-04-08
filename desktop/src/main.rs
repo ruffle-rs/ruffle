@@ -276,9 +276,9 @@ impl App {
             let mut player_lock = player.lock().unwrap();
             player_lock.set_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content);
             if let Some(movie) = movie {
-                player_lock.set_root_movie(Arc::new(movie));
-                player_lock.set_is_playing(true); // Desktop player will auto-play.
+                player_lock.set_root_movie(movie);
             }
+            player_lock.set_is_playing(true); // Desktop player will auto-play.
             player_lock.set_letterbox(Letterbox::On);
             player_lock.set_viewport_dimensions(
                 viewport_size.width,
@@ -761,7 +761,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let player = Player::new(renderer, audio, navigator, storage, video, log, ui)?;
 
     let mut player_lock = player.lock().unwrap();
-    player_lock.set_root_movie(Arc::new(movie));
+    player_lock.set_root_movie(movie);
     player_lock.set_is_playing(true);
     player_lock.set_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor);
 

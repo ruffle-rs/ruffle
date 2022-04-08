@@ -369,7 +369,7 @@ impl Player {
     /// This should only be called once, as it makes no attempt at removing
     /// previous stage contents. If you need to load a new root movie, you
     /// should destroy and recreate the player instance.
-    pub fn set_root_movie(&mut self, movie: Arc<SwfMovie>) {
+    pub fn set_root_movie(&mut self, movie: SwfMovie) {
         info!(
             "Loaded SWF version {}, with a resolution of {}x{}",
             movie.version(),
@@ -378,7 +378,7 @@ impl Player {
         );
 
         self.frame_rate = movie.frame_rate().into();
-        self.swf = movie;
+        self.swf = Arc::new(movie);
         self.instance_counter = 0;
 
         self.mutate_with_update_context(|context| {
