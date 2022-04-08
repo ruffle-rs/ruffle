@@ -8,7 +8,7 @@ use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
 use crate::string::{AvmString, WStr};
-use crate::xml::XmlNode;
+use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -58,12 +58,11 @@ fn create_element<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(_document) = this.as_xml() {
-        let nodename = args
-            .get(0)
-            .map(|v| v.coerce_to_string(activation).unwrap_or_default())
-            .unwrap_or_default();
-        let mut xml_node = XmlNode::new_element(activation.context.gc_context, nodename);
-        return Ok(xml_node.script_object(activation).into());
+        if let Some(name) = args.get(0) {
+            let name = name.coerce_to_string(activation)?;
+            let mut node = XmlNode::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
+            return Ok(node.script_object(activation).into());
+        }
     }
 
     Ok(Value::Undefined)
@@ -75,12 +74,11 @@ fn create_text_node<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(_document) = this.as_xml() {
-        let text_node = args
-            .get(0)
-            .map(|v| v.coerce_to_string(activation).unwrap_or_default())
-            .unwrap_or_default();
-        let mut xml_node = XmlNode::new_text(activation.context.gc_context, text_node);
-        return Ok(xml_node.script_object(activation).into());
+        if let Some(text) = args.get(0) {
+            let text = text.coerce_to_string(activation)?;
+            let mut node = XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
+            return Ok(node.script_object(activation).into());
+        }
     }
 
     Ok(Value::Undefined)
