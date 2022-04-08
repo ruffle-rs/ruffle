@@ -120,41 +120,31 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         let client = self.client.clone();
 
         match processed_url.scheme() {
-            #[cfg(not(feature = "sandbox"))]
             "file" => Box::pin(async move {
                 let path = processed_url.to_file_path().unwrap_or_default();
 
-                fs::read(path).map_err(|e| Error::FetchError(e.to_string()))
-            }),
+                fs::read(&path).or_else(|e| {
+                    if cfg!(feature = "sandbox") {
+                        use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
+                        use std::io::ErrorKind;
 
-            #[cfg(feature = "sandbox")]
-            "file" => Box::pin(async move {
-                use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
-                use std::io::ErrorKind;
+                        if e.kind() == ErrorKind::PermissionDenied {
+                            let attempt_sandbox_open = MessageDialog::new()
+                                .set_level(MessageLevel::Warning)
+                                .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap().to_string_lossy()))
+                                .set_buttons(MessageButtons::YesNo)
+                                .show();
 
-                let path = processed_url.to_file_path().unwrap_or_default();
+                            if attempt_sandbox_open {
+                                FileDialog::new().set_directory(&path).pick_folder();
 
-                fs::read(path.clone()).or_else(|e| {
-                    if matches!(e.kind(), ErrorKind::PermissionDenied) {
-                        let mut display_dir = path.clone();
-
-                        display_dir.pop();
-
-                        let attempt_sandbox_open = MessageDialog::new()
-                            .set_level(MessageLevel::Warning)
-                            .set_description(&format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", display_dir.into_os_string().to_string_lossy()))
-                            .set_buttons(MessageButtons::YesNo)
-                            .show();
-
-                        if attempt_sandbox_open {
-                            FileDialog::new().set_directory(path.clone()).pick_folder();
-
-                            return fs::read(path).map_err(|e| Error::FetchError(e.to_string()));
+                                return fs::read(&path);
+                            }
                         }
                     }
 
-                    Err(Error::FetchError(e.to_string()))
-                })
+                    Err(e)
+                }).map_err(|e| Error::FetchError(e.to_string()))
             }),
             _ => Box::pin(async move {
                 let client =
