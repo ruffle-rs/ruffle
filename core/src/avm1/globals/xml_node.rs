@@ -2,9 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::avm1::{ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::string::AvmString;
 use crate::xml::XmlNode;
 use gc_arena::MutationContext;
@@ -39,25 +38,12 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    match (
-        args.get(0)
-            .map(|v| v.coerce_to_f64(activation).map(|v| v as u32)),
-        args.get(1).map(|v| v.coerce_to_string(activation)),
-        this.as_xml_node(),
-    ) {
-        (Some(Ok(1)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XmlNode::new_element(activation.context.gc_context, *strval);
-            xmlelement.introduce_script_object(activation.context.gc_context, this);
-            this_node.swap(activation.context.gc_context, xmlelement);
-        }
-        (Some(Ok(3)), Some(Ok(ref strval)), Some(ref mut this_node)) => {
-            let mut xmlelement = XmlNode::new_text(activation.context.gc_context, *strval);
-            xmlelement.introduce_script_object(activation.context.gc_context, this);
-            this_node.swap(activation.context.gc_context, xmlelement);
-        }
-        //Invalid nodetype ID, string value missing, or not an XMLElement
-        _ => {}
-    };
+    if let [node_type, value, ..] = args {
+        let node_type = node_type.coerce_to_u8(activation)?;
+        let node_value = value.coerce_to_string(activation)?;
+        let mut node = XmlNode::new(activation.context.gc_context, node_type, Some(node_value));
+        return Ok(node.script_object(activation).into());
+    }
 
     Ok(this.into())
 }
@@ -406,9 +392,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let node = XmlNode::new_text(gc_context, AvmString::default());
-    let xml_node_proto = XmlNodeObject::from_xml_node(gc_context, node, Some(proto));
-    let object = xml_node_proto.as_script_object().unwrap();
-    define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
+    let xml_node_proto = ScriptObject::object(gc_context, Some(proto));
+    define_properties_on(PROTO_DECLS, gc_context, xml_node_proto, fn_proto);
     xml_node_proto.into()
 }

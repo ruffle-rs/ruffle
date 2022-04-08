@@ -12,10 +12,9 @@ use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
 use std::collections::BTreeMap;
 use std::fmt;
-use std::mem::swap;
 
-const ELEMENT_NODE: u8 = 1;
-const TEXT_NODE: u8 = 3;
+pub const ELEMENT_NODE: u8 = 1;
+pub const TEXT_NODE: u8 = 3;
 
 /// Represents a node in the XML tree.
 #[derive(Copy, Clone, Collect)]
@@ -56,8 +55,12 @@ pub struct XmlNodeData<'gc> {
 }
 
 impl<'gc> XmlNode<'gc> {
-    /// Construct a new XML text node.
-    pub fn new_text(mc: MutationContext<'gc, '_>, contents: AvmString<'gc>) -> Self {
+    /// Construct a new XML node.
+    pub fn new(
+        mc: MutationContext<'gc, '_>,
+        node_type: u8,
+        node_value: Option<AvmString<'gc>>,
+    ) -> Self {
         Self(GcCell::allocate(
             mc,
             XmlNodeData {
@@ -66,45 +69,9 @@ impl<'gc> XmlNode<'gc> {
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
-                node_type: TEXT_NODE,
-                node_value: Some(contents),
+                node_type,
+                node_value,
                 attributes: BTreeMap::new(),
-                children: Vec::new(),
-            },
-        ))
-    }
-
-    /// Construct a new XML element node.
-    pub fn new_element(mc: MutationContext<'gc, '_>, element_name: AvmString<'gc>) -> Self {
-        Self(GcCell::allocate(
-            mc,
-            XmlNodeData {
-                script_object: None,
-                attributes_script_object: None,
-                parent: None,
-                prev_sibling: None,
-                next_sibling: None,
-                node_type: ELEMENT_NODE,
-                node_value: Some(element_name),
-                attributes: BTreeMap::new(),
-                children: Vec::new(),
-            },
-        ))
-    }
-
-    /// Construct a new XML root node.
-    pub fn new_document_root(mc: MutationContext<'gc, '_>) -> Self {
-        Self(GcCell::allocate(
-            mc,
-            XmlNodeData {
-                script_object: None,
-                parent: None,
-                prev_sibling: None,
-                next_sibling: None,
-                node_type: ELEMENT_NODE,
-                node_value: None,
-                attributes: BTreeMap::new(),
-                attributes_script_object: None,
                 children: Vec::new(),
             },
         ))
@@ -119,8 +86,8 @@ impl<'gc> XmlNode<'gc> {
         bs: BytesStart<'_>,
         id_map: ScriptObject<'gc>,
     ) -> Result<Self, quick_xml::Error> {
-        let tag_name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name())?;
-        let mut node = Self::new_element(activation.context.gc_context, tag_name);
+        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name())?;
+        let mut node = Self::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
         for attribute in bs.attributes() {
             let attribute = attribute?;
             let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key)?;
@@ -406,21 +373,6 @@ impl<'gc> XmlNode<'gc> {
             .write(gc_context)
             .attributes_script_object
             .get_or_insert_with(|| XmlAttributesObject::from_xml_node(gc_context, *self))
-    }
-
-    /// Swap the contents of this node with another one.
-    ///
-    /// After this function completes, the current `XMLNode` will contain all
-    /// data present in the `other` node, and vice versa. References to the node
-    /// will *not* be updated: it is a logic error to swap nodes that have
-    /// existing referents.
-    pub fn swap(&mut self, gc_context: MutationContext<'gc, '_>, other: Self) {
-        if !GcCell::ptr_eq(self.0, other.0) {
-            swap(
-                &mut *self.0.write(gc_context),
-                &mut *other.0.write(gc_context),
-            );
-        }
     }
 
     /// Create a duplicate copy of this node.

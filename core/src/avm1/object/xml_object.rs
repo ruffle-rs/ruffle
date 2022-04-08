@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
 use crate::string::{AvmString, WStr, WString};
-use crate::xml::XmlNode;
+use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::events::{BytesDecl, Event};
 use quick_xml::{Reader, Writer};
@@ -92,7 +92,7 @@ pub struct XmlObjectData<'gc> {
 impl<'gc> XmlObject<'gc> {
     /// Construct a new XML document and object pair.
     pub fn empty(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
-        let mut root = XmlNode::new_document_root(gc_context);
+        let mut root = XmlNode::new(gc_context, ELEMENT_NODE, None);
         let object = Self(GcCell::allocate(
             gc_context,
             XmlObjectData {
@@ -181,10 +181,9 @@ impl<'gc> XmlObject<'gc> {
                     let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
                     let is_whitespace_text = text.iter().all(is_whitespace_char);
                     if !(text.is_empty() || ignore_white && is_whitespace_text) {
-                        let child = XmlNode::new_text(
-                            activation.context.gc_context,
-                            AvmString::new_utf8_bytes(activation.context.gc_context, text)?,
-                        );
+                        let text = AvmString::new_utf8_bytes(activation.context.gc_context, text)?;
+                        let child =
+                            XmlNode::new(activation.context.gc_context, TEXT_NODE, Some(text));
                         open_tags
                             .last_mut()
                             .unwrap()

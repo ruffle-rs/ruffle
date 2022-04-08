@@ -5,8 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::TObject;
 use crate::avm1::{Object, ScriptObject};
 use crate::impl_custom_object;
-use crate::string::AvmString;
-use crate::xml::XmlNode;
+use crate::xml::{XmlNode, TEXT_NODE};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
@@ -61,7 +60,7 @@ impl<'gc> TObject<'gc> for XmlNodeObject<'gc> {
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(Self::from_xml_node(
             activation.context.gc_context,
-            XmlNode::new_text(activation.context.gc_context, AvmString::default()),
+            XmlNode::new(activation.context.gc_context, TEXT_NODE, Some("".into())),
             Some(this),
         )
         .into())

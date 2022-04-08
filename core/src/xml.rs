@@ -3,4 +3,4 @@
 mod iterators;
 mod tree;
 
-pub use tree::XmlNode;
+pub use tree::{XmlNode, ELEMENT_NODE, TEXT_NODE};

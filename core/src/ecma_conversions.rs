@@ -31,6 +31,16 @@ pub fn f64_to_string(n: f64) -> Cow<'static, str> {
     }
 }
 
+/// Converts an `f64` to a `u8` with ECMAScript `ToUInt8` wrapping behavior.
+/// The value will be wrapped modulo 2^8.
+pub fn f64_to_wrapping_u8(n: f64) -> u8 {
+    if !n.is_finite() {
+        0
+    } else {
+        n.trunc().rem_euclid(256.0) as u8
+    }
+}
+
 /// Converts an `f64` to a `u16` with ECMAScript `ToUInt16` wrapping behavior.
 /// The value will be wrapped modulo 2^16.
 pub fn f64_to_wrapping_u16(n: f64) -> u16 {
