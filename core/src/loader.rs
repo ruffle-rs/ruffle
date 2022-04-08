@@ -363,7 +363,7 @@ impl<'gc> Loader<'gc> {
                 url
             };
 
-            let data = fetch.await.map_err(|error| {
+            let response = fetch.await.map_err(|error| {
                 player
                     .lock()
                     .unwrap()
@@ -372,7 +372,7 @@ impl<'gc> Loader<'gc> {
                 error
             })?;
 
-            let mut movie = SwfMovie::from_data(&data, Some(url.into_owned()), None)?;
+            let mut movie = SwfMovie::from_data(&response.body, Some(url.into_owned()), None)?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
             player.lock().unwrap().set_root_movie(movie);
@@ -433,15 +433,15 @@ impl<'gc> Loader<'gc> {
                 Loader::movie_loader_start(handle, uc)
             })?;
 
-            if let Ok(data) = fetch.await {
-                let sniffed_type = ContentType::sniff(&data);
-                let mut length = data.len();
+            if let Ok(response) = fetch.await {
+                let sniffed_type = ContentType::sniff(&response.body);
+                let mut length = response.body.len();
 
                 if replacing_root_movie {
                     sniffed_type.expect(ContentType::Swf)?;
 
                     let movie =
-                        SwfMovie::from_data(&data, Some(url.into_owned()), loader_url.clone())?;
+                        SwfMovie::from_data(&response.body, Some(url.into_owned()), loader_url)?;
                     player.lock().unwrap().set_root_movie(movie);
                     return Ok(());
                 }
@@ -456,7 +456,7 @@ impl<'gc> Loader<'gc> {
                     match sniffed_type {
                         ContentType::Swf => {
                             let movie = Arc::new(SwfMovie::from_data(
-                                &data,
+                                &response.body,
                                 Some(url.into_owned()),
                                 loader_url,
                             )?);
@@ -475,7 +475,7 @@ impl<'gc> Loader<'gc> {
                             }
                         }
                         ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                            let bitmap = uc.renderer.register_bitmap_jpeg_2(&data)?;
+                            let bitmap = uc.renderer.register_bitmap_jpeg_2(&response.body)?;
                             let bitmap_obj =
                                 Bitmap::new(uc, 0, bitmap.handle, bitmap.width, bitmap.height);
 
@@ -531,7 +531,7 @@ impl<'gc> Loader<'gc> {
                 fetch = player_lock.navigator().fetch(&url, options);
             }
 
-            let data = fetch.await?;
+            let response = fetch.await?;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -547,7 +547,7 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                for (k, v) in form_urlencoded::parse(&data) {
+                for (k, v) in form_urlencoded::parse(&response.body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
@@ -602,14 +602,14 @@ impl<'gc> Loader<'gc> {
                     Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
 
                 match data {
-                    Ok(data) => {
+                    Ok(response) => {
                         let _ =
                             that.call_method("onHTTPStatus".into(), &[200.into()], &mut activation);
 
                         // Fire the onData method with the loaded string.
                         let string_data = AvmString::new_utf8(
                             activation.context.gc_context,
-                            UTF_8.decode(&data).0,
+                            UTF_8.decode(&response.body).0,
                         );
                         let _ = that.call_method(
                             "onData".into(),

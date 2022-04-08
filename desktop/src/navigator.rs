@@ -3,12 +3,11 @@
 use crate::custom_event::RuffleEvent;
 use isahc::{config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request};
 use ruffle_core::backend::navigator::{
-    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions, Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use std::borrow::Cow;
-use std::fs;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use url::Url;
@@ -105,7 +104,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
         };
     }
 
-    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Response, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
         let full_url = match self.movie_url.clone().join(url) {
             Ok(url) => url,
@@ -123,7 +122,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             "file" => Box::pin(async move {
                 let path = processed_url.to_file_path().unwrap_or_default();
 
-                fs::read(&path).or_else(|e| {
+                let body = std::fs::read(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
                         use std::io::ErrorKind;
@@ -138,13 +137,15 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             if attempt_sandbox_open {
                                 FileDialog::new().set_directory(&path).pick_folder();
 
-                                return fs::read(&path);
+                                return std::fs::read(&path);
                             }
                         }
                     }
 
                     Err(e)
-                }).map_err(|e| Error::FetchError(e.to_string()))
+                }).map_err(|e| Error::FetchError(e.to_string()))?;
+
+                Ok(Response { body })
             }),
             _ => Box::pin(async move {
                 let client =
@@ -172,12 +173,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                     )));
                 }
 
-                let mut buffer = vec![];
+                let mut body = vec![];
                 response
-                    .copy_to(&mut buffer)
+                    .copy_to(&mut body)
                     .await
                     .map_err(|e| Error::FetchError(e.to_string()))?;
-                Ok(buffer)
+
+                Ok(Response { body })
             }),
         }
     }

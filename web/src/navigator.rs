@@ -2,6 +2,7 @@
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
+    Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -9,7 +10,9 @@ use std::borrow::Cow;
 use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
-use web_sys::{window, Blob, BlobPropertyBag, Document, Request, RequestInit, Response};
+use web_sys::{
+    window, Blob, BlobPropertyBag, Document, Request, RequestInit, Response as WebResponse,
+};
 
 pub struct WebNavigatorBackend {
     allow_script_access: bool,
@@ -157,7 +160,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Response, Error> {
         let url = if let Ok(parsed_url) = Url::parse(url) {
             self.pre_process_url(parsed_url).to_string()
         } else {
@@ -203,23 +206,24 @@ impl NavigatorBackend for WebNavigatorBackend {
                 .await
                 .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
 
-            let resp: Response = fetchval.dyn_into().unwrap();
-            if !resp.ok() {
+            let response: WebResponse = fetchval.dyn_into().unwrap();
+            if !response.ok() {
                 return Err(Error::FetchError(format!(
                     "HTTP status is not ok, got {}",
-                    resp.status_text()
+                    response.status_text()
                 )));
             }
 
-            let data: ArrayBuffer = JsFuture::from(resp.array_buffer().unwrap())
+            let body: ArrayBuffer = JsFuture::from(response.array_buffer().unwrap())
                 .await
                 .map_err(|_| {
                     Error::FetchError("Could not allocate array buffer for response".to_string())
                 })?
                 .dyn_into()
                 .unwrap();
+            let body = Uint8Array::new(&body).to_vec();
 
-            Ok(Uint8Array::new(&data).to_vec())
+            Ok(Response { body })
         })
     }
 

@@ -4,7 +4,6 @@ use crate::loader::Error;
 use crate::string::WStr;
 use indexmap::IndexMap;
 use std::borrow::Cow;
-use std::fs;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -135,6 +134,12 @@ impl RequestOptions {
     }
 }
 
+/// A response to a fetch request.
+pub struct Response {
+    /// The contents of the response body.
+    pub body: Vec<u8>,
+}
+
 /// Type alias for pinned, boxed, and owned futures that output a falliable
 /// result of type `Result<T, E>`.
 pub type OwnedFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + 'static>>;
@@ -171,7 +176,7 @@ pub trait NavigatorBackend {
     );
 
     /// Fetch data at a given URL and return it some time in the future.
-    fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Vec<u8>, Error>;
+    fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Response, Error>;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -312,11 +317,14 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Vec<u8>, Error> {
+    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Response, Error> {
         let mut path = self.relative_base_path.clone();
         path.push(url);
 
-        Box::pin(async move { fs::read(path).map_err(|e| Error::FetchError(e.to_string())) })
+        Box::pin(async move {
+            let body = std::fs::read(path).map_err(|e| Error::FetchError(e.to_string()))?;
+            Ok(Response { body })
+        })
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
