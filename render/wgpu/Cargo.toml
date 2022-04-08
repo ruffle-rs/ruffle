@@ -27,10 +27,10 @@ version = "0.12"
 
 # wasm
 [target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen-futures]
-version = "0.4"
+version = "0.4.30"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
-version = "0.3"
+version = "0.3.57"
 features = ["HtmlCanvasElement"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
