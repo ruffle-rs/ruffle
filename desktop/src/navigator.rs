@@ -7,7 +7,6 @@ use ruffle_core::backend::navigator::{
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
-use std::borrow::Cow;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use url::Url;
@@ -106,7 +105,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
     fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Response, Error> {
         // TODO: honor sandbox type (local-with-filesystem, local-with-network, remote, ...)
-        let full_url = match self.movie_url.clone().join(url) {
+        let full_url = match self.movie_url.join(url) {
             Ok(url) => url,
             Err(e) => {
                 let msg = format!("Invalid URL {}: {}", url, e);
@@ -199,15 +198,6 @@ impl NavigatorBackend for ExternalNavigatorBackend {
             log::warn!(
                 "A task was queued on an event loop that has already ended. It will not be polled."
             );
-        }
-    }
-
-    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
-        let relative = self.movie_url.join(url);
-        if let Ok(relative) = relative {
-            String::from(relative).into()
-        } else {
-            url.into()
         }
     }
 

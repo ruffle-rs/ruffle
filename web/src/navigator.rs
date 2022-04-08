@@ -73,6 +73,19 @@ impl WebNavigatorBackend {
             None
         }
     }
+
+    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
+        let window = web_sys::window().expect("window()");
+        let document = window.document().expect("document()");
+
+        if let Some(base_uri) = self.base_uri(&document) {
+            if let Ok(new_url) = url_from_relative_url(&base_uri, url) {
+                return String::from(new_url).into();
+            }
+        }
+
+        url.into()
+    }
 }
 
 impl NavigatorBackend for WebNavigatorBackend {
@@ -235,19 +248,6 @@ impl NavigatorBackend for WebNavigatorBackend {
                 log::error!("Asynchronous error occurred: {}", e);
             }
         })
-    }
-
-    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
-        let window = web_sys::window().expect("window()");
-        let document = window.document().expect("document()");
-
-        if let Some(base_uri) = self.base_uri(&document) {
-            if let Ok(new_url) = url_from_relative_url(&base_uri, url) {
-                return String::from(new_url).into();
-            }
-        }
-
-        url.into()
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {

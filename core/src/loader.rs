@@ -352,14 +352,7 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            // clippy reports a false positive for explicitly dropped guards:
-            // https://github.com/rust-lang/rust-clippy/issues/6446
-            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch = {
-                let player_lock = player.lock().unwrap();
-                let url = player_lock.navigator().resolve_relative_url(&url);
-                player_lock.navigator().fetch(&url, options)
-            };
+            let fetch = player.lock().unwrap().navigator().fetch(&url, options);
 
             let response = fetch.await.map_err(|error| {
                 player
@@ -402,14 +395,7 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            // clippy reports a false positive for explicitly dropped guards:
-            // https://github.com/rust-lang/rust-clippy/issues/6446
-            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch = {
-                let player_lock = player.lock().unwrap();
-                let url = player_lock.navigator().resolve_relative_url(&url);
-                player_lock.navigator().fetch(&url, options)
-            };
+            let fetch = player.lock().unwrap().navigator().fetch(&url, options);
 
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -517,14 +503,7 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            // clippy reports a false positive for explicitly dropped guards:
-            // https://github.com/rust-lang/rust-clippy/issues/6446
-            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch = {
-                let player_lock = player.lock().unwrap();
-                let url = player_lock.navigator().resolve_relative_url(&url);
-                player_lock.navigator().fetch(&url, options)
-            };
+            let fetch = player.lock().unwrap().navigator().fetch(&url, options);
 
             let response = fetch.await?;
 
@@ -572,14 +551,7 @@ impl<'gc> Loader<'gc> {
             .expect("Could not upgrade weak reference to player");
 
         Box::pin(async move {
-            // clippy reports a false positive for explicitly dropped guards:
-            // https://github.com/rust-lang/rust-clippy/issues/6446
-            // A workaround for this is to wrap the `.lock()` call in a block instead of explicitly dropping the guard.
-            let fetch = {
-                let player_lock = player.lock().unwrap();
-                let url = player_lock.navigator().resolve_relative_url(&url);
-                player_lock.navigator().fetch(&url, options)
-            };
+            let fetch = player.lock().unwrap().navigator().fetch(&url, options);
 
             let data = fetch.await;
 

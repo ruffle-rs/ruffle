@@ -3,7 +3,6 @@
 use crate::loader::Error;
 use crate::string::WStr;
 use indexmap::IndexMap;
-use std::borrow::Cow;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -191,16 +190,6 @@ pub trait NavigatorBackend {
     /// This seems highly limiting.
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>);
 
-    /// Resolve a relative URL.
-    ///
-    /// This function must not change URLs which are already protocol, domain,
-    /// and path absolute. For URLs that are relative, the implementer of
-    /// this function may opt to convert them to absolute using an implementor
-    /// defined base. For a web browser, the most obvious base would be the
-    /// current document's base URL, while the most obvious base for a desktop
-    /// client would be the file-URL form of the current path.
-    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str>;
-
     /// Handle any context specific pre-processing
     ///
     /// Changing http -> https for example. This function may alter any part of the
@@ -347,15 +336,6 @@ impl NavigatorBackend for NullNavigatorBackend {
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         self.spawner.spawn_local(future);
-    }
-
-    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
-        let relative = url_from_relative_path(&self.relative_base_path, url);
-        if let Ok(relative) = relative {
-            String::from(relative).into()
-        } else {
-            url.into()
-        }
     }
 
     fn pre_process_url(&self, url: Url) -> Url {
