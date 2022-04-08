@@ -240,19 +240,14 @@ impl Ruffle {
     ///
     /// This method should only be called once per player.
     pub fn load_data(&mut self, swf_data: Uint8Array, parameters: &JsValue) -> Result<(), JsValue> {
-        let movie = Arc::new({
-            let mut data = vec![0; swf_data.length() as usize];
-            swf_data.copy_to(&mut data[..]);
-            let mut movie = SwfMovie::from_data(&data, None, None)
-                .map_err(|e| format!("Error loading movie: {}", e))?;
-            movie.append_parameters(parse_movie_parameters(parameters));
-            movie
-        });
+        let mut movie = SwfMovie::from_data(&swf_data.to_vec(), None, None)
+            .map_err(|e| format!("Error loading movie: {}", e))?;
+        movie.append_parameters(parse_movie_parameters(parameters));
 
         self.on_metadata(movie.header());
 
         let _ = self.with_core_mut(move |core| {
-            core.set_root_movie(movie);
+            core.set_root_movie(Arc::new(movie));
         });
 
         Ok(())

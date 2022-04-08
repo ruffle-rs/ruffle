@@ -219,11 +219,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 .dyn_into()
                 .unwrap();
 
-            let jsarray = Uint8Array::new(&data);
-            let mut rust_array = vec![0; jsarray.length() as usize];
-            jsarray.copy_to(&mut rust_array);
-
-            Ok(rust_array)
+            Ok(Uint8Array::new(&data).to_vec())
         })
     }
 
