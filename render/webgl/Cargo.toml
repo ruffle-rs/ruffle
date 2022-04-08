@@ -6,11 +6,11 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-js-sys = "0.3.55"
+js-sys = "0.3.57"
 log = "0.4"
 ruffle_render_common_tess = { path = "../common_tess" }
 ruffle_web_common = { path = "../../web/common" }
-wasm-bindgen = "=0.2.78"
+wasm-bindgen = "=0.2.80"
 bytemuck = { version = "1.9.1", features = ["derive"] }
 
 [dependencies.ruffle_core]
@@ -18,7 +18,7 @@ path = "../../core"
 default-features = false
 
 [dependencies.web-sys]
-version = "0.3.50"
+version = "0.3.57"
 features = [
     "HtmlCanvasElement", "OesVertexArrayObject", "WebGl2RenderingContext", "WebGlBuffer", "WebglDebugRendererInfo",
     "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGlShader", "WebGlTexture",
