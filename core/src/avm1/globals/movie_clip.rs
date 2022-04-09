@@ -291,21 +291,20 @@ fn line_style<'gc>(
             Some(v) if v == b"bevel" => LineJoinStyle::Bevel,
             _ => LineJoinStyle::Round,
         };
+        let line_style = LineStyle::new()
+            .with_width(width)
+            .with_color(color)
+            .with_start_cap(cap_style)
+            .with_end_cap(cap_style)
+            .with_join_style(join_style)
+            .with_allow_scale_x(allow_scale_x)
+            .with_allow_scale_y(allow_scale_y)
+            .with_is_pixel_hinted(is_pixel_hinted)
+            .with_allow_close(false);
         movie_clip
             .as_drawing(activation.context.gc_context)
             .unwrap()
-            .set_line_style(Some(LineStyle {
-                width,
-                color,
-                start_cap: cap_style,
-                end_cap: cap_style,
-                join_style,
-                fill_style: None,
-                allow_scale_x,
-                allow_scale_y,
-                is_pixel_hinted,
-                allow_close: false,
-            }));
+            .set_line_style(Some(line_style));
     } else {
         movie_clip
             .as_drawing(activation.context.gc_context)

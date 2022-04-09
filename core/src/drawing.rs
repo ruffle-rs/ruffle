@@ -177,7 +177,7 @@ impl Drawing {
         // Add command to current line.
         let stroke_width = if let Some(line) = &mut self.current_line {
             line.commands.push(command.clone());
-            line.style.width
+            line.style.width()
         } else {
             Twips::ZERO
         };
@@ -310,7 +310,7 @@ impl Drawing {
                 DrawingPath::Line(line) => {
                     if shape_utils::draw_command_stroke_hit_test(
                         &line.commands,
-                        line.style.width,
+                        line.style.width(),
                         point,
                         local_matrix,
                     ) {
@@ -330,7 +330,7 @@ impl Drawing {
         for line in &self.pending_lines {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
-                line.style.width,
+                line.style.width(),
                 point,
                 local_matrix,
             ) {
@@ -341,7 +341,7 @@ impl Drawing {
         if let Some(line) = &self.current_line {
             if shape_utils::draw_command_stroke_hit_test(
                 &line.commands,
-                line.style.width,
+                line.style.width(),
                 point,
                 local_matrix,
             ) {
@@ -362,7 +362,7 @@ impl Drawing {
                             y: self.fill_start.1,
                         },
                     ],
-                    line.style.width,
+                    line.style.width(),
                     point,
                     local_matrix,
                 )

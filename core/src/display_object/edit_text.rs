@@ -705,10 +705,11 @@ impl<'gc> EditText<'gc> {
             let background_color = write.background_color;
 
             if write.has_border {
-                write.drawing.set_line_style(Some(swf::LineStyle::new_v1(
-                    Twips::new(1),
-                    swf::Color::from_rgb(border_color, 0xFF),
-                )));
+                write.drawing.set_line_style(Some(
+                    swf::LineStyle::new()
+                        .with_width(Twips::new(1))
+                        .with_color(swf::Color::from_rgb(border_color, 0xFF)),
+                ));
             } else {
                 write.drawing.set_line_style(None);
             }

@@ -204,17 +204,11 @@ impl MorphShapeStatic {
             .line_styles
             .iter()
             .zip(self.end.line_styles.iter())
-            .map(|(start, end)| LineStyle {
-                width: lerp_twips(start.width, end.width, a, b),
-                color: lerp_color(&start.color, &end.color, a, b),
-                start_cap: start.start_cap,
-                end_cap: start.end_cap,
-                join_style: start.join_style,
-                fill_style: None,
-                allow_scale_x: start.allow_scale_x,
-                allow_scale_y: start.allow_scale_y,
-                is_pixel_hinted: start.is_pixel_hinted,
-                allow_close: start.allow_close,
+            .map(|(start, end)| {
+                start
+                    .clone()
+                    .with_width(lerp_twips(start.width(), end.width(), a, b))
+                    .with_fill_style(lerp_fill(start.fill_style(), end.fill_style(), a, b))
             })
             .collect();
 

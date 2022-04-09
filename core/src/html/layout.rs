@@ -145,10 +145,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line_drawing = Drawing::new();
         let mut has_underline: bool = false;
 
-        line_drawing.set_line_style(Some(swf::LineStyle::new_v1(
-            Twips::new(1),
-            swf::Color::from_rgb(0, 255),
-        )));
+        line_drawing.set_line_style(Some(
+            swf::LineStyle::new()
+                .with_width(Twips::new(1))
+                .with_color(swf::Color::from_rgb(0, 255)),
+        ));
 
         if let Some(linelist) = self.boxes.get(self.current_line..) {
             for linebox in linelist {

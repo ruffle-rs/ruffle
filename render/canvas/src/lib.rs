@@ -1219,20 +1219,22 @@ fn swf_shape_to_svg(
                 // strokes end up rendering very faintly if we use the actual width of 1 twip.
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
-                let stroke_width = std::cmp::max(style.width.get(), 20);
+                let stroke_width = std::cmp::max(style.width().get(), 20);
+                let color = if let FillStyle::Color(color) = style.fill_style() {
+                    color.clone()
+                } else {
+                    Color::from_rgba(0)
+                };
                 let mut svg_path = SvgPath::new()
                     .set("fill", "none")
                     .set(
                         "stroke",
-                        format!(
-                            "rgba({},{},{},{})",
-                            style.color.r, style.color.g, style.color.b, style.color.a
-                        ),
+                        format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a),
                     )
                     .set("stroke-width", stroke_width)
                     .set(
                         "stroke-linecap",
-                        match style.start_cap {
+                        match style.start_cap() {
                             LineCapStyle::Round => "round",
                             LineCapStyle::Square => "square",
                             LineCapStyle::None => "butt",
@@ -1240,14 +1242,14 @@ fn swf_shape_to_svg(
                     )
                     .set(
                         "stroke-linejoin",
-                        match style.join_style {
+                        match style.join_style() {
                             LineJoinStyle::Round => "round",
                             LineJoinStyle::Bevel => "bevel",
                             LineJoinStyle::Miter(_) => "miter",
                         },
                     );
 
-                if let LineJoinStyle::Miter(miter_limit) = style.join_style {
+                if let LineJoinStyle::Miter(miter_limit) = style.join_style() {
                     svg_path = svg_path.set("stroke-miterlimit", miter_limit.to_f32());
                 }
 
@@ -1480,23 +1482,25 @@ fn swf_shape_to_canvas_commands(
                 // strokes end up rendering very faintly if we use the actual width of 1 twip.
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
-                let line_width = std::cmp::max(style.width.get(), 20);
+                let line_width = std::cmp::max(style.width().get(), 20);
+                let color = if let FillStyle::Color(color) = style.fill_style() {
+                    color.clone()
+                } else {
+                    Color::from_rgba(0)
+                };
                 let stroke_style = CanvasColor(
-                    format!(
-                        "rgba({},{},{},{})",
-                        style.color.r, style.color.g, style.color.b, style.color.a
-                    ),
-                    style.color.r,
-                    style.color.g,
-                    style.color.b,
-                    style.color.a,
+                    format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a),
+                    color.r,
+                    color.g,
+                    color.b,
+                    color.a,
                 );
-                let line_cap = match style.start_cap {
+                let line_cap = match style.start_cap() {
                     LineCapStyle::Round => "round",
                     LineCapStyle::Square => "square",
                     LineCapStyle::None => "butt",
                 };
-                let (line_join, miter_limit) = match style.join_style {
+                let (line_join, miter_limit) = match style.join_style() {
                     LineJoinStyle::Round => ("round", 999_999.0),
                     LineJoinStyle::Bevel => ("bevel", 999_999.0),
                     LineJoinStyle::Miter(ml) => ("miter", ml.to_f32()),
