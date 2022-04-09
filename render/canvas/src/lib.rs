@@ -56,7 +56,7 @@ enum CanvasDrawCommand {
     Stroke {
         path: Path2d,
         line_width: f64,
-        stroke_style: CanvasColor,
+        stroke_style: CanvasFillStyle,
         line_cap: String,
         line_join: String,
         miter_limit: f64,
@@ -722,8 +722,16 @@ impl RenderBackend for WebCanvasRenderBackend {
                         self.context.set_line_cap(line_cap);
                         self.context.set_line_join(line_join);
                         self.context.set_miter_limit(*miter_limit);
-                        self.context
-                            .set_stroke_style(&JsValue::from_str(&xformed_stroke_style.0));
+                        match xformed_stroke_style.as_ref().unwrap_or(stroke_style) {
+                            CanvasFillStyle::Color(CanvasColor(color, ..)) => {
+                                self.context.set_stroke_style(&JsValue::from_str(color))
+                            }
+                            CanvasFillStyle::Gradient(grad) => self.context.set_stroke_style(grad),
+                            CanvasFillStyle::Pattern(patt, smoothed) => {
+                                self.context.set_image_smoothing_enabled(*smoothed);
+                                self.context.set_stroke_style(patt);
+                            }
+                        };
                         self.context.stroke_with_path(path);
                     }
                     CanvasDrawCommand::DrawImage {
@@ -918,288 +926,287 @@ fn swf_shape_to_svg(
 
     let mut svg_paths = Vec::with_capacity(shape.paths.len());
     for path in shape.paths {
-        match path {
-            DrawPath::Fill { style, commands } => {
-                let mut svg_path = SvgPath::new();
-
-                let fill = match style {
-                    FillStyle::Color(Color { r, g, b, a }) => {
-                        format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
-                    }
-                    FillStyle::LinearGradient(gradient) => {
-                        let shift = Matrix {
-                            a: 32768.0 / width,
-                            d: 32768.0 / height,
-                            tx: swf::Twips::new(-16384),
-                            ty: swf::Twips::new(-16384),
-                            ..Default::default()
-                        };
-                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
-
-                        let mut svg_gradient = LinearGradient::new()
-                            .set("id", format!("f{}", num_defs))
-                            .set("gradientUnits", "userSpaceOnUse")
-                            .set(
-                                "gradientTransform",
-                                format!(
-                                    "matrix({} {} {} {} {} {})",
-                                    gradient_matrix.a,
-                                    gradient_matrix.b,
-                                    gradient_matrix.c,
-                                    gradient_matrix.d,
-                                    gradient_matrix.tx.get(),
-                                    gradient_matrix.ty.get()
-                                ),
-                            );
-                        svg_gradient = match gradient.spread {
-                            GradientSpread::Pad => svg_gradient, // default
-                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
-                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
-                        };
-                        if gradient.interpolation == GradientInterpolation::LinearRgb {
-                            has_linear_rgb_gradient = true;
-                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
-                        }
-                        for record in &gradient.records {
-                            let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRgb {
-                                    srgb_to_linear(record.color.clone())
-                                } else {
-                                    record.color.clone()
-                                };
-                            let stop = Stop::new()
-                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                .set(
-                                    "stop-color",
-                                    format!(
-                                        "rgba({},{},{},{})",
-                                        color.r,
-                                        color.g,
-                                        color.b,
-                                        f32::from(color.a) / 255.0
-                                    ),
-                                );
-                            svg_gradient = svg_gradient.add(stop);
-                        }
-                        defs = defs.add(svg_gradient);
-
-                        let fill_id = format!("url(#f{})", num_defs);
-                        num_defs += 1;
-                        fill_id
-                    }
-                    FillStyle::RadialGradient(gradient) => {
-                        let shift = Matrix {
-                            a: 32768.0,
-                            d: 32768.0,
-                            ..Default::default()
-                        };
-                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
-
-                        let mut svg_gradient = RadialGradient::new()
-                            .set("id", format!("f{}", num_defs))
-                            .set("gradientUnits", "userSpaceOnUse")
-                            .set("cx", "0")
-                            .set("cy", "0")
-                            .set("r", "0.5")
-                            .set(
-                                "gradientTransform",
-                                format!(
-                                    "matrix({} {} {} {} {} {})",
-                                    gradient_matrix.a,
-                                    gradient_matrix.b,
-                                    gradient_matrix.c,
-                                    gradient_matrix.d,
-                                    gradient_matrix.tx.get(),
-                                    gradient_matrix.ty.get()
-                                ),
-                            );
-                        svg_gradient = match gradient.spread {
-                            GradientSpread::Pad => svg_gradient, // default
-                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
-                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
-                        };
-                        if gradient.interpolation == GradientInterpolation::LinearRgb {
-                            has_linear_rgb_gradient = true;
-                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
-                        }
-                        for record in &gradient.records {
-                            let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRgb {
-                                    srgb_to_linear(record.color.clone())
-                                } else {
-                                    record.color.clone()
-                                };
-                            let stop = Stop::new()
-                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                .set(
-                                    "stop-color",
-                                    format!(
-                                        "rgba({},{},{},{})",
-                                        color.r,
-                                        color.g,
-                                        color.b,
-                                        f32::from(color.a) / 255.0
-                                    ),
-                                );
-                            svg_gradient = svg_gradient.add(stop);
-                        }
-                        defs = defs.add(svg_gradient);
-
-                        let fill_id = format!("url(#f{})", num_defs);
-                        num_defs += 1;
-                        fill_id
-                    }
-                    FillStyle::FocalGradient {
-                        gradient,
-                        focal_point,
-                    } => {
-                        let shift = Matrix {
-                            a: 32768.0,
-                            d: 32768.0,
-                            ..Default::default()
-                        };
-                        let gradient_matrix = Matrix::from(gradient.matrix) * shift;
-
-                        let mut svg_gradient = RadialGradient::new()
-                            .set("id", format!("f{}", num_defs))
-                            .set("fx", focal_point.to_f32() / 2.0)
-                            .set("gradientUnits", "userSpaceOnUse")
-                            .set("cx", "0")
-                            .set("cy", "0")
-                            .set("r", "0.5")
-                            .set(
-                                "gradientTransform",
-                                format!(
-                                    "matrix({} {} {} {} {} {})",
-                                    gradient_matrix.a,
-                                    gradient_matrix.b,
-                                    gradient_matrix.c,
-                                    gradient_matrix.d,
-                                    gradient_matrix.tx.get(),
-                                    gradient_matrix.ty.get()
-                                ),
-                            );
-                        svg_gradient = match gradient.spread {
-                            GradientSpread::Pad => svg_gradient, // default
-                            GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
-                            GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
-                        };
-                        if gradient.interpolation == GradientInterpolation::LinearRgb {
-                            has_linear_rgb_gradient = true;
-                            svg_path = svg_path.set("filter", "url('#_linearrgb')");
-                        }
-                        for record in &gradient.records {
-                            let color =
-                                if gradient.interpolation == GradientInterpolation::LinearRgb {
-                                    srgb_to_linear(record.color.clone())
-                                } else {
-                                    record.color.clone()
-                                };
-                            let stop = Stop::new()
-                                .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
-                                .set(
-                                    "stop-color",
-                                    format!(
-                                        "rgba({},{},{},{})",
-                                        color.r,
-                                        color.g,
-                                        color.b,
-                                        f32::from(color.a) / 255.0
-                                    ),
-                                );
-                            svg_gradient = svg_gradient.add(stop);
-                        }
-                        defs = defs.add(svg_gradient);
-
-                        let fill_id = format!("url(#f{})", num_defs);
-                        num_defs += 1;
-                        fill_id
-                    }
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        if let Some(bitmap) = bitmap_source
-                            .bitmap(*id)
-                            .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
-                        {
-                            if !bitmap_defs.contains(id) {
-                                let mut image = Image::new()
-                                    .set("width", bitmap.width)
-                                    .set("height", bitmap.height)
-                                    .set(
-                                        "xlink:href",
-                                        bitmap.get_or_compute_data_uri().as_ref().unwrap().clone(),
-                                    );
-
-                                if !*is_smoothed {
-                                    image = image.set("image-rendering", pixelated_property_value);
-                                }
-
-                                let mut bitmap_pattern = Pattern::new()
-                                    .set("id", format!("b{}", id))
-                                    .set("patternUnits", "userSpaceOnUse");
-
-                                if !*is_repeating {
-                                    bitmap_pattern = bitmap_pattern
-                                        .set("width", bitmap.width)
-                                        .set("height", bitmap.height);
-                                } else {
-                                    bitmap_pattern = bitmap_pattern
-                                        .set("width", bitmap.width)
-                                        .set("height", bitmap.height)
-                                        .set(
-                                            "viewBox",
-                                            format!("0 0 {} {}", bitmap.width, bitmap.height),
-                                        );
-                                }
-
-                                bitmap_pattern = bitmap_pattern.add(image);
-
-                                defs = defs.add(bitmap_pattern);
-                                bitmap_defs.insert(*id);
-                            }
-                        } else {
-                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
-                        }
-
-                        let svg_pattern = Pattern::new()
-                            .set("id", format!("f{}", num_defs))
-                            .set("xlink:href", format!("#b{}", id))
-                            .set(
-                                "patternTransform",
-                                format!(
-                                    "matrix({} {} {} {} {} {})",
-                                    matrix.a,
-                                    matrix.b,
-                                    matrix.c,
-                                    matrix.d,
-                                    matrix.tx.get(),
-                                    matrix.ty.get()
-                                ),
-                            );
-
-                        defs = defs.add(svg_pattern);
-
-                        let fill_id = format!("url(#f{})", num_defs);
-                        num_defs += 1;
-                        fill_id
-                    }
+        let mut svg_path = SvgPath::new();
+        let (style, commands) = match &path {
+            DrawPath::Fill { style, commands } => (*style, commands),
+            DrawPath::Stroke {
+                style, commands, ..
+            } => (style.fill_style(), commands),
+        };
+        let fill = match style {
+            FillStyle::Color(Color { r, g, b, a }) => {
+                format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0)
+            }
+            FillStyle::LinearGradient(gradient) => {
+                let shift = Matrix {
+                    a: 32768.0 / width,
+                    d: 32768.0 / height,
+                    tx: swf::Twips::new(-16384),
+                    ty: swf::Twips::new(-16384),
+                    ..Default::default()
                 };
+                let gradient_matrix = Matrix::from(gradient.matrix) * shift;
 
-                let mut data = Data::new();
-                for command in commands {
-                    data = match command {
-                        DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
-                        DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
-                        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                            data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get()))
-                        }
+                let mut svg_gradient = LinearGradient::new()
+                    .set("id", format!("f{}", num_defs))
+                    .set("gradientUnits", "userSpaceOnUse")
+                    .set(
+                        "gradientTransform",
+                        format!(
+                            "matrix({} {} {} {} {} {})",
+                            gradient_matrix.a,
+                            gradient_matrix.b,
+                            gradient_matrix.c,
+                            gradient_matrix.d,
+                            gradient_matrix.tx.get(),
+                            gradient_matrix.ty.get()
+                        ),
+                    );
+                svg_gradient = match gradient.spread {
+                    GradientSpread::Pad => svg_gradient, // default
+                    GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                    GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                };
+                if gradient.interpolation == GradientInterpolation::LinearRgb {
+                    has_linear_rgb_gradient = true;
+                    svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                }
+                for record in &gradient.records {
+                    let color = if gradient.interpolation == GradientInterpolation::LinearRgb {
+                        srgb_to_linear(record.color.clone())
+                    } else {
+                        record.color.clone()
                     };
+                    let stop = Stop::new()
+                        .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                        .set(
+                            "stop-color",
+                            format!(
+                                "rgba({},{},{},{})",
+                                color.r,
+                                color.g,
+                                color.b,
+                                f32::from(color.a) / 255.0
+                            ),
+                        );
+                    svg_gradient = svg_gradient.add(stop);
+                }
+                defs = defs.add(svg_gradient);
+
+                let fill_id = format!("url(#f{})", num_defs);
+                num_defs += 1;
+                fill_id
+            }
+            FillStyle::RadialGradient(gradient) => {
+                let shift = Matrix {
+                    a: 32768.0,
+                    d: 32768.0,
+                    ..Default::default()
+                };
+                let gradient_matrix = Matrix::from(gradient.matrix) * shift;
+
+                let mut svg_gradient = RadialGradient::new()
+                    .set("id", format!("f{}", num_defs))
+                    .set("gradientUnits", "userSpaceOnUse")
+                    .set("cx", "0")
+                    .set("cy", "0")
+                    .set("r", "0.5")
+                    .set(
+                        "gradientTransform",
+                        format!(
+                            "matrix({} {} {} {} {} {})",
+                            gradient_matrix.a,
+                            gradient_matrix.b,
+                            gradient_matrix.c,
+                            gradient_matrix.d,
+                            gradient_matrix.tx.get(),
+                            gradient_matrix.ty.get()
+                        ),
+                    );
+                svg_gradient = match gradient.spread {
+                    GradientSpread::Pad => svg_gradient, // default
+                    GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                    GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                };
+                if gradient.interpolation == GradientInterpolation::LinearRgb {
+                    has_linear_rgb_gradient = true;
+                    svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                }
+                for record in &gradient.records {
+                    let color = if gradient.interpolation == GradientInterpolation::LinearRgb {
+                        srgb_to_linear(record.color.clone())
+                    } else {
+                        record.color.clone()
+                    };
+                    let stop = Stop::new()
+                        .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                        .set(
+                            "stop-color",
+                            format!(
+                                "rgba({},{},{},{})",
+                                color.r,
+                                color.g,
+                                color.b,
+                                f32::from(color.a) / 255.0
+                            ),
+                        );
+                    svg_gradient = svg_gradient.add(stop);
+                }
+                defs = defs.add(svg_gradient);
+
+                let fill_id = format!("url(#f{})", num_defs);
+                num_defs += 1;
+                fill_id
+            }
+            FillStyle::FocalGradient {
+                gradient,
+                focal_point,
+            } => {
+                let shift = Matrix {
+                    a: 32768.0,
+                    d: 32768.0,
+                    ..Default::default()
+                };
+                let gradient_matrix = Matrix::from(gradient.matrix) * shift;
+
+                let mut svg_gradient = RadialGradient::new()
+                    .set("id", format!("f{}", num_defs))
+                    .set("fx", focal_point.to_f32() / 2.0)
+                    .set("gradientUnits", "userSpaceOnUse")
+                    .set("cx", "0")
+                    .set("cy", "0")
+                    .set("r", "0.5")
+                    .set(
+                        "gradientTransform",
+                        format!(
+                            "matrix({} {} {} {} {} {})",
+                            gradient_matrix.a,
+                            gradient_matrix.b,
+                            gradient_matrix.c,
+                            gradient_matrix.d,
+                            gradient_matrix.tx.get(),
+                            gradient_matrix.ty.get()
+                        ),
+                    );
+                svg_gradient = match gradient.spread {
+                    GradientSpread::Pad => svg_gradient, // default
+                    GradientSpread::Reflect => svg_gradient.set("spreadMethod", "reflect"),
+                    GradientSpread::Repeat => svg_gradient.set("spreadMethod", "repeat"),
+                };
+                if gradient.interpolation == GradientInterpolation::LinearRgb {
+                    has_linear_rgb_gradient = true;
+                    svg_path = svg_path.set("filter", "url('#_linearrgb')");
+                }
+                for record in &gradient.records {
+                    let color = if gradient.interpolation == GradientInterpolation::LinearRgb {
+                        srgb_to_linear(record.color.clone())
+                    } else {
+                        record.color.clone()
+                    };
+                    let stop = Stop::new()
+                        .set("offset", format!("{}%", f32::from(record.ratio) / 2.55))
+                        .set(
+                            "stop-color",
+                            format!(
+                                "rgba({},{},{},{})",
+                                color.r,
+                                color.g,
+                                color.b,
+                                f32::from(color.a) / 255.0
+                            ),
+                        );
+                    svg_gradient = svg_gradient.add(stop);
+                }
+                defs = defs.add(svg_gradient);
+
+                let fill_id = format!("url(#f{})", num_defs);
+                num_defs += 1;
+                fill_id
+            }
+            FillStyle::Bitmap {
+                id,
+                matrix,
+                is_smoothed,
+                is_repeating,
+            } => {
+                if let Some(bitmap) = bitmap_source
+                    .bitmap(*id)
+                    .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
+                {
+                    if !bitmap_defs.contains(id) {
+                        let mut image = Image::new()
+                            .set("width", bitmap.width)
+                            .set("height", bitmap.height)
+                            .set(
+                                "xlink:href",
+                                bitmap.get_or_compute_data_uri().as_ref().unwrap().clone(),
+                            );
+
+                        if !*is_smoothed {
+                            image = image.set("image-rendering", pixelated_property_value);
+                        }
+
+                        let mut bitmap_pattern = Pattern::new()
+                            .set("id", format!("b{}", id))
+                            .set("patternUnits", "userSpaceOnUse");
+
+                        if !*is_repeating {
+                            bitmap_pattern = bitmap_pattern
+                                .set("width", bitmap.width)
+                                .set("height", bitmap.height);
+                        } else {
+                            bitmap_pattern = bitmap_pattern
+                                .set("width", bitmap.width)
+                                .set("height", bitmap.height)
+                                .set("viewBox", format!("0 0 {} {}", bitmap.width, bitmap.height));
+                        }
+
+                        bitmap_pattern = bitmap_pattern.add(image);
+
+                        defs = defs.add(bitmap_pattern);
+                        bitmap_defs.insert(*id);
+                    }
+                } else {
+                    log::error!("Couldn't fill shape with unknown bitmap {}", id);
                 }
 
+                let svg_pattern = Pattern::new()
+                    .set("id", format!("f{}", num_defs))
+                    .set("xlink:href", format!("#b{}", id))
+                    .set(
+                        "patternTransform",
+                        format!(
+                            "matrix({} {} {} {} {} {})",
+                            matrix.a,
+                            matrix.b,
+                            matrix.c,
+                            matrix.d,
+                            matrix.tx.get(),
+                            matrix.ty.get()
+                        ),
+                    );
+
+                defs = defs.add(svg_pattern);
+
+                let fill_id = format!("url(#f{})", num_defs);
+                num_defs += 1;
+                fill_id
+            }
+        };
+
+        let mut data = Data::new();
+        for command in commands {
+            data = match command {
+                DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
+                DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
+                DrawCommand::CurveTo { x1, y1, x2, y2 } => {
+                    data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get()))
+                }
+            };
+        }
+
+        match path {
+            DrawPath::Fill { .. } => {
                 svg_path = svg_path
                     .set("fill", fill)
                     .set("fill-rule", "evenodd")
@@ -1207,9 +1214,7 @@ fn swf_shape_to_svg(
                 svg_paths.push(svg_path);
             }
             DrawPath::Stroke {
-                style,
-                commands,
-                is_closed,
+                style, is_closed, ..
             } => {
                 // Flash always renders strokes with a minimum width of 1 pixel (20 twips).
                 // Additionally, many SWFs use the "hairline" stroke setting, which sets the stroke's width
@@ -1220,17 +1225,9 @@ fn swf_shape_to_svg(
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
                 let stroke_width = std::cmp::max(style.width().get(), 20);
-                let color = if let FillStyle::Color(color) = style.fill_style() {
-                    color.clone()
-                } else {
-                    Color::from_rgba(0)
-                };
-                let mut svg_path = SvgPath::new()
+                svg_path = svg_path
                     .set("fill", "none")
-                    .set(
-                        "stroke",
-                        format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a),
-                    )
+                    .set("stroke", fill)
                     .set("stroke-width", stroke_width)
                     .set(
                         "stroke-linecap",
@@ -1253,16 +1250,6 @@ fn swf_shape_to_svg(
                     svg_path = svg_path.set("stroke-miterlimit", miter_limit.to_f32());
                 }
 
-                let mut data = Data::new();
-                for command in commands {
-                    data = match command {
-                        DrawCommand::MoveTo { x, y } => data.move_to((x.get(), y.get())),
-                        DrawCommand::LineTo { x, y } => data.line_to((x.get(), y.get())),
-                        DrawCommand::CurveTo { x1, y1, x2, y2 } => {
-                            data.quadratic_curve_to((x1.get(), y1.get(), x2.get(), y2.get()))
-                        }
-                    };
-                }
                 if is_closed {
                     data = data.close();
                 }
@@ -1390,90 +1377,91 @@ fn swf_shape_to_canvas_commands(
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
     for path in &shape.paths {
-        match path {
-            DrawPath::Fill { style, commands } => {
-                let fill_style = match style {
-                    FillStyle::Color(Color { r, g, b, a }) => CanvasFillStyle::Color(CanvasColor(
-                        format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0),
-                        *r,
-                        *g,
-                        *b,
-                        *a,
-                    )),
-                    FillStyle::LinearGradient(_gradient) => return None,
-                    FillStyle::RadialGradient(_gradient) => return None,
-                    FillStyle::FocalGradient { .. } => return None,
-                    FillStyle::Bitmap {
-                        id,
-                        matrix,
-                        is_smoothed,
-                        is_repeating,
-                    } => {
-                        if let Some(bitmap) = bitmap_source
-                            .bitmap(*id)
-                            .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
-                        {
-                            let repeat = if !*is_repeating {
-                                // NOTE: The WebGL backend does clamping in this case, just like
-                                // Flash Player, but CanvasPattern has no such option...
-                                "no-repeat"
-                            } else {
-                                "repeat"
-                            };
-
-                            let bitmap_pattern = match &bitmap.image {
-                                BitmapDataStorage::ImageElement(elem) => context
-                                    .create_pattern_with_html_image_element(elem, repeat)
-                                    .expect("pattern creation success")?,
-                                BitmapDataStorage::CanvasElement(canvas, _context) => context
-                                    .create_pattern_with_html_canvas_element(canvas, repeat)
-                                    .expect("pattern creation success")?,
-                            };
-
-                            let a = *matrix;
-
-                            let matrix = matrix_factory.create_svg_matrix();
-
-                            // The `1.0 / 20.0` in `bounds_viewbox_matrix` does not
-                            // affect this, so we have to do it manually here.
-                            matrix.set_a(a.a.to_f32() / 20.0);
-                            matrix.set_b(a.b.to_f32() / 20.0);
-                            matrix.set_c(a.c.to_f32() / 20.0);
-                            matrix.set_d(a.d.to_f32() / 20.0);
-                            matrix.set_e(a.tx.get() as f32 / 20.0);
-                            matrix.set_f(a.ty.get() as f32 / 20.0);
-
-                            bitmap_pattern.set_transform(&matrix);
-
-                            CanvasFillStyle::Pattern(bitmap_pattern, *is_smoothed)
-                        } else {
-                            log::error!("Couldn't fill shape with unknown bitmap {}", id);
-                            CanvasFillStyle::Color(CanvasColor(
-                                "rgba(0,0,0,0)".to_string(),
-                                0,
-                                0,
-                                0,
-                                0,
-                            ))
-                        }
-                    }
-                };
-
-                let path = Path2d::new().unwrap();
-                path.add_path_with_transformation(
-                    &draw_commands_to_path2d(commands, false),
-                    &bounds_viewbox_matrix,
-                );
-
-                canvas_data
-                    .0
-                    .push(CanvasDrawCommand::Fill { path, fill_style });
-            }
+        let (style, commands, is_closed) = match &path {
+            DrawPath::Fill {
+                style, commands, ..
+            } => (*style, commands, false),
             DrawPath::Stroke {
                 style,
                 commands,
                 is_closed,
+            } => (style.fill_style(), commands, *is_closed),
+        };
+        let fill_style = match style {
+            FillStyle::Color(Color { r, g, b, a }) => CanvasFillStyle::Color(CanvasColor(
+                format!("rgba({},{},{},{})", r, g, b, f32::from(*a) / 255.0),
+                *r,
+                *g,
+                *b,
+                *a,
+            )),
+            FillStyle::LinearGradient(_gradient) => return None,
+            FillStyle::RadialGradient(_gradient) => return None,
+            FillStyle::FocalGradient { .. } => return None,
+            FillStyle::Bitmap {
+                id,
+                matrix,
+                is_smoothed,
+                is_repeating,
             } => {
+                if let Some(bitmap) = bitmap_source
+                    .bitmap(*id)
+                    .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
+                {
+                    let repeat = if !*is_repeating {
+                        // NOTE: The WebGL backend does clamping in this case, just like
+                        // Flash Player, but CanvasPattern has no such option...
+                        "no-repeat"
+                    } else {
+                        "repeat"
+                    };
+
+                    let bitmap_pattern = match &bitmap.image {
+                        BitmapDataStorage::ImageElement(elem) => context
+                            .create_pattern_with_html_image_element(elem, repeat)
+                            .expect("pattern creation success")?,
+                        BitmapDataStorage::CanvasElement(canvas, _context) => context
+                            .create_pattern_with_html_canvas_element(canvas, repeat)
+                            .expect("pattern creation success")?,
+                    };
+
+                    let a = *matrix;
+
+                    let matrix = matrix_factory.create_svg_matrix();
+
+                    // The `1.0 / 20.0` in `bounds_viewbox_matrix` does not
+                    // affect this, so we have to do it manually here.
+                    matrix.set_a(a.a.to_f32() / 20.0);
+                    matrix.set_b(a.b.to_f32() / 20.0);
+                    matrix.set_c(a.c.to_f32() / 20.0);
+                    matrix.set_d(a.d.to_f32() / 20.0);
+                    matrix.set_e(a.tx.get() as f32 / 20.0);
+                    matrix.set_f(a.ty.get() as f32 / 20.0);
+
+                    bitmap_pattern.set_transform(&matrix);
+
+                    CanvasFillStyle::Pattern(bitmap_pattern, *is_smoothed)
+                } else {
+                    log::error!("Couldn't fill shape with unknown bitmap {}", id);
+                    CanvasFillStyle::Color(CanvasColor("rgba(0,0,0,0)".to_string(), 0, 0, 0, 0))
+                }
+            }
+        };
+
+        let canvas_path = Path2d::new().unwrap();
+        canvas_path.add_path_with_transformation(
+            &draw_commands_to_path2d(commands, is_closed),
+            &bounds_viewbox_matrix,
+        );
+
+        match path {
+            DrawPath::Fill { .. } => {
+                canvas_data.0.push(CanvasDrawCommand::Fill {
+                    path: canvas_path,
+                    fill_style,
+                });
+            }
+            DrawPath::Stroke { style, .. } => {
                 // Flash always renders strokes with a minimum width of 1 pixel (20 twips).
                 // Additionally, many SWFs use the "hairline" stroke setting, which sets the stroke's width
                 // to 1 twip. Because of the minimum, this will effectively make the stroke nearly-always render
@@ -1483,18 +1471,6 @@ fn swf_shape_to_canvas_commands(
                 // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
                 // if the shape is scaled, but it looks much closer to the Flash Player.
                 let line_width = std::cmp::max(style.width().get(), 20);
-                let color = if let FillStyle::Color(color) = style.fill_style() {
-                    color.clone()
-                } else {
-                    Color::from_rgba(0)
-                };
-                let stroke_style = CanvasColor(
-                    format!("rgba({},{},{},{})", color.r, color.g, color.b, color.a),
-                    color.r,
-                    color.g,
-                    color.b,
-                    color.a,
-                );
                 let line_cap = match style.start_cap() {
                     LineCapStyle::Round => "round",
                     LineCapStyle::Square => "square",
@@ -1505,17 +1481,10 @@ fn swf_shape_to_canvas_commands(
                     LineJoinStyle::Bevel => ("bevel", 999_999.0),
                     LineJoinStyle::Miter(ml) => ("miter", ml.to_f32()),
                 };
-
-                let path = Path2d::new().unwrap();
-                path.add_path_with_transformation(
-                    &draw_commands_to_path2d(commands, *is_closed),
-                    &bounds_viewbox_matrix,
-                );
-
                 canvas_data.0.push(CanvasDrawCommand::Stroke {
-                    path,
+                    path: canvas_path,
                     line_width: line_width as f64 / 20.0,
-                    stroke_style,
+                    stroke_style: fill_style,
                     line_cap: line_cap.to_string(),
                     line_join: line_join.to_string(),
                     miter_limit: miter_limit as f64 / 20.0,
