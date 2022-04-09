@@ -1,0 +1,108 @@
+// 3 / 0
+#ERROR#
+
+// 0 / 3
+0
+
+// 3 / NaN
+NaN
+
+// NaN / 3
+NaN
+
+// 3 / Infinity
+0
+
+// Infinity / 3
+Infinity
+
+// 3 / -Infinity
+0
+
+// -Infinity / 3
+-Infinity
+
+// 0 / 0
+#ERROR#
+
+// NaN / NaN
+NaN
+
+// Infinity / Infinity
+NaN
+
+// -Infinity / -Infinity
+NaN
+
+// Infinity / -Infinity
+NaN
+
+// -Infinity / Infinity
+NaN
+
+// {} / {}
+#ERROR#
+
+// 3 / undefined
+#ERROR#
+
+// undefined / 3
+0
+
+// 3 / null
+#ERROR#
+
+// null / 3
+0
+
+// 3 / '12.34'
+0.243111831442464
+
+// '12.34' / 3
+4.11333333333333
+
+// 3 / '12.34A'
+0.243111831442464
+
+// '12.34A' / 3
+4.11333333333333
+
+// 3 / 'ABC'
+#ERROR#
+
+// 'ABC' / 3
+0
+
+// 3 / ''
+#ERROR#
+
+// '' / 3
+0
+
+'' / ''
+#ERROR#
+
+// undefined / undefined
+#ERROR#
+
+// null / null
+#ERROR#
+
+// undefined / null
+#ERROR#
+
+// null / undefined
+#ERROR#
+
+// '12.34' / '56.78'
+0.217330045790771
+
+// '12.34' / '56.78A'
+0.217330045790771
+
+// '56.78A' / '12.34'
+4.60129659643436
+
+// '12.34A' / '56.78A'
+0.217330045790771
+

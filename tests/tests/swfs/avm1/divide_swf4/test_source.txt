@@ -1,0 +1,143 @@
+trace("// 3 / 0");
+trace(3 / 0);
+trace("");
+
+trace("// 0 / 3");
+trace(0 / 3);
+trace("");
+
+trace("// 3 / NaN");
+trace(3 / NaN);
+trace("");
+
+trace("// NaN / 3");
+trace(NaN / 3);
+trace("");
+
+trace("// 3 / Infinity");
+trace(3 / Infinity);
+trace("");
+
+trace("// Infinity / 3");
+trace(Infinity / 3);
+trace("");
+
+trace("// 3 / -Infinity");
+trace(3 / -Infinity);
+trace("");
+
+trace("// -Infinity / 3");
+trace(-Infinity / 3);
+trace("");
+
+trace("// 0 / 0");
+trace(0 / 0);
+trace("");
+
+trace("// NaN / NaN");
+trace(NaN / NaN);
+trace("");
+
+trace("// Infinity / Infinity");
+trace(Infinity / Infinity);
+trace("");
+
+trace("// -Infinity / -Infinity");
+trace(-Infinity / -Infinity);
+trace("");
+
+trace("// Infinity / -Infinity");
+trace(Infinity / -Infinity);
+trace("");
+
+trace("// -Infinity / Infinity");
+trace(-Infinity / Infinity);
+trace("");
+
+trace("// {} / {}");
+trace({} / {});
+trace("");
+
+trace("// 3 / undefined");
+trace(3 / undefined);
+trace("");
+
+trace("// undefined / 3");
+trace(undefined / 3);
+trace("");
+
+trace("// 3 / null");
+trace(3 / null);
+trace("");
+
+trace("// null / 3");
+trace(null / 3);
+trace("");
+
+trace("// 3 / '12.34'");
+trace(3 / "12.34");
+trace("");
+
+trace("// '12.34' / 3");
+trace("12.34" / 3);
+trace("");
+
+trace("// 3 / '12.34A'");
+trace(3 / "12.34A");
+trace("");
+
+trace("// '12.34A' / 3");
+trace("12.34A" / 3);
+trace("");
+
+trace("// 3 / 'ABC'");
+trace(3 / "ABC");
+trace("");
+
+trace("// 'ABC' / 3");
+trace("ABC" / 3);
+trace("");
+
+trace("// 3 / ''");
+trace(3 / "");
+trace("");
+
+trace("// '' / 3");
+trace("" / 3);
+trace("");
+
+trace("'' / ''");
+trace("" / "");
+trace("");
+
+trace("// undefined / undefined");
+trace(undefined / undefined);
+trace("");
+
+trace("// null / null");
+trace(null / null);
+trace("");
+
+trace("// undefined / null");
+trace(undefined / null);
+trace("");
+
+trace("// null / undefined");
+trace(null / undefined);
+trace("");
+
+trace("// '12.34' / '56.78'");
+trace("12.34" / "56.78");
+trace("");
+
+trace("// '12.34' / '56.78A'");
+trace("12.34" / "56.78A");
+trace("");
+
+trace("// '56.78A' / '12.34'");
+trace("56.78A" / "12.34");
+trace("");
+
+trace("// '12.34A' / '56.78A'");
+trace("12.34A" / "56.78A");
+trace("");
