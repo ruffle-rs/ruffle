@@ -1116,31 +1116,153 @@ pub struct GradientRecord {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct LineStyle {
-    pub width: Twips,
-    pub color: Color,
-    pub start_cap: LineCapStyle,
-    pub end_cap: LineCapStyle,
-    pub join_style: LineJoinStyle,
-    pub fill_style: Option<FillStyle>,
-    pub allow_scale_x: bool,
-    pub allow_scale_y: bool,
-    pub is_pixel_hinted: bool,
-    pub allow_close: bool,
+    pub(crate) width: Twips,
+    pub(crate) fill_style: FillStyle,
+    pub(crate) flags: LineStyleFlag,
+    pub(crate) miter_limit: Fixed8,
 }
 
 impl LineStyle {
-    pub const fn new_v1(width: Twips, color: Color) -> LineStyle {
-        LineStyle {
-            width,
-            color,
-            start_cap: LineCapStyle::Round,
-            end_cap: LineCapStyle::Round,
-            join_style: LineJoinStyle::Round,
-            fill_style: None,
-            allow_scale_x: false,
-            allow_scale_y: false,
-            is_pixel_hinted: false,
-            allow_close: true,
+    #[inline]
+    pub fn new() -> LineStyle {
+        Default::default()
+    }
+
+    #[inline]
+    pub fn allow_close(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_CLOSE)
+    }
+
+    #[inline]
+    pub fn with_allow_close(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_CLOSE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn allow_scale_x(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_H_SCALE)
+    }
+
+    #[inline]
+    pub fn with_allow_scale_x(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_H_SCALE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn allow_scale_y(&self) -> bool {
+        !self.flags.contains(LineStyleFlag::NO_V_SCALE)
+    }
+
+    #[inline]
+    pub fn with_allow_scale_y(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::NO_V_SCALE, !val);
+        self
+    }
+
+    #[inline]
+    pub fn is_pixel_hinted(&self) -> bool {
+        self.flags.contains(LineStyleFlag::PIXEL_HINTING)
+    }
+
+    #[inline]
+    pub fn with_is_pixel_hinted(mut self, val: bool) -> Self {
+        self.flags.set(LineStyleFlag::PIXEL_HINTING, val);
+        self
+    }
+
+    #[inline]
+    pub fn start_cap(&self) -> LineCapStyle {
+        let cap = (self.flags & LineStyleFlag::START_CAP_STYLE).bits() >> 6;
+        LineCapStyle::from_u8(cap as u8).unwrap()
+    }
+
+    #[inline]
+    pub fn with_start_cap(mut self, val: LineCapStyle) -> Self {
+        self.flags -= LineStyleFlag::START_CAP_STYLE;
+        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 6);
+        self
+    }
+
+    #[inline]
+    pub fn end_cap(&self) -> LineCapStyle {
+        let cap = (self.flags & LineStyleFlag::END_CAP_STYLE).bits() >> 8;
+        LineCapStyle::from_u8(cap as u8).unwrap()
+    }
+
+    #[inline]
+    pub fn with_end_cap(mut self, val: LineCapStyle) -> Self {
+        self.flags -= LineStyleFlag::END_CAP_STYLE;
+        self.flags |= LineStyleFlag::from_bits_truncate((val as u16) << 8);
+        self
+    }
+
+    #[inline]
+    pub fn join_style(&self) -> LineJoinStyle {
+        match self.flags & LineStyleFlag::JOIN_STYLE {
+            LineStyleFlag::ROUND => LineJoinStyle::Round,
+            LineStyleFlag::BEVEL => LineJoinStyle::Bevel,
+            LineStyleFlag::MITER => LineJoinStyle::Miter(self.miter_limit),
+            _ => unreachable!(),
+        }
+    }
+
+    #[inline]
+    pub fn with_join_style(mut self, val: LineJoinStyle) -> Self {
+        self.flags -= LineStyleFlag::JOIN_STYLE;
+        self.flags |= match val {
+            LineJoinStyle::Round => LineStyleFlag::ROUND,
+            LineJoinStyle::Bevel => LineStyleFlag::BEVEL,
+            LineJoinStyle::Miter(miter_limit) => {
+                self.miter_limit = miter_limit;
+                LineStyleFlag::MITER
+            }
+        };
+        self
+    }
+
+    #[inline]
+    pub fn fill_style(&self) -> &FillStyle {
+        &self.fill_style
+    }
+
+    #[inline]
+    pub fn with_fill_style(mut self, val: FillStyle) -> Self {
+        self.flags
+            .set(LineStyleFlag::HAS_FILL, !matches!(val, FillStyle::Color(_)));
+        self.fill_style = val;
+        self
+    }
+
+    #[inline]
+    pub fn with_color(mut self, val: Color) -> Self {
+        self.flags.remove(LineStyleFlag::HAS_FILL);
+        self.fill_style = FillStyle::Color(val);
+        self
+    }
+
+    #[inline]
+    pub fn width(&self) -> Twips {
+        self.width
+    }
+
+    #[inline]
+    pub fn with_width(mut self, val: Twips) -> Self {
+        self.width = val;
+        self
+    }
+}
+
+impl Default for LineStyle {
+    #[inline]
+    fn default() -> Self {
+        // Hairline black stroke.
+        Self {
+            width: Twips::ZERO,
+            fill_style: FillStyle::Color(Color::from_rgb(0, 255)),
+            flags: Default::default(),
+            miter_limit: Default::default(),
         }
     }
 }
@@ -1157,12 +1279,19 @@ bitflags! {
 
         // Second byte.
         const END_CAP_STYLE = 0b11 << 8;
-        const ALLOW_CLOSE = 1 << 10;
+        const NO_CLOSE = 1 << 10;
 
         // JOIN_STYLE mask values.
         const ROUND = 0b00 << 4;
         const BEVEL = 0b01 << 4;
         const MITER = 0b10 << 4;
+    }
+}
+
+impl Default for LineStyleFlag {
+    #[inline]
+    fn default() -> Self {
+        LineStyleFlag::empty()
     }
 }
 
@@ -1174,8 +1303,16 @@ pub enum LineCapStyle {
 }
 
 impl LineCapStyle {
+    #[inline]
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
+    }
+}
+
+impl Default for LineCapStyle {
+    #[inline]
+    fn default() -> Self {
+        Self::Round
     }
 }
 
@@ -1184,6 +1321,13 @@ pub enum LineJoinStyle {
     Round,
     Bevel,
     Miter(Fixed8),
+}
+
+impl Default for LineJoinStyle {
+    #[inline]
+    fn default() -> Self {
+        Self::Round
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]

@@ -205,30 +205,31 @@ impl ShapeTessellator {
                     commands,
                     is_closed,
                 } => {
-                    let mut buffers_builder = BuffersBuilder::new(
-                        &mut lyon_mesh,
-                        RuffleVertexCtor {
-                            color: style.color.clone(),
-                        },
-                    );
+                    let color = if let swf::FillStyle::Color(color) = &style.fill_style() {
+                        color.clone()
+                    } else {
+                        swf::Color::from_rgba(0)
+                    };
+                    let mut buffers_builder =
+                        BuffersBuilder::new(&mut lyon_mesh, RuffleVertexCtor { color });
 
                     // TODO(Herschel): 0 width indicates "hairline".
-                    let width = (style.width.to_pixels() as f32).max(1.0);
+                    let width = (style.width().to_pixels() as f32).max(1.0);
 
                     let mut options = StrokeOptions::default()
                         .with_line_width(width)
-                        .with_start_cap(match style.start_cap {
+                        .with_start_cap(match style.start_cap() {
                             swf::LineCapStyle::None => tessellation::LineCap::Butt,
                             swf::LineCapStyle::Round => tessellation::LineCap::Round,
                             swf::LineCapStyle::Square => tessellation::LineCap::Square,
                         })
-                        .with_end_cap(match style.end_cap {
+                        .with_end_cap(match style.end_cap() {
                             swf::LineCapStyle::None => tessellation::LineCap::Butt,
                             swf::LineCapStyle::Round => tessellation::LineCap::Round,
                             swf::LineCapStyle::Square => tessellation::LineCap::Square,
                         });
 
-                    let line_join = match style.join_style {
+                    let line_join = match style.join_style() {
                         swf::LineJoinStyle::Round => tessellation::LineJoin::Round,
                         swf::LineJoinStyle::Bevel => tessellation::LineJoin::Bevel,
                         swf::LineJoinStyle::Miter(limit) => {

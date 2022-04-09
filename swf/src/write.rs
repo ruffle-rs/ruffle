@@ -1205,17 +1205,19 @@ impl<W: Write> Writer<W> {
             // TODO(Herschel): Handle overflow.
             self.write_u16(start.width.get() as u16)?;
             self.write_u16(end.width.get() as u16)?;
-            self.write_rgba(&start.color)?;
-            self.write_rgba(&end.color)?;
+            match (&start.fill_style, &end.fill_style) {
+                (FillStyle::Color(start), FillStyle::Color(end)) => {
+                    self.write_rgba(start)?;
+                    self.write_rgba(end)?;
+                }
+                _ => {
+                    return Err(Error::invalid_data(
+                        "Complex line styles can only be used in DefineMorphShape2 tags",
+                    ));
+                }
+            }
         } else {
-            if start.start_cap != end.start_cap
-                || start.join_style != end.join_style
-                || start.allow_scale_x != end.allow_scale_x
-                || start.allow_scale_y != end.allow_scale_y
-                || start.is_pixel_hinted != end.is_pixel_hinted
-                || start.allow_close != end.allow_close
-                || start.end_cap != end.end_cap
-            {
+            if start.flags != end.flags {
                 return Err(Error::invalid_data(
                     "Morph start and end line styles must have the same join parameters.",
                 ));
@@ -1226,41 +1228,21 @@ impl<W: Write> Writer<W> {
             self.write_u16(end.width.get() as u16)?;
 
             // MorphLineStyle2
-            let mut bits = self.bits();
-            bits.write_ubits(2, start.start_cap as u32)?;
-            bits.write_ubits(
-                2,
-                match start.join_style {
-                    LineJoinStyle::Round => 0,
-                    LineJoinStyle::Bevel => 1,
-                    LineJoinStyle::Miter(_) => 2,
-                },
-            )?;
-            bits.write_bit(start.fill_style.is_some())?;
-            bits.write_bit(!start.allow_scale_x)?;
-            bits.write_bit(!start.allow_scale_y)?;
-            bits.write_bit(start.is_pixel_hinted)?;
-            bits.write_ubits(5, 0)?;
-            bits.write_bit(!start.allow_close)?;
-            bits.write_ubits(2, start.end_cap as u32)?;
-            drop(bits);
-            if let LineJoinStyle::Miter(miter_factor) = start.join_style {
+            self.write_u16(start.flags.bits())?;
+            if let LineJoinStyle::Miter(miter_factor) = start.join_style() {
                 self.write_fixed8(miter_factor)?;
             }
-            match (&start.fill_style, &end.fill_style) {
-                (&None, &None) => {
-                    self.write_rgba(&start.color)?;
-                    self.write_rgba(&end.color)?;
-                }
-
-                (&Some(ref start_fill), &Some(ref end_fill)) => {
-                    self.write_morph_fill_style(start_fill, end_fill)?
-                }
-
-                _ => {
-                    return Err(Error::invalid_data(
-                        "Morph start and end line styles must both have fill styles.",
-                    ))
+            if start.flags.contains(LineStyleFlag::HAS_FILL) {
+                self.write_morph_fill_style(&start.fill_style, &end.fill_style)?;
+            } else {
+                match (&start.fill_style, &end.fill_style) {
+                    (FillStyle::Color(start), FillStyle::Color(end)) => {
+                        self.write_rgba(start)?;
+                        self.write_rgba(end)?;
+                    }
+                    _ => {
+                        return Err(Error::invalid_data("Unexpected line fill style fill type"));
+                    }
                 }
             }
         }
@@ -1584,34 +1566,31 @@ impl<W: Write> Writer<W> {
         self.write_u16(line_style.width.get() as u16)?;
         if shape_version >= 4 {
             // LineStyle2
-            let mut flags = LineStyleFlag::empty();
-            flags.set(LineStyleFlag::PIXEL_HINTING, line_style.is_pixel_hinted);
-            flags.set(LineStyleFlag::NO_V_SCALE, !line_style.allow_scale_y);
-            flags.set(LineStyleFlag::NO_H_SCALE, !line_style.allow_scale_x);
-            flags.set(LineStyleFlag::HAS_FILL, line_style.fill_style.is_some());
-            flags |= match line_style.join_style {
-                LineJoinStyle::Round => LineStyleFlag::ROUND,
-                LineJoinStyle::Bevel => LineStyleFlag::BEVEL,
-                LineJoinStyle::Miter(_) => LineStyleFlag::MITER,
-            };
-            let mut flags = flags.bits();
-            flags |= (line_style.start_cap as u16) << 6;
-            flags |= (line_style.end_cap as u16) << 8;
-            self.write_u16(flags)?;
-
-            if let LineJoinStyle::Miter(miter_factor) = line_style.join_style {
+            self.write_u16(line_style.flags.bits())?;
+            if let LineJoinStyle::Miter(miter_factor) = line_style.join_style() {
                 self.write_fixed8(miter_factor)?;
             }
-            match line_style.fill_style {
-                None => self.write_rgba(&line_style.color)?,
-                Some(ref fill) => self.write_fill_style(fill, shape_version)?,
+            if line_style.flags.contains(LineStyleFlag::HAS_FILL) {
+                self.write_fill_style(&line_style.fill_style, shape_version)?;
+            } else if let FillStyle::Color(color) = &line_style.fill_style {
+                self.write_rgba(color)?;
+            } else {
+                return Err(Error::invalid_data("Unexpected line style fill type"));
             }
-        } else if shape_version >= 3 {
-            // LineStyle1 with RGBA
-            self.write_rgba(&line_style.color)?;
         } else {
-            // LineStyle1 with RGB
-            self.write_rgb(&line_style.color)?;
+            // LineStyle1
+            let color = if let FillStyle::Color(color) = &line_style.fill_style {
+                color
+            } else {
+                return Err(Error::invalid_data(
+                    "Complex line styles can only be used in DefineShape4 tags",
+                ));
+            };
+            if shape_version >= 3 {
+                self.write_rgba(color)?
+            } else {
+                self.write_rgb(color)?
+            }
         }
         Ok(())
     }

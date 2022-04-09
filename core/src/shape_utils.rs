@@ -761,7 +761,7 @@ pub fn shape_hit_test(
                     stroke_width = if i > 0 {
                         // Flash renders strokes with a 1px minimum width.
                         if let Some(line_style) = line_styles.get(i as usize - 1) {
-                            let width = line_style.width.get() as f64;
+                            let width = line_style.width().get() as f64;
                             let scaled_width = 0.5 * width.max(min_width);
                             Some((scaled_width, scaled_width * scaled_width))
                         } else {

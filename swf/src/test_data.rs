@@ -737,15 +737,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new_v1(
-                        Twips::from_pixels(10.0),
-                        Color {
-                            r: 0,
-                            g: 255,
-                            b: 0,
-                            a: 255,
-                        },
-                    )],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(10.0))
+                        .with_color(Color::from_rgba(0xff00ff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
@@ -840,15 +834,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new_v1(
-                        Twips::from_pixels(2.0),
-                        Color {
-                            r: 255,
-                            g: 255,
-                            b: 0,
-                            a: 255,
-                        },
-                    )],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(2.0))
+                        .with_color(Color::from_rgba(0xffffff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(60.0))),
@@ -969,23 +957,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(0.97265625),
                     }],
-                    line_styles: vec![LineStyle {
-                        width: Twips::from_pixels(10.0),
-                        color: Color {
-                            r: 0,
-                            g: 255,
-                            b: 0,
-                            a: 255,
-                        },
-                        start_cap: LineCapStyle::Round,
-                        end_cap: LineCapStyle::Round,
-                        join_style: LineJoinStyle::Round,
-                        fill_style: None,
-                        allow_scale_x: true,
-                        allow_scale_y: true,
-                        is_pixel_hinted: false,
-                        allow_close: true,
-                    }],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(10.0))
+                        .with_color(Color::from_rgba(0xff00ff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(20.0), Twips::from_pixels(20.0))),
@@ -1092,23 +1066,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(-0.9921875),
                     }],
-                    line_styles: vec![LineStyle {
-                        width: Twips::from_pixels(2.0),
-                        color: Color {
-                            r: 255,
-                            g: 255,
-                            b: 0,
-                            a: 255,
-                        },
-                        start_cap: LineCapStyle::Round,
-                        end_cap: LineCapStyle::Round,
-                        join_style: LineJoinStyle::Round,
-                        fill_style: None,
-                        allow_scale_x: true,
-                        allow_scale_y: true,
-                        is_pixel_hinted: false,
-                        allow_close: true,
-                    }],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(2.0))
+                        .with_color(Color::from_rgba(0xffffff00))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some((Twips::from_pixels(26.0), Twips::from_pixels(147.35))),
@@ -1217,23 +1177,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle {
-                        width: Twips::from_pixels(0.0),
-                        color: Color {
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            a: 0,
-                        },
-                        start_cap: LineCapStyle::Round,
-                        end_cap: LineCapStyle::Round,
-                        join_style: LineJoinStyle::Round,
-                        fill_style: None,
-                        allow_scale_x: true,
-                        allow_scale_y: true,
-                        is_pixel_hinted: false,
-                        allow_close: true,
-                    }],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::ZERO)
+                        .with_color(Color::from_rgba(0x00000000))],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
@@ -1305,23 +1251,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle {
-                        width: Twips::from_pixels(0.0),
-                        color: Color {
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            a: 0,
-                        },
-                        start_cap: LineCapStyle::Round,
-                        end_cap: LineCapStyle::Round,
-                        join_style: LineJoinStyle::Round,
-                        fill_style: None,
-                        allow_scale_x: true,
-                        allow_scale_y: true,
-                        is_pixel_hinted: false,
-                        allow_close: true,
-                    }],
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(0.0))
+                        .with_color(Color::from_rgba(0x00000000))],
                     shape: vec![
                         ShapeRecord::StraightEdge {
                             delta_x: Twips::from_pixels(200.0),
@@ -1641,35 +1573,23 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     ],
                     line_styles: vec![
-                        LineStyle {
-                            width: Twips::from_pixels(20.0),
-                            color: Color {
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(20.0))
+                            .with_color(Color {
                                 r: 0,
                                 g: 153,
                                 b: 0,
                                 a: 255,
-                            },
-                            start_cap: LineCapStyle::None,
-                            end_cap: LineCapStyle::None,
-                            join_style: LineJoinStyle::Bevel,
-                            fill_style: None,
-                            allow_scale_x: false,
-                            allow_scale_y: false,
-                            is_pixel_hinted: true,
-                            allow_close: true,
-                        },
-                        LineStyle {
-                            width: Twips::from_pixels(20.0),
-                            color: Color {
-                                r: 0,
-                                g: 0,
-                                b: 0,
-                                a: 0,
-                            },
-                            start_cap: LineCapStyle::Round,
-                            end_cap: LineCapStyle::Round,
-                            join_style: LineJoinStyle::Round,
-                            fill_style: Some(FillStyle::LinearGradient(Gradient {
+                            })
+                            .with_allow_scale_x(false)
+                            .with_allow_scale_y(false)
+                            .with_is_pixel_hinted(true)
+                            .with_join_style(LineJoinStyle::Bevel)
+                            .with_start_cap(LineCapStyle::None)
+                            .with_end_cap(LineCapStyle::None),
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(20.0))
+                            .with_fill_style(FillStyle::LinearGradient(Gradient {
                                 matrix: Matrix {
                                     tx: Twips::from_pixels(50.0),
                                     ty: Twips::from_pixels(50.0),
@@ -1700,29 +1620,20 @@ pub fn tag_tests() -> Vec<TagTestData> {
                                         },
                                     },
                                 ],
-                            })),
-                            allow_scale_x: true,
-                            allow_scale_y: false,
-                            is_pixel_hinted: true,
-                            allow_close: true,
-                        },
-                        LineStyle {
-                            width: Twips::from_pixels(20.0),
-                            color: Color {
+                            }))
+                            .with_allow_scale_y(false)
+                            .with_is_pixel_hinted(true),
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(20.0))
+                            .with_color(Color {
                                 r: 0,
                                 g: 153,
                                 b: 0,
                                 a: 255,
-                            },
-                            start_cap: LineCapStyle::Round,
-                            end_cap: LineCapStyle::Round,
-                            join_style: LineJoinStyle::Miter(Fixed8::from_f32(56.0)),
-                            fill_style: None,
-                            allow_scale_x: true,
-                            allow_scale_y: false,
-                            is_pixel_hinted: true,
-                            allow_close: true,
-                        },
+                            })
+                            .with_join_style(LineJoinStyle::Miter(Fixed8::from_f32(56.0)))
+                            .with_allow_scale_y(false)
+                            .with_is_pixel_hinted(true),
                     ],
                 },
                 shape: vec![
@@ -2572,18 +2483,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 has_scaling_strokes: true,
                 styles: ShapeStyles {
                     fill_styles: vec![],
-                    line_styles: vec![LineStyle {
-                        width: Twips::from_pixels(40.0),
-                        color: Color {
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            a: 0,
-                        },
-                        start_cap: LineCapStyle::Round,
-                        end_cap: LineCapStyle::Round,
-                        join_style: LineJoinStyle::Round,
-                        fill_style: Some(FillStyle::Bitmap {
+                    line_styles: vec![LineStyle::new()
+                        .with_width(Twips::from_pixels(40.0))
+                        .with_fill_style(FillStyle::Bitmap {
                             id: 1,
                             matrix: Matrix {
                                 a: Fixed16::from_f32(20.0),
@@ -2594,12 +2496,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                             is_smoothed: false,
                             is_repeating: true,
-                        }),
-                        allow_scale_x: true,
-                        allow_scale_y: true,
-                        is_pixel_hinted: false,
-                        allow_close: true,
-                    }],
+                        })],
                 },
                 shape: vec![
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {
