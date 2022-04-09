@@ -534,6 +534,7 @@ swf_tests! {
     (define_local_with_paths, "avm1/define_local_with_paths", 1),
     (delete, "avm1/delete", 3),
     (displacement_map_filter, "avm1/displacement_map_filter", 1),
+    (divide_swf4, "avm1/divide_swf4", 1),
     (do_init_action, "avm1/do_init_action", 3),
     (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (duplicate_movie_clip_drawing, "avm1/duplicate_movie_clip_drawing", 1),
