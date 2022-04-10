@@ -432,6 +432,9 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
+            Value::Undefined if activation.swf_version() < 7 => "".into(),
+            Value::Bool(true) if activation.swf_version() < 5 => "1".into(),
+            Value::Bool(false) if activation.swf_version() < 5 => "0".into(),
             Value::Object(object) => {
                 match object.call_method("toString".into(), &[], activation)? {
                     Value::String(s) => s,
@@ -444,13 +447,7 @@ impl<'gc> Value<'gc> {
                     }
                 }
             }
-            Value::Undefined => {
-                if activation.swf_version() >= 7 {
-                    "undefined".into()
-                } else {
-                    "".into()
-                }
-            }
+            Value::Undefined => "undefined".into(),
             Value::Null => "null".into(),
             Value::Bool(true) => "true".into(),
             Value::Bool(false) => "false".into(),
