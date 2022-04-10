@@ -860,13 +860,13 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 macro_rules! constructor_to_fn {
     ($f:expr) => {{
         fn _constructor_fn<'gc>(
-            activation: &mut crate::avm1::activation::Activation<'_, 'gc, '_>,
-            this: crate::avm1::Object<'gc>,
-            args: &[crate::avm1::Value<'gc>],
-        ) -> Result<crate::avm1::Value<'gc>, crate::avm1::error::Error<'gc>> {
+            activation: &mut $crate::avm1::activation::Activation<'_, 'gc, '_>,
+            this: $crate::avm1::Object<'gc>,
+            args: &[$crate::avm1::Value<'gc>],
+        ) -> Result<$crate::avm1::Value<'gc>, $crate::avm1::error::Error<'gc>> {
             let _ = $f(activation, this, args)?;
-            Ok(crate::avm1::Value::Undefined)
+            Ok($crate::avm1::Value::Undefined)
         }
-        crate::avm1::function::Executable::Native(_constructor_fn)
+        $crate::avm1::function::Executable::Native(_constructor_fn)
     }};
 }

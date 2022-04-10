@@ -1311,7 +1311,6 @@ impl<'a> Reader<'a> {
         while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
             start_shape.push(record);
         }
-        drop(bits);
 
         let mut end_shape = Vec::new();
         self.read_u8()?; // NumFillBits and NumLineBits are written as 0 for the end shape.
