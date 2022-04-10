@@ -1484,20 +1484,20 @@ export function isBuiltInContextMenuVisible(menu: string | null): boolean {
 export function isYoutubeFlashSource(filename: string | null): boolean {
     if (filename) {
         let pathname = "";
-        let hostname = "";
+        let cleaned_hostname = "";
         try {
             // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
             const url = new URL(filename, RUFFLE_ORIGIN);
             pathname = url.pathname;
-            hostname = url.hostname;
+            cleaned_hostname = url.hostname.replace("www.", "");
         } catch (err) {
             // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
         }
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
         if (
             pathname.startsWith("/v/") &&
-            (hostname.endsWith("youtube.com") ||
-                hostname.endsWith("youtube-nocookie.com"))
+            (cleaned_hostname === "youtube.com" ||
+                cleaned_hostname === "youtube-nocookie.com")
         ) {
             return true;
         }
