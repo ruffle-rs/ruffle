@@ -360,7 +360,7 @@ macro_rules! impl_display_object_container {
 
         fn child_by_name(
             self,
-            name: &crate::string::WStr,
+            name: &$crate::string::WStr,
             case_sensitive: bool,
         ) -> Option<DisplayObject<'gc>> {
             self.0.read().$field.get_name(name, case_sensitive)
@@ -466,7 +466,7 @@ macro_rules! impl_display_object_container {
             child: DisplayObject<'gc>,
             index: usize,
         ) {
-            use crate::display_object::container::dispatch_added_event;
+            use $crate::display_object::container::dispatch_added_event;
             let parent_changed = if let Some(old_parent) = child.parent() {
                 if !DisplayObject::ptr_eq(old_parent, (*self).into()) {
                     if let Some(mut old_parent) = old_parent.as_container() {
@@ -524,7 +524,7 @@ macro_rules! impl_display_object_container {
                 (*self).into()
             ));
 
-            use crate::display_object::container::dispatch_removed_event;
+            use $crate::display_object::container::dispatch_removed_event;
             dispatch_removed_event(child, context);
 
             let mut write = self.0.write(context.gc_context);
@@ -564,7 +564,7 @@ macro_rules! impl_display_object_container {
                 .map(|(_, child)| child)
                 .collect();
 
-            use crate::display_object::container::dispatch_removed_event;
+            use $crate::display_object::container::dispatch_removed_event;
             for removed in removed_list.iter() {
                 dispatch_removed_event(*removed, context);
             }
@@ -588,7 +588,7 @@ macro_rules! impl_display_object_container {
         }
 
         fn clear(&mut self, context: &mut UpdateContext<'_, 'gc, '_>) {
-            use crate::display_object::container::dispatch_removed_event;
+            use $crate::display_object::container::dispatch_removed_event;
             let removed_children: Vec<DisplayObject<'gc>> =
                 self.0.read().$field.iter_render_list().collect();
             for removed in removed_children {
