@@ -250,16 +250,12 @@ export class RuffleObject extends RufflePlayer {
                     "param[name='movie']"
                 ) as HTMLElement;
                 if (movie_elem) {
-                    const movie_src_before = movie_elem.getAttribute("value");
                     workaroundYoutubeMixedContent(movie_elem, "value");
                     // The data attribute needs to be set for the re-fetch to happen
-                    const movie_src_after = movie_elem.getAttribute("value");
-                    if (
-                        movie_src_before &&
-                        movie_src_after &&
-                        movie_src_before !== movie_src_after
-                    ) {
-                        elem.setAttribute("data", movie_src_after);
+                    // It also needs to be set on Firefox for the YouTube object rewrite to work, regardless of mixed content
+                    const movie_src = movie_elem.getAttribute("value");
+                    if (movie_src) {
+                        elem.setAttribute("data", movie_src);
                     }
                 }
                 return false;
