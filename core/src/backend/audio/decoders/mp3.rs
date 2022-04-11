@@ -181,7 +181,7 @@ pub mod symphonia {
             while let Ok(packet) = self.reader.next_packet() {
                 match self.decoder.decode(&packet) {
                     Ok(decoded) => {
-                        if self.sample_buf.len() == 0 {
+                        if self.sample_buf.is_empty() {
                             self.sample_buf = audio::SampleBuffer::new(
                                 decoded.capacity() as core::units::Duration,
                                 *decoded.spec(),
