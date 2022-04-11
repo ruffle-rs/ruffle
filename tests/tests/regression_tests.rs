@@ -695,6 +695,7 @@ swf_tests! {
     (string_methods_negative_args, "avm1/string_methods_negative_args", 1),
     (string_methods, "avm1/string_methods", 1),
     (string_ops_swf6, "avm1/string_ops_swf6", 1),
+    (swf4_bool, "avm1/swf4_bool", 1),
     (swf5_encoding, "avm1/swf5_encoding", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
