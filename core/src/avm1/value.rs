@@ -127,15 +127,6 @@ impl<'gc> Value<'gc> {
         !matches!(self, Value::Object(_))
     }
 
-    pub fn into_number_v1(self) -> f64 {
-        match self {
-            Value::Bool(true) => 1.0,
-            Value::Number(v) => v,
-            Value::String(v) => v.parse().unwrap_or(0.0),
-            _ => 0.0,
-        }
-    }
-
     /// ECMA-262 2nd edtion s. 9.3 ToNumber (after calling `to_primitive_num`)
     ///
     /// Flash diverges from spec in a number of ways. These ways are, as far as

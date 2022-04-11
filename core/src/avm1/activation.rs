@@ -577,7 +577,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_add(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = b.into_number_v1() + a.into_number_v1();
+        let result = b.coerce_to_f64(self)? + a.coerce_to_f64(self)?;
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
@@ -1027,9 +1027,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     #[allow(clippy::float_cmp)]
     fn action_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 equality
-        let a = self.context.avm1.pop();
-        let b = self.context.avm1.pop();
-        let result = b.into_number_v1() == a.into_number_v1();
+        // If both of the values to compare coerce to `NaN`, the result will always be false.
+        // This differs from the behavior used in `Action::Equals2`.
+        let a = self.context.avm1.pop().coerce_to_f64(self)?;
+        let b = self.context.avm1.pop().coerce_to_f64(self)?;
+        let result = b == a;
         self.context
             .avm1
             .push(Value::from_bool(result, self.swf_version()));
@@ -1092,9 +1094,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_get_property(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let prop_index = self.context.avm1.pop().into_number_v1() as usize;
+        let prop_value = self.context.avm1.pop();
+        let prop_index = prop_value.coerce_to_f64(self)?;
         let path = self.context.avm1.pop();
-        let result = if let Some(target) = self.target_clip() {
+        let result = if prop_index.is_nan() || prop_index <= -1.0 {
+            avm_warn!(self, "GetProperty: Invalid property {:?}", prop_value);
+            Value::Undefined
+        } else if let Some(target) = self.target_clip() {
+            let prop_index = prop_index as usize;
             if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
                 let display_properties = self.context.avm1.display_properties;
                 let props = display_properties.read();
@@ -1105,7 +1112,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     Value::Undefined
                 }
             } else {
-                //avm_warn!(self, "GetProperty: Invalid target {}", path);
+                avm_warn!(self, "GetProperty: Invalid target {:?}", path);
                 Value::Undefined
             }
         } else {
@@ -1486,9 +1493,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn action_less(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 less than
+        // If one of the values to compare coerces to `NaN`, the result will be false.
+        // This differs from the behavior used in `Action::Less2`.
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
-        let result = b.into_number_v1() < a.into_number_v1();
+        let result = b.coerce_to_f64(self)? < a.coerce_to_f64(self)?;
         self.context
             .avm1
             .push(Value::from_bool(result, self.swf_version()));
