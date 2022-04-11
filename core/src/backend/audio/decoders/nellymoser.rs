@@ -22,7 +22,7 @@ impl<R: Read> Iterator for NellymoserDecoder<R> {
     }
 }
 
-impl<R: Read> Decoder for NellymoserDecoder<R> {
+impl<R: Read + Send + Sync> Decoder for NellymoserDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
         1
@@ -34,7 +34,7 @@ impl<R: Read> Decoder for NellymoserDecoder<R> {
     }
 }
 
-impl<R: AsRef<[u8]>> SeekableDecoder for NellymoserDecoder<Cursor<R>> {
+impl<R: AsRef<[u8]> + Send + Sync> SeekableDecoder for NellymoserDecoder<Cursor<R>> {
     #[inline]
     fn reset(&mut self) {
         self.decoder.reset();

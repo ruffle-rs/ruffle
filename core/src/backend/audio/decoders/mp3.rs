@@ -38,7 +38,7 @@ pub mod minimp3 {
         }
     }
 
-    impl<R: Read> Iterator for Mp3Decoder<R> {
+    impl<R: Read + Send + Sync> Iterator for Mp3Decoder<R> {
         type Item = [i16; 2];
 
         #[inline]
@@ -65,7 +65,7 @@ pub mod minimp3 {
         }
     }
 
-    impl<R: AsRef<[u8]> + Default> SeekableDecoder for Mp3Decoder<Cursor<R>> {
+    impl<R: AsRef<[u8]> + Default + Send + Sync> SeekableDecoder for Mp3Decoder<Cursor<R>> {
         #[inline]
         fn reset(&mut self) {
             // TODO: This is funky.
@@ -79,7 +79,7 @@ pub mod minimp3 {
         }
     }
 
-    impl<R: Read> Decoder for Mp3Decoder<R> {
+    impl<R: Read + Send + Sync> Decoder for Mp3Decoder<R> {
         #[inline]
         fn num_channels(&self) -> u8 {
             self.num_channels
@@ -121,7 +121,7 @@ pub mod symphonia {
     impl Mp3Decoder {
         const SAMPLE_BUFFER_DURATION: u64 = 4096;
 
-        pub fn new<R: 'static + Read + Send>(reader: R) -> Result<Self, Error> {
+        pub fn new<R: 'static + Read + Send + Sync>(reader: R) -> Result<Self, Error> {
             let source = Box::new(io::ReadOnlySource::new(reader)) as Box<dyn io::MediaSource>;
             let source = io::MediaSourceStream::new(source, Default::default());
             let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
@@ -145,7 +145,7 @@ pub mod symphonia {
             })
         }
 
-        pub fn new_seekable<R: 'static + AsRef<[u8]> + Send>(
+        pub fn new_seekable<R: 'static + AsRef<[u8]> + Send + Sync>(
             reader: Cursor<R>,
         ) -> Result<Self, Error> {
             let source = Box::new(reader) as Box<dyn io::MediaSource>;
