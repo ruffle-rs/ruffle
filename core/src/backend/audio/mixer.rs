@@ -32,7 +32,7 @@ pub struct AudioMixer {
 type Error = Box<dyn std::error::Error>;
 
 /// An audio stream.
-trait Stream: dasp::signal::Signal<Frame = [i16; 2]> + Send {
+trait Stream: dasp::signal::Signal<Frame = [i16; 2]> + Send + Sync {
     /// The position of this stream in sample frames.
     ///
     /// For infinite streams, this will be the number of sample frames since the start of the
@@ -64,7 +64,7 @@ impl<D> DecoderStream<D> {
     }
 }
 
-impl<D: Decoder + Send> Stream for DecoderStream<D> {
+impl<D: Decoder> Stream for DecoderStream<D> {
     #[inline]
     fn source_position(&self) -> u32 {
         self.position
@@ -76,7 +76,7 @@ impl<D: Decoder + Send> Stream for DecoderStream<D> {
     }
 }
 
-impl<D: Decoder + Send> dasp::signal::Signal for DecoderStream<D> {
+impl<D: Decoder> dasp::signal::Signal for DecoderStream<D> {
     type Frame = [i16; 2];
 
     #[inline]
@@ -191,8 +191,8 @@ impl AudioMixer {
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
         data: Cursor<ArcAsRef>,
-    ) -> Result<Box<dyn Send + SeekableDecoder>, Error> {
-        let decoder: Box<dyn Send + SeekableDecoder> = match format.compression {
+    ) -> Result<Box<dyn SeekableDecoder>, Error> {
+        let decoder: Box<dyn SeekableDecoder> = match format.compression {
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
                 data,
                 format.is_stereo,
@@ -273,7 +273,7 @@ impl AudioMixer {
     ///
     /// This is used for cases where there is no custom envelope or looping on the sound instance.
     /// Otherwise, `AudioMixer::make_stream_from_event_sound` should be used.
-    fn make_stream_from_simple_event_sound<R: 'static + std::io::Read + Send>(
+    fn make_stream_from_simple_event_sound<R: 'static + std::io::Read + Send + Sync>(
         &self,
         format: &swf::SoundFormat,
         data_stream: R,
@@ -548,7 +548,7 @@ impl Default for ArcAsRef {
 
 /// A stream for event sound instances with custom envelopes, start/end point, or loop settings.
 struct EventSoundStream {
-    decoder: Box<dyn SeekableDecoder + Send>,
+    decoder: Box<dyn SeekableDecoder>,
     num_loops: u16,
     start_sample_frame: u32,
     end_sample_frame: Option<u32>,
@@ -559,7 +559,7 @@ struct EventSoundStream {
 
 impl EventSoundStream {
     fn new_with_settings(
-        decoder: Box<dyn SeekableDecoder + Send>,
+        decoder: Box<dyn SeekableDecoder>,
         settings: &swf::SoundInfo,
         num_sample_frames: u32,
         skip_sample_frames: u16,
@@ -652,7 +652,7 @@ where
 impl<S, I> Stream for ConverterStream<S, I>
 where
     S: Stream,
-    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send,
+    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send + Sync,
 {
     #[inline]
     fn source_position(&self) -> u32 {
@@ -668,7 +668,7 @@ where
 impl<S, I> dasp::signal::Signal for ConverterStream<S, I>
 where
     S: Stream,
-    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send,
+    I: dasp::interpolate::Interpolator<Frame = [i16; 2]> + Send + Sync,
 {
     type Frame = [i16; 2];
 
@@ -687,7 +687,7 @@ where
 struct MulAmpStream<S, E>
 where
     S: Stream,
-    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send + Sync,
 {
     stream: S,
     envelope: E,
@@ -696,7 +696,7 @@ where
 impl<S, E> MulAmpStream<S, E>
 where
     S: Stream,
-    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send + Sync,
 {
     fn new(stream: S, envelope: E) -> Self {
         Self { stream, envelope }
@@ -706,7 +706,7 @@ where
 impl<S, E> Stream for MulAmpStream<S, E>
 where
     S: Stream,
-    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send + Sync,
 {
     #[inline]
     fn source_position(&self) -> u32 {
@@ -722,7 +722,7 @@ where
 impl<S, E> dasp::signal::Signal for MulAmpStream<S, E>
 where
     S: Stream,
-    E: dasp::signal::Signal<Frame = [f32; 2]> + Send,
+    E: dasp::signal::Signal<Frame = [f32; 2]> + Send + Sync,
 {
     type Frame = [i16; 2];
 

@@ -47,7 +47,7 @@ impl<R: Read> Iterator for PcmDecoder<R> {
     }
 }
 
-impl<R: Read> Decoder for PcmDecoder<R> {
+impl<R: Read + Send + Sync> Decoder for PcmDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
         if self.is_stereo {
@@ -63,7 +63,7 @@ impl<R: Read> Decoder for PcmDecoder<R> {
     }
 }
 
-impl<R: AsRef<[u8]>> SeekableDecoder for PcmDecoder<Cursor<R>> {
+impl<R: AsRef<[u8]> + Send + Sync> SeekableDecoder for PcmDecoder<Cursor<R>> {
     #[inline]
     fn reset(&mut self) {
         self.inner.set_position(0);

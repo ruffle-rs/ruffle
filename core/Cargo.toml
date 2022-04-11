@@ -38,7 +38,7 @@ encoding_rs = "0.8.31"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
-nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser" }
+nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5" }
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
 regress = "0.4"

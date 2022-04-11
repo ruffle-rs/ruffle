@@ -146,7 +146,7 @@ impl<R: Read> Iterator for AdpcmDecoder<R> {
     }
 }
 
-impl<R: std::io::Read> Decoder for AdpcmDecoder<R> {
+impl<R: std::io::Read + Send + Sync> Decoder for AdpcmDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
         self.channels.len() as u8
@@ -158,7 +158,7 @@ impl<R: std::io::Read> Decoder for AdpcmDecoder<R> {
     }
 }
 
-impl<R: AsRef<[u8]> + Default> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
+impl<R: AsRef<[u8]> + Default + Send + Sync> SeekableDecoder for AdpcmDecoder<Cursor<R>> {
     #[inline]
     fn reset(&mut self) {
         // TODO: This is funky.

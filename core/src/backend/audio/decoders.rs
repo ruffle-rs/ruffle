@@ -22,7 +22,7 @@ type Error = Box<dyn std::error::Error>;
 
 /// An audio decoder. Can be used as an `Iterator` to return stero sample frames.
 /// If the sound is mono, the sample is duplicated across both channels.
-pub trait Decoder: Iterator<Item = [i16; 2]> {
+pub trait Decoder: Iterator<Item = [i16; 2]> + Send + Sync {
     /// The number of channels of this audio decoder. Always 1 or 2.
     fn num_channels(&self) -> u8;
 
@@ -31,11 +31,11 @@ pub trait Decoder: Iterator<Item = [i16; 2]> {
 }
 
 /// Instantiate a decoder for the compression that the sound data uses.
-pub fn make_decoder<R: 'static + Send + Read>(
+pub fn make_decoder<R: 'static + Read + Send + Sync>(
     format: &SoundFormat,
     data: R,
-) -> Result<Box<dyn Send + Decoder>, Error> {
-    let decoder: Box<dyn Send + Decoder> = match format.compression {
+) -> Result<Box<dyn Decoder>, Error> {
+    let decoder: Box<dyn Decoder> = match format.compression {
         AudioCompression::UncompressedUnknownEndian => {
             // Cross fingers that it's little endian.
             log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
@@ -74,7 +74,7 @@ pub fn make_decoder<R: 'static + Send + Read>(
     Ok(decoder)
 }
 
-impl Decoder for Box<dyn Decoder + Send> {
+impl<T: Decoder + ?Sized> Decoder for Box<T> {
     #[inline]
     fn num_channels(&self) -> u8 {
         self.as_ref().num_channels()
@@ -100,7 +100,7 @@ pub trait StreamDecoder: Decoder {}
 /// and feeds it to the decoder.
 struct StandardStreamDecoder {
     /// The underlying decoder. The decoder will get its data from a `StreamTagReader`.
-    decoder: Box<dyn Decoder + Send>,
+    decoder: Box<dyn Decoder>,
 }
 
 impl StandardStreamDecoder {
