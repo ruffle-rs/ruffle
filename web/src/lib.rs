@@ -1205,13 +1205,13 @@ fn external_to_js_value(external: ExternalValue) -> JsValue {
 async fn create_renderer(
     document: &web_sys::Document,
 ) -> Result<(HtmlCanvasElement, Box<dyn RenderBackend>), Box<dyn Error>> {
-    #[cfg(not(any(feature = "canvas", feature = "webgl")))]
+    #[cfg(not(any(feature = "canvas", feature = "webgl", feature = "wgpu")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
     // Try to create a backend, falling through to the next backend on failure.
     // We must recreate the canvas each attempt, as only a single context may be created per canvas
     // with `getContext`.
-    #[cfg(feature = "wgpu")]
+    #[cfg(all(feature = "wgpu", target_arch = "wasm32"))]
     {
         // Check that we have access to WebGPU (navigator.gpu should exist).
         if web_sys::window()
