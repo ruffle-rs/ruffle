@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
 use crate::avm_warn;
+use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
 use gc_arena::MutationContext;
@@ -240,11 +241,24 @@ fn id3<'gc>(
 
 fn load_sound<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        avm_warn!(activation, "Sound.loadSound: Unimplemented");
+    if let Some(sound) = this.as_sound_object() {
+        if let Some(url) = args.get(0) {
+            let url = url.coerce_to_string(activation)?;
+            let is_streaming = args
+                .get(1)
+                .unwrap_or(&Value::Undefined)
+                .as_bool(activation.swf_version());
+            let future = activation.context.load_manager.load_sound(
+                activation.context.player.clone(),
+                sound,
+                Request::get(url.to_utf8_lossy().into_owned()),
+                is_streaming,
+            );
+            activation.context.navigator.spawn_future(future);
+        }
     }
     Ok(Value::Undefined)
 }
@@ -356,7 +370,7 @@ fn set_volume<'gc>(
     Ok(Value::Undefined)
 }
 
-fn start<'gc>(
+pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     args: &[Value<'gc>],
