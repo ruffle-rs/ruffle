@@ -363,7 +363,7 @@ impl AudioMixer {
         sound_instances.retain(|_, sound| sound.active);
     }
 
-    /// Registers a sound with the audio mixer.
+    /// Registers an embedded SWF sound with the audio mixer.
     pub fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
@@ -382,6 +382,26 @@ impl AudioMixer {
             num_sample_frames: swf_sound.num_samples,
             skip_sample_frames,
         };
+        Ok(self.sounds.insert(sound))
+    }
+
+    /// Registers an external MP3 with the audio mixer.
+    pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
+        let mut sound = Sound {
+            format: swf::SoundFormat {
+                compression: AudioCompression::Mp3,
+                // This value is ignored; the sample rate from the MP3 data itself will be used.
+                sample_rate: 44100,
+                is_stereo: true,
+                is_16_bit: true,
+            },
+            data: Arc::from(data),
+            num_sample_frames: 0, // TODO
+            skip_sample_frames: 0,
+        };
+        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
+        let decoder = Self::make_seekable_decoder(&sound.format, data)?;
+        sound.num_sample_frames = decoder.count() as u32;
         Ok(self.sounds.insert(sound))
     }
 
@@ -869,6 +889,11 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
             self.$mixer.register_sound(swf_sound)
+        }
+
+        #[inline]
+        fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
+            self.$mixer.register_mp3(data)
         }
 
         #[inline]

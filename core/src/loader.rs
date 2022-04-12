@@ -3,7 +3,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::ByteArrayObject;
 use crate::avm2::object::EventObject as Avm2EventObject;
@@ -129,6 +129,9 @@ pub enum Error {
     #[error("Invalid bitmap")]
     InvalidBitmap(#[from] ruffle_render::error::Error),
 
+    #[error("Invalid sound: {0}")]
+    InvalidSound(#[from] crate::backend::audio::DecodeError),
+
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),
 
@@ -179,6 +182,7 @@ impl<'gc> LoadManager<'gc> {
             | Loader::Form { self_handle, .. }
             | Loader::LoadVars { self_handle, .. }
             | Loader::LoadURLLoader { self_handle, .. } => *self_handle = Some(handle),
+            Loader::Sound { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -306,6 +310,25 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.load_url_loader(player, request, data_format)
     }
+
+    /// Kick off an audio load.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_sound(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: SoundObject<'gc>,
+        request: Request,
+        is_streaming: bool,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::Sound {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.sound_loader(player, request, is_streaming)
+    }
 }
 
 impl<'gc> Default for LoadManager<'gc> {
@@ -397,6 +420,16 @@ pub enum Loader<'gc> {
 
         /// The target `URLLoader` to load data into.
         target_object: Avm2Object<'gc>,
+    },
+
+    /// Loader that is loading an MP3 into an AVM1 Sound object.
+    Sound {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to load the audio into.
+        target_object: SoundObject<'gc>,
     },
 }
 
@@ -907,6 +940,67 @@ impl<'gc> Loader<'gc> {
                             );
                         }
                     }
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Creates a future for a Sound load call.
+    fn sound_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        request: Request,
+        is_streaming: bool,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::Sound { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            _ => return Box::pin(async { Err(Error::NotLoadVarsLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let data = fetch.await;
+
+            // Fire the load handler.
+            player.lock().unwrap().update(|uc| {
+                let loader = uc.load_manager.get_loader(handle);
+                let sound_object = match loader {
+                    Some(&Loader::Sound { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotLoadVarsLoader),
+                };
+
+                let success = data
+                    .and_then(|data| {
+                        let handle = uc.audio.register_mp3(&data.body)?;
+                        sound_object.set_sound(uc.gc_context, Some(handle));
+                        let duration = uc
+                            .audio
+                            .get_sound_duration(handle)
+                            .map(|d| d.round() as u32);
+                        sound_object.set_duration(uc.gc_context, duration);
+                        Ok(())
+                    })
+                    .is_ok();
+
+                let mut activation =
+                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                let _ = sound_object.call_method(
+                    "onLoad".into(),
+                    &[success.into()],
+                    &mut activation,
+                    ExecutionReason::Special,
+                );
+
+                // Streaming sounds should auto-play.
+                if is_streaming {
+                    crate::avm1::start_sound(&mut activation, sound_object.into(), &[])?;
                 }
 
                 Ok(())

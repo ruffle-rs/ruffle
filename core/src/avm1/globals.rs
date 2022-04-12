@@ -48,7 +48,7 @@ mod point;
 mod rectangle;
 mod selection;
 pub(crate) mod shared_object;
-mod sound;
+pub(crate) mod sound;
 mod stage;
 pub(crate) mod string;
 pub(crate) mod system;

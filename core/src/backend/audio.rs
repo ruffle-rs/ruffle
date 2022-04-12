@@ -43,7 +43,12 @@ pub enum RegisterError {
 pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
+
+    /// Registers an sound embedded in an SWF.
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError>;
+
+    /// Registers MP3 audio from an external source.
+    fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError>;
 
     /// Plays a sound.
     fn start_sound(
@@ -171,6 +176,19 @@ impl AudioBackend for NullAudioBackend {
             duration,
             size: data.len() as u32,
             format: sound.format.clone(),
+        }))
+    }
+
+    fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
+        Ok(self.sounds.insert(NullSound {
+            size: 0,
+            duration: 0.0,
+            format: swf::SoundFormat {
+                compression: swf::AudioCompression::Mp3,
+                sample_rate: 44100,
+                is_stereo: true,
+                is_16_bit: true,
+            },
         }))
     }
 
