@@ -1,0 +1,32 @@
+// '100' == '100ABC'
+false
+
+// '0x10' == '16'
+true
+
+// '010' == '8'
+true
+
+// 'true' == '0x1'
+false
+
+// undefined == 0
+false
+
+// null == 0
+false
+
+// 'Infinity' == Infinity
+false
+
+// n = NaN;
+// n == NaN
+false
+
+// n == n
+false
+
+// obj_1 == obj_2
+OBJ_2
+OBJ_1
+true

@@ -1,0 +1,54 @@
+// SWF hand-edited with JPEXS.
+
+obj_1 = { valueOf:function() {
+   trace("OBJ_1");
+   return 1;
+}};
+obj_2 = { valueOf:function() {
+   trace("OBJ_2");
+   return "4";
+}};
+
+trace("// 'ab' + 'cd'");
+a = "ab" + "cd";
+trace(a);
+trace("");
+
+trace("// 300 + '150' + true");
+a = 300 + "150" + true;
+trace(a);
+trace("");
+
+trace("// '300' + '150a'");
+a = "300" + "150a";
+trace(a);
+trace("");
+
+trace("// '300' + '0x96' + '010'");
+a = "300" + "0x96" + "010";
+trace(a);
+trace("");
+
+trace("// '300' + undefined");
+a = "300" + undefined;
+trace(a);
+trace("");
+
+trace("// '300' + null");
+a = "300" + null;
+trace(a);
+trace("");
+
+trace("// '300' + NaN");
+a = "300" + NaN;
+trace(a);
+trace("");
+
+trace("// '300' + Infinity");
+a = "300" + Infinity;
+trace(a);
+trace("");
+
+trace("// obj_1 + obj_2");
+a = obj_1 + obj_2;
+trace(a);

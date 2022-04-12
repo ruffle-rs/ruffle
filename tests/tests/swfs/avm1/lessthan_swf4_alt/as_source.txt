@@ -1,0 +1,75 @@
+// SWF hand-edited with JPEXS.
+
+obj_1 = { valueOf:function() {
+   trace("OBJ_1");
+   return 1;
+}};
+obj_2 = { valueOf:function() {
+   trace("OBJ_2");
+   return "2";
+}};
+
+trace("// '100' < '100ABC'");
+a = "100" < "100ABC";
+trace(a);
+trace("");
+
+trace("// '100' < '101ABC'");
+a = "100" < "101ABC";
+trace(a);
+trace("");
+
+trace("// '0x10' < '16'");
+a = "0x10" < "16";
+trace(a);
+trace("");
+
+trace("// '010' < '10'");
+a = "010" < "10";
+trace(a);
+trace("");
+
+trace("// 'true' < '0x1'");
+a = "true" < "0x1";
+trace(a);
+trace("");
+
+trace("// 'true' < '0x2'");
+a = "true" < "0x2";
+trace(a);
+trace("");
+
+trace("// undefined < '0'");
+a = undefined < "0";
+trace(a);
+trace("");
+
+trace("// undefined < 1");
+a = undefined < "1";
+trace(a);
+trace("");
+
+trace("// null < '0'");
+a = null < "0";
+trace(a);
+trace("");
+
+trace("// null < '1'");
+a = null < "1";
+trace(a);
+trace("");
+
+trace("// n = NaN;\n// n < NaN");
+n = NaN;
+a = n < NaN;
+trace(a);
+trace("");
+
+trace("// n < n");
+a = n < n;
+trace(a);
+trace("");
+
+trace("// obj_1 < obj_2");
+a = obj_1 < obj_2;
+trace(a);
