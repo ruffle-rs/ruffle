@@ -1,0 +1,41 @@
+// '100' < '100ABC'
+false
+
+// '100' < '101ABC'
+false
+
+// '0x10' < '16'
+false
+
+// '010' < '10'
+true
+
+// 'true' < '0x1'
+false
+
+// 'true' < '0x2'
+false
+
+// undefined < '0'
+false
+
+// undefined < 1
+false
+
+// null < '0'
+false
+
+// null < '1'
+false
+
+// n = NaN;
+// n < NaN
+false
+
+// n < n
+false
+
+// obj_1 < obj_2
+OBJ_1
+OBJ_2
+true

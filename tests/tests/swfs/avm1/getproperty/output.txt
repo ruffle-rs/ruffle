@@ -1,0 +1,28 @@
+// GetProperty: -0.8
+number
+0
+
+// GetProperty: -1
+undefined
+undefined
+
+// GetProperty: '013'
+string
+/
+
+// GetProperty: '0x13'
+string
+HIGH
+
+// GetProperty: '11ABC'
+undefined
+undefined
+
+// GetProperty: 'ABC'
+undefined
+undefined
+
+// GetProperty: obj
+OBJ
+string
+/

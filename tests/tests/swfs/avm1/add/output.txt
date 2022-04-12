@@ -1,0 +1,28 @@
+// 'ab' + 'cd'
+NaN
+
+// 300 + '150' + true
+451
+
+// '300' + '150a'
+NaN
+
+// '300' + '0x96' + '010'
+458
+
+// '300' + undefined
+NaN
+
+// '300' + null
+NaN
+
+// '300' + NaN
+NaN
+
+// '300' + Infinity
+Infinity
+
+// obj_1 + obj_2
+OBJ_1
+OBJ_2
+5
