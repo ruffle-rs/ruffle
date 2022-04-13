@@ -306,7 +306,7 @@ fn create_color_pipelines(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_description,
@@ -330,7 +330,7 @@ fn create_color_pipelines(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_description,
@@ -354,7 +354,7 @@ fn create_color_pipelines(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_description,
@@ -378,7 +378,7 @@ fn create_color_pipelines(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_description,
@@ -554,7 +554,7 @@ fn create_gradient_pipeline(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_layout,
@@ -578,7 +578,7 @@ fn create_gradient_pipeline(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_layout,
@@ -603,7 +603,7 @@ fn create_gradient_pipeline(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_layout,
@@ -627,7 +627,7 @@ fn create_gradient_pipeline(
                 }),
                 &[wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
                 }],
                 vertex_buffers_layout,

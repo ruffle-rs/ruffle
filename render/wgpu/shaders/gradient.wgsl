@@ -101,5 +101,6 @@ fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     if( gradient.interpolation != 0 ) {
         color = linear_to_srgb(color);
     }
-    return color * transforms.mult_color + transforms.add_color;
+    let out = color * transforms.mult_color + transforms.add_color;
+    return vec4<f32>(out.rgb * out.a, out.a);
 }

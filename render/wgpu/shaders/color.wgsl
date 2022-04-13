@@ -13,5 +13,6 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
 
 [[stage(fragment)]]
 fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return in.color * transforms.mult_color + transforms.add_color;
+    let out = in.color * transforms.mult_color + transforms.add_color;
+    return vec4<f32>(out.rgb * out.a, out.a);
 }
