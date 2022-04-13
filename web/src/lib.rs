@@ -1244,7 +1244,7 @@ async fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas) {
+        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, true) {
             Ok(renderer) => return Ok((canvas, Box::new(renderer))),
             Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
