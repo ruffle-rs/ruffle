@@ -77,6 +77,44 @@ export const enum LogLevel {
 }
 
 /**
+ * The window mode of a Ruffle player.
+ */
+export const enum WindowMode {
+    /*
+     * The Flash content is rendered in its own window and layering is done with the browser's
+     * default behavior.
+     *
+     * In Ruffle, this mode functions like `WindowMode::Opaque` and will layer the Flash content
+     * together with other HTML elements.
+     */
+    Window = "window",
+
+    /*
+     * The Flash content is layered together with other HTML elements, and the stage color is
+     * opaque. Content can render above or below Ruffle based on CSS rendering order.
+     */
+    Opaque = "opaque",
+
+    /*
+     * The Flash content is layered together with other HTML elements, and the SWF stage color is
+     * transparent. Content beneath Ruffle will be visible through transparent areas.
+     */
+    Transparent = "transparent",
+
+    /*
+     * Request compositing with hardware acceleration when possible.
+     * This mode has no effect in Ruffle and will function like `WindowMode.Opaque`.
+     */
+    Direct = "direct",
+
+    /*
+     * Request a direct rendering path, bypassing browser compositing when possible.
+     * This mode has no effect in Ruffle and will function like `WindowMode::Opaque`.
+     */
+    Gpu = "gpu",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -227,6 +265,15 @@ export interface BaseLoadOptions {
      * @default "showAll"
      */
     scale?: string;
+
+    /**
+     * The window mode of the Ruffle player.
+     *
+     * This setting controls how the Ruffle container is layered and rendered with other content on the page.
+     *
+     * @default WindowMode.Window
+     */
+    wmode?: WindowMode;
 }
 
 /**

@@ -19,7 +19,7 @@ use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
-    StageScaleMode, TInteractiveObject,
+    StageScaleMode, TInteractiveObject, WindowMode,
 };
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::Value as ExternalValue;
@@ -809,6 +809,15 @@ impl Player {
             let stage = context.stage;
             if let Ok(scale_mode) = StageScaleMode::from_str(scale_mode) {
                 stage.set_scale_mode(context, scale_mode);
+            }
+        })
+    }
+
+    pub fn set_window_mode(&mut self, scale_mode: &str) {
+        self.mutate_with_update_context(|context| {
+            let stage = context.stage;
+            if let Ok(window_mode) = WindowMode::from_str(scale_mode) {
+                stage.set_window_mode(context, window_mode);
             }
         })
     }

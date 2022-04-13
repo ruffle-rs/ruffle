@@ -145,6 +145,8 @@ pub struct Config {
 
     scale: Option<String>,
 
+    wmode: Option<String>,
+
     #[serde(rename = "warnOnUnsupportedContent")]
     warn_on_unsupported_content: bool,
 
@@ -163,6 +165,7 @@ impl Default for Config {
             salign: Some("".to_owned()),
             quality: Some("high".to_owned()),
             scale: Some("showAll".to_owned()),
+            wmode: Some("opaque".to_owned()),
             background_color: Default::default(),
             letterbox: Default::default(),
             upgrade_to_https: true,
@@ -465,7 +468,8 @@ impl Ruffle {
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
 
-        let (canvas, renderer) = create_renderer(&document).await?;
+        let (canvas, renderer) = create_renderer(&document, &config).await?;
+
         parent
             .append_child(&canvas.clone().into())
             .into_js_result()?;
@@ -507,6 +511,7 @@ impl Ruffle {
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_quality(config.quality.as_deref().unwrap_or("high"));
             core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
+            core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
 
             // Create the external interface.
             if allow_script_access {
@@ -1204,9 +1209,12 @@ fn external_to_js_value(external: ExternalValue) -> JsValue {
 
 async fn create_renderer(
     document: &web_sys::Document,
+    config: &Config,
 ) -> Result<(HtmlCanvasElement, Box<dyn RenderBackend>), Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgl", feature = "wgpu")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
+
+    let _is_transparent = config.wmode.as_deref() == Some("transparent");
 
     // Try to create a backend, falling through to the next backend on failure.
     // We must recreate the canvas each attempt, as only a single context may be created per canvas
@@ -1244,7 +1252,7 @@ async fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, true) {
+        match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => return Ok((canvas, Box::new(renderer))),
             Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
@@ -1258,7 +1266,7 @@ async fn create_renderer(
             .into_js_result()?
             .dyn_into()
             .map_err(|_| "Expected HtmlCanvasElement")?;
-        match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas) {
+        match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => return Ok((canvas, Box::new(renderer))),
             Err(error) => log::error!("Error creating canvas renderer: {}", error),
         }

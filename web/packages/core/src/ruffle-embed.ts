@@ -11,6 +11,7 @@ import {
     workaroundYoutubeMixedContent,
     RufflePlayer,
 } from "./ruffle-player";
+import { WindowMode } from "./load-options";
 import { registerElement } from "./register-element";
 
 /**
@@ -61,6 +62,9 @@ export class RuffleEmbed extends RufflePlayer {
                     this.attributes.getNamedItem("quality")?.value ?? "high",
                 scale:
                     this.attributes.getNamedItem("scale")?.value ?? "showAll",
+                wmode:
+                    (this.attributes.getNamedItem("wmode")
+                        ?.value as WindowMode) ?? WindowMode.Window,
             });
         }
     }

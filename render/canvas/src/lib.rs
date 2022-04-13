@@ -230,7 +230,10 @@ impl BitmapData {
 }
 
 impl WebCanvasRenderBackend {
-    pub fn new(canvas: &HtmlCanvasElement) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(
+        canvas: &HtmlCanvasElement,
+        is_transparent: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         // Request the CanvasRenderingContext2d.
         // Disable alpha for possible speedup.
         // TODO: Allow user to enable transparent background (transparent wmode in legacy Flash).
@@ -238,7 +241,11 @@ impl WebCanvasRenderBackend {
         let _ = js_sys::Reflect::set(
             &context_options,
             &"alpha".into(),
-            &wasm_bindgen::JsValue::FALSE,
+            &if is_transparent {
+                wasm_bindgen::JsValue::TRUE
+            } else {
+                wasm_bindgen::JsValue::FALSE
+            },
         );
         let context: CanvasRenderingContext2d = canvas
             .get_context_with_context_options("2d", &context_options)
@@ -636,10 +643,17 @@ impl RenderBackend for WebCanvasRenderBackend {
         let width = self.canvas.width();
         let height = self.canvas.height();
 
-        let color = format!("rgb({}, {}, {})", clear.r, clear.g, clear.b);
-        self.context.set_fill_style(&color.into());
-        self.context
-            .fill_rect(0.0, 0.0, width.into(), height.into());
+        if clear.a > 0 {
+            let color = format!("rgba({}, {}, {}, {})", clear.r, clear.g, clear.b, clear.a);
+            self.context.set_fill_style(&color.into());
+            let _ = self.context.set_global_composite_operation("copy");
+            self.context
+                .fill_rect(0.0, 0.0, width.into(), height.into());
+            let _ = self.context.set_global_composite_operation("source-over");
+        } else {
+            self.context
+                .clear_rect(0.0, 0.0, width.into(), height.into());
+        }
 
         self.deactivating_mask = false;
     }
