@@ -14,5 +14,5 @@ uniform vec4 add_color;
 varying vec4 frag_color;
 
 void main() {
-    gl_FragColor = frag_color;
+    gl_FragColor = vec4(frag_color.rgb * frag_color.a, frag_color.a);
 }
