@@ -13,7 +13,7 @@ import {
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
-import { URLLoadOptions } from "./load-options";
+import { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
 
 /**
@@ -126,6 +126,7 @@ export class RuffleObject extends RufflePlayer {
         const salign = findCaseInsensitive(this.params, "salign", "");
         const quality = findCaseInsensitive(this.params, "quality", "high");
         const scale = findCaseInsensitive(this.params, "scale", "showAll");
+        const wmode = findCaseInsensitive(this.params, "wmode", "window");
 
         if (url) {
             const options: URLLoadOptions = { url };
@@ -151,6 +152,9 @@ export class RuffleObject extends RufflePlayer {
             }
             if (scale) {
                 options.scale = scale;
+            }
+            if (wmode) {
+                options.wmode = wmode as WindowMode;
             }
 
             // Kick off the SWF download.
