@@ -1048,7 +1048,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 view: &self.depth_texture_view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(0.0),
-                    store: true,
+                    store: false,
                 }),
                 stencil_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(0),
