@@ -16,6 +16,9 @@ pub struct Pipelines {
 
     pub gradient_pipelines: ShapePipeline,
     pub gradient_layout: wgpu::BindGroupLayout,
+
+    pub copy_srgb_pipeline: wgpu::RenderPipeline,
+    pub copy_srgb_layout: wgpu::BindGroupLayout,
 }
 
 impl ShapePipeline {
@@ -28,31 +31,20 @@ impl Pipelines {
     pub fn new(
         device: &wgpu::Device,
         surface_format: wgpu::TextureFormat,
+        frame_buffer_format: wgpu::TextureFormat,
         msaa_sample_count: u32,
         sampler_layout: &wgpu::BindGroupLayout,
         globals_layout: &wgpu::BindGroupLayout,
         dynamic_uniforms_layout: &wgpu::BindGroupLayout,
     ) -> Result<Self, Error> {
-        // If the surface is sRGB, the GPU will automatically convert colors from linear to sRGB,
-        // so our shader should output linear colors.
-        let output_srgb = !surface_format.describe().srgb;
-        let color_shader = create_shader(
+        let color_shader = create_shader(device, "color", include_str!("../shaders/color.wgsl"));
+        let bitmap_shader = create_shader(device, "bitmap", include_str!("../shaders/bitmap.wgsl"));
+        let gradient_shader =
+            create_shader(device, "gradient", include_str!("../shaders/gradient.wgsl"));
+        let copy_srgb_shader = create_shader(
             device,
-            "color",
-            include_str!("../shaders/color.wgsl"),
-            output_srgb,
-        );
-        let bitmap_shader = create_shader(
-            device,
-            "bitmap",
-            include_str!("../shaders/bitmap.wgsl"),
-            output_srgb,
-        );
-        let gradient_shader = create_shader(
-            device,
-            "gradient",
-            include_str!("../shaders/gradient.wgsl"),
-            output_srgb,
+            "copy sRGB",
+            include_str!("../shaders/copy_srgb.wgsl"),
         );
 
         let vertex_buffers_description = [wgpu::VertexBufferLayout {
@@ -66,7 +58,7 @@ impl Pipelines {
 
         let color_pipelines = create_color_pipelines(
             device,
-            surface_format,
+            frame_buffer_format,
             &color_shader,
             msaa_sample_count,
             &vertex_buffers_description,
@@ -104,7 +96,7 @@ impl Pipelines {
 
         let bitmap_pipelines = create_bitmap_pipeline(
             device,
-            surface_format,
+            frame_buffer_format,
             &bitmap_shader,
             msaa_sample_count,
             &vertex_buffers_description,
@@ -144,7 +136,7 @@ impl Pipelines {
 
         let gradient_pipelines = create_gradient_pipeline(
             device,
-            surface_format,
+            frame_buffer_format,
             &gradient_shader,
             msaa_sample_count,
             &vertex_buffers_description,
@@ -153,41 +145,82 @@ impl Pipelines {
             &gradient_bind_layout,
         );
 
+        let copy_srgb_bind_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                ],
+                label: create_debug_label!("Copy sRGB bind group layout").as_deref(),
+            });
+        let copy_texture_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
+                bind_group_layouts: &[
+                    globals_layout,
+                    dynamic_uniforms_layout,
+                    &bitmap_bind_layout,
+                    sampler_layout,
+                ],
+                push_constant_ranges: &[],
+            });
+        let copy_srgb_pipeline = device.create_render_pipeline(&create_pipeline_descriptor(
+            create_debug_label!("Copy sRGB pipeline").as_deref(),
+            &copy_srgb_shader,
+            &copy_srgb_shader,
+            &copy_texture_pipeline_layout,
+            None,
+            &[wgpu::ColorTargetState {
+                format: surface_format,
+                blend: Some(wgpu::BlendState::REPLACE),
+                write_mask: Default::default(),
+            }],
+            &vertex_buffers_description,
+            1,
+        ));
+
         Ok(Self {
             color_pipelines,
             bitmap_pipelines,
             bitmap_layout: bitmap_bind_layout,
             gradient_pipelines,
             gradient_layout: gradient_bind_layout,
+            copy_srgb_pipeline,
+            copy_srgb_layout: copy_srgb_bind_layout,
         })
     }
 }
 
 /// Builds a `wgpu::ShaderModule` the given WGSL source in `src`.
 ///
-/// The source is prepended with common code in `common.wgsl` and sRGB/linear conversions in
-/// `output_srgb.wgsl`/`output_linear.wgsl`, simulating a `#include` preprocessor. We could
-/// possibly does this as an offline build step instead.
+/// The source is prepended with common code in `common.wgsl`, simulating a `#include` preprocessor.
+/// We could possibly does this as an offline build step instead.
 fn create_shader(
     device: &wgpu::Device,
     name: &'static str,
     src: &'static str,
-    output_srgb: bool,
 ) -> wgpu::ShaderModule {
     const COMMON_SRC: &str = include_str!("../shaders/common.wgsl");
-    const OUTPUT_LINEAR_SRC: &str = include_str!("../shaders/output_linear.wgsl");
-    const OUTPUT_SRGB_SRC: &str = include_str!("../shaders/output_srgb.wgsl");
-
-    let src = if output_srgb {
-        [COMMON_SRC, OUTPUT_SRGB_SRC, src].concat()
-    } else {
-        [COMMON_SRC, OUTPUT_LINEAR_SRC, src].concat()
-    };
-    let label = create_debug_label!(
-        "Shader {} ({})",
-        name,
-        if output_srgb { "sRGB" } else { "linear" }
-    );
+    let src = [COMMON_SRC, src].concat();
+    let label = create_debug_label!("Shader {}", name,);
     let desc = wgpu::ShaderModuleDescriptor {
         label: label.as_deref(),
         source: wgpu::ShaderSource::Wgsl(src.into()),

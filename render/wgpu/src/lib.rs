@@ -44,6 +44,7 @@ pub struct Descriptors {
     pub info: wgpu::AdapterInfo,
     pub limits: wgpu::Limits,
     pub surface_format: wgpu::TextureFormat,
+    frame_buffer_format: wgpu::TextureFormat,
     queue: wgpu::Queue,
     globals: Globals,
     uniform_buffers: UniformBuffer<Transforms>,
@@ -83,9 +84,41 @@ impl Descriptors {
             uniform_buffer_layout,
             limits.min_uniform_buffer_offset_alignment,
         );
+
+        // We want to render directly onto a linear render target to avoid any gamma correction.
+        // If our surface is sRGB, render to a linear texture and than copy over to the surface.
+        // Remove Srgb from texture format.
+        let frame_buffer_format = match surface_format {
+            wgpu::TextureFormat::Rgba8UnormSrgb => wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Bgra8UnormSrgb => wgpu::TextureFormat::Bgra8Unorm,
+            wgpu::TextureFormat::Bc1RgbaUnormSrgb => wgpu::TextureFormat::Bc1RgbaUnorm,
+            wgpu::TextureFormat::Bc2RgbaUnormSrgb => wgpu::TextureFormat::Bc2RgbaUnorm,
+            wgpu::TextureFormat::Bc3RgbaUnormSrgb => wgpu::TextureFormat::Bc3RgbaUnorm,
+            wgpu::TextureFormat::Bc7RgbaUnormSrgb => wgpu::TextureFormat::Bc7RgbaUnorm,
+            wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
+            wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
+            wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
+            wgpu::TextureFormat::Astc4x4RgbaUnormSrgb => wgpu::TextureFormat::Astc4x4RgbaUnorm,
+            wgpu::TextureFormat::Astc5x4RgbaUnormSrgb => wgpu::TextureFormat::Astc5x4RgbaUnorm,
+            wgpu::TextureFormat::Astc5x5RgbaUnormSrgb => wgpu::TextureFormat::Astc5x5RgbaUnorm,
+            wgpu::TextureFormat::Astc6x5RgbaUnormSrgb => wgpu::TextureFormat::Astc6x5RgbaUnorm,
+            wgpu::TextureFormat::Astc6x6RgbaUnormSrgb => wgpu::TextureFormat::Astc6x6RgbaUnorm,
+            wgpu::TextureFormat::Astc8x5RgbaUnormSrgb => wgpu::TextureFormat::Astc8x5RgbaUnorm,
+            wgpu::TextureFormat::Astc8x6RgbaUnormSrgb => wgpu::TextureFormat::Astc8x6RgbaUnorm,
+            wgpu::TextureFormat::Astc10x5RgbaUnormSrgb => wgpu::TextureFormat::Astc10x5RgbaUnorm,
+            wgpu::TextureFormat::Astc10x6RgbaUnormSrgb => wgpu::TextureFormat::Astc10x6RgbaUnorm,
+            wgpu::TextureFormat::Astc8x8RgbaUnormSrgb => wgpu::TextureFormat::Astc8x8RgbaUnorm,
+            wgpu::TextureFormat::Astc10x8RgbaUnormSrgb => wgpu::TextureFormat::Astc10x8RgbaUnorm,
+            wgpu::TextureFormat::Astc10x10RgbaUnormSrgb => wgpu::TextureFormat::Astc10x10RgbaUnorm,
+            wgpu::TextureFormat::Astc12x10RgbaUnormSrgb => wgpu::TextureFormat::Astc12x10RgbaUnorm,
+            wgpu::TextureFormat::Astc12x12RgbaUnormSrgb => wgpu::TextureFormat::Astc12x12RgbaUnorm,
+            _ => surface_format,
+        };
+
         let pipelines = Pipelines::new(
             &device,
             surface_format,
+            frame_buffer_format,
             msaa_sample_count,
             bitmap_samplers.layout(),
             globals.layout(),
@@ -97,6 +130,7 @@ impl Descriptors {
             info,
             limits,
             surface_format,
+            frame_buffer_format,
             queue,
             globals,
             uniform_buffers,
@@ -112,6 +146,8 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     target: T,
     frame_buffer_view: wgpu::TextureView,
     depth_texture_view: wgpu::TextureView,
+    copy_srgb_view: wgpu::TextureView,
+    copy_srgb_bind_group: wgpu::BindGroup,
     current_frame: Option<Frame<'static, T>>,
     meshes: Vec<Mesh>,
     mask_state: MaskState,
@@ -371,7 +407,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             mip_level_count: 1,
             sample_count: descriptors.msaa_sample_count,
             dimension: wgpu::TextureDimension::D2,
-            format: target.format(),
+            format: descriptors.frame_buffer_format,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         });
         let frame_buffer_view = frame_buffer.create_view(&Default::default());
@@ -391,6 +427,40 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         let (quad_vbo, quad_ibo, quad_tex_transforms) = create_quad_buffers(&descriptors.device);
 
+        let copy_srgb_buffer = descriptors.device.create_texture(&wgpu::TextureDescriptor {
+            label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: descriptors.frame_buffer_format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        });
+        let copy_srgb_view = copy_srgb_buffer.create_view(&Default::default());
+        let copy_srgb_bind_group =
+            descriptors
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &descriptors.pipelines.bitmap_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                                buffer: &quad_tex_transforms,
+                                offset: 0,
+                                size: wgpu::BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64,
+                                ),
+                            }),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&copy_srgb_view),
+                        },
+                    ],
+                    label: create_debug_label!("Copy sRGB bind group").as_deref(),
+                });
+
         descriptors
             .globals
             .set_resolution(target.width(), target.height());
@@ -400,6 +470,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             target,
             frame_buffer_view,
             depth_texture_view,
+            copy_srgb_view,
+            copy_srgb_bind_group,
             current_frame: None,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
@@ -767,21 +839,23 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         self.target.resize(&self.descriptors.device, width, height);
 
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
         let label = create_debug_label!("Framebuffer texture");
         let frame_buffer = self
             .descriptors
             .device
             .create_texture(&wgpu::TextureDescriptor {
                 label: label.as_deref(),
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
+                size,
                 mip_level_count: 1,
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
-                format: self.target.format(),
+                format: self.descriptors.frame_buffer_format,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.frame_buffer_view = frame_buffer.create_view(&Default::default());
@@ -792,11 +866,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .device
             .create_texture(&wgpu::TextureDescriptor {
                 label: label.as_deref(),
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
+                size,
                 mip_level_count: 1,
                 sample_count: self.descriptors.msaa_sample_count,
                 dimension: wgpu::TextureDimension::D2,
@@ -804,6 +874,45 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             });
         self.depth_texture_view = depth_texture.create_view(&Default::default());
+
+        let copy_srgb_buffer = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: create_debug_label!("Copy sRGB framebuffer texture").as_deref(),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.descriptors.frame_buffer_format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
+            });
+        self.copy_srgb_view = copy_srgb_buffer.create_view(&Default::default());
+        self.copy_srgb_bind_group =
+            self.descriptors
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &self.descriptors.pipelines.bitmap_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                                buffer: &self.quad_tex_transforms,
+                                offset: 0,
+                                size: wgpu::BufferSize::new(
+                                    std::mem::size_of::<TextureTransforms>() as u64,
+                                ),
+                            }),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&self.copy_srgb_view),
+                        },
+                    ],
+                    label: create_debug_label!("Copy sRBG bind group").as_deref(),
+                });
+
         self.descriptors.globals.set_resolution(width, height);
     }
 
@@ -910,10 +1019,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .globals
             .update_uniform(&self.descriptors.device, &mut frame_data.0);
 
-        let (color_view, resolve_target) = if self.descriptors.msaa_sample_count >= 2 {
-            (&self.frame_buffer_view, Some(frame_data.1.view()))
-        } else {
-            (frame_data.1.view(), None)
+        // Use intermediate render targets when resolving MSAA or copying from linear-to-sRGB texture.
+        let (color_view, resolve_target) = match (
+            self.descriptors.frame_buffer_format != self.descriptors.surface_format,
+            self.descriptors.msaa_sample_count >= 2,
+        ) {
+            (false, false) => (frame_data.1.view(), None),
+            (false, true) => (&self.frame_buffer_view, Some(frame_data.1.view())),
+            (true, false) => (&self.copy_srgb_view, None),
+            (true, true) => (&self.frame_buffer_view, Some(&self.copy_srgb_view)),
         };
 
         let render_pass = frame_data.0.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1216,15 +1330,81 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn end_frame(&mut self) {
         if let Some(frame) = self.current_frame.take() {
-            // Finalize render pass.
-            drop(frame.render_pass);
-            self.descriptors.uniform_buffers.finish();
             let draw_encoder = frame.frame_data.0;
-            let uniform_encoder = frame.frame_data.2;
+            let mut uniform_encoder = frame.frame_data.2;
+            let render_pass = frame.render_pass;
+            // Finalize render pass.
+            drop(render_pass);
+
+            // If we have an sRGB surface, copy from our linear intermediate buffer to the sRGB surface.
+            let command_buffers = if self.descriptors.frame_buffer_format
+                != self.descriptors.surface_format
+            {
+                let mut copy_encoder = self.descriptors.device.create_command_encoder(
+                    &wgpu::CommandEncoderDescriptor {
+                        label: create_debug_label!("Frame copy command encoder").as_deref(),
+                    },
+                );
+
+                let mut render_pass = copy_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: &frame.frame_data.1.view(),
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                            store: true,
+                        },
+                        resolve_target: None,
+                    }],
+                    depth_stencil_attachment: None,
+                    label: None,
+                });
+
+                render_pass.set_pipeline(&self.descriptors.pipelines.copy_srgb_pipeline);
+                render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+                self.descriptors.uniform_buffers.write_uniforms(
+                    &self.descriptors.device,
+                    &mut uniform_encoder,
+                    &mut render_pass,
+                    1,
+                    &Transforms {
+                        world_matrix: [
+                            [self.target.width() as f32, 0.0, 0.0, 0.0],
+                            [0.0, self.target.height() as f32, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                        color_adjustments: ColorAdjustments {
+                            mult_color: [1.0, 1.0, 1.0, 1.0],
+                            add_color: [0.0, 0.0, 0.0, 0.0],
+                        },
+                    },
+                );
+                render_pass.set_bind_group(2, &self.copy_srgb_bind_group, &[]);
+                render_pass.set_bind_group(
+                    3,
+                    self.descriptors
+                        .bitmap_samplers
+                        .get_bind_group(false, false),
+                    &[],
+                );
+                render_pass.set_vertex_buffer(0, self.quad_vbo.slice(..));
+                render_pass.set_index_buffer(self.quad_ibo.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..6, 0, 0..1);
+                drop(render_pass);
+                vec![
+                    uniform_encoder.finish(),
+                    draw_encoder.finish(),
+                    copy_encoder.finish(),
+                ]
+            } else {
+                vec![uniform_encoder.finish(), draw_encoder.finish()]
+            };
+
+            self.descriptors.uniform_buffers.finish();
             self.target.submit(
                 &self.descriptors.device,
                 &self.descriptors.queue,
-                vec![uniform_encoder.finish(), draw_encoder.finish()],
+                command_buffers,
                 frame.frame_data.1,
             );
         }
