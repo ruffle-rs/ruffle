@@ -299,7 +299,7 @@ fn create_color_pipelines(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -323,7 +323,7 @@ fn create_color_pipelines(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -347,7 +347,7 @@ fn create_color_pipelines(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -371,7 +371,7 @@ fn create_color_pipelines(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -424,7 +424,7 @@ fn create_bitmap_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -448,7 +448,7 @@ fn create_bitmap_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -472,8 +472,8 @@ fn create_bitmap_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
-                    depth_compare: wgpu::CompareFunction::Equal,
+                    depth_write_enabled: false,
+                    depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
                 }),
@@ -496,7 +496,7 @@ fn create_bitmap_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -547,7 +547,7 @@ fn create_gradient_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -571,7 +571,7 @@ fn create_gradient_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
@@ -596,7 +596,7 @@ fn create_gradient_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Equal,
                     stencil,
                     bias: Default::default(),
@@ -620,7 +620,7 @@ fn create_gradient_pipeline(
                 &pipeline_layout,
                 Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: true,
+                    depth_write_enabled: false,
                     depth_compare: wgpu::CompareFunction::Always,
                     stencil,
                     bias: Default::default(),
