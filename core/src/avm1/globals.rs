@@ -9,6 +9,7 @@ use gc_arena::Collect;
 use gc_arena::MutationContext;
 use std::str;
 
+mod accessibility;
 mod array;
 pub(crate) mod as_broadcaster;
 mod bevel_filter;
@@ -1147,6 +1148,16 @@ pub fn create_globals<'gc>(
             Some(array_proto),
             function_proto,
             broadcaster_functions,
+        )),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "Accessibility",
+        Value::Object(accessibility::create_accessibility_object(
+            gc_context,
+            Some(object_proto),
+            function_proto,
         )),
         Attribute::DONT_ENUM,
     );
