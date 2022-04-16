@@ -3,6 +3,7 @@ use crate::shape_utils::DistilledShape;
 pub use crate::{library::MovieLibrary, transform::Transform, Color};
 use downcast_rs::Downcast;
 use gc_arena::Collect;
+use std::borrow::Cow;
 use std::io::Read;
 pub use swf;
 
@@ -285,7 +286,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
 pub fn glue_tables_to_jpeg<'a>(
     jpeg_data: &'a [u8],
     jpeg_tables: Option<&'a [u8]>,
-) -> std::borrow::Cow<'a, [u8]> {
+) -> Cow<'a, [u8]> {
     if let Some(jpeg_tables) = jpeg_tables {
         if jpeg_tables.len() >= 2 {
             let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len());
@@ -294,12 +295,12 @@ pub fn glue_tables_to_jpeg<'a>(
                 full_jpeg.extend_from_slice(&jpeg_data[2..]);
             }
 
-            return std::borrow::Cow::from(full_jpeg);
+            return full_jpeg.into();
         }
     }
 
     // No JPEG tables or not enough data; return JPEG data as is
-    std::borrow::Cow::Borrowed(jpeg_data)
+    jpeg_data.into()
 }
 
 /// Removes potential invalid JPEG data from SWF DefineBitsJPEG tags.
@@ -307,19 +308,19 @@ pub fn glue_tables_to_jpeg<'a>(
 /// SWF19 p.138:
 /// "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
 /// These bytes need to be removed for the JPEG to decode properly.
-pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
+pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> Cow<[u8]> {
     // TODO: Might be better to return an Box<Iterator<Item=u8>> instead of a Cow here,
     // where the spliced iter is a data[..n].chain(data[n+4..])?
-    if data.get(0..4) == Some(&[0xFF, 0xD9, 0xFF, 0xD8]) {
+    if data.starts_with(&[0xFF, 0xD9, 0xFF, 0xD8]) {
         data = &data[4..];
     }
     if let Some(pos) = data.windows(4).position(|w| w == [0xFF, 0xD9, 0xFF, 0xD8]) {
         let mut out_data = Vec::with_capacity(data.len() - 4);
         out_data.extend_from_slice(&data[..pos]);
         out_data.extend_from_slice(&data[pos + 4..]);
-        std::borrow::Cow::from(out_data)
+        out_data.into()
     } else {
-        std::borrow::Cow::Borrowed(data)
+        data.into()
     }
 }
 
