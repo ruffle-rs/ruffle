@@ -280,13 +280,6 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
     }
 }
 
-pub fn glue_swf_jpeg_to_tables(jpeg_tables: &[u8], jpeg_data: &[u8]) -> Vec<u8> {
-    let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len() - 4);
-    full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
-    full_jpeg.extend_from_slice(&jpeg_data[2..]);
-    full_jpeg
-}
-
 /// Glues the JPEG encoding tables from a JPEGTables SWF tag to the JPEG data
 /// in a DefineBits tag, producing complete JPEG data suitable for a decoder.
 pub fn glue_tables_to_jpeg<'a>(
@@ -332,7 +325,7 @@ pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> std::borrow::Cow<[u8]> {
 
 /// Decodes a JPEG with optional alpha data.
 /// The decoded bitmap will have pre-multiplied alpha.
-pub fn decode_jpeg(
+fn decode_jpeg(
     jpeg_data: &[u8],
     alpha_data: Option<&[u8]>,
 ) -> Result<Bitmap, Box<dyn std::error::Error>> {
@@ -559,7 +552,7 @@ pub fn decode_define_bits_lossless(
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
+fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     use png::{ColorType, Transformations};
 
     let mut decoder = png::Decoder::new(data);
@@ -595,7 +588,7 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
+fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
     let mut decode_options = gif::DecodeOptions::new();
     decode_options.set_color_output(gif::ColorOutput::RGBA);
     let mut reader = decode_options.read_info(data)?;
@@ -612,7 +605,7 @@ pub fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
 }
 
 /// Converts standard RBGA to premultiplied alpha.
-pub fn premultiply_alpha_rgba(rgba: &mut [u8]) {
+fn premultiply_alpha_rgba(rgba: &mut [u8]) {
     rgba.chunks_exact_mut(4).for_each(|rgba| {
         let a = f32::from(rgba[3]) / 255.0;
         rgba[0] = (f32::from(rgba[0]) * a) as u8;
