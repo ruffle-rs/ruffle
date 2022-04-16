@@ -563,8 +563,9 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     use png::{ColorType, Transformations};
 
     let mut decoder = png::Decoder::new(data);
-    // EXPAND expands palettized types to RGB.
-    decoder.set_transformations(Transformations::EXPAND);
+    // Normalize output to 8-bit grayscale or RGB.
+    // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
+    decoder.set_transformations(Transformations::normalize_to_color8());
     let mut reader = decoder.read_info()?;
 
     let mut data = vec![0; reader.output_buffer_size()];
@@ -573,14 +574,20 @@ pub fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     Ok(Bitmap {
         width: info.width,
         height: info.height,
-        data: if info.color_type == ColorType::Rgba {
-            // In contrast to DefineBitsLossless tags, PNGs embedded in a DefineBitsJPEG tag will not have
-            // premultiplied alpha and need to be converted before sending to the renderer.
-            premultiply_alpha_rgba(&mut data);
-            BitmapFormat::Rgba(data)
-        } else {
-            // EXPAND expands other types to RGB.
-            BitmapFormat::Rgb(data)
+        data: match info.color_type {
+            ColorType::Rgb => BitmapFormat::Rgb(data),
+            ColorType::Rgba => {
+                // In contrast to DefineBitsLossless tags, PNGs embedded in a DefineBitsJPEG tag will not have
+                // premultiplied alpha and need to be converted before sending to the renderer.
+                premultiply_alpha_rgba(&mut data);
+                BitmapFormat::Rgba(data)
+            }
+            color_type => {
+                // Only `ColorType::Grayscale` and `ColorType::GrayscaleAlpha` should reach here.
+                // TODO: Convert output to RGB manually, as the `png` crate provides no such a feature.
+                log::warn!("Unsupported PNG color type: {:?}", color_type);
+                BitmapFormat::Rgb(data)
+            }
         },
     })
 }
