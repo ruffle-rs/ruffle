@@ -341,16 +341,16 @@ fn decode_jpeg(
         jpeg_decoder::PixelFormat::RGB24 => decoded_data,
         jpeg_decoder::PixelFormat::CMYK32 => decoded_data
             .chunks_exact(4)
-            .flat_map(|chunk| {
-                let c = f32::from(chunk[0]);
-                let m = f32::from(chunk[1]);
-                let y = f32::from(chunk[2]);
-                let k = f32::from(chunk[3]);
+            .flat_map(|cmyk| {
+                let c = 255 - u16::from(cmyk[0]);
+                let m = 255 - u16::from(cmyk[1]);
+                let y = 255 - u16::from(cmyk[2]);
+                let k = 256 - u16::from(cmyk[3]);
 
-                let r = ((255.0 - c) * (255.0 - k) / 255.0) as u8;
-                let g = ((255.0 - m) * (255.0 - k) / 255.0) as u8;
-                let b = ((255.0 - y) * (255.0 - k) / 255.0) as u8;
-                [r, g, b]
+                let r = c * k / 255;
+                let g = m * k / 255;
+                let b = y * k / 255;
+                [r as u8, g as u8, b as u8]
             })
             .collect(),
         jpeg_decoder::PixelFormat::L8 => {
