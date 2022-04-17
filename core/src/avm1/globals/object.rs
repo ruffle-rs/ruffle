@@ -267,10 +267,10 @@ pub fn as_set_prop_flags<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let set_flags = args.get(2).unwrap_or(&0.into()).coerce_to_f64(activation)? as u8;
+    let set_flags = args.get(2).unwrap_or(&0.into()).coerce_to_f64(activation)? as u16;
     let set_attributes = Attribute::from_bits_truncate(set_flags);
 
-    let clear_flags = args.get(3).unwrap_or(&0.into()).coerce_to_f64(activation)? as u8;
+    let clear_flags = args.get(3).unwrap_or(&0.into()).coerce_to_f64(activation)? as u16;
     let clear_attributes = Attribute::from_bits_truncate(clear_flags);
 
     if set_attributes.bits() != set_flags || clear_attributes.bits() != clear_flags {
