@@ -10,10 +10,11 @@ bitflags! {
     /// The values are significant and should match the order used by `object::as_set_prop_flags`.
     #[derive(Collect)]
     #[collect(require_static)]
-    pub struct Attribute: u8 {
-        const DONT_ENUM   = 1 << 0;
-        const DONT_DELETE = 1 << 1;
-        const READ_ONLY   = 1 << 2;
+    pub struct Attribute: u16 {
+        const DONT_ENUM     = 1 << 0;
+        const DONT_DELETE   = 1 << 1;
+        const READ_ONLY     = 1 << 2;
+        const VERSION_MASK  = 0xf << 9;
     }
 }
 

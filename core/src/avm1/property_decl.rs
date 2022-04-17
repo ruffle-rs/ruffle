@@ -27,7 +27,7 @@ pub struct Declaration {
     // This should be an `Attribute`, but because of `const` shenanigans
     // we need to store the raw flags.
     // See the comment in the `declare_properties!` macro.
-    pub attributes: u8,
+    pub attributes: u16,
 }
 
 /// All the possible types of a [`Declaration`].
