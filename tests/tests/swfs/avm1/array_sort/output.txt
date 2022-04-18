@@ -142,3 +142,11 @@ undefined
 // [1, 2].sortOn(undefined)
 1,2
 
+// sortOn w/ __proto__ field
+o2
+o1
+
+// sortOn w/ getter
+o2
+o1
+
