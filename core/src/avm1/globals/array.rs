@@ -650,8 +650,12 @@ fn sort_compare_fields<'a, 'gc: 'a>(
         for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
             let a_object = a.coerce_to_object(activation);
             let b_object = b.coerce_to_object(activation);
-            let a_prop = a_object.get(*field_name, activation).unwrap();
-            let b_prop = b_object.get(*field_name, activation).unwrap();
+            let a_prop = a_object
+                .get_local_stored(*field_name, activation)
+                .unwrap_or(Value::Undefined);
+            let b_prop = b_object
+                .get_local_stored(*field_name, activation)
+                .unwrap_or(Value::Undefined);
 
             let result = compare_fn(activation, &a_prop, &b_prop);
             if result != Ordering::Equal {
