@@ -10,6 +10,7 @@ import {
     URLLoadOptions,
     AutoPlay,
     UnmuteOverlay,
+    WindowMode,
 } from "./load-options";
 import { MovieMetadata } from "./movie-metadata";
 import { InternalContextMenuItem } from "./context-menu";
@@ -577,7 +578,10 @@ export class RufflePlayer extends HTMLElement {
             this.hasContextMenu = config.contextMenu !== false;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
-            if (config.backgroundColor) {
+            if (
+                config.backgroundColor &&
+                config.wmode != WindowMode.Transparent
+            ) {
                 this.container.style.backgroundColor = config.backgroundColor;
             }
 
