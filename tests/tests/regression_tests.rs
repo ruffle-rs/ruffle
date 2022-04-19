@@ -1230,6 +1230,10 @@ fn run_swf(
     before_start(player.clone())?;
 
     for _ in 0..num_frames {
+        player.lock().unwrap().run_frame();
+        player.lock().unwrap().update_timers(frame_time);
+        executor.run();
+
         injector.next(|evt, _btns_down| {
             player.lock().unwrap().handle_event(match evt {
                 AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
@@ -1254,10 +1258,6 @@ fn run_swf(
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
-
-        player.lock().unwrap().run_frame();
-        player.lock().unwrap().update_timers(frame_time);
-        executor.run();
     }
 
     // Render the image to disk
