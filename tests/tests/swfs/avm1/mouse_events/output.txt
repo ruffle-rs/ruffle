@@ -1,0 +1,8 @@
+pressed (270, 182)
+released (275, 183)
+pressed (270, 182)
+released (270, 182)
+pressed (270, 182)
+released (270, 182)
+pressed (250, 182)
+released outside (5, 1)

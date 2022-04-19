@@ -658,6 +658,7 @@ swf_tests! {
     (mcl_pngtarget, "avm1/mcl_pngtarget", 11),
     (mcl_unloadclip, "avm1/mcl_unloadclip", 11),
     (mouse_listeners, "avm1/mouse_listeners", 1),
+    (mouse_events, "avm1/mouse_events", 8),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (movieclip_get_instance_at_depth, "avm1/movieclip_get_instance_at_depth", 1),
     (movieclip_hittest_shapeflag, "avm1/movieclip_hittest_shapeflag", 10),

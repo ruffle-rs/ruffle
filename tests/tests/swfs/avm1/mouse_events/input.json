@@ -1,0 +1,87 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [270.0, 182.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [270.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [275.0, 183.0]
+    },
+    {
+        "type": "MouseUp",
+        "pos": [275.0, 183.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [270.0, 182.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [270.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [270.0, 182.0]
+    },
+    {
+        "type": "MouseUp",
+        "pos": [270.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseDown",
+        "pos": [270.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [270.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [250.0, 182.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [250.0, 182.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [5.0, 1.0]
+    },
+    {
+        "type": "MouseUp",
+        "pos": [5.0, 1.0],
+        "btn": "Left"
+    }
+]
