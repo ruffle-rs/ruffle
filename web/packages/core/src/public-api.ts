@@ -83,7 +83,9 @@ export class PublicAPI {
         }
 
         if (document.readyState === "loading") {
-            window.addEventListener("DOMContentLoaded", this.init.bind(this));
+            // Cloudflare Rocket Loader interferes with the DOMContentLoaded event,
+            // so we listen for readystatechange instead
+            document.addEventListener("readystatechange", this.init.bind(this));
         } else {
             window.setTimeout(this.init.bind(this), 0);
         }
