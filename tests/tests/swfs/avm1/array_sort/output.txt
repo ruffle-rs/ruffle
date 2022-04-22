@@ -32,6 +32,9 @@ d,c,b,a
 // [4, 1, 3, 22, 2, 3].sort(Array.NUMERIC)
 1,2,3,3,4,22
 
+// [Infinity, NaN, 4, 1, NaN, -Infinity].sort(Array.NUMERIC)
+-Infinity,1,4,Infinity,NaN,NaN
+
 // [4, 1, 3, 22, 2, 3].sort(Array.DESCENDING | Array.NUMERIC)
 22,4,3,3,2,1
 
@@ -45,6 +48,10 @@ d,c,b,a
 
 // ["hëllo", "HËLLO", "TeSt", "test"].sort(Array.CASEINSENSITIVE)
 hëllo,HËLLO,TeSt,test
+
+// ["TeSt", "hëllo", "HËLLO", "test"].sort(Array.CASEINSENSITIVE)
+HËLLO,hëllo,TeSt,test
+HËLLO,hëllo,TeSt,test
 
 // ["TeSt", "hëllo", "HËLLO", "test"].sort(Array.CASEINSENSITIVE | Array.UNIQUESORT)
 0
@@ -105,6 +112,9 @@ true
 // [objects..].sortOn("n", Array.NUMERIC | Array.CASEINSENSITIVE | Array.DESCENDING | Array.UNIQUESORT | Array.RETURNINDEXEDARRAY)
 2,1,0,3,4
 {n: 3},{n: 5},{n: 22},{n: 2},{n: 1}
+
+// [strings..].sortOn("length", Array.NUMERIC)
+a,asdasdasdsad,bar,hello,test
 
 // [stringobjs..].sortOn("length", Array.NUMERIC)
 a,bar,test,hello,asdasdasdsad
