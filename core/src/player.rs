@@ -813,10 +813,10 @@ impl Player {
         })
     }
 
-    pub fn set_window_mode(&mut self, scale_mode: &str) {
+    pub fn set_window_mode(&mut self, window_mode: &str) {
         self.mutate_with_update_context(|context| {
             let stage = context.stage;
-            if let Ok(window_mode) = WindowMode::from_str(scale_mode) {
+            if let Ok(window_mode) = WindowMode::from_str(window_mode) {
                 stage.set_window_mode(context, window_mode);
             }
         })
