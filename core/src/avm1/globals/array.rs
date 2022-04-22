@@ -5,14 +5,15 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::MutationContext;
 use std::cmp::Ordering;
 
 bitflags! {
-    /// Flags used by `Array.sort` and `Array.sortOn`.
-    struct SortFlags: i32 {
+    /// Options used by `Array.sort` and `Array.sortOn`.
+    struct SortOptions: i32 {
         const CASE_INSENSITIVE     = 1 << 0;
         const DESCENDING           = 1 << 1;
         const UNIQUE_SORT          = 1 << 2;
@@ -27,8 +28,15 @@ bitflags! {
 const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 
 /// Compare function used by `Array.sort` and `Array.sortOn`.
-type CompareFn<'a, 'gc> =
-    Box<dyn 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering>;
+type CompareFn<'a, 'gc> = Box<
+    dyn 'a
+        + Fn(
+            &mut Activation<'_, 'gc, '_>,
+            &Value<'gc>,
+            &Value<'gc>,
+            SortOptions,
+        ) -> Result<Ordering, Error<'gc>>,
+>;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "push" => method(push; DONT_ENUM | DONT_DELETE);
@@ -46,11 +54,11 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "CASEINSENSITIVE" => int(SortFlags::CASE_INSENSITIVE.bits());
-    "DESCENDING" => int(SortFlags::DESCENDING.bits());
-    "UNIQUESORT" => int(SortFlags::UNIQUE_SORT.bits());
-    "RETURNINDEXEDARRAY" => int(SortFlags::RETURN_INDEXED_ARRAY.bits());
-    "NUMERIC" => int(SortFlags::NUMERIC.bits());
+    "CASEINSENSITIVE" => int(SortOptions::CASE_INSENSITIVE.bits());
+    "DESCENDING" => int(SortOptions::DESCENDING.bits());
+    "UNIQUESORT" => int(SortOptions::UNIQUE_SORT.bits());
+    "RETURNINDEXEDARRAY" => int(SortOptions::RETURN_INDEXED_ARRAY.bits());
+    "NUMERIC" => int(SortOptions::NUMERIC.bits());
 };
 
 pub fn create_array_object<'gc>(
@@ -417,39 +425,29 @@ fn sort<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Overloads:
-    // 1) a.sort(flags: Number = 0): Sorts with the given flags.
-    // 2) a.sort(compare_fn: Object, flags: Number = 0): Sorts using the given compare function and flags.
-    use crate::ecma_conversions::f64_to_wrapping_i32;
-    let (compare_fn, flags) = match args {
-        [Value::Number(_), Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),
-        [Value::Number(n), ..] => (None, f64_to_wrapping_i32(*n)),
-        [Value::Object(compare_fn), Value::Number(n), ..] => {
-            (Some(compare_fn), f64_to_wrapping_i32(*n))
-        }
-        [Value::Object(compare_fn), ..] => (Some(compare_fn), 0),
-        [] => (None, 0),
-        _ => return Ok(Value::Undefined),
-    };
-    let flags = SortFlags::from_bits_truncate(flags);
+    // 1) a.sort(options: Number = 0): Sort with the given options.
+    // 2) a.sort(compare_fn: Object, options: Number = 0): Sort using the given compare function and options.
 
-    let string_compare_fn = if flags.contains(SortFlags::CASE_INSENSITIVE) {
-        sort_compare_string_ignore_case
+    let (compare_fn, options) = match args {
+        [Value::Object(f), Value::Number(n), ..] => (
+            Some(f),
+            SortOptions::from_bits_truncate(f64_to_wrapping_i32(*n)),
+        ),
+        [Value::Object(f), ..] => (Some(f), SortOptions::empty()),
+        [Value::Number(_), Value::Number(n), ..] | [Value::Number(n), ..] => (
+            None,
+            SortOptions::from_bits_truncate(f64_to_wrapping_i32(*n)),
+        ),
+        [_, ..] => return Ok(Value::Undefined),
+        [] => (None, SortOptions::empty()),
+    };
+
+    let compare_fn = if let Some(compare_fn) = compare_fn {
+        sort_compare_custom(compare_fn)
     } else {
-        sort_compare_string
+        Box::new(sort_compare)
     };
-
-    let compare_fn: CompareFn<'_, 'gc> = if let Some(f) = compare_fn {
-        Box::new(move |activation, a: &Value<'gc>, b: &Value<'gc>| {
-            // this is undefined in the compare function.
-            sort_compare_custom(activation, Value::Undefined, a, b, f)
-        })
-    } else if flags.contains(SortFlags::NUMERIC) {
-        sort_compare_numeric(flags.contains(SortFlags::CASE_INSENSITIVE))
-    } else {
-        Box::new(string_compare_fn)
-    };
-
-    sort_with_function(activation, this, compare_fn, flags)
+    sort_internal(activation, this, compare_fn, options, false)
 }
 
 fn sort_on<'gc>(
@@ -457,136 +455,292 @@ fn sort_on<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // a.sortOn(field_name, flags: Number = 0): Sorts with the given flags.
-    // a.sortOn(field_names: Array, flags: Number = 0): Sorts with fields in order of precedence with the given flags.
-    // a.sortOn(field_names: Array, flags: Array): Sorts with fields in order of precedence with the given flags respectively.
+    // Overloads:
+    // 1) a.sortOn(field_name: String, options: Number = 0): Sort by a field and with the given options.
+    // 2) a.sortOn(field_names: Array, options: Array): Sort by fields in order of precedence and with the given options respectively.
+
     let fields = match args.get(0) {
-        Some(Value::Object(array)) => {
+        Some(Value::Object(field_names_array)) => {
+            if field_names_array.as_array_object().is_none() {
+                // Non-Array fields.
+                // Fallback to standard sort.
+                return sort_internal(
+                    activation,
+                    this,
+                    Box::new(sort_compare),
+                    SortOptions::empty(),
+                    true,
+                );
+            }
+
             // Array of field names.
-            let length = array.length(activation)?;
-            let field_names: Result<Vec<_>, Error<'gc>> = (0..length)
+            let length = field_names_array.length(activation)?;
+
+            // Bail-out if we don't have any fields.
+            if length <= 0 {
+                return Ok(this.into());
+            }
+
+            let fields: Result<Vec<_>, Error<'gc>> = (0..length)
                 .map(|i| {
-                    array
+                    field_names_array
                         .get_element(activation, i)
                         .coerce_to_string(activation)
+                        .map(|field_name| (field_name, SortOptions::empty()))
                 })
                 .collect();
-            field_names?
+            let mut fields = fields?;
+
+            match args.get(1) {
+                Some(Value::Object(options_array))
+                    if options_array.as_array_object().is_some()
+                        && options_array.length(activation)? == length =>
+                {
+                    // Array of options.
+                    for (i, (_field_name, options)) in fields.iter_mut().enumerate() {
+                        *options = SortOptions::from_bits_truncate(
+                            options_array
+                                .get_element(activation, i as i32)
+                                .coerce_to_i32(activation)?,
+                        );
+                    }
+                }
+                Some(options) if options.is_primitive() => {
+                    // Single options.
+                    let options =
+                        SortOptions::from_bits_truncate(options.coerce_to_i32(activation)?);
+                    fields.iter_mut().for_each(|(_, o)| *o = options);
+                }
+                _ => {
+                    // Non-Array options or mismatching lengths.
+                }
+            }
+
+            fields
         }
         Some(field_name) => {
             // Single field.
-            vec![field_name.coerce_to_string(activation)?]
+            let field_name = field_name.coerce_to_string(activation)?;
+
+            let options = match args.get(1) {
+                Some(Value::Number(n)) => SortOptions::from_bits_truncate(f64_to_wrapping_i32(*n)),
+                _ => SortOptions::empty(),
+            };
+
+            vec![(field_name, options)]
         }
         None => return Ok(Value::Undefined),
     };
 
-    // Bail out if we don't have any fields.
-    if fields.is_empty() {
-        return Ok(this.into());
-    }
-
-    let flags = match args.get(1) {
-        Some(Value::Object(array)) => {
-            // Array of field names.
-            let length = array.length(activation)?;
-            if length as usize == fields.len() {
-                let flags: Result<Vec<_>, Error<'gc>> = (0..length)
-                    .map(|i| {
-                        Ok(SortFlags::from_bits_truncate(
-                            array.get_element(activation, i).coerce_to_i32(activation)?,
-                        ))
-                    })
-                    .collect();
-                flags?
-            } else {
-                // If the lengths of the flags and fields array do not match, the flags array is ignored.
-                std::iter::repeat(SortFlags::empty())
-                    .take(fields.len())
-                    .collect()
-            }
-        }
-        Some(flags) => {
-            // Single field.
-            let flags = SortFlags::from_bits_truncate(flags.coerce_to_i32(activation)?);
-            std::iter::repeat(flags).take(fields.len()).collect()
-        }
-        None => std::iter::repeat(SortFlags::empty())
-            .take(fields.len())
-            .collect(),
-    };
-
-    // CASEINSENSITIVE, UNIQUESORT, and RETURNINDEXEDARRAY are taken from the first set of flags in the array.
-    let main_flags = flags[0];
-
-    // Generate a list of compare functions to use for each field in the array.
-    let field_compare_fns: Vec<CompareFn<'_, 'gc>> = flags
-        .into_iter()
-        .map(|flags| {
-            let string_compare_fn = if flags.contains(SortFlags::CASE_INSENSITIVE) {
-                sort_compare_string_ignore_case
-            } else {
-                sort_compare_string
-            };
-
-            if flags.contains(SortFlags::NUMERIC) {
-                sort_compare_numeric(flags.contains(SortFlags::CASE_INSENSITIVE))
-            } else {
-                Box::new(string_compare_fn)
-            }
-        })
-        .collect();
-
-    let compare_fn = sort_compare_fields(fields, field_compare_fns);
-
-    sort_with_function(activation, this, compare_fn, main_flags)
+    let (_, main_options) = fields[0];
+    let compare_fn = sort_on_compare(&fields);
+    sort_internal(activation, this, compare_fn, main_options, true)
 }
 
-fn sort_with_function<'gc>(
+/// Compare between two values, with specified sort options.
+fn sort_compare<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    a: &Value<'gc>,
+    b: &Value<'gc>,
+    options: SortOptions,
+) -> Result<Ordering, Error<'gc>> {
+    let result = match [a, b] {
+        [Value::Number(a), Value::Number(b)] if options.contains(SortOptions::NUMERIC) => {
+            a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
+        }
+        _ => {
+            let a = a.coerce_to_string(activation)?;
+            let b = b.coerce_to_string(activation)?;
+            if options.contains(SortOptions::CASE_INSENSITIVE) {
+                a.cmp_ignore_case(&b)
+            } else {
+                a.cmp(&b)
+            }
+        }
+    };
+
+    if options.contains(SortOptions::DESCENDING) {
+        Ok(result.reverse())
+    } else {
+        Ok(result)
+    }
+}
+
+/// Create a compare function based on a user-provided custom AS function.
+fn sort_compare_custom<'a, 'gc>(compare_fn: &'a Object<'gc>) -> CompareFn<'a, 'gc> {
+    Box::new(move |activation, a, b, _options| {
+        let this = Value::Undefined;
+        let args = [*a, *b];
+        let result = compare_fn.call("[Compare]".into(), activation, this, &args)?;
+        let result = result.coerce_to_f64(activation)?;
+        Ok(result.partial_cmp(&0.0).unwrap_or(DEFAULT_ORDERING))
+    })
+}
+
+/// Create a compare function based on field names and options.
+fn sort_on_compare<'a, 'gc>(fields: &'a [(AvmString<'gc>, SortOptions)]) -> CompareFn<'a, 'gc> {
+    Box::new(move |activation, a, b, main_options| {
+        if let [Value::Object(a), Value::Object(b)] = [a, b] {
+            for (field_name, options) in fields {
+                let a_prop = a
+                    .get_local_stored(*field_name, activation)
+                    .unwrap_or(Value::Undefined);
+                let b_prop = b
+                    .get_local_stored(*field_name, activation)
+                    .unwrap_or(Value::Undefined);
+
+                let result = sort_compare(activation, &a_prop, &b_prop, *options)?;
+                if result.is_ne() {
+                    return Ok(result);
+                }
+            }
+
+            // Got through all fields; must be equal.
+            Ok(Ordering::Equal)
+        } else {
+            // Fallback to standard comparison.
+            sort_compare(activation, a, b, main_options)
+        }
+    })
+}
+
+/// Common code for both `Array.sort` and `Array.sortOn`.
+fn sort_internal<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
-    mut compare_fn: impl FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering,
-    flags: SortFlags,
+    compare_fn: CompareFn<'_, 'gc>,
+    mut options: SortOptions,
+    is_sort_on: bool,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
-    let mut values: Vec<_> = (0..length)
+    let mut elements: Vec<_> = (0..length)
         .map(|i| (i, this.get_element(activation, i)))
         .collect();
 
-    let mut is_unique = true;
-    values.sort_unstable_by(|(_, a), (_, b)| {
-        let mut ret = compare_fn(activation, a, b);
-        if flags.contains(SortFlags::DESCENDING) {
-            ret = ret.reverse();
-        }
-        if ret == Ordering::Equal {
-            is_unique = false;
-        }
-        ret
-    });
-
-    if flags.contains(SortFlags::UNIQUE_SORT) && !is_unique {
-        // Check for uniqueness. Return 0 if there is a duplicated value.
-        return Ok(0.into());
+    // Remove DESCENDING for `Array.sort`, as it should be handled by the `.reverse()` below.
+    let descending = options.contains(SortOptions::DESCENDING);
+    if !is_sort_on {
+        options.remove(SortOptions::DESCENDING);
     }
 
-    if flags.contains(SortFlags::RETURN_INDEXED_ARRAY) {
+    qsort(activation, &mut elements, &compare_fn, options)?;
+
+    if !is_sort_on && descending {
+        elements.reverse();
+    }
+
+    if options.contains(SortOptions::UNIQUE_SORT) {
+        // Check for uniqueness. Return 0 if there is a duplicated value.
+        let compare_fn = if is_sort_on {
+            compare_fn
+        } else {
+            Box::new(sort_compare)
+        };
+        for pair in elements.windows(2) {
+            let (_, a) = pair[0];
+            let (_, b) = pair[1];
+            if compare_fn(activation, &a, &b, options)?.is_eq() {
+                return Ok(0.into());
+            }
+        }
+    }
+
+    if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
         // Array.RETURNINDEXEDARRAY returns an array containing the sorted indices, and does not modify
         // the original array.
         Ok(ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
-            values.into_iter().map(|(index, _)| index.into()),
+            elements.into_iter().map(|(index, _)| index.into()),
         )
         .into())
     } else {
         // Standard sort modifies the original array, and returns it.
         // AS2 reference incorrectly states this returns nothing, but it returns the original array, sorted.
-        for (i, (_, value)) in values.into_iter().enumerate() {
+        for (i, (_, value)) in elements.into_iter().enumerate() {
             this.set_element(activation, i as i32, value)?;
         }
-        this.set_length(activation, length)?;
         Ok(this.into())
     }
+}
+
+/// Sort elements using the quicksort algorithm, mimicking Flash's behavior.
+fn qsort<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    elements: &mut [(i32, Value<'gc>)],
+    compare_fn: &CompareFn<'_, 'gc>,
+    options: SortOptions,
+) -> Result<(), Error<'gc>> {
+    if elements.len() < 2 {
+        // One or no elements - nothing to do.
+        return Ok(());
+    }
+
+    // Fast-path for 2 elements.
+    if let [(_, a), (_, b)] = &elements {
+        if compare_fn(activation, a, b, options)?.is_gt() {
+            elements.swap(0, 1);
+        }
+        return Ok(());
+    }
+
+    // Flash always chooses the leftmost element as the pivot.
+    let (_, pivot) = elements[0];
+
+    // Order the elements (excluding the pivot) such that all elements lower
+    // than the pivot come before all elements greater than the pivot.
+    //
+    // This is done by iterating from both ends, swapping greater elements with
+    // lower ones along the way.
+    let mut left = 1;
+    let mut right = elements.len() - 1;
+    loop {
+        // Find an element greater than the pivot from the left.
+        while left < elements.len() - 1 {
+            let (_, item) = &elements[left];
+            if compare_fn(activation, &pivot, item, options)?.is_le() {
+                break;
+            }
+            left += 1;
+        }
+
+        // Find an element lower than the pivot from the right.
+        while right > 0 {
+            let (_, item) = &elements[right];
+            if compare_fn(activation, &pivot, item, options)?.is_gt() {
+                break;
+            }
+            right -= 1;
+        }
+
+        // When left and right cross, then no element greater than
+        // the pivot comes before an element lower than the pivot.
+        if left >= right {
+            break;
+        }
+
+        // Otherwise, swap left and right, and keep going.
+        elements.swap(left, right);
+    }
+
+    // The elements are now ordered as follows:
+    // [0]: pivot
+    // [1..=right]: lower partition (empty if right == 0)
+    // [right + 1..]: higher partition
+
+    // Swap the pivot with the last element in the lower partition,
+    // moving it in between the lower and higher partitions.
+    elements.swap(0, right);
+
+    // The elements are now ordered as follows:
+    // [..right]: lower partition
+    // [right]: pivot
+    // [right + 1..]: higher partition
+
+    // Recursively sort the lower and higher partitions.
+    qsort(activation, &mut elements[..right], compare_fn, options)?;
+    qsort(activation, &mut elements[right + 1..], compare_fn, options)?;
+    Ok(())
 }
 
 pub fn create_proto<'gc>(
@@ -598,92 +752,4 @@ pub fn create_proto<'gc>(
     let object = array.as_script_object().unwrap();
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
-}
-
-fn sort_compare_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    a: &Value<'gc>,
-    b: &Value<'gc>,
-) -> Ordering {
-    let a_str = a.coerce_to_string(activation);
-    let b_str = b.coerce_to_string(activation);
-    // TODO: Handle errors.
-    if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
-        a_str.cmp(&b_str)
-    } else {
-        DEFAULT_ORDERING
-    }
-}
-
-fn sort_compare_string_ignore_case<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    a: &Value<'gc>,
-    b: &Value<'gc>,
-) -> Ordering {
-    let a_str = a.coerce_to_string(activation);
-    let b_str = b.coerce_to_string(activation);
-    // TODO: Handle errors.
-    if let (Ok(a_str), Ok(b_str)) = (a_str, b_str) {
-        a_str.cmp_ignore_case(&b_str)
-    } else {
-        DEFAULT_ORDERING
-    }
-}
-
-fn sort_compare_numeric<'a, 'gc: 'a>(case_insensitive: bool) -> CompareFn<'a, 'gc> {
-    Box::new(move |activation, a, b| {
-        if let (Value::Number(a), Value::Number(b)) = (a, b) {
-            a.partial_cmp(b).unwrap_or(DEFAULT_ORDERING)
-        } else if case_insensitive {
-            sort_compare_string_ignore_case(activation, a, b)
-        } else {
-            sort_compare_string(activation, a, b)
-        }
-    })
-}
-
-fn sort_compare_fields<'a, 'gc: 'a>(
-    field_names: Vec<AvmString<'gc>>,
-    mut compare_fns: Vec<CompareFn<'a, 'gc>>,
-) -> impl 'a + FnMut(&mut Activation<'_, 'gc, '_>, &Value<'gc>, &Value<'gc>) -> Ordering {
-    move |activation, a, b| {
-        for (field_name, compare_fn) in field_names.iter().zip(compare_fns.iter_mut()) {
-            let a_object = a.coerce_to_object(activation);
-            let b_object = b.coerce_to_object(activation);
-            let a_prop = a_object
-                .get_local_stored(*field_name, activation)
-                .unwrap_or(Value::Undefined);
-            let b_prop = b_object
-                .get_local_stored(*field_name, activation)
-                .unwrap_or(Value::Undefined);
-
-            let result = compare_fn(activation, &a_prop, &b_prop);
-            if result != Ordering::Equal {
-                return result;
-            }
-        }
-        // Got through all fields; must be equal.
-        Ordering::Equal
-    }
-}
-
-// Returning an impl Trait here doesn't work yet because of https://github.com/rust-lang/rust/issues/65805 (?)
-fn sort_compare_custom<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Value<'gc>,
-    a: &Value<'gc>,
-    b: &Value<'gc>,
-    compare_fn: &Object<'gc>,
-) -> Ordering {
-    // TODO: Handle errors.
-    let args = [*a, *b];
-    let ret = compare_fn
-        .call("[Compare]".into(), activation, this, &args)
-        .unwrap_or(Value::Undefined);
-    match ret {
-        Value::Number(n) if n > 0.0 => Ordering::Greater,
-        Value::Number(n) if n < 0.0 => Ordering::Less,
-        Value::Number(n) if n == 0.0 => Ordering::Equal,
-        _ => DEFAULT_ORDERING,
-    }
 }
