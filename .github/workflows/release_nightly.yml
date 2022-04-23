@@ -239,7 +239,7 @@ jobs:
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
           mv package/ruffle_web_safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/ruffle_web_safari
-          cp ./web/packages/extension/dist/ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+          cp ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
           unzip ruffle_extension.zip
           rm ruffle_extension.zip
