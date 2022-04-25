@@ -36,6 +36,7 @@ pub mod gradient_bevel_filter;
 pub mod gradient_glow_filter;
 mod key;
 mod load_vars;
+mod local_connection;
 mod math;
 mod matrix;
 pub(crate) mod mouse;
@@ -613,6 +614,8 @@ pub fn create_globals<'gc>(
     let number_proto = number::create_proto(gc_context, object_proto, function_proto);
     let boolean_proto = boolean::create_proto(gc_context, object_proto, function_proto);
     let load_vars_proto = load_vars::create_proto(gc_context, object_proto, function_proto);
+    let local_connection_proto =
+        local_connection::create_proto(gc_context, object_proto, function_proto);
     let matrix_proto = matrix::create_proto(gc_context, object_proto, function_proto);
     let point_proto = point::create_proto(gc_context, object_proto, function_proto);
     let rectangle_proto = rectangle::create_proto(gc_context, object_proto, function_proto);
@@ -685,6 +688,13 @@ pub fn create_globals<'gc>(
         constructor_to_fn!(load_vars::constructor),
         Some(function_proto),
         load_vars_proto,
+    );
+    let local_connection = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(local_connection::constructor),
+        constructor_to_fn!(local_connection::constructor),
+        Some(function_proto),
+        local_connection_proto,
     );
     let movie_clip = FunctionObject::constructor(
         gc_context,
@@ -1001,6 +1011,12 @@ pub fn create_globals<'gc>(
         gc_context,
         "LoadVars",
         load_vars.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
+        "LocalConnection",
+        local_connection.into(),
         Attribute::DONT_ENUM,
     );
     globals.define_value(
