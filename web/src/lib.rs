@@ -494,6 +494,9 @@ impl Ruffle {
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
             .with_software_video()
+            .with_letterbox(config.letterbox)
+            .with_max_execution_duration(config.max_execution_duration)
+            .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
             .build()?;
 
         if let Ok(mut core) = core.try_lock() {
@@ -501,9 +504,6 @@ impl Ruffle {
             if let Some(color) = config.background_color.and_then(parse_html_color) {
                 core.set_background_color(Some(color));
             }
-            core.set_letterbox(config.letterbox);
-            core.set_warn_on_unsupported_content(config.warn_on_unsupported_content);
-            core.set_max_execution_duration(config.max_execution_duration);
             core.set_show_menu(config.show_menu);
             core.set_stage_align(config.salign.as_deref().unwrap_or(""));
             core.set_quality(config.quality.as_deref().unwrap_or("high"));

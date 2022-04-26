@@ -99,13 +99,9 @@ fn take_screenshot(
     let player = PlayerBuilder::new()
         .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
         .with_software_video()
+        .with_movie(movie)
+        .with_viewport_dimensions(width, height, size.scale as f64)
         .build()?;
-
-    player
-        .lock()
-        .unwrap()
-        .set_viewport_dimensions(width, height, size.scale as f64);
-    player.lock().unwrap().set_root_movie(movie);
 
     let mut result = Vec::new();
     let totalframes = frames + skipframes;

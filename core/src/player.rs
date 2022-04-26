@@ -646,14 +646,6 @@ impl Player {
         })
     }
 
-    pub fn warn_on_unsupported_content(&self) -> bool {
-        self.warn_on_unsupported_content
-    }
-
-    pub fn set_warn_on_unsupported_content(&mut self, warn_on_unsupported_content: bool) {
-        self.warn_on_unsupported_content = warn_on_unsupported_content
-    }
-
     pub fn movie_width(&mut self) -> u32 {
         self.mutate_with_update_context(|context| context.stage.movie_size().0)
     }
@@ -1663,8 +1655,10 @@ impl Player {
 }
 
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
-#[derive(Default)]
 pub struct PlayerBuilder {
+    movie: Option<SwfMovie>,
+
+    // Backends
     audio: Option<Audio>,
     log: Option<Log>,
     navigator: Option<Navigator>,
@@ -1672,6 +1666,15 @@ pub struct PlayerBuilder {
     storage: Option<Storage>,
     ui: Option<Ui>,
     video: Option<Video>,
+
+    // Misc. player configuration
+    autoplay: bool,
+    letterbox: Letterbox,
+    max_execution_duration: Duration,
+    viewport_width: u32,
+    viewport_height: u32,
+    viewport_scale_factor: f64,
+    warn_on_unsupported_content: bool,
 }
 
 impl PlayerBuilder {
@@ -1681,7 +1684,37 @@ impl PlayerBuilder {
     /// can be changed by chaining the configuration methods.
     #[inline]
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            movie: None,
+
+            audio: None,
+            log: None,
+            navigator: None,
+            renderer: None,
+            storage: None,
+            ui: None,
+            video: None,
+
+            autoplay: false,
+            // Disable script timeout in debug builds by default.
+            letterbox: Letterbox::Fullscreen,
+            max_execution_duration: Duration::from_secs(if cfg!(debug_assertions) {
+                u64::MAX
+            } else {
+                15
+            }),
+            viewport_width: 550,
+            viewport_height: 400,
+            viewport_scale_factor: 1.0,
+            warn_on_unsupported_content: true,
+        }
+    }
+
+    /// Configures the player to play an already-loaded movie.
+    #[inline]
+    pub fn with_movie(mut self, movie: SwfMovie) -> Self {
+        self.movie = Some(movie);
+        self
     }
 
     /// Sets the audio backend of the player.
@@ -1740,6 +1773,48 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets whether the movie will start playing immediately upon load.
+    #[inline]
+    pub fn with_autoplay(mut self, autoplay: bool) -> Self {
+        self.autoplay = autoplay;
+        self
+    }
+
+    /// Sets the letterbox setting for the player.
+    #[inline]
+    pub fn with_letterbox(mut self, letterbox: Letterbox) -> Self {
+        self.letterbox = letterbox;
+        self
+    }
+
+    /// Sets the maximum execution time of ActionScript code.
+    #[inline]
+    pub fn with_max_execution_duration(mut self, duration: Duration) -> Self {
+        self.max_execution_duration = duration;
+        self
+    }
+
+    /// Configures the player to warn if unsupported content is detected (ActionScript 3.0).
+    #[inline]
+    pub fn with_warn_on_unsupported_content(mut self, value: bool) -> Self {
+        self.warn_on_unsupported_content = value;
+        self
+    }
+
+    /// Sets the dimensions of the stage.
+    #[inline]
+    pub fn with_viewport_dimensions(
+        mut self,
+        width: u32,
+        height: u32,
+        dpi_scale_factor: f64,
+    ) -> Self {
+        self.viewport_width = width;
+        self.viewport_height = height;
+        self.viewport_scale_factor = dpi_scale_factor;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Result<Arc<Mutex<Player>>, Error> {
         use crate::backend::*;
@@ -1765,13 +1840,9 @@ impl PlayerBuilder {
             .video
             .unwrap_or_else(|| Box::new(video::NullVideoBackend::new()));
 
+        // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
-        let movie_width = 550;
-        let movie_height = 400;
         let frame_rate = 12.0;
-        // Disable script timeout in debug builds by default.
-        let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
-
         let mut player = Player {
             // Backends
             audio,
@@ -1793,7 +1864,7 @@ impl PlayerBuilder {
             start_time: Instant::now(),
             time_offset: 0,
             time_til_next_timer: None,
-            max_execution_duration: Duration::from_secs(max_execution_duration),
+            max_execution_duration: self.max_execution_duration,
 
             // Input
             input: Default::default(),
@@ -1807,9 +1878,9 @@ impl PlayerBuilder {
             transform_stack: TransformStack::new(),
             instance_counter: 0,
             player_version: NEWEST_PLAYER_VERSION,
-            is_playing: false,
+            is_playing: self.autoplay,
             needs_render: true,
-            warn_on_unsupported_content: true,
+            warn_on_unsupported_content: self.warn_on_unsupported_content,
             self_reference: None,
 
             // GC data
@@ -1830,7 +1901,7 @@ impl PlayerBuilder {
                         mouse_hovered_object: None,
                         mouse_pressed_object: None,
                         shared_objects: HashMap::new(),
-                        stage: Stage::empty(gc_context, movie_width, movie_height),
+                        stage: Stage::empty(gc_context, self.viewport_width, self.viewport_height),
                         timers: Timers::new(),
                         unbound_text_fields: Vec::new(),
                     },
@@ -1853,10 +1924,29 @@ impl PlayerBuilder {
             result
         })?;
 
+        // Finalize configuration and load the movie.
         player.audio.set_frame_rate(frame_rate);
         let player = Arc::new(Mutex::new(player));
-        player.lock().unwrap().self_reference = Some(Arc::downgrade(&player));
+        let mut player_lock = player.lock().unwrap();
+        player_lock.self_reference = Some(Arc::downgrade(&player));
+        player_lock.set_letterbox(self.letterbox);
+        player_lock.set_viewport_dimensions(
+            self.viewport_width,
+            self.viewport_height,
+            self.viewport_scale_factor,
+        );
+        if let Some(movie) = self.movie {
+            player_lock.set_root_movie(movie);
+        }
+        drop(player_lock);
+
         Ok(player)
+    }
+}
+
+impl Default for PlayerBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
