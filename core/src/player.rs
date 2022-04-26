@@ -236,112 +236,6 @@ pub struct Player {
 }
 
 impl Player {
-    fn new(
-        renderer: Renderer,
-        audio: Audio,
-        navigator: Navigator,
-        storage: Storage,
-        video: Video,
-        log: Log,
-        ui: Ui,
-    ) -> Result<Arc<Mutex<Self>>, Error> {
-        let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
-        let movie_width = 550;
-        let movie_height = 400;
-        let frame_rate = 12.0;
-        // Disable script timeout in debug builds by default.
-        let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
-
-        let mut player = Player {
-            player_version: NEWEST_PLAYER_VERSION,
-
-            swf: fake_movie.clone(),
-
-            warn_on_unsupported_content: true,
-
-            is_playing: false,
-            needs_render: true,
-
-            transform_stack: TransformStack::new(),
-
-            rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
-
-            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
-                GcRoot(GcCell::allocate(
-                    gc_context,
-                    GcRootData {
-                        library: Library::empty(),
-                        stage: Stage::empty(gc_context, movie_width, movie_height),
-                        mouse_hovered_object: None,
-                        mouse_pressed_object: None,
-                        drag_object: None,
-                        avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
-                        avm2: Avm2::new(gc_context),
-                        action_queue: ActionQueue::new(),
-                        load_manager: LoadManager::new(),
-                        shared_objects: HashMap::new(),
-                        unbound_text_fields: Vec::new(),
-                        timers: Timers::new(),
-                        current_context_menu: None,
-                        external_interface: ExternalInterface::new(),
-                        focus_tracker: FocusTracker::new(gc_context),
-                        audio_manager: AudioManager::new(),
-                    },
-                ))
-            }),
-
-            frame_rate,
-            frame_accumulator: 0.0,
-            recent_run_frame_timings: VecDeque::with_capacity(10),
-            time_offset: 0,
-
-            input: Default::default(),
-
-            mouse_pos: (Twips::ZERO, Twips::ZERO),
-            mouse_cursor: MouseCursor::Arrow,
-            mouse_cursor_needs_check: false,
-
-            renderer,
-            audio,
-            navigator,
-            log,
-            ui,
-            video,
-            self_reference: None,
-            system: SystemProperties::default(),
-            instance_counter: 0,
-            time_til_next_timer: None,
-            storage,
-            start_time: Instant::now(),
-            max_execution_duration: Duration::from_secs(max_execution_duration),
-            current_frame: None,
-        };
-
-        player.mutate_with_update_context(|context| {
-            // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
-            fake_root.post_instantiation(context, None, Instantiator::Movie, false);
-            context.stage.replace_at_depth(context, fake_root.into(), 0);
-
-            let result = Avm2::load_player_globals(context);
-
-            let stage = context.stage;
-            stage.post_instantiation(context, None, Instantiator::Movie, false);
-            stage.build_matrices(context);
-
-            result
-        })?;
-
-        player.audio.set_frame_rate(frame_rate);
-        let player_box = Arc::new(Mutex::new(player));
-        let mut player_lock = player_box.lock().unwrap();
-        player_lock.self_reference = Some(Arc::downgrade(&player_box));
-
-        std::mem::drop(player_lock);
-
-        Ok(player_box)
-    }
-
     /// Fetch the root movie.
     ///
     /// This should not be called if a root movie fetch has already been kicked
@@ -1870,7 +1764,99 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(video::NullVideoBackend::new()));
-        Player::new(renderer, audio, navigator, storage, video, log, ui)
+
+        let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
+        let movie_width = 550;
+        let movie_height = 400;
+        let frame_rate = 12.0;
+        // Disable script timeout in debug builds by default.
+        let max_execution_duration = if cfg!(debug_assertions) { u64::MAX } else { 15 };
+
+        let mut player = Player {
+            // Backends
+            audio,
+            log,
+            navigator,
+            renderer,
+            storage,
+            ui,
+            video,
+
+            // SWF info
+            swf: fake_movie.clone(),
+            current_frame: None,
+
+            // Timing
+            frame_rate,
+            frame_accumulator: 0.0,
+            recent_run_frame_timings: VecDeque::with_capacity(10),
+            start_time: Instant::now(),
+            time_offset: 0,
+            time_til_next_timer: None,
+            max_execution_duration: Duration::from_secs(max_execution_duration),
+
+            // Input
+            input: Default::default(),
+            mouse_pos: (Twips::ZERO, Twips::ZERO),
+            mouse_cursor: MouseCursor::Arrow,
+            mouse_cursor_needs_check: false,
+
+            // Misc. state
+            rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
+            system: SystemProperties::default(),
+            transform_stack: TransformStack::new(),
+            instance_counter: 0,
+            player_version: NEWEST_PLAYER_VERSION,
+            is_playing: false,
+            needs_render: true,
+            warn_on_unsupported_content: true,
+            self_reference: None,
+
+            // GC data
+            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                GcRoot(GcCell::allocate(
+                    gc_context,
+                    GcRootData {
+                        audio_manager: AudioManager::new(),
+                        action_queue: ActionQueue::new(),
+                        avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                        avm2: Avm2::new(gc_context),
+                        current_context_menu: None,
+                        drag_object: None,
+                        external_interface: ExternalInterface::new(),
+                        focus_tracker: FocusTracker::new(gc_context),
+                        library: Library::empty(),
+                        load_manager: LoadManager::new(),
+                        mouse_hovered_object: None,
+                        mouse_pressed_object: None,
+                        shared_objects: HashMap::new(),
+                        stage: Stage::empty(gc_context, movie_width, movie_height),
+                        timers: Timers::new(),
+                        unbound_text_fields: Vec::new(),
+                    },
+                ))
+            }),
+        };
+
+        player.mutate_with_update_context(|context| {
+            // Instantiate an empty root before the main movie loads.
+            let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
+            fake_root.post_instantiation(context, None, Instantiator::Movie, false);
+            context.stage.replace_at_depth(context, fake_root.into(), 0);
+
+            let result = Avm2::load_player_globals(context);
+
+            let stage = context.stage;
+            stage.post_instantiation(context, None, Instantiator::Movie, false);
+            stage.build_matrices(context);
+
+            result
+        })?;
+
+        player.audio.set_frame_rate(frame_rate);
+        let player = Arc::new(Mutex::new(player));
+        player.lock().unwrap().self_reference = Some(Arc::downgrade(&player));
+        Ok(player)
     }
 }
 
