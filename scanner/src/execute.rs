@@ -21,14 +21,11 @@ fn execute_swf(file: &Path) {
     let player = PlayerBuilder::new()
         .with_log(ScanLogBackend::new())
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
+        .with_max_execution_duration(Duration::from_secs(300))
+        .with_movie(movie)
         .build()
         .unwrap();
 
-    player.lock().unwrap().set_root_movie(movie);
-    player
-        .lock()
-        .unwrap()
-        .set_max_execution_duration(Duration::from_secs(300));
     player.lock().unwrap().run_frame();
     player.lock().unwrap().update_timers(frame_time);
     //executor.poll_all().unwrap();

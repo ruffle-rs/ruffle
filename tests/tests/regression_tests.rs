@@ -1204,13 +1204,9 @@ fn run_swf(
     let player = builder
         .with_log(TestLogBackend::new(trace_output.clone()))
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
+        .with_max_execution_duration(Duration::from_secs(300))
+        .with_movie(movie)
         .build()?;
-
-    player.lock().unwrap().set_root_movie(movie);
-    player
-        .lock()
-        .unwrap()
-        .set_max_execution_duration(Duration::from_secs(300));
 
     before_start(player.clone())?;
 

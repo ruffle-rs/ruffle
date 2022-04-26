@@ -255,30 +255,28 @@ impl App {
             opt.power.into(),
             trace_path(&opt),
         )?;
-        let player = builder
+        builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(storage::DiskStorageBackend::new())
             .with_ui(ui::DesktopUiBackend::new(window.clone()))
             .with_software_video()
-            .build()?;
-
-        let loaded = movie.is_some();
-
-        {
-            let mut player_lock = player.lock().unwrap();
-            player_lock.set_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content);
-            if let Some(movie) = movie {
-                player_lock.set_root_movie(movie);
-            }
-            player_lock.set_is_playing(true); // Desktop player will auto-play.
-            player_lock.set_letterbox(Letterbox::On);
-            player_lock.set_viewport_dimensions(
+            .with_autoplay(true)
+            .with_letterbox(Letterbox::On)
+            .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
+            .with_viewport_dimensions(
                 viewport_size.width,
                 viewport_size.height,
                 viewport_scale_factor,
             );
-        }
+
+        let loaded = if let Some(movie) = movie {
+            builder = builder.with_movie(movie);
+            true
+        } else {
+            false
+        };
+        let player = builder.build()?;
 
         Ok(Self {
             opt,
@@ -748,12 +746,12 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let player = PlayerBuilder::new()
         .with_renderer(renderer)
         .with_software_video()
+        .with_movie(movie)
+        .with_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor)
+        .with_autoplay(true)
         .build()?;
 
     let mut player_lock = player.lock().unwrap();
-    player_lock.set_root_movie(movie);
-    player_lock.set_is_playing(true);
-    player_lock.set_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor);
 
     println!("Running {}...", path.to_string_lossy());
 
