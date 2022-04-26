@@ -1,14 +1,8 @@
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
-use ruffle_core::backend::audio::NullAudioBackend;
-use ruffle_core::backend::log::NullLogBackend;
-use ruffle_core::backend::navigator::NullNavigatorBackend;
-use ruffle_core::backend::storage::MemoryStorageBackend;
-use ruffle_core::backend::ui::NullUiBackend;
-use ruffle_core::backend::video::SoftwareVideoBackend;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::Player;
+use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::{wgpu, Descriptors, WgpuRenderBackend};
@@ -102,15 +96,10 @@ fn take_screenshot(
     let height = (height * size.scale).round() as u32;
 
     let target = TextureTarget::new(&descriptors.device, (width, height));
-    let player = Player::new(
-        Box::new(WgpuRenderBackend::new(descriptors, target)?),
-        Box::new(NullAudioBackend::new()),
-        Box::new(NullNavigatorBackend::new()),
-        Box::new(MemoryStorageBackend::default()),
-        Box::new(SoftwareVideoBackend::new()),
-        Box::new(NullLogBackend::new()),
-        Box::new(NullUiBackend::new()),
-    )?;
+    let player = PlayerBuilder::new()
+        .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
+        .with_software_video()
+        .build()?;
 
     player
         .lock()

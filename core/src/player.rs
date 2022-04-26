@@ -236,7 +236,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(
+    fn new(
         renderer: Renderer,
         audio: Audio,
         navigator: Navigator,
@@ -1765,6 +1765,112 @@ impl Player {
 
     pub fn set_max_execution_duration(&mut self, max_execution_duration: Duration) {
         self.max_execution_duration = max_execution_duration
+    }
+}
+
+/// Player factory, which can be used to configure the aspects of a Ruffle player.
+#[derive(Default)]
+pub struct PlayerBuilder {
+    audio: Option<Audio>,
+    log: Option<Log>,
+    navigator: Option<Navigator>,
+    renderer: Option<Renderer>,
+    storage: Option<Storage>,
+    ui: Option<Ui>,
+    video: Option<Video>,
+}
+
+impl PlayerBuilder {
+    /// Generates the base configuration for creating a player.
+    ///
+    /// All settings will be at their defaults, and "null" backends will be used. The settings
+    /// can be changed by chaining the configuration methods.
+    #[inline]
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Sets the audio backend of the player.
+    #[inline]
+    pub fn with_audio(mut self, audio: impl 'static + AudioBackend) -> Self {
+        self.audio = Some(Box::new(audio));
+        self
+    }
+
+    /// Sets the logging backend of the player.
+    #[inline]
+    pub fn with_log(mut self, log: impl 'static + LogBackend) -> Self {
+        self.log = Some(Box::new(log));
+        self
+    }
+
+    /// Sets the navigator backend of the player.
+    #[inline]
+    pub fn with_navigator(mut self, navigator: impl 'static + NavigatorBackend) -> Self {
+        self.navigator = Some(Box::new(navigator));
+        self
+    }
+
+    /// Sets the rendering backend of the player.
+    #[inline]
+    pub fn with_renderer(mut self, renderer: impl 'static + RenderBackend) -> Self {
+        self.renderer = Some(Box::new(renderer));
+        self
+    }
+
+    /// Sets the storage backend of the player.
+    #[inline]
+    pub fn with_storage(mut self, storage: impl 'static + StorageBackend) -> Self {
+        self.storage = Some(Box::new(storage));
+        self
+    }
+
+    /// Sets the UI backend of the player.
+    #[inline]
+    pub fn with_ui(mut self, ui: impl 'static + UiBackend) -> Self {
+        self.ui = Some(Box::new(ui));
+        self
+    }
+
+    /// Sets the video backend of the player.
+    #[inline]
+    pub fn with_video(mut self, video: impl 'static + VideoBackend) -> Self {
+        self.video = Some(Box::new(video));
+        self
+    }
+
+    /// Configures the player to use software video decoding.
+    #[inline]
+    pub fn with_software_video(mut self) -> Self {
+        self.video = Some(Box::new(crate::backend::video::SoftwareVideoBackend::new()));
+        self
+    }
+
+    /// Builds the player, wiring up the backends and configuring the specified settings.
+    pub fn build(self) -> Result<Arc<Mutex<Player>>, Error> {
+        use crate::backend::*;
+        let audio = self
+            .audio
+            .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
+        let log = self
+            .log
+            .unwrap_or_else(|| Box::new(log::NullLogBackend::new()));
+        let navigator = self
+            .navigator
+            .unwrap_or_else(|| Box::new(navigator::NullNavigatorBackend::new()));
+        let renderer = self
+            .renderer
+            .unwrap_or_else(|| Box::new(render::NullRenderer::new()));
+        let storage = self
+            .storage
+            .unwrap_or_else(|| Box::new(storage::MemoryStorageBackend::new()));
+        let ui = self
+            .ui
+            .unwrap_or_else(|| Box::new(ui::NullUiBackend::new()));
+        let video = self
+            .video
+            .unwrap_or_else(|| Box::new(video::NullVideoBackend::new()));
+        Player::new(renderer, audio, navigator, storage, video, log, ui)
     }
 }
 

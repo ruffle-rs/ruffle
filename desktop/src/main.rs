@@ -19,18 +19,8 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    backend::{
-        audio::{AudioBackend, NullAudioBackend},
-        log as log_backend,
-        navigator::NullNavigatorBackend,
-        storage::MemoryStorageBackend,
-        ui::NullUiBackend,
-        video,
-    },
-    config::Letterbox,
-    events::KeyCode,
-    tag_utils::SwfMovie,
-    Player, PlayerEvent, StageDisplayState,
+    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
+    StageDisplayState,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
@@ -242,33 +232,36 @@ impl App {
         let viewport_scale_factor = window.scale_factor();
 
         let window = Rc::new(window);
-        let renderer = Box::new(WgpuRenderBackend::for_window(
-            window.as_ref(),
-            (viewport_size.width, viewport_size.height),
-            opt.graphics.into(),
-            opt.power.into(),
-            trace_path(&opt),
-        )?);
-        let audio: Box<dyn AudioBackend> = match audio::CpalAudioBackend::new() {
-            Ok(audio) => Box::new(audio),
+
+        let mut builder = PlayerBuilder::new();
+        match audio::CpalAudioBackend::new() {
+            Ok(audio) => builder = builder.with_audio(audio),
             Err(e) => {
                 log::error!("Unable to create audio device: {}", e);
-                Box::new(NullAudioBackend::new())
             }
         };
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
-        let navigator = Box::new(navigator::ExternalNavigatorBackend::new(
+        let navigator = navigator::ExternalNavigatorBackend::new(
             movie_url.unwrap(),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
-        ));
-        let storage = Box::new(storage::DiskStorageBackend::new());
-        let video = Box::new(video::SoftwareVideoBackend::new());
-        let log = Box::new(log_backend::NullLogBackend::new());
-        let ui = Box::new(ui::DesktopUiBackend::new(window.clone()));
-        let player = Player::new(renderer, audio, navigator, storage, video, log, ui)?;
+        );
+        let renderer = WgpuRenderBackend::for_window(
+            window.as_ref(),
+            (viewport_size.width, viewport_size.height),
+            opt.graphics.into(),
+            opt.power.into(),
+            trace_path(&opt),
+        )?;
+        let player = builder
+            .with_navigator(navigator)
+            .with_renderer(renderer)
+            .with_storage(storage::DiskStorageBackend::new())
+            .with_ui(ui::DesktopUiBackend::new(window.clone()))
+            .with_software_video()
+            .build()?;
 
         let loaded = movie.is_some();
 
@@ -746,19 +739,16 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
     let viewport_height = 1080;
     let viewport_scale_factor = 1.0;
 
-    let renderer = Box::new(WgpuRenderBackend::for_offscreen(
+    let renderer = WgpuRenderBackend::for_offscreen(
         (viewport_width, viewport_height),
         opt.graphics.into(),
         opt.power.into(),
         trace_path(&opt),
-    )?);
-    let audio = Box::new(NullAudioBackend::new());
-    let navigator = Box::new(NullNavigatorBackend::new());
-    let storage = Box::new(MemoryStorageBackend::default());
-    let video = Box::new(video::SoftwareVideoBackend::new());
-    let log = Box::new(log_backend::NullLogBackend::new());
-    let ui = Box::new(NullUiBackend::new());
-    let player = Player::new(renderer, audio, navigator, storage, video, log, ui)?;
+    )?;
+    let player = PlayerBuilder::new()
+        .with_renderer(renderer)
+        .with_software_video()
+        .build()?;
 
     let mut player_lock = player.lock().unwrap();
     player_lock.set_root_movie(movie);
