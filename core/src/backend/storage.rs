@@ -17,6 +17,12 @@ pub struct MemoryStorageBackend {
     map: HashMap<String, Vec<u8>>,
 }
 
+impl MemoryStorageBackend {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
 impl StorageBackend for MemoryStorageBackend {
     fn get(&self, name: &str) -> Option<Vec<u8>> {
         self.map.get(name).cloned()
