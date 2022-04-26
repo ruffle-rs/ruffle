@@ -46,6 +46,16 @@ installed on your system. (Ubuntu: `libgtk-3-dev`, Fedora: `gtk3-devel`)
 
 - `cargo run --release --package=ruffle_desktop -- test.swf`
 
+## Homebrew
+
+Ruffle Desktop can be built from our [Homebrew Tap](https://github.com/ruffle-rs/homebrew-ruffle/):
+
+```
+brew install --HEAD ruffle-rs/ruffle/ruffle
+```
+
+_Note: because it is HEAD-only, you'll need to run `brew upgrade --fetch-HEAD ruffle` each time you want to update._
+
 ### Web or Extension
 
 Follow [the instructions in the web directory](web/README.md#building-from-source) for building
