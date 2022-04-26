@@ -3,24 +3,17 @@
 //! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
-use ruffle_core::backend::render::RenderBackend;
-use ruffle_core::backend::video::SoftwareVideoBackend;
-use ruffle_core::backend::video::VideoBackend;
 use ruffle_core::backend::{
-    audio::NullAudioBackend,
     log::LogBackend,
     navigator::{NullExecutor, NullNavigatorBackend},
-    render::NullRenderer,
     storage::{MemoryStorageBackend, StorageBackend},
-    ui::NullUiBackend,
-    video::NullVideoBackend,
 };
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerEvent};
+use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
@@ -1181,46 +1174,38 @@ fn run_swf(
     let mut platform_id = None;
     let backend_bit = wgpu::Backends::PRIMARY;
 
-    let (render_backend, video_backend): (Box<dyn RenderBackend>, Box<dyn VideoBackend>) =
-        if check_img {
-            let instance = wgpu::Instance::new(backend_bit);
+    let mut builder = PlayerBuilder::new();
+    if check_img {
+        let instance = wgpu::Instance::new(backend_bit);
 
-            let descriptors = futures::executor::block_on(
-                WgpuRenderBackend::<TextureTarget>::build_descriptors(
-                    backend_bit,
-                    instance,
-                    None,
-                    Default::default(),
-                    None,
-                ),
-            )?;
+        let descriptors =
+            futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
+                backend_bit,
+                instance,
+                None,
+                Default::default(),
+                None,
+            ))?;
 
-            platform_id = Some(get_img_platform_suffix(&descriptors.info));
+        platform_id = Some(get_img_platform_suffix(&descriptors.info));
 
-            let target = TextureTarget::new(
-                &descriptors.device,
-                (
-                    movie.width().to_pixels() as u32,
-                    movie.height().to_pixels() as u32,
-                ),
-            );
+        let target = TextureTarget::new(
+            &descriptors.device,
+            (
+                movie.width().to_pixels() as u32,
+                movie.height().to_pixels() as u32,
+            ),
+        );
 
-            let render_backend = Box::new(WgpuRenderBackend::new(descriptors, target)?);
-            let video_backend = Box::new(SoftwareVideoBackend::new());
-            (render_backend, video_backend)
-        } else {
-            (Box::new(NullRenderer), Box::new(NullVideoBackend::new()))
-        };
+        builder = builder
+            .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
+            .with_software_video();
+    };
+    let player = builder
+        .with_log(TestLogBackend::new(trace_output.clone()))
+        .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
+        .build()?;
 
-    let player = Player::new(
-        render_backend,
-        Box::new(NullAudioBackend::new()),
-        Box::new(NullNavigatorBackend::with_base_path(base_path, &executor)),
-        Box::new(MemoryStorageBackend::default()),
-        video_backend,
-        Box::new(TestLogBackend::new(trace_output.clone())),
-        Box::new(NullUiBackend::new()),
-    )?;
     player.lock().unwrap().set_root_movie(movie);
     player
         .lock()
