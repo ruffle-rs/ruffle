@@ -33,6 +33,7 @@ module.exports = (_env, _argv) => {
             new CopyPlugin({
                 patterns: [
                     { from: path.resolve(__dirname, "www/index.html") },
+                    { from: path.resolve(__dirname, "www/logo-anim.swf") },
                     { from: "swfs.json", noErrorOnMissing: true },
                     { from: "LICENSE*" },
                     { from: "README.md" },
