@@ -255,7 +255,7 @@ fn spawn_load_var_fetch<'gc>(
     };
 
     let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone().unwrap(),
+        activation.context.player.clone(),
         loader_object,
         &url,
         request_options,

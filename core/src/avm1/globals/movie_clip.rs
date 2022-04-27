@@ -1322,7 +1322,7 @@ fn load_movie<'gc>(
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
     let (url, opts) = activation.locals_into_request_options(&url, method);
     let future = activation.context.load_manager.load_movie_into_clip(
-        activation.context.player.clone().unwrap(),
+        activation.context.player.clone(),
         DisplayObject::MovieClip(target),
         &url,
         opts,
@@ -1346,7 +1346,7 @@ fn load_variables<'gc>(
     let (url, opts) = activation.locals_into_request_options(&url, method);
     let target = target.object().coerce_to_object(activation);
     let future = activation.context.load_manager.load_form_into_object(
-        activation.context.player.clone().unwrap(),
+        activation.context.player.clone(),
         target,
         &url,
         opts,
