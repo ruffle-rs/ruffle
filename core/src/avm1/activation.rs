@@ -1164,7 +1164,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         }
                     } else {
                         let future = self.context.load_manager.load_movie_into_clip(
-                            self.context.player.clone().unwrap(),
+                            self.context.player.clone(),
                             level,
                             &url,
                             RequestOptions::get(),
@@ -1263,7 +1263,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
                     let future = self.context.load_manager.load_form_into_object(
-                        self.context.player.clone().unwrap(),
+                        self.context.player.clone(),
                         target_obj,
                         &url,
                         opts,
@@ -1287,7 +1287,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone().unwrap(),
+                        self.context.player.clone(),
                         clip_target,
                         &url,
                         opts,
@@ -1302,7 +1302,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // `loadMovieNum` call.
             if let Some(clip_target) = clip_target {
                 let future = self.context.load_manager.load_movie_into_clip(
-                    self.context.player.clone().unwrap(),
+                    self.context.player.clone(),
                     clip_target,
                     &url.to_utf8_lossy(),
                     RequestOptions::get(),

@@ -228,7 +228,7 @@ pub struct Player {
     /// This is a weak reference that is upgraded and handed out in various
     /// contexts to other parts of the player. It can be used to ensure the
     /// player lives across `await` calls in async code.
-    self_reference: Option<Weak<Mutex<Self>>>,
+    self_reference: Weak<Mutex<Self>>,
 
     /// The current frame of the main timeline, if available.
     /// The first frame is frame 1.
@@ -248,7 +248,7 @@ impl Player {
     ) {
         self.mutate_with_update_context(|context| {
             let future = context.load_manager.load_root_movie(
-                context.player.clone().unwrap(),
+                context.player.clone(),
                 movie_url,
                 RequestOptions::get(),
                 parameters,
@@ -1843,73 +1843,81 @@ impl PlayerBuilder {
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
         let frame_rate = 12.0;
-        let mut player = Player {
-            // Backends
-            audio,
-            log,
-            navigator,
-            renderer,
-            storage,
-            ui,
-            video,
+        let player = Arc::new_cyclic(|self_ref| {
+            Mutex::new(Player {
+                // Backends
+                audio,
+                log,
+                navigator,
+                renderer,
+                storage,
+                ui,
+                video,
 
-            // SWF info
-            swf: fake_movie.clone(),
-            current_frame: None,
+                // SWF info
+                swf: fake_movie.clone(),
+                current_frame: None,
 
-            // Timing
-            frame_rate,
-            frame_accumulator: 0.0,
-            recent_run_frame_timings: VecDeque::with_capacity(10),
-            start_time: Instant::now(),
-            time_offset: 0,
-            time_til_next_timer: None,
-            max_execution_duration: self.max_execution_duration,
+                // Timing
+                frame_rate,
+                frame_accumulator: 0.0,
+                recent_run_frame_timings: VecDeque::with_capacity(10),
+                start_time: Instant::now(),
+                time_offset: 0,
+                time_til_next_timer: None,
+                max_execution_duration: self.max_execution_duration,
 
-            // Input
-            input: Default::default(),
-            mouse_pos: (Twips::ZERO, Twips::ZERO),
-            mouse_cursor: MouseCursor::Arrow,
-            mouse_cursor_needs_check: false,
+                // Input
+                input: Default::default(),
+                mouse_pos: (Twips::ZERO, Twips::ZERO),
+                mouse_cursor: MouseCursor::Arrow,
+                mouse_cursor_needs_check: false,
 
-            // Misc. state
-            rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
-            system: SystemProperties::default(),
-            transform_stack: TransformStack::new(),
-            instance_counter: 0,
-            player_version: NEWEST_PLAYER_VERSION,
-            is_playing: self.autoplay,
-            needs_render: true,
-            warn_on_unsupported_content: self.warn_on_unsupported_content,
-            self_reference: None,
+                // Misc. state
+                rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
+                system: SystemProperties::default(),
+                transform_stack: TransformStack::new(),
+                instance_counter: 0,
+                player_version: NEWEST_PLAYER_VERSION,
+                is_playing: self.autoplay,
+                needs_render: true,
+                warn_on_unsupported_content: self.warn_on_unsupported_content,
+                self_reference: self_ref.clone(),
 
-            // GC data
-            gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
-                GcRoot(GcCell::allocate(
-                    gc_context,
-                    GcRootData {
-                        audio_manager: AudioManager::new(),
-                        action_queue: ActionQueue::new(),
-                        avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
-                        avm2: Avm2::new(gc_context),
-                        current_context_menu: None,
-                        drag_object: None,
-                        external_interface: ExternalInterface::new(),
-                        focus_tracker: FocusTracker::new(gc_context),
-                        library: Library::empty(),
-                        load_manager: LoadManager::new(),
-                        mouse_hovered_object: None,
-                        mouse_pressed_object: None,
-                        shared_objects: HashMap::new(),
-                        stage: Stage::empty(gc_context, self.viewport_width, self.viewport_height),
-                        timers: Timers::new(),
-                        unbound_text_fields: Vec::new(),
-                    },
-                ))
-            }),
-        };
+                // GC data
+                gc_arena: GcArena::new(ArenaParameters::default(), |gc_context| {
+                    GcRoot(GcCell::allocate(
+                        gc_context,
+                        GcRootData {
+                            audio_manager: AudioManager::new(),
+                            action_queue: ActionQueue::new(),
+                            avm1: Avm1::new(gc_context, NEWEST_PLAYER_VERSION),
+                            avm2: Avm2::new(gc_context),
+                            current_context_menu: None,
+                            drag_object: None,
+                            external_interface: ExternalInterface::new(),
+                            focus_tracker: FocusTracker::new(gc_context),
+                            library: Library::empty(),
+                            load_manager: LoadManager::new(),
+                            mouse_hovered_object: None,
+                            mouse_pressed_object: None,
+                            shared_objects: HashMap::new(),
+                            stage: Stage::empty(
+                                gc_context,
+                                self.viewport_width,
+                                self.viewport_height,
+                            ),
+                            timers: Timers::new(),
+                            unbound_text_fields: Vec::new(),
+                        },
+                    ))
+                }),
+            })
+        });
 
-        player.mutate_with_update_context(|context| {
+        // Finalize configuration and load the movie.
+        let mut player_lock = player.lock().unwrap();
+        player_lock.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
             let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
             fake_root.post_instantiation(context, None, Instantiator::Movie, false);
@@ -1923,12 +1931,7 @@ impl PlayerBuilder {
 
             result
         })?;
-
-        // Finalize configuration and load the movie.
-        player.audio.set_frame_rate(frame_rate);
-        let player = Arc::new(Mutex::new(player));
-        let mut player_lock = player.lock().unwrap();
-        player_lock.self_reference = Some(Arc::downgrade(&player));
+        player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
         player_lock.set_viewport_dimensions(
             self.viewport_width,

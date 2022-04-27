@@ -112,7 +112,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
     ///
     /// Recipients of an update context may upgrade the reference to ensure
     /// that the player lives across I/O boundaries.
-    pub player: Option<Weak<Mutex<Player>>>,
+    pub player: Weak<Mutex<Player>>,
 
     /// The player's load manager.
     ///

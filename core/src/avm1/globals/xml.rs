@@ -261,7 +261,7 @@ fn spawn_xml_fetch<'gc>(
     this.set("loaded", false.into(), activation)?;
 
     let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone().unwrap(),
+        activation.context.player.clone(),
         loader_object,
         &url.to_utf8_lossy(),
         request_options,
