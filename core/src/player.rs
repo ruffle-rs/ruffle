@@ -1453,7 +1453,7 @@ impl Player {
 
     /// Runs the closure `f` with an `UpdateContext`.
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
-    fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
+    pub(crate) fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc, '_>) -> R,
     {

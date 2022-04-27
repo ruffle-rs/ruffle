@@ -529,106 +529,21 @@ mod tests {
     use super::*;
 
     use crate::avm1::function::Executable;
-    use crate::avm1::globals::system::SystemProperties;
+    use crate::avm1::function::FunctionObject;
     use crate::avm1::property::Attribute;
-    use crate::avm1::{activation::ActivationIdentifier, function::FunctionObject};
-    use crate::avm1::{Avm1, Timers};
-    use crate::avm2::Avm2;
-    use crate::backend::audio::{AudioManager, NullAudioBackend};
-    use crate::backend::log::NullLogBackend;
-    use crate::backend::navigator::NullNavigatorBackend;
-    use crate::backend::render::NullRenderer;
-    use crate::backend::storage::MemoryStorageBackend;
-    use crate::backend::ui::NullUiBackend;
-    use crate::backend::video::NullVideoBackend;
-    use crate::context::UpdateContext;
-    use crate::display_object::{MovieClip, Stage};
-    use crate::focus_tracker::FocusTracker;
-    use crate::library::Library;
-    use crate::loader::LoadManager;
-    use crate::prelude::*;
-    use crate::tag_utils::SwfMovie;
-    use crate::vminterface::Instantiator;
-    use gc_arena::rootless_arena;
-    use instant::Instant;
-    use rand::{rngs::SmallRng, SeedableRng};
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use std::time::Duration;
 
-    fn with_object<F, R>(swf_version: u8, test: F) -> R
+    fn with_object<F>(swf_version: u8, test: F)
     where
-        F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>),
     {
-        rootless_arena(|gc_context| {
-            let mut avm1 = Avm1::new(gc_context, swf_version);
-            let mut avm2 = Avm2::new(gc_context);
-            let swf = Arc::new(SwfMovie::empty(swf_version));
-            let root: DisplayObject<'_> = MovieClip::new(swf.clone(), gc_context).into();
-            root.set_depth(gc_context, 0);
-
-            let stage = Stage::empty(gc_context, 550, 400);
-            let mut frame_rate = 12.0;
-
-            let object = ScriptObject::object(gc_context, Some(avm1.prototypes().object)).into();
-            let globals = avm1.global_object_cell();
-
-            let mut context = UpdateContext {
-                gc_context,
-                player_version: 32,
-                swf: &swf,
-                stage,
-                rng: &mut SmallRng::from_seed([0u8; 32]),
-                action_queue: &mut crate::context::ActionQueue::new(),
-                audio: &mut NullAudioBackend::new(),
-                audio_manager: &mut AudioManager::new(),
-                ui: &mut NullUiBackend::new(),
-                library: &mut Library::empty(),
-                navigator: &mut NullNavigatorBackend::new(),
-                renderer: &mut NullRenderer::new(),
-                log: &mut NullLogBackend::new(),
-                video: &mut NullVideoBackend::new(),
-                mouse_over_object: None,
-                mouse_down_object: None,
-                input: &Default::default(),
-                mouse_position: &(Twips::ZERO, Twips::ZERO),
-                drag_object: &mut None,
-                player: None,
-                load_manager: &mut LoadManager::new(),
-                system: &mut SystemProperties::default(),
-                instance_counter: &mut 0,
-                storage: &mut MemoryStorageBackend::default(),
-                shared_objects: &mut HashMap::new(),
-                unbound_text_fields: &mut Vec::new(),
-                timers: &mut Timers::new(),
-                current_context_menu: &mut None,
-                needs_render: &mut false,
-                avm1: &mut avm1,
-                avm2: &mut avm2,
-                external_interface: &mut Default::default(),
-                start_time: Instant::now(),
-                update_start: Instant::now(),
-                max_execution_duration: Duration::from_secs(15),
-                focus_tracker: FocusTracker::new(gc_context),
-                times_get_time_called: 0,
-                time_offset: &mut 0,
-                frame_rate: &mut frame_rate,
-            };
-            context.stage.replace_at_depth(&mut context, root, 0);
-
-            root.post_instantiation(&mut context, None, Instantiator::Movie, false);
-            root.set_name(context.gc_context, "".into());
-
-            let swf_version = context.swf.version();
-            let mut activation = Activation::from_nothing(
-                context,
-                ActivationIdentifier::root("[Test]"),
-                swf_version,
-                globals,
-                root,
-            );
-
-            test(&mut activation, object)
+        crate::avm1::test_utils::with_avm(swf_version, |activation, _root| {
+            let object = ScriptObject::object(
+                activation.context.gc_context,
+                Some(activation.context.avm1.prototypes().object),
+            )
+            .into();
+            test(activation, object);
+            Ok(())
         })
     }
 
