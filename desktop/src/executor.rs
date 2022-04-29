@@ -147,17 +147,15 @@ impl GlutinAsyncExecutor {
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> (Arc<Mutex<Self>>, Sender<OwnedFuture<(), Error>>) {
         let (send, recv) = channel();
-        let new_self = Arc::new(Mutex::new(Self {
-            task_queue: Arena::new(),
-            channel: recv,
-            self_ref: Weak::new(),
-            event_loop,
-            waiting_for_poll: false,
-        }));
-        let self_ref = Arc::downgrade(&new_self);
-
-        new_self.lock().expect("locked self").self_ref = self_ref;
-
+        let new_self = Arc::new_cyclic(|self_ref| {
+            Mutex::new(Self {
+                task_queue: Arena::new(),
+                channel: recv,
+                self_ref: self_ref.clone(),
+                event_loop,
+                waiting_for_poll: false,
+            })
+        });
         (new_self, send)
     }
 
