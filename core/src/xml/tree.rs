@@ -1,16 +1,14 @@
 //! XML Tree structure
 
 use crate::avm1::activation::Activation;
-use crate::avm1::object::xml_attributes_object::XmlAttributesObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Object, ScriptObject, TObject};
+use crate::avm1::{Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
-use std::collections::BTreeMap;
 use std::fmt;
 
 pub const ELEMENT_NODE: u8 = 1;
@@ -26,9 +24,6 @@ pub struct XmlNode<'gc>(GcCell<'gc, XmlNodeData<'gc>>);
 pub struct XmlNodeData<'gc> {
     /// The script object associated with this XML node, if any.
     script_object: Option<Object<'gc>>,
-
-    /// The script object associated with this XML node's attributes, if any.
-    attributes_script_object: Option<Object<'gc>>,
 
     /// The parent node of this one.
     parent: Option<XmlNode<'gc>>,
@@ -48,7 +43,7 @@ pub struct XmlNodeData<'gc> {
     node_value: Option<AvmString<'gc>>,
 
     /// Attributes of the element.
-    attributes: BTreeMap<AvmString<'gc>, AvmString<'gc>>,
+    attributes: ScriptObject<'gc>,
 
     /// Child nodes of this element.
     children: Vec<XmlNode<'gc>>,
@@ -65,13 +60,12 @@ impl<'gc> XmlNode<'gc> {
             mc,
             XmlNodeData {
                 script_object: None,
-                attributes_script_object: None,
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
                 node_type,
                 node_value,
-                attributes: BTreeMap::new(),
+                attributes: ScriptObject::bare_object(mc),
                 children: Vec::new(),
             },
         ))
@@ -88,12 +82,22 @@ impl<'gc> XmlNode<'gc> {
     ) -> Result<Self, quick_xml::Error> {
         let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name())?;
         let mut node = Self::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
-        for attribute in bs.attributes() {
-            let attribute = attribute?;
+
+        // Reverse attributes so they appear in the `PropertyMap` in their definition order.
+        let attributes: Result<Vec<_>, _> = bs.attributes().collect();
+        let attributes = attributes?;
+        for attribute in attributes.iter().rev() {
             let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key)?;
             let value_bytes = attribute.unescaped_value()?;
             let value = AvmString::new_utf8_bytes(activation.context.gc_context, value_bytes)?;
-            node.set_attribute_value(activation.context.gc_context, key, value);
+
+            // Insert an attribute.
+            node.attributes().define_value(
+                activation.context.gc_context,
+                key,
+                value.into(),
+                Attribute::empty(),
+            );
 
             // Update the ID map.
             if attribute.key == b"id" {
@@ -105,6 +109,7 @@ impl<'gc> XmlNode<'gc> {
                 );
             }
         }
+
         Ok(node)
     }
 
@@ -365,31 +370,30 @@ impl<'gc> XmlNode<'gc> {
         }
     }
 
-    /// Obtain the script object for a given XML tree node's attributes,
-    /// constructing a new script object if one does not exist.
-    pub fn attribute_script_object(&mut self, gc_context: MutationContext<'gc, '_>) -> Object<'gc> {
-        *self
-            .0
-            .write(gc_context)
-            .attributes_script_object
-            .get_or_insert_with(|| XmlAttributesObject::from_xml_node(gc_context, *self))
+    /// Obtain the script object for a given XML tree node's attributes.
+    pub fn attributes(&self) -> ScriptObject<'gc> {
+        self.0.read().attributes
     }
 
     /// Create a duplicate copy of this node.
     ///
     /// If the `deep` flag is set true, then the entire node tree will be cloned.
-    pub fn duplicate(self, gc_context: MutationContext<'gc, '_>, deep: bool) -> XmlNode<'gc> {
-        let mut clone = XmlNode(GcCell::allocate(
+    pub fn duplicate(self, gc_context: MutationContext<'gc, '_>, deep: bool) -> Self {
+        let attributes = ScriptObject::bare_object(gc_context);
+        for (key, value) in self.attributes().own_properties() {
+            attributes.define_value(gc_context, key, value, Attribute::empty());
+        }
+
+        let mut clone = Self(GcCell::allocate(
             gc_context,
             XmlNodeData {
                 script_object: None,
-                attributes_script_object: None,
                 parent: None,
                 prev_sibling: None,
                 next_sibling: None,
                 node_type: self.0.read().node_type,
                 node_value: self.0.read().node_value,
-                attributes: self.0.read().attributes.clone(),
+                attributes,
                 children: Vec::new(),
             },
         ));
@@ -403,69 +407,20 @@ impl<'gc> XmlNode<'gc> {
         clone
     }
 
-    /// Retrieve the value of a single attribute on this node.
-    pub fn attribute_value(self, name: &WStr) -> Option<AvmString<'gc>> {
-        self.0.read().attributes.get(name).copied()
-    }
-
-    /// Retrieve all keys defined on this node.
-    pub fn attribute_keys(self) -> Vec<AvmString<'gc>> {
-        self.0.read().attributes.keys().cloned().collect()
-    }
-
-    /// Set the value of a single attribute on this node.
-    pub fn set_attribute_value(
-        self,
-        gc_context: MutationContext<'gc, '_>,
-        name: AvmString<'gc>,
-        value: AvmString<'gc>,
-    ) {
-        self.0.write(gc_context).attributes.insert(name, value);
-    }
-
-    /// Delete the value of a single attribute on this node.
-    pub fn delete_attribute(self, gc_context: MutationContext<'gc, '_>, name: &WStr) {
-        self.0.write(gc_context).attributes.remove(name);
-    }
-
-    /// Look up the URI for the given namespace.
+    /// Look up the URI for the given prefix.
     ///
     /// XML namespaces are determined by `xmlns:` namespace attributes on the
     /// current node, or its parent.
-    pub fn lookup_uri_for_namespace(self, namespace: &WStr) -> Option<AvmString<'gc>> {
-        let mut attribute_name = WString::from_buf(b"xmlns:".to_vec());
-        attribute_name.push_str(namespace);
-
+    pub fn lookup_namespace_uri(self, prefix: &WStr) -> Option<Value<'gc>> {
         for node in self.ancestors() {
-            if namespace.is_empty() {
-                if let Some(url) = node.attribute_value(WStr::from_units(b"xmlns")) {
-                    return Some(url);
-                }
-            }
-
-            if let Some(url) = node.attribute_value(&attribute_name) {
-                return Some(url);
-            }
-        }
-
-        None
-    }
-
-    /// Look up the namespace for the given URI.
-    ///
-    /// XML namespaces are determined by `xmlns:` namespace attributes on the
-    /// current node, or its parent.
-    ///
-    /// If there are multiple namespaces that match the URI, the first
-    /// mentioned on the closest node will be returned.
-    pub fn lookup_namespace_for_uri(self, uri: &WStr) -> Option<WString> {
-        for node in self.ancestors() {
-            for (attr, attr_value) in node.0.read().attributes.iter() {
-                if attr_value == uri {
-                    if attr == b"xmlns" {
-                        return Some(WString::new());
-                    } else if attr.starts_with(WStr::from_units(b"xmlns:")) {
-                        return Some(attr[b"xmlns:".len()..].into());
+            // Iterate attributes by their definition order, so the first matching one
+            // is returned.
+            for (key, value) in node.attributes().own_properties() {
+                if let Some(namespace) = key.strip_prefix(WStr::from_units(b"xmlns")) {
+                    // The empty prefix matches every attribute that starts with "xmlns"
+                    // (with/without a colon).
+                    if prefix.is_empty() || namespace.strip_prefix(b':') == Some(prefix) {
+                        return Some(value);
                     }
                 }
             }
@@ -475,14 +430,21 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Convert the given node to a string of UTF-8 encoded XML.
-    pub fn into_string(self) -> WString {
+    pub fn into_string(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<WString, Error<'gc>> {
         let mut result = WString::new();
-        self.write_node_to_string(&mut result);
-        result
+        self.write_node_to_string(activation, &mut result)?;
+        Ok(result)
     }
 
     /// Write the contents of this node, including its children, to the given string.
-    fn write_node_to_string(self, result: &mut WString) {
+    fn write_node_to_string(
+        self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        result: &mut WString,
+    ) -> Result<(), Error<'gc>> {
         // TODO: we convert some strings to utf8, replacing unpaired surrogates by the replacement char.
         // It is correct?
         if self.0.read().node_type == ELEMENT_NODE {
@@ -491,13 +453,15 @@ impl<'gc> XmlNode<'gc> {
                 result.push_byte(b'<');
                 result.push_str(&tag_name);
 
-                for (key, value) in &self.0.read().attributes {
+                for (key, value) in self.attributes().own_properties() {
+                    let value = value.coerce_to_string(activation)?;
+                    let value = value.to_utf8_lossy();
+                    let value = escape(value.as_bytes());
+
                     result.push_byte(b' ');
                     result.push_str(&key);
                     result.push_str(WStr::from_units(b"=\""));
-                    let encoded_value = value.to_utf8_lossy();
-                    let escaped_value = escape(encoded_value.as_bytes());
-                    result.push_str(WStr::from_units(&*escaped_value));
+                    result.push_str(WStr::from_units(&*value));
                     result.push_byte(b'"');
                 }
 
@@ -506,7 +470,7 @@ impl<'gc> XmlNode<'gc> {
                 } else {
                     result.push_byte(b'>');
                     for child in children {
-                        child.write_node_to_string(result);
+                        child.write_node_to_string(activation, result)?;
                     }
                     result.push_str(WStr::from_units(b"</"));
                     result.push_str(&tag_name);
@@ -514,15 +478,17 @@ impl<'gc> XmlNode<'gc> {
                 }
             } else {
                 for child in children {
-                    child.write_node_to_string(result);
+                    child.write_node_to_string(activation, result)?;
                 }
             }
         } else {
             let value = self.0.read().node_value.unwrap();
-            let encoded = value.to_utf8_lossy();
-            let escaped = escape(encoded.as_bytes());
-            result.push_str(WStr::from_units(&*escaped));
+            let value = value.to_utf8_lossy();
+            let value = escape(value.as_bytes());
+            result.push_str(WStr::from_units(&*value));
         }
+
+        Ok(())
     }
 }
 

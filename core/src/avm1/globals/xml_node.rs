@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, ScriptObject, TObject, Value};
-use crate::string::AvmString;
+use crate::string::{AvmString, WStr};
 use crate::xml::XmlNode;
 use gc_arena::MutationContext;
 
@@ -116,11 +116,9 @@ fn get_namespace_for_prefix<'gc>(
         this.as_xml_node(),
         args.get(0).map(|v| v.coerce_to_string(activation)),
     ) {
-        if let Some(uri) = xmlnode.lookup_uri_for_namespace(&prefix_string?) {
-            Ok(uri.into())
-        } else {
-            Ok(Value::Null)
-        }
+        Ok(xmlnode
+            .lookup_namespace_uri(&prefix_string?)
+            .unwrap_or(Value::Null))
     } else {
         Ok(Value::Undefined)
     }
@@ -131,18 +129,27 @@ fn get_prefix_for_namespace<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(xmlnode), Some(uri_string)) = (
-        this.as_xml_node(),
-        args.get(0).map(|v| v.coerce_to_string(activation)),
-    ) {
-        if let Some(prefix) = xmlnode.lookup_namespace_for_uri(&uri_string?) {
-            Ok(AvmString::new(activation.context.gc_context, prefix).into())
-        } else {
-            Ok(Value::Null)
+    if let (Some(node), Some(uri)) = (this.as_xml_node(), args.get(0)) {
+        let uri = uri.coerce_to_string(activation)?;
+        for ancestor in node.ancestors() {
+            // Iterate attributes by their definition order, so the first matching one
+            // is returned.
+            for (key, value) in ancestor.attributes().own_properties() {
+                let value = value.coerce_to_string(activation)?;
+                if value == uri {
+                    if let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns")) {
+                        if let Some(prefix) = prefix.strip_prefix(b':') {
+                            return Ok(AvmString::new(activation.context.gc_context, prefix).into());
+                        } else {
+                            return Ok("".into());
+                        }
+                    }
+                }
+            }
         }
-    } else {
-        Ok(Value::Undefined)
+        return Ok(Value::Null);
     }
+    Ok(Value::Undefined)
 }
 
 fn has_child_nodes<'gc>(
@@ -175,7 +182,8 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        return Ok(AvmString::new(activation.context.gc_context, node.into_string()).into());
+        let string = node.into_string(activation)?;
+        return Ok(AvmString::new(activation.context.gc_context, string).into());
     }
 
     Ok("".into())
@@ -354,14 +362,12 @@ fn next_sibling<'gc>(
 }
 
 fn attributes<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut node) = this.as_xml_node() {
-        return Ok(node
-            .attribute_script_object(activation.context.gc_context)
-            .into());
+    if let Some(node) = this.as_xml_node() {
+        return Ok(node.attributes().into());
     }
 
     Ok(Value::Undefined)
@@ -375,9 +381,8 @@ fn namespace_uri<'gc>(
     if let Some(node) = this.as_xml_node() {
         if let Some(prefix) = node.prefix(activation.context.gc_context) {
             return Ok(node
-                .lookup_uri_for_namespace(&prefix)
-                .unwrap_or_default()
-                .into());
+                .lookup_namespace_uri(&prefix)
+                .unwrap_or_else(|| "".into()));
         }
 
         return Ok(Value::Null);

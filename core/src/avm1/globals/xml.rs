@@ -249,8 +249,9 @@ fn spawn_xml_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request_options = if let Some(node) = send_object {
         // Send `node` as string.
+        let string = node.into_string(activation)?;
         RequestOptions::post(Some((
-            node.into_string().to_utf8_lossy().into_owned().into_bytes(),
+            string.to_utf8_lossy().into_owned().into_bytes(),
             "application/x-www-form-urlencoded".to_string(),
         )))
     } else {
