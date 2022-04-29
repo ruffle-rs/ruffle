@@ -142,6 +142,22 @@ impl<'gc> ScriptObject<'gc> {
         }
         Ok(())
     }
+
+    // TODO: Make an iterator?
+    pub fn own_properties(&self) -> Vec<(AvmString<'gc>, Value<'gc>)> {
+        self.0
+            .read()
+            .properties
+            .iter()
+            .filter_map(|(k, p)| {
+                if p.is_enumerable() {
+                    Some((k, p.data()))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
