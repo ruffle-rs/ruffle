@@ -9,7 +9,7 @@ pub fn with_avm<F>(swf_version: u8, test: F)
 where
     F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
-    let player = crate::player::PlayerBuilder::new().build().unwrap();
+    let player = crate::player::PlayerBuilder::new().build();
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
         let context = context.reborrow();

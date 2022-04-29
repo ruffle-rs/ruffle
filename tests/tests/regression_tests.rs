@@ -1206,7 +1206,7 @@ fn run_swf(
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
         .with_max_execution_duration(Duration::from_secs(300))
         .with_movie(movie)
-        .build()?;
+        .build();
 
     before_start(player.clone())?;
 

@@ -101,7 +101,7 @@ fn take_screenshot(
         .with_software_video()
         .with_movie(movie)
         .with_viewport_dimensions(width, height, size.scale as f64)
-        .build()?;
+        .build();
 
     let mut result = Vec::new();
     let totalframes = frames + skipframes;

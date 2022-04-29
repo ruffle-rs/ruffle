@@ -23,8 +23,7 @@ fn execute_swf(file: &Path) {
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
         .with_max_execution_duration(Duration::from_secs(300))
         .with_movie(movie)
-        .build()
-        .unwrap();
+        .build();
 
     player.lock().unwrap().run_frame();
     player.lock().unwrap().update_timers(frame_time);
