@@ -1816,7 +1816,7 @@ impl PlayerBuilder {
     }
 
     /// Builds the player, wiring up the backends and configuring the specified settings.
-    pub fn build(self) -> Result<Arc<Mutex<Player>>, Error> {
+    pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
         let audio = self
             .audio
@@ -1922,15 +1922,11 @@ impl PlayerBuilder {
             let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
             fake_root.post_instantiation(context, None, Instantiator::Movie, false);
             context.stage.replace_at_depth(context, fake_root.into(), 0);
-
-            let result = Avm2::load_player_globals(context);
-
+            Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
             let stage = context.stage;
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
-
-            result
-        })?;
+        });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
         player_lock.set_viewport_dimensions(
@@ -1942,8 +1938,7 @@ impl PlayerBuilder {
             player_lock.set_root_movie(movie);
         }
         drop(player_lock);
-
-        Ok(player)
+        player
     }
 }
 

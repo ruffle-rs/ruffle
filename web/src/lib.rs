@@ -497,7 +497,7 @@ impl Ruffle {
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
-            .build()?;
+            .build();
 
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.

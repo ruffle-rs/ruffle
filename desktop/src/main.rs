@@ -276,7 +276,7 @@ impl App {
         } else {
             false
         };
-        let player = builder.build()?;
+        let player = builder.build();
 
         Ok(Self {
             opt,
@@ -749,7 +749,7 @@ fn run_timedemo(opt: Opt) -> Result<(), Box<dyn std::error::Error>> {
         .with_movie(movie)
         .with_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor)
         .with_autoplay(true)
-        .build()?;
+        .build();
 
     let mut player_lock = player.lock().unwrap();
 
