@@ -1,7 +1,7 @@
 import { Ruffle } from "../pkg/ruffle_web";
 
 import { loadRuffle } from "./load-ruffle";
-import { ruffleShadowTemplate } from "./shadow-template";
+import { preloaderTemplate, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { Config } from "./config";
 import {
@@ -214,7 +214,6 @@ export class RufflePlayer extends HTMLElement {
         if (this.playButton) {
             this.playButton.addEventListener("click", () => this.play());
         }
-
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
@@ -392,7 +391,11 @@ export class RufflePlayer extends HTMLElement {
     private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
         this.destroy();
 
-        const ruffleConstructor = await loadRuffle(config).catch((e) => {
+        this.isPreloaderVisible = true;
+        const ruffleConstructor = await loadRuffle(
+            config,
+            this.onRuffleDownloadProgress.bind(this)
+        ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
 
             // Serious duck typing. In error conditions, let's not make assumptions.
@@ -441,7 +444,6 @@ export class RufflePlayer extends HTMLElement {
                 (ruffleConstructor.is_wasm_simd_used() ? "ON" : "OFF") +
                 ")"
         );
-
         // In Firefox, AudioContext.state is always "suspended" when the object has just been created.
         // It may change by itself to "running" some milliseconds later. So we need to wait a little
         // bit before checking if autoplay is supported and applying the instance config.
@@ -455,6 +457,7 @@ export class RufflePlayer extends HTMLElement {
             this.container.style.visibility = "";
         }
 
+        this.isPreloaderVisible = false;
         this.unmuteAudioContext();
 
         // Treat unspecified and invalid values as `AutoPlay.Auto`.
@@ -491,6 +494,21 @@ export class RufflePlayer extends HTMLElement {
             }
         } else {
             this.playButton.style.display = "block";
+        }
+    }
+
+    /**
+     * Uploads the preloader progress bar.
+     *
+     * @param bytesLoaded The size of the Ruffle WebAssembly file downloaded so far.
+     * @param bytesTotal The total size of the Ruffle WebAssembly file.
+     */
+    private onRuffleDownloadProgress(bytesLoaded: number, bytesTotal: number) {
+        const loadBar = <HTMLElement>(
+            this.container.querySelector(".loadbarInner")
+        );
+        if (loadBar) {
+            loadBar.style.width = `${100.0 * (bytesLoaded / bytesTotal)}%`;
         }
     }
 
@@ -1086,6 +1104,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
         this.panicked = true;
+        this.isPreloaderVisible = false;
 
         if (
             error instanceof Error &&
@@ -1411,6 +1430,22 @@ export class RufflePlayer extends HTMLElement {
 
     setIsExtension(isExtension: boolean): void {
         this.isExtension = isExtension;
+    }
+
+    private get isPreloaderVisible(): boolean {
+        return this.container.querySelector("#preloader") != null;
+    }
+
+    private set isPreloaderVisible(visible: boolean) {
+        const preloader = this.container.querySelector("#preloader");
+        if (visible && !preloader) {
+            const preloaderElement = <HTMLElement>(
+                preloaderTemplate.content.cloneNode(true)
+            );
+            this.container.appendChild(preloaderElement);
+        } else if (!visible && preloader) {
+            preloader.remove();
+        }
     }
 }
 
