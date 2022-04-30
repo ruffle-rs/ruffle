@@ -461,7 +461,7 @@ impl<'gc> AudioManager<'gc> {
             .sounds
             .iter()
             .enumerate()
-            .filter_map(|(i, instance)| {
+            .find_map(|(i, instance)| {
                 let start_frame = instance.stream_start_frame?;
                 let clip = instance
                     .display_object
@@ -476,7 +476,6 @@ impl<'gc> AudioManager<'gc> {
                     + offset_ms / 1000.0;
                 Some((i, stream_pos / 1000.0 - timeline_pos))
             })
-            .next()
             .unwrap_or_default();
 
         if skew.abs() >= Self::STREAM_RESTART_THRESHOLD {

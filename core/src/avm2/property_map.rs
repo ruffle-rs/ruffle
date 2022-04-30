@@ -55,30 +55,22 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     pub fn get(&self, name: QName<'gc>) -> Option<&V> {
-        self.0
-            .get(&name.local_name())
-            .iter()
-            .filter_map(|v| {
-                v.iter()
-                    .filter(|(n, _)| *n == name.namespace())
-                    .map(|(_, v)| v)
-                    .next()
-            })
-            .next()
+        self.0.get(&name.local_name()).iter().find_map(|v| {
+            v.iter()
+                .filter(|(n, _)| *n == name.namespace())
+                .map(|(_, v)| v)
+                .next()
+        })
     }
 
     pub fn get_for_multiname(&self, name: &Multiname<'gc>) -> Option<&V> {
         if let Some(local_name) = name.local_name() {
-            self.0
-                .get(&local_name)
-                .iter()
-                .filter_map(|v| {
-                    v.iter()
-                        .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
-                        .map(|(_, v)| v)
-                        .next()
-                })
-                .next()
+            self.0.get(&local_name).iter().find_map(|v| {
+                v.iter()
+                    .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
+                    .map(|(_, v)| v)
+                    .next()
+            })
         } else {
             None
         }
@@ -86,16 +78,12 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
     pub fn get_with_ns_for_multiname(&self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, &V)> {
         if let Some(local_name) = name.local_name() {
-            self.0
-                .get(&local_name)
-                .iter()
-                .filter_map(|v| {
-                    v.iter()
-                        .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
-                        .map(|(ns, v)| (*ns, v))
-                        .next()
-                })
-                .next()
+            self.0.get(&local_name).iter().find_map(|v| {
+                v.iter()
+                    .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
+                    .map(|(ns, v)| (*ns, v))
+                    .next()
+            })
         } else {
             None
         }
