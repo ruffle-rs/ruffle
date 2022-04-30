@@ -1,0 +1,562 @@
+l_button (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+///LeftButton Frame 1
+///RightButton Frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+///(LeftButton clicked...)
+left_shark (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///(RightButton clicked...)
+left_shark (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+///(LeftButton clicked...)
+left_shark (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///(RightButton clicked...)
+left_shark (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+///(LeftButton clicked...)
+left_shark (frame 0):[Event type="added" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="added" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+left_shark (frame 0):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 3 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+/// (Container: left_shark with 0 children)
+left_shark (frame 0):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+///(RightButton clicked...)
+left_shark (frame 0):[Event type="removed" bubbles=true cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="removed" bubbles=true cancelable=false eventPhase=3]
+left_shark (frame 0):[Event type="removedFromStage" bubbles=false cancelable=false eventPhase=2]
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 2):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 3
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 3):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
+l_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+l_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+r_button (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+root1 (frame 1):[Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+/// (Container: root1 with 2 children)
+/// (Container: l_button with 1 children)
+/// (Container: r_button with 1 children)
