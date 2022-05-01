@@ -1952,7 +1952,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.iter_render_list() {
+        //Child removals from looping gotos appear to resolve in reverse order.
+        for child in self.iter_render_list().rev() {
             child.enter_frame(context);
         }
 
