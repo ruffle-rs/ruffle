@@ -1,0 +1,31 @@
+// obj.prop:
+prop
+// Hide with ASSetPropFlags
+// obj.prop:
+undefined
+// obj.hasOwnProperty('prop'):
+true
+// Enumerate
+prop: undefined
+// Set
+// obj.prop:
+reset
+// Hide with ASSetPropFlags
+// obj.prop:
+undefined
+// Delete
+true
+// obj.hasOwnProperty('prop'):
+false
+// Setup obj.__proto__ with getter/setter
+// obj.prop:
+// getter called
+getter
+// Set
+// setter called
+// Hide with ASSetPropFlags
+// obj.prop:
+undefined
+// Set
+// obj.prop:
+20
