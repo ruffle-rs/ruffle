@@ -44,7 +44,7 @@
         "@typescript-eslint/eslint-plugin": "^5.11.0",
         "@typescript-eslint/parser": "^5.13.0",
         "eslint": "^8.12.0",
-        "eslint-plugin-jsdoc": "^37.1.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
         "mocha": "^9.2.1",
         "replace-in-file": "^6.3.2",
         "shx": "^0.3.3",
