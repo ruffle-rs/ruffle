@@ -24,7 +24,7 @@ pub const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 pub const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "getDepth" => method(get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getDepth" => method(get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "_global" => property(get_global, overwrite_global; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "_root" => property(get_root, overwrite_root; DONT_ENUM | DONT_DELETE | READ_ONLY);
