@@ -3303,6 +3303,9 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.clip_depth.is_none() {
                     place_object.clip_depth = Some(Default::default());
                 }
+                if place_object.blend_mode.is_none() {
+                    place_object.blend_mode = Some(Default::default());
+                }
                 if place_object.is_bitmap_cached.is_none() {
                     place_object.is_bitmap_cached = Some(Default::default());
                 }
@@ -3357,6 +3360,9 @@ impl<'a> GotoPlaceObject<'a> {
         }
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
+        }
+        if next_place.blend_mode.is_some() {
+            cur_place.blend_mode = next_place.blend_mode.take();
         }
         if next_place.is_bitmap_cached.is_some() {
             cur_place.is_bitmap_cached = next_place.is_bitmap_cached.take();

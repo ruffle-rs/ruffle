@@ -19,7 +19,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
-use swf::Fixed8;
+use swf::{BlendMode, Fixed8};
 
 mod avm1_button;
 mod avm2_button;
@@ -91,6 +91,11 @@ pub struct DisplayObjectBase<'gc> {
     /// The display object we are currently masking.
     maskee: Option<DisplayObject<'gc>>,
 
+    /// The blend mode used when rendering this display object.
+    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    #[collect(require_static)]
+    blend_mode: BlendMode,
+
     /// Bit flags for various display object properties.
     flags: DisplayObjectFlags,
 }
@@ -113,6 +118,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             masker: None,
             maskee: None,
             sound_transform: Default::default(),
+            blend_mode: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
         }
     }
@@ -371,6 +377,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_visible(&mut self, value: bool) {
         self.flags.set(DisplayObjectFlags::VISIBLE, value);
+    }
+
+    fn blend_mode(&self) -> BlendMode {
+        self.blend_mode
+    }
+
+    fn set_blend_mode(&mut self, value: BlendMode) {
+        self.blend_mode = value;
     }
 
     fn is_root(&self) -> bool {
@@ -945,6 +959,18 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     fn set_visible(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_visible(value);
+    }
+
+    /// The blend mode used when rendering this display object.
+    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    fn blend_mode(&self) -> BlendMode {
+        self.base().blend_mode()
+    }
+
+    /// Sets the blend mode used when rendering this display object.
+    /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
+    fn set_blend_mode(&mut self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
+        self.base_mut(gc_context).set_blend_mode(value);
     }
 
     /// Whether this display object represents the root of loaded content.
