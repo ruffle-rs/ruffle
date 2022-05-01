@@ -1922,6 +1922,24 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
 
             if is_playing {
+                // Frame destruction happens in-line with frame number advance.
+                // If we expect to loop, we do not run `RemoveObject` tags.
+                if self.current_frame() < self.total_frames() {
+                    let mc = self.0.read();
+                    let data = mc.static_data.swf.clone();
+                    let mut reader = data.read_from(mc.tag_stream_pos);
+                    drop(mc);
+
+                    use swf::TagCode;
+                    let tag_callback =
+                        |reader: &mut SwfStream<'_>, tag_code, _tag_len| match tag_code {
+                            TagCode::RemoveObject => self.remove_object(context, reader, 1),
+                            TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
+                            _ => Ok(()),
+                        };
+                    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                }
+
                 self.advance_playhead(context);
             }
         }
@@ -1997,30 +2015,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     dispatch_added_to_stage_event_only(self_dobj, context);
                 }
             }
-        }
-    }
-
-    /// Destroy objects placed on this frame.
-    fn destroy_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        for child in self.iter_render_list() {
-            child.destroy_frame(context);
-        }
-
-        // AVM1 code expects to execute in line with timeline instructions, so
-        // it's exempted from frame destruction.
-        if context.avm_type() == AvmType::Avm2 && self.playing() {
-            let mc = self.0.read();
-            let data = mc.static_data.swf.clone();
-            let mut reader = data.read_from(mc.tag_stream_pos);
-            drop(mc);
-
-            use swf::TagCode;
-            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| match tag_code {
-                TagCode::RemoveObject => self.remove_object(context, reader, 1),
-                TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
-                _ => Ok(()),
-            };
-            let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
         }
     }
 

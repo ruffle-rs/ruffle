@@ -17,27 +17,19 @@ use crate::vminterface::AvmType;
 
 /// Which phase of the frame we're currently in.
 ///
-/// AVM2 frames exist in one of six phases: `Destroy`, `Enter`, `Construct`,
-/// `Update`, `FrameScripts`, or `Exit`.
+/// AVM2 frames exist in one of five phases: `Enter`, `Construct`, `Update`,
+/// `FrameScripts`, or `Exit`. An additional `Idle` phase covers rendering and
+/// event processing.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum FramePhase {
-    /// We're destroying children of existing display objects.
-    ///
-    /// All `RemoveObject` tags should execute at this time.
-    ///
-    /// NOTE: Strictly speaking, this should occur at the end of the prior
-    /// frame after rendering. However, our current frame architecture does not
-    /// allow us to create a separate phase for rendering. Hence, we run the
-    /// prior frame's `Destroy` phase on the next frame. In practice, the only
-    /// code that might be able to see this would be code that runs in the
-    /// `Idle` phase.
-    Destroy,
-
     /// We're entering the next frame.
     ///
-    /// When we enter a new frame, movie clips increment their current frame
-    /// number. Once this phase ends, we fire `enterFrame` on the broadcast
-    /// list.
+    /// When movie clips enter a new frame, they must do two things:
+    ///
+    ///  - Remove all children that should not exist on the next frame.
+    ///  - Increment their current frame number.
+    ///
+    /// Once this phase ends, we fire `enterFrame` on the broadcast list.
     Enter,
 
     /// We're constructing children of existing display objects.
@@ -55,8 +47,7 @@ pub enum FramePhase {
     /// phases.
     ///
     /// This frame phase also exists in AVM1 frames. In AVM1, it does the work
-    /// of `Destroy`, `Enter`, `FrameScripts` (`DoAction` tags), and
-    /// `Construct`.
+    /// of `Enter`, `FrameScripts` (`DoAction` tags), and `Construct`.
     Update,
 
     /// We're running all queued frame scripts.
@@ -117,14 +108,9 @@ pub fn run_all_phases_avm1<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
 pub fn run_all_phases_avm2<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
     let stage = context.stage;
 
-    //As mentioned in the doc comment for `Destroy`, because frame rendering
-    //happens during `Idle`, we have to wait until the next frame to remove the
-    //prior frame's display objects. Otherwise, if we `Destroy` later on in the
-    //frame, then we'll accidentally run the next frame's `RemoveObject` tags
-    //too early and timeline animations will visibly flicker.
-    *context.frame_phase = FramePhase::Destroy;
-    stage.destroy_frame(context);
-
+    // TODO: Determine if children that are to be removed are accessible in
+    // click event handlers. We currently allow to-be-removed children to
+    // linger during `Idle` as rendering still needs to be able to find them.
     *context.frame_phase = FramePhase::Enter;
     stage.enter_frame(context);
 
@@ -170,12 +156,6 @@ pub fn catchup_display_object_to_frame<'gc>(
             dobj.enter_frame(context);
             dobj.construct_frame(context);
             dobj.run_frame_avm2(context);
-        }
-        (FramePhase::Destroy, AvmType::Avm2) => {
-            dobj.enter_frame(context);
-            dobj.construct_frame(context);
-            dobj.run_frame_avm2(context);
-            dobj.destroy_frame(context);
         }
     }
 }
