@@ -3303,6 +3303,9 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.clip_depth.is_none() {
                     place_object.clip_depth = Some(Default::default());
                 }
+                if place_object.is_bitmap_cached.is_none() {
+                    place_object.is_bitmap_cached = Some(Default::default());
+                }
                 if place_object.class_name.is_none() {
                     place_object.class_name = Some(Default::default());
                 }
@@ -3354,6 +3357,9 @@ impl<'a> GotoPlaceObject<'a> {
         }
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
+        }
+        if next_place.is_bitmap_cached.is_some() {
+            cur_place.is_bitmap_cached = next_place.is_bitmap_cached.take();
         }
         if next_place.is_visible.is_some() {
             cur_place.is_visible = next_place.is_visible.take();

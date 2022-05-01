@@ -407,6 +407,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.flags.set(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
     }
 
+    fn is_bitmap_cached(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::CACHE_AS_BITMAP)
+    }
+
+    fn set_is_bitmap_cached(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::CACHE_AS_BITMAP, value);
+    }
+
     fn instantiated_by_timeline(&self) -> bool {
         self.flags
             .contains(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE)
@@ -984,6 +992,19 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_transformed_by_script(value)
     }
 
+    /// Whether this display object is cached into a bitmap rendering.
+    /// This is set implicitly when a filter or blend mode is applied, or explicitly by the user
+    /// via the `cacheAsBitmap` property.
+    fn is_bitmap_cached(&self) -> bool {
+        self.base().is_bitmap_cached()
+    }
+
+    /// Explicilty sets this display object to be cached into a bitmap rendering.
+    /// Note that the object will still be bitmap cached if a filter or blend mode is active.
+    fn set_is_bitmap_cached(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context).set_is_bitmap_cached(value)
+    }
+
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
@@ -1232,6 +1253,9 @@ pub trait TDisplayObject<'gc>:
                     log::error!("No movie when trying to set clip event");
                 }
             }
+            if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
+                self.set_is_bitmap_cached(context.gc_context, is_bitmap_cached);
+            }
             if self.swf_version() >= 11 {
                 if let Some(visible) = place_object.is_visible {
                     self.set_visible(context.gc_context, visible);
@@ -1440,7 +1464,7 @@ bitflags! {
     /// Bit flags used by `DisplayObject`.
     #[derive(Collect)]
     #[collect(no_drop)]
-    struct DisplayObjectFlags: u8 {
+    struct DisplayObjectFlags: u16 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
         const REMOVED                  = 1 << 0;
@@ -1470,6 +1494,9 @@ bitflags! {
         /// Whether this object has `_lockroot` set to true, in which case
         /// it becomes the _root of itself and of any children
         const LOCK_ROOT                = 1 << 7;
+
+        /// Whether this object will be cached to bitmap.
+        const CACHE_AS_BITMAP          = 1 << 8;
     }
 }
 
