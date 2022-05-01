@@ -141,7 +141,7 @@ macro_rules! declare_properties {
             attributes: 0,
         }
     };
-    (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*) ) => {
+    (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*$(; version($version:tt))?) ) => {
         crate::avm1::property_decl::Declaration {
             name: $name,
             kind: declare_properties!(@__kind $kind ($($args),*)),
@@ -167,7 +167,7 @@ macro_rules! declare_properties {
 
                 TODO: use the `B)` desugaring once the above ICE is fixed.
             */
-            attributes: 0 $(| declare_properties!(@__attr $attributes))*,
+            attributes: 0 $(| declare_properties!(@__attr $attributes))* $(| declare_properties!(@__version $version))*,
         }
     };
     // MAKE SURE THESE VALUES ARE IN SYNC WITH THE `Attribute` DEFINITION!
@@ -179,6 +179,24 @@ macro_rules! declare_properties {
     };
     (@__attr READ_ONLY) => {
         (1 << 2)
+    };
+    (@__version 5) => {
+        0b0000_0000_0000_0000
+    };
+    (@__version 6) => {
+        0b0000_0000_1000_0000
+    };
+    (@__version 7) => {
+        0b0000_0101_0000_0000
+    };
+    (@__version 8) => {
+        0b0001_0000_0000_0000
+    };
+    (@__version 9) => {
+        0b0010_0000_0000_0000
+    };
+    (@__version 10) => {
+        0b0100_0000_0000_0000
     };
     (@__kind property($getter:expr)) => {
         crate::avm1::property_decl::DeclKind::Property {
