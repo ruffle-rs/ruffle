@@ -767,6 +767,12 @@ impl BlendMode {
     }
 }
 
+impl Default for BlendMode {
+    fn default() -> Self {
+        BlendMode::Normal
+    }
+}
+
 /// An clip action (a.k.a. clip event) placed on a MovieClip instance.
 /// Created in the Flash IDE using `onClipEvent` or `on` blocks.
 ///
