@@ -374,6 +374,7 @@ swf_tests! {
     (as3_movieclip_dispatchevent_target, "avm2/movieclip_dispatchevent_target", 1),
     (as3_movieclip_dispatchevent, "avm2/movieclip_dispatchevent", 1),
     (as3_movieclip_displayevents_clickgoto, "avm2/movieclip_displayevents_clickgoto", 32),
+    (as3_movieclip_displayevents_clickgoto2, "avm2/movieclip_displayevents_clickgoto2", 46),
     (as3_movieclip_displayevents_clickplay, "avm2/movieclip_displayevents_clickplay", 32),
     (as3_movieclip_displayevents_clicksymbol, "avm2/movieclip_displayevents_clicksymbol", 32),
     (as3_movieclip_displayevents_constructframegoto, "avm2/movieclip_displayevents_constructframegoto", 12),
