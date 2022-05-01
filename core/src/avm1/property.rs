@@ -14,9 +14,27 @@ bitflags! {
         const DONT_ENUM     = 1 << 0;
         const DONT_DELETE   = 1 << 1;
         const READ_ONLY     = 1 << 2;
-        const VERSION_MASK  = 0xf << 9;
+        const VERSION_MASK  = 0x1FFF << 3;
     }
 }
+
+/// To check if a property is available in a specific SWF version, mask the property attributes
+/// against the entry in this array. If the result is non-zero, the property should be hidden.
+const VERSION_MASKS: [u16; 10] = [
+    // SWFv4 and earlier: always hide
+    // Shouldn't really be used because SWFv4 did not have much AS support.
+    0b0111_1111_1111_1000,
+    0b0111_1111_1111_1000,
+    0b0111_1111_1111_1000,
+    0b0111_1111_1111_1000,
+    0b0111_1111_1111_1000,
+    // SWFv5 and above
+    0b0111_0100_1000_0000, // v5
+    0b0111_0101_0000_0000, // v6
+    0b0111_0000_0000_0000, // v7
+    0b0110_0000_0000_0000, // v8
+    0b0100_0000_0000_0000, // v9
+];
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -68,6 +86,8 @@ impl<'gc> Property<'gc> {
     pub fn set_data(&mut self, data: Value<'gc>) {
         if self.is_overwritable() {
             self.data = data;
+            // Overwriting a property also clears SWF version requirements.
+            self.attributes.remove(Attribute::VERSION_MASK);
         }
     }
 
@@ -101,6 +121,16 @@ impl<'gc> Property<'gc> {
 
     pub fn is_virtual(&self) -> bool {
         self.getter.is_some()
+    }
+
+    /// Checks if this property is accessible in the given SWF version.
+    /// If `false`, the property should be returned as `undefined`.
+    pub fn allow_swf_version(&self, swf_version: u8) -> bool {
+        let mask = VERSION_MASKS
+            .get(usize::from(swf_version))
+            .copied()
+            .unwrap_or_default();
+        (self.attributes.bits() & mask) == 0
     }
 }
 

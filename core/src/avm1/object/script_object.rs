@@ -171,6 +171,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name.into(), activation.is_case_sensitive())
+            .filter(|property| property.allow_swf_version(activation.swf_version()))
             .map(|property| property.data())
     }
 
@@ -242,6 +243,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
+            .filter(|property| property.allow_swf_version(activation.swf_version()))
             .and_then(|property| property.getter())
     }
 
@@ -254,6 +256,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
+            .filter(|property| property.allow_swf_version(activation.swf_version()))
             .and_then(|property| property.setter())
     }
 
@@ -441,7 +444,9 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(false, |property| property.is_virtual())
+            .map_or(false, |property| {
+                property.is_virtual() && property.allow_swf_version(activation.swf_version())
+            })
     }
 
     /// Checks if a named property appears when enumerating the object.
