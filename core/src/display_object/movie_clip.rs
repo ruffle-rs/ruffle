@@ -3315,6 +3315,7 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.background_color.is_none() {
                     place_object.background_color = Some(Color::from_rgba(0));
                 }
+                // `is_visible` purposely skipped; flag carries over during rewind.
             }
         }
 
