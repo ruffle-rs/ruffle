@@ -1138,6 +1138,9 @@ impl<'gc> MovieClip<'gc> {
                             AvmString::new_utf8(context.gc_context, name),
                         );
                     }
+                    if let Some(clip_depth) = place_object.clip_depth {
+                        child.set_clip_depth(context.gc_context, clip_depth.into());
+                    }
 
                     // Run first frame.
                     child.construct_frame(context);
@@ -3319,6 +3322,8 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.background_color.is_none() {
                     place_object.background_color = Some(Color::from_rgba(0));
                 }
+                // Deliberately omitted:
+                // clip_depth: Can only be set on initial creation
                 // `is_visible` purposely skipped; flag carries over during rewind.
             }
         }
@@ -3376,7 +3381,8 @@ impl<'a> GotoPlaceObject<'a> {
             cur_place.background_color = next_place.background_color.take();
         }
         // Deliberately omitted: (can only be set once on instantiation)
-        // name
+        // clip_depth
+        // name:
         // TODO: Other stuff.
     }
 }

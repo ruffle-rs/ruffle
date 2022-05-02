@@ -1274,9 +1274,6 @@ pub trait TDisplayObject<'gc>:
             if let Some(color_transform) = &place_object.color_transform {
                 self.set_color_transform(context.gc_context, &color_transform.clone().into());
             }
-            if let Some(clip_depth) = place_object.clip_depth {
-                self.set_clip_depth(context.gc_context, clip_depth.into());
-            }
             if let Some(ratio) = place_object.ratio {
                 if let Some(mut morph_shape) = self.as_morph_shape() {
                     morph_shape.set_ratio(context.gc_context, ratio);
@@ -1327,7 +1324,7 @@ pub trait TDisplayObject<'gc>:
                     self.set_opaque_background(context.gc_context, color);
                 }
             }
-            // Purposely omitted: name
+            // Purposely omitted: name, clip_depth
             // These properties are only set on initial placement in `MovieClip::instantiate_child`
             // and can not be modified by subsequent PlaceObject tags.
             // TODO: Others will go here eventually.
