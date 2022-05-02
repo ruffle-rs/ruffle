@@ -3312,6 +3312,9 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.class_name.is_none() {
                     place_object.class_name = Some(Default::default());
                 }
+                if place_object.background_color.is_none() {
+                    place_object.background_color = Some(Color::from_rgba(0));
+                }
             }
         }
 
@@ -3358,9 +3361,6 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.class_name.is_some() {
             cur_place.class_name = next_place.class_name.take();
         }
-        if next_place.background_color.is_some() {
-            cur_place.background_color = next_place.background_color.take();
-        }
         if next_place.blend_mode.is_some() {
             cur_place.blend_mode = next_place.blend_mode.take();
         }
@@ -3369,6 +3369,9 @@ impl<'a> GotoPlaceObject<'a> {
         }
         if next_place.is_visible.is_some() {
             cur_place.is_visible = next_place.is_visible.take();
+        }
+        if next_place.background_color.is_some() {
+            cur_place.background_color = next_place.background_color.take();
         }
         // TODO: Other stuff.
     }

@@ -96,6 +96,13 @@ pub struct DisplayObjectBase<'gc> {
     #[collect(require_static)]
     blend_mode: BlendMode,
 
+    /// The opaque background color of this display object.
+    /// The bounding box of the display object will be filled with the given color. This also
+    /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
+    /// is ignored.
+    #[collect(require_static)]
+    opaque_background: Option<Color>,
+
     /// Bit flags for various display object properties.
     flags: DisplayObjectFlags,
 }
@@ -119,6 +126,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             maskee: None,
             sound_transform: Default::default(),
             blend_mode: Default::default(),
+            opaque_background: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
         }
     }
@@ -385,6 +393,23 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_blend_mode(&mut self, value: BlendMode) {
         self.blend_mode = value;
+    }
+
+    /// The opaque background color of this display object.
+    /// The bounding box of the display object will be filled with this color.
+    fn opaque_background(&self) -> Option<Color> {
+        self.opaque_background.clone()
+    }
+
+    /// The opaque background color of this display object.
+    /// The bounding box of the display object will be filled with the given color. This also
+    /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
+    /// is ignored.
+    fn set_opaque_background(&mut self, value: Option<Color>) {
+        self.opaque_background = value.map(|mut color| {
+            color.a = 255;
+            color
+        });
     }
 
     fn is_root(&self) -> bool {
@@ -973,6 +998,19 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_blend_mode(value);
     }
 
+    /// The opaque background color of this display object.
+    fn opaque_background(&self) -> Option<Color> {
+        self.base().opaque_background()
+    }
+
+    /// Sets the opaque background color of this display object.
+    /// The bounding box of the display object will be filled with the given color. This also
+    /// triggers cache-as-bitmap behavior. Only solid backgrounds are supported; the alpha channel
+    /// is ignored.
+    fn set_opaque_background(&self, gc_context: MutationContext<'gc, '_>, value: Option<Color>) {
+        self.base_mut(gc_context).set_opaque_background(value);
+    }
+
     /// Whether this display object represents the root of loaded content.
     fn is_root(&self) -> bool {
         self.base().is_root()
@@ -1285,6 +1323,16 @@ pub trait TDisplayObject<'gc>:
             if self.swf_version() >= 11 {
                 if let Some(visible) = place_object.is_visible {
                     self.set_visible(context.gc_context, visible);
+                }
+                if let Some(mut color) = place_object.background_color.clone() {
+                    let color = if color.a > 0 {
+                        // Force opaque background to have no transpranecy.
+                        color.a = 255;
+                        Some(color)
+                    } else {
+                        None
+                    };
+                    self.set_opaque_background(context.gc_context, color);
                 }
             }
             // TODO: Others will go here eventually.
