@@ -481,7 +481,7 @@ impl<'gc> MovieClip<'gc> {
                 )
             })?;
 
-        Avm1::run_stack_frame_for_init_action(self.into(), context.swf.version(), slice, context);
+        Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
 
         Ok(())
     }
@@ -1420,7 +1420,6 @@ impl<'gc> MovieClip<'gc> {
     ) {
         //TODO: This will break horribly when AVM2 starts touching the display list
         if self.0.read().object.is_none() {
-            let version = context.swf.version();
             let globals = context.avm1.global_object_cell();
             let avm1_constructor = self.0.read().get_registered_avm1_constructor(context);
 
@@ -1430,7 +1429,6 @@ impl<'gc> MovieClip<'gc> {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Construct]"),
-                    version,
                     globals,
                     self.into(),
                 );
@@ -1480,7 +1478,6 @@ impl<'gc> MovieClip<'gc> {
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Init]"),
-                    version,
                     globals,
                     self.into(),
                 );
@@ -1527,14 +1524,9 @@ impl<'gc> MovieClip<'gc> {
         }
 
         // If this text field has a variable set, initialize text field binding.
-        Avm1::run_with_stack_frame_for_display_object(
-            self.into(),
-            context.swf.version(),
-            context,
-            |activation| {
-                self.bind_text_field_variables(activation);
-            },
-        );
+        Avm1::run_with_stack_frame_for_display_object(self.into(), context, |activation| {
+            self.bind_text_field_variables(activation);
+        });
     }
 
     /// Allocate the AVM2 side of this object.

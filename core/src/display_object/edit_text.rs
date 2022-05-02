@@ -1290,11 +1290,9 @@ impl<'gc> EditText<'gc> {
 
             if changed {
                 let globals = context.avm1.global_object_cell();
-                let swf_version = context.swf.version();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     ActivationIdentifier::root("[Propagate Text Binding]"),
-                    swf_version,
                     globals,
                     self.into(),
                 );
@@ -1405,21 +1403,16 @@ impl<'gc> EditText<'gc> {
         }
         drop(text);
 
-        Avm1::run_with_stack_frame_for_display_object(
-            (*self).into(),
-            context.swf.version(),
-            context,
-            |activation| {
-                // If this text field has a variable set, initialize text field binding.
-                if !self.try_bind_text_field_variable(activation, true) {
-                    activation.context.unbound_text_fields.push(*self);
-                }
-                // People can bind to properties of TextFields the same as other display objects.
-                self.bind_text_field_variables(activation);
+        Avm1::run_with_stack_frame_for_display_object((*self).into(), context, |activation| {
+            // If this text field has a variable set, initialize text field binding.
+            if !self.try_bind_text_field_variable(activation, true) {
+                activation.context.unbound_text_fields.push(*self);
+            }
+            // People can bind to properties of TextFields the same as other display objects.
+            self.bind_text_field_variables(activation);
 
-                self.initialize_as_broadcaster(activation);
-            },
-        );
+            self.initialize_as_broadcaster(activation);
+        });
 
         if run_frame {
             self.run_frame(context);
