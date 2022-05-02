@@ -1128,8 +1128,18 @@ impl<'gc> MovieClip<'gc> {
                         child.set_place_frame(context.gc_context, self.current_frame());
                     }
 
-                    // Run first frame.
+                    // Apply PlaceObject parameters.
                     child.apply_place_object(context, self.movie(), place_object);
+                    if let Some(name) = &place_object.name {
+                        let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
+                        let name = name.to_str_lossy(encoding);
+                        child.set_name(
+                            context.gc_context,
+                            AvmString::new_utf8(context.gc_context, name),
+                        );
+                    }
+
+                    // Run first frame.
                     child.construct_frame(context);
                     child.post_instantiation(context, None, Instantiator::Movie, false);
                     // In AVM1, children are added in `run_frame` so this is necessary.
@@ -3297,12 +3307,6 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.ratio.is_none() {
                     place_object.ratio = Some(Default::default());
                 }
-                if place_object.name.is_none() {
-                    place_object.name = Some(Default::default());
-                }
-                if place_object.clip_depth.is_none() {
-                    place_object.clip_depth = Some(Default::default());
-                }
                 if place_object.blend_mode.is_none() {
                     place_object.blend_mode = Some(Default::default());
                 }
@@ -3353,9 +3357,6 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.ratio.is_some() {
             cur_place.ratio = next_place.ratio.take();
         }
-        if next_place.name.is_some() {
-            cur_place.name = next_place.name.take();
-        }
         if next_place.clip_depth.is_some() {
             cur_place.clip_depth = next_place.clip_depth.take();
         }
@@ -3374,6 +3375,8 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
         }
+        // Deliberately omitted: (can only be set once on instantiation)
+        // name
         // TODO: Other stuff.
     }
 }
