@@ -1129,7 +1129,7 @@ impl<'gc> MovieClip<'gc> {
                     }
 
                     // Apply PlaceObject parameters.
-                    child.apply_place_object(context, self.movie(), place_object);
+                    child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
                         let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
                         let name = name.to_str_lossy(encoding);
@@ -1140,6 +1140,30 @@ impl<'gc> MovieClip<'gc> {
                     }
                     if let Some(clip_depth) = place_object.clip_depth {
                         child.set_clip_depth(context.gc_context, clip_depth.into());
+                    }
+                    // Clip events only apply to movie clips.
+                    if let (Some(clip_actions), Some(clip)) =
+                        (&place_object.clip_actions, child.as_movie_clip())
+                    {
+                        // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
+                        if let Some(movie) = self.movie() {
+                            clip.set_clip_event_handlers(
+                                context.gc_context,
+                                clip_actions
+                                    .iter()
+                                    .cloned()
+                                    .map(|a| {
+                                        ClipEventHandler::from_action_and_movie(
+                                            a,
+                                            Arc::clone(&movie),
+                                        )
+                                    })
+                                    .collect(),
+                            );
+                        } else {
+                            // This probably shouldn't happen; we should always have a movie.
+                            log::error!("No movie when trying to set clip event");
+                        }
                     }
 
                     // Run first frame.
@@ -1317,11 +1341,11 @@ impl<'gc> MovieClip<'gc> {
                 // If it's a rewind, we removed any dead children above, so we always
                 // modify the previous child.
                 (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
-                    prev_child.apply_place_object(context, self.movie(), &params.place_object);
+                    prev_child.apply_place_object(context, &params.place_object);
                 }
                 (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
                     prev_child.replace_with(context, id);
-                    prev_child.apply_place_object(context, self.movie(), &params.place_object);
+                    prev_child.apply_place_object(context, &params.place_object);
                     prev_child.set_place_frame(context.gc_context, params.frame);
                 }
                 (PlaceObjectAction::Place(id), _, _)
@@ -3075,7 +3099,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             PlaceObjectAction::Replace(id) => {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
-                    child.apply_place_object(context, self.movie(), &place_object);
+                    child.apply_place_object(context, &place_object);
                     if context.avm_type() == AvmType::Avm2 {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
@@ -3087,7 +3111,7 @@ impl<'gc, 'a> MovieClip<'gc> {
             }
             PlaceObjectAction::Modify => {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
-                    child.apply_place_object(context, self.movie(), &place_object);
+                    child.apply_place_object(context, &place_object);
                 }
             }
         }
@@ -3381,6 +3405,7 @@ impl<'a> GotoPlaceObject<'a> {
             cur_place.background_color = next_place.background_color.take();
         }
         // Deliberately omitted: (can only be set once on instantiation)
+        // clip_actions
         // clip_depth
         // name:
         // TODO: Other stuff.
