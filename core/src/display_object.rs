@@ -1263,7 +1263,6 @@ pub trait TDisplayObject<'gc>:
     fn apply_place_object(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        placing_movie: Option<Arc<SwfMovie>>,
         place_object: &swf::PlaceObject,
     ) {
         // PlaceObject tags only apply if this object has not been dynamically moved by AS code.
@@ -1279,31 +1278,6 @@ pub trait TDisplayObject<'gc>:
                     morph_shape.set_ratio(context.gc_context, ratio);
                 } else if let Some(video) = self.as_video() {
                     video.seek(context, ratio.into());
-                }
-            }
-            // Clip events only apply to movie clips.
-            if let (Some(clip_actions), Some(clip)) =
-                (&place_object.clip_actions, self.as_movie_clip())
-            {
-                // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
-                use crate::display_object::movie_clip::ClipEventHandler;
-                if let Some(placing_movie) = placing_movie {
-                    clip.set_clip_event_handlers(
-                        context.gc_context,
-                        clip_actions
-                            .iter()
-                            .cloned()
-                            .map(|a| {
-                                ClipEventHandler::from_action_and_movie(
-                                    a,
-                                    Arc::clone(&placing_movie),
-                                )
-                            })
-                            .collect(),
-                    );
-                } else {
-                    // This probably shouldn't happen; we should always have a movie.
-                    log::error!("No movie when trying to set clip event");
                 }
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
@@ -1324,7 +1298,7 @@ pub trait TDisplayObject<'gc>:
                     self.set_opaque_background(context.gc_context, color);
                 }
             }
-            // Purposely omitted: name, clip_depth
+            // Purposely omitted: name, clip_depth, clip_actions
             // These properties are only set on initial placement in `MovieClip::instantiate_child`
             // and can not be modified by subsequent PlaceObject tags.
             // TODO: Others will go here eventually.
