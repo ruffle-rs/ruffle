@@ -9,19 +9,17 @@ pub fn with_avm<F>(swf_version: u8, test: F)
 where
     F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
-    let player = crate::player::PlayerBuilder::new().build();
+    let movie = crate::tag_utils::SwfMovie::empty(swf_version);
+    let player = crate::player::PlayerBuilder::new()
+        .with_movie(movie)
+        .build();
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
         let context = context.reborrow();
         let globals = context.avm1.globals;
         let root = context.stage.root_clip();
-        let mut activation = Activation::from_nothing(
-            context,
-            ActivationIdentifier::root("[Test]"),
-            swf_version,
-            globals,
-            root,
-        );
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root("[Test]"), globals, root);
         let this = root.object().coerce_to_object(&mut activation);
         let result = test(&mut activation, this);
         if let Err(e) = result {

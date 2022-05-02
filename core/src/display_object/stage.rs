@@ -576,7 +576,6 @@ impl<'gc> Stage<'gc> {
         if library.avm_type() == AvmType::Avm1 {
             crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
-                context.swf.version(),
                 context,
                 "Stage".into(),
                 "onResize".into(),
@@ -598,7 +597,6 @@ impl<'gc> Stage<'gc> {
         if library.avm_type() == AvmType::Avm1 {
             crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
-                context.swf.version(),
                 context,
                 "Stage".into(),
                 "onFullScreen".into(),

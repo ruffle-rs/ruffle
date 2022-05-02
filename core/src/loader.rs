@@ -7,7 +7,7 @@ use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use crate::player::{Player, NEWEST_PLAYER_VERSION};
+use crate::player::Player;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -657,7 +657,6 @@ impl<'gc> Loader<'gc> {
             Avm1::run_stack_frame_for_method(
                 clip,
                 broadcaster,
-                NEWEST_PLAYER_VERSION,
                 uc,
                 "broadcastMessage".into(),
                 &["onLoadStart".into(), clip.object()],
@@ -694,7 +693,6 @@ impl<'gc> Loader<'gc> {
             Avm1::run_stack_frame_for_method(
                 clip,
                 broadcaster,
-                NEWEST_PLAYER_VERSION,
                 uc,
                 "broadcastMessage".into(),
                 &[
@@ -728,7 +726,6 @@ impl<'gc> Loader<'gc> {
             Avm1::run_stack_frame_for_method(
                 clip,
                 broadcaster,
-                NEWEST_PLAYER_VERSION,
                 uc,
                 "broadcastMessage".into(),
                 // TODO: Pass an actual httpStatus argument instead of 0.
@@ -768,7 +765,6 @@ impl<'gc> Loader<'gc> {
             Avm1::run_stack_frame_for_method(
                 clip,
                 broadcaster,
-                NEWEST_PLAYER_VERSION,
                 uc,
                 "broadcastMessage".into(),
                 &[

@@ -306,11 +306,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn from_nothing(
         context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
-        swf_version: u8,
         globals: Object<'gc>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         let global_scope = GcCell::allocate(context.gc_context, Scope::from_global_object(globals));
+        let swf_version = base_clip.swf_version();
         let child_scope = GcCell::allocate(
             context.gc_context,
             Scope::new_local_scope(global_scope, context.gc_context),
@@ -341,11 +341,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         context: UpdateContext<'a, 'gc, 'gc_context>,
         id: ActivationIdentifier<'a>,
     ) -> Self {
-        let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
         let level0 = context.stage.root_clip();
 
-        Self::from_nothing(context, id, version, globals, level0)
+        Self::from_nothing(context, id, globals, level0)
     }
 
     /// Add a stack frame that executes code in timeline scope
@@ -353,14 +352,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         name: S,
         active_clip: DisplayObject<'gc>,
-        swf_version: u8,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let globals = self.context.avm1.globals;
         let mut parent_activation = Activation::from_nothing(
             self.context.reborrow(),
             self.id.child("[Actions Parent]"),
-            swf_version,
             globals,
             active_clip,
         );
@@ -380,7 +377,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let mut child_activation = Activation::from_action(
             parent_activation.context.reborrow(),
             child_name,
-            swf_version,
+            active_clip.swf_version(),
             child_scope,
             constant_pool,
             active_clip,
@@ -745,12 +742,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         if let Some((clip, frame)) = call_frame {
             if frame <= u16::MAX.into() {
                 for action in clip.actions_on_frame(&mut self.context, frame as u16) {
-                    let _ = self.run_child_frame_for_action(
-                        "[Frame Call]",
-                        clip.into(),
-                        self.swf_version(),
-                        action,
-                    )?;
+                    let _ = self.run_child_frame_for_action("[Frame Call]", clip.into(), action)?;
                 }
             }
         } else {

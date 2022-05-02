@@ -259,12 +259,10 @@ impl<'gc> Callback<'gc> {
         match self {
             Callback::Avm1 { this, method } => {
                 let base_clip = context.stage.root_clip();
-                let swf_version = context.swf.version();
                 let globals = context.avm1.global_object_cell();
                 let mut activation = Avm1Activation::from_nothing(
                     context.reborrow(),
                     Avm1ActivationIdentifier::root("[ExternalInterface]"),
-                    swf_version,
                     globals,
                     base_clip,
                 );

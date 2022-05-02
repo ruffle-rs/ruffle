@@ -550,14 +550,12 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
         let root_clip = context.stage.root_clip();
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Context Menu Callback]"),
-            version,
             globals,
             root_clip,
         );
@@ -1341,26 +1339,18 @@ impl Player {
             match actions.action_type {
                 // DoAction/clip event code.
                 ActionType::Normal { bytecode } | ActionType::Initialize { bytecode } => {
-                    Avm1::run_stack_frame_for_action(
-                        actions.clip,
-                        "[Frame]",
-                        context.swf.version(),
-                        bytecode,
-                        context,
-                    );
+                    Avm1::run_stack_frame_for_action(actions.clip, "[Frame]", bytecode, context);
                 }
                 // Change the prototype of a MovieClip and run constructor events.
                 ActionType::Construct {
                     constructor: Some(constructor),
                     events,
                 } => {
-                    let version = context.swf.version();
                     let globals = context.avm1.global_object_cell();
 
                     let mut activation = Activation::from_nothing(
                         context.reborrow(),
                         ActivationIdentifier::root("[Construct]"),
-                        version,
                         globals,
                         actions.clip,
                     );
@@ -1376,7 +1366,6 @@ impl Player {
                                 let _ = activation.run_child_frame_for_action(
                                     "[Actions]",
                                     actions.clip,
-                                    activation.context.swf.version(),
                                     event,
                                 );
                             }
@@ -1394,7 +1383,6 @@ impl Player {
                         Avm1::run_stack_frame_for_action(
                             actions.clip,
                             "[Construct]",
-                            context.swf.version(),
                             event,
                             context,
                         );
@@ -1405,7 +1393,6 @@ impl Player {
                     Avm1::run_stack_frame_for_method(
                         actions.clip,
                         object,
-                        context.swf.version(),
                         context,
                         name.into(),
                         &args,
@@ -1422,7 +1409,6 @@ impl Player {
                     // so this doesn't require any further execution.
                     Avm1::notify_system_listeners(
                         actions.clip,
-                        context.swf.version(),
                         context,
                         listener.into(),
                         method.into(),

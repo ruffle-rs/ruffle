@@ -36,14 +36,12 @@ impl<'gc> Timers<'gc> {
             return None;
         }
 
-        let version = context.swf.version();
         let globals = context.avm1.global_object_cell();
         let level0 = context.stage.root_clip();
 
         let mut activation = Activation::from_nothing(
             context.reborrow(),
             ActivationIdentifier::root("[Timer Callback]"),
-            version,
             globals,
             level0,
         );
