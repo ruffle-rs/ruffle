@@ -19,7 +19,7 @@ webbrowser = "0.7.1"
 url = "2.2.2"
 clipboard = "0.5.0"
 dirs = "4.0"
-isahc = "1.7.0"
+isahc = "1.7.1"
 rfd = "0.8.2"
 
 [target.'cfg(windows)'.dependencies]
