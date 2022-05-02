@@ -833,9 +833,9 @@ dependencies = [
 
 [[package]]
 name = "curl-sys"
-version = "0.4.53+curl-7.82.0"
+version = "0.4.54+curl-7.83.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8092905a5a9502c312f223b2775f57ec5c5b715f9a15ee9d2a8591d1364a0352"
+checksum = "25debbc3365c3e7ee79e30918df5759e84dbd4485807a18829188abf1786ec4e"
 dependencies = [
  "cc",
  "libc",
@@ -1785,9 +1785,9 @@ dependencies = [
 
 [[package]]
 name = "isahc"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "437f8808009c031df3c1d532c8fd7e3d73239dfe522ebf0b94b5e34d5d01044b"
+checksum = "480d9158c9977bff0bc024a11dcad04efcd3955c1e55301092b13fc439d41720"
 dependencies = [
  "async-channel",
  "castaway",
