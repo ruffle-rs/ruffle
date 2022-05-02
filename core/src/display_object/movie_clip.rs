@@ -1165,6 +1165,7 @@ impl<'gc> MovieClip<'gc> {
                             log::error!("No movie when trying to set clip event");
                         }
                     }
+                    // TODO: Missing PlaceObject properties: amf_data, filters
 
                     // Run first frame.
                     child.construct_frame(context);
@@ -3340,15 +3341,16 @@ impl<'a> GotoPlaceObject<'a> {
                 if place_object.is_bitmap_cached.is_none() {
                     place_object.is_bitmap_cached = Some(Default::default());
                 }
-                if place_object.class_name.is_none() {
-                    place_object.class_name = Some(Default::default());
-                }
                 if place_object.background_color.is_none() {
                     place_object.background_color = Some(Color::from_rgba(0));
                 }
-                // Deliberately omitted:
-                // clip_depth: Can only be set on initial creation
-                // `is_visible` purposely skipped; flag carries over during rewind.
+                // Purposely omitted properties:
+                // name, clip_depth, clip_actions, amf_data
+                // These properties are only set on initial placement in `MovieClip::instantiate_child`
+                // and can not be modified by subsequent PlaceObject tags.
+                // Also, is_visible flag persists during rewind unlike all other properties.
+                // TODO: Filters need to be applied here. Rewinding will erase filters if initial
+                // PlaceObject tag has none.
             }
         }
 
@@ -3386,12 +3388,6 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.ratio.is_some() {
             cur_place.ratio = next_place.ratio.take();
         }
-        if next_place.clip_depth.is_some() {
-            cur_place.clip_depth = next_place.clip_depth.take();
-        }
-        if next_place.class_name.is_some() {
-            cur_place.class_name = next_place.class_name.take();
-        }
         if next_place.blend_mode.is_some() {
             cur_place.blend_mode = next_place.blend_mode.take();
         }
@@ -3404,11 +3400,11 @@ impl<'a> GotoPlaceObject<'a> {
         if next_place.background_color.is_some() {
             cur_place.background_color = next_place.background_color.take();
         }
-        // Deliberately omitted: (can only be set once on instantiation)
-        // clip_actions
-        // clip_depth
-        // name:
-        // TODO: Other stuff.
+        // Purposely omitted properties:
+        // name, clip_depth, clip_actions, amf_data
+        // These properties are only set on initial placement in `MovieClip::instantiate_child`
+        // and can not be modified by subsequent PlaceObject tags.
+        // TODO: Filters need to be applied here. New filters will overwrite old filters.
     }
 }
 
