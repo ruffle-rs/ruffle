@@ -22,8 +22,6 @@ bitflags! {
     }
 }
 
-// TODO: This won't work accurately in cases like NaN/undefined.
-// We need to actually match Flash's sorting algorithm and not use Rust's Vec::sort.
 /// Default ordering to return if comparison is invalid.
 const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 
