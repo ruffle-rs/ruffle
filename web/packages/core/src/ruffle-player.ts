@@ -365,11 +365,11 @@ export class RufflePlayer extends HTMLElement {
      * @private
      */
     private isUnusedFallbackObject(): boolean {
-        let parent = this.parentNode;
         const element = lookupElement("ruffle-object");
 
         if (element !== null) {
-            while (parent != document && parent != null) {
+            let parent = this.parentNode;
+            while (parent !== document && parent !== null) {
                 if (parent.nodeName === element.name) {
                     return true;
                 }
@@ -580,7 +580,7 @@ export class RufflePlayer extends HTMLElement {
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
                 config.backgroundColor &&
-                config.wmode != WindowMode.Transparent
+                config.wmode !== WindowMode.Transparent
             ) {
                 this.container.style.backgroundColor = config.backgroundColor;
             }
@@ -1334,7 +1334,7 @@ export class RufflePlayer extends HTMLElement {
 
     displayRootMovieDownloadFailedMessage(): void {
         if (
-            window.location.origin == this.swfUrl!.origin ||
+            window.location.origin === this.swfUrl!.origin ||
             !this.isExtension ||
             !window.location.protocol.includes("http")
         ) {

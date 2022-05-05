@@ -12,7 +12,6 @@ declare global {
  * Production steps of ECMA-262, Edition 5, 15.4.4.21
  * Reference: https://es5.github.io/#x15.4.4.21
  * https://tc39.github.io/ecma262/#sec-array.prototype.reduce
- *
  */
 function polyfillArrayPrototypeReduce() {
     Object.defineProperty(Array.prototype, "reduce", {
@@ -70,7 +69,6 @@ function polyfillArrayPrototypeReduce() {
 
 /**
  * Polyfills the `Window` function.
- *
  */
 function polyfillWindow(): void {
     if (
@@ -89,10 +87,9 @@ function polyfillWindow(): void {
  *
  * Currently it's a minimal implementation with only `get` and `set`
  * just enough for wasm-bindgen's stdlib to not crash on pages I've found.
- *
  */
 function tryPolyfillReflect(): void {
-    if (window.Reflect == undefined) {
+    if (window.Reflect === undefined) {
         // @ts-expect-error: {} indeed doesn't implement Reflect's interface.
         window.Reflect = {};
     }
@@ -134,7 +131,6 @@ function isNativeFunction(func: Function): boolean {
 
 /**
  * Checks and applies the polyfills to the current window, if needed.
- *
  */
 export function setPolyfillsOnLoad(): void {
     if (

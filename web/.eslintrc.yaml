@@ -5,6 +5,7 @@ extends:
   - eslint:recommended
   - plugin:prettier/recommended
 rules:
+  eqeqeq: error
   no-unused-vars:
     - error
     - argsIgnorePattern: ^_

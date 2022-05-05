@@ -174,7 +174,7 @@ export class PublicAPI {
      */
     newest(): SourceAPI | null {
         const name = this.newestSourceName();
-        return name != null ? this.sources[name] : null;
+        return name !== null ? this.sources[name] : null;
     }
 
     /**

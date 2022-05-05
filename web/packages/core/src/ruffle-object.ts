@@ -205,7 +205,7 @@ export class RuffleObject extends RufflePlayer {
      * @internal
      */
     set data(href: string | null) {
-        if (href != undefined) {
+        if (href) {
             const attr = document.createAttribute("data");
             attr.value = href;
             this.attributes.setNamedItem(attr);
@@ -287,26 +287,27 @@ export class RuffleObject extends RufflePlayer {
                     RuffleEmbed.isInterdictable
                 )
             );
-        } else if (classid != null && classid !== "") {
+        } else if (classid) {
             // Non-Flash classid.
             return false;
         }
 
         // Check for MIME type.
-        const type = elem.attributes.getNamedItem("type")?.value.toLowerCase();
-        if (
-            type === FLASH_MIMETYPE.toLowerCase() ||
-            type === FUTURESPLASH_MIMETYPE.toLowerCase() ||
-            type === FLASH7_AND_8_MIMETYPE.toLowerCase() ||
-            type === FLASH_MOVIE_MIMETYPE.toLowerCase()
-        ) {
-            return true;
-        } else if (type != null && type !== "") {
-            return false;
+        const type = elem.attributes.getNamedItem("type");
+        if (!type) {
+            // If no MIME type is specified, polyfill if movie is an SWF file.
+            return isSwf;
         }
 
-        // If no MIME/class type is specified, polyfill if movie is an SWF file.
-        return isSwf;
+        switch (type.value.toLowerCase()) {
+            case FLASH_MIMETYPE.toLowerCase():
+            case FUTURESPLASH_MIMETYPE.toLowerCase():
+            case FLASH7_AND_8_MIMETYPE.toLowerCase():
+            case FLASH_MOVIE_MIMETYPE.toLowerCase():
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**
