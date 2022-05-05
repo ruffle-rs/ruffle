@@ -136,7 +136,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @param elem Element to check.
      * @returns True if the element looks like a flash embed.
      */
-    static isInterdictable(elem: HTMLElement): boolean {
+    static isInterdictable(elem: Element): boolean {
         // Don't polyfill if the element is inside a specific node.
         if (isFallbackElement(elem)) {
             return false;
@@ -176,7 +176,7 @@ export class RuffleEmbed extends RufflePlayer {
      * @param elem Element to replace.
      * @returns Created RuffleEmbed.
      */
-    static fromNativeEmbedElement(elem: HTMLElement): RuffleEmbed {
+    static fromNativeEmbedElement(elem: Element): RuffleEmbed {
         const externalName = registerElement("ruffle-embed", RuffleEmbed);
         const ruffleObj = <RuffleEmbed>document.createElement(externalName);
         ruffleObj.copyElement(elem);
