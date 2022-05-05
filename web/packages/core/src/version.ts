@@ -54,19 +54,19 @@ export class Version {
         let prIdent = null;
         let buildIdent = null;
 
-        if (versionSplit[1] != undefined) {
+        if (versionSplit[1] !== undefined) {
             minor = parseInt(versionSplit[1], 10);
         }
 
-        if (versionSplit[2] != undefined) {
+        if (versionSplit[2] !== undefined) {
             patch = parseInt(versionSplit[2], 10);
         }
 
-        if (prSplit[1] != undefined) {
+        if (prSplit[1] !== undefined) {
             prIdent = prSplit[1].split(".");
         }
 
-        if (buildSplit[1] != undefined) {
+        if (buildSplit[1] !== undefined) {
             buildIdent = buildSplit[1].split(".");
         }
 
@@ -133,9 +133,9 @@ export class Version {
             return false;
         }
 
-        if (this.prIdent == null && other.prIdent != null) {
+        if (this.prIdent === null && other.prIdent !== null) {
             return true;
-        } else if (this.prIdent != null && other.prIdent != null) {
+        } else if (this.prIdent !== null && other.prIdent !== null) {
             const isNumeric = /^[0-9]*$/;
             for (
                 let i = 0;
@@ -215,7 +215,7 @@ export class Version {
      * prerelease in the same series as this one.
      */
     isStableOrCompatiblePrerelease(other: Version): boolean {
-        if (other.prIdent == null) {
+        if (other.prIdent === null) {
             return true;
         } else {
             return (

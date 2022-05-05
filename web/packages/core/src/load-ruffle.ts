@@ -77,7 +77,7 @@ let lastLoaded: Promise<Ruffle> | null = null;
  * instances.
  */
 export function loadRuffle(config: Config): Promise<Ruffle> {
-    if (lastLoaded == null) {
+    if (lastLoaded === null) {
         lastLoaded = fetchRuffle(config);
     }
 
