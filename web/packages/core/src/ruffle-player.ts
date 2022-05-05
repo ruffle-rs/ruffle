@@ -53,9 +53,9 @@ declare global {
         webkitExitFullscreen?: () => void;
         webkitCancelFullScreen?: () => void;
     }
-    interface HTMLElement {
-        webkitRequestFullscreen?: (arg0: unknown) => unknown;
-        webkitRequestFullScreen?: (arg0: unknown) => unknown;
+    interface Element {
+        webkitRequestFullscreen?: (options: unknown) => unknown;
+        webkitRequestFullScreen?: (options: unknown) => unknown;
     }
 }
 
@@ -980,7 +980,7 @@ export class RufflePlayer extends HTMLElement {
      * @param elem The element to copy all attributes from.
      * @protected
      */
-    protected copyElement(elem: HTMLElement): void {
+    protected copyElement(elem: Element): void {
         if (elem) {
             for (let i = 0; i < elem.attributes.length; i++) {
                 const attrib = elem.attributes[i];
@@ -1516,7 +1516,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
  * @param attr The attribute to adjust.
  */
 export function workaroundYoutubeMixedContent(
-    elem: HTMLElement,
+    elem: Element,
     attr: string
 ): void {
     const elem_attr = elem.getAttribute(attr);
@@ -1571,7 +1571,7 @@ export function isSwfFilename(filename: string | null): boolean {
  * @param elem The element to test.
  * @returns True if the element is inside an <audio> or <video> node.
  */
-export function isFallbackElement(elem: HTMLElement): boolean {
+export function isFallbackElement(elem: Element): boolean {
     let parent = elem.parentElement;
     while (parent !== null) {
         switch (parent.tagName) {

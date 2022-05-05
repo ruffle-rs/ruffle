@@ -45,7 +45,7 @@ function findCaseInsensitive(
  * @param elem Element to check.
  * @returns A record of every parameter.
  */
-function paramsOf(elem: HTMLElement): Record<string, string> {
+function paramsOf(elem: Element): Record<string, string> {
     const params: Record<string, string> = {};
 
     for (const param of elem.children) {
@@ -220,7 +220,7 @@ export class RuffleObject extends RufflePlayer {
      * @param elem Element to check.
      * @returns True if the element looks like a flash object.
      */
-    static isInterdictable(elem: HTMLElement): boolean {
+    static isInterdictable(elem: Element): boolean {
         // Don't polyfill if the element is inside a specific node.
         if (isFallbackElement(elem)) {
             return false;
@@ -250,9 +250,7 @@ export class RuffleObject extends RufflePlayer {
             // Don't polyfill when the file is a Youtube Flash source.
             if (isYoutubeFlashSource(params.movie)) {
                 // Workaround YouTube mixed content; this isn't what browsers do automatically, but while we're here, we may as well
-                const movie_elem = elem.querySelector(
-                    "param[name='movie']"
-                ) as HTMLElement;
+                const movie_elem = elem.querySelector("param[name='movie']");
                 if (movie_elem) {
                     workaroundYoutubeMixedContent(movie_elem, "value");
                     // The data attribute needs to be set for the re-fetch to happen
@@ -316,7 +314,7 @@ export class RuffleObject extends RufflePlayer {
      * @param elem Element to replace.
      * @returns Created RuffleObject.
      */
-    static fromNativeObjectElement(elem: HTMLElement): RuffleObject {
+    static fromNativeObjectElement(elem: Element): RuffleObject {
         const externalName = registerElement("ruffle-object", RuffleObject);
         const ruffleObj: RuffleObject = <RuffleObject>(
             document.createElement(externalName)
