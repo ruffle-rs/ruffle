@@ -21,6 +21,7 @@ const sampleFileInputContainer = document.getElementById(
 );
 const localFileInput = document.getElementById("local-file");
 const sampleFileInput = document.getElementById("sample-swfs");
+const localFileName = document.getElementById("local-file-name");
 // prettier-ignore
 const optionGroups = {
     "Animation": document.getElementById("anim-optgroup"),
@@ -68,6 +69,9 @@ async function loadFile(file) {
     if (!file) {
         return;
     }
+    if (file.name) {
+        localFileName.textContent = file.name;
+    }
     hideSample();
     const data = await new Response(file).arrayBuffer();
     load({ data, ...config });
@@ -75,6 +79,7 @@ async function loadFile(file) {
 
 function loadSample() {
     const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
+    localFileName.textContent = "No file selected.";
     if (swfData) {
         showSample(swfData);
         load({ url: swfData.location, ...config });

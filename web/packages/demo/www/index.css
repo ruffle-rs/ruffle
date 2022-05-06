@@ -115,6 +115,12 @@ body {
     background-color: white;
 }
 
+#local-file-name {
+    min-width: 150px;
+    display: inline-block;
+    font-size: smaller;
+}
+
 #sample-swfs {
     background-color: white;
     color: var(--ruffle-blue);
