@@ -80,6 +80,8 @@ jobs:
         run: npm run lint
 
       - name: Run tests
+        # MIKE: Don't run web tests on Windows because it's flaky for unknown reasons. :-(
+        if: runner.os == 'Linux'
         working-directory: web
         run: npm test
 
