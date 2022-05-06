@@ -248,7 +248,7 @@ impl<'a> From<&'a str> for &'a SwfStr {
     }
 }
 
-impl<'a, T: ?Sized + AsRef<str>> PartialEq<T> for SwfStr {
+impl<T: ?Sized + AsRef<str>> PartialEq<T> for SwfStr {
     fn eq(&self, other: &T) -> bool {
         &self.string == other.as_ref().as_bytes()
     }

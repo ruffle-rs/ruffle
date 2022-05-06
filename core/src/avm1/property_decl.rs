@@ -114,7 +114,7 @@ impl Declaration {
 ///
 /// # Usage:
 ///
-/// ```rust,ignored
+/// ```rust,ignore
 /// const DECLS: &'static [Declaration] = declare_properties! {
 ///     "length" => property(get_length);
 ///     "filters" => property(get_filters, set_filters);
@@ -126,7 +126,7 @@ impl Declaration {
 ///     "scale" => float(0.85);
 ///     // all declarations can also specify attributes
 ///     "hidden" => string("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-/// }
+/// };
 /// ```
 macro_rules! declare_properties {
     ( $($name:literal => $kind:ident($($args:tt)*);)* ) => {

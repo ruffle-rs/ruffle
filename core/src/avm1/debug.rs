@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
+use std::fmt::Write;
 
 #[allow(dead_code)]
 pub struct VariableDumper<'a> {
@@ -174,7 +175,9 @@ impl<'a> VariableDumper<'a> {
         self.depth += 1;
 
         for key in keys.into_iter() {
-            self.output.push_str(&format!("{}.{}", name, key));
+            self.output.push_str(name);
+            self.output.push('.');
+            let _ = write!(self.output, "{}", key);
             self.output.push_str(" = ");
             self.print_property(object, key, activation);
             self.output.push('\n');

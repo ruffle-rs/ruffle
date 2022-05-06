@@ -122,7 +122,7 @@ struct SoundInstance {
 impl Drop for SoundInstance {
     fn drop(&mut self) {
         if let SoundInstanceType::AudioBuffer(instance) = &self.instance_type {
-            let _ = instance.buffer_source_node.set_onended(None);
+            instance.buffer_source_node.set_onended(None);
             let _ = instance.node.disconnect();
         }
     }
@@ -474,7 +474,7 @@ impl WebAudioBackend {
                 let closure = Closure::once_into_js(Box::new(ended_handler) as Box<dyn FnMut()>);
                 // Note that we add the ended event to the AudioBufferSourceNode; an audio envelope adds more nodes
                 // in the graph, but these nodes don't fire the ended event.
-                let _ = buffer_source_node.set_onended(Some(closure.as_ref().unchecked_ref()));
+                buffer_source_node.set_onended(Some(closure.as_ref().unchecked_ref()));
 
                 instance_handle
             }
