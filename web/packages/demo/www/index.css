@@ -102,6 +102,26 @@ body {
     vertical-align: middle;
 }
 
+#local-file {
+    display: none;
+}
+
+#local-file-label {
+    color: var(--ruffle-blue);
+    padding: 3px 10px;
+    margin: 5px 2px;
+    cursor: pointer;
+    border-radius: 50px;
+    background-color: white;
+}
+
+#sample-swfs {
+    background-color: white;
+    color: var(--ruffle-blue);
+    border: 1px solid white;
+    border-radius: 5px;
+}
+
 #author-container {
     font-size: small;
 }
