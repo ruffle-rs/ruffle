@@ -127,7 +127,7 @@ impl BitmapDataStorage {
             .dyn_into()
             .unwrap();
 
-        let _ = context.put_image_data(&data, 0.0, 0.0).unwrap();
+        context.put_image_data(&data, 0.0, 0.0).unwrap();
 
         BitmapDataStorage::CanvasElement(canvas, context)
     }

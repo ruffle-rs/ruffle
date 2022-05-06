@@ -263,7 +263,7 @@ impl<'a, T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'a, U> {
 
 pub struct FnPred<F>(F);
 
-impl<'a, T: Into<u16>, F: Fn(u16) -> bool> Predicate<T> for FnPred<F> {
+impl<T: Into<u16>, F: Fn(u16) -> bool> Predicate<T> for FnPred<F> {
     fn is_match(&self, c: T) -> bool {
         (self.0)(c.into())
     }
