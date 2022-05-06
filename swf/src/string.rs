@@ -31,7 +31,7 @@ impl SwfStr {
     /// let s = SwfStr::from_bytes(b"Hello, World!");
     /// ```
     #[inline]
-    pub fn from_bytes(string: &[u8]) -> &Self {
+    pub const fn from_bytes(string: &[u8]) -> &Self {
         // SAFETY: Casting is safe because internal representations are
         // the same, see repr(transparent).
         unsafe { &*(string as *const [u8] as *const Self) }
@@ -72,7 +72,7 @@ impl SwfStr {
     /// let s = SwfStr::from_utf8_str("Hello, 🌏!");
     /// ```
     #[inline]
-    pub fn from_utf8_str(string: &str) -> &Self {
+    pub const fn from_utf8_str(string: &str) -> &Self {
         Self::from_bytes(string.as_bytes())
     }
 
