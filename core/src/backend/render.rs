@@ -377,10 +377,15 @@ fn decode_jpeg(
             let mut i = 0;
             let mut a = 0;
             while i < decoded_data.len() {
-                rgba.push(decoded_data[i]);
-                rgba.push(decoded_data[i + 1]);
-                rgba.push(decoded_data[i + 2]);
-                rgba.push(alpha_data[a]);
+                // The JPEG data should be premultiplied alpha, but it isn't in some incorrect SWFs (see #6983).
+                // This means 0% alpha pixels may have color and incorrectly show as visible.
+                // Flash Player clamps color to the alpha value to fix this case.
+                // Only applies to DefineBitsJPEG3; DefineBitsLossless does not seem to clamp.
+                let alpha = alpha_data[a];
+                rgba.push(decoded_data[i].min(alpha));
+                rgba.push(decoded_data[i + 1].min(alpha));
+                rgba.push(decoded_data[i + 2].min(alpha));
+                rgba.push(alpha);
                 i += 3;
                 a += 1;
             }
