@@ -1,12 +1,204 @@
+// node.nodeName
 null
+// node.prefix
 null
+// node.localName
 null
+// node.getNamespaceForPrefix("test")
 null
+// node.getPrefixForNamespace("https://example.com")
+null
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+null
+// node.namespaceURI
+null
+
+// node.nodeName
+test1
+// node.prefix
+
+// node.localName
+test1
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+null
+// node.namespaceURI
 https://example.com
-test
+
+// node.nodeName
+test2
+// node.prefix
+
+// node.localName
+test2
+// node.getNamespaceForPrefix("test")
 null
+// node.getPrefixForNamespace("https://example.com")
 null
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+null
+// node.namespaceURI
+https://example.com/colon
+
+// node.nodeName
+test3
+// node.prefix
+
+// node.localName
+test3
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+null
+// node.namespaceURI
+https://example.com
+
+// node.nodeName
+test4
+// node.prefix
+
+// node.localName
+test4
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
+https://example.com
+
+// node.nodeName
+test5
+// node.prefix
+
+// node.localName
+test5
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
 https://example.com/2
-test
+
+// node.nodeName
+test6
+// node.prefix
+
+// node.localName
+test6
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
+https://example.com
+
+// node.nodeName
+test7
+// node.prefix
+
+// node.localName
+test7
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
 https://example.com/2
+
+// node.nodeName
+test8
+// node.prefix
+
+// node.localName
+test8
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
+https://example.com
+
+// node.nodeName
+test9
+// node.prefix
+
+// node.localName
+test9
+// node.getNamespaceForPrefix("test")
+null
+// node.getPrefixForNamespace("https://example.com")
+
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+
+// node.namespaceURI
+https://example.com/2
+
+// node.nodeName
+test:test10
+// node.prefix
 test
+// node.localName
+test10
+// node.getNamespaceForPrefix("test")
+https://example.com
+// node.getPrefixForNamespace("https://example.com")
+test
+// node.getNamespaceForPrefix("test2")
+null
+// node.getPrefixForNamespace("https://example.com/2")
+null
+// node.namespaceURI
+https://example.com
+
+// node.nodeName
+test:test11
+// node.prefix
+test
+// node.localName
+test11
+// node.getNamespaceForPrefix("test")
+https://example.com
+// node.getPrefixForNamespace("https://example.com")
+test
+// node.getNamespaceForPrefix("test2")
+https://example.com/2
+// node.getPrefixForNamespace("https://example.com/2")
+test2
+// node.namespaceURI
+https://example.com
+

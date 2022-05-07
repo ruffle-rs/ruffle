@@ -1,4 +1,0 @@
-null
-
-http://example.com/2plain
-http://example.com/3
