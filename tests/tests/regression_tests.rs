@@ -763,8 +763,6 @@ swf_tests! {
     #[ignore] (xml_inspect_xmldecl, "avm1/xml_inspect_xmldecl", 1),
     (xml_load, "avm1/xml_load", 1),
     (xml_namespaces, "avm1/xml_namespaces", 1),
-    (xml_node_namespaceuri, "avm1/xml_node_namespaceuri", 1),
-    (xml_node_weirdnamespace, "avm1/xml_node_weirdnamespace", 1),
     (xml_parent_and_child, "avm1/xml_parent_and_child", 1),
     (xml_remove_node, "avm1/xml_remove_node", 1),
     (xml_reparenting, "avm1/xml_reparenting", 1),
