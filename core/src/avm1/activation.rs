@@ -2830,8 +2830,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     /// Changes the target clip.
     pub fn set_target_clip(&mut self, value: Option<DisplayObject<'gc>>) {
         // The target should revert to `None` if the clip is removed.
-        let is_clip_removed = value.map(|clip| clip.removed()).unwrap_or_default();
-        self.target_clip = if !is_clip_removed { value } else { None }
+        self.target_clip = value.filter(|clip| !clip.removed());
     }
 
     /// Define a local property on the activation.
