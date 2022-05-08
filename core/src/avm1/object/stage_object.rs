@@ -185,27 +185,38 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let name = name.into();
         let obj = self.0.read();
         let props = activation.context.avm1.display_properties;
-        let case_sensitive = activation.is_case_sensitive();
+
         // Property search order for DisplayObjects:
-        if self.has_own_property(activation, name) {
-            // 1) Actual properties on the underlying object
-            obj.base.get_local_stored(name, activation)
-        } else if let Some(object) = self.resolve_path_property(name, activation) {
-            // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
-            Some(object)
-        } else if let Some(child) = obj
+        // 1) Actual properties on the underlying object
+        if let Some(value) = obj.base.get_local_stored(name, activation) {
+            return Some(value);
+        }
+
+        // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
+        let magic_property = name.starts_with(b'_');
+        if magic_property {
+            if let Some(object) = self.resolve_path_property(name, activation) {
+                return Some(object);
+            }
+        }
+
+        // 3) Child display objects with the given instance name
+        if let Some(child) = obj
             .display_object
             .as_container()
-            .and_then(|o| o.child_by_name(&name, case_sensitive))
+            .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
         {
-            // 3) Child display objects with the given instance name
-            Some(child.object())
-        } else if let Some(property) = props.read().get_by_name(name) {
-            // 4) Display object properties such as `_x`, `_y` (never case sensitive)
-            Some(property.get(activation, obj.display_object))
-        } else {
-            None
+            return Some(child.object());
         }
+
+        // 4) Display object properties such as `_x`, `_y` (never case sensitive)
+        if magic_property {
+            if let Some(property) = props.read().get_by_name(name) {
+                return Some(property.get(activation, obj.display_object));
+            }
+        }
+
+        None
     }
 
     fn set_local(
@@ -385,13 +396,15 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if activation
-            .context
-            .avm1
-            .display_properties
-            .read()
-            .get_by_name(name)
-            .is_some()
+        let magic_property = name.starts_with(b'_');
+        if magic_property
+            && activation
+                .context
+                .avm1
+                .display_properties
+                .read()
+                .get_by_name(name)
+                .is_some()
         {
             return true;
         }
@@ -406,7 +419,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return true;
         }
 
-        if self.resolve_path_property(name, activation).is_some() {
+        if magic_property && self.resolve_path_property(name, activation).is_some() {
             return true;
         }
 
