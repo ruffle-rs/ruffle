@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
@@ -26,9 +25,6 @@ pub const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getDepth" => method(get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "_global" => property(get_global, overwrite_global; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "_root" => property(get_root, overwrite_root; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "_parent" => property(get_parent, overwrite_parent; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 /// Add common display object prototype methods to the given prototype.
@@ -38,35 +34,6 @@ pub fn define_display_object_proto<'gc>(
     fn_proto: Object<'gc>,
 ) {
     define_properties_on(OBJECT_DECLS, gc_context, object, fn_proto);
-}
-
-pub fn get_global<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.avm1.global_object())
-}
-
-pub fn get_root<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.root_object())
-}
-
-pub fn get_parent<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this
-        .as_display_object()
-        .and_then(|mc| mc.avm1_parent())
-        .map(|dn| dn.object().coerce_to_object(activation))
-        .map(Value::Object)
-        .unwrap_or(Value::Undefined))
 }
 
 pub fn get_depth<'gc>(
@@ -93,63 +60,6 @@ pub fn to_string<'gc>(
     } else {
         Ok(Value::Undefined)
     }
-}
-
-pub fn overwrite_root<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let new_val = args
-        .get(0)
-        .map(|v| v.to_owned())
-        .unwrap_or(Value::Undefined);
-    this.define_value(
-        activation.context.gc_context,
-        "_root",
-        new_val,
-        Attribute::empty(),
-    );
-
-    Ok(Value::Undefined)
-}
-
-pub fn overwrite_global<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let new_val = args
-        .get(0)
-        .map(|v| v.to_owned())
-        .unwrap_or(Value::Undefined);
-    this.define_value(
-        activation.context.gc_context,
-        "_global",
-        new_val,
-        Attribute::empty(),
-    );
-
-    Ok(Value::Undefined)
-}
-
-pub fn overwrite_parent<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let new_val = args
-        .get(0)
-        .map(|v| v.to_owned())
-        .unwrap_or(Value::Undefined);
-    this.define_value(
-        activation.context.gc_context,
-        "_parent",
-        new_val,
-        Attribute::empty(),
-    );
-
-    Ok(Value::Undefined)
 }
 
 pub fn remove_display_object<'gc>(
