@@ -5,7 +5,6 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
-use crate::string::AvmString;
 use gc_arena::MutationContext;
 
 /// Depths used/returned by ActionScript are offset by this amount from depths used inside the SWF/by the VM.
@@ -24,7 +23,6 @@ pub const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getDepth" => method(get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 /// Add common display object prototype methods to the given prototype.
@@ -48,18 +46,6 @@ pub fn get_depth<'gc>(
         }
     }
     Ok(Value::Undefined)
-}
-
-pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(display_object) = this.as_display_object() {
-        Ok(AvmString::new(activation.context.gc_context, display_object.path()).into())
-    } else {
-        Ok(Value::Undefined)
-    }
 }
 
 pub fn remove_display_object<'gc>(
