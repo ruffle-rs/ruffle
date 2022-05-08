@@ -2,9 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::display_object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::display_object::{Avm1Button, TDisplayObject};
 use gc_arena::MutationContext;
 
@@ -37,6 +36,7 @@ macro_rules! button_setter {
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "enabled" => property(button_getter!(enabled), button_setter!(set_enabled));
+    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
     "useHandCursor" => property(button_getter!(use_hand_cursor), button_setter!(set_use_hand_cursor));
 };
 
@@ -46,10 +46,7 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object = ScriptObject::object(gc_context, Some(proto));
-
-    display_object::define_display_object_proto(gc_context, object, fn_proto);
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
-
     object.into()
 }
 

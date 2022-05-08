@@ -1,9 +1,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::display_object;
 use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
@@ -66,6 +65,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color));
     "bottomScroll" => property(tf_getter!(bottom_scroll));
     "embedFonts" => property(tf_getter!(embed_fonts), tf_setter!(set_embed_fonts));
+    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
     "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
     "html" => property(tf_getter!(html), tf_setter!(set_html));
     "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text));
@@ -100,7 +100,6 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object = ScriptObject::object(gc_context, Some(proto));
-    display_object::define_display_object_proto(gc_context, object, fn_proto);
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }
@@ -260,7 +259,7 @@ pub fn remove_text_field<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    display_object::remove_display_object(text_field.into(), activation);
+    globals::remove_display_object(text_field.into(), activation);
     Ok(Value::Undefined)
 }
 

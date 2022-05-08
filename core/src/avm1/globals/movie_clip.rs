@@ -2,8 +2,8 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::display_object::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
+use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
@@ -70,6 +70,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE);
     "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE);
     "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE);
+    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY; version(6));
     "getInstanceAtDepth" => method(mc_method!(get_instance_at_depth); DONT_ENUM | DONT_DELETE; version(7));
     "getNextHighestDepth" => method(mc_method!(get_next_highest_depth); DONT_ENUM | DONT_DELETE; version(7));
     "getRect" => method(mc_method!(get_rect); DONT_ENUM | DONT_DELETE; version(8));
@@ -167,7 +168,6 @@ pub fn create_proto<'gc>(
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
     let object = ScriptObject::object(gc_context, Some(proto));
-    display_object::define_display_object_proto(gc_context, object, fn_proto);
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }
@@ -1042,7 +1042,7 @@ fn remove_movie_clip<'gc>(
     // `removeMovieClip` can remove all types of display object,
     // e.g. `MovieClip.prototype.removeMovieClip.apply(textField);`
     if let Some(this) = this.as_display_object() {
-        crate::avm1::globals::display_object::remove_display_object(this, activation);
+        crate::avm1::globals::remove_display_object(this, activation);
     }
 
     Ok(Value::Undefined)

@@ -1788,7 +1788,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let target_clip = self.resolve_target_display_object(start_clip, target, true)?;
 
         if let Some(target_clip) = target_clip {
-            crate::avm1::globals::display_object::remove_display_object(target_clip, self);
+            crate::avm1::globals::remove_display_object(target_clip, self);
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a display object");
         }
