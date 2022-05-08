@@ -290,6 +290,21 @@ impl WStr {
     }
 
     #[inline]
+    /// Compares two strings with the specified case sensitivity.
+    /// Note that the case mapping is different than Rust's case mapping.
+    pub fn eq_with_case<'a>(
+        &self,
+        other: impl Into<Units<&'a [u8], &'a [u16]>>,
+        case_sensitive: bool,
+    ) -> bool {
+        if case_sensitive {
+            self == WStr::from_units(other.into())
+        } else {
+            self.eq_ignore_case(WStr::from_units(other.into()))
+        }
+    }
+
+    #[inline]
     /// Compares two strings, ignoring case as done by the Flash Player.
     /// Note that the case mapping is different than Rust's case mapping.
     pub fn cmp_ignore_case(&self, other: &WStr) -> core::cmp::Ordering {
