@@ -428,13 +428,18 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) if activation.swf_version() < 5 => "1".into(),
             Value::Bool(false) if activation.swf_version() < 5 => "0".into(),
             Value::Object(object) => {
-                match object.call_method("toString".into(), &[], activation)? {
-                    Value::String(s) => s,
-                    _ => {
-                        if object.as_executable().is_some() {
-                            "[type Function]".into()
-                        } else {
-                            "[type Object]".into()
+                if let Some(object) = object.as_display_object() {
+                    // StageObjects are special-cased to return their path.
+                    AvmString::new(activation.context.gc_context, object.path())
+                } else {
+                    match object.call_method("toString".into(), &[], activation)? {
+                        Value::String(s) => s,
+                        _ => {
+                            if object.as_executable().is_some() {
+                                "[type Function]".into()
+                            } else {
+                                "[type Object]".into()
+                            }
                         }
                     }
                 }
