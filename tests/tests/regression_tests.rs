@@ -626,6 +626,7 @@ swf_tests! {
     (issue_3522, "avm1/issue_3522", 2),
     (issue_4377, "avm1/issue_4377", 1),
     (issue_710, "avm1/issue_710", 1),
+    (issue_768, "avm1/issue_768", 1),
     (lessthan_swf4, "avm1/lessthan_swf4", 1),
     (lessthan_swf4_alt, "avm1/lessthan_swf4_alt", 1),
     (lessthan_swf5, "avm1/lessthan_swf5", 1),
