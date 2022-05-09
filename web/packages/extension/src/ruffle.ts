@@ -13,17 +13,15 @@ type Message = LoadMessage | PingMessage;
 
 function handleMessage(message: Message) {
     switch (message.type) {
-        case "load":
-            window.RufflePlayer = window.RufflePlayer || {};
-            window.RufflePlayer.config = {
-                ...window.RufflePlayer.config,
+        case "load": {
+            const api = window.RufflePlayer ?? {};
+            api.config = {
+                ...api.config,
                 ...message.config,
             };
-            window.RufflePlayer = PublicAPI.negotiate(
-                window.RufflePlayer!,
-                "extension"
-            );
+            window.RufflePlayer = PublicAPI.negotiate(api, "extension");
             return {};
+        }
         case "ping":
             // Ping back.
             return {};
