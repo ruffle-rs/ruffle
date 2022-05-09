@@ -40,7 +40,7 @@ use std::cell::{Ref, RefMut};
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, FrameLabelData, Tag};
+use swf::{ClipEventFlag, FrameLabelData};
 
 type FrameNumber = u16;
 
@@ -2490,23 +2490,19 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream,
     ) -> DecodeResult {
-        match reader.read_video_frame()? {
-            Tag::VideoFrame(vframe) => {
-                let library = context.library.library_for_movie_mut(self.movie());
-                match library.character_by_id(vframe.stream_id) {
-                    Some(Character::Video(mut v)) => {
-                        v.preload_swf_frame(vframe, context);
+        let vframe = reader.read_video_frame()?;
+        let library = context.library.library_for_movie_mut(self.movie());
+        match library.character_by_id(vframe.stream_id) {
+            Some(Character::Video(mut v)) => {
+                v.preload_swf_frame(vframe, context);
 
-                        Ok(())
-                    }
-                    _ => Err(format!(
-                        "Attempted to preload video frames into non-video character {}",
-                        vframe.stream_id
-                    )
-                    .into()),
-                }
+                Ok(())
             }
-            _ => unreachable!(),
+            _ => Err(format!(
+                "Attempted to preload video frames into non-video character {}",
+                vframe.stream_id
+            )
+            .into()),
         }
     }
 
@@ -2863,18 +2859,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream,
     ) -> DecodeResult {
-        match reader.read_define_video_stream()? {
-            Tag::DefineVideoStream(streamdef) => {
-                let id = streamdef.id;
-                let video = Video::from_swf_tag(self.movie(), streamdef, context.gc_context);
-                context
-                    .library
-                    .library_for_movie_mut(self.movie())
-                    .register_character(id, Character::Video(video));
-            }
-            _ => unreachable!(),
-        };
-
+        let streamdef = reader.read_define_video_stream()?;
+        let id = streamdef.id;
+        let video = Video::from_swf_tag(self.movie(), streamdef, context.gc_context);
+        context
+            .library
+            .library_for_movie_mut(self.movie())
+            .register_character(id, Character::Video(video));
         Ok(())
     }
 

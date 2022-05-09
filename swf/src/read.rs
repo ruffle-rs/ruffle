@@ -377,8 +377,12 @@ impl<'a> Reader<'a> {
                 let jpeg_data = tag_reader.read_slice_to_end();
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
-            TagCode::DefineBitsJpeg3 => tag_reader.read_define_bits_jpeg_3(3)?,
-            TagCode::DefineBitsJpeg4 => tag_reader.read_define_bits_jpeg_3(4)?,
+            TagCode::DefineBitsJpeg3 => {
+                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(3)?)
+            }
+            TagCode::DefineBitsJpeg4 => {
+                Tag::DefineBitsJpeg3(tag_reader.read_define_bits_jpeg_3(4)?)
+            }
             TagCode::DefineButton => {
                 Tag::DefineButton(Box::new(tag_reader.read_define_button_1()?))
             }
@@ -399,8 +403,12 @@ impl<'a> Reader<'a> {
             TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
             TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
             TagCode::DefineFontAlignZones => tag_reader.read_define_font_align_zones()?,
-            TagCode::DefineFontInfo => tag_reader.read_define_font_info(1)?,
-            TagCode::DefineFontInfo2 => tag_reader.read_define_font_info(2)?,
+            TagCode::DefineFontInfo => {
+                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(1)?))
+            }
+            TagCode::DefineFontInfo2 => {
+                Tag::DefineFontInfo(Box::new(tag_reader.read_define_font_info(2)?))
+            }
             TagCode::DefineFontName => tag_reader.read_define_font_name()?,
             TagCode::DefineMorphShape => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(1)?))
@@ -415,7 +423,9 @@ impl<'a> Reader<'a> {
             TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
             TagCode::DefineText2 => Tag::DefineText(Box::new(tag_reader.read_define_text(2)?)),
-            TagCode::DefineVideoStream => tag_reader.read_define_video_stream()?,
+            TagCode::DefineVideoStream => {
+                Tag::DefineVideoStream(tag_reader.read_define_video_stream()?)
+            }
             TagCode::EnableTelemetry => {
                 tag_reader.read_u16()?; // Reserved
                 let password_hash = if length > 2 {
@@ -565,7 +575,7 @@ impl<'a> Reader<'a> {
 
             TagCode::FrameLabel => Tag::FrameLabel(tag_reader.read_frame_label(length)?),
 
-            TagCode::DefineSprite => tag_reader.read_define_sprite()?,
+            TagCode::DefineSprite => Tag::DefineSprite(tag_reader.read_define_sprite()?),
 
             TagCode::PlaceObject => {
                 Tag::PlaceObject(Box::new(tag_reader.read_place_object(length)?))
@@ -584,7 +594,7 @@ impl<'a> Reader<'a> {
 
             TagCode::RemoveObject2 => Tag::RemoveObject(tag_reader.read_remove_object_2()?),
 
-            TagCode::VideoFrame => tag_reader.read_video_frame()?,
+            TagCode::VideoFrame => Tag::VideoFrame(tag_reader.read_video_frame()?),
             TagCode::ProductInfo => Tag::ProductInfo(tag_reader.read_product_info()?),
             TagCode::NameCharacter => Tag::NameCharacter(tag_reader.read_name_character()?),
         };
@@ -1206,7 +1216,7 @@ impl<'a> Reader<'a> {
         Ok(zone)
     }
 
-    fn read_define_font_info(&mut self, version: u8) -> Result<Tag<'a>> {
+    fn read_define_font_info(&mut self, version: u8) -> Result<FontInfo<'a>> {
         let id = self.read_u16()?;
         let name = self.read_str_with_len()?;
         let flags = FontInfoFlag::from_bits_truncate(self.read_u8()?);
@@ -1230,14 +1240,14 @@ impl<'a> Reader<'a> {
         }
 
         // SWF19 has ANSI and Shift-JIS backwards?
-        Ok(Tag::DefineFontInfo(Box::new(FontInfo {
+        Ok(FontInfo {
             id,
             version,
             name,
             flags,
             language,
             code_table,
-        })))
+        })
     }
 
     fn read_define_font_name(&mut self) -> Result<Tag<'a>> {
@@ -1808,12 +1818,12 @@ impl<'a> Reader<'a> {
         Ok(shape_record)
     }
 
-    pub fn read_define_sprite(&mut self) -> Result<Tag<'a>> {
-        Ok(Tag::DefineSprite(Sprite {
+    pub fn read_define_sprite(&mut self) -> Result<Sprite<'a>> {
+        Ok(Sprite {
             id: self.read_u16()?,
             num_frames: self.read_u16()?,
             tags: self.read_tag_list()?,
-        }))
+        })
     }
 
     pub fn read_file_attributes(&mut self) -> Result<FileAttributes> {
@@ -2459,7 +2469,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    pub fn read_define_video_stream(&mut self) -> Result<Tag<'a>> {
+    pub fn read_define_video_stream(&mut self) -> Result<DefineVideoStream> {
         let id = self.read_character_id()?;
         let num_frames = self.read_u16()?;
         let width = self.read_u16()?;
@@ -2468,7 +2478,7 @@ impl<'a> Reader<'a> {
         // TODO(Herschel): Check SWF version.
         let codec = VideoCodec::from_u8(self.read_u8()?)
             .ok_or_else(|| Error::invalid_data("Invalid video codec."))?;
-        Ok(Tag::DefineVideoStream(DefineVideoStream {
+        Ok(DefineVideoStream {
             id,
             num_frames,
             width,
@@ -2477,21 +2487,21 @@ impl<'a> Reader<'a> {
             codec,
             deblocking: VideoDeblocking::from_u8((flags >> 1) & 0b111)
                 .ok_or_else(|| Error::invalid_data("Invalid video deblocking value."))?,
-        }))
+        })
     }
 
-    pub fn read_video_frame(&mut self) -> Result<Tag<'a>> {
+    pub fn read_video_frame(&mut self) -> Result<VideoFrame<'a>> {
         let stream_id = self.read_character_id()?;
         let frame_num = self.read_u16()?;
         let data = self.read_slice_to_end();
-        Ok(Tag::VideoFrame(VideoFrame {
+        Ok(VideoFrame {
             stream_id,
             frame_num,
             data,
-        }))
+        })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<Tag<'a>> {
+    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
@@ -2501,13 +2511,13 @@ impl<'a> Reader<'a> {
         };
         let data = self.read_slice(data_size)?;
         let alpha_data = self.read_slice_to_end();
-        Ok(Tag::DefineBitsJpeg3(DefineBitsJpeg3 {
+        Ok(DefineBitsJpeg3 {
             id,
             version,
             deblocking,
             data,
             alpha_data,
-        }))
+        })
     }
 
     pub fn read_define_bits_lossless(&mut self, version: u8) -> Result<DefineBitsLossless<'a>> {
