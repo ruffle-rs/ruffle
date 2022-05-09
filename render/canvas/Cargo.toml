@@ -20,7 +20,7 @@ png = "0.17.5"
 wasm-bindgen = "=0.2.80"
 
 [dependencies.jpeg-decoder]
-version = "0.2.5"
+version = "0.2.6"
 default-features = false # can't use rayon on web
 
 [dependencies.ruffle_core]
