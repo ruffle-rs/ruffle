@@ -122,7 +122,7 @@ async function injectRuffle(
         }, 100);
     });
 
-    let elementDocument: HTMLDocument;
+    let elementDocument: Document;
     try {
         elementDocument = elementWindow.document;
         if (!elementDocument) {
