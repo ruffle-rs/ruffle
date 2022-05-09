@@ -145,15 +145,17 @@ body {
     #sample-swfs-container {
         display: block;
     }
+
+    #local-file-container {
+        margin-bottom: 10px;
+    }
 }
 
 @media only screen and (max-width: 600px) {
-    #local-file-container span {
-        display: block;
-    }
-
+    #local-file-static-label,
     #sample-swfs-label {
         display: block;
+        margin-bottom: 5px;
     }
 
     #author-container {
