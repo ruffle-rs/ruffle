@@ -37,3 +37,25 @@ export function getAudioOutputTimestamp(context: AudioContext): number {
     // TODO: Ideally we'd use `context.getOutputTimestamp`, but this is broken as of Safari 15.4.
     return context.currentTime - context.baseLatency;
 }
+
+/**
+ * Copies interleaved stereo audio data into an `AudioBuffer`.
+ *
+ * @internal
+ */
+export function copyToAudioBufferInterleaved(
+    audioBuffer: AudioBuffer,
+    interleavedData: ArrayLike<number>
+): void {
+    const numSamples = audioBuffer.length;
+    const leftBuffer = audioBuffer.getChannelData(0);
+    const rightBuffer = audioBuffer.getChannelData(1);
+    let i = 0;
+    let sample = 0;
+    while (sample < numSamples) {
+        leftBuffer[sample] = interleavedData[i];
+        rightBuffer[sample] = interleavedData[i + 1];
+        sample++;
+        i += 2;
+    }
+}
