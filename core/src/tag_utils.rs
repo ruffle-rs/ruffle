@@ -1,9 +1,7 @@
 use crate::vminterface::AvmType;
 use gc_arena::Collect;
-use std::path::Path;
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, TagCode, Twips};
-use url::Url;
 
 pub type Error = Box<dyn std::error::Error>;
 pub type DecodeResult = Result<(), Error>;
@@ -53,11 +51,14 @@ impl SwfMovie {
 
     /// Utility method to construct a movie from a file on disk.
     #[cfg(any(unix, windows, target_os = "redox"))]
-    pub fn from_path<P: AsRef<Path>>(path: P, loader_url: Option<String>) -> Result<Self, Error> {
+    pub fn from_path<P: AsRef<std::path::Path>>(
+        path: P,
+        loader_url: Option<String>,
+    ) -> Result<Self, Error> {
         let data = std::fs::read(&path)?;
 
         let abs_path = path.as_ref().canonicalize()?;
-        let url = Url::from_file_path(abs_path).map_err(|()| "Invalid SWF URL")?;
+        let url = url::Url::from_file_path(abs_path).map_err(|()| "Invalid SWF URL")?;
 
         Self::from_data(&data, Some(url.into()), loader_url)
     }
