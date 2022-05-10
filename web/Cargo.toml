@@ -50,14 +50,14 @@ base64 = "0.13.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["h263", "vp6", "screenvideo", "wasm-bindgen"]
+features = ["h263", "vp6", "screenvideo", "symphonia", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.58"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
-    "AudioNode", "AudioParam", "AudioProcessingEvent", "Blob", "BlobPropertyBag", "ChannelMergerNode",
+    "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
     "ChannelSplitterNode", "Document", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
     "HtmlElement", "HtmlFormElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit", "Response",
-    "ScriptProcessorNode", "Storage", "WheelEvent", "Window",
+    "Storage", "WheelEvent", "Window",
 ]
