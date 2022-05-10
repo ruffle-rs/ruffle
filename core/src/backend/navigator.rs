@@ -260,7 +260,7 @@ impl NullNavigatorBackend {
     }
 
     #[cfg(not(any(unix, windows, target_os = "redox")))]
-    fn url_from_file_path(path: &Path) -> Result<Url, ()> {
+    fn url_from_file_path(_path: &Path) -> Result<Url, ()> {
         Err(())
     }
 }
