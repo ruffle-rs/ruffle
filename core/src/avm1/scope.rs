@@ -192,8 +192,11 @@ impl<'gc> Scope<'gc> {
                 .get(name, activation)
                 .map(|v| CallableValue::Callable(self.locals_cell(), v));
         }
-        if let Some(scope) = self.parent() {
-            return scope.resolve(name, activation);
+
+        if activation.swf_version() >= 5 {
+            if let Some(scope) = self.parent() {
+                return scope.resolve(name, activation);
+            }
         }
 
         Ok(CallableValue::UnCallable(Value::Undefined))
@@ -211,7 +214,10 @@ impl<'gc> Scope<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error<'gc>> {
-        if self.class == ScopeClass::Target || self.locals().has_property(activation, name) {
+        if activation.swf_version() < 5
+            || self.class == ScopeClass::Target
+            || self.locals().has_property(activation, name)
+        {
             // Value found on this object, so overwrite it.
             // Or we've hit the executing movie clip, so create it here.
             self.locals().set(name, value, activation)
