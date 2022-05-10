@@ -18,6 +18,7 @@ pub mod swf {
 }
 
 mod mixer;
+use instant::Duration;
 pub use mixer::*;
 
 pub type SoundHandle = Index;
@@ -91,6 +92,14 @@ pub trait AudioBackend: Downcast {
     /// what the stage frame rate is. Otherwise, you are free to avoid
     /// implementing it.
     fn set_frame_rate(&mut self, _frame_rate: f64) {}
+
+    /// The approximate interval that this backend updates a sound's position value. `None` if the
+    /// value is unknown.
+    ///
+    /// This determines the time threshold for syncing embedded audio streams to the animation.
+    fn position_resolution(&self) -> Option<Duration> {
+        None
+    }
 }
 
 impl_downcast!(AudioBackend);
@@ -222,13 +231,13 @@ impl<'gc> AudioManager<'gc> {
     /// The default timeline stream buffer time in seconds.
     pub const DEFAULT_STREAM_BUFFER_TIME: i32 = 5;
 
-    /// The audio sycning threshold in seconds.
+    /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
+    pub const STREAM_RESTART_THRESHOLD: f64 = 1.0;
+
+    /// The minimum audio sycning threshold in seconds.
     ///
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
-    pub const STREAM_SYNC_THRESHOLD: f64 = 1.0 / 60.0;
-
-    /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
-    pub const STREAM_RESTART_THRESHOLD: f64 = 1.00;
+    pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;
 
     pub fn new() -> Self {
         Self {
@@ -446,9 +455,16 @@ impl<'gc> AudioManager<'gc> {
                 let timeline_pos = f64::from(clip.current_frame().saturating_sub(start_frame))
                     / frame_rate
                     + offset_ms / 1000.0;
+
                 Some((i, stream_pos / 1000.0 - timeline_pos))
             })
             .unwrap_or_default();
+
+        // Calculate the syncing threshold based on the audio backend's frequency in updating sound position.
+        let sync_threshold = audio
+            .position_resolution()
+            .map(|duration| duration.as_secs_f64())
+            .unwrap_or(Self::STREAM_DEFAULT_SYNC_THRESHOLD);
 
         if skew.abs() >= Self::STREAM_RESTART_THRESHOLD {
             // Way out of sync, let's stop the entire stream.
@@ -457,11 +473,11 @@ impl<'gc> AudioManager<'gc> {
             audio.stop_sound(instance.instance);
             self.sounds.swap_remove(i);
             0.0
-        } else if skew.abs() < Self::STREAM_RESTART_THRESHOLD {
-            // Out of sync, adjust player speed.
+        } else if skew.abs() >= sync_threshold {
+            // Slightly out of sync, adjust player speed to compensate.
             skew
         } else {
-            // In sync, no adjustment.
+            // More or less in sync, no adjustment.
             0.0
         }
     }
