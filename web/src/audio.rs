@@ -5,6 +5,7 @@ use ruffle_core::backend::audio::{
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;
 use std::sync::{Arc, RwLock};
+use std::time::Duration;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::AudioContext;
 
@@ -16,6 +17,7 @@ pub struct WebAudioBackend {
     context: AudioContext,
     buffers: Vec<Arc<RwLock<Buffer>>>,
     time: Arc<RwLock<f64>>,
+    position_resolution: Duration,
 }
 
 impl WebAudioBackend {
@@ -29,6 +31,9 @@ impl WebAudioBackend {
             mixer: AudioMixer::new(2, sample_rate as u32),
             buffers: Vec::with_capacity(2),
             time: Arc::new(RwLock::new(0.0)),
+            position_resolution: Duration::from_secs_f64(
+                f64::from(Self::BUFFER_SIZE) / f64::from(sample_rate),
+            ),
         };
 
         // Create and start the audio buffers.
@@ -57,6 +62,10 @@ impl AudioBackend for WebAudioBackend {
 
     fn pause(&mut self) {
         let _ = self.context.suspend();
+    }
+
+    fn position_resolution(&self) -> Option<Duration> {
+        Some(self.position_resolution)
     }
 }
 
