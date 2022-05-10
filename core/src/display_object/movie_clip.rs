@@ -9,7 +9,7 @@ use crate::avm2::{
     Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
     TObject as Avm2TObject, Value as Avm2Value,
 };
-use crate::backend::audio::{PreloadStreamHandle, SoundHandle, SoundInstanceHandle};
+use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
@@ -311,7 +311,6 @@ impl<'gc> MovieClip<'gc> {
         let data = self.0.read().static_data.swf.clone();
         let mut reader = data.read_from(0);
         let mut cur_frame = 1;
-        let mut preload_stream_handle = None;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::CsmTextSettings => self
                 .0
@@ -451,35 +450,20 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .script_limits(reader, context.avm1),
-            TagCode::SoundStreamHead => self.0.write(context.gc_context).preload_sound_stream_head(
-                context,
-                reader,
-                &mut preload_stream_handle,
-                &mut static_data,
-                1,
-            ),
+            TagCode::SoundStreamHead => {
+                self.0
+                    .write(context.gc_context)
+                    .sound_stream_head(reader, &mut static_data, 1)
+            }
+            TagCode::SoundStreamHead2 => {
+                self.0
+                    .write(context.gc_context)
+                    .sound_stream_head(reader, &mut static_data, 2)
+            }
             TagCode::VideoFrame => self
                 .0
                 .write(context.gc_context)
                 .preload_video_frame(context, reader),
-            TagCode::SoundStreamHead2 => {
-                self.0.write(context.gc_context).preload_sound_stream_head(
-                    context,
-                    reader,
-                    &mut preload_stream_handle,
-                    &mut static_data,
-                    2,
-                )
-            }
-            TagCode::SoundStreamBlock => {
-                self.0.write(context.gc_context).preload_sound_stream_block(
-                    context,
-                    reader,
-                    preload_stream_handle,
-                    cur_frame,
-                    tag_len,
-                )
-            }
             TagCode::DefineBinaryData => self
                 .0
                 .write(context.gc_context)
@@ -487,13 +471,6 @@ impl<'gc> MovieClip<'gc> {
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
-
-        // Finalize audio stream.
-        if let Some(stream) = preload_stream_handle {
-            if let Some(sound) = context.audio.preload_sound_stream_end(stream) {
-                static_data.audio_stream_handle = Some(sound);
-            }
-        }
 
         self.0.write(context.gc_context).static_data =
             Gc::allocate(context.gc_context, static_data);
@@ -2480,36 +2457,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
-    fn preload_sound_stream_block(
+    fn sound_stream_head(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'a>,
-        stream: Option<PreloadStreamHandle>,
-        cur_frame: FrameNumber,
-        tag_len: usize,
-    ) -> DecodeResult {
-        if let Some(stream) = stream {
-            let data = &reader.get_ref()[..tag_len];
-            context
-                .audio
-                .preload_sound_stream_block(stream, cur_frame, data);
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    fn preload_sound_stream_head(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        reader: &mut SwfStream<'a>,
-        stream: &mut Option<PreloadStreamHandle>,
         static_data: &mut MovieClipStatic,
         _version: u8,
     ) -> DecodeResult {
-        let audio_stream_info = reader.read_sound_stream_head()?;
-        *stream = context.audio.preload_sound_stream_head(&audio_stream_info);
-        static_data.audio_stream_info = Some(audio_stream_info);
+        static_data.audio_stream_info = Some(reader.read_sound_stream_head()?);
         Ok(())
     }
 
