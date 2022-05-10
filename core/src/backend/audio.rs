@@ -22,7 +22,6 @@ pub use mixer::*;
 
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
-pub type PreloadStreamHandle = u32;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -30,33 +29,6 @@ pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
     fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
-
-    /// Used by the web backend to pre-decode sound streams.
-    /// Returns the sound handle to be used to add data to the stream.
-    /// Other backends return `None`.
-    /// TODO: Get rid of the preload_* methods when web backend has a better way
-    /// of decoding audio on the fly.
-    fn preload_sound_stream_head(
-        &mut self,
-        _stream_info: &swf::SoundStreamHead,
-    ) -> Option<PreloadStreamHandle> {
-        None
-    }
-
-    /// Used by the web backend to add data to a currently preloading sound stream.
-    fn preload_sound_stream_block(
-        &mut self,
-        _stream: PreloadStreamHandle,
-        _clip_frame: u16,
-        _audio_data: &[u8],
-    ) {
-    }
-
-    /// Used by the web backend to finalize and decode a sound stream.
-    /// Returns true if this was a valid stream.
-    fn preload_sound_stream_end(&mut self, _stream: PreloadStreamHandle) -> Option<SoundHandle> {
-        None
-    }
 
     /// Plays a sound.
     fn start_sound(
