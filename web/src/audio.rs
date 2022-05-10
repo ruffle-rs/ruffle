@@ -3,6 +3,7 @@ use ruffle_core::backend::audio::{
 };
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;
+use std::time::Duration;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::{AudioContext, AudioProcessingEvent, ScriptProcessorNode};
 
@@ -14,6 +15,7 @@ pub struct WebAudioBackend {
     context: AudioContext,
     script_processor: ScriptProcessorNode,
     on_audio_process: Closure<dyn FnMut(AudioProcessingEvent)>,
+    position_resolution: Duration,
 }
 
 impl WebAudioBackend {
@@ -40,11 +42,17 @@ impl WebAudioBackend {
             .connect_with_audio_node(&context.destination())
             .warn_on_error();
 
+        // Scale the buffer size by 1.5 to give some wiggle room for additional internal buffering by browsers.
+        let position_resolution = Duration::from_secs_f64(
+            1.5 * f64::from(script_processor.buffer_size()) / f64::from(context.sample_rate()),
+        );
+
         Ok(Self {
             mixer,
             context,
             script_processor,
             on_audio_process,
+            position_resolution,
         })
     }
 
@@ -63,6 +71,10 @@ impl AudioBackend for WebAudioBackend {
 
     fn pause(&mut self) {
         let _ = self.context.suspend();
+    }
+
+    fn position_resolution(&self) -> Option<Duration> {
+        Some(self.position_resolution)
     }
 }
 
