@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject};
 use crate::display_object::TDisplayObject;
@@ -225,7 +226,7 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Object(object) if object.as_display_object().is_none() => {
-                object.call_method("valueOf".into(), &[], activation)?
+                object.call_method("valueOf".into(), &[], activation, ExecutionReason::Special)?
             }
             val => val.to_owned(),
         })
@@ -250,10 +251,20 @@ impl<'gc> Value<'gc> {
             Value::Object(object) => {
                 let val = if activation.swf_version() > 5 && object.as_date_object().is_some() {
                     // In SWFv6 and higher, Date objects call `toString`.
-                    object.call_method("toString".into(), &[], activation)?
+                    object.call_method(
+                        "toString".into(),
+                        &[],
+                        activation,
+                        ExecutionReason::Special,
+                    )?
                 } else {
                     // Other objects call `valueOf`.
-                    object.call_method("valueOf".into(), &[], activation)?
+                    object.call_method(
+                        "valueOf".into(),
+                        &[],
+                        activation,
+                        ExecutionReason::Special,
+                    )?
                 };
 
                 if val.is_primitive() {
@@ -432,7 +443,12 @@ impl<'gc> Value<'gc> {
                     // StageObjects are special-cased to return their path.
                     AvmString::new(activation.context.gc_context, object.path())
                 } else {
-                    match object.call_method("toString".into(), &[], activation)? {
+                    match object.call_method(
+                        "toString".into(),
+                        &[],
+                        activation,
+                        ExecutionReason::Special,
+                    )? {
                         Value::String(s) => s,
                         _ => {
                             if object.as_executable().is_some() {

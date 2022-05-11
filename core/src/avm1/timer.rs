@@ -6,6 +6,7 @@
 //!
 //! TODO: Could we use this for AVM2 timers as well?
 
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, AvmString, Object, TObject, Value};
 use crate::context::UpdateContext;
 use gc_arena::Collect;
@@ -91,7 +92,12 @@ impl<'gc> Timers<'gc> {
                     );
                 }
                 TimerCallback::Method { this, method_name } => {
-                    let _ = this.call_method(method_name, &params, &mut activation);
+                    let _ = this.call_method(
+                        method_name,
+                        &params,
+                        &mut activation,
+                        ExecutionReason::Special,
+                    );
                 }
             }
 

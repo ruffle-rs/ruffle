@@ -1,4 +1,4 @@
-use crate::avm1::function::FunctionObject;
+use crate::avm1::function::{ExecutionReason, FunctionObject};
 use crate::avm1::globals::create_globals;
 use crate::avm1::object::stage_object;
 use crate::avm1::property_map::PropertyMap;
@@ -331,7 +331,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
         );
 
-        let _ = obj.call_method(name, args, &mut activation);
+        let _ = obj.call_method(name, args, &mut activation, ExecutionReason::Special);
     }
 
     pub fn notify_system_listeners(

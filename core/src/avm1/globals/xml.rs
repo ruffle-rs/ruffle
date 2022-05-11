@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
@@ -167,14 +168,29 @@ fn on_data<'gc>(
     let src = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     if let Value::Undefined = src {
-        this.call_method("onLoad".into(), &[false.into()], activation)?;
+        this.call_method(
+            "onLoad".into(),
+            &[false.into()],
+            activation,
+            ExecutionReason::FunctionCall,
+        )?;
     } else {
         let src = src.coerce_to_string(activation)?;
-        this.call_method("parseXML".into(), &[src.into()], activation)?;
+        this.call_method(
+            "parseXML".into(),
+            &[src.into()],
+            activation,
+            ExecutionReason::FunctionCall,
+        )?;
 
         this.set("loaded", true.into(), activation)?;
 
-        this.call_method("onLoad".into(), &[true.into()], activation)?;
+        this.call_method(
+            "onLoad".into(),
+            &[true.into()],
+            activation,
+            ExecutionReason::FunctionCall,
+        )?;
     }
 
     Ok(Value::Undefined)

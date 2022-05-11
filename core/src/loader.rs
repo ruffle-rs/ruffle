@@ -1,6 +1,7 @@
 //! Management of async loaders
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
+use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Domain as Avm2Domain};
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
@@ -569,8 +570,12 @@ impl<'gc> Loader<'gc> {
 
                 match data {
                     Ok(response) => {
-                        let _ =
-                            that.call_method("onHTTPStatus".into(), &[200.into()], &mut activation);
+                        let _ = that.call_method(
+                            "onHTTPStatus".into(),
+                            &[200.into()],
+                            &mut activation,
+                            ExecutionReason::Special,
+                        );
 
                         // Fire the onData method with the loaded string.
                         let string_data = AvmString::new_utf8(
@@ -581,18 +586,27 @@ impl<'gc> Loader<'gc> {
                             "onData".into(),
                             &[string_data.into()],
                             &mut activation,
+                            ExecutionReason::Special,
                         );
                     }
                     Err(_) => {
                         // TODO: Log "Error opening URL" trace similar to the Flash Player?
                         // Simulate 404 HTTP status. This should probably be fired elsewhere
                         // because a failed local load doesn't fire a 404.
-                        let _ =
-                            that.call_method("onHTTPStatus".into(), &[404.into()], &mut activation);
+                        let _ = that.call_method(
+                            "onHTTPStatus".into(),
+                            &[404.into()],
+                            &mut activation,
+                            ExecutionReason::Special,
+                        );
 
                         // Fire the onData method with no data to indicate an unsuccessful load.
-                        let _ =
-                            that.call_method("onData".into(), &[Value::Undefined], &mut activation);
+                        let _ = that.call_method(
+                            "onData".into(),
+                            &[Value::Undefined],
+                            &mut activation,
+                            ExecutionReason::Special,
+                        );
                     }
                 }
 
