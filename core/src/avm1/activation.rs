@@ -806,7 +806,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             object.call("[Anonymous]".into(), self, Value::Undefined, &args)?
         } else {
             // Call `this[method_name]`.
-            object.call_method(method_name, &args, self)?
+            object.call_method(method_name, &args, self, ExecutionReason::FunctionCall)?
         };
         self.context.avm1.push(result);
 

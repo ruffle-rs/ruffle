@@ -102,6 +102,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         name: AvmString<'gc>,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
+        reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.0.read().this;
         let (method, depth) =
@@ -117,7 +118,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
                 this.into(),
                 self.0.read().depth + depth + 1,
                 args,
-                ExecutionReason::FunctionCall,
+                reason,
                 method,
             ),
             None => method.call(name, activation, this.into(), args),

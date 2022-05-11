@@ -248,6 +248,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: AvmString<'gc>,
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc, '_>,
+        reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
         let (method, depth) = match search_prototype(Value::Object(this), name, activation, this)? {
@@ -266,7 +267,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 this.into(),
                 depth,
                 args,
-                ExecutionReason::FunctionCall,
+                reason,
                 method,
             ),
             None => method.call(name, activation, this.into(), args),

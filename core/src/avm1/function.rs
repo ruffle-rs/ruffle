@@ -34,12 +34,13 @@ pub type NativeFunction = for<'gc> fn(
 ) -> Result<Value<'gc>, Error<'gc>>;
 
 /// Indicates the reason for an execution
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ExecutionReason {
-    /// This execution is a "normal" function call, from either user-code or builtins.
+    /// This execution is a "normal" function call from ActionScript bytecode.
     FunctionCall,
 
-    /// This execution is a "special" function call, such as a getter or setter.
+    /// This execution is a "special" internal function call from the player,
+    /// such as getters, setters, `toString`, or event handlers.
     Special,
 }
 
@@ -230,28 +231,28 @@ impl<'gc> Executable<'gc> {
                 };
 
                 let target = activation.target_clip_or_root();
-                let (swf_version, base_clip, parent_scope) = if activation.swf_version() >= 6 {
+                let is_closure = activation.swf_version() >= 6;
+                let base_clip = if (is_closure || reason == ExecutionReason::Special)
+                    && !af.base_clip.removed()
+                {
+                    af.base_clip
+                } else {
+                    this_obj
+                        .and_then(|this| this.as_display_object())
+                        .unwrap_or(target)
+                };
+                let (swf_version, parent_scope) = if is_closure {
                     // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
                     // * Use the SWF version from the SWF that defined the function.
                     // * Use the base clip from when the function was defined.
                     // * Close over the scope from when the function was defined.
-                    let base_clip = if !af.base_clip.removed() {
-                        af.base_clip
-                    } else {
-                        this_obj
-                            .and_then(|this| this.as_display_object())
-                            .unwrap_or(target)
-                    };
-                    (af.swf_version(), base_clip, af.scope())
+                    (af.swf_version(), af.scope())
                 } else {
                     // Function calls in a v5 SWF are *not* closures, and will use the settings of
                     // `this`, regardless of the function's origin:
                     // * Use the SWF version of `this`.
                     // * Use the base clip of `this`.
                     // * Allocate a new scope using the given base clip. No previous scope is closed over.
-                    let base_clip = this_obj
-                        .and_then(|this| this.as_display_object())
-                        .unwrap_or(target);
                     let swf_version = base_clip.swf_version();
                     let base_clip_obj = match base_clip.object() {
                         Value::Object(o) => o,
@@ -269,7 +270,7 @@ impl<'gc> Executable<'gc> {
                             base_clip_obj,
                         ),
                     );
-                    (swf_version, base_clip, scope)
+                    (swf_version, scope)
                 };
 
                 let child_scope = GcCell::allocate(

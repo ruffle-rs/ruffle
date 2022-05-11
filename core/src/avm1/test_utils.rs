@@ -41,7 +41,7 @@ macro_rules! test_method {
 
                         $(
                             let args: Vec<Value> = vec![$($arg.into()),*];
-                            let ret = crate::avm1::object::TObject::call_method(&object, name, &args, activation)?;
+                            let ret = crate::avm1::object::TObject::call_method(&object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
                             assert_eq!(ret, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
                         )*
 
