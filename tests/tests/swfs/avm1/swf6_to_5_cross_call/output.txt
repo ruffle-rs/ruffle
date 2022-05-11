@@ -1,0 +1,30 @@
+child f():
+ this: _level0.clip
+ _target: /clip
+ getDepth: 
+ foo: child foo
+
+child obj toString:
+ this: object
+ _target: /clip
+ getDepth: 
+ foo: child foo
+
+clip.f():
+ this: _level0.clip
+ _target: /clip
+ getDepth: 
+ foo: child foo
+
+_root f():
+ this: object
+ _target: /clip
+ getDepth: 
+ foo: child foo
+
+root obj toString:
+ this: object
+ _target: /clip
+ getDepth: 
+ foo: child foo
+
