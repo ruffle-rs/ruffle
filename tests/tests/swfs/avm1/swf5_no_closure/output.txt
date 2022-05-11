@@ -1,0 +1,20 @@
+g() this: _level0
+g() _target: /
+g() foo: root
+
+root foo:
+g
+
+clip g():
+g() this: _level0.clip
+g() _target: /clip
+g() foo: clip foo
+
+clip foo:
+g
+
+object g():
+g() this: [object Object]
+g() _target: /
+g() foo: g
+
