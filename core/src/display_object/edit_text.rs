@@ -949,9 +949,7 @@ impl<'gc> EditText<'gc> {
                                     x + Twips::from_pixels(-1.0),
                                     Twips::from_pixels(2.0),
                                 );
-                            context
-                                .renderer
-                                .draw_rect(Color::from_rgb(0x000000, 0xFF), &selection_box);
+                            context.renderer.draw_rect(Color::BLACK, &selection_box);
 
                             // Set text color to white
                             context.transform_stack.push(&Transform {
@@ -1640,7 +1638,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             Twips::ZERO,
         );
         context.renderer.draw_rect(
-            Color::from_rgb(0, 0xff),
+            Color::BLACK,
             &(context.transform_stack.transform().matrix * mask),
         );
         context.renderer.activate_mask();
@@ -1687,9 +1685,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                             Twips::from_pixels(-1.0),
                             Twips::from_pixels(2.0),
                         );
-                    context
-                        .renderer
-                        .draw_rect(Color::from_rgb(0x000000, 0xFF), &caret);
+                    context.renderer.draw_rect(Color::BLACK, &caret);
                 }
             }
         } else {
@@ -1702,7 +1698,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         context.renderer.deactivate_mask();
         context.renderer.draw_rect(
-            Color::from_rgb(0, 0xff),
+            Color::BLACK,
             &(context.transform_stack.transform().matrix * mask),
         );
         context.renderer.pop_mask();

@@ -487,7 +487,6 @@ impl<'gc> Stage<'gc> {
 
     /// Draw the stage's letterbox.
     fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
-        let black = Color::from_rgb(0, 255);
         let (viewport_width, viewport_height) = self.0.read().viewport_size;
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
@@ -509,7 +508,7 @@ impl<'gc> Stage<'gc> {
             // Top + bottom
             if margin_top > 0.0 {
                 context.renderer.draw_rect(
-                    black.clone(),
+                    Color::BLACK,
                     &Matrix::create_box(
                         viewport_width,
                         margin_top,
@@ -521,7 +520,7 @@ impl<'gc> Stage<'gc> {
             }
             if margin_bottom > 0.0 {
                 context.renderer.draw_rect(
-                    black,
+                    Color::BLACK,
                     &Matrix::create_box(
                         viewport_width,
                         margin_bottom,
@@ -535,7 +534,7 @@ impl<'gc> Stage<'gc> {
             // Left + right
             if margin_left > 0.0 {
                 context.renderer.draw_rect(
-                    black.clone(),
+                    Color::BLACK,
                     &Matrix::create_box(
                         margin_left,
                         viewport_height,
@@ -547,7 +546,7 @@ impl<'gc> Stage<'gc> {
             }
             if margin_right > 0.0 {
                 context.renderer.draw_rect(
-                    black,
+                    Color::BLACK,
                     &Matrix::create_box(
                         margin_right,
                         viewport_height,
