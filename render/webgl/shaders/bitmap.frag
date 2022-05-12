@@ -23,7 +23,8 @@ void main() {
     if( color.a > 0.0 ) {
         color.rgb /= color.a;
         color = mult_color * color + add_color;
-        color.rgb *= color.a;
+        float alpha = saturate(color.a);
+        color = vec4(color.rgb * alpha, alpha);
     }
 
     gl_FragColor = color;
