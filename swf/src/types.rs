@@ -403,6 +403,8 @@ pub struct Color {
 }
 
 impl Color {
+    pub const BLACK: Self = Self::from_rgb(0, 255);
+
     /// Creates a `Color` from a 32-bit `rgb` value and an `alpha` value.
     ///
     /// The byte-ordering of the 32-bit `rgb` value is XXRRGGBB.
@@ -1266,7 +1268,7 @@ impl Default for LineStyle {
         // Hairline black stroke.
         Self {
             width: Twips::ZERO,
-            fill_style: FillStyle::Color(Color::from_rgb(0, 255)),
+            fill_style: FillStyle::Color(Color::BLACK),
             flags: Default::default(),
             miter_limit: Default::default(),
         }

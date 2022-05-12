@@ -148,7 +148,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         line_drawing.set_line_style(Some(
             swf::LineStyle::new()
                 .with_width(Twips::new(1))
-                .with_color(swf::Color::from_rgb(0, 255)),
+                .with_color(swf::Color::BLACK),
         ));
 
         if let Some(linelist) = self.boxes.get(self.current_line..) {

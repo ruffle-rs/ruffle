@@ -251,7 +251,7 @@ fn line_style<'gc>(
                 * 255.0;
             Color::from_rgb(rgb, alpha as u8)
         } else {
-            Color::from_rgb(0, 255)
+            Color::BLACK
         };
         let is_pixel_hinted = args
             .get(3)
