@@ -102,5 +102,6 @@ fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
         color = linear_to_srgb(color);
     }
     let out = color * transforms.mult_color + transforms.add_color;
-    return vec4<f32>(out.rgb * out.a, out.a);
+    let alpha = clamp(out.a, 0.0, 1.0);
+    return vec4<f32>(out.rgb * alpha, alpha);
 }
