@@ -47,7 +47,6 @@ impl ShapeTessellator {
                 ),
             };
 
-            const WHITE: swf::Color = swf::Color::from_rgba(0xffffffff);
             let (draw, color, needs_flush) = match fill_style {
                 swf::FillStyle::Color(color) => (DrawType::Color, color.clone(), false),
                 swf::FillStyle::LinearGradient(gradient) => (
@@ -56,7 +55,7 @@ impl ShapeTessellator {
                         gradient,
                         swf::Fixed8::ZERO,
                     )),
-                    WHITE,
+                    swf::Color::WHITE,
                     true,
                 ),
                 swf::FillStyle::RadialGradient(gradient) => (
@@ -65,7 +64,7 @@ impl ShapeTessellator {
                         gradient,
                         swf::Fixed8::ZERO,
                     )),
-                    WHITE,
+                    swf::Color::WHITE,
                     true,
                 ),
                 swf::FillStyle::FocalGradient {
@@ -77,7 +76,7 @@ impl ShapeTessellator {
                         gradient,
                         *focal_point,
                     )),
-                    WHITE,
+                    swf::Color::WHITE,
                     true,
                 ),
                 swf::FillStyle::Bitmap {
@@ -98,7 +97,7 @@ impl ShapeTessellator {
                                 is_smoothed: *is_smoothed,
                                 is_repeating: *is_repeating,
                             }),
-                            WHITE,
+                            swf::Color::WHITE,
                             true,
                         )
                     } else {
