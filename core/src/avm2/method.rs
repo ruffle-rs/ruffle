@@ -251,7 +251,6 @@ impl<'gc> BytecodeMethod<'gc> {
     ///  * The method was declared as a free-standing function
     ///  * The function does not use rest-parameters
     ///  * The function's parameters have no declared types or default values
-    ///  * The function does not declare a return type
     pub fn is_unchecked(&self) -> bool {
         if !self.is_function {
             return false;
@@ -263,7 +262,7 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
-        !self.method().needs_rest && self.return_type.is_any()
+        !self.method().needs_rest
     }
 }
 
