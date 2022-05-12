@@ -233,7 +233,10 @@ pub mod symphonia {
                 formats::SeekMode::Accurate,
                 formats::SeekTo::TimeStamp { track_id: 0, ts: 0 },
             );
-            self.cur_sample = self.sample_buf.len();
+            self.sample_buf.clear();
+            self.cur_sample = 0;
+            self.stream_ended = false;
+            self.next_frame();
         }
     }
 
