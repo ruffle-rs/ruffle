@@ -1,0 +1,15 @@
+// foo())
+Called foo!
+true
+// foo("A")
+Called foo!
+true
+// foo(true, true, false)
+Called foo!
+true
+// testing()
+Called dummy!
+undefined
+// testing(true)
+Called dummy!
+undefined
