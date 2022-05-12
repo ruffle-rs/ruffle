@@ -334,9 +334,7 @@ pub fn color<'gc>(
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
     {
-        let color = dobj
-            .background_color()
-            .unwrap_or_else(|| Color::from_rgb(0xffffff, 255));
+        let color = dobj.background_color().unwrap_or(Color::WHITE);
         return Ok(color.to_rgba().into());
     }
 

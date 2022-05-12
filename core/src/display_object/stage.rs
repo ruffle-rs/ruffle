@@ -695,8 +695,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     fn render(&self, context: &mut RenderContext<'_, 'gc>) {
         let background_color =
             if self.window_mode() != WindowMode::Transparent || self.is_fullscreen() {
-                self.background_color()
-                    .unwrap_or_else(|| Color::from_rgb(0xffffff, 255))
+                self.background_color().unwrap_or(Color::WHITE)
             } else {
                 Color::from_rgba(0)
             };
