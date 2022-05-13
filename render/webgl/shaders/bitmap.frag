@@ -23,7 +23,7 @@ void main() {
     if( color.a > 0.0 ) {
         color.rgb /= color.a;
         color = mult_color * color + add_color;
-        float alpha = saturate(color.a);
+        float alpha = clamp(color.a, 0.0, 1.0);
         color = vec4(color.rgb * alpha, alpha);
     }
 

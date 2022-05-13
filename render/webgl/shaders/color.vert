@@ -17,7 +17,7 @@ varying vec4 frag_color;
 
 void main() {
     frag_color = color * mult_color + add_color;
-    float alpha = saturate(frag_color.a);
+    float alpha = clamp(frag_color.a, 0.0, 1.0);
     frag_color = vec4(frag_color.rgb * alpha, alpha);
     gl_Position = view_matrix * world_matrix * vec4(position, 0.0, 1.0);
 }
