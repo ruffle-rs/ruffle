@@ -31,6 +31,6 @@ default-features = false
 version = "0.3.57"
 features = [
     "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
-    "Document", "Element", "HtmlCanvasElement", "HtmlImageElement", "ImageData", "Navigator", "Path2d", "SvgMatrix",
-    "SvgsvgElement",
+    "Document", "DomMatrix", "Element", "HtmlCanvasElement", "HtmlImageElement", "ImageData", "Navigator", "Path2d",
+    "SvgMatrix", "SvgsvgElement",
 ]
