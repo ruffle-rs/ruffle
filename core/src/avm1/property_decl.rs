@@ -128,6 +128,7 @@ impl Declaration {
 ///     "hidden" => string("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
 /// };
 /// ```
+#[allow(unused_macro_rules)]
 macro_rules! declare_properties {
     ( $($name:literal => $kind:ident($($args:tt)*);)* ) => {
         &[ $(
