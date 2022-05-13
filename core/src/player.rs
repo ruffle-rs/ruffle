@@ -933,6 +933,9 @@ impl Player {
             let old_pos = self.mouse_pos;
             self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
 
+            // Update the dragged object here to keep it constantly in sync with the mouse position.
+            self.update_drag();
+
             let is_mouse_moved = old_pos != self.mouse_pos;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
@@ -1184,12 +1187,25 @@ impl Player {
             let needs_render = if events.is_empty() {
                 false
             } else {
+                let mut refresh = false;
                 for (object, event) in events {
-                    if !object.as_displayobject().removed() {
+                    let display_object = object.as_displayobject();
+                    if !display_object.removed() {
                         object.handle_clip_event(context, event);
                     }
+                    if !refresh && event.is_button_event() {
+                        let is_button_mode = display_object.as_avm1_button().is_some()
+                            || display_object.as_avm2_button().is_some()
+                            || display_object
+                                .as_movie_clip()
+                                .map(|mc| mc.is_button_mode(context))
+                                .unwrap_or_default();
+                        if is_button_mode {
+                            refresh = true;
+                        }
+                    }
                 }
-                true
+                refresh
             };
             Self::run_actions(context);
             needs_render
@@ -1564,8 +1580,6 @@ impl Player {
     where
         F: for<'a, 'gc, 'gc_context> FnOnce(&mut UpdateContext<'a, 'gc, 'gc_context>) -> R,
     {
-        self.update_drag();
-
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);
 
@@ -1575,6 +1589,7 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
+        self.update_drag();
         self.update_mouse_state(false, false);
 
         // GC
