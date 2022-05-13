@@ -130,7 +130,7 @@ void main() {
     }
 
     color = mult_color * color + add_color;
-    float alpha = saturate(color.a);
+    float alpha = clamp(color.a, 0.0, 1.0);
     gl_FragColor = vec4(color.rgb * alpha, alpha);
 }
 
