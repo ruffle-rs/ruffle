@@ -124,6 +124,17 @@ fn parse_url(path: &Path) -> Result<Url, Box<dyn std::error::Error>> {
     })
 }
 
+fn parse_parameters(opt: &Opt) -> impl '_ + Iterator<Item = (String, String)> {
+    opt.parameters.iter().map(|parameter| {
+        let mut split = parameter.splitn(2, '=');
+        if let (Some(key), Some(value)) = (split.next(), split.next()) {
+            (key.to_owned(), value.to_owned())
+        } else {
+            (parameter.clone(), "".to_string())
+        }
+    })
+}
+
 fn pick_file() -> Option<PathBuf> {
     FileDialog::new()
         .add_filter(".swf", &["swf"])
@@ -147,41 +158,27 @@ fn load_movie(url: &Url, opt: &Opt) -> Result<SwfMovie, Box<dyn std::error::Erro
         SwfMovie::from_data(&buffer, Some(url.to_string()), None)?
     };
 
-    let parameters = opt.parameters.iter().map(|parameter| {
-        let mut split = parameter.splitn(2, '=');
-        if let (Some(key), Some(value)) = (split.next(), split.next()) {
-            (key.to_owned(), value.to_owned())
-        } else {
-            (parameter.clone(), "".to_string())
-        }
-    });
-    movie.append_parameters(parameters);
+    movie.append_parameters(parse_parameters(opt));
 
     Ok(movie)
 }
 
 struct App {
-    #[allow(dead_code)]
     opt: Opt,
     window: Rc<Window>,
     event_loop: EventLoop<RuffleEvent>,
     executor: Arc<Mutex<GlutinAsyncExecutor>>,
     player: Arc<Mutex<Player>>,
-    loaded: bool,
 }
 
 impl App {
-    const DEFAULT_WINDOW_SIZE: LogicalSize<f64> = LogicalSize::new(1280.0, 720.0);
-
     fn new(opt: Opt) -> Result<Self, Box<dyn std::error::Error>> {
         let path = match opt.input_path.as_ref() {
             Some(path) => Some(std::borrow::Cow::Borrowed(path)),
             None => pick_file().map(std::borrow::Cow::Owned),
         };
-        let (movie, movie_url) = if let Some(path) = path {
-            let movie_url = parse_url(&path)?;
-            let movie = load_movie(&movie_url, &opt)?;
-            (Some(movie), Some(movie_url))
+        let movie_url = if let Some(path) = path {
+            Some(parse_url(&path)?)
         } else {
             shutdown(&Ok(()));
             std::process::exit(0);
@@ -192,78 +189,53 @@ impl App {
 
         let event_loop: EventLoop<RuffleEvent> = EventLoop::with_user_event();
 
-        let (title, movie_size) = if let (Some(movie), Some(movie_url)) = (&movie, &movie_url) {
+        let title = if let Some(movie_url) = &movie_url {
             let filename = movie_url
                 .path_segments()
                 .and_then(|segments| segments.last())
                 .unwrap_or_else(|| movie_url.as_str());
 
-            (
-                format!("Ruffle - {}", filename),
-                LogicalSize::new(movie.width().to_pixels(), movie.height().to_pixels()),
-            )
+            format!("Ruffle - {}", filename)
         } else {
-            ("Ruffle".into(), Self::DEFAULT_WINDOW_SIZE)
-        };
-
-        let window_size: Size = if opt.width.is_none() && opt.height.is_none() {
-            movie_size.into()
-        } else {
-            let window_width = opt
-                .width
-                .unwrap_or(
-                    movie_size.width
-                        * (opt.height.unwrap_or(movie_size.height) / movie_size.height),
-                )
-                .max(1.0);
-            let window_height = opt
-                .height
-                .unwrap_or(
-                    movie_size.height * (opt.width.unwrap_or(movie_size.width) / movie_size.width),
-                )
-                .max(1.0);
-            PhysicalSize::new(window_width, window_height).into()
+            "Ruffle".into()
         };
 
         let window = WindowBuilder::new()
+            .with_visible(false)
             .with_title(title)
             .with_window_icon(Some(icon))
-            .with_inner_size(window_size)
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
-            .with_fullscreen(if opt.fullscreen {
-                Some(Fullscreen::Borderless(None))
-            } else {
-                None
-            })
             .build(&event_loop)?;
 
-        let viewport_size = window.inner_size();
-        let viewport_scale_factor = window.scale_factor();
-
-        let window = Rc::new(window);
-
         let mut builder = PlayerBuilder::new();
+
         match audio::CpalAudioBackend::new() {
             Ok(audio) => builder = builder.with_audio(audio),
             Err(e) => {
                 log::error!("Unable to create audio device: {}", e);
             }
         };
+
         let (executor, channel) = GlutinAsyncExecutor::new(event_loop.create_proxy());
         let navigator = navigator::ExternalNavigatorBackend::new(
-            movie_url.unwrap(),
+            movie_url.as_ref().unwrap().to_owned(),
             channel,
             event_loop.create_proxy(),
             opt.proxy.clone(),
             opt.upgrade_to_https,
         );
+
+        let viewport_size = window.inner_size();
         let renderer = WgpuRenderBackend::for_window(
-            window.as_ref(),
+            &window,
             (viewport_size.width, viewport_size.height),
             opt.graphics.into(),
             opt.power.into(),
             trace_path(&opt),
         )?;
+
+        let window = Rc::new(window);
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
@@ -273,20 +245,22 @@ impl App {
             .with_autoplay(true)
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
-            .with_viewport_dimensions(
-                viewport_size.width,
-                viewport_size.height,
-                viewport_scale_factor,
-            )
             .with_fullscreen(opt.fullscreen);
 
-        let loaded = if let Some(movie) = movie {
-            builder = builder.with_movie(movie);
-            true
-        } else {
-            false
-        };
         let player = builder.build();
+
+        if let Some(movie_url) = &movie_url {
+            let event_loop_proxy = event_loop.create_proxy();
+            let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
+                let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
+            };
+
+            player.lock().unwrap().fetch_root_movie(
+                movie_url.as_str(),
+                parse_parameters(&opt).collect(),
+                Box::new(on_metadata),
+            );
+        }
 
         Ok(Self {
             opt,
@@ -294,11 +268,11 @@ impl App {
             event_loop,
             executor,
             player,
-            loaded,
         })
     }
 
     fn run(self) -> ! {
+        let mut loaded = false;
         let mut mouse_pos = PhysicalPosition::new(0.0, 0.0);
         let mut time = Instant::now();
         let mut next_frame_time = Instant::now();
@@ -357,7 +331,7 @@ impl App {
                     }
 
                     // Core loop
-                    winit::event::Event::MainEventsCleared if self.loaded => {
+                    winit::event::Event::MainEventsCleared if loaded => {
                         let new_time = Instant::now();
                         let dt = new_time.duration_since(time).as_micros();
                         if dt > 0 {
@@ -493,11 +467,58 @@ impl App {
                         .lock()
                         .expect("active executor reference")
                         .poll_all(),
+                    winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
+                        // TODO: Re-use `SwfMovie::width` and `SwfMovie::height`.
+                        let movie_width = (swf_header.stage_size().x_max
+                            - swf_header.stage_size().x_min)
+                            .to_pixels();
+                        let movie_height = (swf_header.stage_size().y_max
+                            - swf_header.stage_size().y_min)
+                            .to_pixels();
+
+                        let window_size: Size = match (self.opt.width, self.opt.height) {
+                            (None, None) => LogicalSize::new(movie_width, movie_height).into(),
+                            (Some(width), None) => {
+                                let scale = width / movie_width;
+                                let height = movie_height * scale;
+                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            }
+                            (None, Some(height)) => {
+                                let scale = height / movie_height;
+                                let width = movie_width * scale;
+                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            }
+                            (Some(width), Some(height)) => {
+                                PhysicalSize::new(width.max(1.0), height.max(1.0)).into()
+                            }
+                        };
+                        self.window.set_inner_size(window_size);
+                        self.window.set_fullscreen(if self.opt.fullscreen {
+                            Some(Fullscreen::Borderless(None))
+                        } else {
+                            None
+                        });
+                        self.window.set_visible(true);
+
+                        let viewport_size = self.window.inner_size();
+                        let viewport_scale_factor = self.window.scale_factor();
+                        let mut player_lock = self.player.lock().unwrap();
+                        player_lock.set_viewport_dimensions(
+                            viewport_size.width,
+                            viewport_size.height,
+                            viewport_scale_factor,
+                        );
+                        player_lock
+                            .renderer_mut()
+                            .set_viewport_dimensions(viewport_size.width, viewport_size.height);
+
+                        loaded = true;
+                    }
                     _ => (),
                 }
 
                 // After polling events, sleep the event loop until the next event or the next frame.
-                *control_flow = if self.loaded {
+                *control_flow = if loaded {
                     ControlFlow::WaitUntil(next_frame_time)
                 } else {
                     ControlFlow::Wait
