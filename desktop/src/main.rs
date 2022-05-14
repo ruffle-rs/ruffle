@@ -305,31 +305,22 @@ impl App {
         let mut minimized = false;
         let mut fullscreen_down = false;
 
-        // Poll UI events
+        // Poll UI events.
         self.event_loop
             .run(move |event, _window_target, control_flow| {
-                if !self.loaded {
-                    *control_flow = ControlFlow::Wait;
-                }
-
-                // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                #[allow(deprecated)]
-                match &event {
-                    winit::event::Event::LoopDestroyed => {
-                        self.player.lock().unwrap().flush_shared_objects();
-                        shutdown(&Ok(()));
-                        return;
-                    }
-                    winit::event::Event::WindowEvent { event, .. } => match event {
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    modifiers,
-                                    ..
-                                },
+                // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
+                if let winit::event::Event::WindowEvent {
+                    event: WindowEvent::KeyboardInput { input, .. },
+                    ..
+                } = &event
+                {
+                    // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                    #[allow(deprecated)]
+                    match input {
+                        KeyboardInput {
+                            state: ElementState::Pressed,
+                            virtual_keycode: Some(VirtualKeyCode::Return),
+                            modifiers,
                             ..
                         } if modifiers.alt() => {
                             if !fullscreen_down {
@@ -340,42 +331,33 @@ impl App {
                             fullscreen_down = true;
                             return;
                         }
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Released,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                },
+                        KeyboardInput {
+                            state: ElementState::Released,
+                            virtual_keycode: Some(VirtualKeyCode::Return),
                             ..
                         } if fullscreen_down => {
                             fullscreen_down = false;
                         }
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
+                        KeyboardInput {
+                            state: ElementState::Pressed,
+                            virtual_keycode: Some(VirtualKeyCode::Escape),
                             ..
                         } => self.player.lock().unwrap().update(|uc| {
                             uc.stage.set_display_state(uc, StageDisplayState::Normal);
                         }),
                         _ => (),
-                    },
-                    _ => (),
+                    }
                 }
 
-                if !self.loaded {
-                    return;
-                }
-
-                // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
-                #[allow(deprecated)]
                 match event {
+                    winit::event::Event::LoopDestroyed => {
+                        self.player.lock().unwrap().flush_shared_objects();
+                        shutdown(&Ok(()));
+                        return;
+                    }
+
                     // Core loop
-                    winit::event::Event::MainEventsCleared => {
+                    winit::event::Event::MainEventsCleared if self.loaded => {
                         let new_time = Instant::now();
                         let dt = new_time.duration_since(time).as_micros();
                         if dt > 0 {
@@ -398,6 +380,10 @@ impl App {
                     }
 
                     winit::event::Event::WindowEvent { event, .. } => match event {
+                        WindowEvent::CloseRequested => {
+                            *control_flow = ControlFlow::Exit;
+                            return;
+                        }
                         WindowEvent::Resized(size) => {
                             // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
                             minimized = size.width == 0 && size.height == 0;
@@ -468,6 +454,8 @@ impl App {
                                 self.window.request_redraw();
                             }
                         }
+                        // Allow KeyboardInput.modifiers (ModifiersChanged event not functional yet).
+                        #[allow(deprecated)]
                         WindowEvent::KeyboardInput { input, .. } => {
                             let mut player_lock = self.player.lock().unwrap();
                             if let Some(key) = input.virtual_keycode {
@@ -509,9 +497,11 @@ impl App {
                 }
 
                 // After polling events, sleep the event loop until the next event or the next frame.
-                if *control_flow != ControlFlow::Exit {
-                    *control_flow = ControlFlow::WaitUntil(next_frame_time);
-                }
+                *control_flow = if self.loaded {
+                    ControlFlow::WaitUntil(next_frame_time)
+                } else {
+                    ControlFlow::Wait
+                };
             });
     }
 }
