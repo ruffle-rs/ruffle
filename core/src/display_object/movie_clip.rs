@@ -1327,6 +1327,10 @@ impl<'gc> MovieClip<'gc> {
 
         self.0.write(context.gc_context).stop_audio_stream(context);
 
+        // Oh, and as of AVM2 we have to support no-op gotos.
+        // Certain bits of AVM2 state actually do change if you no-op.
+        let is_noop = self.current_frame() == frame;
+
         //Implicit AVM2 gotos require us to lie about our current frame number.
         //If we did so, we have to commit to the lie by pretending that the
         //prior implicit goto already completed.
@@ -1361,7 +1365,9 @@ impl<'gc> MovieClip<'gc> {
             //
             // This code does NOT run in AVM1, as we never enter this invalid
             // state in AVM1.
-            if context.avm_type() == AvmType::Avm2 && *context.frame_phase == FramePhase::Construct
+            if !is_noop
+                && context.avm_type() == AvmType::Avm2
+                && *context.frame_phase == FramePhase::Construct
             {
                 let mut mc = self.0.write(context.gc_context);
                 let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
@@ -1395,7 +1401,7 @@ impl<'gc> MovieClip<'gc> {
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
 
         let mut reader = data.read_from(frame_pos);
-        while self.current_frame() < clamped_frame && !reader.get_ref().is_empty() {
+        while !is_noop && self.current_frame() < clamped_frame && !reader.get_ref().is_empty() {
             self.0.write(context.gc_context).current_frame += 1;
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
@@ -1518,7 +1524,10 @@ impl<'gc> MovieClip<'gc> {
 
                 {
                     let mut write = self.0.write(context.gc_context);
-                    write.tag_stream_pos = frame_pos;
+                    if !is_noop {
+                        write.tag_stream_pos = frame_pos;
+                    }
+
                     write.queued_script_frame = Some(clamped_frame);
 
                     if write.current_frame != from_frame {
