@@ -3,6 +3,9 @@
 //! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
 //! <https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf>
+
+//! The Twips struct has been moved to a separate file, swf/src/types/Twips.rs
+//! Also check out Twips2d.rs
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
