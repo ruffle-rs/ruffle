@@ -1544,7 +1544,7 @@ impl<'gc> MovieClip<'gc> {
                 // Also, if we're outside of the frame loop and
                 // fast-forwarding, we need to skip `run_frame_internal` to
                 // avoid a tag stream desync.
-                if *context.frame_phase != FramePhase::Idle || is_rewind {
+                if !is_noop && (*context.frame_phase != FramePhase::Idle || is_rewind) {
                     let old_npa = self.0.read().natural_playhead_action;
                     self.0.write(context.gc_context).natural_playhead_action = NextFrame::Next;
                     self.run_frame_internal(context, false);
