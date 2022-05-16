@@ -1,3 +1,6 @@
+use swf::types::twips;
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, PartialOrd, Ord)]
+pub struct Twips2d(Twips, Twips);
 impl Twips2d {
     /// There are 20 Twips2d in a pixel.
     pub const TWIPS_PER_PIXEL: f64 = 20.0;

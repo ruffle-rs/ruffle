@@ -4,7 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::display_object::TDisplayObject;
-use swf::Twips;
+use crate::prelude::Twips;
 
 /// Implements `stageX`'s getter.
 pub fn get_stage_x<'gc>(

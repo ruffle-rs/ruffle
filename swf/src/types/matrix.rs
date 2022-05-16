@@ -1,4 +1,5 @@
-use crate::{Fixed16, Twips};
+use crate::Fixed16;
+use crate::types::twips::Twips;
 use std::ops;
 
 /// The transformation matrix used by Flash display objects.
