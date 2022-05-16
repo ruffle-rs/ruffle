@@ -1607,12 +1607,6 @@ impl Player {
         self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
     }
 
-    pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.mutate_with_update_context(|context| {
-            context.external_interface.add_provider(provider)
-        });
-    }
-
     pub fn call_internal_interface(
         &mut self,
         name: &str,
@@ -1718,6 +1712,7 @@ pub struct PlayerBuilder {
 
     // Backends
     audio: Option<Audio>,
+    external_interfaces: Vec<Box<dyn ExternalInterfaceProvider>>,
     log: Option<Log>,
     navigator: Option<Navigator>,
     renderer: Option<Renderer>,
@@ -1746,6 +1741,7 @@ impl PlayerBuilder {
             movie: None,
 
             audio: None,
+            external_interfaces: vec![],
             log: None,
             navigator: None,
             renderer: None,
@@ -1786,6 +1782,17 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_log(mut self, log: impl 'static + LogBackend) -> Self {
         self.log = Some(Box::new(log));
+        self
+    }
+
+    /// Adds an external interface to this player.
+    /// Multiple external interfaces may be added.
+    #[inline]
+    pub fn with_external_interface(
+        mut self,
+        external_interface: impl 'static + ExternalInterfaceProvider,
+    ) -> Self {
+        self.external_interfaces.push(Box::new(external_interface));
         self
     }
 
@@ -1984,6 +1991,9 @@ impl PlayerBuilder {
             let stage = context.stage;
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
+            for provider in self.external_interfaces {
+                context.external_interface.add_provider(provider);
+            }
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);

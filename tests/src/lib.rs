@@ -127,7 +127,6 @@ pub struct TestBuilder<'a> {
     builder: PlayerBuilder,
     swf_path: PathBuf,
     simulated_input_path: PathBuf,
-    external_interfaces: Vec<Box<dyn ExternalInterfaceProvider>>,
     output_image: bool,
     is_avm_bench: bool,
     before_end_fn: Option<BeforeEndFn<'a>>,
@@ -143,7 +142,6 @@ impl<'a> TestBuilder<'a> {
             builder: PlayerBuilder::new().with_max_execution_duration(Self::DEFAULT_MAX_DURATION),
             swf_path: PathBuf::new(),
             simulated_input_path: PathBuf::new(),
-            external_interfaces: vec![],
             before_end_fn: None,
             is_avm_bench: false,
             output_image: false,
@@ -191,7 +189,7 @@ impl<'a> TestBuilder<'a> {
         mut self,
         external_interface: impl 'static + ExternalInterfaceProvider,
     ) -> Self {
-        self.external_interfaces.push(Box::new(external_interface));
+        self.builder = self.builder.with_external_interface(external_interface);
         self
     }
 
@@ -273,9 +271,6 @@ impl<'a> TestBuilder<'a> {
             .build();
         {
             let mut player = player.lock().unwrap();
-            for external_interface in self.external_interfaces {
-                player.add_external_interface(external_interface);
-            }
             // Prime the action queue is this is an AVM1 benchmark.
             if self.is_avm_bench {
                 player.init_avm_bench()?;

@@ -490,15 +490,18 @@ impl Ruffle {
         };
 
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
-        let core = builder
+        let mut builder = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
             .with_software_video()
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
-            .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
-            .build();
+            .with_warn_on_unsupported_content(config.warn_on_unsupported_content);
+        if allow_script_access {
+            builder = builder.with_external_interface(JavascriptInterface::new(js_player.clone()));
+        }
 
+        let core = builder.build();
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
             if let Some(color) = config.background_color.and_then(parse_html_color) {
@@ -509,11 +512,6 @@ impl Ruffle {
             core.set_quality(config.quality.as_deref().unwrap_or("high"));
             core.set_scale_mode(config.scale.as_deref().unwrap_or("showAll"));
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
-
-            // Create the external interface.
-            if allow_script_access {
-                core.add_external_interface(Box::new(JavascriptInterface::new(js_player.clone())));
-            }
         }
 
         // Create instance.
