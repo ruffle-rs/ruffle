@@ -9,7 +9,6 @@ license = "MIT OR Apache-2.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base64 = "0.13.0"
 fnv = "1.0.7"
 js-sys = "0.3.57"
 log = "0.4"
