@@ -16,7 +16,7 @@
         "//2": "# Unfortunately, we have to set $RUSTFLAGS here, instead of in .cargo/config.toml (for example), because it's not possible to specify them per-profile; see cargo issue #7878.",
         "//3": "# Enabling 'build-std' would also be great, but it's not stable yet.",
 
-        "build:ruffle_web": "cross-env OUT_NAME=ruffle_web CARGO_PROFILE=web-vanilla-wasm RUSTFLAGS=\"--cfg=web_sys_unstable_apis\" npm run build:cargo_bindgen_opt",
+        "build:ruffle_web": "cross-env OUT_NAME=ruffle_web CARGO_PROFILE=web-vanilla-wasm RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints\" npm run build:cargo_bindgen_opt",
 
         "//4": "# Dispatches to either building the real, or copying the fake (stand-in), 'with-extensions' module.",
         "build:ruffle_web-wasm_extensions": "node -e \"process.exit(process.env.ENABLE_WASM_EXTENSIONS == 'true' ? 0 : 1)\" && npm run build:ruffle_web-wasm_extensions-real || npm run build:ruffle_web-wasm_extensions-fake",
