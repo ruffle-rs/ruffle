@@ -30,7 +30,8 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::{Color, Twips};
+use swf::Color;
+use crate::prelude::Twips;
 
 /// The kind of autosizing behavior an `EditText` should have, if any
 #[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]

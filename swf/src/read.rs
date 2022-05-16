@@ -9,6 +9,7 @@ use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
 use std::io::{self, Read};
+use crate::types::Twips;
 
 /// Parse a decompressed SWF.
 ///

@@ -691,7 +691,7 @@ mod tests {
     use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
-    use swf::Twips;
+    use crate::prelude::Twips;
 
     fn with_device_font<F>(callback: F)
     where
