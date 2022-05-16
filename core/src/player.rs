@@ -1607,12 +1607,6 @@ impl Player {
         self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
     }
 
-    pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.mutate_with_update_context(|context| {
-            context.external_interface.add_provider(provider)
-        });
-    }
-
     pub fn call_internal_interface(
         &mut self,
         name: &str,
@@ -1640,12 +1634,85 @@ impl Player {
     }
 }
 
+#[cfg(feature = "bench")]
+impl Player {
+    /// Primes the action queue with the first `DoAction` tag in the movie.
+    ///
+    /// Call during benchmark setup, before timing starts.
+    pub fn init_avm_bench(&mut self) -> Result<(), Error> {
+        if self.swf.avm_type() == AvmType::Avm2 {
+            // We call ABC methods directly in AVM2 benchmarks.
+            return Ok(());
+        }
+
+        self.mutate_with_update_context(|context| {
+            use crate::tag_utils::{decode_tags, SwfSlice, SwfStream};
+            use swf::TagCode;
+            let root = context.stage.root_clip();
+            let data = SwfSlice::from(root.movie().unwrap());
+            let mut found_action = false;
+            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+                if tag_code == swf::TagCode::DoAction {
+                    found_action = true;
+                    let bytecode = data.resize_to_reader(reader, tag_len).unwrap();
+                    context.action_queue.queue_actions(
+                        context.stage.root_clip(),
+                        ActionType::Normal { bytecode },
+                        false,
+                    );
+                }
+                Ok(())
+            };
+            let mut reader = data.read_from(0);
+            decode_tags(&mut reader, tag_callback, TagCode::DoAction)?;
+            if !found_action {
+                return Err("No DoAction tag found in benchmark SWF".into());
+            }
+            Ok(())
+        })
+    }
+
+    /// Runs the queued bytecode. Called after `Player::init_avm_bench`.
+    #[inline]
+    pub fn run_avm1_bench(&mut self) {
+        self.mutate_with_update_context(|context| {
+            Self::run_actions(context);
+        });
+    }
+
+    #[inline]
+    pub fn run_avm2_bench(&mut self) {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::TObject;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let library = activation
+                .context
+                .library
+                .library_for_movie(activation.context.swf.clone())
+                .unwrap();
+            let domain = library.avm2_domain();
+            let name = crate::avm2::QName::from_qualified_name(
+                crate::string::AvmString::new_utf8(activation.context.gc_context, "Bench"),
+                activation.context.gc_context,
+            );
+            let class_object = domain
+                .get_defined_value(&mut activation, name)
+                .and_then(|v| v.coerce_to_object(&mut activation))
+                .and_then(|v| v.as_class_object().ok_or_else(|| "Expected class".into()))
+                .unwrap();
+            let method_name = crate::avm2::QName::new(crate::avm2::Namespace::public(), "bench");
+            let _ = class_object.call_property(&method_name.into(), &[], &mut activation);
+        });
+    }
+}
+
 /// Player factory, which can be used to configure the aspects of a Ruffle player.
 pub struct PlayerBuilder {
     movie: Option<SwfMovie>,
 
     // Backends
     audio: Option<Audio>,
+    external_interfaces: Vec<Box<dyn ExternalInterfaceProvider>>,
     log: Option<Log>,
     navigator: Option<Navigator>,
     renderer: Option<Renderer>,
@@ -1674,6 +1741,7 @@ impl PlayerBuilder {
             movie: None,
 
             audio: None,
+            external_interfaces: vec![],
             log: None,
             navigator: None,
             renderer: None,
@@ -1714,6 +1782,17 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_log(mut self, log: impl 'static + LogBackend) -> Self {
         self.log = Some(Box::new(log));
+        self
+    }
+
+    /// Adds an external interface to this player.
+    /// Multiple external interfaces may be added.
+    #[inline]
+    pub fn with_external_interface(
+        mut self,
+        external_interface: impl 'static + ExternalInterfaceProvider,
+    ) -> Self {
+        self.external_interfaces.push(Box::new(external_interface));
         self
     }
 
@@ -1912,6 +1991,9 @@ impl PlayerBuilder {
             let stage = context.stage;
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
+            for provider in self.external_interfaces {
+                context.external_interface.add_provider(provider);
+            }
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);

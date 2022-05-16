@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3.21"
-ruffle_core = { path = "../core", features = ["deterministic"] }
+ruffle_core = { path = "../core", features = ["bench", "deterministic"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_input_format = { path = "input-format" }
 image = "0.24.2"
@@ -19,5 +19,10 @@ imgtests = []
 
 [dev-dependencies]
 approx = "0.5.0"
-pretty_assertions = "1.2.1"
+criterion = "0.3"
 env_logger = "0.9.0"
+pretty_assertions = "1.2.1"
+
+[[bench]]
+name = "benches"
+harness = false
