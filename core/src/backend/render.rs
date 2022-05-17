@@ -580,11 +580,22 @@ fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
                 premultiply_alpha_rgba(&mut data);
                 BitmapFormat::Rgba(data)
             }
-            color_type => {
-                // Only `ColorType::Grayscale` and `ColorType::GrayscaleAlpha` should reach here.
-                // TODO: Convert output to RGB manually, as the `png` crate provides no such a feature.
-                log::warn!("Unsupported PNG color type: {:?}", color_type);
-                BitmapFormat::Rgb(data)
+            ColorType::Grayscale => {
+                BitmapFormat::Rgb(data.into_iter().flat_map(|v| [v, v, v]).collect())
+            }
+            ColorType::GrayscaleAlpha => BitmapFormat::Rgba(
+                data.chunks_exact(2)
+                    .flat_map(|pixel| {
+                        // Pre-multiply alpha.
+                        let a = pixel[1];
+                        let v = (u16::from(pixel[0]) * u16::from(a) / 255) as u8;
+                        [v, v, v, a]
+                    })
+                    .collect(),
+            ),
+            ColorType::Indexed => {
+                // Shouldn't get here because of `normalize_to_color8` transformation above.
+                unreachable!("Unexpected PNG ColorType::Indexed");
             }
         },
     })
