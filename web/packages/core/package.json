@@ -20,7 +20,7 @@
 
         "//4": "# Dispatches to either building the real, or copying the fake (stand-in), 'with-extensions' module.",
         "build:ruffle_web-wasm_extensions": "node -e \"process.exit(process.env.ENABLE_WASM_EXTENSIONS == 'true' ? 0 : 1)\" && npm run build:ruffle_web-wasm_extensions-real || npm run build:ruffle_web-wasm_extensions-fake",
-        "build:ruffle_web-wasm_extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext\" npm run build:cargo_bindgen_opt",
+        "build:ruffle_web-wasm_extensions-real": "echo \"Building module with WebAssembly extensions\" && cross-env OUT_NAME=ruffle_web-wasm_extensions CARGO_PROFILE=web-wasm-extensions RUSTFLAGS=\"--cfg=web_sys_unstable_apis -Aunknown_lints -C target-feature=+bulk-memory,+simd128,+nontrapping-fptoint,+sign-ext\" npm run build:cargo_bindgen_opt",
         "build:ruffle_web-wasm_extensions-fake": "echo \"Copying the vanilla module as stand-in\" && shx cp ./pkg/ruffle_web_bg.wasm ./pkg/ruffle_web-wasm_extensions_bg.wasm && shx cp ./pkg/ruffle_web_bg.wasm.d.ts ./pkg/ruffle_web-wasm_extensions_bg.wasm.d.ts && shx cp ./pkg/ruffle_web.js ./pkg/ruffle_web-wasm_extensions.js && shx cp ./pkg/ruffle_web.d.ts ./pkg/ruffle_web-wasm_extensions.d.ts",
 
         "//5": "# This just chains together the three commands after it.",
