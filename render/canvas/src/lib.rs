@@ -5,7 +5,7 @@ use ruffle_core::backend::render::{
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::matrix::Matrix;
-use ruffle_core::shape_utils::{DistilledShape, DrawCommand};
+use ruffle_core::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_web_common::{JsError, JsResult};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{
@@ -58,6 +58,7 @@ enum CanvasDrawCommand {
         line_cap: String,
         line_join: String,
         miter_limit: f64,
+        scale_mode: LineScaleMode,
     },
 
     /// A command to fill a path with a given style.
@@ -383,6 +384,8 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
         match &self.mask_state {
             MaskState::DrawContent => {
+                let mut line_scale = LineScales::new(&transform.matrix);
+                let dom_matrix = transform.matrix.to_dom_matrix();
                 self.set_transform(&transform.matrix);
                 if let Some(shape) = self.shapes.get(shape.0) {
                     for command in shape.0.iter() {
@@ -457,47 +460,59 @@ impl RenderBackend for WebCanvasRenderBackend {
                                 line_cap,
                                 line_join,
                                 miter_limit,
+                                scale_mode,
                             } => {
+                                // Canvas.setTransform ends up transforming the stroke geometry itself (including joins/endcaps).
+                                // Instead, reset the canvas transform, and apply the transform to the stroke path directly so
+                                // that the geometry remains untransformed.
+                                let _ = self.context.reset_transform();
+                                let transformed_path = Path2d::new().unwrap();
+                                transformed_path
+                                    .add_path_with_transformation(path, dom_matrix.unchecked_ref());
+
+                                // Set stroke parameters.
                                 self.context.set_line_cap(line_cap);
                                 self.context.set_line_join(line_join);
                                 self.context.set_miter_limit(*miter_limit);
-                                self.context.set_line_width(*line_width);
+                                let line_width =
+                                    line_scale.transform_width(*line_width as f32, *scale_mode);
+                                self.context.set_line_width(line_width.into());
                                 match stroke_style {
                                     CanvasFillStyle::Color(color) => {
                                         let color =
                                             color.color_transform(&transform.color_transform);
                                         self.context.set_stroke_style(&color.0.into());
-                                        self.context.stroke_with_path(path);
+                                        self.context.stroke_with_path(&transformed_path);
                                     }
                                     CanvasFillStyle::Gradient(gradient) => {
                                         self.set_color_filter(transform);
                                         self.context.set_stroke_style(gradient);
-                                        self.context.stroke_with_path(path);
+                                        self.context.stroke_with_path(&transformed_path);
                                         self.clear_color_filter();
                                     }
                                     CanvasFillStyle::TransformedGradient(gradient) => {
                                         self.set_color_filter(transform);
                                         self.context.set_stroke_style(&gradient.gradient);
-                                        self.context.stroke_with_path(path);
-                                        self.context
-                                            .set_transform(
-                                                transform.matrix.a.into(),
-                                                transform.matrix.b.into(),
-                                                transform.matrix.c.into(),
-                                                transform.matrix.d.into(),
-                                                transform.matrix.tx.to_pixels(),
-                                                transform.matrix.ty.to_pixels(),
-                                            )
-                                            .unwrap();
+                                        self.context.stroke_with_path(&transformed_path);
                                         self.clear_color_filter();
                                     }
                                     CanvasFillStyle::Pattern(patt, smoothed) => {
                                         self.context.set_image_smoothing_enabled(*smoothed);
                                         self.context.set_stroke_style(patt);
-                                        self.context.stroke_with_path(path);
+                                        self.context.stroke_with_path(&transformed_path);
                                         self.clear_color_filter();
                                     }
                                 };
+                                self.context
+                                    .set_transform(
+                                        transform.matrix.a.into(),
+                                        transform.matrix.b.into(),
+                                        transform.matrix.c.into(),
+                                        transform.matrix.d.into(),
+                                        transform.matrix.tx.to_pixels(),
+                                        transform.matrix.ty.to_pixels(),
+                                    )
+                                    .unwrap();
                             }
                         }
                     }
@@ -764,15 +779,6 @@ fn swf_shape_to_canvas_commands(
                 });
             }
             DrawPath::Stroke { style, .. } => {
-                // Flash always renders strokes with a minimum width of 1 pixel (20 twips).
-                // Additionally, many SWFs use the "hairline" stroke setting, which sets the stroke's width
-                // to 1 twip. Because of the minimum, this will effectively make the stroke nearly-always render
-                // as 1 pixel wide.
-                // SVG doesn't have a minimum and can render strokes at fractional widths, so these hairline
-                // strokes end up rendering very faintly if we use the actual width of 1 twip.
-                // Therefore, we clamp the stroke width to 1 pixel (20 twips). This won't be 100% accurate
-                // if the shape is scaled, but it looks much closer to the Flash Player.
-                let line_width = std::cmp::max(style.width().get(), 20);
                 let line_cap = match style.start_cap() {
                     LineCapStyle::Round => "round",
                     LineCapStyle::Square => "square",
@@ -785,11 +791,17 @@ fn swf_shape_to_canvas_commands(
                 };
                 canvas_data.0.push(CanvasDrawCommand::Stroke {
                     path: canvas_path,
-                    line_width: line_width as f64 / 20.0,
+                    line_width: style.width().to_pixels(),
                     stroke_style: fill_style,
                     line_cap: line_cap.to_string(),
                     line_join: line_join.to_string(),
                     miter_limit: miter_limit as f64 / 20.0,
+                    scale_mode: match (style.allow_scale_x(), style.allow_scale_y()) {
+                        (false, false) => LineScaleMode::None,
+                        (true, false) => LineScaleMode::Horizontal,
+                        (false, true) => LineScaleMode::Vertical,
+                        (true, true) => LineScaleMode::Both,
+                    },
                 });
             }
         }
