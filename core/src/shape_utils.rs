@@ -1321,3 +1321,48 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
         shape: glyph.shape_records.clone(),
     }
 }
+
+/// Scale mode used by strokes in a shape.
+///
+/// Determines how the line thickness is affected by the shape's transform.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum LineScaleMode {
+    None = 0,
+    Horizontal,
+    Vertical,
+    Both,
+}
+
+/// Helper type for calculating line widths for a transformed shape.
+pub struct LineScales<'a> {
+    matrix: &'a Matrix,
+    scales: Option<[f32; 4]>,
+}
+
+impl<'a> LineScales<'a> {
+    /// Create a new line scaler for the given matrix.
+    #[inline]
+    pub fn new(matrix: &'a Matrix) -> Self {
+        Self {
+            matrix,
+            scales: None,
+        }
+    }
+
+    /// Returns the final width of a line after transformation.
+    #[inline]
+    pub fn transform_width(&mut self, width: f32, scale_mode: LineScaleMode) -> f32 {
+        // Lazily calculate the scale to avoid doing so for shapes that have no strokes.
+        let scales = self.scales.get_or_insert_with(|| {
+            let line_scale_x = f32::abs(self.matrix.a + self.matrix.c);
+            let line_scale_y = f32::abs(self.matrix.b + self.matrix.d);
+            let line_scale =
+                ((line_scale_x * line_scale_x + line_scale_y * line_scale_y) / 2.0).sqrt();
+            [1.0, line_scale_x, line_scale_y, line_scale]
+        });
+        let scaled_width = width * scales[scale_mode as usize];
+        // Flash draws all strokes with a minimum width of 1 pixel.
+        // This usually occurs in "hairline" strokes (exported with width of 1 twip).
+        scaled_width.max(1.0)
+    }
+}
