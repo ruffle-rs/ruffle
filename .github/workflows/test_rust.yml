@@ -77,13 +77,14 @@ jobs:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
         with:
           command: test
-          args: --features imgtests
+          args: --locked --features imgtests
 
       - name: Run tests without image tests
         if: ${{ !(runner.os == 'Linux' || runner.os == 'Windows') }}
         uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --locked
 
       - name: Upload images
         if: failure()
