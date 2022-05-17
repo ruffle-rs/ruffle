@@ -1260,11 +1260,7 @@ impl RenderBackend for WebGlRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap(Bitmap {
-                data: BitmapFormat::Rgba(rgba),
-                width,
-                height,
-            })?
+            .register_bitmap(Bitmap::from_data(width, height, BitmapFormat::Rgba(rgba)))?
             .handle)
     }
 

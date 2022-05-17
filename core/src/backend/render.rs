@@ -220,6 +220,32 @@ pub struct Bitmap {
     pub data: BitmapFormat,
 }
 
+impl Bitmap {
+    /// Ensures that `data` is the correct size for the given `width` and `height`.
+    pub fn from_data(width: u32, height: u32, mut data: BitmapFormat) -> Self {
+        let (out_data, expected_len) = match &mut data {
+            BitmapFormat::Rgb(data) => (data, width as usize * height as usize * 3),
+            BitmapFormat::Rgba(data) => (data, width as usize * height as usize * 4),
+        };
+        // If the size is incorrect, either we screwed up or the decoder screwed up.
+        debug_assert_eq!(out_data.len(), expected_len);
+        if out_data.len() != expected_len {
+            log::warn!(
+                "Incorrect bitmap data size, expected {} bytes, got {}",
+                out_data.len(),
+                expected_len
+            );
+            // Truncate or zero pad to the expected size.
+            out_data.resize(expected_len, 0);
+        }
+        Self {
+            width,
+            height,
+            data,
+        }
+    }
+}
+
 /// Decoded bitmap data from an SWF tag.
 /// The image data will have pre-multiplied alpha.
 #[derive(Debug, Clone)]
@@ -389,11 +415,11 @@ fn decode_jpeg(
                 i += 3;
                 a += 1;
             }
-            return Ok(Bitmap {
-                width: metadata.width.into(),
-                height: metadata.height.into(),
-                data: BitmapFormat::Rgba(rgba),
-            });
+            return Ok(Bitmap::from_data(
+                metadata.width.into(),
+                metadata.height.into(),
+                BitmapFormat::Rgba(rgba),
+            ));
         } else {
             // Size isn't correct; fallback to RGB?
             log::error!("Size mismatch in DefineBitsJPEG3 alpha data");
@@ -401,11 +427,11 @@ fn decode_jpeg(
     }
 
     // No alpha.
-    Ok(Bitmap {
-        width: metadata.width.into(),
-        height: metadata.height.into(),
-        data: BitmapFormat::Rgb(decoded_data),
-    })
+    Ok(Bitmap::from_data(
+        metadata.width.into(),
+        metadata.height.into(),
+        BitmapFormat::Rgb(decoded_data),
+    ))
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
@@ -547,11 +573,11 @@ pub fn decode_define_bits_lossless(
         }
     };
 
-    Ok(Bitmap {
-        width: swf_tag.width.into(),
-        height: swf_tag.height.into(),
-        data: BitmapFormat::Rgba(out_data),
-    })
+    Ok(Bitmap::from_data(
+        swf_tag.width.into(),
+        swf_tag.height.into(),
+        BitmapFormat::Rgba(out_data),
+    ))
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
@@ -569,10 +595,10 @@ fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     let mut data = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut data)?;
 
-    Ok(Bitmap {
-        width: info.width,
-        height: info.height,
-        data: match info.color_type {
+    Ok(Bitmap::from_data(
+        info.width,
+        info.height,
+        match info.color_type {
             ColorType::Rgb => BitmapFormat::Rgb(data),
             ColorType::Rgba => {
                 // In contrast to DefineBitsLossless tags, PNGs embedded in a DefineBitsJPEG tag will not have
@@ -598,7 +624,7 @@ fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
                 unreachable!("Unexpected PNG ColorType::Indexed");
             }
         },
-    })
+    ))
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
@@ -613,11 +639,11 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
     let mut data = frame.buffer.to_vec();
     premultiply_alpha_rgba(&mut data);
 
-    Ok(Bitmap {
-        width: frame.width.into(),
-        height: frame.height.into(),
-        data: BitmapFormat::Rgba(data),
-    })
+    Ok(Bitmap::from_data(
+        frame.width.into(),
+        frame.height.into(),
+        BitmapFormat::Rgba(data),
+    ))
 }
 
 /// Converts standard RBGA to premultiplied alpha.
