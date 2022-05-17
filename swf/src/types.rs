@@ -24,6 +24,7 @@ mod gradient_filter;
 mod matrix;
 mod rectangle;
 mod twips;
+mod twips_2d;
 
 pub use bevel_filter::BevelFilter;
 pub use blur_filter::BlurFilter;
@@ -37,6 +38,7 @@ pub use gradient_filter::GradientFilter;
 pub use matrix::Matrix;
 pub use rectangle::Rectangle;
 pub use twips::Twips;
+pub use twips_2d::Twips2d;
 
 /// A complete header and tags in the SWF file.
 /// This is returned by the `swf::parse_swf` convenience method.
