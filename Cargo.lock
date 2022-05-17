@@ -3081,12 +3081,8 @@ dependencies = [
 name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
- "fnv",
- "jpeg-decoder 0.2.6",
  "js-sys",
  "log",
- "percent-encoding",
- "png",
  "ruffle_core",
  "ruffle_web_common",
  "wasm-bindgen",
