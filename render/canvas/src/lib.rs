@@ -129,11 +129,11 @@ impl BitmapData {
                 .context
                 .get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
         {
-            Some(Bitmap {
-                width: self.width,
-                height: self.height,
-                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
-            })
+            Some(Bitmap::from_data(
+                self.width,
+                self.height,
+                BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
+            ))
         } else {
             None
         }
@@ -753,11 +753,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap_raw(Bitmap {
-                width,
-                height,
-                data: BitmapFormat::Rgba(rgba),
-            })?
+            .register_bitmap_raw(Bitmap::from_data(width, height, BitmapFormat::Rgba(rgba)))?
             .handle)
     }
 

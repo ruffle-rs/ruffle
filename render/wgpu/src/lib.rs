@@ -1464,11 +1464,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     ) -> Result<BitmapHandle, Error> {
         Ok(self
             .register_bitmap(
-                Bitmap {
-                    height,
-                    width,
-                    data: BitmapFormat::Rgba(rgba),
-                },
+                Bitmap::from_data(height, width, BitmapFormat::Rgba(rgba)),
                 "RAW",
             )
             .handle)
