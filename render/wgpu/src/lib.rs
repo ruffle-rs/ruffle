@@ -4,7 +4,7 @@ use ruffle_core::backend::render::{
 };
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
-use std::{borrow::Cow, num::NonZeroU32};
+use std::num::NonZeroU32;
 
 use bytemuck::{Pod, Zeroable};
 
@@ -734,27 +734,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap, debug_str: &str) -> BitmapInfo {
+        let bitmap = bitmap.to_rgba();
         let extent = wgpu::Extent3d {
             width: bitmap.width(),
             height: bitmap.height(),
             depth_or_array_layers: 1,
-        };
-
-        let data: Cow<[u8]> = match &bitmap.format() {
-            BitmapFormat::Rgba => Cow::Borrowed(bitmap.data()),
-            BitmapFormat::Rgb => {
-                // Expand to RGBA.
-                let data = bitmap.data();
-                let mut as_rgba =
-                    Vec::with_capacity(extent.width as usize * extent.height as usize * 4);
-                for i in (0..data.len()).step_by(3) {
-                    as_rgba.push(data[i]);
-                    as_rgba.push(data[i + 1]);
-                    as_rgba.push(data[i + 2]);
-                    as_rgba.push(255);
-                }
-                Cow::Owned(as_rgba)
-            }
         };
 
         let texture_label = create_debug_label!("{} Texture", debug_str);
@@ -778,7 +762,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                 origin: Default::default(),
                 aspect: wgpu::TextureAspect::All,
             },
-            &data,
+            bitmap.data(),
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: NonZeroU32::new(4 * extent.width),
