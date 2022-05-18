@@ -650,9 +650,9 @@ impl WebGlRenderBackend {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
-        let (format, data) = match &bitmap.data {
-            BitmapFormat::Rgb(data) => (Gl::RGB, data),
-            BitmapFormat::Rgba(data) => (Gl::RGBA, data),
+        let format = match &bitmap.format() {
+            BitmapFormat::Rgb => Gl::RGB,
+            BitmapFormat::Rgba => Gl::RGBA,
         };
 
         let texture = self.gl.create_texture().unwrap();
@@ -662,12 +662,12 @@ impl WebGlRenderBackend {
                 Gl::TEXTURE_2D,
                 0,
                 format as i32,
-                bitmap.width as i32,
-                bitmap.height as i32,
+                bitmap.width() as i32,
+                bitmap.height() as i32,
                 0,
                 format,
                 Gl::UNSIGNED_BYTE,
-                Some(data),
+                Some(bitmap.data()),
             )
             .into_js_result()?;
 
@@ -682,8 +682,8 @@ impl WebGlRenderBackend {
             .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
 
         let handle = BitmapHandle(self.textures.len());
-        let width = bitmap.width;
-        let height = bitmap.height;
+        let width = bitmap.width();
+        let height = bitmap.height();
         self.bitmap_registry.insert(handle, bitmap);
 
         self.textures.push(Texture {
@@ -1260,7 +1260,7 @@ impl RenderBackend for WebGlRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap(Bitmap::from_data(width, height, BitmapFormat::Rgba(rgba)))?
+            .register_bitmap(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?
             .handle)
     }
 

@@ -735,15 +735,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
     fn register_bitmap(&mut self, bitmap: Bitmap, debug_str: &str) -> BitmapInfo {
         let extent = wgpu::Extent3d {
-            width: bitmap.width,
-            height: bitmap.height,
+            width: bitmap.width(),
+            height: bitmap.height(),
             depth_or_array_layers: 1,
         };
 
-        let data: Cow<[u8]> = match &bitmap.data {
-            BitmapFormat::Rgba(data) => Cow::Borrowed(data),
-            BitmapFormat::Rgb(data) => {
+        let data: Cow<[u8]> = match &bitmap.format() {
+            BitmapFormat::Rgba => Cow::Borrowed(bitmap.data()),
+            BitmapFormat::Rgb => {
                 // Expand to RGBA.
+                let data = bitmap.data();
                 let mut as_rgba =
                     Vec::with_capacity(extent.width as usize * extent.height as usize * 4);
                 for i in (0..data.len()).step_by(3) {
@@ -787,8 +788,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         );
 
         let handle = BitmapHandle(self.textures.len());
-        let width = bitmap.width;
-        let height = bitmap.height;
+        let width = bitmap.width();
+        let height = bitmap.height();
 
         // Make bind group for bitmap quad.
         let texture_view = texture.create_view(&Default::default());
@@ -1463,10 +1464,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap(
-                Bitmap::from_data(height, width, BitmapFormat::Rgba(rgba)),
-                "RAW",
-            )
+            .register_bitmap(Bitmap::new(height, width, BitmapFormat::Rgba, rgba), "RAW")
             .handle)
     }
 
