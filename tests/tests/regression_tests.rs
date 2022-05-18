@@ -557,6 +557,7 @@ swf_tests! {
     (edittext_scroll, "avm1/edittext_scroll", 1),
     (edittext_width_height, "avm1/edittext_width_height", 1),
     (empty_movieclip_can_attach_movies, "avm1/empty_movieclip_can_attach_movies", 1),
+    (enumerate, "avm1/enumerate", 1),
     (equals_swf4, "avm1/equals_swf4", 1),
     (equals_swf4_alt, "avm1/equals_swf4_alt", 1),
     (equals_swf5, "avm1/equals_swf5", 1),
