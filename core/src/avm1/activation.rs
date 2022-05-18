@@ -986,7 +986,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
         self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
-        let object: Value<'gc> = self.resolve(name)?.into();
+        let object: Value<'gc> = self.get_variable(name)?.into();
 
         match object {
             Value::Object(ob) => {
