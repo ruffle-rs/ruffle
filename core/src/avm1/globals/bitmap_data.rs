@@ -1165,15 +1165,17 @@ pub fn load_bitmap<'gc>(
                     Some(activation.context.avm1.prototypes.bitmap_data),
                 );
 
-                let pixels: Vec<i32> = bitmap.data.into();
+                let width = bitmap.width();
+                let height = bitmap.height();
+                let pixels: Vec<i32> = bitmap.into();
                 new_bitmap_data
                     .as_bitmap_data_object()
                     .unwrap()
                     .bitmap_data()
                     .write(activation.context.gc_context)
                     .set_pixels(
-                        bitmap.width,
-                        bitmap.height,
+                        width,
+                        height,
                         true,
                         pixels.into_iter().map(|p| p.into()).collect(),
                     );

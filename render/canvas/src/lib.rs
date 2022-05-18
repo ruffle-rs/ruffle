@@ -129,10 +129,11 @@ impl BitmapData {
                 .context
                 .get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
         {
-            Some(Bitmap::from_data(
+            Some(Bitmap::new(
                 self.width,
                 self.height,
-                BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
+                BitmapFormat::Rgba,
+                bitmap_pixels.data().to_vec(),
             ))
         } else {
             None
@@ -374,28 +375,34 @@ impl WebCanvasRenderBackend {
     /// Puts the contents of the given Bitmap into an ImageData on the browser side,
     /// doing the RGB to RGBA expansion if needed.
     fn swf_bitmap_to_js_imagedata(bitmap: &mut Bitmap) -> ImageData {
-        match &bitmap.data {
-            BitmapFormat::Rgb(rgb_data) => {
+        match &bitmap.format() {
+            BitmapFormat::Rgb => {
                 let mut rgba_data =
-                    Vec::with_capacity(bitmap.width as usize * bitmap.height as usize * 4);
-                for rgb in rgb_data.chunks_exact(3) {
+                    Vec::with_capacity(bitmap.width() as usize * bitmap.height() as usize * 4);
+                for rgb in bitmap.data().chunks_exact(3) {
                     rgba_data.extend_from_slice(rgb);
                     rgba_data.push(255);
                 }
+                *bitmap = Bitmap::from_data(
+                    bitmap.width(),
+                    bitmap.height(),
+                    BitmapFormat::Rgba,
+                    rgba_data,
+                );
                 let image_data =
-                    ImageData::new_with_u8_clamped_array(Clamped(&rgba_data), bitmap.width)
+                    ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
                         .unwrap();
-                bitmap.data = BitmapFormat::Rgba(rgba_data);
                 image_data
             }
-            BitmapFormat::Rgba(rgba_data) => {
-                ImageData::new_with_u8_clamped_array(Clamped(&rgba_data), bitmap.width).unwrap()
+            BitmapFormat::Rgba => {
+                ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
+                    .unwrap()
             }
         }
     }
 
     fn register_bitmap_raw(&mut self, mut bitmap: Bitmap) -> Result<BitmapInfo, Error> {
-        let (width, height) = (bitmap.width, bitmap.height);
+        let (width, height) = (bitmap.width(), bitmap.height());
 
         let image = Self::swf_bitmap_to_js_imagedata(&mut bitmap);
 
@@ -753,7 +760,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap_raw(Bitmap::from_data(width, height, BitmapFormat::Rgba(rgba)))?
+            .register_bitmap_raw(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?
             .handle)
     }
 

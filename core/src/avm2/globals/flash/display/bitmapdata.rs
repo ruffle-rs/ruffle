@@ -50,7 +50,7 @@ pub fn instance_init<'gc>(
                 if let Some(bitmap_pixels) =
                     activation.context.renderer.get_bitmap_pixels(bitmap_handle)
                 {
-                    let bitmap_pixels: Vec<i32> = bitmap_pixels.data.into();
+                    let bitmap_pixels: Vec<i32> = bitmap_pixels.into();
                     new_bitmap_data
                         .write(activation.context.gc_context)
                         .set_pixels(
