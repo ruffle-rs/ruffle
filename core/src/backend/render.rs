@@ -224,11 +224,8 @@ pub struct Bitmap {
 impl Bitmap {
     /// Ensures that `data` is the correct size for the given `width` and `height`.
     pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
-        let expected_len = match format {
-            BitmapFormat::Rgb => width as usize * height as usize * 3,
-            BitmapFormat::Rgba => width as usize * height as usize * 4,
-        };
         // If the size is incorrect, either we screwed up or the decoder screwed up.
+        let expected_len = width as usize * height as usize * format.bytes_per_pixel();
         debug_assert_eq!(data.len(), expected_len);
         if data.len() != expected_len {
             log::warn!(
@@ -322,6 +319,16 @@ pub enum BitmapFormat {
 
     /// 32-bit RGBA with premultiplied alpha.
     Rgba,
+}
+
+impl BitmapFormat {
+    #[inline]
+    pub fn bytes_per_pixel(self) -> usize {
+        match self {
+            BitmapFormat::Rgb => 3,
+            BitmapFormat::Rgba => 4,
+        }
+    }
 }
 
 /// Determines the format of the image data in `data` from a DefineBitsJPEG2/3 tag.
