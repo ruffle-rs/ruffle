@@ -1,0 +1,13 @@
+// this:obj (String)
+abc
+def
+
+// this.obj (GetMember)
+
+// myVar (GetVariable)
+abc
+def
+
+// this.obj (GetMember)
+ghi
+jkl

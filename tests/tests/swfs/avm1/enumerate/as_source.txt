@@ -1,0 +1,33 @@
+// SWF hand-edited with JPEXS.
+
+
+this.obj = {abc:"ABC",def:"DEF"};
+
+trace("// this:obj (String)");
+for(e in "this:obj")
+{
+   trace(e);
+}
+
+trace("");
+trace("// this.obj (GetMember)");
+for(e in this.obj)
+{
+   trace(e);
+}
+
+myVar = "this.obj";
+trace("");
+trace("// myVar (GetVariable)");
+for(e in myVar)
+{
+   trace(e);
+}
+
+this["[object Object]"] = {ghi:"GHI",jkl:"JKL"};
+trace("");
+trace("// this.obj (GetMember)");
+for(e in this.obj)
+{
+   trace(e);
+}
