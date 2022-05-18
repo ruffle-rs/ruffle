@@ -374,38 +374,15 @@ impl WebCanvasRenderBackend {
 
     /// Puts the contents of the given Bitmap into an ImageData on the browser side,
     /// doing the RGB to RGBA expansion if needed.
-    fn swf_bitmap_to_js_imagedata(bitmap: &mut Bitmap) -> ImageData {
-        match &bitmap.format() {
-            BitmapFormat::Rgb => {
-                let mut rgba_data =
-                    Vec::with_capacity(bitmap.width() as usize * bitmap.height() as usize * 4);
-                for rgb in bitmap.data().chunks_exact(3) {
-                    rgba_data.extend_from_slice(rgb);
-                    rgba_data.push(255);
-                }
-                *bitmap = Bitmap::from_data(
-                    bitmap.width(),
-                    bitmap.height(),
-                    BitmapFormat::Rgba,
-                    rgba_data,
-                );
-                let image_data =
-                    ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
-                        .unwrap();
-                image_data
-            }
-            BitmapFormat::Rgba => {
-                ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
-                    .unwrap()
-            }
-        }
+    fn swf_bitmap_to_js_imagedata(bitmap: Bitmap) -> ImageData {
+        let bitmap = bitmap.to_rgba();
+        assert!(bitmap.format() == BitmapFormat::Rgba);
+        ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width()).unwrap()
     }
 
-    fn register_bitmap_raw(&mut self, mut bitmap: Bitmap) -> Result<BitmapInfo, Error> {
+    fn register_bitmap_raw(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
         let (width, height) = (bitmap.width(), bitmap.height());
-
-        let image = Self::swf_bitmap_to_js_imagedata(&mut bitmap);
-
+        let image = Self::swf_bitmap_to_js_imagedata(bitmap);
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image: BitmapDataStorage::from_image_data(image),
@@ -493,8 +470,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         &mut self,
         swf_tag: &swf::DefineBitsLossless,
     ) -> Result<BitmapInfo, Error> {
-        let mut bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        let image = Self::swf_bitmap_to_js_imagedata(&mut bitmap);
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
+        let image = Self::swf_bitmap_to_js_imagedata(bitmap);
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image: BitmapDataStorage::from_image_data(image),

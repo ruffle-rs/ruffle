@@ -247,6 +247,19 @@ impl Bitmap {
         }
     }
 
+    pub fn to_rgba(mut self) -> Self {
+        // Converts this bitmap to RGBA, if it is not already.
+        if self.format == BitmapFormat::Rgb {
+            self.data = self
+                .data
+                .chunks_exact(3)
+                .flat_map(|rgb| [rgb[0], rgb[1], rgb[2], 255])
+                .collect();
+            self.format = BitmapFormat::Rgba;
+        }
+        self
+    }
+
     #[inline]
     pub fn width(&self) -> u32 {
         self.width
