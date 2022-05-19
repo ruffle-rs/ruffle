@@ -27,7 +27,6 @@ pub struct WebCanvasRenderBackend {
     bitmaps: Vec<BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
-    pixelated_property_value: &'static str,
     deactivating_mask: bool,
 }
 
@@ -224,14 +223,6 @@ impl WebCanvasRenderBackend {
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
-        // TODO: We could turn this into a general util function to detect browser
-        // type, version, OS, etc.
-        let is_firefox = window
-            .navigator()
-            .user_agent()
-            .map(|s| s.contains("Firefox"))
-            .unwrap_or(false);
-
         let render_targets = vec![(canvas.clone(), context.clone())];
         let renderer = Self {
             canvas: canvas.clone(),
@@ -245,14 +236,6 @@ impl WebCanvasRenderBackend {
             viewport_width: 0,
             viewport_height: 0,
             deactivating_mask: false,
-
-            // For rendering non-smoothed bitmaps.
-            // crisp-edges works in Firefox, pixelated works in Chrome (and others)?
-            pixelated_property_value: if is_firefox {
-                "crisp-edges"
-            } else {
-                "pixelated"
-            },
         };
         Ok(renderer)
     }
@@ -399,13 +382,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data = swf_shape_to_canvas_commands(
-            &shape,
-            bitmap_source,
-            &self.bitmaps,
-            self.pixelated_property_value,
-            &self.context,
-        );
+        let data =
+            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
         self.shapes.push(data);
         handle
     }
@@ -416,13 +394,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let data = swf_shape_to_canvas_commands(
-            &shape,
-            bitmap_source,
-            &self.bitmaps,
-            self.pixelated_property_value,
-            &self.context,
-        );
+        let data =
+            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
         self.shapes[handle.0] = data;
     }
 
@@ -783,7 +756,6 @@ fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
     bitmap_source: &dyn BitmapSource,
     bitmaps: &[BitmapData],
-    _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
 ) -> ShapeData {
     use ruffle_core::shape_utils::DrawPath;
