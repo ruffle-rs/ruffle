@@ -87,6 +87,9 @@ impl KeyModifiers {
 #[collect(no_drop)]
 pub enum EventData<'gc> {
     Empty,
+    Error {
+        error_id: i32,
+    },
     FullScreen {
         full_screen: bool,
         interactive: bool,
@@ -100,6 +103,9 @@ pub enum EventData<'gc> {
         modifiers: KeyModifiers,
         button_down: bool,
         delta: i32,
+    },
+    Text {
+        text: AvmString<'gc>,
     },
 }
 

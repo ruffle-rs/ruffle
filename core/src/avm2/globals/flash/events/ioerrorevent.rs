@@ -32,8 +32,7 @@ pub fn class_init<'gc>(
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
         QName::new(Namespace::package("flash.events"), "IOErrorEvent"),
-        // TODO: this should derive IOErrorEvent -> ErrorEvent -> TextEvent -> Event
-        Some(QName::new(Namespace::package("flash.events"), "Event").into()),
+        Some(QName::new(Namespace::package("flash.events"), "ErrorEvent").into()),
         Method::from_builtin(instance_init, "<IOErrorEvent instance initializer>", mc),
         Method::from_builtin(class_init, "<IOErrorEvent class initializer>", mc),
         mc,
