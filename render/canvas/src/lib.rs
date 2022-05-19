@@ -27,7 +27,6 @@ pub struct WebCanvasRenderBackend {
     bitmaps: Vec<BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
-    use_color_transform_hack: bool,
     pixelated_property_value: &'static str,
     deactivating_mask: bool,
 }
@@ -225,7 +224,6 @@ impl WebCanvasRenderBackend {
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
-        // Check if we are on Firefox to use the color transform hack.
         // TODO: We could turn this into a general util function to detect browser
         // type, version, OS, etc.
         let is_firefox = window
@@ -246,7 +244,6 @@ impl WebCanvasRenderBackend {
             bitmaps: vec![],
             viewport_width: 0,
             viewport_height: 0,
-            use_color_transform_hack: is_firefox,
             deactivating_mask: false,
 
             // For rendering non-smoothed bitmaps.
@@ -345,17 +342,9 @@ impl WebCanvasRenderBackend {
             let mult = color_transform.mult_rgba_normalized();
             let add = color_transform.add_rgba_normalized();
 
-            // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
-            // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
-            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0 {
-                (mult[3] + add[3], 0.0)
-            } else {
-                (mult[3], add[3])
-            };
-
             let matrix_str = format!(
                 "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
-                mult[0], add[0], mult[1], add[1], mult[2], add[2], a_mult, a_add
+                mult[0], add[0], mult[1], add[1], mult[2], add[2], mult[3], add[3]
             );
 
             self.color_matrix
