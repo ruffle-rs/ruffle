@@ -30,12 +30,12 @@ fn instance_init<'gc>(
     if let Some(mut this) = this {
         activation.super_init(this, &[])?;
         this.set_property(
-            &QName::new(Namespace::public(), "dataFormat").into(),
+            &QName::dynamic_name("dataFormat").into(),
             "text".into(),
             activation,
         )?;
         this.set_property(
-            &QName::new(Namespace::public(), "data").into(),
+            &QName::dynamic_name("data").into(),
             Value::Undefined,
             activation,
         )?;
@@ -67,8 +67,7 @@ fn bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        let data =
-            this.get_property(&QName::new(Namespace::public(), "data").into(), activation)?;
+        let data = this.get_property(&QName::dynamic_name("data").into(), activation)?;
 
         if let Value::Object(data) = data {
             // `bytesTotal` should be 0 while the download is in progress
@@ -99,10 +98,7 @@ fn load<'gc>(
         };
 
         let data_format = this
-            .get_property(
-                &QName::new(Namespace::public(), "dataFormat").into(),
-                activation,
-            )?
+            .get_property(&QName::dynamic_name("dataFormat").into(), activation)?
             .coerce_to_string(activation)?;
 
         let data_format = if data_format == AvmString::from("binary") {
@@ -127,7 +123,7 @@ fn spawn_fetch<'gc>(
     data_format: DataFormat,
 ) -> Result<Value<'gc>, Error> {
     let url = url_request
-        .get_property(&QName::new(Namespace::public(), "url").into(), activation)?
+        .get_property(&QName::dynamic_name("url").into(), activation)?
         .coerce_to_string(activation)?;
 
     let url = url.to_utf8_lossy();
