@@ -9,9 +9,13 @@ use crate::avm2::object::{
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
+use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::string::AvmString;
+use crate::tag_utils::{self, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::{Collect, GcCell, MutationContext};
+use std::sync::Arc;
+use swf::TagCode;
 
 mod array;
 mod boolean;
@@ -522,6 +526,8 @@ pub fn load_player_globals<'gc>(
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
 
+    load_playerglobal(activation, domain)?;
+
     avm2_system_class!(string, activation, string::create_class(mc), script);
     avm2_system_class!(boolean, activation, boolean::create_class(mc), script);
     avm2_system_class!(number, activation, number::create_class(mc), script);
@@ -901,12 +907,6 @@ pub fn load_player_globals<'gc>(
     // package `flash.geom`
     class(activation, flash::geom::matrix::create_class(mc), script)?;
     avm2_system_class!(
-        point,
-        activation,
-        flash::geom::point::create_class(mc),
-        script
-    );
-    avm2_system_class!(
         rectangle,
         activation,
         flash::geom::rectangle::create_class(mc),
@@ -1031,6 +1031,57 @@ pub fn load_player_globals<'gc>(
         flash::accessibility::accessibilityproperties::create_class(mc),
         script,
     )?;
+
+    Ok(())
+}
+
+/// This file is built by 'core/build_playerglobal/'
+/// See that tool, and 'core/src/avm2/globals/README.md', for more details
+const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal.swf"));
+
+/// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
+/// into the environment. See 'core/src/avm2/globals/README.md' for more information
+fn load_playerglobal<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    domain: Domain<'gc>,
+) -> Result<(), Error> {
+    let movie = Arc::new(SwfMovie::from_data(PLAYERGLOBAL, None, None)?);
+
+    let slice = SwfSlice::from(movie);
+
+    let mut reader = slice.read_from(0);
+
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        if tag_code == TagCode::DoAbc {
+            Avm2::load_abc_from_do_abc(&mut activation.context, &slice, domain, reader, tag_len)?;
+        } else if tag_code != TagCode::End {
+            panic!(
+                "playerglobal should only contain `DoAbc` tag - found tag {:?}",
+                tag_code
+            )
+        }
+        Ok(())
+    };
+
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+    macro_rules! avm2_system_classes_playerglobal {
+        ($activation:expr, $script:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
+            $(
+                let qname = QName::new(Namespace::package($package), $class_name);
+                let class_object = activation.resolve_class(&qname.into())?;
+                let sc = $activation.avm2().system_classes.as_mut().unwrap();
+                sc.$field = class_object;
+
+                let sp = $activation.avm2().system_prototypes.as_mut().unwrap();
+                sp.$field = class_object.prototype();
+            )*
+        }
+    }
+
+    // This acts the same way as 'avm2_system_class', but for classes
+    // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
+    // and are stored in 'avm2().system_classes' and 'avm2().system_prototypes'
+    avm2_system_classes_playerglobal!(activation, script, [("flash.geom", "Point", point),]);
 
     Ok(())
 }

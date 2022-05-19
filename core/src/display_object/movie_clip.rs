@@ -502,32 +502,15 @@ impl<'gc> MovieClip<'gc> {
             return Ok(());
         }
 
-        let start = reader.as_slice();
-        // Queue the actions.
-        // TODO: The tag reader parses the entire ABC file, instead of just
-        // giving us a `SwfSlice` for later parsing, so we have to replcate the
-        // *entire* parsing code here. This sucks.
-        let flags = reader.read_u32()?;
-        let name = reader.read_str()?.to_string_lossy(reader.encoding());
-        let is_lazy_initialize = flags & 1 != 0;
         let domain = context.library.library_for_movie_mut(movie).avm2_domain();
-        let num_read = reader.pos(start);
 
-        // The rest of the tag is an ABC file so we can take our SwfSlice now.
-        let slice = self
-            .0
-            .read()
-            .static_data
-            .swf
-            .resize_to_reader(reader, tag_len - num_read)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running init action",
-                )
-            })?;
-
-        if let Err(e) = Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain) {
+        if let Err(e) = Avm2::load_abc_from_do_abc(
+            context,
+            &self.0.read().static_data.swf,
+            domain,
+            reader,
+            tag_len,
+        ) {
             log::warn!("Error loading ABC file: {}", e);
         }
 

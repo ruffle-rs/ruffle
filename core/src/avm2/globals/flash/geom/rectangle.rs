@@ -1,11 +1,22 @@
 //! `flash.geom.Rectangle` builtin/prototype
 
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::globals::flash::geom::point::create_point;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::{Activation, Error, Namespace, Object, QName, TObject, Value};
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
+
+pub fn create_point<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    coords: (f64, f64),
+) -> Result<Value<'gc>, Error> {
+    let point_class = activation.context.avm2.classes().point;
+
+    let args = [Value::Number(coords.0), Value::Number(coords.1)];
+    let new_point = point_class.construct(activation, &args)?;
+
+    Ok(new_point.into())
+}
 
 pub fn create_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
