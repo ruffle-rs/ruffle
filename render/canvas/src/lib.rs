@@ -19,15 +19,13 @@ type Error = Box<dyn std::error::Error>;
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
-    root_canvas: HtmlCanvasElement,
-    render_targets: Vec<(HtmlCanvasElement, CanvasRenderingContext2d)>,
-    cur_render_target: usize,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
     bitmaps: Vec<BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
-    deactivating_mask: bool,
+    rect: Path2d,
+    mask_state: MaskState,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -223,72 +221,21 @@ impl WebCanvasRenderBackend {
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
-        let render_targets = vec![(canvas.clone(), context.clone())];
+        let rect = Path2d::new().into_js_result()?;
+        rect.rect(0.0, 0.0, 1.0, 1.0);
+
         let renderer = Self {
             canvas: canvas.clone(),
-            root_canvas: canvas.clone(),
-            render_targets,
-            cur_render_target: 0,
             color_matrix,
             context,
             shapes: vec![],
             bitmaps: vec![],
             viewport_width: 0,
             viewport_height: 0,
-            deactivating_mask: false,
+            rect,
+            mask_state: MaskState::DrawContent,
         };
         Ok(renderer)
-    }
-
-    // Pushes a fresh canvas onto the stack to use as a render target.
-    fn push_render_target(&mut self) {
-        self.cur_render_target += 1;
-        if self.cur_render_target >= self.render_targets.len() {
-            // Create offscreen canvas to use as the render target.
-            let window = web_sys::window().unwrap();
-            let document = window.document().unwrap();
-            let canvas: HtmlCanvasElement = document
-                .create_element("canvas")
-                .unwrap()
-                .dyn_into()
-                .unwrap();
-            let context: CanvasRenderingContext2d = canvas
-                .get_context("2d")
-                .unwrap()
-                .unwrap()
-                .dyn_into()
-                .unwrap();
-            canvas
-                .style()
-                .set_property("display", "none")
-                .warn_on_error();
-            self.root_canvas.append_child(&canvas).warn_on_error();
-            self.render_targets.push((canvas, context));
-        }
-
-        let (canvas, context) = &self.render_targets[self.cur_render_target];
-        canvas.set_width(self.viewport_width);
-        canvas.set_height(self.viewport_height);
-        self.canvas = canvas.clone();
-        self.context = context.clone();
-        let width = self.canvas.width();
-        let height = self.canvas.height();
-        self.context
-            .clear_rect(0.0, 0.0, width.into(), height.into());
-    }
-
-    fn pop_render_target(&mut self) -> (HtmlCanvasElement, CanvasRenderingContext2d) {
-        if self.cur_render_target > 0 {
-            let out = (self.canvas.clone(), self.context.clone());
-            self.cur_render_target -= 1;
-            let (canvas, context) = &self.render_targets[self.cur_render_target];
-            self.canvas = canvas.clone();
-            self.context = context.clone();
-            out
-        } else {
-            log::error!("Render target stack underflow");
-            (self.canvas.clone(), self.context.clone())
-        }
     }
 
     #[allow(clippy::float_cmp)]
@@ -466,7 +413,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                 .clear_rect(0.0, 0.0, width.into(), height.into());
         }
 
-        self.deactivating_mask = false;
+        self.mask_state = MaskState::DrawContent;
     }
 
     fn end_frame(&mut self) {
@@ -474,7 +421,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if self.deactivating_mask {
+        if self.mask_state == MaskState::ClearMask {
             return;
         }
 
@@ -491,200 +438,215 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
-        if self.deactivating_mask {
-            return;
-        }
-
-        self.set_transform(&transform.matrix);
-        if let Some(shape) = self.shapes.get(shape.0) {
-            for command in shape.0.iter() {
-                match command {
-                    CanvasDrawCommand::Fill { path, fill_style } => match fill_style {
-                        CanvasFillStyle::Color(color) => {
-                            let color = color.color_transform(&transform.color_transform);
-                            self.context.set_fill_style(&color.0.into());
-                            self.context
-                                .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
-                        }
-                        CanvasFillStyle::Gradient(gradient) => {
-                            self.set_color_filter(&transform);
-                            self.context.set_fill_style(gradient);
-                            self.context
-                                .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
-                            self.clear_color_filter();
-                        }
-                        CanvasFillStyle::TransformedGradient(gradient) => {
-                            // Canvas has no easy way to draw gradients with an arbitrary transform,
-                            // but we can fake it by pushing the gradient's transform to the canvas,
-                            // then transforming the path itself by the inverse.
-                            self.set_color_filter(&transform);
-                            self.context.set_fill_style(&gradient.gradient);
-                            let matrix = &gradient.gradient_matrix;
-                            self.context
-                                .transform(
-                                    matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
-                                    matrix[5],
-                                )
-                                .warn_on_error();
-                            let untransformed_path = Path2d::new().unwrap();
-                            untransformed_path.add_path_with_transformation(
+        match &self.mask_state {
+            MaskState::DrawContent => {
+                self.set_transform(&transform.matrix);
+                if let Some(shape) = self.shapes.get(shape.0) {
+                    for command in shape.0.iter() {
+                        match command {
+                            CanvasDrawCommand::Fill { path, fill_style } => match fill_style {
+                                CanvasFillStyle::Color(color) => {
+                                    let color = color.color_transform(&transform.color_transform);
+                                    self.context.set_fill_style(&color.0.into());
+                                    self.context.fill_with_path_2d_and_winding(
+                                        path,
+                                        CanvasWindingRule::Evenodd,
+                                    );
+                                }
+                                CanvasFillStyle::Gradient(gradient) => {
+                                    self.set_color_filter(&transform);
+                                    self.context.set_fill_style(gradient);
+                                    self.context.fill_with_path_2d_and_winding(
+                                        path,
+                                        CanvasWindingRule::Evenodd,
+                                    );
+                                    self.clear_color_filter();
+                                }
+                                CanvasFillStyle::TransformedGradient(gradient) => {
+                                    // Canvas has no easy way to draw gradients with an arbitrary transform,
+                                    // but we can fake it by pushing the gradient's transform to the canvas,
+                                    // then transforming the path itself by the inverse.
+                                    self.set_color_filter(&transform);
+                                    self.context.set_fill_style(&gradient.gradient);
+                                    let matrix = &gradient.gradient_matrix;
+                                    self.context
+                                        .transform(
+                                            matrix[0], matrix[1], matrix[2], matrix[3], matrix[4],
+                                            matrix[5],
+                                        )
+                                        .warn_on_error();
+                                    let untransformed_path = Path2d::new().unwrap();
+                                    untransformed_path.add_path_with_transformation(
+                                        path,
+                                        gradient.inverse_gradient_matrix.unchecked_ref(),
+                                    );
+                                    self.context.fill_with_path_2d_and_winding(
+                                        &untransformed_path,
+                                        CanvasWindingRule::Evenodd,
+                                    );
+                                    self.context
+                                        .set_transform(
+                                            transform.matrix.a.into(),
+                                            transform.matrix.b.into(),
+                                            transform.matrix.c.into(),
+                                            transform.matrix.d.into(),
+                                            transform.matrix.tx.to_pixels(),
+                                            transform.matrix.ty.to_pixels(),
+                                        )
+                                        .unwrap();
+                                    self.clear_color_filter();
+                                }
+                                CanvasFillStyle::Pattern(patt, smoothed) => {
+                                    self.set_color_filter(&transform);
+                                    self.context.set_image_smoothing_enabled(*smoothed);
+                                    self.context.set_fill_style(patt);
+                                    self.context.fill_with_path_2d_and_winding(
+                                        path,
+                                        CanvasWindingRule::Evenodd,
+                                    );
+                                    self.clear_color_filter();
+                                }
+                            },
+                            CanvasDrawCommand::Stroke {
                                 path,
-                                gradient.inverse_gradient_matrix.unchecked_ref(),
-                            );
-                            self.context.fill_with_path_2d_and_winding(
-                                &untransformed_path,
-                                CanvasWindingRule::Evenodd,
-                            );
-                            self.context
-                                .set_transform(
-                                    transform.matrix.a.into(),
-                                    transform.matrix.b.into(),
-                                    transform.matrix.c.into(),
-                                    transform.matrix.d.into(),
-                                    transform.matrix.tx.to_pixels(),
-                                    transform.matrix.ty.to_pixels(),
-                                )
-                                .unwrap();
-                            self.clear_color_filter();
+                                line_width,
+                                stroke_style,
+                                line_cap,
+                                line_join,
+                                miter_limit,
+                            } => {
+                                self.context.set_line_cap(line_cap);
+                                self.context.set_line_join(line_join);
+                                self.context.set_miter_limit(*miter_limit);
+                                self.context.set_line_width(*line_width);
+                                match stroke_style {
+                                    CanvasFillStyle::Color(color) => {
+                                        let color =
+                                            color.color_transform(&transform.color_transform);
+                                        self.context.set_stroke_style(&color.0.into());
+                                        self.context.stroke_with_path(path);
+                                    }
+                                    CanvasFillStyle::Gradient(gradient) => {
+                                        self.set_color_filter(&transform);
+                                        self.context.set_stroke_style(gradient);
+                                        self.context.stroke_with_path(path);
+                                        self.clear_color_filter();
+                                    }
+                                    CanvasFillStyle::TransformedGradient(gradient) => {
+                                        self.set_color_filter(&transform);
+                                        self.context.set_stroke_style(&gradient.gradient);
+                                        self.context.stroke_with_path(path);
+                                        self.context
+                                            .set_transform(
+                                                transform.matrix.a.into(),
+                                                transform.matrix.b.into(),
+                                                transform.matrix.c.into(),
+                                                transform.matrix.d.into(),
+                                                transform.matrix.tx.to_pixels(),
+                                                transform.matrix.ty.to_pixels(),
+                                            )
+                                            .unwrap();
+                                        self.clear_color_filter();
+                                    }
+                                    CanvasFillStyle::Pattern(patt, smoothed) => {
+                                        self.context.set_image_smoothing_enabled(*smoothed);
+                                        self.context.set_stroke_style(patt);
+                                        self.context.stroke_with_path(path);
+                                        self.clear_color_filter();
+                                    }
+                                };
+                            }
                         }
-                        CanvasFillStyle::Pattern(patt, smoothed) => {
-                            self.set_color_filter(&transform);
-                            self.context.set_image_smoothing_enabled(*smoothed);
-                            self.context.set_fill_style(patt);
-                            self.context
-                                .fill_with_path_2d_and_winding(path, CanvasWindingRule::Evenodd);
-                            self.clear_color_filter();
-                        }
-                    },
-                    CanvasDrawCommand::Stroke {
-                        path,
-                        line_width,
-                        stroke_style,
-                        line_cap,
-                        line_join,
-                        miter_limit,
-                    } => {
-                        self.context.set_line_cap(line_cap);
-                        self.context.set_line_join(line_join);
-                        self.context.set_miter_limit(*miter_limit);
-                        self.context.set_line_width(*line_width);
-                        match stroke_style {
-                            CanvasFillStyle::Color(color) => {
-                                let color = color.color_transform(&transform.color_transform);
-                                self.context.set_stroke_style(&color.0.into());
-                                self.context.stroke_with_path(path);
-                            }
-                            CanvasFillStyle::Gradient(gradient) => {
-                                self.set_color_filter(&transform);
-                                self.context.set_stroke_style(gradient);
-                                self.context.stroke_with_path(path);
-                                self.clear_color_filter();
-                            }
-                            CanvasFillStyle::TransformedGradient(gradient) => {
-                                self.set_color_filter(&transform);
-                                self.context.set_stroke_style(&gradient.gradient);
-                                self.context.stroke_with_path(path);
-                                self.context
-                                    .set_transform(
-                                        transform.matrix.a.into(),
-                                        transform.matrix.b.into(),
-                                        transform.matrix.c.into(),
-                                        transform.matrix.d.into(),
-                                        transform.matrix.tx.to_pixels(),
-                                        transform.matrix.ty.to_pixels(),
-                                    )
-                                    .unwrap();
-                                self.clear_color_filter();
-                            }
-                            CanvasFillStyle::Pattern(patt, smoothed) => {
-                                self.context.set_image_smoothing_enabled(*smoothed);
-                                self.context.set_stroke_style(patt);
-                                self.context.stroke_with_path(path);
-                                self.clear_color_filter();
-                            }
-                        };
                     }
                 }
             }
+
+            // Add the shape path to the mask path.
+            // Strokes are ignored.
+            MaskState::DrawMask(mask_path) => {
+                if let Some(shape) = self.shapes.get(shape.0) {
+                    for command in shape.0.iter() {
+                        if let CanvasDrawCommand::Fill { path, .. } = command {
+                            mask_path.add_path_with_transformation(
+                                path,
+                                transform.matrix.to_dom_matrix().unchecked_ref(),
+                            );
+                        }
+                    }
+                }
+            }
+
+            // Canvas backend doesn't have to do anything to clear masks.
+            MaskState::ClearMask => (),
         }
     }
 
     fn draw_rect(&mut self, color: Color, matrix: &Matrix) {
-        if self.deactivating_mask {
-            return;
+        match &self.mask_state {
+            MaskState::DrawContent => {
+                self.set_transform(matrix);
+                self.clear_color_filter();
+                self.context.set_fill_style(
+                    &format!(
+                        "rgba({},{},{},{})",
+                        color.r,
+                        color.g,
+                        color.b,
+                        f32::from(color.a) / 255.0
+                    )
+                    .into(),
+                );
+                self.context.fill_rect(0.0, 0.0, 1.0, 1.0);
+            }
+            MaskState::DrawMask(mask_path) => {
+                mask_path.add_path_with_transformation(
+                    &self.rect,
+                    matrix.to_dom_matrix().unchecked_ref(),
+                );
+            }
+            MaskState::ClearMask => (),
         }
-
-        self.set_transform(matrix);
-        self.clear_color_filter();
-
-        self.context.set_fill_style(
-            &format!(
-                "rgba({},{},{},{})",
-                color.r,
-                color.g,
-                color.b,
-                f32::from(color.a) / 255.0
-            )
-            .into(),
-        );
-        self.context.fill_rect(0.0, 0.0, 1.0, 1.0);
-
-        self.clear_color_filter();
     }
 
     fn push_mask(&mut self) {
-        // In the canvas backend, masks are implemented using two render targets.
-        // We render the masker clips to the first render target.
-        self.push_render_target();
+        if self.mask_state == MaskState::DrawContent {
+            // Save the current mask layer so that it can be restored when the mask is popped.
+            self.context.save();
+            self.mask_state = MaskState::DrawMask(Path2d::new().unwrap());
+        }
     }
+
     fn activate_mask(&mut self) {
-        // We render the maskee clips to the second render target.
-        self.push_render_target();
+        if let MaskState::DrawMask(mask_path) = &self.mask_state {
+            self.context.reset_transform().unwrap();
+            // Apply the clipping path to the canvas for future draws.
+            // TODO: Canvas almost, but not completely, provides a clean way to implement Flash masks.
+            // Subsequent calls to `CanvasRenderingContext2d.clip` support nested masks (intersection),
+            // but Flash art is sometimes in layers where one path is filled on top of another (union).
+            // We use non-zero winding here to handle this case, but this will be incorrect in the
+            // other cases such as self-intersecting shapes. The Flash IDE actively avoids exporting
+            // shapes and masks for both of these cases, so it shouldn't be common.
+            // Most likely it would happen with dynamiuc masks via drawing API or similar.
+            // A possible improvement is to choose the winding rule based on whether the shape has
+            // layers or not (via a flag in DistilledShape?)
+            self.context
+                .clip_with_path_2d_and_winding(&mask_path, CanvasWindingRule::Nonzero);
+            self.mask_state = MaskState::DrawContent;
+        }
     }
+
     fn deactivate_mask(&mut self) {
-        self.deactivating_mask = true;
+        if self.mask_state == MaskState::DrawContent {
+            self.mask_state = MaskState::ClearMask;
+        }
     }
+
     fn pop_mask(&mut self) {
-        self.deactivating_mask = false;
-
-        let (maskee_canvas, maskee_context) = self.pop_render_target();
-        let (masker_canvas, _masker_context) = self.pop_render_target();
-
-        // We have to be sure to reset the transforms here so that
-        // the texture is drawn starting from the upper-left corner.
-        maskee_context.reset_transform().warn_on_error();
-        self.context.reset_transform().warn_on_error();
-
-        // We draw the masker onto the maskee using the "destination-in" blend mode.
-        // This will filter out pixels where the maskee alpha == 0.
-        maskee_context
-            .set_global_composite_operation("destination-in")
-            .unwrap();
-
-        // Force alpha to 100% for the mask art, because Flash ignores alpha in masks.
-        // Otherwise canvas blend modes will draw the masked clip as transparent.
-        // TODO: Doesn't work on Safari because it doesn't support context.filter.
-        self.color_matrix
-            .set_attribute(
-                "values",
-                "1.0 0 0 0 0 0 1.0 0 0 0 0 0 1.0 0 0 0 0 0 256.0 0",
-            )
-            .warn_on_error();
-
-        maskee_context.set_filter("url('#_cm')");
-        maskee_context
-            .draw_image_with_html_canvas_element(&masker_canvas, 0.0, 0.0)
-            .unwrap();
-        maskee_context
-            .set_global_composite_operation("source-over")
-            .unwrap();
-        maskee_context.set_filter("none");
-
-        // Finally, we draw the finalized masked onto the main canvas.
-        self.context.reset_transform().warn_on_error();
-        self.context
-            .draw_image_with_html_canvas_element(&maskee_canvas, 0.0, 0.0)
-            .unwrap();
+        if self.mask_state == MaskState::ClearMask {
+            // Pop the previous clipping state.
+            self.context.restore();
+            self.mask_state = MaskState::DrawContent;
+        }
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
@@ -1110,18 +1072,7 @@ fn swf_to_canvas_gradient(
     if transformed {
         // When we render this gradient, we will push the gradient's transform to the canvas,
         // and then transform the path itself by the inverse.
-        let matrix = DomMatrix::new_with_array64(
-            [
-                swf_gradient.matrix.a.to_f64() / 20.0,
-                swf_gradient.matrix.b.to_f64() / 20.0,
-                swf_gradient.matrix.c.to_f64() / 20.0,
-                swf_gradient.matrix.d.to_f64() / 20.0,
-                swf_gradient.matrix.tx.to_pixels(),
-                swf_gradient.matrix.ty.to_pixels(),
-            ]
-            .as_mut_slice(),
-        )
-        .into_js_result()?;
+        let matrix = swf_gradient.matrix.to_dom_matrix();
         let inverse_gradient_matrix = matrix.inverse();
         Ok(CanvasFillStyle::TransformedGradient(TransformedGradient {
             gradient: canvas_gradient,
@@ -1137,5 +1088,59 @@ fn swf_to_canvas_gradient(
         }))
     } else {
         Ok(CanvasFillStyle::Gradient(canvas_gradient))
+    }
+}
+
+/// The current masking behavior of the canvas.
+#[derive(Debug, Eq, PartialEq)]
+enum MaskState {
+    // Content is being drawn.
+    DrawContent,
+
+    // A clipping layer is being drawn.
+    // Paths should be added to the `Path2d` instead of drawn to the canvas.
+    DrawMask(Path2d),
+
+    // A clipping layer is being cleared.
+    // On a canvas, all draws are a no-op until the clear is complete.
+    ClearMask,
+}
+
+/// Extension trait for easily converting from Ruffle matrices to `DomMatrix`.
+trait MatrixExt {
+    fn to_dom_matrix(&self) -> DomMatrix;
+}
+
+impl MatrixExt for Matrix {
+    fn to_dom_matrix(&self) -> DomMatrix {
+        DomMatrix::new_with_array64(
+            [
+                self.a.into(),
+                self.b.into(),
+                self.c.into(),
+                self.d.into(),
+                self.tx.to_pixels(),
+                self.ty.to_pixels(),
+            ]
+            .as_mut_slice(),
+        )
+        .unwrap()
+    }
+}
+
+impl MatrixExt for swf::Matrix {
+    fn to_dom_matrix(&self) -> DomMatrix {
+        DomMatrix::new_with_array64(
+            [
+                self.a.to_f64() / 20.0,
+                self.b.to_f64() / 20.0,
+                self.c.to_f64() / 20.0,
+                self.d.to_f64() / 20.0,
+                self.tx.to_pixels(),
+                self.ty.to_pixels(),
+            ]
+            .as_mut_slice(),
+        )
+        .unwrap()
     }
 }
