@@ -12,4 +12,5 @@ pub mod ioerrorevent;
 pub mod keyboardevent;
 pub mod mouseevent;
 pub mod progressevent;
+pub mod securityerrorevent;
 pub mod textevent;

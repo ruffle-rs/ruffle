@@ -598,6 +598,11 @@ pub fn load_player_globals<'gc>(
     );
     class(
         activation,
+        flash::events::securityerrorevent::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
         flash::events::ioerrorevent::create_class(mc),
         script,
     )?;
