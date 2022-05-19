@@ -759,6 +759,21 @@ pub fn load_player_globals<'gc>(
         flash::display::capsstyle::create_class(mc),
         script,
     )?;
+    class(
+        activation,
+        flash::display::spreadmethod::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
+        flash::display::interpolationmethod::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
+        flash::display::gradienttype::create_class(mc),
+        script,
+    )?;
     class(activation, flash::display::loader::create_class(mc), script)?;
     avm2_system_class!(
         loaderinfo,
