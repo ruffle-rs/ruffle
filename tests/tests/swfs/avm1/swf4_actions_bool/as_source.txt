@@ -1,0 +1,115 @@
+// SWF hand-edited with JPEXS.
+
+
+trace("// true");
+trace(true);
+trace("");
+trace("// false");
+trace(false);
+trace("");
+trace("");
+
+eq_ = true == "1";
+trace("// eq_ = true == '1'");
+trace(eq_);
+trace("");
+trace("// typeof eq_");
+trace(typeof eq_);
+trace("");
+trace("// eq_ === 1");
+trace(eq_ === 1);
+trace("");
+trace("// eq_ === true");
+trace(eq_ === true);
+trace("");
+trace("");
+
+less_ = 3 < 2;
+trace("// less_ = 3 < 2");
+trace(less_);
+trace("");
+trace("// typeof less_");
+trace(typeof less_);
+trace("");
+trace("// less_ === 0");
+trace(less_ === 0);
+trace("");
+trace("// less_ === false");
+trace(less_ === false);
+trace("");
+trace("");
+
+and_ = true and "1";
+trace("// and_ = true and '1'");
+trace(and_);
+trace("");
+trace("// typeof and_");
+trace(typeof and_);
+trace("");
+trace("// and_ === 1");
+trace(and_ === 1);
+trace("");
+trace("// and_ === true");
+trace(and_ === true);
+trace("");
+trace("");
+
+or_ = true or true;
+trace("// or_ = true or true");
+trace(or_);
+trace("");
+trace("// typeof or_");
+trace(typeof or_);
+trace("");
+trace("// or_ === 1");
+trace(or_ === 1);
+trace("");
+trace("// or_ === true");
+trace(or_ === true);
+trace("");
+trace("");
+not_ = !"1";
+
+trace("// not_ = !'1'");
+trace(not_);
+trace("");
+trace("// typeof not_");
+trace(typeof not_);
+trace("");
+trace("// not_ === 0");
+trace(not_ === 0);
+trace("");
+trace("// not_ === false");
+trace(not_ === false);
+trace("");
+trace("");
+
+streq_ = "cats" eq "cattle";
+trace("// streq_ = 'cats' == 'cattle'");
+trace(streq_);
+trace("");
+trace("// typeof streq_");
+trace(typeof streq_);
+trace("");
+trace("// streq_ === 0");
+trace(streq_ === 0);
+trace("");
+trace("// streq_ === false");
+trace(streq_ === false);
+trace("");
+trace("");
+
+strless_ = "cats" lt "cattle";
+trace("// strless_ = 'cats' < 'cattle'");
+trace(strless_);
+trace("");
+trace("// typeof strless_");
+trace(typeof strless_);
+trace("");
+trace("// strless_ === 1");
+trace(strless_ === 1);
+trace("");
+trace("// strless_ === true");
+trace(strless_ === true);
+trace("");
+trace("");
