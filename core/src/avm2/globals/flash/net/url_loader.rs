@@ -13,7 +13,7 @@ use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.net.URLLoader`'s class constructor.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -22,7 +22,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `flash.net.URLLoader`'s instance constructor.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -49,7 +49,7 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn bytes_loaded<'gc>(
+fn bytes_loaded<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -61,7 +61,7 @@ pub fn bytes_loaded<'gc>(
     bytes_total(activation, this, args)
 }
 
-pub fn bytes_total<'gc>(
+fn bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -86,7 +86,7 @@ pub fn bytes_total<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn load<'gc>(
+fn load<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
