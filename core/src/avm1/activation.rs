@@ -604,9 +604,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.as_bool(self.swf_version()) && a.as_bool(self.swf_version());
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -949,8 +947,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
-        //Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
-        //a boolean based on if the delete actually deleted something.
+        // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
+        // a boolean based on if the delete actually deleted something.
         let success = self.scope_cell().read().delete(self, name);
         self.context.avm1.push(success.into());
 
@@ -1024,9 +1022,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_f64(self)?;
         let b = self.context.avm1.pop().coerce_to_f64(self)?;
         let result = b == a;
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1490,9 +1486,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_f64(self)? < a.coerce_to_f64(self)?;
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1603,9 +1597,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_not(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let a = self.context.avm1.pop();
         let result = !a.as_bool(self.swf_version());
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1692,9 +1684,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.as_bool(self.swf_version()) || a.as_bool(self.swf_version());
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -1979,9 +1969,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)? == a.coerce_to_string(self)?;
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
@@ -2014,9 +2002,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)?.gt(&a.coerce_to_string(self)?);
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }
 
@@ -2034,9 +2020,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop();
         let b = self.context.avm1.pop();
         let result = b.coerce_to_string(self)?.lt(&a.coerce_to_string(self)?);
-        self.context
-            .avm1
-            .push(Value::from_bool(result, self.swf_version()));
+        self.context.avm1.push(result.into()); // Diverges from spec: returns a boolean even in SWF 4
         Ok(FrameControl::Continue)
     }
 
