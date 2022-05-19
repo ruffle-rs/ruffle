@@ -9,7 +9,6 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::RequestOptions;
 use crate::loader::DataFormat;
-use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.net.URLLoader`'s class constructor.
@@ -101,11 +100,11 @@ fn load<'gc>(
             .get_property(&QName::dynamic_name("dataFormat").into(), activation)?
             .coerce_to_string(activation)?;
 
-        let data_format = if data_format == AvmString::from("binary") {
+        let data_format = if &data_format == b"binary" {
             DataFormat::Binary
-        } else if data_format == AvmString::from("text") {
+        } else if &data_format == b"text" {
             DataFormat::Text
-        } else if data_format == AvmString::from("variables") {
+        } else if &data_format == b"variables" {
             DataFormat::Variables
         } else {
             return Err(format!("Unknown data format: {}", data_format).into());
