@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.ErrorEvent`'s instance constructor.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -29,7 +29,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `flash.events.ErrorEvent`'s class constructor.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -38,7 +38,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `errorID`'s getter.
-pub fn error_id<'gc>(
+fn error_id<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],

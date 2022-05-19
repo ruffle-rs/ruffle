@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.events.TextEvent`'s instance constructor.
-pub fn instance_init<'gc>(
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -29,7 +29,7 @@ pub fn instance_init<'gc>(
 }
 
 /// Implements `flash.events.TextEvent`'s class constructor.
-pub fn class_init<'gc>(
+fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -38,7 +38,7 @@ pub fn class_init<'gc>(
 }
 
 /// Implements `text`'s setter.
-pub fn set_text<'gc>(
+fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -58,7 +58,7 @@ pub fn set_text<'gc>(
 }
 
 /// Implements `text`'s getter.
-pub fn text<'gc>(
+fn text<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
