@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::RequestOptions;
-use crate::string::{AvmString, WStr};
+use crate::string::WStr;
 use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::MutationContext;
 
@@ -211,21 +211,13 @@ fn doc_type_decl<'gc>(
 }
 
 fn xml_decl<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(document) = this.as_xml() {
-        let result = document.xmldecl_string();
-
-        if let Err(e) = result {
-            avm_warn!(
-                activation,
-                "Could not generate XML declaration for document: {}",
-                e
-            );
-        } else if let Ok(Some(result_str)) = result {
-            return Ok(AvmString::new_utf8(activation.context.gc_context, result_str).into());
+        if let Some(xml_decl) = document.xml_decl() {
+            return Ok(xml_decl.into());
         }
     }
 
