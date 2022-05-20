@@ -87,9 +87,17 @@ impl KeyModifiers {
 #[collect(no_drop)]
 pub enum EventData<'gc> {
     Empty,
+    Error {
+        text: AvmString<'gc>,
+        error_id: i32,
+    },
     FullScreen {
         full_screen: bool,
         interactive: bool,
+    },
+    IOError {
+        text: AvmString<'gc>,
+        error_id: i32,
     },
     Mouse {
         local_x: f64,
@@ -101,10 +109,11 @@ pub enum EventData<'gc> {
         button_down: bool,
         delta: i32,
     },
-    // FIXME - define properties from 'ErrorEvent' and 'TextEvent'
-    IOError {
-        // FIXME - this should be inherited in some way from
-        // the (currently not declared) `TextEvent`
+    SecurityError {
+        text: AvmString<'gc>,
+        error_id: i32,
+    },
+    Text {
         text: AvmString<'gc>,
     },
 }

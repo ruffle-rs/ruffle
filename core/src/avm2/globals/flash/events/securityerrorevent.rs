@@ -7,8 +7,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::{GcCell, MutationContext};
 
-/// Implements `flash.events.IOErrorEvent`'s instance constructor.
-pub fn instance_init<'gc>(
+/// Implements `flash.events.SecurityErrorEvent`'s instance constructor.
+fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
@@ -19,8 +19,8 @@ pub fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.events.IOErrorEvent`'s class constructor.
-pub fn class_init<'gc>(
+/// Implements `flash.events.SecurityErrorEvent`'s class constructor.
+fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
@@ -28,13 +28,17 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Construct `IOErrorEvent`'s class.
+/// Construct `SecurityErrorEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::package("flash.events"), "IOErrorEvent"),
+        QName::new(Namespace::package("flash.events"), "SecurityErrorEvent"),
         Some(QName::new(Namespace::package("flash.events"), "ErrorEvent").into()),
-        Method::from_builtin(instance_init, "<IOErrorEvent instance initializer>", mc),
-        Method::from_builtin(class_init, "<IOErrorEvent class initializer>", mc),
+        Method::from_builtin(
+            instance_init,
+            "<SecurityErrorEvent instance initializer>",
+            mc,
+        ),
+        Method::from_builtin(class_init, "<SecurityErrorEvent class initializer>", mc),
         mc,
     );
 
@@ -42,7 +46,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED);
 
-    const CONSTANTS: &[(&str, &str)] = &[("IO_ERROR", "ioError")];
+    const CONSTANTS: &[(&str, &str)] = &[("SECURITY_ERROR", "securityError")];
 
     write.define_public_constant_string_class_traits(CONSTANTS);
 
