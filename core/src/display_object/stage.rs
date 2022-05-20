@@ -108,7 +108,12 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(gc_context: MutationContext<'gc, '_>, width: u32, height: u32) -> Stage<'gc> {
+    pub fn empty(
+        gc_context: MutationContext<'gc, '_>,
+        width: u32,
+        height: u32,
+        fullscreen: bool,
+    ) -> Stage<'gc> {
         let stage = Self(GcCell::allocate(
             gc_context,
             StageData {
@@ -120,7 +125,11 @@ impl<'gc> Stage<'gc> {
                 quality: Default::default(),
                 stage_size: (width, height),
                 scale_mode: Default::default(),
-                display_state: Default::default(),
+                display_state: if fullscreen {
+                    StageDisplayState::FullScreen
+                } else {
+                    StageDisplayState::Normal
+                },
                 align: Default::default(),
                 use_bitmap_downsampling: false,
                 viewport_size: (width, height),
