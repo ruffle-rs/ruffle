@@ -15,5 +15,5 @@ Loaded binary with length: 4
 2
 3
 IOErrorEvent.IO_ERROR: [object URLLoader]
-IOErrorEvent text: Ruffle: Failed to fetch url '"missingFile.bin"' : FetchError("No such file or directory (os error 2)")
+IOErrorEvent text: Error #2032: Stream Error
 Old data: 
