@@ -1,0 +1,98 @@
+// true
+1
+
+// false
+0
+
+
+// eq_ = true == '1'
+1
+
+// typeof eq_
+boolean
+
+// eq_ === 1
+0
+
+// eq_ === true
+1
+
+
+// less_ = 3 < 2
+0
+
+// typeof less_
+boolean
+
+// less_ === 0
+0
+
+// less_ === false
+1
+
+
+// and_ = true and '1'
+1
+
+// typeof and_
+boolean
+
+// and_ === 1
+0
+
+// and_ === true
+1
+
+
+// or_ = true or true
+1
+
+// typeof or_
+boolean
+
+// or_ === 1
+0
+
+// or_ === true
+1
+
+
+// not_ = !'1'
+0
+
+// typeof not_
+boolean
+
+// not_ === 0
+0
+
+// not_ === false
+1
+
+
+// streq_ = 'cats' == 'cattle'
+0
+
+// typeof streq_
+boolean
+
+// streq_ === 0
+0
+
+// streq_ === false
+1
+
+
+// strless_ = 'cats' < 'cattle'
+1
+
+// typeof strless_
+boolean
+
+// strless_ === 1
+0
+
+// strless_ === true
+1
+
+

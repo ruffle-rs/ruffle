@@ -27,8 +27,6 @@ pub struct WebCanvasRenderBackend {
     bitmaps: Vec<BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
-    use_color_transform_hack: bool,
-    pixelated_property_value: &'static str,
     deactivating_mask: bool,
 }
 
@@ -129,11 +127,12 @@ impl BitmapData {
                 .context
                 .get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
         {
-            Some(Bitmap {
-                width: self.width,
-                height: self.height,
-                data: BitmapFormat::Rgba(bitmap_pixels.data().to_vec()),
-            })
+            Some(Bitmap::new(
+                self.width,
+                self.height,
+                BitmapFormat::Rgba,
+                bitmap_pixels.data().to_vec(),
+            ))
         } else {
             None
         }
@@ -224,15 +223,6 @@ impl WebCanvasRenderBackend {
             .append_child(&svg)
             .map_err(|_| "append_child failed")?;
 
-        // Check if we are on Firefox to use the color transform hack.
-        // TODO: We could turn this into a general util function to detect browser
-        // type, version, OS, etc.
-        let is_firefox = window
-            .navigator()
-            .user_agent()
-            .map(|s| s.contains("Firefox"))
-            .unwrap_or(false);
-
         let render_targets = vec![(canvas.clone(), context.clone())];
         let renderer = Self {
             canvas: canvas.clone(),
@@ -245,16 +235,7 @@ impl WebCanvasRenderBackend {
             bitmaps: vec![],
             viewport_width: 0,
             viewport_height: 0,
-            use_color_transform_hack: is_firefox,
             deactivating_mask: false,
-
-            // For rendering non-smoothed bitmaps.
-            // crisp-edges works in Firefox, pixelated works in Chrome (and others)?
-            pixelated_property_value: if is_firefox {
-                "crisp-edges"
-            } else {
-                "pixelated"
-            },
         };
         Ok(renderer)
     }
@@ -344,17 +325,9 @@ impl WebCanvasRenderBackend {
             let mult = color_transform.mult_rgba_normalized();
             let add = color_transform.add_rgba_normalized();
 
-            // TODO HACK: Firefox is having issues with additive alpha in color transforms (see #38).
-            // Hack this away and just use multiplicative (not accurate in many cases, but won't look awful).
-            let (a_mult, a_add) = if self.use_color_transform_hack && color_transform.a_add != 0 {
-                (mult[3] + add[3], 0.0)
-            } else {
-                (mult[3], add[3])
-            };
-
             let matrix_str = format!(
                 "{} 0 0 0 {} 0 {} 0 0 {} 0 0 {} 0 {} 0 0 0 {} {}",
-                mult[0], add[0], mult[1], add[1], mult[2], add[2], a_mult, a_add
+                mult[0], add[0], mult[1], add[1], mult[2], add[2], mult[3], add[3]
             );
 
             self.color_matrix
@@ -373,32 +346,15 @@ impl WebCanvasRenderBackend {
 
     /// Puts the contents of the given Bitmap into an ImageData on the browser side,
     /// doing the RGB to RGBA expansion if needed.
-    fn swf_bitmap_to_js_imagedata(bitmap: &mut Bitmap) -> ImageData {
-        match &bitmap.data {
-            BitmapFormat::Rgb(rgb_data) => {
-                let mut rgba_data =
-                    Vec::with_capacity(bitmap.width as usize * bitmap.height as usize * 4);
-                for rgb in rgb_data.chunks_exact(3) {
-                    rgba_data.extend_from_slice(rgb);
-                    rgba_data.push(255);
-                }
-                let image_data =
-                    ImageData::new_with_u8_clamped_array(Clamped(&rgba_data), bitmap.width)
-                        .unwrap();
-                bitmap.data = BitmapFormat::Rgba(rgba_data);
-                image_data
-            }
-            BitmapFormat::Rgba(rgba_data) => {
-                ImageData::new_with_u8_clamped_array(Clamped(&rgba_data), bitmap.width).unwrap()
-            }
-        }
+    fn swf_bitmap_to_js_imagedata(bitmap: Bitmap) -> ImageData {
+        let bitmap = bitmap.to_rgba();
+        assert!(bitmap.format() == BitmapFormat::Rgba);
+        ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width()).unwrap()
     }
 
-    fn register_bitmap_raw(&mut self, mut bitmap: Bitmap) -> Result<BitmapInfo, Error> {
-        let (width, height) = (bitmap.width, bitmap.height);
-
-        let image = Self::swf_bitmap_to_js_imagedata(&mut bitmap);
-
+    fn register_bitmap_raw(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
+        let (width, height) = (bitmap.width(), bitmap.height());
+        let image = Self::swf_bitmap_to_js_imagedata(bitmap);
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image: BitmapDataStorage::from_image_data(image),
@@ -426,13 +382,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
         let handle = ShapeHandle(self.shapes.len());
-        let data = swf_shape_to_canvas_commands(
-            &shape,
-            bitmap_source,
-            &self.bitmaps,
-            self.pixelated_property_value,
-            &self.context,
-        );
+        let data =
+            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
         self.shapes.push(data);
         handle
     }
@@ -443,13 +394,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap_source: &dyn BitmapSource,
         handle: ShapeHandle,
     ) {
-        let data = swf_shape_to_canvas_commands(
-            &shape,
-            bitmap_source,
-            &self.bitmaps,
-            self.pixelated_property_value,
-            &self.context,
-        );
+        let data =
+            swf_shape_to_canvas_commands(&shape, bitmap_source, &self.bitmaps, &self.context);
         self.shapes[handle.0] = data;
     }
 
@@ -486,8 +432,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         &mut self,
         swf_tag: &swf::DefineBitsLossless,
     ) -> Result<BitmapInfo, Error> {
-        let mut bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        let image = Self::swf_bitmap_to_js_imagedata(&mut bitmap);
+        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
+        let image = Self::swf_bitmap_to_js_imagedata(bitmap);
         let handle = BitmapHandle(self.bitmaps.len());
         self.bitmaps.push(BitmapData {
             image: BitmapDataStorage::from_image_data(image),
@@ -753,11 +699,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap_raw(Bitmap {
-                width,
-                height,
-                data: BitmapFormat::Rgba(rgba),
-            })?
+            .register_bitmap_raw(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?
             .handle)
     }
 
@@ -814,7 +756,6 @@ fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
     bitmap_source: &dyn BitmapSource,
     bitmaps: &[BitmapData],
-    _pixelated_property_value: &str,
     context: &CanvasRenderingContext2d,
 ) -> ShapeData {
     use ruffle_core::shape_utils::DrawPath;
