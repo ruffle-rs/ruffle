@@ -24,13 +24,19 @@ fn instance_init<'gc>(
                 .coerce_to_i32(activation)?;
             let event_data = evt.event_data_mut();
             match event_data {
-                EventData::Error {ref mut error_id, ..} => {
+                EventData::Error {
+                    ref mut error_id, ..
+                } => {
                     *error_id = id;
                 }
-                EventData::IOError {ref mut error_id, ..} => {
+                EventData::IOError {
+                    ref mut error_id, ..
+                } => {
                     *error_id = id;
                 }
-                EventData::SecurityError {ref mut error_id, ..} => {
+                EventData::SecurityError {
+                    ref mut error_id, ..
+                } => {
                     *error_id = id;
                 }
                 _ => {}
