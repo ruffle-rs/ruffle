@@ -22,7 +22,19 @@ fn instance_init<'gc>(
                 .cloned()
                 .unwrap_or_else(|| 0.into())
                 .coerce_to_i32(activation)?;
-            evt.set_event_data(EventData::Error { error_id: id });
+            let event_data = evt.event_data_mut();
+            match event_data {
+                EventData::Error {ref mut error_id, ..} => {
+                    *error_id = id;
+                }
+                EventData::IOError {ref mut error_id, ..} => {
+                    *error_id = id;
+                }
+                EventData::SecurityError {ref mut error_id, ..} => {
+                    *error_id = id;
+                }
+                _ => {}
+            }
         }
     }
     Ok(Value::Undefined)
@@ -46,6 +58,12 @@ fn error_id<'gc>(
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
             if let EventData::Error { error_id, .. } = evt.event_data() {
+                return Ok(Value::Integer(*error_id));
+            }
+            if let EventData::IOError { error_id, .. } = evt.event_data() {
+                return Ok(Value::Integer(*error_id));
+            }
+            if let EventData::SecurityError { error_id, .. } = evt.event_data() {
                 return Ok(Value::Integer(*error_id));
             }
         }

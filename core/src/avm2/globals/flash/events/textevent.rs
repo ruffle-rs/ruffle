@@ -17,12 +17,27 @@ fn instance_init<'gc>(
     if let Some(this) = this {
         activation.super_init(this, args)?; // Event uses these
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            let text = args
+            let text_arg = args
                 .get(3)
                 .cloned()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)?;
-            evt.set_event_data(EventData::Text { text });
+            let event_data = evt.event_data_mut();
+            match event_data {
+                EventData::Text {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::Error {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::IOError {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::SecurityError {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                _ => {}
+            }
         }
     }
     Ok(Value::Undefined)
@@ -45,12 +60,27 @@ fn set_text<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
-            let text = args
+            let text_arg = args
                 .get(0)
                 .cloned()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)?;
-            evt.set_event_data(EventData::Text { text });
+            let event_data = evt.event_data_mut();
+            match event_data {
+                EventData::Text {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::Error {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::IOError {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                EventData::SecurityError {ref mut text, ..} => {
+                    *text = text_arg;
+                }
+                _ => {}
+            }
         }
     }
 
@@ -66,6 +96,15 @@ fn text<'gc>(
     if let Some(this) = this {
         if let Some(evt) = this.as_event() {
             if let EventData::Text { text, .. } = evt.event_data() {
+                return Ok(Value::String(*text));
+            }
+            if let EventData::Error { text, .. } = evt.event_data() {
+                return Ok(Value::String(*text));
+            }
+            if let EventData::IOError { text, .. } = evt.event_data() {
+                return Ok(Value::String(*text));
+            }
+            if let EventData::SecurityError { text, .. } = evt.event_data() {
                 return Ok(Value::String(*text));
             }
         }

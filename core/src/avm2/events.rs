@@ -88,11 +88,16 @@ impl KeyModifiers {
 pub enum EventData<'gc> {
     Empty,
     Error {
+        text: AvmString<'gc>,
         error_id: i32,
     },
     FullScreen {
         full_screen: bool,
         interactive: bool,
+    },
+    IOError {
+        text: AvmString<'gc>,
+        error_id: i32,
     },
     Mouse {
         local_x: f64,
@@ -103,6 +108,10 @@ pub enum EventData<'gc> {
         modifiers: KeyModifiers,
         button_down: bool,
         delta: i32,
+    },
+    SecurityError {
+        text: AvmString<'gc>,
+        error_id: i32,
     },
     Text {
         text: AvmString<'gc>,

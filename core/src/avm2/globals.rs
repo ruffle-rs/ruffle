@@ -90,6 +90,8 @@ pub struct SystemPrototypes<'gc> {
     pub mouseevent: Object<'gc>,
     pub textevent: Object<'gc>,
     pub errorevent: Object<'gc>,
+    pub ioerrorevent: Object<'gc>,
+    pub securityerrorevent: Object<'gc>,
 }
 
 impl<'gc> SystemPrototypes<'gc> {
@@ -154,6 +156,8 @@ impl<'gc> SystemPrototypes<'gc> {
             mouseevent: empty,
             textevent: empty,
             errorevent: empty,
+            ioerrorevent: empty,
+            securityerrorevent: empty,
         }
     }
 }
@@ -208,6 +212,8 @@ pub struct SystemClasses<'gc> {
     pub mouseevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
     pub errorevent: ClassObject<'gc>,
+    pub ioerrorevent: ClassObject<'gc>,
+    pub securityerrorevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -272,6 +278,8 @@ impl<'gc> SystemClasses<'gc> {
             mouseevent: object,
             textevent: object,
             errorevent: object,
+            ioerrorevent: object,
+            securityerrorevent: object,
         }
     }
 }
@@ -596,16 +604,18 @@ pub fn load_player_globals<'gc>(
         flash::events::errorevent::create_class(mc),
         script
     );
-    class(
+    avm2_system_class!(
+        securityerrorevent,
         activation,
         flash::events::securityerrorevent::create_class(mc),
-        script,
-    )?;
-    class(
+        script
+    );
+    avm2_system_class!(
+        ioerrorevent,
         activation,
         flash::events::ioerrorevent::create_class(mc),
-        script,
-    )?;
+        script
+    );
     class(
         activation,
         flash::events::contextmenuevent::create_class(mc),
