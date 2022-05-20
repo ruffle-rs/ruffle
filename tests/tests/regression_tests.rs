@@ -460,6 +460,7 @@ swf_tests! {
     #[ignore] (as3_uint_toprecision, "avm2/uint_toprecision", 1), //Ignored because Flash Player has a print routine that adds extraneous zeros to things
     (as3_uint_tostring, "avm2/uint_tostring", 1),
     (as3_unchecked_function, "avm2/unchecked_function", 1),
+    (as3_url_loader, "avm2/url_loader", 1),
     (as3_urshift, "avm2/urshift", 1),
     (as3_vector_coercion, "avm2/vector_coercion", 1),
     (as3_vector_concat, "avm2/vector_concat", 1),
