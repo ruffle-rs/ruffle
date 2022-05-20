@@ -787,6 +787,7 @@ impl<'gc> Loader<'gc> {
                                     activation.context.gc_context,
                                     "Error #2032: Stream Error",
                                 ),
+                                error_id: 2032,
                             },
                         );
                         io_error_evt.set_bubbles(false);

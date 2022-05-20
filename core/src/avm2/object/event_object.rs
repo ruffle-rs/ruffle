@@ -52,9 +52,12 @@ impl<'gc> EventObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let class = match event.event_data() {
             EventData::Empty => activation.avm2().classes().event,
+            EventData::Error { .. } => activation.avm2().classes().errorevent,
             EventData::FullScreen { .. } => activation.avm2().classes().fullscreenevent,
-            EventData::Mouse { .. } => activation.avm2().classes().mouseevent,
             EventData::IOError { .. } => activation.avm2().classes().ioerrorevent,
+            EventData::Mouse { .. } => activation.avm2().classes().mouseevent,
+            EventData::SecurityError { .. } => activation.avm2().classes().securityerrorevent,
+            EventData::Text { .. } => activation.avm2().classes().textevent,
         };
 
         let proto = class.prototype();
