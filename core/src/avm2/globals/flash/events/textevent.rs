@@ -24,16 +24,16 @@ fn instance_init<'gc>(
                 .coerce_to_string(activation)?;
             let event_data = evt.event_data_mut();
             match event_data {
-                EventData::Text {ref mut text, ..} => {
+                EventData::Text { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::Error {ref mut text, ..} => {
+                EventData::Error { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::IOError {ref mut text, ..} => {
+                EventData::IOError { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::SecurityError {ref mut text, ..} => {
+                EventData::SecurityError { ref mut text, .. } => {
                     *text = text_arg;
                 }
                 _ => {}
@@ -67,16 +67,16 @@ fn set_text<'gc>(
                 .coerce_to_string(activation)?;
             let event_data = evt.event_data_mut();
             match event_data {
-                EventData::Text {ref mut text, ..} => {
+                EventData::Text { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::Error {ref mut text, ..} => {
+                EventData::Error { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::IOError {ref mut text, ..} => {
+                EventData::IOError { ref mut text, .. } => {
                     *text = text_arg;
                 }
-                EventData::SecurityError {ref mut text, ..} => {
+                EventData::SecurityError { ref mut text, .. } => {
                     *text = text_arg;
                 }
                 _ => {}
