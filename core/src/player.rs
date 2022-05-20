@@ -1655,6 +1655,7 @@ pub struct PlayerBuilder {
 
     // Misc. player configuration
     autoplay: bool,
+    fullscreen: bool,
     letterbox: Letterbox,
     max_execution_duration: Duration,
     viewport_width: u32,
@@ -1682,6 +1683,7 @@ impl PlayerBuilder {
             video: None,
 
             autoplay: false,
+            fullscreen: false,
             // Disable script timeout in debug builds by default.
             letterbox: Letterbox::Fullscreen,
             max_execution_duration: Duration::from_secs(if cfg!(debug_assertions) {
@@ -1801,6 +1803,12 @@ impl PlayerBuilder {
         self
     }
 
+    // Sets whether the stage is fullscreen.
+    pub fn with_fullscreen(mut self, fullscreen: bool) -> Self {
+        self.fullscreen = fullscreen;
+        self
+    }
+
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
@@ -1892,6 +1900,7 @@ impl PlayerBuilder {
                                 gc_context,
                                 self.viewport_width,
                                 self.viewport_height,
+                                self.fullscreen,
                             ),
                             timers: Timers::new(),
                             unbound_text_fields: Vec::new(),

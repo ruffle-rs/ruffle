@@ -36,7 +36,7 @@ use winit::event::{
     WindowEvent,
 };
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Icon, Window, WindowBuilder};
+use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -84,6 +84,10 @@ struct Opt {
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, takes_value = false)]
     upgrade_to_https: bool,
+
+    /// Start application in fullscreen.
+    #[clap(long, takes_value = false)]
+    fullscreen: bool,
 
     #[clap(long, takes_value = false)]
     timedemo: bool,
@@ -226,6 +230,11 @@ impl App {
             .with_window_icon(Some(icon))
             .with_inner_size(window_size)
             .with_max_inner_size(LogicalSize::new(i16::MAX, i16::MAX))
+            .with_fullscreen(if opt.fullscreen {
+                Some(Fullscreen::Borderless(None))
+            } else {
+                None
+            })
             .build(&event_loop)?;
 
         let viewport_size = window.inner_size();
@@ -268,7 +277,8 @@ impl App {
                 viewport_size.width,
                 viewport_size.height,
                 viewport_scale_factor,
-            );
+            )
+            .with_fullscreen(opt.fullscreen);
 
         let loaded = if let Some(movie) = movie {
             builder = builder.with_movie(movie);
