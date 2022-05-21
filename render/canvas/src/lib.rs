@@ -9,7 +9,7 @@ use ruffle_web_common::{JsError, JsResult};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
-    HtmlCanvasElement, ImageData, Path2d, SvgsvgElement,
+    HtmlCanvasElement, ImageData, Path2d,
 };
 
 const GRADIENT_TRANSFORM_THRESHOLD: f32 = 0.0001;
@@ -739,16 +739,7 @@ fn swf_shape_to_canvas_commands(
 
     let mut canvas_data = ShapeData(vec![]);
 
-    let matrix_factory: SvgsvgElement = web_sys::window()
-        .expect("window")
-        .document()
-        .expect("document")
-        .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
-        .expect("create_element on svg")
-        .dyn_into::<SvgsvgElement>()
-        .expect("an actual SVG element");
-
-    let bounds_viewbox_matrix = matrix_factory.create_svg_matrix();
+    let bounds_viewbox_matrix = DomMatrix::new().unwrap();
     bounds_viewbox_matrix.set_a(1.0 / 20.0);
     bounds_viewbox_matrix.set_d(1.0 / 20.0);
 
@@ -808,20 +799,7 @@ fn swf_shape_to_canvas_commands(
                         continue;
                     };
 
-                    let a = *matrix;
-
-                    let matrix = matrix_factory.create_svg_matrix();
-
-                    // The `1.0 / 20.0` in `bounds_viewbox_matrix` does not
-                    // affect this, so we have to do it manually here.
-                    matrix.set_a(a.a.to_f32() / 20.0);
-                    matrix.set_b(a.b.to_f32() / 20.0);
-                    matrix.set_c(a.c.to_f32() / 20.0);
-                    matrix.set_d(a.d.to_f32() / 20.0);
-                    matrix.set_e(a.tx.get() as f32 / 20.0);
-                    matrix.set_f(a.ty.get() as f32 / 20.0);
-
-                    bitmap_pattern.set_transform(&matrix);
+                    bitmap_pattern.set_transform(matrix.to_dom_matrix().unchecked_ref());
 
                     CanvasFillStyle::Pattern(bitmap_pattern, *is_smoothed)
                 } else {
@@ -834,7 +812,7 @@ fn swf_shape_to_canvas_commands(
         let canvas_path = Path2d::new().unwrap();
         canvas_path.add_path_with_transformation(
             &draw_commands_to_path2d(commands, is_closed),
-            &bounds_viewbox_matrix,
+            bounds_viewbox_matrix.unchecked_ref(),
         );
 
         match path {

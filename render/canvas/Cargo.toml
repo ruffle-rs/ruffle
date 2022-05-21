@@ -20,5 +20,4 @@ version = "0.3.57"
 features = [
     "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
     "Document", "DomMatrix", "Element", "HtmlCanvasElement", "ImageData", "Navigator", "Path2d", "SvgMatrix",
-    "SvgsvgElement",
 ]
