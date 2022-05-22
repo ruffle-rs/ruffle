@@ -25,6 +25,40 @@ fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
+fn cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("Mouse.cursor: not yet implemented");
+    Ok(Value::Undefined)
+}
+
+fn set_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("Mouse.cursor: not yet implemented");
+    Ok(Value::Undefined)
+}
+
+fn supports_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Bool(false))
+}
+
+fn supports_native_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Bool(false))
+}
+
 fn hide<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -34,12 +68,30 @@ fn hide<'gc>(
     Ok(Value::Undefined)
 }
 
+fn register_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("Mouse.registerCursor: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 fn show<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     activation.context.ui.set_mouse_visible(true);
+    Ok(Value::Undefined)
+}
+
+fn unregister_cursor<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("Mouse.unregisterCursor: not yet implemented");
     Ok(Value::Undefined)
 }
 
@@ -56,7 +108,20 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.set_attributes(ClassAttributes::SEALED | ClassAttributes::FINAL);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("show", show), ("hide", hide)];
+    const PUBLIC_CLASS_PROPERTIES: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] =
+        &[
+            ("cursor", Some(cursor), Some(set_cursor)),
+            ("supportsCursor", Some(supports_cursor), None),
+            ("supportsNativeCursor", Some(supports_native_cursor), None),
+        ];
+    write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
+
+    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("show", show),
+        ("registerCursor", register_cursor),
+        ("hide", hide),
+        ("unregisterCursor", unregister_cursor),
+    ];
     write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
 
     class
