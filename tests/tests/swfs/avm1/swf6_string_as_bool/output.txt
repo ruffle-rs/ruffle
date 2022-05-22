@@ -1,0 +1,15 @@
+10
+0x10
+0x-10
+010
+010.5
+\r10
+
+// true and '0x10'
+true
+
+// false or '0x10'
+true
+
+// !'0x10'
+false
