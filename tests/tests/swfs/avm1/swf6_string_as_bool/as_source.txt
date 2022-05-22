@@ -1,0 +1,74 @@
+// SWF hand-edited with JPEXS.
+
+
+if("") {
+   trace("(empty string)");
+}
+
+if("ab") {
+   trace("ab");
+}
+
+if("10") {
+   trace("10");
+}
+
+if("10a") {
+   trace("10a");
+}
+
+if("0x10") {
+   trace("0x10");
+}
+
+if("0x-10") {
+   trace("0x-10");
+}
+
+if("0x10.5") {
+   trace("0x10.5");
+}
+
+if("010") {
+   trace("010");
+}
+
+if("010.5") {
+   trace("010.5");
+}
+
+if("\r10") {
+   trace("\\r10");
+}
+
+if("NaN") {
+   trace("NaN");
+}
+
+if("inf") {
+   trace("inf");
+}
+
+if("+inf") {
+   trace("+inf");
+}
+
+if("Infinity") {
+   trace("Infinity");
+}
+
+if("-inf") {
+   trace("-inf");
+}
+
+trace("");
+trace("// true and \'0x10\'");
+trace(true and "0x10");
+
+trace("");
+trace("// false or \'0x10\'");
+trace(false or "0x10");
+
+trace("");
+trace("// !\'0x10\'");
+trace(!"0x10");

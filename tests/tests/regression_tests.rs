@@ -721,6 +721,7 @@ swf_tests! {
     (swf5_encoding, "avm1/swf5_encoding", 1),
     (swf5_no_closure, "avm1/swf5_no_closure", 1),
     (swf5_to_6_cross_call, "avm1/swf5_to_6_cross_call", 2),
+    (swf6_string_as_bool, "avm1/swf6_string_as_bool", 1),
     (swf6_case_insensitive, "avm1/swf6_case_insensitive", 1),
     (swf6_to_5_cross_call, "avm1/swf6_to_5_cross_call", 2),
     (swf7_case_sensitive, "avm1/swf7_case_sensitive", 1),
