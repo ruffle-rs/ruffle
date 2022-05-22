@@ -1,4 +1,4 @@
-//! `flash.ui.MouseCursor` builtin
+//! `flash.ui.MouseCursorData` builtin
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
