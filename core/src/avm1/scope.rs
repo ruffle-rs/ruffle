@@ -9,7 +9,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::Ref;
 
 /// Indicates what kind of scope a scope is.
-#[derive(Copy, Clone, Debug, PartialEq, Collect)]
+#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
 #[collect(require_static)]
 pub enum ScopeClass {
     /// Scope represents global scope.

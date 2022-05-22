@@ -2,7 +2,7 @@ use crate::matrix::Matrix;
 use gc_arena::Collect;
 use swf::Twips;
 
-#[derive(Clone, Debug, PartialEq, Collect, Default)]
+#[derive(Clone, Collect, Debug, Default, Eq, PartialEq)]
 #[collect(require_static)]
 pub struct BoundingBox {
     pub x_min: Twips,

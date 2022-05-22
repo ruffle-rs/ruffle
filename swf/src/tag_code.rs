@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum TagCode {
     End = 0,
     ShowFrame = 1,

@@ -97,7 +97,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
         let processed_url = self.pre_process_url(modified_url);
 
-        match webbrowser::open(&processed_url.to_string()) {
+        match webbrowser::open(processed_url.as_ref()) {
             Ok(_output) => {}
             Err(e) => log::error!("Could not open URL {}: {}", processed_url.as_str(), e),
         };
