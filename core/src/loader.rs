@@ -33,7 +33,7 @@ pub type Handle = Index;
 /// Enumeration of all content types that `Loader` can handle.
 ///
 /// This is a superset of `JpegTagFormat`.
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContentType {
     Swf,
     Jpeg,
@@ -84,7 +84,7 @@ impl ContentType {
     }
 }
 
-#[derive(Collect, Copy, Clone)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub enum DataFormat {
     Binary,
@@ -92,7 +92,7 @@ pub enum DataFormat {
     Variables,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
     #[error("Load cancelled")]
     Cancelled,
@@ -304,7 +304,7 @@ impl<'gc> Default for LoadManager<'gc> {
 }
 
 /// The completion status of a `Loader` loading a movie.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Collect)]
+#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
 #[collect(require_static)]
 pub enum LoaderStatus {
     /// The movie hasn't been loaded yet.

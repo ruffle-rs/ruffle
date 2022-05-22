@@ -1,6 +1,6 @@
 use swf::Fixed8;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ColorTransform {
     pub r_mult: Fixed8,
     pub g_mult: Fixed8,

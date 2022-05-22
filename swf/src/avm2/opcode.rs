@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone, Copy, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum OpCode {
     Add = 0xA0,
     AddI = 0xC5,

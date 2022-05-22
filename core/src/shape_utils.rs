@@ -61,7 +61,7 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 /// `DrawPath` represents a solid fill or a stroke.
 /// Fills are always closed paths, while strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DrawPath<'a> {
     Stroke {
         style: &'a LineStyle,
@@ -76,7 +76,7 @@ pub enum DrawPath<'a> {
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
     pub shape_bounds: BoundingBox,
@@ -97,7 +97,7 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 
 /// `DrawCommands` trace the outline of a path.
 /// Fills follow the even-odd fill rule, with opposite winding for holes.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DrawCommand {
     MoveTo {
         x: Twips,
@@ -125,7 +125,7 @@ impl DrawCommand {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 struct Point {
     x: Twips,
     y: Twips,

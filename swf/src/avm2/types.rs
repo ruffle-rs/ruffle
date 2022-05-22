@@ -24,6 +24,8 @@ pub struct ConstantPool {
     pub multinames: Vec<Multiname>,
 }
 
+// clippy false positive: https://github.com/rust-lang/rust-clippy/issues/8867
+#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Index<T>(pub u32, pub PhantomData<T>);
 
@@ -121,7 +123,7 @@ pub struct MethodBody {
     pub traits: Vec<Trait>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Exception {
     pub from_offset: u32,
     pub to_offset: u32,
@@ -130,7 +132,7 @@ pub struct Exception {
     pub type_name: Index<Multiname>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Opcode;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -152,13 +154,13 @@ pub enum DefaultValue {
     Private(Index<Namespace>),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Metadata {
     pub name: Index<String>,
     pub items: Vec<MetadataItem>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MetadataItem {
     pub key: Index<String>,
     pub value: Index<String>,
