@@ -2376,6 +2376,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_debug_id(&mut self, debug_id: &DebugId) -> Result<()> {
+        self.write_tag_header(TagCode::DebugId, debug_id.len() as u32)?;
         self.output.write_all(debug_id)?;
         Ok(())
     }
