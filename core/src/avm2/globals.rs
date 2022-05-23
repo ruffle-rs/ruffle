@@ -947,6 +947,9 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
     class(activation, flash::ui::mouse::create_class(mc), script)?;
+    class(activation, flash::ui::mouse::create_class(mc), script)?;
+    class(activation, flash::ui::mousecursor::create_class(mc), script)?;
+    class(activation, flash::ui::mousecursordata::create_class(mc), script)?;
     class(activation, flash::ui::keyboard::create_class(mc), script)?;
 
     // package `flash.net`
