@@ -1128,8 +1128,11 @@ export class RufflePlayer extends HTMLElement {
         if (this.swfUrl) errorArray.push(`SWF URL: ${this.swfUrl}\n`);
 
         errorArray.push("\n# Browser Info\n");
-        errorArray.push(`Useragent: ${window.navigator.userAgent}\n`);
-        errorArray.push(`OS: ${window.navigator.platform}\n`);
+        errorArray.push(`User Agent: ${window.navigator.userAgent}\n`);
+        errorArray.push(`Platform: ${window.navigator.platform}\n`);
+        errorArray.push(
+            `Has touch support: ${window.navigator.maxTouchPoints > 0}\n`
+        );
 
         errorArray.push("\n# Ruffle Info\n");
         errorArray.push(`Version: %VERSION_NUMBER%\n`);
@@ -1141,23 +1144,36 @@ export class RufflePlayer extends HTMLElement {
 
         const errorText = errorArray.join("");
 
-        // Remove query params for the issue title.
-        const pageUrl = document.location.href.split(/[?#]/)[0];
-        const issueTitle = `Error on ${pageUrl}`;
-        let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
-            issueTitle
-        )}&template=error_report.md&labels=error-report&body=`;
-        let issueBody = encodeURIComponent(errorText);
-        if (
-            errorArray.stackIndex > -1 &&
-            String(issueLink + issueBody).length > 8195
-        ) {
-            // Strip the stack error from the array when the produced URL is way too long.
-            // This should prevent "414 Request-URI Too Large" errors on Github.
-            errorArray[errorArray.stackIndex] = null;
-            issueBody = encodeURIComponent(errorArray.join(""));
+        const buildDate = new Date("%BUILD_DATE%");
+        const monthsPrior = new Date();
+        monthsPrior.setMonth(monthsPrior.getMonth() - 6); // 6 months prior
+        const isBuildOutdated = monthsPrior > buildDate;
+
+        // Create a link to GitHub with all of the error data, if the build is not outdated.
+        // Otherwise, create a link to the downloads section on the Ruffle website.
+        let actionTag;
+        if (!isBuildOutdated) {
+            // Remove query params for the issue title.
+            const pageUrl = document.location.href.split(/[?#]/)[0];
+            const issueTitle = `Error on ${pageUrl}`;
+            let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
+                issueTitle
+            )}&template=error_report.md&labels=error-report&body=`;
+            let issueBody = encodeURIComponent(errorText);
+            if (
+                errorArray.stackIndex > -1 &&
+                String(issueLink + issueBody).length > 8195
+            ) {
+                // Strip the stack error from the array when the produced URL is way too long.
+                // This should prevent "414 Request-URI Too Large" errors on GitHub.
+                errorArray[errorArray.stackIndex] = null;
+                issueBody = encodeURIComponent(errorArray.join(""));
+            }
+            issueLink += issueBody;
+            actionTag = `<a target="_top" href="${issueLink}">Report Bug</a>`;
+        } else {
+            actionTag = `<a target="_top" href="${RUFFLE_ORIGIN}#downloads">Update Ruffle</a>`;
         }
-        issueLink += issueBody;
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         let errorBody, errorFooter;
@@ -1276,8 +1292,11 @@ export class RufflePlayer extends HTMLElement {
                     <p>It seems like this page uses JavaScript code that conflicts with Ruffle.</p>
                     <p>If you are the server administrator, we invite you to try loading the file on a blank page.</p>
                 `;
+                if (isBuildOutdated) {
+                    errorBody += `<p>You can also try to upload a more recent version of Ruffle that may circumvent the issue (current build is outdated: %BUILD_DATE%).</p>`;
+                }
                 errorFooter = `
-                    <li><a target="_top" href="${issueLink}">Report Bug</a></li>
+                    <li>${actionTag}</li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
@@ -1295,12 +1314,14 @@ export class RufflePlayer extends HTMLElement {
                 break;
             default:
                 // Unknown error
-                errorBody = `
-                    <p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>
-                    <p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>
-                `;
+                errorBody = `<p>Ruffle has encountered a major issue whilst trying to display this Flash content.</p>`;
+                if (!isBuildOutdated) {
+                    errorBody += `<p>This isn't supposed to happen, so we'd really appreciate if you could file a bug!</p>`;
+                } else {
+                    errorBody += `<p>If you are the server administrator, please try to upload a more recent version of Ruffle (current build is outdated: %BUILD_DATE%).</p>`;
+                }
                 errorFooter = `
-                    <li><a target="_top" href="${issueLink}">Report Bug</a></li>
+                    <li>${actionTag}</li>
                     <li><a href="#" id="panic-view-details">View Error Details</a></li>
                 `;
                 break;
