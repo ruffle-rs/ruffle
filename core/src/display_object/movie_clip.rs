@@ -464,16 +464,19 @@ impl<'gc> MovieClip<'gc> {
             return Ok(());
         }
 
+        let start = reader.as_slice();
         // Queue the init actions.
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
         let _sprite_id = reader.read_u16()?;
+        let num_read = reader.pos(start);
+
         let slice = self
             .0
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len)
+            .resize_to_reader(reader, tag_len - num_read)
             .ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::Other,
@@ -499,6 +502,7 @@ impl<'gc> MovieClip<'gc> {
             return Ok(());
         }
 
+        let start = reader.as_slice();
         // Queue the actions.
         // TODO: The tag reader parses the entire ABC file, instead of just
         // giving us a `SwfSlice` for later parsing, so we have to replcate the
@@ -507,6 +511,7 @@ impl<'gc> MovieClip<'gc> {
         let name = reader.read_str()?.to_string_lossy(reader.encoding());
         let is_lazy_initialize = flags & 1 != 0;
         let domain = context.library.library_for_movie_mut(movie).avm2_domain();
+        let num_read = reader.pos(start);
 
         // The rest of the tag is an ABC file so we can take our SwfSlice now.
         let slice = self
@@ -514,7 +519,7 @@ impl<'gc> MovieClip<'gc> {
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len)
+            .resize_to_reader(reader, tag_len - num_read)
             .ok_or_else(|| {
                 std::io::Error::new(
                     std::io::ErrorKind::Other,
@@ -2891,14 +2896,17 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> DecodeResult {
+        let start = reader.as_slice();
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
+        let num_read = reader.pos(start);
+
         let movie_clip = MovieClip::new_with_data(
             context.gc_context,
             id,
             self.static_data
                 .swf
-                .resize_to_reader(reader, tag_len - 4)
+                .resize_to_reader(reader, tag_len - num_read)
                 .ok_or_else(|| {
                     std::io::Error::new(
                         std::io::ErrorKind::Other,
