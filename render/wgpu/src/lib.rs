@@ -283,7 +283,8 @@ struct Draw {
     draw_type: DrawType,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    index_count: u32,
+    num_indices: u32,
+    num_mask_indices: u32,
 }
 
 #[allow(dead_code)]
@@ -590,7 +591,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     draw_type: DrawType::Color,
                     vertex_buffer,
                     index_buffer,
-                    index_count,
+                    num_indices: index_count,
+                    num_mask_indices: draw.mask_index_count,
                 },
                 TessDrawType::Gradient(gradient) => {
                     // TODO: Extract to function?
@@ -672,7 +674,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         },
                         vertex_buffer,
                         index_buffer,
-                        index_count,
+                        num_indices: index_count,
+                        num_mask_indices: draw.mask_index_count,
                     }
                 }
                 TessDrawType::Bitmap(bitmap) => {
@@ -742,7 +745,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         },
                         vertex_buffer,
                         index_buffer,
-                        index_count,
+                        num_indices: index_count,
+                        num_mask_indices: draw.mask_index_count,
                     }
                 }
             });
@@ -1086,6 +1090,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
 
         for draw in &mesh.draws {
+            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
+                && self.mask_state != MaskState::ClearMaskStencil
+            {
+                draw.num_indices
+            } else {
+                // Omit strokes when drawing a mask stencil.
+                draw.num_mask_indices
+            };
+            if num_indices == 0 {
+                continue;
+            }
+
             match &draw.draw_type {
                 DrawType::Color => {
                     frame.render_pass.set_pipeline(
@@ -1146,7 +1162,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
             };
 
-            frame.render_pass.draw_indexed(0..draw.index_count, 0, 0..1);
+            frame.render_pass.draw_indexed(0..num_indices, 0, 0..1);
         }
     }
 

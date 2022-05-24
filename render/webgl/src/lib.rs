@@ -348,6 +348,7 @@ impl WebGlRenderBackend {
                 vertex_buffer,
                 index_buffer,
                 num_indices: 6,
+                num_mask_indices: 6,
             }],
         };
         Ok(quad_mesh)
@@ -501,6 +502,7 @@ impl WebGlRenderBackend {
         let mut draws = Vec::with_capacity(lyon_mesh.len());
         for draw in lyon_mesh {
             let num_indices = draw.indices.len() as i32;
+            let num_mask_indices = draw.mask_index_count as i32;
 
             let vao = self.create_vertex_array().unwrap();
             let vertex_buffer = self.gl.create_buffer().unwrap();
@@ -565,6 +567,7 @@ impl WebGlRenderBackend {
                     vertex_buffer,
                     index_buffer,
                     num_indices,
+                    num_mask_indices,
                 },
                 TessDrawType::Gradient(gradient) => Draw {
                     draw_type: DrawType::Gradient(Box::new(Gradient::from(gradient))),
@@ -572,6 +575,7 @@ impl WebGlRenderBackend {
                     vertex_buffer,
                     index_buffer,
                     num_indices,
+                    num_mask_indices,
                 },
                 TessDrawType::Bitmap(bitmap) => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
@@ -584,6 +588,7 @@ impl WebGlRenderBackend {
                     vertex_buffer,
                     index_buffer,
                     num_indices,
+                    num_mask_indices,
                 },
             });
 
@@ -947,6 +952,18 @@ impl RenderBackend for WebGlRenderBackend {
 
         let mesh = &self.meshes[shape.0];
         for draw in &mesh.draws {
+            // Ignore strokes when drawing a mask stencil.
+            let num_indices = if self.mask_state != MaskState::DrawMaskStencil
+                && self.mask_state != MaskState::ClearMaskStencil
+            {
+                draw.num_indices
+            } else {
+                draw.num_mask_indices
+            };
+            if num_indices == 0 {
+                continue;
+            }
+
             self.bind_vertex_array(Some(&draw.vao));
 
             let (program, src_blend, dst_blend) = match &draw.draw_type {
@@ -1068,7 +1085,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Draw the triangles.
             self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
+                .draw_elements_with_i32(Gl::TRIANGLES, num_indices, Gl::UNSIGNED_INT, 0);
         }
     }
 
@@ -1336,6 +1353,7 @@ struct Draw {
     index_buffer: WebGlBuffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,
+    num_mask_indices: i32,
 }
 
 enum DrawType {

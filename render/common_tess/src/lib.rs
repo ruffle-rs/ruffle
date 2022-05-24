@@ -13,6 +13,8 @@ pub struct ShapeTessellator {
     stroke_tess: StrokeTessellator,
     mesh: Vec<Draw>,
     lyon_mesh: VertexBuffers<Vertex, u32>,
+    mask_index_count: Option<u32>,
+    is_stroke: bool,
 }
 
 impl ShapeTessellator {
@@ -22,6 +24,8 @@ impl ShapeTessellator {
             stroke_tess: StrokeTessellator::new(),
             mesh: Vec::new(),
             lyon_mesh: VertexBuffers::new(),
+            mask_index_count: None,
+            is_stroke: false,
         }
     }
 
@@ -33,9 +37,9 @@ impl ShapeTessellator {
         self.mesh = Vec::new();
         self.lyon_mesh = VertexBuffers::new();
         for path in shape.paths {
-            let (fill_style, lyon_path) = match &path {
+            let (fill_style, lyon_path, next_is_stroke) = match &path {
                 DrawPath::Fill { style, commands } => {
-                    (*style, ruffle_path_to_lyon_path(commands, true))
+                    (*style, ruffle_path_to_lyon_path(commands, true), false)
                 }
                 DrawPath::Stroke {
                     style,
@@ -44,6 +48,7 @@ impl ShapeTessellator {
                 } => (
                     style.fill_style(),
                     ruffle_path_to_lyon_path(&commands, *is_closed),
+                    true,
                 ),
             };
 
@@ -107,10 +112,19 @@ impl ShapeTessellator {
                 }
             };
 
-            if needs_flush {
-                // Non-solid color fills are isolated draw calls, so flush any pending color fill.
+            if needs_flush || (self.is_stroke && !next_is_stroke) {
+                // We flush separate draw calls in these cases:
+                // * Non-solid color fills which require their own shader.
+                // * Strokes followed by fills, because strokes need to be omitted
+                //   when using this shape as a mask.
                 self.flush_draw(DrawType::Color);
+            } else if !self.is_stroke && next_is_stroke {
+                // Bake solid color fills followed by strokes into a single draw call, and adjust
+                // the index count to omit the strokes when rendering this shape as a mask.
+                debug_assert!(self.mask_index_count.is_none());
+                self.mask_index_count = Some(self.lyon_mesh.indices.len() as u32);
             }
+            self.is_stroke = next_is_stroke;
 
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
@@ -187,9 +201,13 @@ impl ShapeTessellator {
         let draw_mesh = std::mem::replace(&mut self.lyon_mesh, VertexBuffers::new());
         self.mesh.push(Draw {
             draw_type: draw,
+            mask_index_count: self
+                .mask_index_count
+                .unwrap_or(draw_mesh.indices.len() as u32),
             vertices: draw_mesh.vertices,
             indices: draw_mesh.indices,
         });
+        self.mask_index_count = None;
     }
 }
 
@@ -205,6 +223,7 @@ pub struct Draw {
     pub draw_type: DrawType,
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
+    pub mask_index_count: u32,
 }
 
 pub enum DrawType {
