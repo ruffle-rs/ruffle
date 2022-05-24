@@ -544,7 +544,7 @@ impl<'gc> ClassObject<'gc> {
             // todo: handle errors
             let (superclass_object, method) =
                 self.instance_vtable().get_full_method(disp_id).unwrap();
-            let scope = superclass_object.unwrap().class_scope();
+            let scope = superclass_object.unwrap().instance_scope();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),

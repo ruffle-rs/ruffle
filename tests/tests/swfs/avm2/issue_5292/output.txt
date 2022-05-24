@@ -1,2 +1,5 @@
-// Getting static property
+// Getting static property in subclass constructor
+static prop
+Calling super!
+// Getting static property in instance method
 static prop
