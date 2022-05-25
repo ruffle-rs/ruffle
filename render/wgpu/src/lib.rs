@@ -1448,7 +1448,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
         Ok(self
-            .register_bitmap(Bitmap::new(height, width, BitmapFormat::Rgba, rgba), "RAW")
+            .register_bitmap(Bitmap::new(width, height, BitmapFormat::Rgba, rgba), "RAW")
             .handle)
     }
 
