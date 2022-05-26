@@ -303,14 +303,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
             Some(Property::Method { disp_id }) => {
                 let vtable = self.vtable().unwrap();
-                if let Some((superclass, method)) = vtable.get_full_method(disp_id) {
+                if let Some((superclass, scope, method)) = vtable.get_full_method(disp_id) {
                     if !method.needs_arguments_object() {
-                        let scope = superclass.unwrap().instance_scope();
-                        Executable::from_method(method, scope, None, superclass).exec(
+                        Executable::from_method(method, scope, None, Some(superclass)).exec(
                             Some(self.into()),
                             arguments,
                             activation,
-                            superclass.unwrap().into(), //Deliberately invalid.
+                            superclass.into(), //Deliberately invalid.
                         )
                     } else {
                         if let Some(bound_method) = self.get_bound_method(disp_id) {
