@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, NullBitmapSource,
-    RenderBackend, ShapeHandle, Transform,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
+    ShapeHandle, Transform,
 };
 use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
@@ -648,56 +648,6 @@ impl WebGlRenderBackend {
             }
         }
     }
-
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
-        let format = match &bitmap.format() {
-            BitmapFormat::Rgb => Gl::RGB,
-            BitmapFormat::Rgba => Gl::RGBA,
-        };
-
-        let texture = self.gl.create_texture().unwrap();
-        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
-        self.gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-                Gl::TEXTURE_2D,
-                0,
-                format as i32,
-                bitmap.width() as i32,
-                bitmap.height() as i32,
-                0,
-                format,
-                Gl::UNSIGNED_BYTE,
-                Some(bitmap.data()),
-            )
-            .into_js_result()?;
-
-        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
-        self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
-
-        let handle = BitmapHandle(self.textures.len());
-        let width = bitmap.width();
-        let height = bitmap.height();
-        self.bitmap_registry.insert(handle, bitmap);
-
-        self.textures.push(Texture {
-            width,
-            height,
-            texture,
-        });
-
-        Ok(BitmapInfo {
-            handle,
-            width: width as u16,
-            height: height as u16,
-        })
-    }
 }
 
 impl RenderBackend for WebGlRenderBackend {
@@ -747,38 +697,6 @@ impl RenderBackend for WebGlRenderBackend {
         let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
         self.meshes.push(mesh);
         handle
-    }
-
-    fn register_bitmap_jpeg(
-        &mut self,
-        data: &[u8],
-        jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error> {
-        let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(&data[..])
-    }
-
-    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        self.register_bitmap(bitmap)
-    }
-
-    fn register_bitmap_jpeg_3_or_4(
-        &mut self,
-        jpeg_data: &[u8],
-        alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap =
-            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap(bitmap)
-    }
-
-    fn register_bitmap_png(
-        &mut self,
-        swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        self.register_bitmap(bitmap)
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -1253,15 +1171,50 @@ impl RenderBackend for WebGlRenderBackend {
         self.bitmap_registry.get(&bitmap).cloned()
     }
 
-    fn register_bitmap_raw(
-        &mut self,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        Ok(self
-            .register_bitmap(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?
-            .handle)
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        let format = match bitmap.format() {
+            BitmapFormat::Rgb => Gl::RGB,
+            BitmapFormat::Rgba => Gl::RGBA,
+        };
+
+        let texture = self.gl.create_texture().unwrap();
+        self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture));
+        self.gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                Gl::TEXTURE_2D,
+                0,
+                format as i32,
+                bitmap.width() as i32,
+                bitmap.height() as i32,
+                0,
+                format,
+                Gl::UNSIGNED_BYTE,
+                Some(bitmap.data()),
+            )
+            .into_js_result()?;
+
+        // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_S, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_WRAP_T, Gl::CLAMP_TO_EDGE as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, Gl::LINEAR as i32);
+        self.gl
+            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, Gl::LINEAR as i32);
+
+        let handle = BitmapHandle(self.textures.len());
+        let width = bitmap.width();
+        let height = bitmap.height();
+        self.bitmap_registry.insert(handle, bitmap);
+
+        self.textures.push(Texture {
+            width,
+            height,
+            texture,
+        });
+
+        Ok(handle)
     }
 
     fn update_texture(

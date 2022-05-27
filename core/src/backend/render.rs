@@ -21,21 +21,58 @@ pub trait RenderBackend: Downcast {
         handle: ShapeHandle,
     );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
+
     fn register_bitmap_jpeg(
         &mut self,
         data: &[u8],
         jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error>;
-    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error>;
+    ) -> Result<BitmapInfo, Error> {
+        let data = glue_tables_to_jpeg(data, jpeg_tables);
+        self.register_bitmap_jpeg_2(&data)
+    }
+
+    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
+        let bitmap = decode_define_bits_jpeg(data, None)?;
+        let width = bitmap.width() as u16;
+        let height = bitmap.height() as u16;
+        let handle = self.register_bitmap(bitmap)?;
+        Ok(BitmapInfo {
+            handle,
+            width,
+            height,
+        })
+    }
+
     fn register_bitmap_jpeg_3_or_4(
         &mut self,
         jpeg_data: &[u8],
         alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error>;
+    ) -> Result<BitmapInfo, Error> {
+        let bitmap = decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
+        let width = bitmap.width() as u16;
+        let height = bitmap.height() as u16;
+        let handle = self.register_bitmap(bitmap)?;
+        Ok(BitmapInfo {
+            handle,
+            width,
+            height,
+        })
+    }
+
     fn register_bitmap_png(
         &mut self,
         swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error>;
+    ) -> Result<BitmapInfo, Error> {
+        let bitmap = decode_define_bits_lossless(swf_tag)?;
+        let width = bitmap.width() as u16;
+        let height = bitmap.height() as u16;
+        let handle = self.register_bitmap(bitmap)?;
+        Ok(BitmapInfo {
+            handle,
+            width,
+            height,
+        })
+    }
 
     fn begin_frame(&mut self, clear: Color);
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool);
@@ -48,12 +85,7 @@ pub trait RenderBackend: Downcast {
     fn pop_mask(&mut self);
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap>;
-    fn register_bitmap_raw(
-        &mut self,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error>;
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
         bitmap: BitmapHandle,
@@ -129,45 +161,6 @@ impl RenderBackend for NullRenderer {
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
-    fn register_bitmap_jpeg(
-        &mut self,
-        _data: &[u8],
-        _jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error> {
-        Ok(BitmapInfo {
-            handle: BitmapHandle(0),
-            width: 0,
-            height: 0,
-        })
-    }
-    fn register_bitmap_jpeg_2(&mut self, _data: &[u8]) -> Result<BitmapInfo, Error> {
-        Ok(BitmapInfo {
-            handle: BitmapHandle(0),
-            width: 0,
-            height: 0,
-        })
-    }
-    fn register_bitmap_jpeg_3_or_4(
-        &mut self,
-        _data: &[u8],
-        _alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
-        Ok(BitmapInfo {
-            handle: BitmapHandle(0),
-            width: 0,
-            height: 0,
-        })
-    }
-    fn register_bitmap_png(
-        &mut self,
-        _swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error> {
-        Ok(BitmapInfo {
-            handle: BitmapHandle(0),
-            width: 0,
-            height: 0,
-        })
-    }
     fn begin_frame(&mut self, _clear: Color) {}
     fn end_frame(&mut self) {}
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
@@ -181,12 +174,7 @@ impl RenderBackend for NullRenderer {
     fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
         None
     }
-    fn register_bitmap_raw(
-        &mut self,
-        _width: u32,
-        _height: u32,
-        _rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }
 
@@ -344,7 +332,7 @@ pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
 
 /// Decodes bitmap data from a DefineBitsJPEG2/3 tag.
 /// The data is returned with pre-multiplied alpha.
-pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
+fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
     let format = determine_jpeg_tag_format(data);
     if format != JpegTagFormat::Jpeg && alpha_data.is_some() {
         // Only DefineBitsJPEG3 with true JPEG data should have separate alpha data.
@@ -360,10 +348,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
 
 /// Glues the JPEG encoding tables from a JPEGTables SWF tag to the JPEG data
 /// in a DefineBits tag, producing complete JPEG data suitable for a decoder.
-pub fn glue_tables_to_jpeg<'a>(
-    jpeg_data: &'a [u8],
-    jpeg_tables: Option<&'a [u8]>,
-) -> Cow<'a, [u8]> {
+fn glue_tables_to_jpeg<'a>(jpeg_data: &'a [u8], jpeg_tables: Option<&'a [u8]>) -> Cow<'a, [u8]> {
     if let Some(jpeg_tables) = jpeg_tables {
         if jpeg_tables.len() >= 2 {
             let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len());
@@ -490,7 +475,7 @@ fn decode_jpeg(
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn decode_define_bits_lossless(
+fn decode_define_bits_lossless(
     swf_tag: &swf::DefineBitsLossless,
 ) -> Result<Bitmap, Box<dyn std::error::Error>> {
     // Decompress the image data (DEFLATE compression).

@@ -1,22 +1,19 @@
-use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, RenderBackend,
-    ShapeHandle, Transform,
-};
-use ruffle_core::shape_utils::DistilledShape;
-use ruffle_core::swf;
-use std::num::NonZeroU32;
-
-use bytemuck::{Pod, Zeroable};
-
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
+use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
+use ruffle_core::backend::render::{
+    Bitmap, BitmapHandle, BitmapSource, Color, RenderBackend, ShapeHandle, Transform,
+};
 use ruffle_core::color_transform::ColorTransform;
+use ruffle_core::shape_utils::DistilledShape;
+use ruffle_core::swf;
 use ruffle_render_common_tess::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
     Vertex as TessVertex,
 };
+use std::num::NonZeroU32;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -733,89 +730,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         Mesh { draws }
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap, debug_str: &str) -> BitmapInfo {
-        let bitmap = bitmap.to_rgba();
-        let extent = wgpu::Extent3d {
-            width: bitmap.width(),
-            height: bitmap.height(),
-            depth_or_array_layers: 1,
-        };
-
-        let texture_label = create_debug_label!("{} Texture", debug_str);
-        let texture = self
-            .descriptors
-            .device
-            .create_texture(&wgpu::TextureDescriptor {
-                label: texture_label.as_deref(),
-                size: extent,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            });
-
-        self.descriptors.queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: Default::default(),
-                aspect: wgpu::TextureAspect::All,
-            },
-            bitmap.data(),
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: NonZeroU32::new(4 * extent.width),
-                rows_per_image: None,
-            },
-            extent,
-        );
-
-        let handle = BitmapHandle(self.textures.len());
-        let width = bitmap.width();
-        let height = bitmap.height();
-
-        // Make bind group for bitmap quad.
-        let texture_view = texture.create_view(&Default::default());
-        let bind_group = self
-            .descriptors
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.descriptors.pipelines.bitmap_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &self.quad_tex_transforms,
-                            offset: 0,
-                            size: wgpu::BufferSize::new(
-                                std::mem::size_of::<TextureTransforms>() as u64
-                            ),
-                        }),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
-                    },
-                ],
-                label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
-            });
-
-        self.bitmap_registry.insert(handle, bitmap);
-        self.textures.push(Texture {
-            width,
-            height,
-            texture,
-            bind_group,
-        });
-
-        BitmapInfo {
-            handle,
-            width: width as u16,
-            height: height as u16,
-        }
-    }
-
     pub fn target(&self) -> &T {
         &self.target
     }
@@ -949,38 +863,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         );
         self.meshes.push(mesh);
         handle
-    }
-
-    fn register_bitmap_jpeg(
-        &mut self,
-        data: &[u8],
-        jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error> {
-        let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(&data[..])
-    }
-
-    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        Ok(self.register_bitmap(bitmap, "JPEG2"))
-    }
-
-    fn register_bitmap_jpeg_3_or_4(
-        &mut self,
-        jpeg_data: &[u8],
-        alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap =
-            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        Ok(self.register_bitmap(bitmap, "JPEG3"))
-    }
-
-    fn register_bitmap_png(
-        &mut self,
-        swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        Ok(self.register_bitmap(bitmap, "PNG"))
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -1441,15 +1323,83 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.bitmap_registry.get(&bitmap).cloned()
     }
 
-    fn register_bitmap_raw(
-        &mut self,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        Ok(self
-            .register_bitmap(Bitmap::new(width, height, BitmapFormat::Rgba, rgba), "RAW")
-            .handle)
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        let bitmap = bitmap.to_rgba();
+        let extent = wgpu::Extent3d {
+            width: bitmap.width(),
+            height: bitmap.height(),
+            depth_or_array_layers: 1,
+        };
+
+        let texture_label = create_debug_label!("Bitmap");
+        let texture = self
+            .descriptors
+            .device
+            .create_texture(&wgpu::TextureDescriptor {
+                label: texture_label.as_deref(),
+                size: extent,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            });
+
+        self.descriptors.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &texture,
+                mip_level: 0,
+                origin: Default::default(),
+                aspect: wgpu::TextureAspect::All,
+            },
+            bitmap.data(),
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: NonZeroU32::new(4 * extent.width),
+                rows_per_image: None,
+            },
+            extent,
+        );
+
+        let handle = BitmapHandle(self.textures.len());
+        let width = bitmap.width();
+        let height = bitmap.height();
+
+        // Make bind group for bitmap quad.
+        let texture_view = texture.create_view(&Default::default());
+        let bind_group = self
+            .descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.descriptors.pipelines.bitmap_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                            buffer: &self.quad_tex_transforms,
+                            offset: 0,
+                            size: wgpu::BufferSize::new(
+                                std::mem::size_of::<TextureTransforms>() as u64
+                            ),
+                        }),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                ],
+                label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
+            });
+
+        self.bitmap_registry.insert(handle, bitmap);
+        self.textures.push(Texture {
+            width,
+            height,
+            texture,
+            bind_group,
+        });
+
+        Ok(handle)
     }
 
     fn update_texture(

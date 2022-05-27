@@ -1,6 +1,6 @@
 use ruffle_core::backend::render::{
-    swf, Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource, Color, NullBitmapSource,
-    RenderBackend, ShapeHandle, Transform,
+    swf, Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
+    ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::matrix::Matrix;
@@ -298,18 +298,6 @@ impl WebCanvasRenderBackend {
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
     }
-
-    fn register_bitmap_raw(&mut self, bitmap: Bitmap) -> Result<BitmapInfo, Error> {
-        let (width, height) = (bitmap.width(), bitmap.height());
-        let handle = BitmapHandle(self.bitmaps.len());
-        let bitmap_data = BitmapData::new(bitmap)?;
-        self.bitmaps.push(bitmap_data);
-        Ok(BitmapInfo {
-            handle,
-            width: width.try_into()?,
-            height: height.try_into()?,
-        })
-    }
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
@@ -344,38 +332,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
         let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
         self.register_shape((&shape).into(), &NullBitmapSource)
-    }
-
-    fn register_bitmap_jpeg(
-        &mut self,
-        data: &[u8],
-        jpeg_tables: Option<&[u8]>,
-    ) -> Result<BitmapInfo, Error> {
-        let data = ruffle_core::backend::render::glue_tables_to_jpeg(data, jpeg_tables);
-        self.register_bitmap_jpeg_2(&data)
-    }
-
-    fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_jpeg(data, None)?;
-        self.register_bitmap_raw(bitmap)
-    }
-
-    fn register_bitmap_jpeg_3_or_4(
-        &mut self,
-        jpeg_data: &[u8],
-        alpha_data: &[u8],
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap =
-            ruffle_core::backend::render::decode_define_bits_jpeg(jpeg_data, Some(alpha_data))?;
-        self.register_bitmap_raw(bitmap)
-    }
-
-    fn register_bitmap_png(
-        &mut self,
-        swf_tag: &swf::DefineBitsLossless,
-    ) -> Result<BitmapInfo, Error> {
-        let bitmap = ruffle_core::backend::render::decode_define_bits_lossless(swf_tag)?;
-        self.register_bitmap_raw(bitmap)
     }
 
     fn begin_frame(&mut self, clear: Color) {
@@ -638,15 +594,11 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap.get_pixels()
     }
 
-    fn register_bitmap_raw(
-        &mut self,
-        width: u32,
-        height: u32,
-        rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
-        Ok(self
-            .register_bitmap_raw(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?
-            .handle)
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        let handle = BitmapHandle(self.bitmaps.len());
+        let bitmap_data = BitmapData::new(bitmap)?;
+        self.bitmaps.push(bitmap_data);
+        Ok(handle)
     }
 
     fn update_texture(
