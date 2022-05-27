@@ -1,6 +1,6 @@
 //! Pure software video decoding backend.
 
-use crate::backend::render::{BitmapHandle, BitmapInfo, RenderBackend};
+use crate::backend::render::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, RenderBackend};
 use crate::backend::video::{
     DecodedFrame, EncodedFrame, Error, FrameDependency, VideoBackend, VideoStreamHandle,
 };
@@ -91,7 +91,13 @@ impl VideoBackend for SoftwareVideoBackend {
         let handle = if let Some(bitmap) = stream.bitmap {
             renderer.update_texture(bitmap, frame.width.into(), frame.height.into(), frame.rgba)?
         } else {
-            renderer.register_bitmap_raw(frame.width.into(), frame.height.into(), frame.rgba)?
+            let bitmap = Bitmap::new(
+                frame.width.into(),
+                frame.height.into(),
+                BitmapFormat::Rgba,
+                frame.rgba,
+            );
+            renderer.register_bitmap(bitmap)?
         };
         stream.bitmap = Some(handle);
 

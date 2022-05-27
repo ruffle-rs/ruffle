@@ -1,7 +1,7 @@
 use gc_arena::Collect;
 
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::backend::render::{BitmapHandle, RenderBackend};
+use crate::backend::render::{Bitmap, BitmapFormat, BitmapHandle, RenderBackend};
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
@@ -177,8 +177,13 @@ impl<'gc> BitmapData<'gc> {
 
     pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
         if self.bitmap_handle.is_none() {
-            let bitmap_handle =
-                renderer.register_bitmap_raw(self.width(), self.height(), self.pixels_rgba());
+            let bitmap = Bitmap::new(
+                self.width(),
+                self.height(),
+                BitmapFormat::Rgba,
+                self.pixels_rgba(),
+            );
+            let bitmap_handle = renderer.register_bitmap(bitmap);
             if let Err(e) = &bitmap_handle {
                 log::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
             }
