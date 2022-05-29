@@ -126,30 +126,30 @@ macro_rules! define_fixed {
             /// -Self::MIN is the only case where wrapping occurs.
             #[inline]
             #[must_use]
-            pub fn wrapping_neg(self) -> Self {
+            pub const fn wrapping_neg(self) -> Self {
                 Self(self.0.wrapping_neg())
             }
 
             /// Wrapping (modular) addition. Computes self + rhs, wrapping around at the boundary of the type.
             #[inline]
             #[must_use]
-            pub fn wrapping_add(self, other: Self) -> Self {
+            pub const fn wrapping_add(self, other: Self) -> Self {
                 Self(self.0.wrapping_add(other.0))
             }
 
             /// Wrapping (modular) subtraction. Computes self - rhs, wrapping around at the boundary of the type.
             #[inline]
             #[must_use]
-            pub fn wrapping_sub(self, other: Self) -> Self {
+            pub const fn wrapping_sub(self, other: Self) -> Self {
                 Self(self.0.wrapping_sub(other.0))
             }
 
             /// Wrapping (modular) multiplication. Computes self * rhs, wrapping around at the boundary of the type.
             #[inline]
             #[must_use]
-            pub fn wrapping_mul(self, other: Self) -> Self {
-                let n = <$intermediate_type>::from(self.0)
-                    .wrapping_mul(<$intermediate_type>::from(other.0))
+            pub const fn wrapping_mul(self, other: Self) -> Self {
+                let n = (self.0 as $intermediate_type)
+                    .wrapping_mul(other.0 as $intermediate_type)
                     >> Self::FRACTIONAL_BITS;
                 Self(n as $underlying_type)
             }
@@ -157,8 +157,9 @@ macro_rules! define_fixed {
             /// Wrapping (modular) division. Computes self / rhs, wrapping around at the boundary of the type.
             #[inline]
             #[must_use]
-            pub fn wrapping_div(self, other: Self) -> Self {
-                let n = (<$intermediate_type>::from(self.0) << Self::FRACTIONAL_BITS).wrapping_div(<$intermediate_type>::from(other.0));
+            pub const fn wrapping_div(self, other: Self) -> Self {
+                let n = ((self.0 as $intermediate_type) << Self::FRACTIONAL_BITS)
+                    .wrapping_div(other.0 as $intermediate_type);
                 Self(n as $underlying_type)
             }
 
@@ -166,9 +167,9 @@ macro_rules! define_fixed {
             /// Multiplies this fixed-point by an integer, returning the integer result.
             /// The result will use the full size of the integer. The fractional bits will be truncated.
             #[inline]
-            pub fn wrapping_mul_int(self, other: $underlying_type) -> $underlying_type {
-                let n = (<$intermediate_type>::from(self.0)
-                    .wrapping_mul(<$intermediate_type>::from(other)))
+            pub const fn wrapping_mul_int(self, other: $underlying_type) -> $underlying_type {
+                let n = (self.0 as $intermediate_type)
+                    .wrapping_mul(other as $intermediate_type)
                     >> Self::FRACTIONAL_BITS;
                 n as $underlying_type
             }
