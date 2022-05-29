@@ -1621,11 +1621,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         let edit_text = self.0.read();
         context.transform_stack.push(&Transform {
-            matrix: Matrix {
-                tx: edit_text.bounds.x_min,
-                ty: edit_text.bounds.y_min,
-                ..Default::default()
-            },
+            matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
             ..Default::default()
         });
 
@@ -1659,12 +1655,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
         // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
-            matrix: Matrix {
-                tx: Twips::from_pixels(Self::INTERNAL_PADDING)
-                    - Twips::from_pixels(edit_text.hscroll),
-                ty: Twips::from_pixels(Self::INTERNAL_PADDING) - scroll_offset,
-                ..Default::default()
-            },
+            matrix: Matrix::translate(
+                Twips::from_pixels(Self::INTERNAL_PADDING) - Twips::from_pixels(edit_text.hscroll),
+                Twips::from_pixels(Self::INTERNAL_PADDING) - scroll_offset,
+            ),
             ..Default::default()
         });
 
