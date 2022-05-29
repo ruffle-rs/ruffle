@@ -15,7 +15,6 @@ ruffleShadowTemplate.innerHTML = `
             width: 550px;
             height: 400px;
             font-family: Arial, sans-serif;
-            font-size: 20px;
             letter-spacing: 0.4px;
             touch-action: none;
             user-select: none;
@@ -132,6 +131,7 @@ ruffleShadowTemplate.innerHTML = `
             align-items: center;
             justify-content: center;
             overflow: auto;
+			font-size: 20px;
         }
 
         #message_overlay .message {
