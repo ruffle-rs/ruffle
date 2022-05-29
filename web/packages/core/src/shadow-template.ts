@@ -131,7 +131,6 @@ ruffleShadowTemplate.innerHTML = `
             align-items: center;
             justify-content: center;
             overflow: auto;
-			font-size: 20px;
         }
 
         #message_overlay .message {
@@ -139,6 +138,7 @@ ruffleShadowTemplate.innerHTML = `
             max-height: 100%;
             max-width: 100%;
             padding: 5%;
+	    font-size: 20px;
         }
 
         #message_overlay p {
