@@ -51,11 +51,11 @@ impl Matrix {
 
     /// Returns a scale matrix.
     #[inline]
-    pub fn scale(scale_x: Fixed16, scale_y: Fixed16) -> Self {
+    pub const fn scale(scale_x: Fixed16, scale_y: Fixed16) -> Self {
         Self {
             a: scale_x,
             d: scale_y,
-            ..Default::default()
+            ..Self::IDENTITY
         }
     }
 
@@ -73,11 +73,11 @@ impl Matrix {
 
     /// Returns a translation matrix.
     #[inline]
-    pub fn translate(x: Twips, y: Twips) -> Self {
+    pub const fn translate(x: Twips, y: Twips) -> Self {
         Self {
             tx: x,
             ty: y,
-            ..Default::default()
+            ..Self::IDENTITY
         }
     }
 
