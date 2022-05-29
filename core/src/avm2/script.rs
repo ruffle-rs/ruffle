@@ -4,7 +4,9 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
+use crate::avm2::names::Multiname;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
@@ -55,6 +57,23 @@ pub struct TranslationUnitData<'gc> {
     /// All strings loaded from the ABC's strings list.
     /// They're lazy loaded and offset by 1, with the 0th element being always None.
     strings: Vec<Option<AvmString<'gc>>>,
+
+    /// A map from trait names to their defining `Scripts`.
+    /// This is very similar to `Domain.defs`, except it
+    /// only stores traits with `Namespace::Private`, which are
+    /// not exported/stored in `Domain`.
+    ///
+    /// This should only be used in very specific circumstances -
+    /// such as resolving classes for property types. All other
+    /// lookups should go through `Activation.resolve_definition`,
+    /// which takes scopes and privacy into account.
+    ///
+    /// Note that this map is 'gradually' populated over time -
+    /// each call to `script.load_traits` inserts all private
+    /// traits declared by that script. When looking up a
+    /// trait name in this map, you must ensure that its
+    /// corresponing `Script` will have already been loaded.
+    private_trait_scripts: PropertyMap<'gc, Script<'gc>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -65,6 +84,7 @@ impl<'gc> TranslationUnit<'gc> {
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
         let strings = vec![None; abc.constant_pool.strings.len() + 1];
+        let private_trait_scripts = PropertyMap::new();
 
         Self(GcCell::allocate(
             mc,
@@ -75,13 +95,26 @@ impl<'gc> TranslationUnit<'gc> {
                 methods,
                 scripts,
                 strings,
+                private_trait_scripts,
             },
         ))
+    }
+
+    pub fn domain(self) -> Domain<'gc> {
+        self.0.read().domain
     }
 
     /// Retrieve the underlying `AbcFile` for this translation unit.
     pub fn abc(self) -> Rc<AbcFile> {
         self.0.read().abc.clone()
+    }
+
+    pub fn get_loaded_private_trait_script(self, name: &Multiname<'gc>) -> Option<Script<'gc>> {
+        self.0
+            .read()
+            .private_trait_scripts
+            .get_for_multiname(name)
+            .copied()
     }
 
     /// Load a method from the ABC file and return its method definition.
@@ -338,7 +371,13 @@ impl<'gc> Script<'gc> {
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            if !newtrait.name().namespace().is_private() {
+            let name = newtrait.name();
+            if name.namespace().is_private() {
+                unit.0
+                    .write(activation.context.gc_context)
+                    .private_trait_scripts
+                    .insert(name, *self);
+            } else {
                 write.domain.export_definition(
                     newtrait.name(),
                     *self,

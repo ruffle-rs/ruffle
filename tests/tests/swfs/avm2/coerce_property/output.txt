@@ -1,0 +1,18 @@
+///any_var
+[object Object]
+///var integer_var:int = 1.5
+///integer_var
+1
+///integer_var = 6.7;
+6
+///first.prop1
+null
+///second.prop2
+null
+///first.prop1 = second;
+///second.prop2 = first
+///first.prop1
+[object Second]
+///second.prop2
+[object First]
+//first.prop1 = new Object();

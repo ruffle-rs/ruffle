@@ -1,6 +1,7 @@
 //! AVM2 values
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
@@ -687,15 +688,27 @@ impl<'gc> Value<'gc> {
             if object.is_of_type(class, activation)? {
                 return Ok(object.into());
             }
+
+            if let Some(vector) = object.as_vector_storage() {
+                let name = class.inner_class_definition().read().name();
+                if name == QName::new(Namespace::package(NS_VECTOR), "Vector")
+                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$int")
+                        && vector.value_type() == activation.avm2().classes().int)
+                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$uint")
+                        && vector.value_type() == activation.avm2().classes().uint)
+                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$number")
+                        && vector.value_type() == activation.avm2().classes().number)
+                    || (name == QName::new(Namespace::internal(NS_VECTOR), "Vector$object")
+                        && vector.value_type() == activation.avm2().classes().object)
+                {
+                    return Ok(*self);
+                }
+            }
         }
 
-        let static_class = class.inner_class_definition();
-        Err(format!(
-            "Cannot coerce {:?} to an {:?}",
-            self,
-            static_class.read().name()
-        )
-        .into())
+        let name = class.inner_class_definition().read().name();
+
+        Err(format!("Cannot coerce {:?} to an {:?}", self, name).into())
     }
 
     /// Determine if this value is any kind of number.

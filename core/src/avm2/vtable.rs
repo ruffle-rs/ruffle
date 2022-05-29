@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::method::Method;
 use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, FunctionObject, Object};
-use crate::avm2::property::Property;
+use crate::avm2::property::{Property, PropertyClass};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -27,7 +27,7 @@ pub struct VTableData<'gc> {
 
     protected_namespace: Option<Namespace<'gc>>,
 
-    resolved_traits: PropertyMap<'gc, Property>,
+    resolved_traits: PropertyMap<'gc, Property<'gc>>,
 
     method_table: Vec<ClassBoundMethod<'gc>>,
 
@@ -64,7 +64,7 @@ impl<'gc> VTable<'gc> {
         VTable(GcCell::allocate(mc, self.0.read().clone()))
     }
 
-    pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
+    pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property<'gc>> {
         self.0
             .read()
             .resolved_traits
@@ -300,12 +300,26 @@ impl<'gc> VTable<'gc> {
                     };
 
                     let new_prop = match trait_data.kind() {
-                        TraitKind::Slot { .. } | TraitKind::Function { .. } => {
-                            Property::new_slot(new_slot_id)
-                        }
-                        TraitKind::Const { .. } | TraitKind::Class { .. } => {
-                            Property::new_const_slot(new_slot_id)
-                        }
+                        TraitKind::Slot {
+                            type_name, unit, ..
+                        } => Property::new_slot(
+                            new_slot_id,
+                            PropertyClass::name(activation, type_name.clone(), *unit),
+                        ),
+                        TraitKind::Function { .. } => Property::new_slot(
+                            new_slot_id,
+                            PropertyClass::Class(activation.avm2().classes().function),
+                        ),
+                        TraitKind::Const {
+                            type_name, unit, ..
+                        } => Property::new_const_slot(
+                            new_slot_id,
+                            PropertyClass::name(activation, type_name.clone(), *unit),
+                        ),
+                        TraitKind::Class { .. } => Property::new_const_slot(
+                            new_slot_id,
+                            PropertyClass::Class(activation.avm2().classes().class),
+                        ),
                         _ => unreachable!(),
                     };
 
@@ -359,14 +373,16 @@ impl<'gc> VTable<'gc> {
         mc: MutationContext<'gc, '_>,
         name: QName<'gc>,
         value: Value<'gc>,
+        class: ClassObject<'gc>,
     ) -> u32 {
         let mut write = self.0.write(mc);
 
         write.default_slots.push(Some(value));
         let new_slot_id = write.default_slots.len() as u32 - 1;
-        write
-            .resolved_traits
-            .insert(name, Property::new_slot(new_slot_id));
+        write.resolved_traits.insert(
+            name,
+            Property::new_slot(new_slot_id, PropertyClass::Class(class)),
+        );
 
         new_slot_id
     }

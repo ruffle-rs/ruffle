@@ -73,8 +73,15 @@ fn bytes_total<'gc>(
             // (the `data` property is only set after the download is completed)
             if let Some(array) = data.as_bytearray() {
                 return Ok(array.len().into());
+            } else if let Some(Value::String(data)) = data.as_primitive().as_deref() {
+                return Ok(data.len().into());
             } else {
-                return Err(format!("Unexpected value for `data` property: {:?}", data).into());
+                return Err(format!(
+                    "Unexpected value for `data` property: {:?} {:?}",
+                    data,
+                    data.as_primitive()
+                )
+                .into());
             }
         } else if let Value::String(data) = data {
             return Ok(data.len().into());
