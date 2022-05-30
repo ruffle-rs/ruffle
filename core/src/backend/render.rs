@@ -726,23 +726,6 @@ pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
     })
 }
 
-/// Converts an RGBA color from sRGB space to linear color space.
-pub fn srgb_to_linear(color: [f32; 4]) -> [f32; 4] {
-    fn to_linear_channel(n: f32) -> f32 {
-        if n <= 0.04045 {
-            n / 12.92
-        } else {
-            f32::powf((n + 0.055) / 1.055, 2.4)
-        }
-    }
-    [
-        to_linear_channel(color[0]),
-        to_linear_channel(color[1]),
-        to_linear_channel(color[2]),
-        color[3],
-    ]
-}
-
 /// Decodes zlib-compressed data.
 fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
     let mut out_data = Vec::new();

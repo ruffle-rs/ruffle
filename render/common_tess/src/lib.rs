@@ -5,7 +5,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_core::backend::render::{srgb_to_linear, swf, BitmapHandle, BitmapSource};
+use ruffle_core::backend::render::{swf, BitmapHandle, BitmapSource};
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
@@ -353,25 +353,25 @@ fn swf_gradient_to_uniforms(
     gradient: &swf::Gradient,
     focal_point: swf::Fixed8,
 ) -> Gradient {
-    let mut colors: Vec<[f32; 4]> = Vec::with_capacity(8);
-    let mut ratios: Vec<f32> = Vec::with_capacity(8);
     // TODO: Support more than MAX_GRADIENT_COLORS.
     let num_colors = gradient.records.len().min(MAX_GRADIENT_COLORS);
+    let mut colors = Vec::with_capacity(num_colors);
+    let mut ratios = Vec::with_capacity(num_colors);
     for record in &gradient.records[..num_colors] {
-        colors.push([
+        let mut color = [
             f32::from(record.color.r) / 255.0,
             f32::from(record.color.g) / 255.0,
             f32::from(record.color.b) / 255.0,
             f32::from(record.color.a) / 255.0,
-        ]);
-        ratios.push(f32::from(record.ratio) / 255.0);
-    }
-
-    // Convert to linear color space if this is a linear-interpolated gradient.
-    if gradient.interpolation == swf::GradientInterpolation::LinearRgb {
-        for color in &mut colors[..num_colors] {
-            *color = srgb_to_linear(*color);
+        ];
+        // Convert to linear color space if this is a linear-interpolated gradient.
+        match gradient.interpolation {
+            swf::GradientInterpolation::Rgb => {}
+            swf::GradientInterpolation::LinearRgb => srgb_to_linear(&mut color),
         }
+        colors.push(color);
+
+        ratios.push(f32::from(record.ratio) / 255.0);
     }
 
     Gradient {
@@ -383,6 +383,17 @@ fn swf_gradient_to_uniforms(
         repeat_mode: gradient.spread,
         focal_point,
         interpolation: gradient.interpolation,
+    }
+}
+
+/// Converts an RGBA color from sRGB space to linear color space.
+fn srgb_to_linear(color: &mut [f32; 4]) {
+    for n in &mut color[..3] {
+        *n = if *n <= 0.04045 {
+            *n / 12.92
+        } else {
+            f32::powf((*n + 0.055) / 1.055, 2.4)
+        };
     }
 }
 
