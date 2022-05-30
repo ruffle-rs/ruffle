@@ -186,8 +186,10 @@ impl<'gc> ScriptObjectData<'gc> {
             .unwrap_or(false)
         {
             return Err(format!(
-                "Cannot set undefined property {}",
-                multiname.to_qualified_name(activation.context.gc_context)
+                "Cannot set undefined property {} on {:?}",
+                multiname.to_qualified_name(activation.context.gc_context),
+                self.instance_of()
+                    .map(|cls| cls.inner_class_definition().read().name()),
             )
             .into());
         }

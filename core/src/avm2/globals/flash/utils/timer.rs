@@ -1,39 +1,79 @@
-//! `flash.utils.Timer` builtin/prototype
+//! `flash.utils.Timer` native methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::Method;
 use crate::avm2::names::{Namespace, QName};
+use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
-use gc_arena::{GcCell, MutationContext};
+use crate::timer::TimerCallback;
 
-/// Implements `flash.utils.Timer`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+/// Implements `Timer.stop`
+pub fn stop<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    let mut this = this.expect("`this` should be set in native method!");
+    let id = this
+        .get_property(
+            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            activation,
+        )
+        .unwrap()
+        .coerce_to_i32(activation)?;
+
+    if id != -1 {
+        activation.context.timers.remove(id);
+        this.set_property(
+            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            (-1).into(),
+            activation,
+        )?;
+    }
+
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.utils.Timer`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+/// Implements `Timer.start`
+pub fn start<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    let mut this = this.expect("`this` should be set in native method!");
+    let id = this
+        .get_property(
+            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            activation,
+        )
+        .unwrap()
+        .coerce_to_i32(activation)?;
+
+    let delay = this
+        .get_property(
+            &QName::new(Namespace::Private("".into()), "_delay").into(),
+            activation,
+        )
+        .unwrap()
+        .coerce_to_number(activation)?;
+
+    if id == -1 {
+        let on_update = this
+            .get_property(
+                &QName::new(Namespace::Private("".into()), "onUpdate").into(),
+                activation,
+            )?
+            .coerce_to_object(activation)?;
+        let id = activation.context.timers.add_timer(
+            TimerCallback::Avm2Callback(on_update),
+            delay as _,
+            false,
+        );
+        this.set_property(
+            &QName::new(Namespace::Private("".into()), "_timerId").into(),
+            id.into(),
+            activation,
+        )?;
+    }
     Ok(Value::Undefined)
-}
-
-pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
-    let class = Class::new(
-        QName::new(Namespace::package("flash.utils"), "Timer"),
-        Some(QName::new(Namespace::package("flash.events"), "EventDispatcher").into()),
-        Method::from_builtin(instance_init, "<Timer instance initializer>", mc),
-        Method::from_builtin(class_init, "<Timer class initializer>", mc),
-        mc,
-    );
-
-    class
 }

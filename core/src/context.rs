@@ -1,7 +1,7 @@
 //! Contexts and helper types passed between functions.
 
 use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::{Avm1, Object as Avm1Object, Timers, Value as Avm1Value};
+use crate::avm1::{Avm1, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{
     Avm2, Event as Avm2Event, Object as Avm2Object, SoundChannelObject, Value as Avm2Value,
 };
@@ -23,6 +23,7 @@ use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::timer::Timers;
 use crate::transform::TransformStack;
 use crate::vminterface::AvmType;
 use core::fmt;

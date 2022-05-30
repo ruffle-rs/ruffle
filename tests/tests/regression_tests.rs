@@ -701,7 +701,7 @@ swf_tests! {
     (removed_clip_halts_script, "avm1/removed_clip_halts_script", 13),
     (root_global_parent, "avm1/root_global_parent", 3),
     (selection, "avm1/selection", 1),
-    (set_interval, "avm1/set_interval", 20),
+    (set_interval, "avm1/set_interval", 40),
     (set_variable_scope, "avm1/set_variable_scope", 1),
     (single_frame, "avm1/single_frame", 2),
     (slash_syntax, "avm1/slash_syntax", 2),
@@ -740,6 +740,7 @@ swf_tests! {
     (textfield_variable, "avm1/textfield_variable", 8),
     (this_scoping, "avm1/this_scoping", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
+    (avm2_timer, "avm2/timer", 140),
     (timer_run_actions, "avm1/timer_run_actions", 1),
     (trace, "avm1/trace", 1),
     (transform, "avm1/transform", 1),
@@ -1223,7 +1224,7 @@ fn run_swf(
 
     before_start(player.clone())?;
 
-    for _ in 0..num_frames {
+    for i in 0..num_frames {
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.run();
@@ -1252,6 +1253,19 @@ fn run_swf(
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
+        if i != num_frames - 1 {
+            // Ensure that the correct amount of time *actually* elapses.
+            // The actual time firing is deterministic (we always advance
+            // the timer clock by `frame_time` milliseconds), but tests
+            // can observe the actual time via `flash.utils.getTimer()`.
+            //
+            // This allows us to write tests that verify that the time
+            // elapsed between timer events is at least the specified
+            // timer delay.
+            if let Some(sleep) = player.lock().unwrap().time_til_next_timer() {
+                std::thread::sleep(Duration::from_millis(sleep as u64));
+            }
+        }
     }
 
     // Render the image to disk

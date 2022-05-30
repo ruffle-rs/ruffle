@@ -36,6 +36,7 @@ mod prelude;
 pub mod shape_utils;
 pub mod string;
 pub mod tag_utils;
+pub mod timer;
 mod transform;
 mod types;
 mod vminterface;

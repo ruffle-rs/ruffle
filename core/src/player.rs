@@ -3,7 +3,7 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, ScriptObject, TObject, Timers, Value};
+use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -30,6 +30,7 @@ use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
+use crate::timer::Timers;
 use crate::transform::TransformStack;
 use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
@@ -446,6 +447,10 @@ impl Player {
             self.update_timers(dt);
             self.audio.tick();
         }
+    }
+
+    pub fn time_til_next_timer(&self) -> Option<f64> {
+        self.time_til_next_timer
     }
 
     /// Returns the approximate duration of time until the next frame is due to run.
