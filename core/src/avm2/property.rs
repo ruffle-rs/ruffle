@@ -45,7 +45,9 @@ pub enum Property<'gc> {
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
-    Class(ClassObject<'gc>),
+    /// We use `None` to represent a type of `*` (`Multiname.is_any()`),
+    /// which needs to be distinguished from `Object`
+    Class(Option<ClassObject<'gc>>),
     Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
 }
 
@@ -72,11 +74,12 @@ impl<'gc> PropertyClass<'gc> {
             }
         };
 
-        // `coerce_to_type` maps `Undefined` to `Null`, but
-        // we want it to stay as `Undefined` when setting a property
-        match value {
-            Value::Undefined => Ok(value),
-            _ => value.coerce_to_type(activation, class),
+        if let Some(class) = class {
+            value.coerce_to_type(activation, class)
+        } else {
+            // We have a type of '*' ("any"), so don't
+            // perform any coercions
+            Ok(value)
         }
     }
 }
@@ -91,13 +94,14 @@ fn resolve_class_private<'gc>(
     name: &Multiname<'gc>,
     unit: Option<TranslationUnit<'gc>>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<ClassObject<'gc>, Error> {
+) -> Result<Option<ClassObject<'gc>>, Error> {
     // A Property may have a type of '*' (which corresponds to 'Multiname::any()')
-    // In certain cases, we need to be able to distinguish between this
-    // and a type of 'Object' (e.g. when determining the default value).
-    // Here, it makes no difference.
+    // We don't want to perform any coercions in this case - in particular,
+    // this means that the property can have a value of `Undefined`.
+    // If the type is `Object`, then a value of `Undefind` gets coerced
+    // to `Null`
     if name.is_any() {
-        Ok(activation.avm2().classes().object)
+        Ok(None)
     } else {
         // First, check the domain for an exported (non-private) class.
         // If the property we're resolving for lacks a `TranslationUnit`,
@@ -129,17 +133,18 @@ fn resolve_class_private<'gc>(
             return Err(format!("Missing script and translation unit for class {:?}", name).into());
         };
 
-        globals
-            .get_property(name, activation)?
-            .as_object()
-            .and_then(|o| o.as_class_object())
-            .ok_or_else(|| {
-                format!(
-                    "Attempted to perform (private) resolution of nonexistent type {:?}",
-                    name
-                )
-                .into()
-            })
+        Ok(Some(
+            globals
+                .get_property(name, activation)?
+                .as_object()
+                .and_then(|o| o.as_class_object())
+                .ok_or_else(|| {
+                    Error::from(format!(
+                        "Attempted to perform (private) resolution of nonexistent type {:?}",
+                        name
+                    ))
+                })?,
+        ))
     }
 }
 

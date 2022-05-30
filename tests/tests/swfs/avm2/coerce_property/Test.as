@@ -13,10 +13,13 @@ class Second {
 	var prop2:First;
 }
 
-var any_var:*;
-any_var = new Object();
+var any_var:* = undefined;
 trace("///any_var");
 trace(any_var);
+
+var object_var:Object = undefined;
+trace("///object_var");
+trace(object_var);
 
 trace("///var integer_var:int = 1.5");
 var integer_var:int = 1.5;

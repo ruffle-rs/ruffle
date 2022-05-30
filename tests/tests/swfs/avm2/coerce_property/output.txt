@@ -1,5 +1,7 @@
 ///any_var
-[object Object]
+undefined
+///object_var
+null
 ///var integer_var:int = 1.5
 ///integer_var
 1

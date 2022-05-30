@@ -757,6 +757,20 @@ impl<'gc> Class<'gc> {
     }
 
     #[inline(never)]
+    pub fn define_public_slot_instance_traits_type_multiname(
+        &mut self,
+        items: &[(&'static str, Multiname<'gc>)],
+    ) {
+        for (name, type_name) in items {
+            self.define_instance_trait(Trait::from_slot(
+                QName::new(Namespace::public(), *name),
+                type_name.clone(),
+                None,
+            ));
+        }
+    }
+
+    #[inline(never)]
     pub fn define_private_slot_instance_traits(
         &mut self,
         items: &[(&'static str, &'static str, &'static str, &'static str)],
