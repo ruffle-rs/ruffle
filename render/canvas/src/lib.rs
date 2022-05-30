@@ -834,23 +834,6 @@ fn swf_shape_to_canvas_commands(
     canvas_data
 }
 
-/// Converts an SWF color from sRGB space to linear color space.
-pub fn srgb_to_linear(mut color: swf::Color) -> swf::Color {
-    fn to_linear_channel(n: u8) -> u8 {
-        let mut n = f32::from(n) / 255.0;
-        n = if n <= 0.04045 {
-            n / 12.92
-        } else {
-            f32::powf((n + 0.055) / 1.055, 2.4)
-        };
-        (n.clamp(0.0, 1.0) * 255.0).round() as u8
-    }
-    color.r = to_linear_channel(color.r);
-    color.g = to_linear_channel(color.g);
-    color.b = to_linear_channel(color.b);
-    color
-}
-
 fn create_linear_gradient(
     context: &CanvasRenderingContext2d,
     gradient: &swf::Gradient,
