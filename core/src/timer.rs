@@ -1,14 +1,17 @@
-//! Timer handling for `setInterval` AVM timers.
+//! Timer handling for `setInterval`/`setTimeout`/`Timer` AVM timers.
 //!
 //! We tick the timers during our normal frame loop for deterministic operation.
 //! The timers are stored in a priority queue, where we check if the nearest timer
 //! is ready to tick each frame.
-//!
-//! TODO: Could we use this for AVM2 timers as well?
 
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::{Activation, ActivationIdentifier, AvmString, Object, TObject, Value};
+use crate::avm1::{
+    Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
+};
+use crate::avm2::object::TObject;
+use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object};
 use crate::context::UpdateContext;
+use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 
@@ -79,37 +82,50 @@ impl<'gc> Timers<'gc> {
             }
 
             // TODO: Can we avoid these clones?
-            let params = timer.params.clone();
             let callback = timer.callback.clone();
 
-            match callback {
-                TimerCallback::Function(function) => {
-                    let _ = function.call(
+            let cancel_timer = match callback {
+                TimerCallback::Avm1Function { func, params } => {
+                    let _ = func.call(
                         "[Timer Callback]".into(),
                         &mut activation,
-                        Value::Undefined,
+                        Avm1Value::Undefined,
                         &params,
                     );
+                    false
                 }
-                TimerCallback::Method { this, method_name } => {
+                TimerCallback::Avm1Method {
+                    this,
+                    method_name,
+                    params,
+                } => {
                     let _ = this.call_method(
                         method_name,
                         &params,
                         &mut activation,
                         ExecutionReason::Special,
                     );
+                    false
                 }
-            }
+                TimerCallback::Avm2Callback(obj) => {
+                    let mut avm2_activation =
+                        Avm2Activation::from_nothing(activation.context.reborrow());
+                    obj.call(None, &[], &mut avm2_activation)
+                        .unwrap()
+                        .coerce_to_boolean()
+                }
+            };
 
             crate::player::Player::run_actions(&mut activation.context);
 
             let mut timer = activation.context.timers.peek_mut().unwrap();
-            if timer.is_timeout {
+            if timer.is_timeout || cancel_timer {
                 // Timeouts only fire once.
                 drop(timer);
                 activation.context.timers.pop();
             } else {
                 // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
+                //timer.tick_time = new_cur_time.wrapping_add(timer.interval);
                 timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
             }
         }
@@ -150,7 +166,6 @@ impl<'gc> Timers<'gc> {
         &mut self,
         callback: TimerCallback<'gc>,
         interval: i32,
-        params: Vec<Value<'gc>>,
         is_timeout: bool,
     ) -> i32 {
         // SANITY: Set a minimum interval so we don't spam too much.
@@ -161,7 +176,6 @@ impl<'gc> Timers<'gc> {
         let timer = Timer {
             id,
             callback,
-            params,
             tick_time: self.cur_time + interval,
             interval,
             is_timeout,
@@ -210,18 +224,15 @@ unsafe impl<'gc> Collect for Timers<'gc> {
 }
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
-#[derive(Debug, Collect)]
+#[derive(Collect)]
 #[collect(no_drop)]
-struct Timer<'gc> {
+pub struct Timer<'gc> {
     /// The ID of the timer.
     id: i32,
 
     /// The callback that this timer runs when it fires.
     /// A callback is either a function object, or a parent object with a method name.
     callback: TimerCallback<'gc>,
-
-    /// The parameters to pass to the callback function.
-    params: Vec<Value<'gc>>,
 
     /// The time when this timer should fire.
     tick_time: u64,
@@ -260,12 +271,20 @@ impl Ord for Timer<'_> {
 }
 
 /// A callback fired by a `setInterval`/`setTimeout` timer.
-#[derive(Debug, Collect, Clone)]
+#[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
 pub enum TimerCallback<'gc> {
-    Function(Object<'gc>),
-    Method {
-        this: Object<'gc>,
-        method_name: AvmString<'gc>,
+    Avm1Function {
+        func: Avm1Object<'gc>,
+        /// The parameters to pass to the callback function.
+        params: Vec<Avm1Value<'gc>>,
     },
+
+    Avm1Method {
+        this: Avm1Object<'gc>,
+        method_name: AvmString<'gc>,
+        params: Vec<Avm1Value<'gc>>,
+    },
+
+    Avm2Callback(Avm2Object<'gc>),
 }

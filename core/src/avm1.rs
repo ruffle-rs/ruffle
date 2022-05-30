@@ -30,13 +30,12 @@ pub mod object;
 pub mod property;
 pub mod property_map;
 mod scope;
-mod timer;
 mod value;
 
 #[cfg(test)]
 mod tests;
 
-use crate::avm1::activation::{Activation, ActivationIdentifier};
+pub use crate::avm1::activation::{Activation, ActivationIdentifier};
 pub use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
@@ -49,7 +48,6 @@ pub use object::stage_object::StageObject;
 pub use object::{Object, ObjectPtr, TObject};
 use scope::Scope;
 use smallvec::alloc::borrow::Cow;
-pub use timer::Timers;
 pub use value::Value;
 
 macro_rules! avm_debug {

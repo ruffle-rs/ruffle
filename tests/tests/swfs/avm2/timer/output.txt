@@ -1,0 +1,38 @@
+test1: timer.currentCount = 0
+test1 tick: timer.currentCount = 1
+test1 tick: timer.currentCount = 2
+test1 tick: timer.currentCount = 3
+test1 tick: timer complete at 3
+test2 tick: timer.currentCount = 1
+test2 tick: timer.currentCount = 2
+test2 tick: timer.currentCount = 3
+test3 tick: timer.currentCount = 1
+test3 tick: timer.currentCount = 2
+test3 RESET
+test3 tick: timer.currentCount = 1
+test3 tick: timer.currentCount = 2
+test3 tick: timer.currentCount = 3
+test3 tick: timer.currentCount = 4
+test3 tick: timer.currentCount = 5
+test3 tick: timer.currentCount = 6
+test3 timer done
+test4 tick: timer.currentCount = 1
+test4 tick: timer.currentCount = 2
+test4 tick: timer.currentCount = 3
+test4 tick: timer.currentCount = 4
+test4 tick: timer.currentCount = 5
+test4 timer done
+test5: Reached count 5
+test6 tick: timer.currentCount = 1
+test6 tick: timer.currentCount = 2
+test6 tick: timer.currentCount = 3
+test6 tick: timer.currentCount = 4
+test6 tick: timer.currentCount = 5
+test6 timer done
+test7 tick: timer.currentCount = 1
+test7 tick: timer.currentCount = 2
+test7 tick: timer.currentCount = 3
+test7: Increasing delay
+test7 tick: timer.currentCount = 4
+test7 tick: timer.currentCount = 5
+test7 timer done

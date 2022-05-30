@@ -474,8 +474,6 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
-    class(activation, flash::utils::timer::create_class(mc), script)?;
-
     namespace(
         activation,
         "flash.utils",
