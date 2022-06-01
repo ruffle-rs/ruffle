@@ -22,7 +22,7 @@
     "devDependencies": {
         "@wdio/cli": "^7.19.7",
         "json5": "^2.2.1",
-        "webpack": "^5.71.0",
+        "webpack": "^5.72.1",
         "webpack-cli": "^4.9.2",
         "webpack-dev-server": "^4.9.1"
     }
