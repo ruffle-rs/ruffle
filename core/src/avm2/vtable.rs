@@ -308,7 +308,7 @@ impl<'gc> VTable<'gc> {
                         ),
                         TraitKind::Function { .. } => Property::new_slot(
                             new_slot_id,
-                            PropertyClass::Class(Some(activation.avm2().classes().function)),
+                            PropertyClass::Class(activation.avm2().classes().function),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
@@ -318,7 +318,7 @@ impl<'gc> VTable<'gc> {
                         ),
                         TraitKind::Class { .. } => Property::new_const_slot(
                             new_slot_id,
-                            PropertyClass::Class(Some(activation.avm2().classes().class)),
+                            PropertyClass::Class(activation.avm2().classes().class),
                         ),
                         _ => unreachable!(),
                     };
@@ -381,7 +381,7 @@ impl<'gc> VTable<'gc> {
         let new_slot_id = write.default_slots.len() as u32 - 1;
         write.resolved_traits.insert(
             name,
-            Property::new_slot(new_slot_id, PropertyClass::Class(Some(class))),
+            Property::new_slot(new_slot_id, PropertyClass::Class(class)),
         );
 
         new_slot_id

@@ -45,9 +45,11 @@ pub enum Property<'gc> {
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
-    /// We use `None` to represent a type of `*` (`Multiname.is_any()`),
-    /// which needs to be distinguished from `Object`
-    Class(Option<ClassObject<'gc>>),
+    /// The type `*` (Multiname::is_any()). This allows
+    /// `Value::Undefined`, so it needs to be distinguished
+    /// from the `Object` class
+    Any,
+    Class(ClassObject<'gc>),
     Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
 }
 
@@ -65,13 +67,17 @@ impl<'gc> PropertyClass<'gc> {
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error> {
         let class = match self {
-            PropertyClass::Class(class) => *class,
+            PropertyClass::Class(class) => Some(*class),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
                 let class = resolve_class_private(&name, *unit, activation)?;
-                *self = PropertyClass::Class(class);
+                *self = match class {
+                    Some(class) => PropertyClass::Class(class),
+                    None => PropertyClass::Any,
+                };
                 class
             }
+            PropertyClass::Any => None,
         };
 
         if let Some(class) = class {
