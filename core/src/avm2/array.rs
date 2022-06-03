@@ -112,6 +112,7 @@ impl<'gc> ArrayStorage<'gc> {
         for (i, item) in self.storage.iter().enumerate().rev() {
             if item.is_some() {
                 non_hole = Some(i);
+                break;
             }
         }
 

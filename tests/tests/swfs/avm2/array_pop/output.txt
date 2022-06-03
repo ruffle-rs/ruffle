@@ -1,9 +1,10 @@
 //var a = new Array(5);
+//a[1] = "other_test";
 //a[2] = "test";
 //Array.prototype[3] = "works";
 //(contents of a)
 undefined
-undefined
+other_test
 test
 works
 undefined
@@ -13,13 +14,13 @@ undefined
 test
 //(contents of a)
 undefined
-undefined
+other_test
 undefined
 works
 //a.length
 4
 //a.pop();
-undefined
+other_test
 //(contents of a)
 undefined
 undefined

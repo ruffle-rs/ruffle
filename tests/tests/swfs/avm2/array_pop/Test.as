@@ -12,6 +12,9 @@ function assert_array(a) {
 trace("//var a = new Array(5);");
 var a = new Array(5);
 
+trace("//a[1] = \"other_test\";");
+a[1] = "other_test";
+
 trace("//a[2] = \"test\";");
 a[2] = "test";
 
