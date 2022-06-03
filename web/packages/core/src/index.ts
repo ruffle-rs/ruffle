@@ -9,7 +9,6 @@ export * from "./ruffle-imports";
 export * from "./ruffle-object";
 export * from "./ruffle-player";
 export * from "./shadow-template";
-export * from "./source-api";
 export * from "./version";
 export * from "./version-range";
 export * from "./config";

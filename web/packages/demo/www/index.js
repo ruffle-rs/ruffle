@@ -1,12 +1,8 @@
 import "./index.css";
 
-import { SourceAPI, PublicAPI } from "ruffle-core";
+import { PublicAPI } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(
-    window.RufflePlayer,
-    "local",
-    new SourceAPI("local")
-);
+window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
 const ruffle = window.RufflePlayer.newest();
 
 let player;

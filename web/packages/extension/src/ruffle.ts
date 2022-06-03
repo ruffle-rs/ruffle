@@ -1,4 +1,4 @@
-import { PublicAPI, SourceAPI, Config } from "ruffle-core";
+import { PublicAPI, Config } from "ruffle-core";
 
 interface LoadMessage {
     type: "load";
@@ -21,8 +21,7 @@ function handleMessage(message: Message) {
             };
             window.RufflePlayer = PublicAPI.negotiate(
                 window.RufflePlayer!,
-                "extension",
-                new SourceAPI("extension")
+                "extension"
             );
             return {};
         case "ping":

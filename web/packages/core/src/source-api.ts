@@ -10,28 +10,11 @@ import { RufflePlayer } from "./ruffle-player";
  * negotiator (see [[PublicAPI]]) what this particular version of Ruffle is and
  * how to control it.
  */
-export class SourceAPI {
-    private name: string;
-
+export const SourceAPI = {
     /**
-     * Construct a Source API.
-     *
-     * @param name The name of this particular source.
+     * The version of this particular API, as a string in a semver compatible format.
      */
-    constructor(name: string) {
-        this.name = name;
-    }
-
-    /**
-     * The version of this particular API.
-     *
-     * This is returned as a string in a semver compatible format.
-     *
-     * @returns The version of this Ruffle source
-     */
-    get version(): string {
-        return "%VERSION_NUMBER%";
-    }
+    version: "%VERSION_NUMBER%",
 
     /**
      * Start up the polyfills.
@@ -42,7 +25,7 @@ export class SourceAPI {
      */
     polyfill(isExt: boolean): void {
         polyfill(isExt);
-    }
+    },
 
     /**
      * Polyfill the plugin detection.
@@ -51,7 +34,7 @@ export class SourceAPI {
      */
     pluginPolyfill(): void {
         pluginPolyfill();
-    }
+    },
 
     /**
      * Create a Ruffle player element using this particular version of Ruffle.
@@ -62,5 +45,5 @@ export class SourceAPI {
     createPlayer(): RufflePlayer {
         const name = registerElement("ruffle-player", RufflePlayer);
         return <RufflePlayer>document.createElement(name);
-    }
-}
+    },
+};
