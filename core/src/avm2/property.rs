@@ -92,7 +92,7 @@ impl<'gc> PropertyClass<'gc> {
 
 /// Resolves a class definition referenced by the type of a property.
 /// This supports private (`Namespace::Private`) classes,
-/// and does not usethe `ScopeStack`/`ScopeChain`.
+/// and does not use the `ScopeStack`/`ScopeChain`.
 ///
 /// This is an internal operation used to resolve property type names.
 /// It does not correspond to any opcode or native method.
