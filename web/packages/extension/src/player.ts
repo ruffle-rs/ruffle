@@ -1,11 +1,7 @@
 import * as utils from "./utils";
-import { PublicAPI, SourceAPI, Letterbox } from "ruffle-core";
+import { PublicAPI, Letterbox } from "ruffle-core";
 
-const api = PublicAPI.negotiate(
-    window.RufflePlayer!,
-    "local",
-    new SourceAPI("local")
-);
+const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
 window.RufflePlayer = api;
 const ruffle = api.newest()!;
 
