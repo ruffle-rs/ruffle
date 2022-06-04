@@ -396,11 +396,8 @@ impl<'gc> ScriptObjectData<'gc> {
         Ok(())
     }
 
-    /// Get the end of (standard) enumerant space.
-    ///
-    /// Intended for objects that need to extend enumerant space. The index
-    /// returned is guaranteed to be unused by the base enumerant list.
-    pub fn get_last_enumerant(&self) -> u32 {
+    /// Gets the number of (standard) enumerants.
+    pub fn num_enumerants(&self) -> u32 {
         self.enumerants.len() as u32
     }
 

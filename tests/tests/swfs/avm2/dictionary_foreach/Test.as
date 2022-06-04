@@ -5,8 +5,31 @@
 
 import flash.utils.Dictionary;
 
+function printKeys(dict:Dictionary):void {
+	var keys:Array = new Array();
+	for (var k in dict) {
+		keys.push(k);
+	}
+	keys.sort();
+	trace("Keys: " + keys);
+}
+
 trace("///var a = new Dictionary()");
 var a = new Dictionary();
+
+a[new String("foo")] = "The value";
+trace("Different string: " + a[new String("foo")]);
+
+var firstKey = new Object();
+a[firstKey] = "Testing";
+a[1234567] = true;
+a.setPropertyIsEnumerable(1234567, false);
+trace("Is existent property enumerable: " + a.propertyIsEnumerable(1234567));
+trace("Is nonexistent property enumerable " + a.propertyIsEnumerable(new Object()));
+
+a.setPropertyIsEnumerable(firstKey, false);
+trace("Showing first key");
+printKeys(a);
 
 trace("///a[\"key\"] = 5");
 a["key"] = 5;
@@ -76,32 +99,8 @@ a["false"] = "stringy false";
 trace('///a[a] = a');
 a[a] = a;
 
-var has_key2 = false;
-var has_key3 = false;
-var has_key4 = false;
-
 trace("/// (enumerating object keys...)");
-for (var k in a) {
-	if (k === key2) {
-		has_key2 = true;
-	} else if (k === key3) {
-		has_key3 = true;
-	} else if (k === key4) {
-		has_key4 = true;
-	}
-}
-
-if (has_key2) {
-	trace("/// (Found key2!)");
-}
-
-if (has_key3) {
-	trace("/// (Found key3!)");
-}
-
-if (has_key4) {
-	trace("/// (Found key4!)");
-}
+printKeys(a);
 
 trace("///a.setPropertyIsEnumerable(key2, false);");
 a.setPropertyIsEnumerable(key2, false);
@@ -112,29 +111,5 @@ a.setPropertyIsEnumerable(key3, false);
 trace("///a.setPropertyIsEnumerable(key4, false);");
 a.setPropertyIsEnumerable(key4, false);
 
-has_key2 = false;
-has_key3 = false;
-has_key4 = false;
-
 trace("/// (enumerating object keys...)");
-for (var k in a) {
-	if (k === key2) {
-		has_key2 = true;
-	} else if (k === key3) {
-		has_key3 = true;
-	} else if (k === key4) {
-		has_key4 = true;
-	}
-}
-
-if (has_key2) {
-	trace("/// (Found key2!)");
-}
-
-if (has_key3) {
-	trace("/// (Found key3!)");
-}
-
-if (has_key4) {
-	trace("/// (Found key4!)");
-}
+printKeys(a);
