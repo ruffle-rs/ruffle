@@ -335,17 +335,13 @@ pub fn loader_url<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(loader_stream) = this.as_loader_stream() {
-            match &*loader_stream {
-                LoaderStream::Stage => {
-                    return Err("Error: The stage's loader info does not have a loader URL".into())
-                }
-                LoaderStream::Swf(root, _) => {
-                    let loader_url = root.loader_url().or_else(|| root.url()).unwrap_or("");
-                    return Ok(
-                        AvmString::new_utf8(activation.context.gc_context, loader_url).into(),
-                    );
-                }
-            }
+            let root = match &*loader_stream {
+                LoaderStream::Stage => activation.context.swf,
+                LoaderStream::Swf(root, _) => root,
+            };
+
+            let loader_url = root.loader_url().or_else(|| root.url()).unwrap_or("");
+            return Ok(AvmString::new_utf8(activation.context.gc_context, loader_url).into());
         }
     }
 
