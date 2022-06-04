@@ -1,4 +1,9 @@
 ///var a = new Dictionary()
+Different string: The value
+Is existent property enumerable: true
+Is nonexistent property enumerable false
+Showing first key
+Keys: 1234567,[object Object],foo
 ///a["key"] = 5
 ///a["key"]
 5
@@ -25,13 +30,9 @@
 ///a["false"] = "stringy false"
 ///a[a] = a
 /// (enumerating object keys...)
-/// (Found key2!)
-/// (Found key3!)
-/// (Found key4!)
+Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined
 ///a.setPropertyIsEnumerable(key2, false);
 ///a.setPropertyIsEnumerable(key3, false);
 ///a.setPropertyIsEnumerable(key4, false);
 /// (enumerating object keys...)
-/// (Found key2!)
-/// (Found key3!)
-/// (Found key4!)
+Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined

@@ -189,10 +189,10 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         _activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Option<u32>, Error> {
         let read = self.0.read();
-        let last_enumerant = read.base.get_last_enumerant();
+        let num_enumerants = read.base.num_enumerants();
         let array_length = read.array.length() as u32;
 
-        if last_index < last_enumerant + array_length {
+        if last_index < num_enumerants + array_length {
             Ok(Some(last_index.saturating_add(1)))
         } else {
             Ok(None)
