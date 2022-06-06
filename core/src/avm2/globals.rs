@@ -889,6 +889,11 @@ pub fn load_player_globals<'gc>(
     )?;
     class(
         activation,
+        flash::filters::blurfilter::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
         flash::filters::glowfilter::create_class(mc),
         script,
     )?;
