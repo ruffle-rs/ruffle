@@ -1,4 +1,4 @@
-//! `flash.filters.GlowFilter` builtin/prototype
+//! `flash.filters.BlurFilter` builtin/prototype
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use gc_arena::{GcCell, MutationContext};
 
-/// Implements `flash.filters.GlowFilter`'s class constructor.
+/// Implements `flash.filters.BlurFilter`'s class constructor.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -17,7 +17,7 @@ pub fn class_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `flash.filters.GlowFilter`'s instance constructor.
+/// Implements `flash.filters.BlurFilter`'s instance constructor.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
@@ -28,10 +28,10 @@ pub fn instance_init<'gc>(
 
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
-        QName::new(Namespace::package("flash.filters"), "GlowFilter"),
+        QName::new(Namespace::package("flash.filters"), "BlurFilter"),
         Some(QName::new(Namespace::package("flash.filters"), "BitmapFilter").into()),
-        Method::from_builtin(instance_init, "<GlowFilter instance initializer>", mc),
-        Method::from_builtin(class_init, "<GlowFilter class initializer>", mc),
+        Method::from_builtin(instance_init, "<BlurFilter instance initializer>", mc),
+        Method::from_builtin(class_init, "<BlurFilter class initializer>", mc),
         mc,
     );
 
@@ -39,14 +39,9 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
     const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] = &[
-        ("alpha", "", "Number"),
         ("blurX", "", "Number"),
         ("blurY", "", "Number"),
-        ("color", "", "uint"),
-        ("inner", "", "Boolean"),
-        ("knockout", "", "Boolean"),
         ("quality", "", "int"),
-        ("strength", "", "Number"),
     ];
     write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
 
