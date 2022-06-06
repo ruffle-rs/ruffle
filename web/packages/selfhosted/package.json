@@ -20,7 +20,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@wdio/cli": "^7.19.7",
+        "@wdio/cli": "^7.20.1",
         "json5": "^2.2.1",
         "webpack": "^5.72.1",
         "webpack-cli": "^4.9.2",
