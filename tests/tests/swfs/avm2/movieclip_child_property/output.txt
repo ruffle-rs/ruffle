@@ -1,0 +1,16 @@
+///this.dynamic_named_child
+[object MovieClip]
+///this.dynamic_named_child.name
+dynamic_named_child
+///this["dynamic_named_child"]
+[object MovieClip]
+///this.static_named_child
+[object MovieClip]
+///this.static_named_child.name
+static_named_child
+///this["static_named_child"]
+[object MovieClip]
+///this
+[object MainTimeline]
+Enumerating properties
+Done enumerating properties
