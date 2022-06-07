@@ -2934,7 +2934,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 "Target not found: Target=\"{}\" Base=\"{}\"",
                 target,
                 match &path {
-                    Some(p) => &*p,
+                    Some(p) => p,
                     None => WStr::from_units(b"?"),
                 }
             );

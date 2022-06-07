@@ -86,7 +86,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
             return Ok(Value::Undefined);
         }
 
-        return Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into());
+        Err(format!("Cannot get undefined property {:?}", multiname.local_name()).into())
     }
 
     fn set_property_local(

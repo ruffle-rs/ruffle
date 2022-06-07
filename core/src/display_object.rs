@@ -493,7 +493,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if this.maskee().is_some() {
         return;
     }
-    context.transform_stack.push(&*this.base().transform());
+    context.transform_stack.push(this.base().transform());
 
     let mask = this.masker();
     let mut mask_transform = crate::transform::Transform::default();
