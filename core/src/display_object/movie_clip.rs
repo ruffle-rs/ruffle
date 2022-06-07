@@ -1103,6 +1103,7 @@ impl<'gc> MovieClip<'gc> {
                 // Remove previous child from children list,
                 // and add new child onto front of the list.
                 let prev_child = self.replace_at_depth(context, child, depth);
+                let mut placed_with_name = false;
                 {
                     // Set initial properties for child.
                     child.set_instantiated_by_timeline(context.gc_context, true);
@@ -1119,6 +1120,7 @@ impl<'gc> MovieClip<'gc> {
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
+                        placed_with_name = true;
                         let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
                         let name = name.to_str_lossy(encoding);
                         child.set_name(
@@ -1172,16 +1174,19 @@ impl<'gc> MovieClip<'gc> {
                     dispatch_removed_event(prev_child, context);
                 }
 
-                if let Avm2Value::Object(mut p) = self.object2() {
-                    if let Avm2Value::Object(c) = child.object2() {
-                        let name = Avm2QName::new(Avm2Namespace::public(), child.name());
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                        if let Err(e) = p.init_property(&name.into(), c.into(), &mut activation) {
-                            log::error!(
-                                "Got error when setting AVM2 child named \"{}\": {}",
-                                &child.name(),
-                                e
-                            );
+                if placed_with_name {
+                    if let Avm2Value::Object(mut p) = self.object2() {
+                        if let Avm2Value::Object(c) = child.object2() {
+                            let name = Avm2QName::new(Avm2Namespace::public(), child.name());
+                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            if let Err(e) = p.init_property(&name.into(), c.into(), &mut activation)
+                            {
+                                log::error!(
+                                    "Got error when setting AVM2 child named \"{}\": {}",
+                                    &child.name(),
+                                    e
+                                );
+                            }
                         }
                     }
                 }
