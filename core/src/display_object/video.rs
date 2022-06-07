@@ -443,7 +443,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             return;
         }
 
-        context.transform_stack.push(&*self.base().transform());
+        context.transform_stack.push(self.base().transform());
 
         let read = self.0.read();
 
