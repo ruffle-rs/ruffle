@@ -1957,7 +1957,13 @@ impl<'a> Reader<'a> {
             None
         };
         let is_bitmap_cached = if flags.contains(PlaceFlag::HAS_CACHE_AS_BITMAP) {
-            Some(self.read_u8()? != 0)
+            // Some incorrect SWFs appear to end the tag here, without
+            // the expected 'u8'.
+            if self.as_slice().is_empty() {
+                Some(true)
+            } else {
+                Some(self.read_u8()? != 0)
+            }
         } else {
             None
         };
@@ -3065,5 +3071,44 @@ pub mod tests {
                 panic!("Expected SwfParseError, got {:?}", result);
             }
         }
+    }
+
+    /// Ensure that we can read a PlaceObject3 tag that
+    /// inccorrectly omits the 'is_bitmap_cached' u8
+    /// Extracted from #7098
+    #[test]
+    fn read_incorrect_place_object_3() {
+        let place_object = Tag::PlaceObject(Box::new(PlaceObject {
+            version: 3,
+            action: PlaceObjectAction::Place(161),
+            depth: 1,
+            matrix: Some(Matrix {
+                a: Fixed16::ONE,
+                b: Fixed16::ZERO,
+                c: Fixed16::ZERO,
+                d: Fixed16::ONE,
+                tx: Twips::from_pixels(0.0),
+                ty: Twips::from_pixels(0.0),
+            }),
+            color_transform: None,
+            ratio: None,
+            name: None,
+            clip_depth: None,
+            class_name: None,
+            filters: None,
+            background_color: None,
+            blend_mode: None,
+            clip_actions: None,
+            has_image: false,
+            is_bitmap_cached: Some(true),
+            is_visible: None,
+            amf_data: None,
+        }));
+        assert_eq!(
+            reader(&[0x88, 0x11, 0x06, 0x4, 0x01, 0x00, 0xA1, 0x00, 0x02, 0x00])
+                .read_tag()
+                .unwrap(),
+            place_object
+        );
     }
 }
