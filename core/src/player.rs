@@ -745,7 +745,6 @@ impl Player {
                 {
                     self.mutate_with_update_context(|context| {
                         let mut dumper = VariableDumper::new("  ");
-                        let levels: Vec<_> = context.stage.iter_depth_list().collect();
 
                         let mut activation = Activation::from_stub(
                             context.reborrow(),
@@ -759,7 +758,8 @@ impl Player {
                             &mut activation,
                         );
 
-                        for (level, display_object) in levels {
+                        for display_object in activation.context.stage.iter_render_list() {
+                            let level = display_object.depth();
                             let object = display_object.object().coerce_to_object(&mut activation);
                             dumper.print_variables(
                                 &format!("Level #{}:", level),
@@ -822,8 +822,7 @@ impl Player {
 
             let mut key_press_handled = false;
             if let Some(button_event) = button_event {
-                let levels: Vec<_> = context.stage.iter_depth_list().collect();
-                for (_depth, level) in levels {
+                for level in context.stage.iter_render_list() {
                     let state = if let Some(interactive) = level.as_interactive() {
                         interactive.handle_clip_event(context, button_event)
                     } else {
@@ -891,8 +890,7 @@ impl Player {
 
             // Fire clip event on all clips.
             if let Some(clip_event) = clip_event {
-                let levels: Vec<_> = context.stage.iter_depth_list().collect();
-                for (_depth, level) in levels {
+                for level in context.stage.iter_render_list() {
                     if let Some(interactive) = level.as_interactive() {
                         interactive.handle_clip_event(context, clip_event);
                     }
@@ -986,15 +984,11 @@ impl Player {
                         display_object.set_visible(context.gc_context, false);
                         // Set _droptarget to the object the mouse is hovering over.
                         let drop_target_object =
-                            context
-                                .stage
-                                .iter_depth_list()
-                                .rev()
-                                .find_map(|(_depth, level)| {
-                                    level.as_interactive().and_then(|l| {
-                                        l.mouse_pick(context, *context.mouse_position, false)
-                                    })
-                                });
+                            context.stage.iter_render_list().rev().find_map(|level| {
+                                level.as_interactive().and_then(|l| {
+                                    l.mouse_pick(context, *context.mouse_position, false)
+                                })
+                            });
                         movie_clip.set_drop_target(
                             context.gc_context,
                             drop_target_object.map(|d| d.as_displayobject()),
@@ -1014,16 +1008,11 @@ impl Player {
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
-            let new_over_object =
-                context
-                    .stage
-                    .iter_depth_list()
-                    .rev()
-                    .find_map(|(_depth, level)| {
-                        level
-                            .as_interactive()
-                            .and_then(|l| l.mouse_pick(context, *context.mouse_position, true))
-                    });
+            let new_over_object = context.stage.iter_render_list().rev().find_map(|level| {
+                level
+                    .as_interactive()
+                    .and_then(|l| l.mouse_pick(context, *context.mouse_position, true))
+            });
 
             let mut events: smallvec::SmallVec<[(InteractiveObject<'_>, ClipEvent); 2]> =
                 Default::default();
