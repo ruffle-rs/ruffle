@@ -288,19 +288,6 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
-    /// Iterates over the children of this display object in depth order.
-    ///
-    /// This yields an iterator that does *not* lock the parent and can be
-    /// safely held in situations where display objects need to be unlocked.
-    /// This means that unexpected but legal and defined items may be yielded
-    /// due to intended or unintended list manipulation by the caller.
-    ///
-    /// The iterator's concrete type is stated here due to Rust language
-    /// limitations.
-    fn iter_depth_list(self) -> DepthIter<'gc> {
-        DepthIter::from_container(self.into())
-    }
-
     /// Renders the children of this container in render list order.
     fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
         let mut clip_depth = 0;
@@ -728,20 +715,19 @@ impl<'gc> ChildContainer<'gc> {
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
     ///
-    /// If multiple children with the same name exist, the one with the lowest
-    /// depth wins. Children not on the depth list will not be accessible via
-    /// this mechanism.
+    /// If multiple children with the same name exist, the one that occurs
+    /// first in the render list wins.
     pub fn get_name(&self, name: &WStr, case_sensitive: bool) -> Option<DisplayObject<'gc>> {
         // TODO: Make a HashMap from name -> child?
         // But need to handle conflicting names (lowest in depth order takes priority).
         if case_sensitive {
-            self.depth_list
-                .values()
+            self.render_list
+                .iter()
                 .copied()
                 .find(|child| child.name() == name)
         } else {
-            self.depth_list
-                .values()
+            self.render_list
+                .iter()
                 .copied()
                 .find(|child| child.name().eq_ignore_case(name))
         }
@@ -949,76 +935,5 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
         self.neg_i -= 1;
 
         this
-    }
-}
-
-pub struct DepthIter<'gc> {
-    src: DisplayObjectContainer<'gc>,
-    depth: Option<Depth>,
-    neg_depth: Option<Depth>,
-}
-
-impl<'gc> DepthIter<'gc> {
-    fn from_container(src: DisplayObjectContainer<'gc>) -> Self {
-        Self {
-            src,
-            depth: Some(Depth::MIN),
-            neg_depth: Some(Depth::MAX),
-        }
-    }
-}
-
-impl<'gc> Iterator for DepthIter<'gc> {
-    type Item = (Depth, DisplayObject<'gc>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.depth.is_none()
-            || self.neg_depth.is_none()
-            || self.depth.unwrap() > self.neg_depth.unwrap()
-        {
-            return None;
-        }
-
-        let mut old_depth = self.depth.unwrap();
-        let (new_depth, new_next) = if let Some(next) = self.src.child_by_depth(old_depth) {
-            (self.src.lowest_depth(old_depth), Some(next))
-        } else if let Some(new_depth) = self.src.lowest_depth(old_depth) {
-            old_depth = new_depth;
-            (
-                self.src.lowest_depth(new_depth),
-                self.src.child_by_depth(new_depth),
-            )
-        } else {
-            (None, None)
-        };
-
-        self.depth = new_depth;
-
-        new_next.map(|n| (old_depth, n))
-    }
-}
-
-impl<'gc> DoubleEndedIterator for DepthIter<'gc> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.depth.is_none() || self.neg_depth.is_none() || self.neg_depth <= self.depth {
-            return None;
-        }
-
-        let mut old_neg_depth = self.neg_depth.unwrap();
-        let (new_neg_depth, new_next) = if let Some(next) = self.src.child_by_depth(old_neg_depth) {
-            (self.src.highest_depth(old_neg_depth), Some(next))
-        } else if let Some(new_neg_depth) = self.src.highest_depth(old_neg_depth) {
-            old_neg_depth = new_neg_depth;
-            (
-                self.src.highest_depth(new_neg_depth),
-                self.src.child_by_depth(new_neg_depth),
-            )
-        } else {
-            (None, None)
-        };
-
-        self.neg_depth = new_neg_depth;
-
-        new_next.map(|n| (old_neg_depth, n))
     }
 }

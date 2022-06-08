@@ -481,7 +481,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 up_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(up_container) = up_state.as_container() {
-                    for (_depth, child) in up_container.iter_depth_list() {
+                    for child in up_container.iter_render_list() {
                         dispatch_added_event((*self).into(), child, false, context);
                     }
                 }
@@ -491,7 +491,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 over_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(over_container) = over_state.as_container() {
-                    for (_depth, child) in over_container.iter_depth_list() {
+                    for child in over_container.iter_render_list() {
                         dispatch_added_event((*self).into(), child, false, context);
                     }
                 }
@@ -501,7 +501,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 down_state.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(down_container) = down_state.as_container() {
-                    for (_depth, child) in down_container.iter_depth_list() {
+                    for child in down_container.iter_render_list() {
                         dispatch_added_event((*self).into(), child, false, context);
                     }
                 }
@@ -511,7 +511,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 hit_area.post_instantiation(context, None, Instantiator::Movie, false);
 
                 if let Some(hit_container) = hit_area.as_container() {
-                    for (_depth, child) in hit_container.iter_depth_list() {
+                    for child in hit_container.iter_render_list() {
                         dispatch_added_event((*self).into(), child, false, context);
                     }
                 }
