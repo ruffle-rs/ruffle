@@ -3088,6 +3088,7 @@ dependencies = [
 name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
+ "fnv",
  "js-sys",
  "log",
  "ruffle_core",
@@ -3110,6 +3111,7 @@ name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "fnv",
  "js-sys",
  "log",
  "ruffle_core",
@@ -3126,6 +3128,7 @@ dependencies = [
  "bytemuck",
  "clap",
  "enum-map",
+ "fnv",
  "futures",
  "image",
  "log",

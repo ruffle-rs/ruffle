@@ -1,5 +1,6 @@
 use crate::add_field_accessors;
 use crate::avm1::{Object, ScriptObject, TObject};
+use crate::context::UpdateContext;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
 
@@ -54,9 +55,11 @@ impl<'gc> BitmapDataObject<'gc> {
         ))
     }
 
-    pub fn dispose(&self, gc_context: MutationContext<'gc, '_>) {
-        self.bitmap_data().write(gc_context).dispose();
-        self.0.write(gc_context).disposed = true;
+    pub fn dispose(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        self.bitmap_data()
+            .write(context.gc_context)
+            .dispose(context.renderer);
+        self.0.write(context.gc_context).disposed = true;
     }
 }
 

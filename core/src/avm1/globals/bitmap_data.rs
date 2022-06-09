@@ -405,7 +405,7 @@ pub fn dispose<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            bitmap_data.dispose(activation.context.gc_context);
+            bitmap_data.dispose(&mut activation.context);
             return Ok(Value::Undefined);
         }
     }

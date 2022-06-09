@@ -168,11 +168,18 @@ impl<'gc> BitmapData<'gc> {
         self.dirty = true;
     }
 
-    pub fn dispose(&mut self) {
+    pub fn dispose(&mut self, renderer: &mut dyn RenderBackend) {
         self.width = 0;
         self.height = 0;
         self.pixels.clear();
-        self.dirty = true;
+        if let Some(handle) = self.bitmap_handle {
+            if let Err(e) = renderer.unregister_bitmap(handle) {
+                log::warn!("Failed to unregister bitmap {:?}: {:?}", handle, e);
+            }
+            self.bitmap_handle = None;
+        }
+        // There's no longer a handle to update
+        self.dirty = false;
     }
 
     pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
