@@ -13,7 +13,7 @@ use ruffle_macros::enum_trait_object;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
-use std::ops::{Bound, RangeBounds};
+use std::ops::RangeBounds;
 
 /// Dispatch the `removedFromStage` event on a child and all of it's
 /// grandchildren, recursively.
@@ -183,10 +183,6 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Returns the highest depth on the render list, or `None` if no children
     /// have a depth less than the provided value.
     fn highest_depth(self, less_than: Depth) -> Option<Depth>;
-
-    /// Returns the lowest depth on the render list, or `None` if no children
-    /// have a depth greater than the provided value.
-    fn lowest_depth(self, greater_than: Depth) -> Option<Depth>;
 
     /// Insert a child display object into the container at a specific position
     /// in the depth list, removing any child already at that position.
@@ -359,10 +355,6 @@ macro_rules! impl_display_object_container {
 
         fn highest_depth(self, less_than: Depth) -> Option<Depth> {
             self.0.read().$field.highest_depth(less_than)
-        }
-
-        fn lowest_depth(self, greater_than: Depth) -> Option<Depth> {
-            self.0.read().$field.lowest_depth(greater_than)
         }
 
         fn replace_at_depth(
@@ -687,15 +679,6 @@ impl<'gc> ChildContainer<'gc> {
         self.depth_list
             .range(..less_than)
             .rev()
-            .map(|(k, _v)| *k)
-            .next()
-    }
-
-    /// Returns the lowest depth on the render list, or `None` if no children
-    /// have a depth greater than the provided value.
-    pub fn lowest_depth(&self, greater_than: Depth) -> Option<Depth> {
-        self.depth_list
-            .range((Bound::Excluded(greater_than), Bound::<Depth>::Unbounded))
             .map(|(k, _v)| *k)
             .next()
     }
