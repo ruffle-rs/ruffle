@@ -1,0 +1,28 @@
+// base
+this: THIS
+super: [object Object]
+arguments: 1,2
+reg 1: undefined
+reg 2: undefined
+reg 3: undefined
+// suppress
+this: _level0
+super: undefined
+arguments: undefined
+reg 1: undefined
+reg 2: undefined
+reg 3: undefined
+// preload
+this: _level0
+super: undefined
+arguments: undefined
+reg 1: THIS
+reg 2: 1,2
+reg 3: [object Object]
+// suppress_preload
+this: _level0
+super: undefined
+arguments: undefined
+reg 1: undefined
+reg 2: 1,2
+reg 3: undefined
