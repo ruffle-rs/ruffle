@@ -54,91 +54,93 @@ pub fn is_nan<'gc>(
     }
 }
 
+/// Converts a `WStr` to an integer (as an `f64`).
+///
+/// This function might fail for some invalid inputs, by returning `f64::NAN`.
+///
+/// `radix` is only valid in the range `2..=36`, plus the special `0` value, which means the
+/// radix is inferred from the string; hexadecimal if it starts with a `0x` prefix (case
+/// insensitive), or decimal otherwise.
+/// `strict` tells whether to fail on trailing garbage, or ignore it.
+fn string_to_int(mut s: &WStr, mut radix: i32, strict: bool) -> f64 {
+    // Allow leading whitespace characters.
+    skip_spaces(&mut s);
+
+    let is_negative = parse_sign(&mut s);
+
+    if radix == 16 || radix == 0 {
+        if let Some(after_0x) = s
+            .strip_prefix(WStr::from_units(b"0x"))
+            .or_else(|| s.strip_prefix(WStr::from_units(b"0X")))
+        {
+            // Consume hexadecimal prefix.
+            s = after_0x;
+
+            // Explicit hexadecimal.
+            radix = 16;
+        } else if radix == 0 {
+            // Default to decimal.
+            radix = 10;
+        }
+    }
+
+    // Fail on invalid radix or blank string.
+    if !(2..=36).contains(&radix) || s.is_empty() {
+        return f64::NAN;
+    }
+
+    // Actual number parsing.
+    let mut result = 0.0;
+    let start = s;
+    s = s.trim_start_matches(|c| match (c as u8 as char).to_digit(radix as u32) {
+        Some(digit) => {
+            result *= f64::from(radix);
+            result += f64::from(digit);
+            true
+        }
+        None => false,
+    });
+
+    // Fail if we got no digits.
+    if s == start {
+        return f64::NAN;
+    }
+
+    if strict {
+        // Allow trailing whitespace characters.
+        skip_spaces(&mut s);
+
+        // If we got digits, but we're in strict mode and not at end of string, fail.
+        if !s.is_empty() {
+            return f64::NAN;
+        }
+    }
+
+    // Apply sign.
+    if is_negative {
+        result = -result;
+    }
+
+    result
+}
+
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let string = match args.get(0) {
-        None => return Ok(f64::NAN.into()),
-        Some(Value::Undefined) => Value::Null,
-        Some(v) => *v,
-    }
-    .coerce_to_string(activation)?;
-
-    let radix = if let Some(val) = args.get(1) {
-        Some(val.coerce_to_u32(activation)?)
-    } else {
-        None
-    };
-    let radix = match radix {
-        Some(r @ 2..=36) => Some(r as u32),
-        Some(0) => None,
-        Some(_) => return Ok(f64::NAN.into()),
-        None => None,
+    let string = match args.get(0).unwrap_or(&Value::Undefined) {
+        Value::Undefined => "null".into(),
+        value => value.coerce_to_string(activation)?,
     };
 
-    let string = string.as_wstr();
-
-    // Strip spaces.
-    let string = string.trim_start_matches(b"\t\n\r ".as_ref());
-
-    if string.is_empty() {
-        return Ok(f64::NAN.into());
-    }
-
-    let (sign, string) = match u8::try_from(string.get(0).unwrap()) {
-        Ok(b'+') => (1.0, &string[1..]),
-        Ok(b'-') => (-1.0, &string[1..]),
-        _ => (1.0, string),
+    let radix = match args.get(1) {
+        Some(value) => value.coerce_to_i32(activation)?,
+        None => 0,
     };
 
-    fn starts_with_0x(string: &WStr) -> bool {
-        if string.get(0) == Some(b'0' as u16) {
-            let x_char = string.get(1);
-            x_char == Some(b'x' as u16) || x_char == Some(b'X' as u16)
-        } else {
-            false
-        }
-    }
-
-    let (radix, string) = match radix {
-        None => {
-            if starts_with_0x(string) {
-                (16, &string[2..])
-            } else {
-                (10, string)
-            }
-        }
-        Some(16) => {
-            if starts_with_0x(string) {
-                (16, &string[2..])
-            } else {
-                (16, string)
-            }
-        }
-        Some(radix) => (radix, string),
-    };
-
-    let mut empty = true;
-    let mut result = 0.0f64;
-    for chr in string {
-        let digit = u8::try_from(chr)
-            .ok()
-            .and_then(|c| (c as char).to_digit(radix));
-        if let Some(digit) = digit {
-            result = result * radix as f64 + digit as f64;
-            empty = false;
-        } else {
-            break;
-        }
-    }
-
-    if empty {
-        Ok(f64::NAN.into())
-    } else {
-        Ok(result.copysign(sign).into())
-    }
+    let result = string_to_int(&string, radix, false);
+    Ok(result.into())
 }
 
 /// Strips leading whitespace characters.
