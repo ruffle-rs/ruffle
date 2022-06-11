@@ -249,14 +249,14 @@ impl App {
 
         let player = builder.build();
 
-        if let Some(movie_url) = &movie_url {
+        if let Some(movie_url) = movie_url {
             let event_loop_proxy = event_loop.create_proxy();
             let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
                 let _ = event_loop_proxy.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
             };
 
             player.lock().unwrap().fetch_root_movie(
-                movie_url.as_str(),
+                movie_url.as_str().to_owned(),
                 parse_parameters(&opt).collect(),
                 Box::new(on_metadata),
             );

@@ -1,8 +1,7 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, RequestOptions,
-    Response,
+    url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -11,7 +10,8 @@ use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, Document, Request, RequestInit, Response as WebResponse,
+    window, Blob, BlobPropertyBag, Document, Request as WebRequest, RequestInit,
+    Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
@@ -173,22 +173,22 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
     }
 
-    fn fetch(&self, url: &str, options: RequestOptions) -> OwnedFuture<Response, Error> {
-        let url = if let Ok(parsed_url) = Url::parse(url) {
+    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
+        let url = if let Ok(parsed_url) = Url::parse(request.url()) {
             self.pre_process_url(parsed_url).to_string()
         } else {
-            self.resolve_relative_url(url).to_string()
+            self.resolve_relative_url(request.url()).to_string()
         };
 
         Box::pin(async move {
             let mut init = RequestInit::new();
 
-            init.method(match options.method() {
+            init.method(match request.method() {
                 NavigationMethod::Get => "GET",
                 NavigationMethod::Post => "POST",
             });
 
-            if let Some((data, mime)) = options.body() {
+            if let Some((data, mime)) = request.body() {
                 let arraydata = ArrayBuffer::new(data.len() as u32);
                 let u8data = Uint8Array::new(&arraydata);
 
@@ -211,7 +211,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 init.body(Some(&datablob));
             }
 
-            let request = Request::new_with_str_and_init(&url, &init)
+            let request = WebRequest::new_with_str_and_init(&url, &init)
                 .map_err(|_| Error::FetchError(format!("Unable to create request for {}", url)))?;
 
             let window = web_sys::window().unwrap();

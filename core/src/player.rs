@@ -8,7 +8,7 @@ use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     log::LogBackend,
-    navigator::{NavigatorBackend, RequestOptions},
+    navigator::{NavigatorBackend, Request},
     render::RenderBackend,
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
@@ -242,15 +242,14 @@ impl Player {
     /// off.
     pub fn fetch_root_movie(
         &mut self,
-        movie_url: &str,
+        movie_url: String,
         parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) {
         self.mutate_with_update_context(|context| {
             let future = context.load_manager.load_root_movie(
                 context.player.clone(),
-                movie_url,
-                RequestOptions::get(),
+                Request::get(movie_url),
                 parameters,
                 on_metadata,
             );

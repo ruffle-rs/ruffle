@@ -7,7 +7,7 @@ use crate::avm1::scope::Scope;
 use crate::avm1::{
     fscommand, globals, scope, skip_actions, start_drag, ArrayObject, ScriptObject, Value,
 };
-use crate::backend::navigator::{NavigationMethod, RequestOptions};
+use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
@@ -1154,8 +1154,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         let future = self.context.load_manager.load_movie_into_clip(
                             self.context.player.clone(),
                             level,
-                            &url,
-                            RequestOptions::get(),
+                            Request::get(url),
                             None,
                             None,
                         );
@@ -1246,15 +1245,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         .unwrap()
                         .object()
                         .coerce_to_object(self);
-                    let (url, opts) = self.locals_into_request_options(
-                        &url,
+                    let request = self.locals_into_request(
+                        url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
                     let future = self.context.load_manager.load_form_into_object(
                         self.context.player.clone(),
                         target_obj,
-                        &url,
-                        opts,
+                        request,
                     );
                     self.context.navigator.spawn_future(future);
                 }
@@ -1263,22 +1261,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if action.is_target_sprite() {
             // `loadMovie`, `unloadMovie` or `unloadMovieNum` call.
             if let Some(clip_target) = clip_target {
-                let (url, opts) = self.locals_into_request_options(
-                    &url,
-                    NavigationMethod::from_send_vars_method(action.send_vars_method()),
-                );
-
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
                         mc.replace_with_movie(self.context.gc_context, None)
                     }
                 } else {
+                    let request = self.locals_into_request(
+                        url,
+                        NavigationMethod::from_send_vars_method(action.send_vars_method()),
+                    );
                     let future = self.context.load_manager.load_movie_into_clip(
                         self.context.player.clone(),
                         clip_target,
-                        &url,
-                        opts,
+                        request,
                         None,
                         None,
                     );
@@ -1292,8 +1288,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 let future = self.context.load_manager.load_movie_into_clip(
                     self.context.player.clone(),
                     clip_target,
-                    &url.to_utf8_lossy(),
-                    RequestOptions::get(),
+                    Request::get(url.to_utf8_lossy().into_owned()),
                     None,
                     None,
                 );
@@ -2295,14 +2290,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         form_values
     }
 
-    /// Construct request options for a fetch operation that may sends object properties as
-    /// form data in the request body or URL.
-    pub fn object_into_request_options<'c>(
+    /// Construct a request for a fetch operation that may send object properties as form data in
+    /// the request body or URL.
+    pub fn object_into_request(
         &mut self,
         object: Object<'gc>,
-        url: &'c WStr,
+        url: AvmString<'gc>,
         method: Option<NavigationMethod>,
-    ) -> (Cow<'c, str>, RequestOptions) {
+    ) -> Request {
         match method {
             Some(method) => {
                 let vars = self.object_into_form_values(object);
@@ -2311,24 +2306,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     .finish();
 
                 match method {
-                    NavigationMethod::Get if url.find(b'?').is_none() => (
-                        Cow::Owned(format!("{}?{}", url, qstring)),
-                        RequestOptions::get(),
-                    ),
-                    NavigationMethod::Get => (
-                        Cow::Owned(format!("{}&{}", url, qstring)),
-                        RequestOptions::get(),
-                    ),
-                    NavigationMethod::Post => (
-                        url.to_utf8_lossy(),
-                        RequestOptions::post(Some((
+                    NavigationMethod::Get if !url.contains(b'?') => {
+                        Request::get(format!("{}?{}", url, qstring))
+                    }
+                    NavigationMethod::Get => Request::get(format!("{}&{}", url, qstring)),
+                    NavigationMethod::Post => Request::post(
+                        url.to_utf8_lossy().into_owned(),
+                        Some((
                             qstring.as_bytes().to_owned(),
                             "application/x-www-form-urlencoded".to_string(),
-                        ))),
+                        )),
                     ),
                 }
             }
-            None => (url.to_utf8_lossy(), RequestOptions::get()),
+            None => Request::get(url.to_utf8_lossy().into_owned()),
         }
     }
 
@@ -2344,16 +2335,16 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.object_into_form_values(locals)
     }
 
-    /// Construct request options for a fetch operation that may send locals as
-    /// form data in the request body or URL.
-    pub fn locals_into_request_options<'c>(
+    /// Construct a request for a fetch operation that may send locals as form data in the request
+    /// body or URL.
+    pub fn locals_into_request(
         &mut self,
-        url: &'c WStr,
+        url: AvmString<'gc>,
         method: Option<NavigationMethod>,
-    ) -> (Cow<'c, str>, RequestOptions) {
+    ) -> Request {
         let scope = self.scope_cell();
         let locals = scope.read().locals_cell();
-        self.object_into_request_options(locals, url, method)
+        self.object_into_request(locals, url, method)
     }
 
     /// Resolves a target value to a display object, relative to a starting display object.

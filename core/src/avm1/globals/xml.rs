@@ -7,8 +7,8 @@ use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
-use crate::backend::navigator::RequestOptions;
-use crate::string::WStr;
+use crate::backend::navigator::Request;
+use crate::string::AvmString;
 use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::MutationContext;
 
@@ -134,7 +134,7 @@ fn send_and_load<'gc>(
 
     if let Some(document) = this.as_xml() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, target, &url, Some(document.as_node()))?;
+        spawn_xml_fetch(activation, this, target, url, Some(document.as_node()))?;
     }
     Ok(Value::Undefined)
 }
@@ -152,7 +152,7 @@ fn load<'gc>(
 
     if let Some(_document) = this.as_xml() {
         let url = url_val.coerce_to_string(activation)?;
-        spawn_xml_fetch(activation, this, this, &url, None)?;
+        spawn_xml_fetch(activation, this, this, url, None)?;
 
         Ok(true.into())
     } else {
@@ -252,19 +252,24 @@ fn spawn_xml_fetch<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     loader_object: Object<'gc>,
-    url: &WStr,
+    url: AvmString<'gc>,
     send_object: Option<XmlNode<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let request_options = if let Some(node) = send_object {
+    let url = url.to_utf8_lossy().into_owned();
+
+    let request = if let Some(node) = send_object {
         // Send `node` as string.
         let string = node.into_string(activation)?;
-        RequestOptions::post(Some((
-            string.to_utf8_lossy().into_owned().into_bytes(),
-            "application/x-www-form-urlencoded".to_string(),
-        )))
+        Request::post(
+            url,
+            Some((
+                string.to_utf8_lossy().into_owned().into_bytes(),
+                "application/x-www-form-urlencoded".to_string(),
+            )),
+        )
     } else {
         // Not sending any parameters.
-        RequestOptions::get()
+        Request::get(url)
     };
 
     this.set("loaded", false.into(), activation)?;
@@ -272,8 +277,7 @@ fn spawn_xml_fetch<'gc>(
     let future = activation.context.load_manager.load_form_into_load_vars(
         activation.context.player.clone(),
         loader_object,
-        &url.to_utf8_lossy(),
-        request_options,
+        request,
     );
     activation.context.navigator.spawn_future(future);
 
