@@ -2657,12 +2657,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         let movie = self.movie();
         let library = context.library.library_for_movie_mut(movie.clone());
         if library.avm_type() == AvmType::Avm1 {
-            let button = Avm1Button::from_swf_tag(
-                &swf_button,
-                &self.static_data.swf,
-                context.library,
-                context.gc_context,
-            );
+            let button =
+                Avm1Button::from_swf_tag(&swf_button, &self.static_data.swf, context.gc_context);
             context
                 .library
                 .library_for_movie_mut(movie)

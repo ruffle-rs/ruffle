@@ -42,7 +42,6 @@ impl<'gc> Avm1Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
         source_movie: &SwfSlice,
-        _library: &crate::library::Library<'gc>,
         gc_context: gc_arena::MutationContext<'gc, '_>,
     ) -> Self {
         let mut actions = vec![];
