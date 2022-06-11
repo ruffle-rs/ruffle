@@ -143,6 +143,81 @@ impl<'gc> Avm1Function<'gc> {
     pub fn register_count(&self) -> u8 {
         self.register_count
     }
+
+    fn debug_string_for_call(&self, name: ExecutionName<'gc>, args: &[Value<'gc>]) -> String {
+        let mut result = match self.name.map(ExecutionName::Dynamic).unwrap_or(name) {
+            ExecutionName::Static(n) => n.to_owned(),
+            ExecutionName::Dynamic(n) => n.to_utf8_lossy().into_owned(),
+        };
+        result.push('(');
+        for i in 0..args.len() {
+            result.push_str(args.get(i).unwrap().type_of());
+            if i < args.len() - 1 {
+                result.push_str(", ");
+            }
+        }
+        result.push(')');
+        result
+    }
+
+    fn load_this(&self, frame: &mut Activation<'_, 'gc, '_>, this: Value<'gc>, preload_r: &mut u8) {
+        if self.flags.contains(FunctionFlags::PRELOAD_THIS) {
+            //TODO: What happens if you specify both suppress and
+            //preload for this?
+            frame.set_local_register(*preload_r, this);
+            *preload_r += 1;
+        }
+    }
+
+    fn load_arguments(&self, frame: &mut Activation<'_, 'gc, '_>, arguments: Value<'gc>, preload_r: &mut u8) {
+        if self.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
+            //TODO: What happens if you specify both suppress and
+            //preload for arguments?
+            frame.set_local_register(*preload_r, arguments);
+            *preload_r += 1;
+        }
+    }
+
+    fn load_super(&self, frame: &mut Activation<'_, 'gc, '_>, super_object: Option<Object<'gc>>, preload_r: &mut u8) {
+        if let Some(super_object) = super_object {
+            if self.flags.contains(FunctionFlags::PRELOAD_SUPER) {
+                frame.set_local_register(*preload_r, super_object.into());
+                //TODO: What happens if you specify both suppress and
+                //preload for super?
+                *preload_r += 1;
+            } else {
+                frame.force_define_local("super".into(), super_object.into());
+            }
+        }
+    }
+
+    fn load_root(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
+        if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
+            let root = self.base_clip.avm1_root().object();
+            frame.set_local_register(*preload_r, root);
+            *preload_r += 1;
+        }
+    }
+
+    fn load_parent(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
+        if self.flags.contains(FunctionFlags::PRELOAD_PARENT) {
+            // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
+            // and _global ends up incorrectly taking _parent's register.
+            // See test for more info.
+            if let Some(parent) = self.base_clip.avm1_parent() {
+                frame.set_local_register(*preload_r, parent.object());
+                *preload_r += 1;
+            }
+        }
+    }
+
+    fn load_global(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
+        if self.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
+            let global = frame.context.avm1.global_object();
+            frame.set_local_register(*preload_r, global);
+            *preload_r += 1;
+        }
+    }
 }
 
 #[derive(Debug, Clone, Collect)]
@@ -218,200 +293,147 @@ impl<'gc> Executable<'gc> {
         reason: ExecutionReason,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self {
+        let af = match self {
             Executable::Native(nf) => {
                 // TODO: Change NativeFunction to accept `this: Value`.
                 let this = this.coerce_to_object(activation);
-                nf(activation, this, args)
+                return nf(activation, this, args);
             }
-            Executable::Action(af) => {
-                let this_obj = match this {
-                    Value::Object(obj) => Some(obj),
-                    _ => None,
-                };
+            Executable::Action(af) => af,
+        };
 
-                let target = activation.target_clip_or_root();
-                let is_closure = activation.swf_version() >= 6;
-                let base_clip = if (is_closure || reason == ExecutionReason::Special)
-                    && !af.base_clip.removed()
-                {
-                    af.base_clip
-                } else {
-                    this_obj
-                        .and_then(|this| this.as_display_object())
-                        .unwrap_or(target)
-                };
-                let (swf_version, parent_scope) = if is_closure {
-                    // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
-                    // * Use the SWF version from the SWF that defined the function.
-                    // * Use the base clip from when the function was defined.
-                    // * Close over the scope from when the function was defined.
-                    (af.swf_version(), af.scope())
-                } else {
-                    // Function calls in a v5 SWF are *not* closures, and will use the settings of
-                    // `this`, regardless of the function's origin:
-                    // * Use the SWF version of `this`.
-                    // * Use the base clip of `this`.
-                    // * Allocate a new scope using the given base clip. No previous scope is closed over.
-                    let swf_version = base_clip.swf_version();
-                    let base_clip_obj = match base_clip.object() {
-                        Value::Object(o) => o,
-                        _ => unreachable!(),
-                    };
-                    // TODO: It would be nice to avoid these extra Scope allocs.
-                    let scope = GcCell::allocate(
+        let this_obj = match this {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        };
+
+        let target = activation.target_clip_or_root();
+        let is_closure = activation.swf_version() >= 6;
+        let base_clip = if (is_closure || reason == ExecutionReason::Special)
+            && !af.base_clip.removed()
+        {
+            af.base_clip
+        } else {
+            this_obj
+                .and_then(|this| this.as_display_object())
+                .unwrap_or(target)
+        };
+        let (swf_version, parent_scope) = if is_closure {
+            // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
+            // * Use the SWF version from the SWF that defined the function.
+            // * Use the base clip from when the function was defined.
+            // * Close over the scope from when the function was defined.
+            (af.swf_version(), af.scope())
+        } else {
+            // Function calls in a v5 SWF are *not* closures, and will use the settings of
+            // `this`, regardless of the function's origin:
+            // * Use the SWF version of `this`.
+            // * Use the base clip of `this`.
+            // * Allocate a new scope using the given base clip. No previous scope is closed over.
+            let swf_version = base_clip.swf_version();
+            let base_clip_obj = match base_clip.object() {
+                Value::Object(o) => o,
+                _ => unreachable!(),
+            };
+            // TODO: It would be nice to avoid these extra Scope allocs.
+            let scope = GcCell::allocate(
+                activation.context.gc_context,
+                Scope::new(
+                    GcCell::allocate(
                         activation.context.gc_context,
-                        Scope::new(
-                            GcCell::allocate(
-                                activation.context.gc_context,
-                                Scope::from_global_object(activation.context.avm1.globals),
-                            ),
-                            super::scope::ScopeClass::Target,
-                            base_clip_obj,
-                        ),
-                    );
-                    (swf_version, scope)
-                };
+                        Scope::from_global_object(activation.context.avm1.globals),
+                    ),
+                    super::scope::ScopeClass::Target,
+                    base_clip_obj,
+                ),
+            );
+            (swf_version, scope)
+        };
 
-                let child_scope = GcCell::allocate(
-                    activation.context.gc_context,
-                    Scope::new_local_scope(parent_scope, activation.context.gc_context),
-                );
+        let child_scope = GcCell::allocate(
+            activation.context.gc_context,
+            Scope::new_local_scope(parent_scope, activation.context.gc_context),
+        );
 
-                let arguments = if af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
-                    ArrayObject::empty(activation)
-                } else {
-                    ArrayObject::new(
-                        activation.context.gc_context,
-                        activation.context.avm1.prototypes().array,
-                        args.iter().cloned(),
-                    )
-                };
-                arguments.define_value(
-                    activation.context.gc_context,
-                    "callee",
-                    callee.into(),
-                    Attribute::DONT_ENUM,
-                );
-                // The caller is the previous callee.
-                arguments.define_value(
-                    activation.context.gc_context,
-                    "caller",
-                    activation.callee.map(Value::from).unwrap_or(Value::Null),
-                    Attribute::DONT_ENUM,
-                );
+        let arguments = if af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
+            ArrayObject::empty(activation)
+        } else {
+            ArrayObject::new(
+                activation.context.gc_context,
+                activation.context.avm1.prototypes().array,
+                args.iter().cloned(),
+            )
+        };
+        arguments.define_value(
+            activation.context.gc_context,
+            "callee",
+            callee.into(),
+            Attribute::DONT_ENUM,
+        );
+        // The caller is the previous callee.
+        arguments.define_value(
+            activation.context.gc_context,
+            "caller",
+            activation.callee.map(Value::from).unwrap_or(Value::Null),
+            Attribute::DONT_ENUM,
+        );
 
-                // TODO: `super` should only be defined if this was a method call (depth > 0?)
-                // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
-                let super_object: Option<Object<'gc>> = this_obj.and_then(|this| {
-                    if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
-                        Some(SuperObject::new(activation, this, depth).into())
-                    } else {
-                        None
-                    }
-                });
+        // TODO: `super` should only be defined if this was a method call (depth > 0?)
+        // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
+        let super_object: Option<Object<'gc>> = this_obj.and_then(|this| {
+            if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
+                Some(SuperObject::new(activation, this, depth).into())
+            } else {
+                None
+            }
+        });
 
-                let name = if cfg!(feature = "avm_debug") {
-                    let mut result = match af.name.map(ExecutionName::Dynamic).unwrap_or(name) {
-                        ExecutionName::Static(n) => n.to_owned(),
-                        ExecutionName::Dynamic(n) => n.to_utf8_lossy().into_owned(),
-                    };
+        let name = if cfg!(feature = "avm_debug") {
+            Cow::Owned(af.debug_string_for_call(name, args))
+        } else {
+            Cow::Borrowed("[Anonymous]")
+        };
 
-                    result.push('(');
-                    for i in 0..args.len() {
-                        result.push_str(args.get(i).unwrap().type_of());
-                        if i < args.len() - 1 {
-                            result.push_str(", ");
-                        }
-                    }
-                    result.push(')');
+        let max_recursion_depth = activation.context.avm1.max_recursion_depth();
+        let mut frame = Activation::from_action(
+            activation.context.reborrow(),
+            activation.id.function(name, reason, max_recursion_depth)?,
+            swf_version,
+            child_scope,
+            af.constant_pool,
+            base_clip,
+            this,
+            Some(callee),
+            Some(arguments.into()),
+        );
 
-                    Cow::Owned(result)
-                } else {
-                    Cow::Borrowed("[Anonymous]")
-                };
+        frame.allocate_local_registers(af.register_count(), frame.context.gc_context);
 
-                let max_recursion_depth = activation.context.avm1.max_recursion_depth();
-                let mut frame = Activation::from_action(
-                    activation.context.reborrow(),
-                    activation.id.function(name, reason, max_recursion_depth)?,
-                    swf_version,
-                    child_scope,
-                    af.constant_pool,
-                    base_clip,
-                    this,
-                    Some(callee),
-                    Some(arguments.into()),
-                );
+        let mut preload_r = 1;
+        af.load_this(&mut frame, this, &mut preload_r);
+        af.load_arguments(&mut frame, arguments.into(), &mut preload_r);
+        af.load_super(&mut frame, super_object, &mut preload_r);
+        af.load_root(&mut frame, &mut preload_r);
+        af.load_parent(&mut frame, &mut preload_r);
+        af.load_global(&mut frame, &mut preload_r);
 
-                frame.allocate_local_registers(af.register_count(), frame.context.gc_context);
+        // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
+        let args_iter = args
+            .iter()
+            .cloned()
+            .chain(std::iter::repeat(Value::Undefined));
 
-                let mut preload_r = 1;
-
-                if af.flags.contains(FunctionFlags::PRELOAD_THIS) {
-                    //TODO: What happens if you specify both suppress and
-                    //preload for this?
-                    frame.set_local_register(preload_r, this);
-                    preload_r += 1;
-                }
-
-                if af.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
-                    //TODO: What happens if you specify both suppress and
-                    //preload for arguments?
-                    frame.set_local_register(preload_r, arguments.into());
-                    preload_r += 1;
-                }
-
-                if let Some(super_object) = super_object {
-                    if af.flags.contains(FunctionFlags::PRELOAD_SUPER) {
-                        frame.set_local_register(preload_r, super_object.into());
-                        //TODO: What happens if you specify both suppress and
-                        //preload for super?
-                        preload_r += 1;
-                    } else {
-                        frame.force_define_local("super".into(), super_object.into());
-                    }
-                }
-
-                if af.flags.contains(FunctionFlags::PRELOAD_ROOT) {
-                    frame.set_local_register(preload_r, af.base_clip.avm1_root().object());
-                    preload_r += 1;
-                }
-
-                if af.flags.contains(FunctionFlags::PRELOAD_PARENT) {
-                    // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
-                    // and _global ends up incorrectly taking _parent's register.
-                    // See test for more info.
-                    if let Some(parent) = af.base_clip.avm1_parent() {
-                        frame.set_local_register(preload_r, parent.object());
-                        preload_r += 1;
-                    }
-                }
-
-                if af.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
-                    let global = frame.context.avm1.global_object();
-                    frame.set_local_register(preload_r, global);
-                }
-
-                // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
-                let args_iter = args
-                    .iter()
-                    .cloned()
-                    .chain(std::iter::repeat(Value::Undefined));
-
-                //TODO: What happens if the argument registers clash with the
-                //preloaded registers? What gets done last?
-                for (param, value) in af.params.iter().zip(args_iter) {
-                    if let Some(register) = param.register {
-                        frame.set_local_register(register.get(), value);
-                    } else {
-                        frame.force_define_local(param.name, value);
-                    }
-                }
-
-                Ok(frame.run_actions(af.data.clone())?.value())
+        //TODO: What happens if the argument registers clash with the
+        //preloaded registers? What gets done last?
+        for (param, value) in af.params.iter().zip(args_iter) {
+            if let Some(register) = param.register {
+                frame.set_local_register(register.get(), value);
+            } else {
+                frame.force_define_local(param.name, value);
             }
         }
+
+        Ok(frame.run_actions(af.data.clone())?.value())
     }
 }
 
