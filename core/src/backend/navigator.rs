@@ -54,8 +54,11 @@ impl NavigationMethod {
     }
 }
 
-/// Represents request options to be sent as part of a fetch.
-pub struct RequestOptions {
+/// A fetch request.
+pub struct Request {
+    /// The URL of the request.
+    url: String,
+
     /// The HTTP method to be used to make the request.
     method: NavigationMethod,
 
@@ -66,21 +69,28 @@ pub struct RequestOptions {
     body: Option<(Vec<u8>, String)>,
 }
 
-impl RequestOptions {
-    /// Construct request options for a GET request.
-    pub fn get() -> Self {
+impl Request {
+    /// Construct a GET request.
+    pub fn get(url: String) -> Self {
         Self {
+            url,
             method: NavigationMethod::Get,
             body: None,
         }
     }
 
-    /// Construct request options for a POST request.
-    pub fn post(body: Option<(Vec<u8>, String)>) -> Self {
+    /// Construct a POST request.
+    pub fn post(url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
+            url,
             method: NavigationMethod::Post,
             body,
         }
+    }
+
+    /// Retrieve the URL of this request.
+    pub fn url(&self) -> &str {
+        &self.url
     }
 
     /// Retrieve the navigation method for this request.
@@ -138,8 +148,8 @@ pub trait NavigatorBackend {
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
-    /// Fetch data at a given URL and return it some time in the future.
-    fn fetch(&self, url: &str, request_options: RequestOptions) -> OwnedFuture<Response, Error>;
+    /// Fetch data and return it some time in the future.
+    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error>;
 
     /// Arrange for a future to be run at some point in the... well, future.
     ///
@@ -280,9 +290,9 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
-    fn fetch(&self, url: &str, _opts: RequestOptions) -> OwnedFuture<Response, Error> {
+    fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
         let mut path = self.relative_base_path.clone();
-        path.push(url);
+        path.push(request.url);
 
         Box::pin(async move {
             let url = Self::url_from_file_path(&path)

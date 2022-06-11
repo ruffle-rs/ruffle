@@ -7,7 +7,7 @@ use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
-use crate::backend::navigator::RequestOptions;
+use crate::backend::navigator::Request;
 use crate::loader::DataFormat;
 use gc_arena::{GcCell, MutationContext};
 
@@ -130,14 +130,11 @@ fn spawn_fetch<'gc>(
         .get_property(&QName::dynamic_name("url").into(), activation)?
         .coerce_to_string(activation)?;
 
-    let url = url.to_utf8_lossy();
-
     let future = activation.context.load_manager.load_data_into_url_loader(
         activation.context.player.clone(),
         loader_object,
-        &url,
         // FIXME - get these from the `URLRequest`
-        RequestOptions::get(),
+        Request::get(url.to_utf8_lossy().into_owned()),
         data_format,
     );
     activation.context.navigator.spawn_future(future);
