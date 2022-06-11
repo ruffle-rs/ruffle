@@ -14,7 +14,7 @@ use super::{Units, WStr};
 /// - `u16` searches for a single UCS2 code unit.
 /// - `&[u8]` searches for any of the given LATIN1 code units.
 /// - `&[u16]` searches for any of the given UCS2 code units.
-/// - `Fn(u16) -> bool` searches for code units matching the predicate.
+/// - `FnMut(u16) -> bool` searches for code units matching the predicate.
 pub trait Pattern<'a> {
     type Searcher: Searcher<'a>;
 
@@ -123,7 +123,7 @@ impl<'a> Pattern<'a> for &'a [u16] {
     }
 }
 
-impl<'a, F: Fn(u16) -> bool> Pattern<'a> for F {
+impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
     type Searcher = Either<PredSearcher<'a, u8, FnPred<F>>, PredSearcher<'a, u16, FnPred<F>>>;
 
     fn into_searcher(self, haystack: &'a WStr) -> Self::Searcher {
@@ -244,11 +244,11 @@ pub struct PredSearcher<'a, T, P> {
 }
 
 pub trait Predicate<T> {
-    fn is_match(&self, c: T) -> bool;
+    fn matches(&mut self, c: T) -> bool;
 }
 
 impl<T: Copy + Eq> Predicate<T> for T {
-    fn is_match(&self, c: T) -> bool {
+    fn matches(&mut self, c: T) -> bool {
         *self == c
     }
 }
@@ -256,15 +256,15 @@ impl<T: Copy + Eq> Predicate<T> for T {
 pub struct AnyOf<'a, T>(&'a [T]);
 
 impl<'a, T: Copy, U: Copy + Eq + TryFrom<T>> Predicate<T> for AnyOf<'a, U> {
-    fn is_match(&self, c: T) -> bool {
+    fn matches(&mut self, c: T) -> bool {
         self.0.iter().any(|m| U::try_from(c).ok() == Some(*m))
     }
 }
 
 pub struct FnPred<F>(F);
 
-impl<T: Into<u16>, F: Fn(u16) -> bool> Predicate<T> for FnPred<F> {
-    fn is_match(&self, c: T) -> bool {
+impl<T: Into<u16>, F: FnMut(u16) -> bool> Predicate<T> for FnPred<F> {
+    fn matches(&mut self, c: T) -> bool {
         (self.0)(c.into())
     }
 }
@@ -289,7 +289,7 @@ impl<'a, T: Copy, M: Predicate<T>> Searcher<'a> for PredSearcher<'a, T, M> {
 
         let i = self.front;
         self.front += 1;
-        if self.predicate.is_match(c) {
+        if self.predicate.matches(c) {
             SearchStep::Match(i, i + 1)
         } else {
             SearchStep::Reject(i, i + 1)
@@ -303,7 +303,7 @@ impl<'a, T: Copy, M: Predicate<T>> Searcher<'a> for PredSearcher<'a, T, M> {
         }
         let c = self.haystack[len - 1];
         self.haystack = &self.haystack[..len - 1];
-        if self.predicate.is_match(c) {
+        if self.predicate.matches(c) {
             SearchStep::Match(len - 1, len)
         } else {
             SearchStep::Reject(len - 1, len)
