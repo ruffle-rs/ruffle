@@ -6,7 +6,7 @@ definitions (e.g. `Object`, `flash.geom.Point`, `flash.utils.getDefinitionByName
 WARNING: Do *not* implement classes by copying their (decompiled) ActionScript
 from the Adobe Flash `playerglobal.swf`. This would violate copyright by making
 Ruffle re-distribute Adobe's code (and will not even work in general, since
-Adobe's `playerglobal.swf` uses native methods that Ruffle doesn't implement.
+Adobe's `playerglobal.swf` uses native methods that Ruffle doesn't implement).
 
 Currently, globals are implemented in one of two ways:
 1) As pure-Rust code in files like `system.rs`. These are normal Rust
