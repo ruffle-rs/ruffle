@@ -3,6 +3,11 @@
 This directory contains implementations of Flash global
 definitions (e.g. `Object`, `flash.geom.Point`, `flash.utils.getDefinitionByName`)
 
+WARNING: Do *not* implement classes by copying their (decompiled) ActionScript
+from the Adobe Flash `playerglobal.swf`. This would violate copyright by making
+Ruffle re-distribute Adobe's code (and will not even work in general, since
+Adobe's `playerglobal.swf` uses native methods that Ruffle doesn't implement.
+
 Currently, globals are implemented in one of two ways:
 1) As pure-Rust code in files like `system.rs`. These are normal Rust
    modules, and are used from `core/src/avm2/global.rs`
@@ -39,13 +44,6 @@ and not checked in to Git).
 
 The `core/build\_playerglobal` tool is automatically run by `core`'s build script
 when any of our ActionScript classes are changed.
-
-NOTE - when adding a *new* .as file, you must manually trigger
-the build script to be re-run by running 'touch core/build.rs'
-(or otherwise updating the modification time of 'core/build.rs').
-This only needs to be done once - afterwards, Cargo will track
-changes to your newly added '.as' file, and re-run the build
-script as needed.
 
 ## Limitations
 

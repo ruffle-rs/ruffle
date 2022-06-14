@@ -17,19 +17,11 @@ use walkdir::WalkDir;
 pub fn build_playerglobal(
     repo_root: PathBuf,
     out_dir: PathBuf,
-) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let classes_dir = repo_root.join("core/src/avm2/globals/");
     let asc_path = repo_root.join("core/build_playerglobal/asc.jar");
 
     let out_path = out_dir.join("playerglobal.swf");
-
-    let mut classes = Vec::new();
-    for entry in WalkDir::new(&classes_dir) {
-        let entry = entry?;
-        if entry.path().extension().and_then(|e| e.to_str()) == Some("as") {
-            classes.push(entry.into_path());
-        }
-    }
 
     // These classes are currently stubs - they're referenced by
     // other classes that we need to compile, but the real definition
@@ -51,7 +43,12 @@ pub fn build_playerglobal(
         "playerglobal",
     ]);
 
-    for class in &classes {
+    for entry in WalkDir::new(&classes_dir) {
+        let entry = entry?;
+        if entry.path().extension().and_then(|e| e.to_str()) != Some("as") {
+            continue;
+        }
+        let class = entry.into_path();
         let class_name: String = class
             .strip_prefix(&classes_dir)?
             .with_extension("")
@@ -90,5 +87,5 @@ pub fn build_playerglobal(
     let out_file = File::create(out_path).unwrap();
     swf::write_swf(&header, &tags, out_file)?;
 
-    Ok(classes)
+    Ok(())
 }
