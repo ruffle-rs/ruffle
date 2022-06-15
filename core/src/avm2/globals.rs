@@ -906,12 +906,6 @@ pub fn load_player_globals<'gc>(
 
     // package `flash.geom`
     class(activation, flash::geom::matrix::create_class(mc), script)?;
-    avm2_system_class!(
-        rectangle,
-        activation,
-        flash::geom::rectangle::create_class(mc),
-        script
-    );
 
     // package `flash.media`
     avm2_system_class!(
