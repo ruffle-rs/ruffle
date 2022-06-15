@@ -2,6 +2,7 @@
 members = [
     "core",
     "core/macros",
+    "core/build_playerglobal",
     "desktop",
     "swf",
     "web",

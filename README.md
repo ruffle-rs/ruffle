@@ -39,6 +39,8 @@ For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs
 
 [Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
 
+You must also have Java installed, and available on your PATH as `java`.
+
 ### Desktop
 
 If you are building for a Linux platform, make sure that the GTK 3 development packages are

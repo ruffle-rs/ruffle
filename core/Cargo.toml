@@ -72,3 +72,6 @@ lzma = ["lzma-rs", "swf/lzma"]
 wasm-bindgen = [ "instant/wasm-bindgen" ]
 avm_debug = []
 deterministic = []
+
+[build-dependencies]
+build_playerglobal = { path = "build_playerglobal" }
