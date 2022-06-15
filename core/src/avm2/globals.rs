@@ -70,8 +70,6 @@ pub struct SystemPrototypes<'gc> {
     pub xml_list: Object<'gc>,
     pub display_object: Object<'gc>,
     pub shape: Object<'gc>,
-    pub point: Object<'gc>,
-    pub rectangle: Object<'gc>,
     pub textfield: Object<'gc>,
     pub textformat: Object<'gc>,
     pub graphics: Object<'gc>,
@@ -136,8 +134,6 @@ impl<'gc> SystemPrototypes<'gc> {
             xml_list: empty,
             display_object: empty,
             shape: empty,
-            point: empty,
-            rectangle: empty,
             textfield: empty,
             textformat: empty,
             graphics: empty,
@@ -192,8 +188,6 @@ pub struct SystemClasses<'gc> {
     pub xml_list: ClassObject<'gc>,
     pub display_object: ClassObject<'gc>,
     pub shape: ClassObject<'gc>,
-    pub point: ClassObject<'gc>,
-    pub rectangle: ClassObject<'gc>,
     pub textfield: ClassObject<'gc>,
     pub textformat: ClassObject<'gc>,
     pub graphics: ClassObject<'gc>,
@@ -258,8 +252,6 @@ impl<'gc> SystemClasses<'gc> {
             xml_list: object,
             display_object: object,
             shape: object,
-            point: object,
-            rectangle: object,
             textfield: object,
             textformat: object,
             graphics: object,
@@ -1075,7 +1067,7 @@ fn load_playerglobal<'gc>(
     // This acts the same way as 'avm2_system_class', but for classes
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
     // and are stored in 'avm2().system_classes' and 'avm2().system_prototypes'
-    avm2_system_classes_playerglobal!(activation, script, [("flash.geom", "Point", point),]);
+    avm2_system_classes_playerglobal!(activation, script, []);
 
     Ok(())
 }
