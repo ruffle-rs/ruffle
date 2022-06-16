@@ -37,6 +37,7 @@ pub fn build_playerglobal(
         "-classpath",
         &asc_path.to_string_lossy(),
         "macromedia.asc.embedding.ScriptCompiler",
+        "-optimize",
         "-outdir",
         &out_dir.to_string_lossy(),
         "-out",
