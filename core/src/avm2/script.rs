@@ -14,6 +14,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use std::borrow::Cow;
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
@@ -129,11 +130,29 @@ impl<'gc> TranslationUnit<'gc> {
             return Ok(method.clone());
         }
 
+        let is_global = read.domain.is_avm2_global_domain(activation);
         drop(read);
 
-        let method: Result<Gc<'gc, BytecodeMethod<'gc>>, Error> =
-            BytecodeMethod::from_method_index(self, method_index, is_function, activation);
-        let method: Method<'gc> = method?.into();
+        let bc_method =
+            BytecodeMethod::from_method_index(self, method_index, is_function, activation)?;
+
+        // This closure lets us move out of 'bc_method.signature' and then return,
+        // allowing us to use 'bc_method' later on without a borrow-checker error.
+        let method = (|| {
+            if is_global {
+                if let Some(native) = activation.avm2().native_table[method_index.0 as usize] {
+                    let variadic = bc_method.is_variadic();
+                    return Method::from_builtin_and_params(
+                        native,
+                        Cow::Owned(bc_method.method_name().to_string()),
+                        bc_method.signature,
+                        variadic,
+                        activation.context.gc_context,
+                    );
+                }
+            }
+            Gc::allocate(activation.context.gc_context, bc_method).into()
+        })();
 
         self.0.write(activation.context.gc_context).methods[method_index.0 as usize] =
             Some(method.clone());

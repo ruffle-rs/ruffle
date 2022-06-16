@@ -443,11 +443,6 @@ pub fn load_player_globals<'gc>(
         flash::system::capabilities::create_class(mc),
         script,
     )?;
-    class(
-        activation,
-        flash::system::security::create_class(mc),
-        script,
-    )?;
     class(activation, flash::system::system::create_class(mc), script)?;
 
     // package `flash.events`
@@ -577,14 +572,6 @@ pub fn load_player_globals<'gc>(
         "flash.utils",
         "getQualifiedSuperclassName",
         flash::utils::get_qualified_super_class_name,
-        script,
-    )?;
-
-    function(
-        activation,
-        "flash.utils",
-        "getDefinitionByName",
-        flash::utils::get_definition_by_name,
         script,
     )?;
 
@@ -756,12 +743,6 @@ pub fn load_player_globals<'gc>(
         flash::net::object_encoding::create_class(mc),
         script,
     )?;
-    class(activation, flash::net::url_loader::create_class(mc), script)?;
-    class(
-        activation,
-        flash::net::url_request::create_class(mc),
-        script,
-    )?;
 
     // package `flash.text`
     avm2_system_class!(
@@ -806,12 +787,17 @@ pub fn load_player_globals<'gc>(
 /// See that tool, and 'core/src/avm2/globals/README.md', for more details
 const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal.swf"));
 
+// This defines a const named `NATIVE_TABLE`
+include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
+
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
 fn load_playerglobal<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     domain: Domain<'gc>,
 ) -> Result<(), Error> {
+    activation.avm2().native_table = NATIVE_TABLE;
+
     let movie = Arc::new(SwfMovie::from_data(PLAYERGLOBAL, None, None)?);
 
     let slice = SwfSlice::from(movie);

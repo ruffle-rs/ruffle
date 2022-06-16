@@ -6,6 +6,7 @@ include "Object.as"
 // List is ordered alphabetically.
 include "Array.as"
 include "Boolean.as"
+include "flash/events/EventDispatcher.as"
 include "Number.as"
 include "String.as"
 include "int.as"

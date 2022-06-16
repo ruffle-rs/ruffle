@@ -53,6 +53,10 @@ impl<'gc> Domain<'gc> {
         ))
     }
 
+    pub fn is_avm2_global_domain(&self, activation: &mut Activation<'_, 'gc, '_>) -> bool {
+        activation.avm2().global_domain().0.as_ptr() == self.0.as_ptr()
+    }
+
     /// Create a new domain with a given parent.
     ///
     /// This function must not be called before the player globals have been

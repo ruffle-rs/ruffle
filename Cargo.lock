@@ -264,6 +264,9 @@ checksum = "b4ae4235e6dac0694637c763029ecea1a2ec9e4e06ec2729bd21ba4d9c863eb7"
 name = "build_playerglobal"
 version = "0.1.0"
 dependencies = [
+ "convert_case",
+ "proc-macro2",
+ "quote",
  "swf",
 ]
 
@@ -573,6 +576,12 @@ dependencies = [
  "log",
  "web-sys",
 ]
+
+[[package]]
+name = "convert_case"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb4a24b1aaf0fd0ce8b45161144d6f42cd91677fd5940fd431183eb023b3a2b8"
 
 [[package]]
 name = "cookie-factory"

@@ -1,7 +1,7 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
 use crate::avm2::globals::SystemClasses;
-use crate::avm2::method::Method;
+use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
@@ -75,6 +75,9 @@ pub struct Avm2<'gc> {
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
+    #[collect(require_static)]
+    native_table: &'static [Option<NativeMethodImpl>],
+
     /// A list of objects which are capable of recieving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
@@ -98,6 +101,7 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_classes: None,
+            native_table: Default::default(),
             broadcast_list: Default::default(),
 
             #[cfg(feature = "avm_debug")]
@@ -130,7 +134,7 @@ impl<'gc> Avm2<'gc> {
             Method::Native(method) => {
                 //This exists purely to check if the builtin is OK with being called with
                 //no parameters.
-                init_activation.resolve_parameters(method.name, &[], &method.signature)?;
+                init_activation.resolve_parameters(&method.name, &[], &method.signature)?;
 
                 (method.method)(&mut init_activation, Some(scope), &[])?;
             }

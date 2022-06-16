@@ -32,6 +32,26 @@ In addition to potential copyright issues around redistributing Flash's `playerg
 many of its classes rely on specific 'native' methods being provided
 by the Flash VM, which Ruffle does not implement.
 
+## Native methods
+
+We support defining native methods (instance methods, class methods, and freestanding functions)
+in ActionScript classes in playerglobal. During the build process, we automatically
+generate a reference to a Rust function at the corresponding path in Ruffle.
+
+For example, the native method function `flash.system.Security.allowDomain`
+expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allowDomain`.
+
+This function is cast to a `NativeMethodImpl` function pointer, exactly like
+functions defined on a pure-Rust class definition.
+
+If you're unsure of the path to use, just build Ruffle after marking the
+`ActionScript` method as `native` - the compiler will produce an error
+explaining where the Rust function needs to be defined.
+
+The ActionScript method and the Rust function are automatically linked
+together, and the Rust function will be invoked when the corresponding
+function is called from ActionScript.
+
 ## Compiling
 
 Java must be installed for the build process to complete.
@@ -53,8 +73,6 @@ when any of our ActionScript classes are changed.
 
 ## Limitations
 
-* Only pure ActionScript classes are currently supported. Classes with
-'native' methods are not yet supported.
 * 'Special' classes which are loaded early during player initialization
 (e.g. `Object`, `Function`, `Class`) cannot currently
 be implemented in `playerglobal`, since they are initialized in a special
