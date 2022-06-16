@@ -132,7 +132,7 @@ impl<'gc> Executable<'gc> {
                 }
 
                 let arguments = activation.resolve_parameters(
-                    bm.method.name,
+                    &bm.method.name,
                     arguments,
                     &bm.method.signature,
                 )?;

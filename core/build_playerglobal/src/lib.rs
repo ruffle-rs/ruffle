@@ -1,9 +1,15 @@
 //! An internal Ruffle utility to build our playerglobal
 //! `library.swf`
 
+use convert_case::{Case, Casing};
+use proc_macro2::TokenStream;
+use quote::quote;
 use std::fs::File;
-use std::path::PathBuf;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::FromStr;
+use swf::avm2::types::*;
 use swf::DoAbc;
 use swf::Header;
 use swf::SwfStr;
@@ -50,6 +56,8 @@ pub fn build_playerglobal(
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 
+    write_native_table(&bytes, &out_dir)?;
+
     let tags = vec![Tag::DoAbc(DoAbc {
         name: SwfStr::from_utf8_str(""),
         is_lazy_initialize: true,
@@ -59,6 +67,187 @@ pub fn build_playerglobal(
     let header = Header::default_with_swf_version(19);
     let out_file = File::create(out_path).unwrap();
     swf::write_swf(&header, &tags, out_file)?;
+
+    Ok(())
+}
+
+// Resolve the 'name' field of a `Multiname`. This only handles the cases
+// that we need for our custom `playerglobal.swf` (
+fn resolve_multiname_name<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a str {
+    if let Multiname::QName { name, .. } | Multiname::Multiname { name, .. } = multiname {
+        &abc.constant_pool.strings[name.0 as usize - 1]
+    } else {
+        panic!("Unexpected Multiname {:?}", multiname);
+    }
+}
+
+// Like `resolve_multiname_name`, but for namespaces instead.
+fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> &'a str {
+    if let Multiname::QName { namespace, .. } = multiname {
+        let ns = &abc.constant_pool.namespaces[namespace.0 as usize - 1];
+        if let Namespace::Package(p) = ns {
+            &abc.constant_pool.strings[p.0 as usize - 1]
+        } else {
+            panic!("Unexpected Namespace {:?}", ns);
+        }
+    } else {
+        panic!("Unexpected Multiname {:?}", multiname);
+    }
+}
+
+/// Handles native functons defined in our `playerglobal`
+///
+/// The high-level idea is to generate code (specifically, a `TokenStream`)
+/// which builds a table - mapping from the method ids of native functions,
+/// to Rust function pointers which implement them.
+///
+/// This table gets used when we first load a method from an ABC file.
+/// If it's a native method in our `playerglobal`, we swap it out
+/// with a `NativeMethod` retrieved from the table. To the rest of
+/// the Ruffle codebase, it appears as though the method was always defined
+/// as a native method, and never existed in the bytecode at all.
+///
+/// See `flash.system.Security.allowDomain` for an example of defining
+/// and using a native method.
+fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let mut reader = swf::avm2::read::Reader::new(data);
+    let abc = reader.read()?;
+
+    let none_tokens = quote! { None };
+    let mut rust_paths = vec![none_tokens; abc.methods.len()];
+
+    let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
+        let method_id = match trait_.kind {
+            TraitKind::Method { method, .. }
+            | TraitKind::Getter { method, .. }
+            | TraitKind::Setter { method, .. } => {
+                let abc_method = &abc.methods[method.0 as usize];
+                // We only want to process native methods
+                if !abc_method.flags.contains(MethodFlags::NATIVE) {
+                    return;
+                }
+                method
+            }
+            TraitKind::Function { .. } => {
+                panic!("TraitKind::Function is not supported: {:?}", trait_)
+            }
+            _ => return,
+        };
+
+        // Note - technically, this could conflict with
+        // a method with a name starting with `get_` or `set_`.
+        // However, all Flash methods are named with lowerCamelCase,
+        // so we'll never actually need to implement a native method that
+        // would cause such a conflict.
+        let method_prefix = match trait_.kind {
+            TraitKind::Getter { .. } => "get_",
+            TraitKind::Setter { .. } => "set_",
+            _ => "",
+        };
+
+        let flash_to_rust_path = |path: &str| {
+            // Convert each component of the path to snake-case.
+            // This correctly handles sequences of upper-case letters,
+            // so 'URLLoader' becomes 'url_loader'
+            let components = path
+                .split('.')
+                .map(|component| component.to_case(Case::Snake))
+                .collect::<Vec<_>>();
+            // Form a Rust path from the snake-case components
+            components.join("::")
+        };
+
+        let mut path = "crate::avm2::globals::".to_string();
+
+        let trait_name = &abc.constant_pool.multinames[trait_.name.0 as usize - 1];
+
+        if let Some(parent) = parent {
+            // This is a method defined inside the class. Append the class namespace
+            // (the package) and the class name.
+            // For example, a namespace of "flash.system" and a name of "Security"
+            // turns into the path "flash::system::security"
+            let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
+            path += &flash_to_rust_path(resolve_multiname_ns(&abc, multiname));
+            path += "::";
+            path += &flash_to_rust_path(resolve_multiname_name(&abc, multiname));
+            path += "::";
+        } else {
+            // This is a freestanding function. Append its namespace (the package).
+            // For example, the freestanding function "flash.utils.getDefinitionByName"
+            // has a namespace of "flash.utils", which turns into the path
+            // "flash::utils"
+            path += &flash_to_rust_path(resolve_multiname_ns(&abc, trait_name));
+            path += "::";
+        }
+
+        // Append the trait name - this corresponds to the actual method
+        // name (e.g. `getDefinitionByName`)
+        path += method_prefix;
+        path += &flash_to_rust_path(resolve_multiname_name(&abc, trait_name));
+
+        // Now that we've built up the path, convert it into a `TokenStream`.
+        // This gives us something like
+        // `crate::avm2::globals::flash::system::Security::allowDomain`
+        //
+        // The resulting `TokenStream` is suitable for usage with `quote!` to
+        // generate a reference to the function pointer that should exist
+        // at that path in Rust code.
+        let path_tokens = TokenStream::from_str(&path).unwrap();
+        rust_paths[method_id.0 as usize] = quote! { Some(#path_tokens) };
+    };
+
+    // We support three kinds of native methods:
+    // instance methods, class methods, and freestanding functions.
+    // We're going to insert them into an array indexed by `MethodId`,
+    // so it doesn't matter what order we visit them in.
+    for (i, instance) in abc.instances.iter().enumerate() {
+        // Look for native instance methods
+        for trait_ in &instance.traits {
+            check_trait(trait_, Some(instance.name));
+        }
+        // Look for native class methods (in the corresponding
+        // `Class` definition)
+        for trait_ in &abc.classes[i].traits {
+            check_trait(trait_, Some(instance.name));
+        }
+    }
+
+    // Look for freestanding methods
+    for script in &abc.scripts {
+        for trait_ in &script.traits {
+            check_trait(trait_, None);
+        }
+    }
+
+    // Finally, generate the actual code. This is a Rust array -
+    // the entry at index `i` is a Rust function pointer for the native
+    // method with id `i`. Not all methods in playerglobal will be native
+    // methods, so we store `None` in the entries corresponding to non-native
+    // functions. We expect the majority of the methods in playerglobal to be
+    // native, so this should only waste a small amount of memory.
+    //
+    // If a function pointer doesn't exist at the expected path,
+    // then Ruffle compilation will fail
+    // with an error message that mentions the non-existent path.
+    //
+    // When we initially load a method from an ABC file, we check if it's from our playerglobal,
+    // and if its ID exists in this table.
+    // If so, we replace it with a `NativeMethod` constructed
+    // from the function pointer we looked up in the table.
+
+    let make_native_table = quote! {
+        const NATIVE_TABLE: &[Option<crate::avm2::method::NativeMethodImpl>] = &[
+            #(#rust_paths,)*
+        ];
+    }
+    .to_string();
+
+    // Each table entry ends with ') ,' - insert a newline so that
+    // each entry is on its own line. This makes error messages more readable.
+    let make_native_table = make_native_table.replace(") ,", ") ,\n");
+
+    let mut native_table_file = File::create(out_dir.join("native_table.rs"))?;
+    native_table_file.write_all(make_native_table.as_bytes())?;
 
     Ok(())
 }
