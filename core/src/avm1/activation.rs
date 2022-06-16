@@ -194,13 +194,19 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     constant_pool: GcCell<'gc, Vec<Value<'gc>>>,
 
     /// The immutable value of `this`.
+    ///
+    /// This differs from Flash Player, where `this` is mutable and seems
+    /// to be part of the scope chain (e.g. a function with the `suppress_this` flag
+    /// set can modify the `this` value of its closure).
+    ///
+    /// Fortunately, ActionScript syntax prevents mutating `this` altogether, so
+    /// observing this behavior requires manually-crafted bytecode.
+    ///
+    /// TODO: implement correct semantics for mutable `this`.
     this: Value<'gc>,
 
     /// The function object being called.
     pub callee: Option<Object<'gc>>,
-
-    /// The arguments this function was called by.
-    pub arguments: Option<Object<'gc>>,
 
     /// Local registers, if any.
     ///
@@ -254,7 +260,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         base_clip: DisplayObject<'gc>,
         this: Value<'gc>,
         callee: Option<Object<'gc>>,
-        arguments: Option<Object<'gc>>,
     ) -> Self {
         avm_debug!(context.avm1, "START {}", id);
         Self {
@@ -268,7 +273,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             base_clip_unloaded: base_clip.removed(),
             this,
             callee,
-            arguments,
             local_registers: None,
             actions_since_timeout_check: 0,
         }
@@ -293,7 +297,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
             callee: self.callee,
-            arguments: self.arguments,
             local_registers: self.local_registers,
             actions_since_timeout_check: 0,
         }
@@ -329,7 +332,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             base_clip_unloaded: base_clip.removed(),
             this: globals.into(),
             callee: None,
-            arguments: None,
             local_registers: None,
             actions_since_timeout_check: 0,
         }
@@ -383,7 +385,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             active_clip,
             clip_obj.into(),
             None,
-            None,
         );
         child_activation.run_actions(code)
     }
@@ -420,7 +421,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             constant_pool,
             active_clip,
             clip_obj.into(),
-            None,
             None,
         );
         function(&mut activation)
@@ -2131,7 +2131,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.base_clip,
                     self.this,
                     self.callee,
-                    self.arguments,
                 );
 
                 match catch_vars {
@@ -2735,12 +2734,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
         if &name == b"this" {
             return Ok(CallableValue::UnCallable(self.this_cell()));
-        }
-
-        if &name == b"arguments" && self.arguments.is_some() {
-            return Ok(CallableValue::UnCallable(Value::Object(
-                self.arguments.unwrap(),
-            )));
         }
 
         self.scope_cell().read().resolve(name, self)

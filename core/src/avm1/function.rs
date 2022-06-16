@@ -161,33 +161,83 @@ impl<'gc> Avm1Function<'gc> {
     }
 
     fn load_this(&self, frame: &mut Activation<'_, 'gc, '_>, this: Value<'gc>, preload_r: &mut u8) {
-        if self.flags.contains(FunctionFlags::PRELOAD_THIS) {
-            //TODO: What happens if you specify both suppress and
-            //preload for this?
+        let preload = self.flags.contains(FunctionFlags::PRELOAD_THIS);
+        let suppress = self.flags.contains(FunctionFlags::SUPPRESS_THIS);
+
+        if preload {
+            // The register is set to undefined if both flags are set.
+            let this = if suppress { Value::Undefined } else { this };
             frame.set_local_register(*preload_r, this);
             *preload_r += 1;
         }
     }
 
-    fn load_arguments(&self, frame: &mut Activation<'_, 'gc, '_>, arguments: Value<'gc>, preload_r: &mut u8) {
-        if self.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS) {
-            //TODO: What happens if you specify both suppress and
-            //preload for arguments?
+    fn load_arguments(
+        &self,
+        frame: &mut Activation<'_, 'gc, '_>,
+        args: &[Value<'gc>],
+        caller: Option<Object<'gc>>,
+        preload_r: &mut u8,
+    ) {
+        let preload = self.flags.contains(FunctionFlags::PRELOAD_ARGUMENTS);
+        let suppress = self.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS);
+
+        if suppress && !preload {
+            return;
+        }
+
+        let arguments = ArrayObject::new(
+            frame.context.gc_context,
+            frame.context.avm1.prototypes().array,
+            args.iter().cloned(),
+        );
+
+        arguments.define_value(
+            frame.context.gc_context,
+            "callee",
+            frame.callee.unwrap().into(),
+            Attribute::DONT_ENUM,
+        );
+
+        arguments.define_value(
+            frame.context.gc_context,
+            "caller",
+            caller.map(Value::from).unwrap_or(Value::Null),
+            Attribute::DONT_ENUM,
+        );
+
+        let arguments = Value::from(arguments);
+
+        // Contrarily to `this` and `super`, setting both flags is equivalent to just setting `preload`.
+        if preload {
             frame.set_local_register(*preload_r, arguments);
             *preload_r += 1;
+        } else {
+            frame.force_define_local("arguments".into(), arguments);
         }
     }
 
-    fn load_super(&self, frame: &mut Activation<'_, 'gc, '_>, super_object: Option<Object<'gc>>, preload_r: &mut u8) {
-        if let Some(super_object) = super_object {
-            if self.flags.contains(FunctionFlags::PRELOAD_SUPER) {
-                frame.set_local_register(*preload_r, super_object.into());
-                //TODO: What happens if you specify both suppress and
-                //preload for super?
-                *preload_r += 1;
-            } else {
-                frame.force_define_local("super".into(), super_object.into());
-            }
+    fn load_super(
+        &self,
+        frame: &mut Activation<'_, 'gc, '_>,
+        this: Option<Object<'gc>>,
+        depth: u8,
+        preload_r: &mut u8,
+    ) {
+        let preload = self.flags.contains(FunctionFlags::PRELOAD_SUPER);
+        let suppress = self.flags.contains(FunctionFlags::SUPPRESS_SUPER);
+
+        // TODO: `super` should only be defined if this was a method call (depth > 0?)
+        // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
+        let zuper = this
+            .filter(|_| !suppress)
+            .map(|this| SuperObject::new(frame, this, depth).into());
+
+        if preload {
+            // The register is set to undefined if both flags are set.
+            frame.set_local_register(*preload_r, zuper.unwrap_or(Value::Undefined));
+        } else if let Some(zuper) = zuper {
+            frame.force_define_local("super".into(), zuper);
         }
     }
 
@@ -309,15 +359,14 @@ impl<'gc> Executable<'gc> {
 
         let target = activation.target_clip_or_root();
         let is_closure = activation.swf_version() >= 6;
-        let base_clip = if (is_closure || reason == ExecutionReason::Special)
-            && !af.base_clip.removed()
-        {
-            af.base_clip
-        } else {
-            this_obj
-                .and_then(|this| this.as_display_object())
-                .unwrap_or(target)
-        };
+        let base_clip =
+            if (is_closure || reason == ExecutionReason::Special) && !af.base_clip.removed() {
+                af.base_clip
+            } else {
+                this_obj
+                    .and_then(|this| this.as_display_object())
+                    .unwrap_or(target)
+            };
         let (swf_version, parent_scope) = if is_closure {
             // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
             // * Use the SWF version from the SWF that defined the function.
@@ -355,43 +404,22 @@ impl<'gc> Executable<'gc> {
             Scope::new_local_scope(parent_scope, activation.context.gc_context),
         );
 
-        let arguments = if af.flags.contains(FunctionFlags::SUPPRESS_ARGUMENTS) {
-            ArrayObject::empty(activation)
-        } else {
-            ArrayObject::new(
-                activation.context.gc_context,
-                activation.context.avm1.prototypes().array,
-                args.iter().cloned(),
-            )
-        };
-        arguments.define_value(
-            activation.context.gc_context,
-            "callee",
-            callee.into(),
-            Attribute::DONT_ENUM,
-        );
         // The caller is the previous callee.
-        arguments.define_value(
-            activation.context.gc_context,
-            "caller",
-            activation.callee.map(Value::from).unwrap_or(Value::Null),
-            Attribute::DONT_ENUM,
-        );
-
-        // TODO: `super` should only be defined if this was a method call (depth > 0?)
-        // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
-        let super_object: Option<Object<'gc>> = this_obj.and_then(|this| {
-            if !af.flags.contains(FunctionFlags::SUPPRESS_SUPER) {
-                Some(SuperObject::new(activation, this, depth).into())
-            } else {
-                None
-            }
-        });
+        let arguments_caller = activation.callee;
 
         let name = if cfg!(feature = "avm_debug") {
             Cow::Owned(af.debug_string_for_call(name, args))
         } else {
             Cow::Borrowed("[Anonymous]")
+        };
+
+        let is_this_inherited = af
+            .flags
+            .intersects(FunctionFlags::PRELOAD_THIS | FunctionFlags::SUPPRESS_THIS);
+        let local_this = if is_this_inherited {
+            activation.this_cell()
+        } else {
+            this
         };
 
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
@@ -402,17 +430,16 @@ impl<'gc> Executable<'gc> {
             child_scope,
             af.constant_pool,
             base_clip,
-            this,
+            local_this,
             Some(callee),
-            Some(arguments.into()),
         );
 
         frame.allocate_local_registers(af.register_count(), frame.context.gc_context);
 
         let mut preload_r = 1;
         af.load_this(&mut frame, this, &mut preload_r);
-        af.load_arguments(&mut frame, arguments.into(), &mut preload_r);
-        af.load_super(&mut frame, super_object, &mut preload_r);
+        af.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
+        af.load_super(&mut frame, this_obj, depth, &mut preload_r);
         af.load_root(&mut frame, &mut preload_r);
         af.load_parent(&mut frame, &mut preload_r);
         af.load_global(&mut frame, &mut preload_r);

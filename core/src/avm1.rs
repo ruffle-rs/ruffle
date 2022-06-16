@@ -211,7 +211,6 @@ impl<'gc> Avm1<'gc> {
             active_clip,
             clip_obj.into(),
             None,
-            None,
         );
         if let Err(e) = child_activation.run_actions(code) {
             root_error_handler(&mut child_activation, e);
@@ -250,7 +249,6 @@ impl<'gc> Avm1<'gc> {
             constant_pool,
             active_clip,
             clip_obj.into(),
-            None,
             None,
         );
         function(&mut activation)
@@ -299,7 +297,6 @@ impl<'gc> Avm1<'gc> {
             constant_pool,
             active_clip,
             clip_obj.into(),
-            None,
             None,
         );
         if let Err(e) = child_activation.run_actions(code) {
