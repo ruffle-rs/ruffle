@@ -1,7 +1,6 @@
 //! An internal Ruffle utility to build our playerglobal
 //! `library.swf`
 
-use std::collections::HashSet;
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::Command;
@@ -23,13 +22,6 @@ pub fn build_playerglobal(
 
     let out_path = out_dir.join("playerglobal.swf");
 
-    // These classes are currently stubs - they're referenced by
-    // other classes that we need to compile, but the real definition
-    // is in Ruffle itself (in Rust code).
-    // As a result, we don't emit them into the final SWF (but we do
-    // provide them to asc.jar with '-import' to link against).
-    let stub_classes: HashSet<_> = ["Object", "Number", "Boolean", "String"].into();
-
     // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
     // in `out_dir`
     let mut cmd = Command::new("java");
@@ -49,19 +41,21 @@ pub fn build_playerglobal(
         if entry.path().extension().and_then(|e| e.to_str()) != Some("as") {
             continue;
         }
-        let class = entry.into_path();
-        let class_name: String = class
-            .strip_prefix(&classes_dir)?
-            .with_extension("")
-            .iter()
-            .map(|c| c.to_string_lossy())
-            .collect::<Vec<_>>()
-            .join("/");
-
-        if stub_classes.contains(class_name.as_str()) {
+        // Files like `uint.stub.as` are stubs - they're referenced by
+        // other classes that we need to compile, but the real definition
+        // is in Ruffle itself (in Rust code).
+        // As a result, we don't emit them into the final SWF (but we do
+        // provide them to asc.jar with '-import' to link against).
+        if entry
+            .path()
+            .file_stem()
+            .unwrap()
+            .to_string_lossy()
+            .ends_with(".stub")
+        {
             cmd.arg("-import");
         }
-        cmd.arg(class);
+        cmd.arg(entry.path());
     }
 
     println!("Compiling: {:?}", cmd);
