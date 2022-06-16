@@ -25,28 +25,28 @@ pub enum Mode {
 #[derive(Parser, Debug)]
 pub struct ScanOpt {
     /// The directory (containing SWF files) to scan
-    #[clap(name = "directory", parse(from_os_str))]
+    #[clap(name = "directory", value_parser)]
     pub input_path: PathBuf,
 
     /// The file to store results in CSV format
-    #[clap(name = "results", parse(from_os_str))]
+    #[clap(name = "results", value_parser)]
     pub output_path: PathBuf,
 
     /// Filenames to ignore
-    #[clap(short = 'i', long = "ignore")]
+    #[clap(short = 'i', long = "ignore", action = clap::ArgAction::Append)]
     pub ignore: Vec<String>,
 }
 
 #[derive(Parser, Debug)]
 pub struct AnalyzeOpt {
     /// The CSV file to reanalyze
-    #[clap(name = "input", parse(from_os_str))]
+    #[clap(name = "input", value_parser)]
     pub input_path: PathBuf,
 }
 
 #[derive(Parser, Debug)]
 pub struct ExecuteReportOpt {
     /// The single SWF file to parse and run
-    #[clap(name = "file", parse(from_os_str))]
+    #[clap(name = "file", value_parser)]
     pub input_path: PathBuf,
 }
