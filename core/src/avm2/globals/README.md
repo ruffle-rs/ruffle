@@ -16,6 +16,14 @@ Currently, globals are implemented in one of two ways:
    file at build time, which is included into the final Ruffle binary
    and loaded during player initialization.
 
+ActionScript files can be marked as 'stubs' by giving them the suffix
+'.stub.as' instead of '.as' (e.g. 'Number.stub.as'). Stub classes
+can be referenced from other '.as' files, but they will not be included
+in the final 'playerglobal.swf'. This is useful when you need to write
+a '.as' file that references a class defined in Rust - you can create
+a stub class without needing to port the entire pre-existing class
+to ActionScript.
+
 In many cases, defining a class in ActionScript results in
 code that's much simpler and more readable than if were
 defined in Rust.
