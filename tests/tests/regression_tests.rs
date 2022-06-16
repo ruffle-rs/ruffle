@@ -577,7 +577,7 @@ swf_tests! {
     (function_as_function, "avm1/function_as_function", 1),
     (function_base_clip_removed, "avm1/function_base_clip_removed", 3),
     (function_base_clip, "avm1/function_base_clip", 2),
-    #[ignore] (function_suppress_and_preload, "avm1/function_suppress_and_preload", 1),
+    (function_suppress_and_preload, "avm1/function_suppress_and_preload", 1),
     (funky_function_calls, "avm1/funky_function_calls", 1),
     (get_bytes_total, "avm1/get_bytes_total", 1),
     (getproperty_swf4, "avm1/getproperty_swf4", 1),
