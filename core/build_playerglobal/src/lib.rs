@@ -8,7 +8,6 @@ use swf::DoAbc;
 use swf::Header;
 use swf::SwfStr;
 use swf::Tag;
-use walkdir::WalkDir;
 
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
@@ -24,42 +23,21 @@ pub fn build_playerglobal(
 
     // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
     // in `out_dir`
-    let mut cmd = Command::new("java");
-    cmd.args(&[
-        "-classpath",
-        &asc_path.to_string_lossy(),
-        "macromedia.asc.embedding.ScriptCompiler",
-        "-optimize",
-        "-outdir",
-        &out_dir.to_string_lossy(),
-        "-out",
-        "playerglobal",
-    ]);
-
-    for entry in WalkDir::new(&classes_dir) {
-        let entry = entry?;
-        if entry.path().extension().and_then(|e| e.to_str()) != Some("as") {
-            continue;
-        }
-        // Files like `uint.stub.as` are stubs - they're referenced by
-        // other classes that we need to compile, but the real definition
-        // is in Ruffle itself (in Rust code).
-        // As a result, we don't emit them into the final SWF (but we do
-        // provide them to asc.jar with '-import' to link against).
-        if entry
-            .path()
-            .file_stem()
-            .unwrap()
-            .to_string_lossy()
-            .ends_with(".stub")
-        {
-            cmd.arg("-import");
-        }
-        cmd.arg(entry.path());
-    }
-
-    println!("Compiling: {:?}", cmd);
-    let code = cmd.status()?;
+    let code = Command::new("java")
+        .args(&[
+            "-classpath",
+            &asc_path.to_string_lossy(),
+            "macromedia.asc.embedding.ScriptCompiler",
+            "-optimize",
+            "-outdir",
+            &out_dir.to_string_lossy(),
+            "-out",
+            "playerglobal",
+            "-import",
+            &classes_dir.join("stubs.as").to_string_lossy(),
+            &classes_dir.join("globals.as").to_string_lossy(),
+        ])
+        .status()?;
     if !code.success() {
         return Err(format!("Compiling failed with code {:?}", code).into());
     }
