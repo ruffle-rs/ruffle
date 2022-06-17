@@ -256,7 +256,6 @@ name = "build_playerglobal"
 version = "0.1.0"
 dependencies = [
  "swf",
- "walkdir",
 ]
 
 [[package]]
