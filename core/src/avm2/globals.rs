@@ -1011,13 +1011,6 @@ pub fn load_player_globals<'gc>(
         script,
     )?;
 
-    // package `flash.accessibility`
-    class(
-        activation,
-        flash::accessibility::accessibilityproperties::create_class(mc),
-        script,
-    )?;
-
     Ok(())
 }
 

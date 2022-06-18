@@ -1,6 +1,5 @@
 //! `flash` namespace
 
-pub mod accessibility;
 pub mod crypto;
 pub mod display;
 pub mod events;
