@@ -812,6 +812,7 @@ swf_tests_approx! {
     (as3_number_tofixed, "avm2/number_tofixed", 1, max_relative = 0.001),
     (as3_number_toprecision, "avm2/number_toprecision", 1, max_relative = 0.001),
     (as3_parse_float, "avm2/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
+    (as3_parse_float_swf10, "avm2/parse_float_swf10", 1, max_relative = 5.0 * f64::EPSILON),
     (edittext_align, "avm1/edittext_align", 1, epsilon = 3.0),
     (edittext_autosize, "avm1/edittext_autosize", 1, epsilon = 0.1),
     (edittext_bullet, "avm1/edittext_bullet", 1, epsilon = 3.0),
