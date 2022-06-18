@@ -593,23 +593,6 @@ pub fn load_player_globals<'gc>(
         script
     );
 
-    // package `flash.filters`
-    class(
-        activation,
-        flash::filters::bitmapfilter::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::filters::blurfilter::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::filters::glowfilter::create_class(mc),
-        script,
-    )?;
-
     // package `flash.geom`
 
     // package `flash.media`
