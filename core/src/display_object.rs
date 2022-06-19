@@ -167,7 +167,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.matrix
     }
 
-    fn set_matrix(&mut self, matrix: &Matrix) {
+    pub fn set_matrix(&mut self, matrix: &Matrix) {
         self.transform.matrix = *matrix;
         self.flags -= DisplayObjectFlags::SCALE_ROTATION_CACHED;
     }
@@ -180,7 +180,7 @@ impl<'gc> DisplayObjectBase<'gc> {
         &mut self.transform.color_transform
     }
 
-    fn set_color_transform(&mut self, color_transform: &ColorTransform) {
+    pub fn set_color_transform(&mut self, color_transform: &ColorTransform) {
         self.transform.color_transform = *color_transform;
     }
 

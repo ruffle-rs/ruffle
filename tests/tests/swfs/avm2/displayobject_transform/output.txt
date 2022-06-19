@@ -1,0 +1,90 @@
+Checking stage qualities with non-stage child
+best TextField (a=5, b=0, c=0, d=5, tx=0, ty=0)
+best stage(a=5, b=0, c=0, d=5, tx=0, ty=0)
+high TextField (a=5, b=0, c=0, d=5, tx=0, ty=0)
+high stage(a=5, b=0, c=0, d=5, tx=0, ty=0)
+16x16 TextField (a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+16x16 stage(a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+16x16linear TextField (a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+16x16linear stage(a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+8x8 TextField (a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+8x8 stage(a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+8x8linear TextField (a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+8x8linear stage(a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+low TextField (a=20, b=0, c=0, d=20, tx=0, ty=0)
+low stage(a=20, b=0, c=0, d=20, tx=0, ty=0)
+medium TextField (a=10, b=0, c=0, d=10, tx=0, ty=0)
+medium stage(a=10, b=0, c=0, d=10, tx=0, ty=0)
+
+Checking stage qualities with child on stage
+best TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+best stage(a=5, b=0, c=0, d=5, tx=0, ty=0)
+high TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+high stage(a=5, b=0, c=0, d=5, tx=0, ty=0)
+16x16 TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+16x16 stage(a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+16x16linear TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+16x16linear stage(a=1.25, b=0, c=0, d=1.25, tx=0, ty=0)
+8x8 TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+8x8 stage(a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+8x8linear TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+8x8linear stage(a=2.5, b=0, c=0, d=2.5, tx=0, ty=0)
+low TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+low stage(a=20, b=0, c=0, d=20, tx=0, ty=0)
+medium TextField (a=1, b=0, c=0, d=1, tx=0, ty=0)
+medium stage(a=10, b=0, c=0, d=10, tx=0, ty=0)
+// child.transform == child.transform
+false
+// firstTransform
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+// secondTransform
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+// firstTransform after no-op modifications
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=1, b=0, c=0, d=1, tx=0, ty=0)
+// firstTransform after matrix modification
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=42.000003814697266, b=0, c=0, d=1, tx=0, ty=0)
+// secondTransform
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=0, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=42.000003814697266, b=0, c=0, d=1, tx=0, ty=0)
+// firstTransform after color modification
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=42.000003814697266, b=0, c=0, d=1, tx=0, ty=0)
+// secondTransform
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=42.000003814697266, b=0, c=0, d=1, tx=0, ty=0)
+// firstTransform after setting parent
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=420, b=0, c=0, d=10, tx=0, ty=0)
+// secondTransform after setting parent
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=420, b=0, c=0, d=10, tx=0, ty=0)
+// firstTransform after indirectly added to stage
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=1764.0001220703125, b=1764.0001220703125, c=42.000003814697266, d=42.000003814697266, tx=0, ty=0)
+// secondTransform after indirectly added to stage
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=1764.0001220703125, b=1764.0001220703125, c=42.000003814697266, d=42.000003814697266, tx=0, ty=0)
+// firstTransform after indirectly removed from stage
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=420, b=0, c=0, d=10, tx=0, ty=0)
+// secondTransform after indirectly removed forrm stage
+colorTransform=(redMultiplier=1, greenMultiplier=1, blueMultiplier=1, alphaMultiplier=1, redOffset=12, greenOffset=0, blueOffset=0, alphaOffset=0)
+matrix=(a=42, b=0, c=0, d=1, tx=0, ty=0)
+concatenatedMatrix=(a=420, b=0, c=0, d=10, tx=0, ty=0)
+
