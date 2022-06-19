@@ -3,6 +3,7 @@
 //! Trace output can be compared with correct output from the official Flash Player.
 
 use approx::assert_relative_eq;
+use regex::Regex;
 use ruffle_core::backend::{
     log::LogBackend,
     navigator::{NullExecutor, NullNavigatorBackend},
@@ -45,6 +46,15 @@ macro_rules! val_or_false {
     };
 }
 
+macro_rules! val_or_empty_slice {
+    ($val:expr) => {
+        $val
+    };
+    () => {
+        &[]
+    };
+}
+
 // This macro generates test cases for a given list of SWFs.
 // If 'img' is true, then we will render an image of the final frame
 // of the SWF, and compare it against a reference image on disk.
@@ -69,8 +79,12 @@ macro_rules! swf_tests {
 }
 
 // This macro generates test cases for a given list of SWFs using `test_swf_approx`.
+// If provided, `@num_patterns` must be a `&[Regex]`. Each regex in the slice is
+// tested against the expected and actual - if it matches, then each capture
+// group is treated as a floating-point value to be compared approximately.
+// The rest of the string (outside of the capture groups) is compared exactly.
 macro_rules! swf_tests_approx {
-    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, $opt:ident = $val:expr)*),)*) => {
+    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, @num_patterns = $num_patterns:expr)? $(, $opt:ident = $val:expr)*),)*) => {
         $(
         #[test]
         $(#[$attr])*
@@ -81,6 +95,7 @@ macro_rules! swf_tests_approx {
                 $num_frames,
                 concat!("tests/swfs/", $path, "/input.json"),
                 concat!("tests/swfs/", $path, "/output.txt"),
+                val_or_empty_slice!($($num_patterns)?),
                 |actual, expected| assert_relative_eq!(actual, expected $(, $opt = $val)*),
             )
         }
@@ -809,6 +824,9 @@ swf_tests_approx! {
     (as3_displayobject_height, "avm2/displayobject_height", 7, epsilon = 0.06), // TODO: height/width appears to be off by 1 twip sometimes
     (as3_displayobject_rotation, "avm2/displayobject_rotation", 1, epsilon = 0.0000000001),
     (as3_displayobject_width, "avm2/displayobject_width", 7, epsilon = 0.06),
+    (as3_displayobject_transform, "avm2/displayobject_transform", 1, @num_patterns = &[
+        Regex::new(r"\(a=(.+), b=(.+), c=(.+), d=(.+), tx=(.+), ty=(.+)\)").unwrap()
+    ], max_relative = f32::EPSILON as f64),
     (as3_divide, "avm2/divide", 1, epsilon = 0.0), // TODO: Discrepancy in float formatting.
     (as3_edittext_align, "avm2/edittext_align", 1, epsilon = 3.0),
     (as3_edittext_autosize, "avm2/edittext_autosize", 1, epsilon = 0.1),
@@ -1138,6 +1156,7 @@ fn test_swf_approx(
     num_frames: u32,
     simulated_input_path: &str,
     expected_output_path: &str,
+    num_patterns: &[Regex],
     approx_assert_fn: impl Fn(f64, f64),
 ) -> Result<(), Error> {
     let injector =
@@ -1185,7 +1204,46 @@ fn test_swf_approx(
             // }
             approx_assert_fn(actual, expected);
         } else {
-            assert_eq!(actual, expected);
+            let mut found = false;
+            // Check each of the user-provided regexes for a match
+            for pattern in num_patterns {
+                if let (Some(actual_captures), Some(expected_captures)) =
+                    (pattern.captures(actual), pattern.captures(expected))
+                {
+                    found = true;
+                    std::assert_eq!(
+                        actual_captures.len(),
+                        expected_captures.len(),
+                        "Differing numbers of regex captures"
+                    );
+                    // Each capture group (other than group 0, which is always the entire regex
+                    // match) represents a floating-point value
+                    for (actual_val, expected_val) in actual_captures
+                        .iter()
+                        .skip(1)
+                        .zip(expected_captures.iter().skip(1))
+                    {
+                        let actual_num = actual_val
+                            .expect("Missing capture gruop value for 'actual'")
+                            .as_str()
+                            .parse::<f64>()
+                            .expect("Failed to parse 'actual' capture group as float");
+                        let expected_num = expected_val
+                            .expect("Missing capture gruop value for 'expected'")
+                            .as_str()
+                            .parse::<f64>()
+                            .expect("Failed to parse 'expected' capture group as float");
+                        approx_assert_fn(actual_num, expected_num);
+                    }
+                    let modified_actual = pattern.replace(actual, "");
+                    let modified_expected = pattern.replace(expected, "");
+                    assert_eq!(modified_actual, modified_expected);
+                    break;
+                }
+            }
+            if !found {
+                assert_eq!(actual, expected);
+            }
         }
     }
     Ok(())

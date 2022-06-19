@@ -594,6 +594,54 @@ pub fn loader_info<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn transform<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        return Ok(activation
+            .avm2()
+            .classes()
+            .transform
+            .construct(activation, &[this.into()])?
+            .into());
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn set_transform<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(this) = this {
+        let transform = args[0].coerce_to_object(activation)?;
+
+        // FIXME - consider 3D matrix and pixel bounds
+        let matrix = transform
+            .get_property(&QName::dynamic_name("matrix").into(), activation)?
+            .coerce_to_object(activation)?;
+        let color_transform = transform
+            .get_property(&QName::dynamic_name("matrix").into(), activation)?
+            .coerce_to_object(activation)?;
+
+        let matrix =
+            crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+        let color_transform =
+            crate::avm2::globals::flash::geom::transform::object_to_color_transform(
+                color_transform,
+                activation,
+            )?;
+
+        let dobj = this.as_display_object().unwrap();
+        let mut write = dobj.base_mut(activation.context.gc_context);
+        write.set_color_transform(&color_transform);
+        write.set_matrix(&matrix);
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -637,6 +685,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("mouseY", Some(mouse_y), None),
         ("loaderInfo", Some(loader_info), None),
         ("filters", Some(filters), Some(set_filters)),
+        ("transform", Some(transform), Some(set_transform)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

@@ -3621,6 +3621,7 @@ dependencies = [
  "futures",
  "image",
  "pretty_assertions",
+ "regex",
  "ruffle_core",
  "ruffle_input_format",
  "ruffle_render_wgpu",

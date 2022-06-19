@@ -29,5 +29,9 @@ package flash.geom {
 			this.a *= sx;
 			this.d *= sy;
 		}
+
+		public function toString():String {
+			return "(a=" + this.a + ", b=" + this.b + ", c=" + this.c + ", d=" + this.d + ", tx=" + this.tx + ", ty=" + this.ty + ")";
+		}
 	}
 }

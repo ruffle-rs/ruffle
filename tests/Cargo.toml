@@ -10,6 +10,7 @@ ruffle_core = { path = "../core", features = ["deterministic"] }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_input_format = { path = "input-format" }
 image = "0.24.2"
+regex = "1.6.0"
 
 [features]
 # Enable running image comparison tests. This is off by default,

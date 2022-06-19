@@ -93,6 +93,9 @@ pub struct SystemClasses<'gc> {
     pub errorevent: ClassObject<'gc>,
     pub ioerrorevent: ClassObject<'gc>,
     pub securityerrorevent: ClassObject<'gc>,
+    pub transform: ClassObject<'gc>,
+    pub colortransform: ClassObject<'gc>,
+    pub matrix: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -155,6 +158,9 @@ impl<'gc> SystemClasses<'gc> {
             errorevent: object,
             ioerrorevent: object,
             securityerrorevent: object,
+            transform: object,
+            colortransform: object,
+            matrix: object,
         }
     }
 }
@@ -752,6 +758,9 @@ fn load_playerglobal<'gc>(
             ("flash.events", "IOErrorEvent", ioerrorevent),
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
+            ("flash.geom", "Matrix", matrix),
+            ("flash.geom", "Transform", transform),
+            ("flash.geom", "ColorTransform", colortransform),
         ]
     );
 
