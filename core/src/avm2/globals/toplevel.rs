@@ -1,11 +1,11 @@
 //! Global scope built-ins
 
-use ruffle_wstr::WString;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::{AvmString, WStr};
+use ruffle_wstr::WString;
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -356,11 +356,15 @@ pub fn escape<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let arg = args.first().unwrap_or(&Value::Undefined).coerce_to_string(activation)?;
+    let arg = args
+        .first()
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_string(activation)?;
     let mut output = WString::new();
 
     // Characters that are not escaped, sourced from as3 docs
-    let not_converted = WStr::from_units(b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@-_.*+/");
+    let not_converted =
+        WStr::from_units(b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@-_.*+/");
 
     for x in arg.iter() {
         if not_converted.contains(WStr::from_units(&[x])) {
