@@ -8,6 +8,18 @@ trace("// escape()");
 trace(escape());
 trace("");
 
+trace("// escape(undefined)");
+trace(escape(undefined));
+trace("");
+
+trace("// typeof(escape(undefined))");
+trace(typeof(escape(undefined)));
+trace("");
+
+trace("// escape(null)");
+trace(escape(null));
+trace("");
+
 var input = "test";
 trace("// escape(\"" + input + "\")");
 trace(escape(input));

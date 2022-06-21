@@ -1,6 +1,15 @@
 // escape()
 undefined
 
+// escape(undefined)
+null
+
+// typeof(escape(undefined))
+string
+
+// escape(null)
+null
+
 // escape("test")
 test
 
