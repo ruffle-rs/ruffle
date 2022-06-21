@@ -20,7 +20,7 @@ url = "2.2.2"
 clipboard = "0.5.0"
 dirs = "4.0"
 isahc = "1.7.2"
-rfd = "0.8.4"
+rfd = "0.9.1"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
