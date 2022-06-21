@@ -355,28 +355,26 @@ pub fn escape<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let output = match args.first() {
-        None => "undefined".into(),
-        Some(Value::String(arg)) => {
-            let mut output = WString::new();
-
-            // Characters that are not escaped, sourced from as3 docs
-            let not_converted = WStr::from_units(
-                b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@-_.*+/",
-            );
-
-            for x in arg.iter() {
-                if not_converted.contains(x) {
-                    output.push(x);
-                } else {
-                    let encode = format!("%{:X}", x);
-                    output.push_str(WStr::from_units(encode.as_bytes()));
-                }
-            }
-            AvmString::new(activation.context.gc_context, output)
-        }
-        _ => "null".into(),
+    let value = match args.first() {
+        None => return Ok("undefined".into()),
+        Some(Value::Undefined) => return Ok("null".into()),
+        Some(value) => value,
     };
 
-    Ok(output.into())
+    let mut output = WString::new();
+
+    // Characters that are not escaped, sourced from as3 docs
+    let not_converted =
+        WStr::from_units(b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@-_.*+/");
+
+    for x in value.coerce_to_string(activation)?.iter() {
+        if not_converted.contains(x) {
+            output.push(x);
+        } else {
+            let encode = format!("%{:X}", x);
+            output.push_str(WStr::from_units(encode.as_bytes()));
+        }
+    }
+
+    Ok(AvmString::new(activation.context.gc_context, output).into())
 }
