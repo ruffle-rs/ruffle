@@ -1,4 +1,4 @@
-// compiled with mxmlc
+// compiled with mxmlc -swf-version 10
 
 package {
     public class Test {}

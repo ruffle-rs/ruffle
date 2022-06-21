@@ -35,9 +35,9 @@ NaN
 // parseFloat("1e-2147483648")
 0
 // parseFloat("1.2345.678")
-1.2345
+12345.678
 // parseFloat("1.2345.6e50")
-1.2345
+12345.6
 // parseFloat("Infinity")
 Infinity
 // parseFloat("-Infinity")
