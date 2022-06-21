@@ -46,15 +46,21 @@ You must also have Java installed, and available on your PATH as `java`.
 If you are building for a Linux platform, make sure that the GTK 3 development packages are
 installed on your system. (Ubuntu: `libgtk-3-dev`, Fedora: `gtk3-devel`)
 
-- `cargo run --release --package=ruffle_desktop -- test.swf`
+Use the following command to build and run the desktop app:
+
+`cargo run --release --package=ruffle_desktop`
+
+To run a specific SWF file, pass the SWF path as an argument:
+
+`cargo run --release --package=ruffle_desktop -- test.swf`
+
+To build in debug mode, simply omit `--release` from the command.
 
 ## Homebrew
 
 Ruffle Desktop can be built from our [Homebrew Tap](https://github.com/ruffle-rs/homebrew-ruffle/):
 
-```
-brew install --HEAD ruffle-rs/ruffle/ruffle
-```
+`brew install --HEAD ruffle-rs/ruffle/ruffle`
 
 _Note: because it is HEAD-only, you'll need to run `brew upgrade --fetch-HEAD ruffle` each time you want to update._
 
@@ -69,7 +75,7 @@ If you have a collection of "real world" SWFs to test against, the scanner may b
 ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
 all of the flash files and report on the success of such a task.
 
-- `cargo run --release --package=ruffle_scanner -- folder/with/swfs/ results.csv`
+`cargo run --release --package=ruffle_scanner -- folder/with/swfs/ results.csv`
 
 ### Exporter
 
