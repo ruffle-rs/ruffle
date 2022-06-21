@@ -4,8 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, WStr};
-use ruffle_wstr::WString;
+use crate::string::{AvmString, WStr, WString};
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -356,7 +355,7 @@ pub fn escape<'gc>(
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let output: AvmString = match args.first() {
+    let output = match args.first() {
         None => "undefined".into(),
         Some(Value::String(arg)) => {
             let mut output = WString::new();
