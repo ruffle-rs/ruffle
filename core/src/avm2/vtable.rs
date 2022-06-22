@@ -29,10 +29,22 @@ pub struct VTableData<'gc> {
 
     resolved_traits: PropertyMap<'gc, Property>,
 
-    method_table: Vec<(ClassObject<'gc>, ScopeChain<'gc>, Method<'gc>)>,
+    method_table: Vec<ClassBoundMethod<'gc>>,
 
     default_slots: Vec<Option<Value<'gc>>>,
 }
+
+// TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
+// would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
+// to be more intuitive and cheaper
+#[derive(Collect, Debug, Clone)]
+#[collect(no_drop)]
+pub struct ClassBoundMethod<'gc> {
+    pub class: ClassObject<'gc>,
+    pub scope: ScopeChain<'gc>,
+    pub method: Method<'gc>,
+}
+
 impl<'gc> VTable<'gc> {
     pub fn empty(mc: MutationContext<'gc, '_>) -> Self {
         VTable(GcCell::allocate(
@@ -74,13 +86,10 @@ impl<'gc> VTable<'gc> {
             .method_table
             .get(disp_id as usize)
             .cloned()
-            .map(|x| x.2)
+            .map(|x| x.method)
     }
 
-    pub fn get_full_method(
-        self,
-        disp_id: u32,
-    ) -> Option<(ClassObject<'gc>, ScopeChain<'gc>, Method<'gc>)> {
+    pub fn get_full_method(self, disp_id: u32) -> Option<ClassBoundMethod<'gc>> {
         self.0.read().method_table.get(disp_id as usize).cloned()
     }
 
@@ -195,7 +204,11 @@ impl<'gc> VTable<'gc> {
         for trait_data in traits {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
-                    let entry = (defining_class, scope, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get(trait_data.name()) {
                         Some(Property::Method { disp_id, .. }) => {
                             let disp_id = *disp_id as usize;
@@ -212,7 +225,11 @@ impl<'gc> VTable<'gc> {
                     }
                 }
                 TraitKind::Getter { method, .. } => {
-                    let entry = (defining_class, scope, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
                             get: Some(disp_id), ..
@@ -234,7 +251,11 @@ impl<'gc> VTable<'gc> {
                     }
                 }
                 TraitKind::Setter { method, .. } => {
-                    let entry = (defining_class, scope, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
                             set: Some(disp_id), ..
@@ -312,13 +333,18 @@ impl<'gc> VTable<'gc> {
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
-        if let Some((superclass, scope, method)) = self.get_full_method(disp_id) {
+        if let Some(ClassBoundMethod {
+            class,
+            scope,
+            method,
+        }) = self.get_full_method(disp_id)
+        {
             Some(FunctionObject::from_method(
                 activation,
                 method,
                 scope,
                 Some(receiver),
-                Some(superclass),
+                Some(class),
             ))
         } else {
             None

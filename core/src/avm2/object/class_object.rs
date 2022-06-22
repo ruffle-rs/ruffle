@@ -11,7 +11,7 @@ use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -542,14 +542,17 @@ impl<'gc> ClassObject<'gc> {
         }
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
-            let (superclass_object, scope, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                Some(class),
             );
 
             callee.call(Some(reciever), arguments, activation)
@@ -601,14 +604,17 @@ impl<'gc> ClassObject<'gc> {
         }) = property
         {
             // todo: handle errors
-            let (superclass_object, scope, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                Some(class),
             );
 
             callee.call(Some(reciever), &[], activation)
@@ -662,14 +668,17 @@ impl<'gc> ClassObject<'gc> {
         }) = property
         {
             // todo: handle errors
-            let (superclass_object, scope, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                Some(superclass_object),
+                Some(class),
             );
 
             callee.call(Some(reciever), &[value], activation)?;

@@ -12,7 +12,7 @@ use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
@@ -303,13 +303,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             }
             Some(Property::Method { disp_id }) => {
                 let vtable = self.vtable().unwrap();
-                if let Some((superclass, scope, method)) = vtable.get_full_method(disp_id) {
+                if let Some(ClassBoundMethod {
+                    class,
+                    scope,
+                    method,
+                }) = vtable.get_full_method(disp_id)
+                {
                     if !method.needs_arguments_object() {
-                        Executable::from_method(method, scope, None, Some(superclass)).exec(
+                        Executable::from_method(method, scope, None, Some(class)).exec(
                             Some(self.into()),
                             arguments,
                             activation,
-                            superclass.into(), //Deliberately invalid.
+                            class.into(), //Deliberately invalid.
                         )
                     } else {
                         if let Some(bound_method) = self.get_bound_method(disp_id) {
