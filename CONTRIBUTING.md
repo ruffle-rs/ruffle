@@ -53,17 +53,15 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 ## Debugging ActionScript Content
 
-If you build Ruffle with `--features avm_debug` and enable debug logging with `RUST_LOG="warn,ruffle_core=debug,avm_trace=trace"` then you will
-activate a few built-in debugging utilities inside Ruffle, listed below.
+To enable debug logging, set `RUST_LOG=warn,ruffle_core=debug,avm_trace=trace` and run Ruffle from the command line. 
+This will also enable printing `trace()` statements.
+
+Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.
 
 ### Warnings and Errors
 
 All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the
-ActionScript inside the movie. This requires no extra configuration and will be visible by default.
-
-### Trace statements
-
-With `avm_trace=trace`, `trace()` statements will print to stderr.
+ActionScript inside the movie.
 
 ### Step-By-Step Output
 

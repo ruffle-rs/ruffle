@@ -8,9 +8,8 @@ It automatically negotiates with websites that do have Ruffle installed, to ensu
 
 ## Using ruffle-extension
 
-The browser extension works in Chrome, Firefox, and Safari 14+.
-
-Before you can install the extension, you must either download the [latest release](https://github.com/ruffle-rs/ruffle/releases) or [build it yourself](../../README.md).
+The browser extension works in Chrome, Firefox, and Safari 14+. It can be installed directly from the [Chrome Web Store](https://chrome.google.com/webstore/detail/ruffle/donbcfbmhbcapadipfkeojnmajbakjdc) or [Firefox Add-ons site](https://addons.mozilla.org/firefox/addon/ruffle_rs). 
+Or to install it manually, you can either download the [latest release](https://github.com/ruffle-rs/ruffle/releases) or [build it yourself](../../README.md), then follow the instructions below.
 
 ### Chrome
 
@@ -18,7 +17,7 @@ These instructions also apply to Chromium-based browsers such as Edge, Opera and
 
 - Navigate to `chrome://extensions/`.
 - Turn on Developer mode in the top-right corner.
-- Drag and drop the `*_extension.zip` file into the page.
+- Drag and drop the `*-extension.zip` file into the page.
 
 Alternatively, loading unpacked can save time during development:
 
@@ -28,7 +27,7 @@ Alternatively, loading unpacked can save time during development:
 - Select the `assets/` folder.
 - Each time after making changes, click the reload icon.
 
-### Firefox
+### Firefox (Developer Edition or Nightly)
 
 - Navigate to `about:addons`.
 - Click the gear and select "Install Add-on From File...".
@@ -36,7 +35,7 @@ Alternatively, loading unpacked can save time during development:
 
 ### Safari
 
-- Unzip the `*_extension.zip` file.
+- Unzip the `*-extension.zip` file.
 - Run `xcrun safari-web-extension-converter path/to/unzipped_folder/`
 - Click "Run on Xcode".
 - Enable `Safari > Preferences > Advanced > Show Develop menu in menu bar`.
