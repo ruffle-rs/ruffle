@@ -484,6 +484,7 @@ swf_tests! {
     (as3_vector_tostring, "avm2/vector_tostring", 1),
     (as3_virtual_properties, "avm2/virtual_properties", 1),
     (as3_with, "avm2/with", 1),
+    (as3_escape, "avm2/escape", 1),
     (attach_movie, "avm1/attach_movie", 1),
     (bad_placeobject_clipaction, "avm1/bad_placeobject_clipaction", 2),
     (bad_swf_tag_past_eof, "avm1/bad_swf_tag_past_eof", 1),

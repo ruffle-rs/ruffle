@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::WStr;
+use crate::string::{AvmString, WStr, WString};
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
@@ -348,4 +348,33 @@ pub fn parse_float<'gc>(
     }
 
     Ok(f64::NAN.into())
+}
+
+pub fn escape<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let value = match args.first() {
+        None => return Ok("undefined".into()),
+        Some(Value::Undefined) => return Ok("null".into()),
+        Some(value) => value,
+    };
+
+    let mut output = WString::new();
+
+    // Characters that are not escaped, sourced from as3 docs
+    let not_converted =
+        WStr::from_units(b"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@-_.*+/");
+
+    for x in value.coerce_to_string(activation)?.iter() {
+        if not_converted.contains(x) {
+            output.push(x);
+        } else {
+            let encode = format!("%{:X}", x);
+            output.push_str(WStr::from_units(encode.as_bytes()));
+        }
+    }
+
+    Ok(AvmString::new(activation.context.gc_context, output).into())
 }
