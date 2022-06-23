@@ -19,6 +19,7 @@ pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
 pub struct VTableData<'gc> {
+    /// should always be Some post-initialization
     defining_class: Option<ClassObject<'gc>>,
 
     /// should always be Some post-initialization
@@ -28,10 +29,22 @@ pub struct VTableData<'gc> {
 
     resolved_traits: PropertyMap<'gc, Property>,
 
-    method_table: Vec<(Option<ClassObject<'gc>>, Method<'gc>)>,
+    method_table: Vec<ClassBoundMethod<'gc>>,
 
     default_slots: Vec<Option<Value<'gc>>>,
 }
+
+// TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
+// would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
+// to be more intuitive and cheaper
+#[derive(Collect, Debug, Clone)]
+#[collect(no_drop)]
+pub struct ClassBoundMethod<'gc> {
+    pub class: ClassObject<'gc>,
+    pub scope: ScopeChain<'gc>,
+    pub method: Method<'gc>,
+}
+
 impl<'gc> VTable<'gc> {
     pub fn empty(mc: MutationContext<'gc, '_>) -> Self {
         VTable(GcCell::allocate(
@@ -73,10 +86,10 @@ impl<'gc> VTable<'gc> {
             .method_table
             .get(disp_id as usize)
             .cloned()
-            .map(|x| x.1)
+            .map(|x| x.method)
     }
 
-    pub fn get_full_method(self, disp_id: u32) -> Option<(Option<ClassObject<'gc>>, Method<'gc>)> {
+    pub fn get_full_method(self, disp_id: u32) -> Option<ClassBoundMethod<'gc>> {
         self.0.read().method_table.get(disp_id as usize).cloned()
     }
 
@@ -92,7 +105,7 @@ impl<'gc> VTable<'gc> {
     #[allow(clippy::if_same_then_else)]
     pub fn init_vtable(
         self,
-        defining_class: Option<ClassObject<'gc>>,
+        defining_class: ClassObject<'gc>,
         traits: &[Trait<'gc>],
         scope: ScopeChain<'gc>,
         superclass_vtable: Option<Self>,
@@ -152,15 +165,13 @@ impl<'gc> VTable<'gc> {
         let mut write = self.0.write(activation.context.gc_context);
         let write = write.deref_mut();
 
-        write.defining_class = defining_class;
+        write.defining_class = Some(defining_class);
         write.scope = Some(scope);
 
-        if let Some(defining_class) = defining_class {
-            write.protected_namespace = defining_class
-                .inner_class_definition()
-                .read()
-                .protected_namespace();
-        }
+        write.protected_namespace = defining_class
+            .inner_class_definition()
+            .read()
+            .protected_namespace();
 
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
@@ -193,7 +204,11 @@ impl<'gc> VTable<'gc> {
         for trait_data in traits {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
-                    let entry = (defining_class, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get(trait_data.name()) {
                         Some(Property::Method { disp_id, .. }) => {
                             let disp_id = *disp_id as usize;
@@ -210,7 +225,11 @@ impl<'gc> VTable<'gc> {
                     }
                 }
                 TraitKind::Getter { method, .. } => {
-                    let entry = (defining_class, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
                             get: Some(disp_id), ..
@@ -232,7 +251,11 @@ impl<'gc> VTable<'gc> {
                     }
                 }
                 TraitKind::Setter { method, .. } => {
-                    let entry = (defining_class, method.clone());
+                    let entry = ClassBoundMethod {
+                        class: defining_class,
+                        scope,
+                        method: method.clone(),
+                    };
                     match resolved_traits.get_mut(trait_data.name()) {
                         Some(Property::Virtual {
                             set: Some(disp_id), ..
@@ -310,14 +333,18 @@ impl<'gc> VTable<'gc> {
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
-        if let Some((superclass, method)) = self.get_full_method(disp_id) {
-            let scope = self.0.read().scope.unwrap();
+        if let Some(ClassBoundMethod {
+            class,
+            scope,
+            method,
+        }) = self.get_full_method(disp_id)
+        {
             Some(FunctionObject::from_method(
                 activation,
                 method,
                 scope,
                 Some(receiver),
-                superclass,
+                Some(class),
             ))
         } else {
             None

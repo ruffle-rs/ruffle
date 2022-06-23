@@ -379,7 +379,7 @@ impl<'gc> Script<'gc> {
             let scope = ScopeChain::new(domain);
 
             globals.vtable().unwrap().init_vtable(
-                None,
+                globals.instance_of().unwrap(),
                 &self.traits()?,
                 scope,
                 None,

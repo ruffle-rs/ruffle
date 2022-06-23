@@ -11,7 +11,7 @@ use crate::avm2::object::{Multiname, Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -245,7 +245,7 @@ impl<'gc> ClassObject<'gc> {
         class.read().validate_class(self.superclass_object())?;
 
         self.instance_vtable().init_vtable(
-            Some(self),
+            self,
             class.read().instance_traits(),
             self.instance_scope(),
             self.superclass_object().map(|cls| cls.instance_vtable()),
@@ -254,7 +254,7 @@ impl<'gc> ClassObject<'gc> {
 
         // class vtable == class traits + Class instance traits
         self.class_vtable().init_vtable(
-            Some(self),
+            self,
             class.read().class_traits(),
             self.class_scope(),
             Some(self.instance_of().unwrap().instance_vtable()),
@@ -542,15 +542,17 @@ impl<'gc> ClassObject<'gc> {
         }
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
-            let (superclass_object, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
-            let scope = superclass_object.unwrap().instance_scope();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                superclass_object,
+                Some(class),
             );
 
             callee.call(Some(reciever), arguments, activation)
@@ -602,15 +604,17 @@ impl<'gc> ClassObject<'gc> {
         }) = property
         {
             // todo: handle errors
-            let (superclass_object, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
-            let scope = superclass_object.unwrap().class_scope();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                superclass_object,
+                Some(class),
             );
 
             callee.call(Some(reciever), &[], activation)
@@ -664,15 +668,17 @@ impl<'gc> ClassObject<'gc> {
         }) = property
         {
             // todo: handle errors
-            let (superclass_object, method) =
-                self.instance_vtable().get_full_method(disp_id).unwrap();
-            let scope = superclass_object.unwrap().class_scope();
+            let ClassBoundMethod {
+                class,
+                scope,
+                method,
+            } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method.clone(),
                 scope,
                 Some(reciever),
-                superclass_object,
+                Some(class),
             );
 
             callee.call(Some(reciever), &[value], activation)?;
@@ -904,7 +910,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             .validate_class(class_object.superclass_object())?;
 
         class_object.instance_vtable().init_vtable(
-            Some(class_object),
+            class_object,
             parameterized_class.read().instance_traits(),
             class_object.instance_scope(),
             class_object
@@ -915,7 +921,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
         // class vtable == class traits + Class instance traits
         class_object.class_vtable().init_vtable(
-            Some(class_object),
+            class_object,
             parameterized_class.read().class_traits(),
             class_object.class_scope(),
             Some(class_object.instance_of().unwrap().instance_vtable()),
