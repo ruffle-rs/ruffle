@@ -15,7 +15,6 @@ pub mod nativemenu;
 pub mod nativemenuitem;
 pub mod shape;
 pub mod simplebutton;
-pub mod spreadmethod;
 pub mod sprite;
 pub mod stage;
 pub mod stagealign;
