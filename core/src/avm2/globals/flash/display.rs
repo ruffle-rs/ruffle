@@ -8,7 +8,6 @@ pub mod framelabel;
 pub mod graphics;
 pub mod ibitmapdrawable;
 pub mod interactiveobject;
-pub mod linescalemode;
 pub mod loader;
 pub mod loaderinfo;
 pub mod movieclip;
