@@ -1,3 +1,5 @@
+// parseFloat()
+undefined
 // parseFloat("12345")
 12345
 // parseFloat("012345.67890")
@@ -6,10 +8,16 @@
 99999.99999
 // parseFloat("-22222222222222222")
 -2.22222222222222e+16
+// parseFloat("-22222222.222222222")
+-22222222.2222222
 // parseFloat(".0000000000000000000000005")
 5e-25
+// parseFloat(".1499999") === 0.14999990000000005
+true
 // parseFloat("0000.12345GIBBERISH")
 0.12345
+// parseFloat("1        2")
+1
 // parseFloat("9e99999")
 Infinity
 // parseFloat("+100e-100")
@@ -18,21 +26,43 @@ Infinity
 -1.23234e+68
 // parseFloat(".2E20E1")
 2e+19
+// parseFloat("-034.1+e20")
+-34.1
+// parseFloat("-2.123123123219e20")
+-2.123123123219e+20
+// parseFloat("10101010e+100")
+1.010101e+107
+// parseFloat("10101010e-20.0")
+1.010101e-13
+// parseFloat("10e")
+10
+// parseFloat("e10")
+NaN
+// parseFloat("10e-")
+10
+// parseFloat("1e4294967297")
+10
 // parseFloat("1.2345.678")
 1.2345678
 // parseFloat("1.2345.6e50")
 1.23456
-// parseFloat("-034.1+e20")
--34.1
-// parseFloat("e10")
+// parseFloat("-2.123123.123219e20")
+-2.123123123219
+// parseFloat("Infinity")
+NaN
+// parseFloat("-Infinity")
+NaN
+// parseFloat("+Infinity")
 NaN
 // parseFloat("BADBAD")
+NaN
+// parseFloat("")
 NaN
 // parseFloat("-")
 NaN
 // parseFloat("0xff")
 0
-// parseFloat("Infinity")
+// parseFloat(String.fromCharCode(305))
 NaN
 // parseFloat(true)
 NaN
@@ -40,5 +70,5 @@ NaN
 1.2
 // parseFloat(Infinity)
 NaN
-// parseFloat({toString})
+// parseFloat({ toString })
 5

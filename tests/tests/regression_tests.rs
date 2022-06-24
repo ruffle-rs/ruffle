@@ -681,6 +681,7 @@ swf_tests! {
     (object_string_coerce_swf5, "avm1/object_string_coerce_swf5", 1),
     (object_string_coerce_swf6, "avm1/object_string_coerce_swf6", 1),
     (on_construct, "avm1/on_construct", 1),
+    (parse_float, "avm1/parse_float", 1),
     (parse_int, "avm1/parse_int", 1),
     (path_string, "avm1/path_string", 1),
     (point, "avm1/point", 1),
@@ -823,7 +824,6 @@ swf_tests_approx! {
     (edittext_underline, "avm1/edittext_underline", 1, epsilon = 4.0),
     (local_to_global, "avm1/local_to_global", 1, epsilon = 0.051),
     (movieclip_getbounds, "avm1/movieclip_getbounds", 1, epsilon = 0.051),
-    (parse_float, "avm1/parse_float", 1, max_relative = 5.0 * f64::EPSILON),
     (stage_object_properties_swf6, "avm1/stage_object_properties_swf6", 4, epsilon = 0.051),
     (stage_object_properties, "avm1/stage_object_properties", 6, epsilon = 0.051),
 }
