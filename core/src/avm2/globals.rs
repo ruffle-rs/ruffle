@@ -976,11 +976,6 @@ pub fn load_player_globals<'gc>(
         flash::text::textformatalign::create_class(mc),
         script,
     )?;
-    class(
-        activation,
-        flash::text::textfieldtype::create_class(mc),
-        script,
-    )?;
     class(activation, flash::text::font::create_class(mc), script)?;
 
     // package `flash.crypto`
