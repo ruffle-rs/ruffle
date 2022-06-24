@@ -878,11 +878,6 @@ pub fn load_player_globals<'gc>(
     class(activation, flash::net::url_loader::create_class(mc), script)?;
     class(
         activation,
-        flash::net::url_loader_data_format::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
         flash::net::url_request::create_class(mc),
         script,
     )?;
