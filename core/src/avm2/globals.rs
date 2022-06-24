@@ -825,11 +825,6 @@ pub fn load_player_globals<'gc>(
         flash::display::bitmapdata::create_class(mc),
         script
     );
-    class(
-        activation,
-        flash::display::pixelsnapping::create_class(mc),
-        script,
-    )?;
     avm2_system_class!(
         nativemenu,
         activation,
