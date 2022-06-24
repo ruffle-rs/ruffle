@@ -215,6 +215,13 @@ export interface BaseLoadOptions {
     contextMenu?: boolean;
 
     /**
+     * Whether or not to show a preloader before the SWF has loaded with Ruffle.
+     *
+     * @default true
+     */
+    showPreloader?: boolean;
+
+    /**
      * Maximum amount of time a script can take before scripting
      * is disabled.
      *
