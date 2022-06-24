@@ -3,4 +3,3 @@
 pub mod font;
 pub mod textfield;
 pub mod textformat;
-pub mod textformatalign;
