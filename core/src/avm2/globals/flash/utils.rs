@@ -7,7 +7,6 @@ use instant::Instant;
 
 pub mod bytearray;
 pub mod dictionary;
-pub mod endian;
 pub mod proxy;
 pub mod timer;
 

@@ -657,8 +657,6 @@ pub fn load_player_globals<'gc>(
 
     domain.init_default_domain_memory(activation)?;
 
-    class(activation, flash::utils::endian::create_class(mc), script)?;
-
     class(
         activation,
         flash::utils::dictionary::create_class(mc),
