@@ -973,11 +973,6 @@ pub fn load_player_globals<'gc>(
     );
     class(
         activation,
-        flash::text::textfieldautosize::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
         flash::text::textformatalign::create_class(mc),
         script,
     )?;
