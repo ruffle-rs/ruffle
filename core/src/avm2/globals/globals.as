@@ -2,6 +2,7 @@
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
+include "flash/display/BitmapEncodingColorSpace.as"
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Orientation3D.as"
 include "flash/geom/Point.as"
