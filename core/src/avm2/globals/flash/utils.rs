@@ -6,7 +6,6 @@ use crate::avm2::{Activation, Error, Object, Value};
 use instant::Instant;
 
 pub mod bytearray;
-pub mod compression_algorithm;
 pub mod dictionary;
 pub mod endian;
 pub mod proxy;
