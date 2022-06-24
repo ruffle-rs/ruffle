@@ -782,11 +782,6 @@ pub fn load_player_globals<'gc>(
         flash::display::loaderinfo::create_class(mc),
         script
     );
-    class(
-        activation,
-        flash::display::swfversion::create_class(mc),
-        script,
-    )?;
     avm2_system_class!(
         stage,
         activation,
