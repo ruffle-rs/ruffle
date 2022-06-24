@@ -809,11 +809,6 @@ pub fn load_player_globals<'gc>(
     );
     class(
         activation,
-        flash::display::actionscriptversion::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
         flash::display::swfversion::create_class(mc),
         script,
     )?;

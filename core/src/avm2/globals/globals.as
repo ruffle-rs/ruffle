@@ -1,5 +1,6 @@
 // List is ordered alphabetically.
 include "flash/accessibility/AccessibilityProperties.as"
+include "flash/display/ActionScriptVersion.as"
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Orientation3D.as"
 include "flash/geom/Point.as"
