@@ -17,5 +17,4 @@ pub mod shape;
 pub mod simplebutton;
 pub mod sprite;
 pub mod stage;
-pub mod stagequality;
 pub mod stagescalemode;
