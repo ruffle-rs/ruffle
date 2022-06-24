@@ -16,6 +16,8 @@ declare global {
     let __webpack_public_path__: string;
 }
 
+type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
+
 /**
  * Load ruffle from an automatically-detected location.
  *
@@ -24,10 +26,14 @@ declare global {
  * download.
  *
  * @param config The `window.RufflePlayer.config` object.
+ * @param progressCallback The   * @param progressCallback The callback that will be run with Ruffle's download progress.
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-async function fetchRuffle(config: Config): Promise<typeof Ruffle> {
+async function fetchRuffle(
+    config: Config,
+    progressCallback?: ProgressCallback
+): Promise<typeof Ruffle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -55,8 +61,40 @@ async function fetchRuffle(config: Config): Promise<typeof Ruffle> {
     const { default: init, Ruffle } = await (extensionsSupported
         ? import("../pkg/ruffle_web-wasm_extensions")
         : import("../pkg/ruffle_web"));
+    let response;
+    const wasmUrl = extensionsSupported
+        ? new URL("../pkg/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
+        : new URL("../pkg/ruffle_web_bg.wasm", import.meta.url);
+    const wasmResponse = await fetch(wasmUrl.href);
+    if (progressCallback) {
+        const contentLength = wasmResponse.headers.get("content-length")!;
+        let bytesLoaded = 0;
+        const bytesTotal = parseInt(contentLength, 10);
+        response = new Response(
+            new ReadableStream({
+                async start(controller) {
+                    const reader = wasmResponse.body?.getReader();
+                    if (!reader) {
+                        throw "Response had no body";
+                    }
+                    progressCallback?.(bytesLoaded, bytesTotal);
+                    for (;;) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        if (value?.byteLength) bytesLoaded += value?.byteLength;
+                        controller.enqueue(value);
+                        progressCallback?.(bytesLoaded, bytesTotal);
+                    }
+                    controller.close();
+                },
+            }),
+            wasmResponse
+        );
+    } else {
+        response = wasmResponse;
+    }
 
-    await init();
+    await init(response);
 
     return Ruffle;
 }
@@ -73,12 +111,16 @@ let lastLoaded: Promise<Ruffle> | null = null;
  * This function returns a promise which yields `Ruffle` asynchronously.
  *
  * @param config The `window.RufflePlayer.config` object.
+ * @param progressCallback The callback that will be run with Ruffle's download progress.
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
-export function loadRuffle(config: Config): Promise<Ruffle> {
+export function loadRuffle(
+    config: Config,
+    progressCallback?: ProgressCallback
+): Promise<Ruffle> {
     if (lastLoaded === null) {
-        lastLoaded = fetchRuffle(config);
+        lastLoaded = fetchRuffle(config, progressCallback);
     }
 
     return lastLoaded;
