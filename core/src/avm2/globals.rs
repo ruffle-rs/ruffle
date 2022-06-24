@@ -784,11 +784,6 @@ pub fn load_player_globals<'gc>(
     )?;
     class(
         activation,
-        flash::display::stagealign::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
         flash::display::stagedisplaystate::create_class(mc),
         script,
     )?;
