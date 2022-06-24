@@ -8,7 +8,6 @@ pub mod framelabel;
 pub mod graphics;
 pub mod ibitmapdrawable;
 pub mod interactiveobject;
-pub mod interpolationmethod;
 pub mod jointstyle;
 pub mod linescalemode;
 pub mod loader;
