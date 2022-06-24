@@ -782,11 +782,6 @@ pub fn load_player_globals<'gc>(
     )?;
     class(
         activation,
-        flash::display::capsstyle::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
         flash::display::spreadmethod::create_class(mc),
         script,
     )?;
