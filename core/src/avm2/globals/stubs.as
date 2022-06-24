@@ -4,6 +4,7 @@
 include "Object.as"
 
 // List is ordered alphabetically.
+include "Array.as"
 include "Boolean.as"
 include "Number.as"
 include "String.as"
