@@ -13,7 +13,6 @@ pub mod loaderinfo;
 pub mod movieclip;
 pub mod nativemenu;
 pub mod nativemenuitem;
-pub mod scene;
 pub mod shape;
 pub mod simplebutton;
 pub mod spreadmethod;

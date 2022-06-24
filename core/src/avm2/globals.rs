@@ -759,12 +759,6 @@ pub fn load_player_globals<'gc>(
         script
     );
     avm2_system_class!(
-        scene,
-        activation,
-        flash::display::scene::create_class(mc),
-        script
-    );
-    avm2_system_class!(
         graphics,
         activation,
         flash::display::graphics::create_class(mc),
@@ -998,7 +992,7 @@ fn load_playerglobal<'gc>(
     // This acts the same way as 'avm2_system_class', but for classes
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
     // and are stored in 'avm2().system_classes' and 'avm2().system_prototypes'
-    avm2_system_classes_playerglobal!(activation, script, []);
+    avm2_system_classes_playerglobal!(activation, script, [("flash.display", "Scene", scene)]);
 
     Ok(())
 }
