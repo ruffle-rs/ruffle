@@ -1,132 +1,134 @@
-// trace(parseInt());
+// parseInt()
 NaN
-// trace(parseInt(undefined_));
+// parseInt(undefined)
 NaN
-// trace(parseInt(undefined_, 32));
+// parseInt(undefined, 32)
 785077
-// trace(parseInt("undefined", 32));
+// parseInt("undefined", 32)
 33790067563981
-// trace(parseInt(""));
+// parseInt("")
 NaN
-// trace(parseInt("123"));
+// parseInt("123")
 123
-// trace(parseInt("100", 10));
+// parseInt("100", 10)
 100
-// trace(parseInt("100", 0));
+// parseInt("100", 0)
 100
-// trace(parseInt("100", 1));
+// parseInt("100", 1)
 NaN
-// trace(parseInt("100", 2));
+// parseInt("100", 2)
 4
-// trace(parseInt("100", 36));
+// parseInt("100", 36)
 1296
-// trace(parseInt("100", 37));
+// parseInt("100", 37)
 NaN
-// trace(parseInt("100", -1));
+// parseInt("100", -1)
 NaN
-// trace(parseInt("100", {}));
+// parseInt("100", {})
 100
-// trace(parseInt("100", true));
+// parseInt("100", true)
 NaN
-// trace(parseInt("100", false));
+// parseInt("100", false)
 100
-// trace(parseInt("100", NaN));
+// parseInt("100", NaN)
 100
-// trace(parseInt("100", undefined_));
+// parseInt("100", undefined)
 100
-// trace(parseInt("0x123"));
+// parseInt("0x123")
 291
-// trace(parseInt("0xabc"));
+// parseInt("0xabc")
 2748
-// trace(parseInt("010", 2));
+// parseInt("010", 2)
 2
-// trace(parseInt("-0100"));
+// parseInt("-0100")
 -100
-// trace(parseInt("-0100z"));
+// parseInt("-0100z")
 -100
-// trace(parseInt("0x+0X100"));
+// parseInt("0x+0X100")
 NaN
-// trace(parseInt(123));
+// parseInt(123)
 123
-// trace(parseInt(123, 32));
+// parseInt(123, 32)
 1091
-// trace(parseInt("++1"));
+// parseInt("++1")
 NaN
-// trace(parseInt("0x100", 36));
+// parseInt("0x100", 36)
 1540944
-// trace(parseInt(" 0x100", 36));
+// parseInt(" 0x100", 36)
 1540944
-// trace(parseInt("0y100", 36));
+// parseInt("0y100", 36)
 1587600
-// trace(parseInt(" 0y100", 36));
+// parseInt(" 0y100", 36)
 1587600
-// trace(parseInt("-0x100", 36));
+// parseInt("-0x100", 36)
 -1540944
-// trace(parseInt(" -0x100", 36));
+// parseInt(" -0x100", 36)
 -1540944
-// trace(parseInt("-0y100", 36));
+// parseInt("-0y100", 36)
 -1587600
-// trace(parseInt(" -0y100", 36));
+// parseInt(" -0y100", 36)
 -1587600
-// trace(parseInt("-0x100"));
+// parseInt("-0x100")
 -256
-// trace(parseInt("0x-100"));
+// parseInt("0x-100")
 NaN
-// trace(parseInt(" 0x-100"));
+// parseInt(" 0x-100")
 NaN
-// trace(parseInt("0x -100"));
+// parseInt("0x -100")
 NaN
-// trace(parseInt("-0100"));
+// parseInt("-0100")
 -100
-// trace(parseInt("0-100"));
+// parseInt("0-100")
 0
-// trace(parseInt("+0x123", 33));
+// parseInt("+0x123", 33)
 0
-// trace(parseInt("+0x123", 34));
+// parseInt("+0x123", 34)
 1298259
-// trace(parseInt("0"));
+// parseInt("0")
 0
-// trace(parseInt(" 0"));
+// parseInt(" 0")
 0
-// trace(parseInt(" 0 "));
+// parseInt(" 0 ")
 0
-// trace(parseInt("077"));
+// parseInt("077")
 77
-// trace(parseInt("  077"));
+// parseInt("  077")
 77
-// trace(parseInt("  077   "));
+// parseInt("  077   ")
 77
-// trace(parseInt("  -077"));
+// parseInt("  -077")
 -77
-// trace(parseInt("077 "));
+// parseInt("077 ")
 77
-// trace(parseInt("11", 2));
+// parseInt("11", 2)
 3
-// trace(parseInt("11", 3));
+// parseInt("11", 3)
 4
-// trace(parseInt("11", 3.8));
+// parseInt("11", 3.8)
 4
-// trace(parseInt("0x12"));
+// parseInt("0x12")
 18
-// trace(parseInt("0x12", 16));
+// parseInt("0x12", 16)
 18
-// trace(parseInt("0x12", 16.1));
+// parseInt("0x12", 16.1)
 18
-// trace(parseInt("0x12", NaN));
+// parseInt("0x12", NaN)
 18
-// trace(parseInt("0x  "));
+// parseInt("0x  ")
 NaN
-// trace(parseInt("0x"));
+// parseInt("0x")
 NaN
-// trace(parseInt("0x  ", 16));
+// parseInt("0x  ", 16)
 NaN
-// trace(parseInt("0x", 16));
+// parseInt("0x", 16)
 NaN
-// trace(parseInt("12aaa"));
+// parseInt("12aaa")
 12
-// trace(parseInt("100000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "000000000000000"));
+// parseInt("100000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "000000000000000")
 Infinity
-// trace(parseInt("0x1000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "000000000000000"));
+// parseInt("0x1000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "00000000000000000000000000000000000000000000000000000000000000000000" + "000000000000000")
 Infinity
-// trace(parseInt(String.fromCharCode(0x2000) + "123"));
+// parseInt(String.fromCharCode(305))
+NaN
+// parseInt(String.fromCharCode(0x2000) + "123")
 123

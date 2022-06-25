@@ -4,6 +4,10 @@ package {
     public class Test {}
 }
 
+// Test no arguments.
+trace("// parseFloat()");
+trace(parseFloat());
+
 // Test integer.
 trace("// parseFloat(\"12345\")");
 trace(parseFloat("12345"));
@@ -12,7 +16,7 @@ trace(parseFloat("12345"));
 trace("// parseFloat(\"012345.67890\")");
 trace(parseFloat("012345.67890"));
 
-// Test that leading/trailing whitespace characters are allowed.
+// Test that leading/trailing whitespace are allowed.
 trace("// parseFloat(\"    99999.99999          \")");
 trace(parseFloat(" \t\r\n99999.99999\t\r\n      "));
 
@@ -113,6 +117,9 @@ trace(parseFloat("-"));
 
 trace("// parseFloat(\"0xff\")");
 trace(parseFloat("0xff"));
+
+trace("// parseFloat(String.fromCharCode(305))");
+trace(parseFloat(String.fromCharCode(305)));
 
 // Test non-string inputs.
 trace("// parseFloat(true)");
