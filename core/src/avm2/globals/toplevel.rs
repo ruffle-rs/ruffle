@@ -63,7 +63,7 @@ pub fn is_nan<'gc>(
 /// insensitive), or decimal otherwise.
 /// `strict` tells whether to fail on trailing garbage, or ignore it.
 fn string_to_int(mut s: &WStr, mut radix: i32, strict: bool) -> f64 {
-    // Allow leading whitespace characters.
+    // Allow leading whitespace.
     skip_spaces(&mut s);
 
     let is_negative = parse_sign(&mut s);
@@ -92,25 +92,31 @@ fn string_to_int(mut s: &WStr, mut radix: i32, strict: bool) -> f64 {
     // Actual number parsing.
     let mut result = 0.0;
     let start = s;
-    s = s.trim_start_matches(|c| match (c as u8 as char).to_digit(radix as u32) {
-        Some(digit) => {
-            result *= f64::from(radix);
-            result += f64::from(digit);
-            true
+    s = s.trim_start_matches(|c| {
+        match u8::try_from(c)
+            .ok()
+            .and_then(|c| char::from(c).to_digit(radix as u32))
+        {
+            Some(digit) => {
+                result *= f64::from(radix);
+                result += f64::from(digit);
+                true
+            }
+            None => false,
         }
-        None => false,
     });
 
     // Fail if we got no digits.
-    if s == start {
+    // TODO: Compare by reference instead?
+    if s.len() == start.len() {
         return f64::NAN;
     }
 
     if strict {
-        // Allow trailing whitespace characters.
+        // Allow trailing whitespace.
         skip_spaces(&mut s);
 
-        // If we got digits, but we're in strict mode and not at end of string, fail.
+        // Fail if we got digits, but we're in strict mode and not at end of string.
         if !s.is_empty() {
             return f64::NAN;
         }
@@ -143,7 +149,7 @@ pub fn parse_int<'gc>(
     Ok(result.into())
 }
 
-/// Strips leading whitespace characters.
+/// Strips leading whitespace.
 fn skip_spaces(s: &mut &WStr) {
     *s = s.trim_start_matches(|c| {
         matches!(
@@ -173,28 +179,33 @@ fn parse_sign(s: &mut &WStr) -> bool {
 /// This function might fail for some invalid inputs, by returning `None`.
 ///
 /// `strict` typically tells whether to behave like `Number()` or `parseFloat()`:
-/// * `strict == true` fails on trailing garbage, but interprets blank strings (which are empty or consist only of whitespace characters) as zero.
+/// * `strict == true` fails on trailing garbage, but interprets blank strings (which are empty or consist only of whitespace) as zero.
 /// * `strict == false` ignores trailing garbage, but fails on blank strings.
 fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
-    // Allow leading whitespace characters.
+    fn is_ascii_digit(c: u16) -> bool {
+        u8::try_from(c).map_or(false, |c| c.is_ascii_digit())
+    }
+
+    // Allow leading whitespace.
     skip_spaces(&mut s);
 
+    // Handle blank strings as described above.
     if s.is_empty() {
-        // A blank string. Handle it as described above.
         return if strict { Some(0.0) } else { None };
     }
 
+    // Parse sign.
     let is_negative = parse_sign(&mut s);
     let after_sign = s;
 
     // Count digits before decimal point.
-    s = s.trim_start_matches(|c| (c as u8).is_ascii_digit());
+    s = s.trim_start_matches(is_ascii_digit);
     let mut total_digits = after_sign.len() - s.len();
 
     // Count digits after decimal point.
     if let Some(after_dot) = s.strip_prefix(b'.') {
         s = after_dot;
-        s = s.trim_start_matches(|c| (c as u8).is_ascii_digit());
+        s = s.trim_start_matches(is_ascii_digit);
         total_digits += after_dot.len() - s.len();
     }
 
@@ -202,6 +213,8 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
     let mut exponent: i32 = 0;
     if let Some(after_e) = s.strip_prefix(b"eE".as_ref()) {
         s = after_e;
+
+        // Parse exponent sign.
         let exponent_is_negative = parse_sign(&mut s);
 
         // Fail if string ends with "e-" with no exponent value specified.
@@ -209,13 +222,19 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
             return None;
         }
 
-        s = s.trim_start_matches(|c| match (c as u8 as char).to_digit(10) {
-            Some(digit) => {
-                exponent = exponent.wrapping_mul(10);
-                exponent = exponent.wrapping_add(digit as i32);
-                true
+        // Parse exponent itself.
+        s = s.trim_start_matches(|c| {
+            match u8::try_from(c)
+                .ok()
+                .and_then(|c| char::from(c).to_digit(10))
+            {
+                Some(digit) => {
+                    exponent = exponent.wrapping_mul(10);
+                    exponent = exponent.wrapping_add(digit as i32);
+                    true
+                }
+                None => false,
             }
-            None => false,
         });
 
         // Apply exponent sign.
@@ -224,18 +243,19 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
         }
     }
 
-    // Allow trailing whitespace characters.
+    // Allow trailing whitespace.
     skip_spaces(&mut s);
 
-    // If we got no digits, check for Infinity/-Infinity, else fail.
+    // If we got no digits, check for Infinity/-Infinity. Otherwise fail.
     if total_digits == 0 {
         if let Some(after_infinity) = s.strip_prefix(WStr::from_units(b"Infinity")) {
             s = after_infinity;
 
-            // Allow end of string or a whitespace, and fail otherwise.
+            // Allow end of string or a whitespace. Otherwise fail.
             if !s.is_empty() {
                 skip_spaces(&mut s);
-                if s == after_infinity {
+                // TODO: Compare by reference instead?
+                if s.len() == after_infinity.len() {
                     return None;
                 }
             }
@@ -250,7 +270,7 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
         return None;
     }
 
-    // If we got digits, but we're in strict mode and not at end of string (or at null character), fail.
+    // Fail if we got digits, but we're in strict mode and not at end of string or at a null character.
     if strict && !s.is_empty() && !s.starts_with(b'\0') {
         return None;
     }
@@ -262,12 +282,16 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
         after_sign
     };
 
+    // Finally, calculate the result.
     let mut result = if total_digits > 15 {
         // With more than 15 digits, avmplus uses integer arithmetic to avoid rounding errors.
         let mut result: i64 = 0;
         let mut decimal_digits = -1;
         for c in s {
-            if let Some(digit) = (c as u8 as char).to_digit(10) {
+            if let Some(digit) = u8::try_from(c)
+                .ok()
+                .and_then(|c| char::from(c).to_digit(10))
+            {
                 if decimal_digits != -1 {
                     decimal_digits += 1;
                 }
@@ -294,7 +318,10 @@ fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
         let mut result = 0.0;
         let mut decimal_digits = -1;
         for c in s {
-            if let Some(digit) = (c as u8 as char).to_digit(10) {
+            if let Some(digit) = u8::try_from(c)
+                .ok()
+                .and_then(|c| char::from(c).to_digit(10))
+            {
                 if decimal_digits != -1 {
                     decimal_digits += 1;
                 }
