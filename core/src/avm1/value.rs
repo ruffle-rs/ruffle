@@ -137,8 +137,8 @@ impl<'gc> Value<'gc> {
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
     /// rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
-    /// * In SWF4 and lower, a string is coerced using the `parseFloat` function
-    /// and returns `0.0` rather than `NaN` if it cannot be converted to a number.
+    /// * In SWF4 and lower, `0.0` is returned rather than `NaN` if a string cannot
+    /// be converted to a number.
     fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc, '_>) -> f64 {
         match self {
             Value::Undefined if activation.swf_version() < 7 => 0.0,
@@ -459,6 +459,32 @@ impl<'gc> Value<'gc> {
     }
 }
 
+/// Calculate `value * 10^exp` through repeated multiplication or division.
+fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
+    let mut base: f64 = 10.0;
+    // The multiply and division branches are intentionally separate to match Flash's behavior.
+    if exp > 0 {
+        while exp > 0 {
+            if (exp & 1) != 0 {
+                value *= base;
+            }
+            exp >>= 1;
+            base *= base;
+        }
+    } else {
+        // Avoid overflow when `exp == i32::MIN`.
+        let mut exp = exp.unsigned_abs();
+        while exp > 0 {
+            if (exp & 1) != 0 {
+                value /= base;
+            }
+            exp >>= 1;
+            base *= base;
+        }
+    };
+    value
+}
+
 /// Converts an `f64` to a String with (hopefully) the same output as Flash AVM1.
 /// 15 digits are displayed (not including leading 0s in a decimal <1).
 /// Exponential notation is used for numbers <= 1e-5 and >= 1e15.
@@ -510,31 +536,6 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
         // Convert to base-10 exponent.
         const LOG10_2: f64 = 0.301029995663981; // log_10(2) value (less precise than Rust's f64::LOG10_2).
         let mut exp = f64::round(f64::from(exp_base2) * LOG10_2) as i32;
-
-        // Calculate `value * 10^exp` through repeated multiplication or division.
-        fn decimal_shift(mut value: f64, mut exp: i32) -> f64 {
-            let mut base: f64 = 10.0;
-            // The multiply and division branches are intentionally separate to match Flash's behavior.
-            if exp > 0 {
-                while exp > 0 {
-                    if (exp & 1) != 0 {
-                        value *= base;
-                    }
-                    exp >>= 1;
-                    base *= base;
-                }
-            } else {
-                exp = -exp;
-                while exp > 0 {
-                    if (exp & 1) != 0 {
-                        value /= base;
-                    }
-                    exp >>= 1;
-                    base *= base;
-                }
-            };
-            value
-        }
 
         // Shift the decimal value so that it's in the range of [0.0, 10.0).
         let mut mantissa: f64 = decimal_shift(n, -exp);
@@ -671,51 +672,170 @@ fn f64_to_string(mut n: f64) -> Cow<'static, str> {
     }
 }
 
-/// Converts a `WStr` to an f64 based on the SWF version.
-fn string_to_f64(str: &WStr, swf_version: u8) -> f64 {
-    if swf_version < 5 {
-        use crate::avm1::globals::parse_float_impl;
-        let v = parse_float_impl(str.trim_start(), true);
-        if v.is_nan() {
-            return 0.0;
-        }
-        return v;
+/// Consumes an optional sign character.
+/// Returns whether a minus sign was consumed.
+fn parse_sign(s: &mut &WStr) -> bool {
+    if let Some(after_sign) = s.strip_prefix(b'-') {
+        *s = after_sign;
+        true
+    } else if let Some(after_sign) = s.strip_prefix(b'+') {
+        *s = after_sign;
+        false
+    } else {
+        false
+    }
+}
+
+/// Converts a `WStr` to an `f64`.
+///
+/// This function might fail for some invalid inputs, by returning `NaN`.
+///
+/// `strict` typically tells whether to behave like `Number()` or `parseFloat()`:
+/// * `strict == true` fails on trailing garbage (like `Number()`).
+/// * `strict == false` ignores trailing garbage (like `parseFloat()`).
+pub fn parse_float_impl(mut s: &WStr, strict: bool) -> f64 {
+    fn is_ascii_digit(c: u16) -> bool {
+        u8::try_from(c).map_or(false, |c| c.is_ascii_digit())
     }
 
-    if str.is_empty() {
+    // Allow leading whitespace.
+    s = s.trim_start();
+
+    // Parse sign.
+    let is_negative = parse_sign(&mut s);
+    let after_sign = s;
+
+    // Validate digits before decimal point.
+    s = s.trim_start_matches(is_ascii_digit);
+    let mut exp = (after_sign.len() - s.len()) as i32 - 1;
+
+    // Validate digits after decimal point.
+    if let Some(after_dot) = s.strip_prefix(b'.') {
+        s = after_dot;
+        s = s.trim_start_matches(is_ascii_digit);
+    }
+
+    // Fail if we got no digits.
+    // TODO: Compare by reference instead?
+    if s.len() == after_sign.len() {
         return f64::NAN;
     }
 
-    if swf_version >= 6 {
-        if let Some(v) = str.strip_prefix(WStr::from_units(b"0x")) {
-            // Flash allows the '-' sign here.
-            return match Wrapping::<i32>::from_wstr_radix(v, 16) {
-                Ok(n) => f64::from(n.0 as i32),
-                Err(_) => f64::NAN,
-            };
-        } else if str.starts_with(b'0')
-            || str.starts_with(WStr::from_units(b"+0"))
-            || str.starts_with(WStr::from_units(b"-0"))
-        {
-            // Flash allows the '-' sign here.
-            if let Ok(n) = Wrapping::<i32>::from_wstr_radix(str, 8) {
-                return f64::from(n.0);
+    // Handle exponent.
+    if let Some(after_e) = s.strip_prefix(b"eE".as_ref()) {
+        s = after_e;
+
+        // Parse exponent sign.
+        let exponent_is_negative = parse_sign(&mut s);
+
+        // Parse exponent itself.
+        let mut exponent: i32 = 0;
+        s = s.trim_start_matches(|c| {
+            match u8::try_from(c)
+                .ok()
+                .and_then(|c| char::from(c).to_digit(10))
+            {
+                Some(digit) => {
+                    exponent = exponent.wrapping_mul(10);
+                    exponent = exponent.wrapping_add(digit as i32);
+                    true
+                }
+                None => false,
             }
+        });
+
+        // Apply exponent sign.
+        if exponent_is_negative {
+            exponent = exponent.wrapping_neg();
+        }
+
+        exp = exp.wrapping_add(exponent);
+    }
+
+    // Fail if we got digits, but we're in strict mode and not at end of string.
+    if strict && !s.is_empty() {
+        return f64::NAN;
+    }
+
+    // Finally, calculate the result.
+    let mut result = 0.0;
+    for c in after_sign {
+        if let Some(digit) = u8::try_from(c)
+            .ok()
+            .and_then(|c| char::from(c).to_digit(10))
+        {
+            result += decimal_shift(digit.into(), exp);
+            exp = exp.wrapping_sub(1);
+        } else if c == b'.' as u16 {
+            // Allow multiple dots.
+        } else {
+            break;
         }
     }
 
-    // Rust parses "inf", "+inf" and "infinity" into Infinity, but Flash doesn't.
-    // Check if the string starts with 'i' (ignoring any leading +/-).
-    if str
-        .strip_prefix(&b"+-"[..])
-        .unwrap_or(str)
-        .starts_with(&b"iI"[..])
-    {
-        f64::NAN
+    // Apply sign.
+    if is_negative {
+        result = -result;
+    }
+
+    // We shouldn't return `NaN` after a successful parsing.
+    debug_assert!(!result.is_nan());
+    result
+}
+
+/// Guess the radix of a string.
+///
+/// With an optional leading sign omitted:
+/// * Strings that start with `0x` (case insensitive) are considered hexadecimal.
+/// * Strings that start with a `0` and consist only of `0..=7` digits are considered octal.
+/// * All other strings are considered decimal.
+fn guess_radix(s: &WStr) -> u32 {
+    // Optionally skip sign.
+    let s = s.strip_prefix(b"+-".as_ref()).unwrap_or(s);
+
+    if let Some(s) = s.strip_prefix(b'0') {
+        if s.starts_with(b"xX".as_ref()) {
+            // Hexadecimal.
+            return 16;
+        }
+
+        if s.iter().all(|c| c >= b'0' as u16 && c <= b'7' as u16) {
+            // Octal.
+            return 8;
+        }
+    }
+
+    // Decimal.
+    10
+}
+
+/// Converts a `WStr` to an `f64` based on the SWF version.
+fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
+    if swf_version >= 6 {
+        let radix = guess_radix(s);
+
+        // Parse hexadecimal and octal numbers as integers.
+        if radix != 10 {
+            if radix == 16 {
+                // Bug compatibility: Flash fails to skip an hexadecimal prefix with a sign,
+                // causing such strings to be parsed as `NaN`.
+                s = &s[2..];
+            }
+
+            return match Wrapping::<i32>::from_wstr_radix(s, radix) {
+                Ok(result) => result.0.into(),
+                Err(_) => f64::NAN,
+            };
+        }
+    }
+
+    let strict = swf_version >= 5;
+    let result = parse_float_impl(s, strict);
+    if !strict && result.is_nan() {
+        // In non-strict mode, return `0.0` rather than `NaN`.
+        0.0
     } else {
-        str.trim_start_matches(&b"\t\n\r "[..])
-            .parse()
-            .unwrap_or(f64::NAN)
+        result
     }
 }
 
