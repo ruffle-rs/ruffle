@@ -1,3 +1,5 @@
+// parseFloat()
+NaN
 // parseFloat("12345")
 12345
 // parseFloat("012345.67890")
@@ -64,6 +66,8 @@ NaN
 NaN
 // parseFloat("0xff")
 0
+// parseFloat(String.fromCharCode(305))
+NaN
 // parseFloat(true)
 NaN
 // parseFloat(1.2)
