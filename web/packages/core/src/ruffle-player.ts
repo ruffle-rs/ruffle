@@ -1498,7 +1498,8 @@ export class RufflePlayer extends HTMLElement {
             );
             this.container.appendChild(preloaderElement);
         } else if (!visible && preloader) {
-            preloader.remove();
+            // The remove method is overwritten by a somewhat common JS library called prototype.js
+            preloader.parentNode!.removeChild(preloader);
         }
     }
 }
