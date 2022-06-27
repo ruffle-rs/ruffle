@@ -12,7 +12,7 @@ flate2 = "1.0.24"
 fnv = "1.0.7"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
-gif = "0.11.3"
+gif = "0.11.4"
 indexmap = "1.9.1"
 log = "0.4"
 minimp3 = { version = "0.5.1", optional = true }
