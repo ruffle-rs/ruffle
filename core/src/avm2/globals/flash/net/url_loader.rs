@@ -160,7 +160,8 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] = &[("data", "", "Object")];
+    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] =
+        &[("data", "", "Object"), ("dataFormat", "", "String")];
     write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("load", load)];
