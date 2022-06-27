@@ -239,7 +239,6 @@ preloaderTemplate.innerHTML = `
                 background: var(--preloader-background, var(--ruffle-blue));
                 width: 60%;
                 height: auto;
-                padding: 10px auto; 
                 align-items: center;
                 justify-content: center;
                 aspect-ratio: 2;
@@ -252,14 +251,15 @@ preloaderTemplate.innerHTML = `
             .loadbar {
                 width: 100%;
                 max-width: 316px;
-                height: 10px;
+                max-height: 10px;
+                height: 20%;
                 margin-top: -3%;
                 background: #253559;
             }
 
             .loadbarInner {
                 width: 0px;
-                height: 10px;
+                height: 100%;
                 background: var(--ruffle-orange);
             }
             
