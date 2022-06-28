@@ -4,11 +4,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
-use crate::avm2::object::{stage_allocator, LoaderInfoObject, Object, TObject};
+use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::ArrayObject;
 use crate::avm2::Error;
-use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
+use crate::display_object::{HitTestOptions, TDisplayObject};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
@@ -574,26 +574,15 @@ pub fn hit_test_object<'gc>(
 
 /// Implements `loaderInfo` getter
 pub fn loader_info<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(root) = dobj.avm2_root(&mut activation.context) {
-            let movie = dobj.movie();
-
-            if let Some(movie) = movie {
-                let obj = LoaderInfoObject::from_movie(activation, movie, root)?;
-
-                return Ok(obj.into());
-            }
-        }
-
-        if DisplayObject::ptr_eq(dobj, activation.context.stage.into()) {
-            return Ok(LoaderInfoObject::from_stage(activation)?.into());
+        if let Some(loader_info) = dobj.loader_info() {
+            return Ok(loader_info.into());
         }
     }
-
     Ok(Value::Undefined)
 }
 

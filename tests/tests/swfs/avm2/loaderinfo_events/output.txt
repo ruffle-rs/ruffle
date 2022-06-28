@@ -1,0 +1,6 @@
+Called constructor
+Called added
+Called addedToStage
+Called exitFrame
+Called init!
+Called enterFrame

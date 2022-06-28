@@ -1,6 +1,7 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
+use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::{
     Activation as Avm2Activation, Event as Avm2Event, EventData as Avm2EventData,
     Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
@@ -105,6 +106,9 @@ pub struct StageData<'gc> {
 
     /// The AVM2 view of this stage object.
     avm2_object: Avm2Object<'gc>,
+
+    /// The AVM2 'LoaderInfo' object for this stage object
+    loader_info: Avm2Object<'gc>,
 }
 
 impl<'gc> Stage<'gc> {
@@ -138,6 +142,7 @@ impl<'gc> Stage<'gc> {
                 window_mode: Default::default(),
                 show_menu: true,
                 avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
+                loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
             },
         ));
         stage.set_is_root(gc_context, true);
@@ -671,7 +676,12 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
         match avm2_stage {
             Ok(avm2_stage) => {
-                self.0.write(activation.context.gc_context).avm2_object = avm2_stage.into()
+                let mut write = self.0.write(activation.context.gc_context);
+                write.avm2_object = avm2_stage.into();
+                match LoaderInfoObject::from_stage(&mut activation) {
+                    Ok(loader_info) => write.loader_info = loader_info,
+                    Err(e) => log::error!("Unable to set AVM2 Stage loaderInfo: {}", e),
+                }
             }
             Err(e) => log::error!("Unable to construct AVM2 Stage: {}", e),
         }
@@ -728,6 +738,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn object2(&self) -> Avm2Value<'gc> {
         self.0.read().avm2_object.into()
+    }
+
+    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+        Some(self.0.read().loader_info)
     }
 }
 
