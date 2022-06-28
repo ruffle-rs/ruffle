@@ -16,6 +16,7 @@ use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
+use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -1002,6 +1003,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
         None
     }
+
+    fn loader_stream_init(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
 
     /// Unwrap this object's loader stream
     fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {

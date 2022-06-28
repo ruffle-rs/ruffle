@@ -4,9 +4,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Avm2;
 use crate::avm2::Error;
+use crate::avm2::{Event, EventData};
+use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
-use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -24,6 +26,7 @@ pub fn loaderinfo_allocator<'gc>(
         LoaderInfoObjectData {
             base,
             loaded_stream: None,
+            init_fired: false,
         },
     ))
     .into())
@@ -60,6 +63,9 @@ pub struct LoaderInfoObjectData<'gc> {
 
     /// The loaded stream that this gets it's info from.
     loaded_stream: Option<LoaderStream<'gc>>,
+
+    /// Whether or not we've fired an 'init' event
+    init_fired: bool,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -78,6 +84,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             LoaderInfoObjectData {
                 base,
                 loaded_stream,
+                init_fired: false,
             },
         ))
         .into();
@@ -98,6 +105,9 @@ impl<'gc> LoaderInfoObject<'gc> {
             LoaderInfoObjectData {
                 base,
                 loaded_stream: Some(LoaderStream::Stage),
+                // We never want to fire an "init" event for the special
+                // Stagee loaderInfo
+                init_fired: true,
             },
         ))
         .into();
@@ -122,14 +132,23 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn value_of(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        if let Some(class) = self.instance_of_class_definition() {
-            Ok(
-                AvmString::new_utf8(mc, format!("[object {}]", class.read().name().local_name()))
-                    .into(),
-            )
-        } else {
-            Ok("[object Object]".into())
+    fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(Value::Object((*self).into()))
+    }
+
+    fn loader_stream_init(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !self.0.read().init_fired {
+            self.0.write(context.gc_context).init_fired = true;
+            let mut init_evt = Event::new("init", EventData::Empty);
+            init_evt.set_bubbles(false);
+            init_evt.set_cancelable(false);
+
+            if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
+                log::error!(
+                    "Encountered AVM2 error when broadcasting `init` event: {}",
+                    e
+                );
+            }
         }
     }
 

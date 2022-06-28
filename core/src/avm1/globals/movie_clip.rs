@@ -1352,7 +1352,7 @@ fn unload_movie<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     target.unload(&mut activation.context);
-    target.replace_with_movie(activation.context.gc_context, None);
+    target.replace_with_movie(&mut activation.context, None);
 
     Ok(Value::Undefined)
 }

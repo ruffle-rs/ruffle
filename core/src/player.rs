@@ -294,8 +294,7 @@ impl Player {
                 .set_avm2_domain(domain);
             context.ui.set_mouse_visible(true);
 
-            let root: DisplayObject =
-                MovieClip::from_movie(context.gc_context, context.swf.clone()).into();
+            let root: DisplayObject = MovieClip::from_movie(context, context.swf.clone()).into();
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {
@@ -1922,7 +1921,7 @@ impl PlayerBuilder {
         let mut player_lock = player.lock().unwrap();
         player_lock.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::from_movie(context.gc_context, fake_movie);
+            let fake_root = MovieClip::from_movie(context, fake_movie);
             fake_root.post_instantiation(context, None, Instantiator::Movie, false);
             context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");

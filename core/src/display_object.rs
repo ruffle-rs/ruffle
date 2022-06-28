@@ -1165,6 +1165,16 @@ pub trait TDisplayObject<'gc>:
                 e
             );
         }
+
+        self.on_exit_frame(context);
+    }
+
+    fn on_exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if let Some(container) = self.as_container() {
+            for child in container.iter_render_list() {
+                child.on_exit_frame(context);
+            }
+        }
     }
 
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
@@ -1336,6 +1346,10 @@ pub trait TDisplayObject<'gc>:
     /// Return the SWF that defines this display object.
     fn movie(&self) -> Option<Arc<SwfMovie>> {
         self.parent().and_then(|p| p.movie())
+    }
+
+    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+        None
     }
 
     fn instantiate(&self, gc_context: MutationContext<'gc, '_>) -> DisplayObject<'gc>;

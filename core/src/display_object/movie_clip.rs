@@ -2,6 +2,7 @@
 use crate::avm1::{
     Avm1, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
 };
+use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Namespace as Avm2Namespace,
@@ -205,15 +206,20 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Construct a movie clip that represents an entire movie.
-    pub fn from_movie(gc_context: MutationContext<'gc, '_>, movie: Arc<SwfMovie>) -> Self {
+    pub fn from_movie(context: &mut UpdateContext<'_, 'gc, '_>, movie: Arc<SwfMovie>) -> Self {
         let num_frames = movie.num_frames();
         let mc = MovieClip(GcCell::allocate(
-            gc_context,
+            context.gc_context,
             MovieClipData {
                 base: Default::default(),
                 static_data: Gc::allocate(
-                    gc_context,
-                    MovieClipStatic::with_data(0, movie.into(), num_frames, gc_context),
+                    context.gc_context,
+                    MovieClipStatic::with_data(
+                        0,
+                        movie.clone().into(),
+                        num_frames,
+                        context.gc_context,
+                    ),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -237,23 +243,64 @@ impl<'gc> MovieClip<'gc> {
                 drop_target: None,
             },
         ));
-        mc.set_is_root(gc_context, true);
+        mc.set_is_root(context.gc_context, true);
+        mc.set_loader_info(context, movie);
         mc
     }
 
-    /// Replace the current MovieClip with a completely new SwfMovie.
+    /// Replace the current MovieClipData with a completely new SwfMovie.
     ///
     /// Playback will start at position zero, any existing streamed audio will
-    /// be terminated, and so on. Children and AVM data will be kept across the
-    /// load boundary.
+    /// be terminated, and so on. Children and AVM data will NOT be kept across
+    /// the load boundary.
+    ///
+    /// If no movie is provided, then the movie clip will be replaced with an
+    /// empty movie of the same SWF version.
     pub fn replace_with_movie(
         &mut self,
-        gc_context: MutationContext<'gc, '_>,
+        context: &mut UpdateContext<'_, 'gc, '_>,
         movie: Option<Arc<SwfMovie>>,
     ) {
-        self.0
-            .write(gc_context)
-            .replace_with_movie(gc_context, movie)
+        let mut mc = self.0.write(context.gc_context);
+        let is_swf = movie.is_some();
+        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
+        let total_frames = movie.num_frames();
+        mc.base.base.reset_for_movie_load();
+        mc.static_data = Gc::allocate(
+            context.gc_context,
+            MovieClipStatic::with_data(0, movie.clone().into(), total_frames, context.gc_context),
+        );
+        mc.tag_stream_pos = 0;
+        mc.flags = MovieClipFlags::PLAYING;
+        mc.base.base.set_is_root(is_swf);
+        mc.current_frame = 0;
+        mc.audio_stream = None;
+        mc.container = ChildContainer::new();
+        drop(mc);
+
+        self.set_loader_info(context, movie);
+    }
+
+    fn set_loader_info(&self, context: &mut UpdateContext<'_, 'gc, '_>, movie: Arc<SwfMovie>) {
+        if movie.avm_type() == AvmType::Avm2 {
+            let gc_context = context.gc_context;
+            let mc = self.0.write(gc_context);
+            if mc.base.base.is_root() {
+                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                match LoaderInfoObject::from_movie(&mut activation, movie, (*self).into()) {
+                    Ok(loader_info) => {
+                        *mc.static_data.loader_info.write(gc_context) = Some(loader_info);
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Error contructing LoaderInfoObject for movie {:?}: {:?}",
+                            mc,
+                            e
+                        );
+                    }
+                }
+            }
+        }
     }
 
     pub fn preload(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -1771,9 +1818,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // we can't fire the events until we run our first frame, so we
                 // have to actually check if we've just built the root and act
                 // like it just got added to the timeline.
-                let root = self.avm2_root(context);
                 let self_dobj: DisplayObject<'gc> = (*self).into();
-                if DisplayObject::option_ptr_eq(Some(self_dobj), root) {
+                if self_dobj.is_root() {
                     dispatch_added_event_only(self_dobj, context);
                     dispatch_added_to_stage_event_only(self_dobj, context);
                 }
@@ -1783,7 +1829,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
     fn run_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Run my load/enterFrame clip event.
-        let is_load_frame = !self.0.read().initialized();
+        let is_load_frame = !self.0.read().flags.contains(MovieClipFlags::INITIALIZED);
         if is_load_frame {
             self.event_dispatch(context, ClipEvent::Load);
             self.0.write(context.gc_context).set_initialized(true);
@@ -1863,6 +1909,23 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
             }
+        }
+    }
+
+    fn on_exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        // Attempt to fire an "init" event on our `LoaderInfo`.
+        // This fires after we've exited our first frame, but before
+        // but before we enter a new frame. `loader_strean_init`
+        // keeps track if an "init" event has already been fired,
+        // so this becomes a no-op after the event has been fired.
+        if self.0.read().initialized() {
+            if let Some(loader_info) = self.loader_info() {
+                loader_info.loader_stream_init(context);
+            }
+        }
+
+        for child in self.iter_render_list() {
+            child.on_exit_frame(context);
         }
     }
 
@@ -2015,6 +2078,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
         self.event_dispatch(context, ClipEvent::Unload);
         self.set_removed(context.gc_context, true);
+    }
+
+    fn loader_info(&self) -> Option<Avm2Object<'gc>> {
+        *self.0.read().static_data.loader_info.read()
     }
 
     fn allow_as_mask(&self) -> bool {
@@ -2225,36 +2292,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 }
 
 impl<'gc> MovieClipData<'gc> {
-    /// Replace the current MovieClipData with a completely new SwfMovie.
-    ///
-    /// Playback will start at position zero, any existing streamed audio will
-    /// be terminated, and so on. Children and AVM data will NOT be kept across
-    /// the load boundary.
-    ///
-    /// If no movie is provided, then the movie clip will be replaced with an
-    /// empty movie of the same SWF version.
-    pub fn replace_with_movie(
-        &mut self,
-        gc_context: MutationContext<'gc, '_>,
-        movie: Option<Arc<SwfMovie>>,
-    ) {
-        let is_swf = movie.is_some();
-        let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(self.movie().version())));
-        let total_frames = movie.num_frames();
-
-        self.base.base.reset_for_movie_load();
-        self.static_data = Gc::allocate(
-            gc_context,
-            MovieClipStatic::with_data(0, movie.into(), total_frames, gc_context),
-        );
-        self.tag_stream_pos = 0;
-        self.flags = MovieClipFlags::PLAYING;
-        self.base.base.set_is_root(is_swf);
-        self.current_frame = 0;
-        self.audio_stream = None;
-        self.container = ChildContainer::new();
-    }
-
     fn id(&self) -> CharacterId {
         self.static_data.id
     }
@@ -3283,6 +3320,10 @@ struct MovieClipStatic<'gc> {
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
     exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
+    /// Only set if this MovieClip is the root movie in an SWF
+    /// (either the root SWF initially loaded by the player,
+    /// or an SWF dynamically loaded by `Loader`)
+    loader_info: GcCell<'gc, Option<Avm2Object<'gc>>>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
@@ -3305,6 +3346,7 @@ impl<'gc> MovieClipStatic<'gc> {
             audio_stream_info: None,
             audio_stream_handle: None,
             exported_name: GcCell::allocate(gc_context, None),
+            loader_info: GcCell::allocate(gc_context, None),
         }
     }
 }

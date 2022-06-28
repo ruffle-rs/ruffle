@@ -457,7 +457,7 @@ impl<'gc> Loader<'gc> {
 
                 if let Some(mut mc) = clip.as_movie_clip() {
                     mc.unload(uc);
-                    mc.replace_with_movie(uc.gc_context, None);
+                    mc.replace_with_movie(uc, None);
                 }
 
                 Loader::movie_loader_start(handle, uc)
@@ -499,7 +499,7 @@ impl<'gc> Loader<'gc> {
                                 .set_avm2_domain(domain);
 
                             if let Some(mut mc) = clip.as_movie_clip() {
-                                mc.replace_with_movie(uc.gc_context, Some(movie));
+                                mc.replace_with_movie(uc, Some(movie));
                                 mc.post_instantiation(uc, None, Instantiator::Movie, false);
                                 mc.preload(uc);
                             }
