@@ -14,7 +14,10 @@ use crate::avm2::{
 use crate::backend::navigator::{OwnedFuture, RequestOptions};
 use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
-use crate::display_object::{Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+};
+use crate::events::ClipEvent;
 use crate::player::Player;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -577,6 +580,22 @@ impl<'gc> Loader<'gc> {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
+                }
+
+                // Fire the onData method and event.
+                if let Some(display_object) = that.as_display_object() {
+                    if let Some(movie_clip) = display_object.as_movie_clip() {
+                        activation.context.action_queue.queue_actions(
+                            movie_clip.into(),
+                            ActionType::Method {
+                                object: that,
+                                name: "onData",
+                                args: vec![],
+                            },
+                            false,
+                        );
+                        movie_clip.event_dispatch(&mut activation.context, ClipEvent::Data);
+                    }
                 }
 
                 Ok(())

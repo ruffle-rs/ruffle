@@ -298,10 +298,14 @@ impl<'gc> ClipEvent<'gc> {
     }
 
     /// Returns the method name of the event handler for this event.
+    ///
+    /// `ClipEvent::Data` returns `None` rather than `onData` because its behavior
+    /// differs from the other events: the method must fire before the SWF-defined
+    /// event handler, so we'll explicitly call `onData` in the appropriate places.
     pub const fn method_name(self) -> Option<&'static str> {
         match self {
             ClipEvent::Construct => None,
-            ClipEvent::Data => Some("onData"),
+            ClipEvent::Data => None,
             ClipEvent::DragOut { .. } => Some("onDragOut"),
             ClipEvent::DragOver { .. } => Some("onDragOver"),
             ClipEvent::EnterFrame => Some("onEnterFrame"),
