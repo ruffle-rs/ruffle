@@ -45,8 +45,7 @@ impl<'gc> ByteArrayObject<'gc> {
         bytes: ByteArrayStorage,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().bytearray;
-        let proto = activation.avm2().prototypes().bytearray;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut instance: Object<'gc> = ByteArrayObject(GcCell::allocate(
             activation.context.gc_context,

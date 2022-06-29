@@ -94,11 +94,10 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error> {
         let class = activation.avm2().classes().graphics;
-        let proto = activation.avm2().prototypes().graphics;
         let mut this = Self(GcCell::allocate(
             activation.context.gc_context,
             StageObjectData {
-                base: ScriptObjectData::base_new(Some(proto), Some(class)),
+                base: ScriptObjectData::new(class),
                 display_object: Some(display_object),
             },
         ));

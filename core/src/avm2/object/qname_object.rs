@@ -46,8 +46,7 @@ impl<'gc> QNameObject<'gc> {
         qname: QName<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().qname;
-        let proto = activation.avm2().prototypes().qname;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = QNameObject(GcCell::allocate(
             activation.context.gc_context,

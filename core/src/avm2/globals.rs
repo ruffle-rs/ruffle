@@ -44,124 +44,6 @@ const NS_VECTOR: &str = "__AS3__.vec";
 
 pub use flash::utils::NS_FLASH_PROXY;
 
-/// This structure represents all system builtins' prototypes.
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-pub struct SystemPrototypes<'gc> {
-    pub object: Object<'gc>,
-    pub function: Object<'gc>,
-    pub class: Object<'gc>,
-    pub global: Object<'gc>,
-    pub string: Object<'gc>,
-    pub boolean: Object<'gc>,
-    pub number: Object<'gc>,
-    pub int: Object<'gc>,
-    pub uint: Object<'gc>,
-    pub namespace: Object<'gc>,
-    pub array: Object<'gc>,
-    pub movieclip: Object<'gc>,
-    pub framelabel: Object<'gc>,
-    pub scene: Object<'gc>,
-    pub application_domain: Object<'gc>,
-    pub event: Object<'gc>,
-    pub fullscreenevent: Object<'gc>,
-    pub video: Object<'gc>,
-    pub xml: Object<'gc>,
-    pub xml_list: Object<'gc>,
-    pub display_object: Object<'gc>,
-    pub shape: Object<'gc>,
-    pub textfield: Object<'gc>,
-    pub textformat: Object<'gc>,
-    pub graphics: Object<'gc>,
-    pub loaderinfo: Object<'gc>,
-    pub bytearray: Object<'gc>,
-    pub stage: Object<'gc>,
-    pub sprite: Object<'gc>,
-    pub simplebutton: Object<'gc>,
-    pub regexp: Object<'gc>,
-    pub vector: Object<'gc>,
-    pub soundtransform: Object<'gc>,
-    pub soundchannel: Object<'gc>,
-    pub bitmap: Object<'gc>,
-    pub bitmapdata: Object<'gc>,
-    pub date: Object<'gc>,
-    pub qname: Object<'gc>,
-    pub sharedobject: Object<'gc>,
-    pub nativemenu: Object<'gc>,
-    pub contextmenu: Object<'gc>,
-    pub mouseevent: Object<'gc>,
-    pub textevent: Object<'gc>,
-    pub errorevent: Object<'gc>,
-    pub ioerrorevent: Object<'gc>,
-    pub securityerrorevent: Object<'gc>,
-}
-
-impl<'gc> SystemPrototypes<'gc> {
-    /// Construct a minimal set of system prototypes necessary for
-    /// bootstrapping player globals.
-    ///
-    /// All other system prototypes aside from the three given here will be set
-    /// to the empty object also handed to this function. It is the caller's
-    /// responsibility to instantiate each class and replace the empty object
-    /// with that.
-    fn new(
-        object: Object<'gc>,
-        function: Object<'gc>,
-        class: Object<'gc>,
-        global: Object<'gc>,
-        empty: Object<'gc>,
-    ) -> Self {
-        SystemPrototypes {
-            object,
-            function,
-            class,
-            global,
-            string: empty,
-            boolean: empty,
-            number: empty,
-            int: empty,
-            uint: empty,
-            namespace: empty,
-            array: empty,
-            movieclip: empty,
-            framelabel: empty,
-            scene: empty,
-            application_domain: empty,
-            event: empty,
-            fullscreenevent: empty,
-            video: empty,
-            xml: empty,
-            xml_list: empty,
-            display_object: empty,
-            shape: empty,
-            textfield: empty,
-            textformat: empty,
-            graphics: empty,
-            loaderinfo: empty,
-            bytearray: empty,
-            stage: empty,
-            sprite: empty,
-            simplebutton: empty,
-            regexp: empty,
-            vector: empty,
-            soundtransform: empty,
-            soundchannel: empty,
-            bitmap: empty,
-            bitmapdata: empty,
-            date: empty,
-            qname: empty,
-            sharedobject: empty,
-            nativemenu: empty,
-            contextmenu: empty,
-            mouseevent: empty,
-            textevent: empty,
-            errorevent: empty,
-            ioerrorevent: empty,
-            securityerrorevent: empty,
-        }
-    }
-}
-
 /// This structure represents all system builtin classes.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -319,13 +201,13 @@ fn dynamic_class<'gc>(
 
 /// Add a class builtin to the global scope.
 ///
-/// This function returns the class object and class prototype as a pair, which
-/// may be stored in `SystemClasses` and `SystemPrototypes`, respectively.
+/// This function returns the class object and class prototype as a class, which
+/// may be stored in `SystemClasses`
 fn class<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     class_def: GcCell<'gc, Class<'gc>>,
     script: Script<'gc>,
-) -> Result<(ClassObject<'gc>, Object<'gc>), Error> {
+) -> Result<ClassObject<'gc>, Error> {
     let (_, mut global, mut domain) = script.init();
 
     let class_read = class_def.read();
@@ -364,7 +246,7 @@ fn class<'gc>(
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
-    Ok((class_object, class_object.prototype()))
+    Ok(class_object)
 }
 
 /// Add a builtin constant to the global scope.
@@ -402,13 +284,10 @@ fn namespace<'gc>(
 
 macro_rules! avm2_system_class {
     ($field:ident, $activation:ident, $class:expr, $script:expr) => {
-        let (class_object, proto) = class($activation, $class, $script)?;
+        let class_object = class($activation, $class, $script)?;
 
         let sc = $activation.avm2().system_classes.as_mut().unwrap();
         sc.$field = class_object;
-
-        let sp = $activation.avm2().system_prototypes.as_mut().unwrap();
-        sp.$field = proto;
     };
 }
 
@@ -478,16 +357,9 @@ pub fn load_player_globals<'gc>(
     global_class.link_prototype(activation, global_proto)?;
     global_class.link_type(activation, class_proto, class_class);
 
-    // At this point, we need at least a partial set of system prototypes in
-    // order to continue initializing the player. The rest of the prototypes
-    // are set to a bare object until we have a chance to initialize them.
-    activation.context.avm2.system_prototypes = Some(SystemPrototypes::new(
-        object_proto,
-        fn_proto,
-        class_proto,
-        global_proto,
-        ScriptObject::bare_object(mc),
-    ));
+    // At this point, we need at least a partial set of system classes in
+    // order to continue initializing the player. The rest of the classes
+    // are set to a temporary class until we have a chance to initialize them.
 
     activation.context.avm2.system_classes = Some(SystemClasses::new(
         object_class,
@@ -505,8 +377,8 @@ pub fn load_player_globals<'gc>(
     let object_class = object_class.into_finished_class(activation)?;
     let _global_class = global_class.into_finished_class(activation)?;
 
-    globals.set_proto(mc, activation.avm2().prototypes().global);
-    globals.set_instance_of(mc, activation.avm2().classes().global);
+    globals.set_proto(mc, global_proto);
+    globals.set_instance_of(mc, global_class);
     globals.fork_vtable(activation.context.gc_context);
 
     // From this point, `globals` is safe to be modified
@@ -951,16 +823,13 @@ fn load_playerglobal<'gc>(
                 let class_object = activation.resolve_class(&qname.into())?;
                 let sc = $activation.avm2().system_classes.as_mut().unwrap();
                 sc.$field = class_object;
-
-                let sp = $activation.avm2().system_prototypes.as_mut().unwrap();
-                sp.$field = class_object.prototype();
             )*
         }
     }
 
     // This acts the same way as 'avm2_system_class', but for classes
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
-    // and are stored in 'avm2().system_classes' and 'avm2().system_prototypes'
+    // and are stored in 'avm2().system_classes'
     avm2_system_classes_playerglobal!(activation, script, [("flash.display", "Scene", scene)]);
 
     Ok(())

@@ -235,7 +235,7 @@ pub fn to_string<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    let object_proto = activation.avm2().prototypes().object;
+    let object_proto = activation.avm2().classes().object.prototype();
     let name = QName::dynamic_name("toString").into();
     object_proto
         .get_property(&name, activation)?

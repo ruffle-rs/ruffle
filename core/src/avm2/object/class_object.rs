@@ -134,7 +134,7 @@ impl<'gc> ClassObject<'gc> {
         class_object.link_prototype(activation, class_proto)?;
 
         let class_class = activation.avm2().classes().class;
-        let class_class_proto = activation.avm2().prototypes().class;
+        let class_class_proto = class_class.prototype();
 
         class_object.link_type(activation, class_class_proto, class_class);
         class_object.into_finished_class(activation)
@@ -877,7 +877,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let class_proto = self.allocate_prototype(activation, superclass_object)?;
 
         let class_class = activation.avm2().classes().class;
-        let class_class_proto = activation.avm2().prototypes().class;
 
         let constructor = self.0.read().constructor.clone();
         let native_constructor = self.0.read().native_constructor.clone();
@@ -886,7 +885,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let mut class_object = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
-                base: ScriptObjectData::base_new(Some(class_class_proto), Some(class_class)),
+                base: ScriptObjectData::new(class_class),
                 class: parameterized_class,
                 prototype: None,
                 class_scope,

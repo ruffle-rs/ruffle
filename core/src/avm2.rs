@@ -1,6 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use crate::avm2::globals::{SystemClasses, SystemPrototypes};
+use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::Method;
 use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -72,9 +72,6 @@ pub struct Avm2<'gc> {
     /// Global scope object.
     globals: Domain<'gc>,
 
-    /// System prototypes.
-    system_prototypes: Option<SystemPrototypes<'gc>>,
-
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
@@ -100,7 +97,6 @@ impl<'gc> Avm2<'gc> {
         Self {
             stack: Vec::new(),
             globals,
-            system_prototypes: None,
             system_classes: None,
             broadcast_list: Default::default(),
 
@@ -113,13 +109,6 @@ impl<'gc> Avm2<'gc> {
         let globals = context.avm2.globals;
         let mut activation = Activation::from_nothing(context.reborrow());
         globals::load_player_globals(&mut activation, globals)
-    }
-
-    /// Return the current set of system prototypes.
-    ///
-    /// This function panics if the interpreter has not yet been initialized.
-    pub fn prototypes(&self) -> &SystemPrototypes<'gc> {
-        self.system_prototypes.as_ref().unwrap()
     }
 
     /// Return the current set of system classes.
