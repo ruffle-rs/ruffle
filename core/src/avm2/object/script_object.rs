@@ -132,6 +132,18 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
+    pub fn new(instance_of: ClassObject<'gc>) -> Self {
+        ScriptObjectData {
+            values: Default::default(),
+            slots: Vec::new(),
+            bound_methods: Vec::new(),
+            proto: Some(instance_of.prototype()),
+            instance_of: Some(instance_of),
+            vtable: Some(instance_of.instance_vtable()),
+            enumerants: Vec::new(),
+        }
+    }
+
     pub fn get_property_local(
         &self,
         multiname: &Multiname<'gc>,

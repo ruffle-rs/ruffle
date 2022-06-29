@@ -47,8 +47,7 @@ impl<'gc> RegExpObject<'gc> {
         regexp: RegExp<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().regexp;
-        let proto = activation.avm2().prototypes().regexp;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = RegExpObject(GcCell::allocate(
             activation.context.gc_context,

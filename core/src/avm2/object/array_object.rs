@@ -58,8 +58,7 @@ impl<'gc> ArrayObject<'gc> {
         array: ArrayStorage<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().array;
-        let proto = activation.avm2().prototypes().array;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut instance: Object<'gc> = ArrayObject(GcCell::allocate(
             activation.context.gc_context,

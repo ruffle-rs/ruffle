@@ -49,8 +49,7 @@ impl<'gc> DomainObject<'gc> {
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().application_domain;
-        let proto = activation.avm2().prototypes().application_domain;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
         let mut this: Object<'gc> = DomainObject(GcCell::allocate(
             activation.context.gc_context,
             DomainObjectData { base, domain },

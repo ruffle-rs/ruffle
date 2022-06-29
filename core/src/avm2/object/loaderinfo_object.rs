@@ -71,8 +71,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         root: DisplayObject<'gc>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().loaderinfo;
-        let proto = activation.avm2().prototypes().loaderinfo;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
         let loaded_stream = Some(LoaderStream::Swf(movie, root));
 
         let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
@@ -93,8 +92,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// Create a loader info object for the stage.
     pub fn from_stage(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().loaderinfo;
-        let proto = activation.avm2().prototypes().loaderinfo;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = LoaderInfoObject(GcCell::allocate(
             activation.context.gc_context,

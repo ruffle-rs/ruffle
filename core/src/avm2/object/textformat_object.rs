@@ -46,8 +46,7 @@ impl<'gc> TextFormatObject<'gc> {
         text_format: TextFormat,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().textformat;
-        let proto = activation.avm2().prototypes().textformat;
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut this: Object<'gc> = Self(GcCell::allocate(
             activation.context.gc_context,
