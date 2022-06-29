@@ -51,7 +51,8 @@ pub struct DispatchObjectData<'gc> {
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
     pub fn empty_list(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        let base = ScriptObjectData::base_new(None, None);
+        // TODO: we might want this to be a proper Object instance, just in case
+        let base = ScriptObjectData::custom_new(None, None);
 
         DispatchObject(GcCell::allocate(
             mc,

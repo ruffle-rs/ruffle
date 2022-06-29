@@ -1737,7 +1737,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let instance = if let Some(activation_class) = self.activation_class {
             activation_class.construct(self, &[])?
         } else {
-            ScriptObject::bare_object(self.context.gc_context)
+            // TODO: we might want this to be a proper Object instance, just in case
+            ScriptObject::custom_object(self.context.gc_context, None, None)
         };
 
         self.context.avm2.push(instance);

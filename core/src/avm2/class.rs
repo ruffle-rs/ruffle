@@ -116,13 +116,9 @@ pub(crate) use define_indirect_properties;
 ///  * `class` - The class object that is being allocated. This must be the
 ///  current class (using a superclass will cause the wrong class to be
 ///  read for traits).
-///  * `proto` - The prototype attached to the class object.
 ///  * `activation` - The current AVM2 activation.
-pub type AllocatorFn = for<'gc> fn(
-    ClassObject<'gc>,
-    Object<'gc>,
-    &mut Activation<'_, 'gc, '_>,
-) -> Result<Object<'gc>, Error>;
+pub type AllocatorFn =
+    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error>;
 
 #[derive(Clone, Collect)]
 #[collect(require_static)]

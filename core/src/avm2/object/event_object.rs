@@ -12,10 +12,9 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Event objects.
 pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
-    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+    let base = ScriptObjectData::new(class);
 
     Ok(EventObject(GcCell::allocate(
         activation.context.gc_context,
@@ -60,8 +59,7 @@ impl<'gc> EventObject<'gc> {
             EventData::Text { .. } => activation.avm2().classes().textevent,
         };
 
-        let proto = class.prototype();
-        let base = ScriptObjectData::base_new(Some(proto), Some(class));
+        let base = ScriptObjectData::new(class);
 
         let mut event_object: Object<'gc> = EventObject(GcCell::allocate(
             activation.context.gc_context,

@@ -12,10 +12,9 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmapdata_allocator<'gc>(
     class: ClassObject<'gc>,
-    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+    let base = ScriptObjectData::new(class);
 
     Ok(BitmapDataObject(GcCell::allocate(
         activation.context.gc_context,
@@ -46,12 +45,10 @@ impl<'gc> BitmapDataObject<'gc> {
         bitmap_data: GcCell<'gc, BitmapData<'gc>>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error> {
-        let proto = class.prototype();
-
         let mut instance = Self(GcCell::allocate(
             activation.context.gc_context,
             BitmapDataObjectData {
-                base: ScriptObjectData::base_new(Some(proto), Some(class)),
+                base: ScriptObjectData::new(class),
                 bitmap_data: Some(bitmap_data),
             },
         ));

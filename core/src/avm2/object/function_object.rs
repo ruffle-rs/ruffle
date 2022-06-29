@@ -40,9 +40,12 @@ impl<'gc> FunctionObject<'gc> {
         scope: ScopeChain<'gc>,
     ) -> Result<FunctionObject<'gc>, Error> {
         let this = Self::from_method(activation, method, scope, None, None);
-        let es3_proto = ScriptObject::object(
+        let es3_proto = ScriptObject::custom_object(
             activation.context.gc_context,
-            activation.avm2().classes().object.prototype(),
+            // TODO: is this really a class-less object?
+            // (also: how much of "ES3 class-less object" is even true?)
+            None,
+            Some(activation.avm2().classes().object.prototype()),
         );
 
         this.0.write(activation.context.gc_context).prototype = Some(es3_proto);
@@ -135,7 +138,8 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     ) -> Result<Object<'gc>, Error> {
         let prototype = self.prototype().unwrap();
 
-        let instance = ScriptObject::object(activation.context.gc_context, prototype);
+        let instance =
+            ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
 
         self.call(Some(instance), arguments, activation)?;
 

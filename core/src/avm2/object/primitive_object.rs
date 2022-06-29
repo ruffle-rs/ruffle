@@ -13,10 +13,9 @@ use gc_arena::{Collect, GcCell, MutationContext};
 /// A class instance allocator that allocates primitive objects.
 pub fn primitive_allocator<'gc>(
     class: ClassObject<'gc>,
-    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+    let base = ScriptObjectData::new(class);
 
     Ok(PrimitiveObject(GcCell::allocate(
         activation.context.gc_context,

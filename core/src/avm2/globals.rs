@@ -303,7 +303,7 @@ pub fn load_player_globals<'gc>(
 ) -> Result<(), Error> {
     let mc = activation.context.gc_context;
 
-    let globals = ScriptObject::bare_object(activation.context.gc_context);
+    let globals = ScriptObject::custom_object(activation.context.gc_context, None, None);
     let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
     let script = Script::empty_script(mc, globals, domain);
 
@@ -328,21 +328,21 @@ pub fn load_player_globals<'gc>(
     // and partial initialization.
     let object_classdef = object::create_class(mc);
     let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
-    let object_proto = ScriptObject::bare_instance(mc, object_class);
+    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
 
     let fn_classdef = function::create_class(mc);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
-    let fn_proto = ScriptObject::instance(mc, fn_class, object_proto);
+    let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
 
     let class_classdef = class::create_class(mc);
     let class_class =
         ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
-    let class_proto = ScriptObject::instance(mc, object_class, object_proto);
+    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
 
     let global_classdef = global_scope::create_class(mc);
     let global_class =
         ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
-    let global_proto = ScriptObject::instance(mc, object_class, object_proto);
+    let global_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
