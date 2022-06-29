@@ -3,6 +3,7 @@ use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
+use fnv::FnvHashMap;
 use ruffle_core::backend::render::{
     Bitmap, BitmapHandle, BitmapSource, Color, RenderBackend, ShapeHandle, Transform,
 };
@@ -32,7 +33,6 @@ pub mod clap;
 use crate::bitmaps::BitmapSamplers;
 use crate::globals::Globals;
 use crate::uniform_buffer::UniformBuffer;
-use std::collections::HashMap;
 use std::path::Path;
 pub use wgpu;
 
@@ -149,12 +149,17 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     meshes: Vec<Mesh>,
     mask_state: MaskState,
     shape_tessellator: ShapeTessellator,
-    textures: Vec<Texture>,
     num_masks: u32,
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
-    bitmap_registry: HashMap<BitmapHandle, Bitmap>,
+    bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
+    next_bitmap_handle: BitmapHandle,
+}
+
+struct RegistryData {
+    bitmap: Bitmap,
+    texture_wrapper: Texture,
 }
 
 #[allow(dead_code)]
@@ -481,7 +486,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             current_frame: None,
             meshes: Vec::new(),
             shape_tessellator: ShapeTessellator::new(),
-            textures: Vec::new(),
 
             num_masks: 0,
             mask_state: MaskState::NoMask,
@@ -489,7 +493,8 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
-            bitmap_registry: HashMap::new(),
+            bitmap_registry: Default::default(),
+            next_bitmap_handle: BitmapHandle(0),
         })
     }
 
@@ -658,8 +663,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                     }
                 }
                 TessDrawType::Bitmap(bitmap) => {
-                    let texture = self.textures.get(bitmap.bitmap.0).unwrap();
-                    let texture_view = texture.texture.create_view(&Default::default());
+                    let entry = self.bitmap_registry.get(&bitmap.bitmap).unwrap();
+                    let texture_view = entry
+                        .texture_wrapper
+                        .texture
+                        .create_view(&Default::default());
 
                     // TODO: Extract to function?
                     let mut texture_transform = [[0.0; 4]; 4];
@@ -952,7 +960,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
-        if let Some(texture) = self.textures.get(bitmap.0) {
+        if let Some(entry) = self.bitmap_registry.get(&bitmap) {
+            let texture = &entry.texture_wrapper;
             let frame = if let Some(frame) = &mut self.current_frame {
                 frame.get()
             } else {
@@ -1320,7 +1329,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        self.bitmap_registry.get(&bitmap).cloned()
+        self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
@@ -1361,7 +1370,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             extent,
         );
 
-        let handle = BitmapHandle(self.textures.len());
+        let handle = self.next_bitmap_handle;
+        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
         let width = bitmap.width();
         let height = bitmap.height();
 
@@ -1391,15 +1401,25 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 label: create_debug_label!("Bitmap {} bind group", handle.0).as_deref(),
             });
 
-        self.bitmap_registry.insert(handle, bitmap);
-        self.textures.push(Texture {
-            width,
-            height,
-            texture,
-            bind_group,
-        });
+        self.bitmap_registry.insert(
+            handle,
+            RegistryData {
+                bitmap,
+                texture_wrapper: Texture {
+                    width,
+                    height,
+                    texture,
+                    bind_group,
+                },
+            },
+        );
 
         Ok(handle)
+    }
+
+    fn unregister_bitmap(&mut self, handle: BitmapHandle) -> Result<(), Error> {
+        self.bitmap_registry.remove(&handle);
+        Ok(())
     }
 
     fn update_texture(
@@ -1409,8 +1429,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         height: u32,
         rgba: Vec<u8>,
     ) -> Result<BitmapHandle, Error> {
-        let texture = if let Some(texture) = self.textures.get(handle.0) {
-            &texture.texture
+        let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
+            &entry.texture_wrapper.texture
         } else {
             return Err("update_texture: Bitmap not registered".into());
         };

@@ -1,3 +1,4 @@
+use fnv::FnvHashMap;
 use ruffle_core::backend::render::{
     swf, Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
     ShapeHandle, Transform,
@@ -21,11 +22,12 @@ pub struct WebCanvasRenderBackend {
     context: CanvasRenderingContext2d,
     color_matrix: Element,
     shapes: Vec<ShapeData>,
-    bitmaps: Vec<BitmapData>,
+    bitmaps: FnvHashMap<BitmapHandle, BitmapData>,
     viewport_width: u32,
     viewport_height: u32,
     rect: Path2d,
     mask_state: MaskState,
+    next_bitmap_handle: BitmapHandle,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -237,11 +239,12 @@ impl WebCanvasRenderBackend {
             color_matrix,
             context,
             shapes: vec![],
-            bitmaps: vec![],
+            bitmaps: Default::default(),
             viewport_width: 0,
             viewport_height: 0,
             rect,
             mask_state: MaskState::DrawContent,
+            next_bitmap_handle: BitmapHandle(0),
         };
         Ok(renderer)
     }
@@ -369,7 +372,7 @@ impl RenderBackend for WebCanvasRenderBackend {
 
         self.set_transform(&transform.matrix);
         self.set_color_filter(transform);
-        if let Some(bitmap) = self.bitmaps.get(bitmap.0) {
+        if let Some(bitmap) = self.bitmaps.get(&bitmap) {
             let _ = self
                 .context
                 .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
@@ -590,15 +593,21 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
-        let bitmap = &self.bitmaps[bitmap.0];
+        let bitmap = &self.bitmaps[&bitmap];
         bitmap.get_pixels()
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
-        let handle = BitmapHandle(self.bitmaps.len());
+        let handle = self.next_bitmap_handle;
+        self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
         let bitmap_data = BitmapData::new(bitmap)?;
-        self.bitmaps.push(bitmap_data);
+        self.bitmaps.insert(handle, bitmap_data);
         Ok(handle)
+    }
+
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), Error> {
+        self.bitmaps.remove(&bitmap);
+        Ok(())
     }
 
     fn update_texture(
@@ -610,8 +619,10 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> Result<BitmapHandle, Error> {
         // TODO: Could be optimized to a single put_image_data call
         // in case it is already stored as a canvas+context.
-        self.bitmaps[handle.0] =
-            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?;
+        self.bitmaps.insert(
+            handle,
+            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?,
+        );
         Ok(handle)
     }
 }
@@ -647,7 +658,7 @@ fn draw_commands_to_path2d(commands: &[DrawCommand], is_closed: bool) -> Path2d 
 fn swf_shape_to_canvas_commands(
     shape: &DistilledShape,
     bitmap_source: &dyn BitmapSource,
-    bitmaps: &[BitmapData],
+    bitmaps: &FnvHashMap<BitmapHandle, BitmapData>,
     context: &CanvasRenderingContext2d,
 ) -> ShapeData {
     use ruffle_core::shape_utils::DrawPath;
@@ -710,7 +721,7 @@ fn swf_shape_to_canvas_commands(
             } => {
                 if let Some(bitmap) = bitmap_source
                     .bitmap(*id)
-                    .and_then(|bitmap| bitmaps.get(bitmap.handle.0))
+                    .and_then(|bitmap| bitmaps.get(&bitmap.handle))
                 {
                     let repeat = if !*is_repeating {
                         // NOTE: The WebGL backend does clamping in this case, just like

@@ -13,6 +13,7 @@ bytemuck = { version = "1.9.1", features = ["derive"] }
 raw-window-handle = "0.4"
 clap = { version = "3.2.2", features = ["derive"], optional = true }
 enum-map = "2.4.0"
+fnv = "1.0.7"
 
 # desktop
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures]
