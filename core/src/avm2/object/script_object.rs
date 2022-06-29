@@ -16,10 +16,9 @@ use std::fmt::Debug;
 /// A class instance allocator that allocates `ScriptObject`s.
 pub fn scriptobject_allocator<'gc>(
     class: ClassObject<'gc>,
-    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+    let base = ScriptObjectData::new(class);
 
     Ok(ScriptObject(GcCell::allocate(activation.context.gc_context, base)).into())
 }
@@ -79,48 +78,45 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
 }
 
 impl<'gc> ScriptObject<'gc> {
-    /// Construct a bare object with no base class.
+    /// Construct an instance with a possibly-none class and proto chain.
+    /// NOTE: this is a low-level function.
+    /// This should *not* be used unless you really need
+    /// to do something low-level, weird or lazily initialize the object.
+    /// You shouldn't let scripts observe this weirdness.
+    /// Another exception is ES3 class-less objects, which we don't really understand well :)
     ///
-    /// This is *not* the same thing as an object literal, which actually does
-    /// have a base class: `Object`.
-    pub fn bare_object(mc: MutationContext<'gc, '_>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(mc, ScriptObjectData::base_new(None, None))).into()
-    }
-
-    /// Construct an object with a prototype.
-    pub fn object(mc: MutationContext<'gc, '_>, proto: Object<'gc>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(Some(proto), None),
-        ))
-        .into()
-    }
-
-    /// Construct an instance with a class and proto chain.
-    pub fn instance(
+    /// The "everyday" way to create a normal empty ScriptObject (AS "Object") is to call
+    /// `avm2.classes().object.construct(self, &[])`.
+    /// This is equivalent to AS3 `new Object()`.
+    ///
+    /// (calling `custom_object(mc, object_class, object_class.prototype()`)
+    /// is technically also equivalent and faster, but not recommended outside lower-level Core code)
+    pub fn custom_object(
         mc: MutationContext<'gc, '_>,
-        class: ClassObject<'gc>,
-        proto: Object<'gc>,
+        class: Option<ClassObject<'gc>>,
+        proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
         ScriptObject(GcCell::allocate(
             mc,
-            ScriptObjectData::base_new(Some(proto), Some(class)),
-        ))
-        .into()
-    }
-
-    /// Construct an instance with a class chain, but no prototype.
-    pub fn bare_instance(mc: MutationContext<'gc, '_>, class: ClassObject<'gc>) -> Object<'gc> {
-        ScriptObject(GcCell::allocate(
-            mc,
-            ScriptObjectData::base_new(None, Some(class)),
+            ScriptObjectData::custom_new(proto, class),
         ))
         .into()
     }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
-    pub fn base_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
+    /// Create new object data of a given class.
+    /// This is a low-level function used to implement things like object allocators.
+    pub fn new(instance_of: ClassObject<'gc>) -> Self {
+        Self::custom_new(Some(instance_of.prototype()), Some(instance_of))
+    }
+
+    /// Create new custom object data of a given possibly-none class and prototype.
+    /// This is a low-level function used to implement things like object allocators.
+    /// This should *not* be used, unless you really need
+    /// to do something weird or lazily initialize the object.
+    /// You shouldn't let scripts observe this weirdness.
+    pub fn custom_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
         ScriptObjectData {
             values: Default::default(),
             slots: Vec::new(),
@@ -128,18 +124,6 @@ impl<'gc> ScriptObjectData<'gc> {
             proto,
             instance_of,
             vtable: instance_of.map(|cls| cls.instance_vtable()),
-            enumerants: Vec::new(),
-        }
-    }
-
-    pub fn new(instance_of: ClassObject<'gc>) -> Self {
-        ScriptObjectData {
-            values: Default::default(),
-            slots: Vec::new(),
-            bound_methods: Vec::new(),
-            proto: Some(instance_of.prototype()),
-            instance_of: Some(instance_of),
-            vtable: Some(instance_of.instance_vtable()),
             enumerants: Vec::new(),
         }
     }

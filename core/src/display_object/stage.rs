@@ -137,7 +137,7 @@ impl<'gc> Stage<'gc> {
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
                 show_menu: true,
-                avm2_object: Avm2ScriptObject::bare_object(gc_context),
+                avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
             },
         ));
         stage.set_is_root(gc_context, true);

@@ -185,7 +185,7 @@ impl<'gc> ClassObject<'gc> {
         let class_object = ClassObject(GcCell::allocate(
             activation.context.gc_context,
             ClassObjectData {
-                base: ScriptObjectData::base_new(None, None),
+                base: ScriptObjectData::custom_new(None, None),
                 class,
                 prototype: None,
                 class_scope: scope,
@@ -785,9 +785,8 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error> {
         let instance_allocator = self.0.read().instance_allocator.0;
-        let prototype = self.0.read().prototype.unwrap();
 
-        let mut instance = instance_allocator(self, prototype, activation)?;
+        let mut instance = instance_allocator(self, activation)?;
 
         instance.install_instance_slots(activation);
 

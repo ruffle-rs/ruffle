@@ -14,10 +14,9 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Vector objects.
 pub fn vector_allocator<'gc>(
     class: ClassObject<'gc>,
-    proto: Object<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Object<'gc>, Error> {
-    let base = ScriptObjectData::base_new(Some(proto), Some(class));
+    let base = ScriptObjectData::new(class);
 
     //Because allocators are still called to build prototypes, especially for
     //the unspecialized Vector class, we have to fall back to Object when
@@ -62,12 +61,11 @@ impl<'gc> VectorObject<'gc> {
         let vector_class = activation.avm2().classes().vector;
 
         let applied_class = vector_class.apply(activation, &[value_type.into()])?;
-        let applied_proto = applied_class.prototype();
 
         let mut object: Object<'gc> = VectorObject(GcCell::allocate(
             activation.context.gc_context,
             VectorObjectData {
-                base: ScriptObjectData::base_new(Some(applied_proto), Some(applied_class)),
+                base: ScriptObjectData::new(applied_class),
                 vector,
             },
         ))
