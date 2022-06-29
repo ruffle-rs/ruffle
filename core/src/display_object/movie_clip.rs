@@ -1242,12 +1242,50 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    #[cfg(not(feature = "timeline_debug"))]
+    fn assert_expected_tag_start(self) {}
+
+    #[cfg(feature = "timeline_debug")]
+    fn assert_expected_tag_start(self) {
+        let read = self.0.read();
+
+        assert_eq!(
+            Some(read.tag_stream_pos),
+            read.tag_frame_boundaries
+                .get(&read.current_frame)
+                .map(|(_start, end)| *end), // Yes, this is correct, at least for AVM1.
+            "[{}] Gotos must start from the correct tag position for frame {}",
+            read.base.base.name,
+            read.current_frame
+        );
+    }
+
+    #[cfg(not(feature = "timeline_debug"))]
+    fn assert_expected_tag_end(self) {}
+
+    #[cfg(feature = "timeline_debug")]
+    fn assert_expected_tag_end(self) {
+        let read = self.0.read();
+
+        assert_eq!(
+            Some(read.tag_stream_pos),
+            read.tag_frame_boundaries
+                .get(&read.current_frame)
+                .map(|(_start, end)| *end),
+            "[{}] Gotos must end at the correct tag position for frame {}",
+            read.base.base.name,
+            read.current_frame
+        );
+    }
+
     pub fn run_goto(
         mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         frame: FrameNumber,
         is_implicit: bool,
     ) {
+        self.assert_expected_tag_start();
+
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
         //    backward to a frame.
@@ -1440,6 +1478,8 @@ impl<'gc> MovieClip<'gc> {
                 .run_frame_scripts(context);
             self.exit_frame(context);
         }
+
+        self.assert_expected_tag_end();
     }
 
     fn construct_as_avm1_object(
