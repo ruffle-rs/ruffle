@@ -99,6 +99,10 @@ pub struct MovieClipData<'gc> {
     queued_script_frame: Option<FrameNumber>,
     queued_goto_frame: Option<FrameNumber>,
     drop_target: Option<DisplayObject<'gc>>,
+
+    /// The tag stream start and stop positions for each frame in the clip.
+    #[cfg(feature = "timeline_debug")]
+    tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -128,6 +132,9 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
             },
         ))
     }
@@ -163,6 +170,9 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
             },
         ))
     }
@@ -201,6 +211,9 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
             },
         ))
     }
@@ -241,6 +254,9 @@ impl<'gc> MovieClip<'gc> {
                 queued_script_frame: None,
                 queued_goto_frame: None,
                 drop_target: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
             },
         ));
         mc.set_is_root(context.gc_context, true);
@@ -311,6 +327,8 @@ impl<'gc> MovieClip<'gc> {
         let data = self.0.read().static_data.swf.clone();
         let mut reader = data.read_from(0);
         let mut cur_frame = 1;
+        let mut start_pos = 0;
+
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::CsmTextSettings => self
                 .0
@@ -441,11 +459,13 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .write(context.gc_context)
                 .jpeg_tables(context, reader, tag_len),
-            TagCode::ShowFrame => {
-                self.0
-                    .write(context.gc_context)
-                    .preload_show_frame(context, reader, &mut cur_frame)
-            }
+            TagCode::ShowFrame => self.0.write(context.gc_context).preload_show_frame(
+                context,
+                reader,
+                tag_len,
+                &mut cur_frame,
+                &mut start_pos,
+            ),
             TagCode::ScriptLimits => self
                 .0
                 .write(context.gc_context)
@@ -471,6 +491,12 @@ impl<'gc> MovieClip<'gc> {
             _ => Ok(()),
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::End);
+
+        // End-of-clip should be treated as ShowFrame
+        self.0
+            .write(context.gc_context)
+            .preload_show_frame(context, &mut reader, 0, &mut cur_frame, &mut start_pos)
+            .unwrap();
 
         self.0.write(context.gc_context).static_data =
             Gc::allocate(context.gc_context, static_data);
@@ -3018,12 +3044,39 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    #[cfg(not(feature = "timeline_debug"))]
     fn preload_show_frame(
         &mut self,
         _context: &mut UpdateContext<'_, 'gc, '_>,
         _reader: &mut SwfStream<'a>,
+        _tag_len: usize,
         cur_frame: &mut FrameNumber,
+        _start_pos: &mut u64,
     ) -> DecodeResult {
+        *cur_frame += 1;
+        Ok(())
+    }
+
+    #[inline]
+    #[cfg(feature = "timeline_debug")]
+    fn preload_show_frame(
+        &mut self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<'a>,
+        tag_len: usize,
+        cur_frame: &mut FrameNumber,
+        start_pos: &mut u64,
+    ) -> DecodeResult {
+        let tag_stream_start = self.static_data.swf.as_ref().as_ptr() as u64;
+        let end_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+
+        // We add tag_len because the reader position doesn't take it into
+        // account. Strictly speaking ShowFrame should not have tag data, but
+        // who *knows* what weird obfuscation hacks people have done with it.
+        self.tag_frame_boundaries
+            .insert(*cur_frame, (*start_pos, end_pos + tag_len as u64));
+
+        *start_pos = end_pos;
         *cur_frame += 1;
         Ok(())
     }
