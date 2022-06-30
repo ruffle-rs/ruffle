@@ -415,7 +415,14 @@ pub fn load_player_globals<'gc>(
     constant(mc, "", "undefined", Value::Undefined, script, object_class)?;
     constant(mc, "", "null", Value::Null, script, object_class)?;
     constant(mc, "", "NaN", f64::NAN.into(), script, object_class)?;
-    constant(mc, "", "Infinity", f64::INFINITY.into(), script, object_class)?;
+    constant(
+        mc,
+        "",
+        "Infinity",
+        f64::INFINITY.into(),
+        script,
+        object_class,
+    )?;
 
     class(activation, math::create_class(mc), script)?;
     class(activation, json::create_class(mc), script)?;

@@ -169,9 +169,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
 
     // This can't be a constant, due to the inability to declare `Multiname<'gc>`
-    let public_instance_slots_any = &[
-        ("data", Multiname::any())
-    ];
+    let public_instance_slots_any = &[("data", Multiname::any())];
     write.define_public_slot_instance_traits_type_multiname(public_instance_slots_any);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("load", load)];
