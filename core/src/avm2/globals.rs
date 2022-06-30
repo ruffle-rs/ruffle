@@ -395,8 +395,6 @@ pub fn load_player_globals<'gc>(
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
 
-    load_playerglobal(activation, domain)?;
-
     avm2_system_class!(string, activation, string::create_class(mc), script);
     avm2_system_class!(boolean, activation, boolean::create_class(mc), script);
     avm2_system_class!(number, activation, number::create_class(mc), script);
@@ -795,6 +793,11 @@ pub fn load_player_globals<'gc>(
         flash::external::externalinterface::create_class(mc),
         script,
     )?;
+
+    // Inside this call, the macro `avm2_system_classes_playerglobal`
+    // triggers classloading. Therefore, we run `load_playerglobal` last,
+    // so that all of our classes have been defined.
+    load_playerglobal(activation, domain)?;
 
     Ok(())
 }
