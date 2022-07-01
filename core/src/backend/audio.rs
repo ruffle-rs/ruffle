@@ -7,7 +7,7 @@ use downcast_rs::Downcast;
 use duration_helper::from_f64_millis;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
-use std::time::Duration;
+use duration_helper::{from_f64_millis, into_f64_millis};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -340,7 +340,7 @@ impl<'gc> AudioManager<'gc> {
                     .and_then(|sound| audio.get_sound_duration(sound))
                     .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    object.set_position(gc_context, duration.as_millis() as u32);
+                    object.set_position(gc_context, into_f64_millis(duration).round() as u32);
 
                     // Fire soundComplete event.
                     action_queue.queue_action(
