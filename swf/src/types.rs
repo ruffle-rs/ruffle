@@ -561,8 +561,9 @@ pub struct GradientBevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum BlendMode {
+    #[default]
     Normal = 0,
     Layer = 2,
     Multiply = 3,
@@ -585,12 +586,6 @@ impl BlendMode {
             1 => 0,
             n => n,
         })
-    }
-}
-
-impl Default for BlendMode {
-    fn default() -> Self {
-        BlendMode::Normal
     }
 }
 
@@ -1122,8 +1117,9 @@ impl Default for LineStyleFlag {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
 pub enum LineCapStyle {
+    #[default]
     Round = 0,
     None = 1,
     Square = 2,
@@ -1136,25 +1132,12 @@ impl LineCapStyle {
     }
 }
 
-impl Default for LineCapStyle {
-    #[inline]
-    fn default() -> Self {
-        Self::Round
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum LineJoinStyle {
+    #[default]
     Round,
     Bevel,
     Miter(Fixed8),
-}
-
-impl Default for LineJoinStyle {
-    #[inline]
-    fn default() -> Self {
-        Self::Round
-    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]

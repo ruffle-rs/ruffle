@@ -767,7 +767,7 @@ pub struct ParseEnumError;
 
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 pub enum StageScaleMode {
     /// The movie will be stretched to fit the container.
@@ -783,13 +783,8 @@ pub enum StageScaleMode {
 
     /// The movie will scale to fill the container and maintain its aspect ratio, but will be letterboxed.
     /// This is the default scale mode.
+    #[default]
     ShowAll,
-}
-
-impl Default for StageScaleMode {
-    fn default() -> StageScaleMode {
-        StageScaleMode::ShowAll
-    }
 }
 
 impl Display for StageScaleMode {
@@ -840,7 +835,7 @@ impl FromWStr for StageScaleMode {
 
 /// The scale mode of a stage.
 /// This controls the behavior when the player viewport size differs from the SWF size.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Collect)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Collect)]
 #[collect(require_static)]
 pub enum StageDisplayState {
     /// Sets AIR application or content in Flash Player to expand the stage over the user's entire screen.
@@ -852,13 +847,8 @@ pub enum StageDisplayState {
     FullScreenInteractive,
 
     /// Sets the stage back to the standard stage display mode.
+    #[default]
     Normal,
-}
-
-impl Default for StageDisplayState {
-    fn default() -> StageDisplayState {
-        StageDisplayState::Normal
-    }
 }
 
 impl Display for StageDisplayState {
@@ -972,7 +962,7 @@ impl FromWStr for StageAlign {
 /// In the Flash Player, this settings affects anti-aliasing and bitmap smoothing.
 /// These settings currently have no effect in Ruffle, but the active setting is still stored.
 /// [StageQuality in the AS3 Reference](https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/StageQuality.html)
-#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
+#[derive(Default, Clone, Collect, Copy, Debug, Eq, PartialEq)]
 #[collect(require_static)]
 pub enum StageQuality {
     /// No anti-aliasing, and bitmaps are never smoothed.
@@ -982,6 +972,7 @@ pub enum StageQuality {
     Medium,
 
     /// 4x anti-aliasing.
+    #[default]
     High,
 
     /// 4x anti-aliasing with high quality downsampling.
@@ -1022,12 +1013,6 @@ impl StageQuality {
             StageQuality::High8x8 | StageQuality::High8x8Linear => "8X8",
             StageQuality::High16x16 | StageQuality::High16x16Linear => "16X16",
         }
-    }
-}
-
-impl Default for StageQuality {
-    fn default() -> StageQuality {
-        StageQuality::High
     }
 }
 
@@ -1099,7 +1084,7 @@ impl FromWStr for StageQuality {
 /// the page. This setting is only used on web.
 ///
 /// [Apply OBJECT and EMBED tag attributes in Adobe Flash Professional](https://helpx.adobe.com/flash/kb/flash-object-embed-tag-attributes.html)
-#[derive(Clone, Collect, Copy, Debug, Eq, PartialEq)]
+#[derive(Default, Clone, Collect, Copy, Debug, Eq, PartialEq)]
 #[collect(require_static)]
 pub enum WindowMode {
     /// The Flash content is rendered in its own window and layering is done with the browser's
@@ -1107,6 +1092,7 @@ pub enum WindowMode {
     ///
     /// In Ruffle, this mode functions like `WindowMode::Opaque` and will layer the Flash content
     /// together with other HTML elements.
+    #[default]
     Window,
 
     /// The Flash content is layered together with other HTML elements, and the stage color is
@@ -1126,12 +1112,6 @@ pub enum WindowMode {
     ///
     /// This mode has no effect in Ruffle and will function like `WindowMode::Opaque`.
     Direct,
-}
-
-impl Default for WindowMode {
-    fn default() -> WindowMode {
-        WindowMode::Window
-    }
 }
 
 impl Display for WindowMode {
