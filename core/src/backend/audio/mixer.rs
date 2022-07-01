@@ -3,9 +3,11 @@ use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::duration::RuffleDuration;
 use crate::tag_utils::SwfSlice;
+use duration_helper::from_f64_millis;
 use generational_arena::Arena;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::Duration;
 use swf::AudioCompression;
 
 /// Holds the last 2048 output audio frames. Frames can be written to it one by
@@ -610,12 +612,12 @@ impl AudioMixer {
     /// Returns the duration of a registered sound in milliseconds.
     ///
     /// Returns `None` if the sound is not registered or invalid.
-    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         self.sounds.get(sound).map(|sound| {
             // AS duration does not subtract `skip_sample_frames`.
             let num_sample_frames: f64 = sound.num_sample_frames.into();
             let sample_rate: f64 = sound.format.sample_rate.into();
-            RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate)
+            from_f64_millis(num_sample_frames * 1000.0 / sample_rate)
         })
     }
 
@@ -1047,7 +1049,7 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+        fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
             self.$mixer.get_sound_duration(sound)
         }
 

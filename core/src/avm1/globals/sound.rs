@@ -9,6 +9,7 @@ use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
+use duration_helper::into_f64_millis;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -93,7 +94,7 @@ fn attach_sound<'gc>(
                         .context
                         .audio
                         .get_sound_duration(*sound)
-                        .map(|d| d.as_millis().round() as u32),
+                        .map(|d| into_f64_millis(d).round() as u32),
                 );
                 sound_object.set_position(activation.context.gc_context, 0);
             } else {

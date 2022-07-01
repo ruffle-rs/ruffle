@@ -6,6 +6,7 @@ use ruffle_core::backend::audio::{
 };
 use ruffle_core::duration::RuffleDuration;
 use ruffle_core::impl_audio_mixer_backend;
+use std::time::Duration;
 
 pub struct CpalAudioBackend {
     #[allow(dead_code)]

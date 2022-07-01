@@ -1,12 +1,13 @@
-use crate::duration::RuffleDuration;
 use crate::{
     avm1::SoundObject,
     avm2::SoundChannelObject,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
 };
 use downcast_rs::Downcast;
+use duration_helper::from_f64_millis;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
+use std::time::Duration;
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -82,7 +83,7 @@ pub trait AudioBackend: Downcast {
 
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration>;
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration>;
 
     /// Get the size of the data stored within a given sound.
     ///
@@ -137,7 +138,7 @@ impl_downcast!(AudioBackend);
 /// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {
     /// The duration of the sound in milliseconds.
-    duration: RuffleDuration,
+    duration: Duration,
 
     /// The compressed size of the sound data, excluding MP3 latency seek data.
     size: u32,
@@ -175,7 +176,7 @@ impl AudioBackend for NullAudioBackend {
         // AS duration does not subtract `skip_sample_frames`.
         let num_sample_frames: f64 = sound.num_samples.into();
         let sample_rate: f64 = sound.format.sample_rate.into();
-        let duration = RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate);
+        let duration = from_f64_millis(num_sample_frames * 1000.0 / sample_rate);
 
         Ok(self.sounds.insert(NullSound {
             duration,
@@ -221,7 +222,7 @@ impl AudioBackend for NullAudioBackend {
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<RuffleDuration> {
         Some(RuffleDuration::zero())
     }
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<RuffleDuration> {
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.duration)
         } else {
@@ -339,7 +340,7 @@ impl<'gc> AudioManager<'gc> {
                     .and_then(|sound| audio.get_sound_duration(sound))
                     .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    object.set_position(gc_context, duration.as_millis().round() as u32);
+                    object.set_position(gc_context, duration.as_millis() as u32);
 
                     // Fire soundComplete event.
                     action_queue.queue_action(
