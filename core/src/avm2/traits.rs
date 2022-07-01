@@ -70,6 +70,7 @@ pub enum TraitKind<'gc> {
         slot_id: u32,
         type_name: Multiname<'gc>,
         default_value: Value<'gc>,
+        unit: Option<TranslationUnit<'gc>>,
     },
 
     /// A method on an object that can be called.
@@ -97,6 +98,7 @@ pub enum TraitKind<'gc> {
         slot_id: u32,
         type_name: Multiname<'gc>,
         default_value: Value<'gc>,
+        unit: Option<TranslationUnit<'gc>>,
     },
 }
 
@@ -158,6 +160,7 @@ impl<'gc> Trait<'gc> {
                 slot_id: 0,
                 default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
                 type_name,
+                unit: None,
             },
         }
     }
@@ -174,6 +177,7 @@ impl<'gc> Trait<'gc> {
                 slot_id: 0,
                 default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
                 type_name,
+                unit: None,
             },
         }
     }
@@ -206,6 +210,7 @@ impl<'gc> Trait<'gc> {
                         slot_id: *slot_id,
                         type_name,
                         default_value,
+                        unit: Some(unit),
                     },
                 }
             }
@@ -267,6 +272,7 @@ impl<'gc> Trait<'gc> {
                         slot_id: *slot_id,
                         type_name,
                         default_value,
+                        unit: Some(unit),
                     },
                 }
             }

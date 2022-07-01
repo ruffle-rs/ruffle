@@ -40,7 +40,7 @@ mod xml;
 mod xml_list;
 
 pub(crate) const NS_RUFFLE_INTERNAL: &str = "https://ruffle.rs/AS3/impl/";
-const NS_VECTOR: &str = "__AS3__.vec";
+pub(crate) const NS_VECTOR: &str = "__AS3__.vec";
 
 pub use flash::utils::NS_FLASH_PROXY;
 
@@ -177,7 +177,7 @@ fn function<'gc>(
     let method = Method::from_builtin(nf, name, mc);
     let as3fn = FunctionObject::from_method(activation, method, scope, None, None).into();
     domain.export_definition(qname, script, mc)?;
-    global.install_const_late(mc, qname, as3fn);
+    global.install_const_late(mc, qname, as3fn, activation.avm2().classes().function);
 
     Ok(())
 }
@@ -190,12 +190,14 @@ fn dynamic_class<'gc>(
     mc: MutationContext<'gc, '_>,
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
+    // The `ClassObject` of the `Class` class
+    class_class: ClassObject<'gc>,
 ) -> Result<(), Error> {
     let (_, mut global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
     let name = class.read().name();
 
-    global.install_const_late(mc, name, class_object.into());
+    global.install_const_late(mc, name, class_object.into(), class_class);
     domain.export_definition(name, script, mc)
 }
 
@@ -243,6 +245,7 @@ fn class<'gc>(
         activation.context.gc_context,
         class_name,
         class_object.into(),
+        activation.avm2().classes().class,
     );
     domain.export_definition(class_name, script, activation.context.gc_context)?;
 
@@ -256,11 +259,12 @@ fn constant<'gc>(
     name: impl Into<AvmString<'gc>>,
     value: Value<'gc>,
     script: Script<'gc>,
+    class: ClassObject<'gc>,
 ) -> Result<(), Error> {
     let (_, mut global, mut domain) = script.init();
     let name = QName::new(Namespace::package(package), name);
     domain.export_definition(name, script, mc)?;
-    global.install_const_late(mc, name, value);
+    global.install_const_late(mc, name, value, class);
 
     Ok(())
 }
@@ -279,6 +283,7 @@ fn namespace<'gc>(
         name,
         namespace.into(),
         script,
+        activation.avm2().classes().namespace,
     )
 }
 
@@ -383,14 +388,12 @@ pub fn load_player_globals<'gc>(
 
     // From this point, `globals` is safe to be modified
 
-    dynamic_class(mc, object_class, script)?;
-    dynamic_class(mc, fn_class, script)?;
-    dynamic_class(mc, class_class, script)?;
+    dynamic_class(mc, object_class, script, class_class)?;
+    dynamic_class(mc, fn_class, script, class_class)?;
+    dynamic_class(mc, class_class, script, class_class)?;
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
-
-    load_playerglobal(activation, domain)?;
 
     avm2_system_class!(string, activation, string::create_class(mc), script);
     avm2_system_class!(boolean, activation, boolean::create_class(mc), script);
@@ -407,10 +410,17 @@ pub fn load_player_globals<'gc>(
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
-    constant(mc, "", "undefined", Value::Undefined, script)?;
-    constant(mc, "", "null", Value::Null, script)?;
-    constant(mc, "", "NaN", f64::NAN.into(), script)?;
-    constant(mc, "", "Infinity", f64::INFINITY.into(), script)?;
+    constant(mc, "", "undefined", Value::Undefined, script, object_class)?;
+    constant(mc, "", "null", Value::Null, script, object_class)?;
+    constant(mc, "", "NaN", f64::NAN.into(), script, object_class)?;
+    constant(
+        mc,
+        "",
+        "Infinity",
+        f64::INFINITY.into(),
+        script,
+        object_class,
+    )?;
 
     class(activation, math::create_class(mc), script)?;
     class(activation, json::create_class(mc), script)?;
@@ -783,6 +793,11 @@ pub fn load_player_globals<'gc>(
         flash::external::externalinterface::create_class(mc),
         script,
     )?;
+
+    // Inside this call, the macro `avm2_system_classes_playerglobal`
+    // triggers classloading. Therefore, we run `load_playerglobal` last,
+    // so that all of our classes have been defined.
+    load_playerglobal(activation, domain)?;
 
     Ok(())
 }

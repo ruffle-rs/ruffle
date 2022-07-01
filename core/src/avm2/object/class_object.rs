@@ -13,6 +13,7 @@ use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
+use crate::avm2::TranslationUnit;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -686,6 +687,14 @@ impl<'gc> ClassObject<'gc> {
             Ok(())
         } else {
             reciever.set_property(multiname, value, activation)
+        }
+    }
+
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        if let Method::Bytecode(bc) = self.0.read().constructor {
+            Some(bc.txunit)
+        } else {
+            None
         }
     }
 

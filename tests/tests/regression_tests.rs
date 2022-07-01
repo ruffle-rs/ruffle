@@ -188,6 +188,7 @@ swf_tests! {
     (as3_class_to_string, "avm2/class_to_string", 1),
     (as3_class_value_of, "avm2/class_value_of", 1),
     (as3_closures, "avm2/closures", 1),
+    (as3_coerce_property, "avm2/coerce_property", 1),
     (as3_coerce_string, "avm2/coerce_string", 1),
     (as3_constructor_call, "avm2/constructor_call", 1),
     (as3_control_flow_bool, "avm2/control_flow_bool", 1),

@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
+use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
@@ -74,7 +74,12 @@ fn bytes_total<'gc>(
             if let Some(array) = data.as_bytearray() {
                 return Ok(array.len().into());
             } else {
-                return Err(format!("Unexpected value for `data` property: {:?}", data).into());
+                return Err(format!(
+                    "Unexpected value for `data` property: {:?} {:?}",
+                    data,
+                    data.as_primitive()
+                )
+                .into());
             }
         } else if let Value::String(data) = data {
             return Ok(data.len().into());
@@ -160,9 +165,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
-    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] =
-        &[("data", "", "Object"), ("dataFormat", "", "String")];
+    const PUBLIC_INSTANCE_SLOTS: &[(&str, &str, &str)] = &[("dataFormat", "", "String")];
     write.define_public_slot_instance_traits(PUBLIC_INSTANCE_SLOTS);
+
+    // This can't be a constant, due to the inability to declare `Multiname<'gc>`
+    let public_instance_slots_any = &[("data", Multiname::any())];
+    write.define_public_slot_instance_traits_type_multiname(public_instance_slots_any);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("load", load)];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);

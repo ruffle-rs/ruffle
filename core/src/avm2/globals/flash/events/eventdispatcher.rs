@@ -5,7 +5,6 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::events::{
     dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
 };
-use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
@@ -271,12 +270,12 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
 
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "target"),
-        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "BareObject").into(),
+        QName::new(Namespace::public(), "Object").into(),
         None,
     ));
     write.define_instance_trait(Trait::from_slot(
         QName::new(Namespace::private(NS_EVENT_DISPATCHER), "dispatch_list"),
-        QName::new(Namespace::private(NS_RUFFLE_INTERNAL), "BareObject").into(),
+        QName::new(Namespace::public(), "Object").into(),
         None,
     ));
 
