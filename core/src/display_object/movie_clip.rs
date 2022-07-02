@@ -1264,18 +1264,33 @@ impl<'gc> MovieClip<'gc> {
     fn assert_expected_tag_end(self) {}
 
     #[cfg(feature = "timeline_debug")]
-    fn assert_expected_tag_end(self) {
-        let read = self.0.read();
+    fn assert_expected_tag_end(self, context: &mut UpdateContext<'_, 'gc, '_>, hit_target_frame: bool) {
+        // Gotos that do *not* hit their target frame will not update their tag
+        // stream position, as they do not run the final frame's tags, and thus
+        // cannot derive the end position of the clip anyway. This is not
+        // observable to user code as any further timeline interaction would
+        // trigger a rewind, so we ignore it here for now.
+        if hit_target_frame {
+            let read = self.0.read();
 
-        assert_eq!(
-            Some(read.tag_stream_pos),
-            read.tag_frame_boundaries
-                .get(&read.current_frame)
-                .map(|(_start, end)| *end),
-            "[{}] Gotos must end at the correct tag position for frame {}",
-            read.base.base.name,
-            read.current_frame
-        );
+            assert_eq!(
+                Some(read.tag_stream_pos),
+                read.tag_frame_boundaries
+                    .get(&read.current_frame)
+                    .map(|(_start, end)| *end),
+                "[{}] Gotos must end at the correct tag position for frame {}",
+                read.base.base.name,
+                read.current_frame
+            );
+        } else {
+            // Of course, the target frame desync absolutely will break our
+            // other asserts, so fix them up here.
+            let mut write = self.0.write(context.gc_context);
+
+            if let Some((_, end)) = write.tag_frame_boundaries.get(&write.current_frame).cloned() {
+                write.tag_stream_pos = end;
+            }
+        }
     }
 
     pub fn run_goto(
@@ -1479,7 +1494,7 @@ impl<'gc> MovieClip<'gc> {
             self.exit_frame(context);
         }
 
-        self.assert_expected_tag_end();
+        self.assert_expected_tag_end(context, hit_target_frame);
     }
 
     fn construct_as_avm1_object(
