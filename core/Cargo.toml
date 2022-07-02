@@ -56,7 +56,7 @@ default-features = false # can't use rayon on web
 version = "0.3.21"
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.30"
+version = "0.4.31"
 
 [dev-dependencies]
 approx = "0.5.1"

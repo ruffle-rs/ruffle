@@ -9,7 +9,6 @@ pub struct UniformBuffer<T: Pod> {
     blocks: Vec<Block>,
     buffer_layout: wgpu::BindGroupLayout,
     staging_belt: StagingBelt,
-    executor: Executor,
     aligned_uniforms_size: u32,
     cur_block: usize,
     cur_offset: u32,
@@ -34,7 +33,6 @@ impl<T: Pod> UniformBuffer<T> {
         Self {
             blocks: Vec::with_capacity(8),
             buffer_layout,
-            executor: Executor::new(),
             staging_belt: StagingBelt::new(u64::from(Self::BLOCK_SIZE) / 2),
             aligned_uniforms_size,
             cur_block: 0,
@@ -53,8 +51,7 @@ impl<T: Pod> UniformBuffer<T> {
     pub fn reset(&mut self) {
         self.cur_block = 0;
         self.cur_offset = 0;
-        self.executor.spawn_local(self.staging_belt.recall());
-        self.executor.run_until_stalled();
+        self.staging_belt.recall();
     }
 
     /// Enqueue `data` for upload into the given command encoder, and set the bind group on `render_pass`
@@ -135,50 +132,4 @@ impl<T: Pod> UniformBuffer<T> {
 struct Block {
     buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
-}
-
-#[cfg(not(target_family = "wasm"))]
-struct Executor {
-    executor: futures::executor::LocalPool,
-    spawner: futures::executor::LocalSpawner,
-}
-
-#[cfg(not(target_family = "wasm"))]
-impl Executor {
-    fn new() -> Self {
-        let executor = futures::executor::LocalPool::new();
-        let spawner = executor.spawner();
-        Self { executor, spawner }
-    }
-
-    fn spawn_local<Fut>(&self, future: Fut)
-    where
-        Fut: std::future::Future<Output = ()> + 'static,
-    {
-        use futures::task::LocalSpawnExt;
-        let _ = self.spawner.spawn_local(future);
-    }
-
-    fn run_until_stalled(&mut self) {
-        self.executor.run_until_stalled();
-    }
-}
-
-#[cfg(target_family = "wasm")]
-struct Executor;
-
-#[cfg(target_family = "wasm")]
-impl Executor {
-    fn new() -> Self {
-        Self
-    }
-
-    fn spawn_local<Fut>(&self, future: Fut)
-    where
-        Fut: std::future::Future<Output = ()> + 'static,
-    {
-        wasm_bindgen_futures::spawn_local(future);
-    }
-
-    fn run_until_stalled(&mut self) {}
 }

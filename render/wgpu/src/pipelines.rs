@@ -188,11 +188,11 @@ impl Pipelines {
             &copy_srgb_shader,
             &copy_texture_pipeline_layout,
             None,
-            &[wgpu::ColorTargetState {
+            &[Some(wgpu::ColorTargetState {
                 format: surface_format,
                 blend: Some(wgpu::BlendState::REPLACE),
                 write_mask: Default::default(),
-            }],
+            })],
             &vertex_buffers_description,
             1,
         ));
@@ -225,8 +225,7 @@ fn create_shader(
         label: label.as_deref(),
         source: wgpu::ShaderSource::Wgsl(src.into()),
     };
-
-    device.create_shader_module(&desc)
+    device.create_shader_module(desc)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -236,7 +235,7 @@ fn create_pipeline_descriptor<'a>(
     fragment_shader: &'a wgpu::ShaderModule,
     pipeline_layout: &'a wgpu::PipelineLayout,
     depth_stencil_state: Option<wgpu::DepthStencilState>,
-    color_target_state: &'a [wgpu::ColorTargetState],
+    color_target_state: &'a [Option<wgpu::ColorTargetState>],
     vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
     msaa_sample_count: u32,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
@@ -304,11 +303,11 @@ fn create_color_pipelines(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_description,
                 msaa_sample_count,
             ))
@@ -328,11 +327,11 @@ fn create_color_pipelines(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_description,
                 msaa_sample_count,
             ))
@@ -352,11 +351,11 @@ fn create_color_pipelines(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_description,
                 msaa_sample_count,
             ))
@@ -376,11 +375,11 @@ fn create_color_pipelines(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_description,
                 msaa_sample_count,
             ))
@@ -429,11 +428,11 @@ fn create_bitmap_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -453,11 +452,11 @@ fn create_bitmap_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -477,11 +476,11 @@ fn create_bitmap_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -501,11 +500,11 @@ fn create_bitmap_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -552,11 +551,11 @@ fn create_gradient_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -576,11 +575,11 @@ fn create_gradient_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -601,11 +600,11 @@ fn create_gradient_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
@@ -625,11 +624,11 @@ fn create_gradient_pipeline(
                     stencil,
                     bias: Default::default(),
                 }),
-                &[wgpu::ColorTargetState {
+                &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
                     write_mask,
-                }],
+                })],
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))

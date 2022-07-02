@@ -6,6 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+wgpu = "0.13.0"
 log = "0.4"
 ruffle_core = { path = "../../core", default-features = false }
 ruffle_render_common_tess = { path = "../common_tess" }
@@ -16,26 +17,17 @@ enum-map = "2.4.0"
 fnv = "1.0.7"
 
 # desktop
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures]
+[target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.21"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies.image]
+[target.'cfg(not(target_family = "wasm"))'.dependencies.image]
 version = "0.24.2"
 default-features = false
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies.wgpu]
-version = "0.12"
-
 # wasm
-[target.'cfg(target_arch = "wasm32")'.dependencies.wasm-bindgen-futures]
-version = "0.4.30"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
-version = "0.3.57"
+[target.'cfg(target_family = "wasm")'.dependencies.web-sys]
+version = "0.3.58"
 features = ["HtmlCanvasElement"]
-
-[target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
-version = "0.12"
 
 [features]
 render_debug_labels = []

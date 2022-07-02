@@ -1217,7 +1217,7 @@ async fn create_renderer(
     // Try to create a backend, falling through to the next backend on failure.
     // We must recreate the canvas each attempt, as only a single context may be created per canvas
     // with `getContext`.
-    #[cfg(all(feature = "wgpu", target_arch = "wasm32"))]
+    #[cfg(all(feature = "wgpu", target_family = "wasm"))]
     {
         // Check that we have access to WebGPU (navigator.gpu should exist).
         if web_sys::window()

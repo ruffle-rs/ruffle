@@ -58,7 +58,7 @@ impl SwapChainTarget {
             format,
             width: size.0,
             height: size.1,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Fifo,
         };
         surface.configure(device, &surface_config);
         Self {
@@ -165,10 +165,19 @@ impl TextureTarget {
         }
     }
 
-    pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
-        let buffer_future = self.buffer.slice(..).map_async(wgpu::MapMode::Read);
-        device.poll(wgpu::Maintain::Wait);
-        match futures::executor::block_on(buffer_future) {
+    pub fn capture(&self) -> Option<image::RgbaImage> {
+        use std::sync::mpsc::channel;
+
+        let (sender, receiver) = channel();
+
+        self.buffer
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, move |result| {
+                sender.send(result).unwrap()
+            });
+
+        let result = receiver.recv().unwrap();
+        match result {
             Ok(()) => {
                 let map = self.buffer.slice(..).get_mapped_range();
                 let mut buffer = Vec::with_capacity(
