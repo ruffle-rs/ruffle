@@ -799,7 +799,7 @@ impl<W: Write> Writer<W> {
                 self.write_u16(tab_index)?;
             }
 
-            Tag::PlaceObject(ref place_object) => match (*place_object).version {
+            Tag::PlaceObject(ref place_object) => match place_object.version {
                 1 => self.write_place_object(place_object)?,
                 2 => self.write_place_object_2_or_3(place_object, 2)?,
                 3 => self.write_place_object_2_or_3(place_object, 3)?,
