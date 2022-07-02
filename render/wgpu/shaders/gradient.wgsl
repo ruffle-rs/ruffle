@@ -1,35 +1,33 @@
 /// Shader used for drawing all flavors of gradients.
 
 struct Gradient {
-    colors: array<vec4<f32>,16u>;
-    ratios: array<f32,16u>;
-    gradient_type: i32;
-    num_colors: u32;
-    repeat_mode: i32;
-    interpolation: i32;
-    focal_point: f32;
+    colors: array<vec4<f32>,16u>,
+    ratios: array<f32,16u>,
+    gradient_type: i32,
+    num_colors: u32,
+    repeat_mode: i32,
+    interpolation: i32,
+    focal_point: f32,
 };
 
 struct VertexOutput {
-    [[builtin(position)]] position: vec4<f32>;
-    [[location(0)]] uv: vec2<f32>;
+    @builtin(position) position: vec4<f32>,
+    @location(0) uv: vec2<f32>,
 };
 
-[[group(2), binding(0)]]
-var<uniform> textureTransforms: TextureTransforms;
-[[group(2), binding(1)]]
-var<storage> gradient: Gradient;
+@group(2) @binding(0) var<uniform> textureTransforms: TextureTransforms;
+@group(2) @binding(1) var<storage> gradient: Gradient;
 
-[[stage(vertex)]]
+@vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
-    let matrix = textureTransforms.matrix;
-    let uv = (mat3x3<f32>(matrix[0].xyz, matrix[1].xyz, matrix[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
+    let matrix_ = textureTransforms.matrix_;
+    let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
     let pos = globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, uv);
 }
 
-[[stage(fragment)]]
-fn main_fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let last = gradient.num_colors - 1u;
 
     // Calculate normalized `t` position in gradient, [0.0, 1.0] being the bounds of the ratios.

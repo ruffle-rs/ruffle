@@ -1263,9 +1263,9 @@ fn run_swf(
             .renderer_mut()
             .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
             .unwrap();
-        let target = renderer.target();
-        let actual_image = target
-            .capture(renderer.device())
+        let actual_image = renderer
+            .target()
+            .capture()
             .expect("Failed to capture image");
 
         let expected_image_path = base_path.join("expected.png");

@@ -55,7 +55,7 @@ jobs:
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in release_nightly.yml, web/Cargo.toml and web/README.md.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.80
+        run: cargo install wasm-bindgen-cli --version 0.2.81
 
       - name: Setup conda
         uses: conda-incubator/setup-miniconda@v2

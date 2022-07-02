@@ -1,5 +1,8 @@
+use crate::bitmaps::BitmapSamplers;
+use crate::globals::Globals;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, RenderTargetFrame, SwapChainTarget};
+use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
@@ -15,6 +18,8 @@ use ruffle_render_common_tess::{
     Vertex as TessVertex,
 };
 use std::num::NonZeroU32;
+use std::path::Path;
+pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
 
@@ -29,12 +34,6 @@ mod uniform_buffer;
 
 #[cfg(feature = "clap")]
 pub mod clap;
-
-use crate::bitmaps::BitmapSamplers;
-use crate::globals::Globals;
-use crate::uniform_buffer::UniformBuffer;
-use std::path::Path;
-pub use wgpu;
 
 pub struct Descriptors {
     pub device: wgpu::Device,
@@ -95,20 +94,13 @@ impl Descriptors {
             wgpu::TextureFormat::Etc2Rgb8UnormSrgb => wgpu::TextureFormat::Etc2Rgb8Unorm,
             wgpu::TextureFormat::Etc2Rgb8A1UnormSrgb => wgpu::TextureFormat::Etc2Rgb8A1Unorm,
             wgpu::TextureFormat::Etc2Rgba8UnormSrgb => wgpu::TextureFormat::Etc2Rgba8Unorm,
-            wgpu::TextureFormat::Astc4x4RgbaUnormSrgb => wgpu::TextureFormat::Astc4x4RgbaUnorm,
-            wgpu::TextureFormat::Astc5x4RgbaUnormSrgb => wgpu::TextureFormat::Astc5x4RgbaUnorm,
-            wgpu::TextureFormat::Astc5x5RgbaUnormSrgb => wgpu::TextureFormat::Astc5x5RgbaUnorm,
-            wgpu::TextureFormat::Astc6x5RgbaUnormSrgb => wgpu::TextureFormat::Astc6x5RgbaUnorm,
-            wgpu::TextureFormat::Astc6x6RgbaUnormSrgb => wgpu::TextureFormat::Astc6x6RgbaUnorm,
-            wgpu::TextureFormat::Astc8x5RgbaUnormSrgb => wgpu::TextureFormat::Astc8x5RgbaUnorm,
-            wgpu::TextureFormat::Astc8x6RgbaUnormSrgb => wgpu::TextureFormat::Astc8x6RgbaUnorm,
-            wgpu::TextureFormat::Astc10x5RgbaUnormSrgb => wgpu::TextureFormat::Astc10x5RgbaUnorm,
-            wgpu::TextureFormat::Astc10x6RgbaUnormSrgb => wgpu::TextureFormat::Astc10x6RgbaUnorm,
-            wgpu::TextureFormat::Astc8x8RgbaUnormSrgb => wgpu::TextureFormat::Astc8x8RgbaUnorm,
-            wgpu::TextureFormat::Astc10x8RgbaUnormSrgb => wgpu::TextureFormat::Astc10x8RgbaUnorm,
-            wgpu::TextureFormat::Astc10x10RgbaUnormSrgb => wgpu::TextureFormat::Astc10x10RgbaUnorm,
-            wgpu::TextureFormat::Astc12x10RgbaUnormSrgb => wgpu::TextureFormat::Astc12x10RgbaUnorm,
-            wgpu::TextureFormat::Astc12x12RgbaUnormSrgb => wgpu::TextureFormat::Astc12x12RgbaUnorm,
+            wgpu::TextureFormat::Astc {
+                block,
+                channel: wgpu::AstcChannel::UnormSrgb,
+            } => wgpu::TextureFormat::Astc {
+                block,
+                channel: wgpu::AstcChannel::Unorm,
+            },
             _ => surface_format,
         };
 
@@ -316,7 +308,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
     pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
         let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU);
-        let surface = unsafe { instance.create_surface_from_canvas(canvas) };
+        let surface = instance.create_surface_from_canvas(canvas);
         let descriptors = Self::build_descriptors(
             wgpu::Backends::BROWSER_WEBGPU,
             instance,
@@ -533,7 +525,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             .await?;
         let info = adapter.get_info();
         let surface_format = surface
-            .and_then(|surface| surface.get_preferred_format(&adapter))
+            .and_then(|surface| surface.get_supported_formats(&adapter).first().copied())
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
         Descriptors::new(device, queue, info, surface_format)
     }
@@ -741,10 +733,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn target(&self) -> &T {
         &self.target
     }
-
-    pub fn device(&self) -> &wgpu::Device {
-        &self.descriptors.device
-    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -921,7 +909,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         };
 
         let render_pass = frame_data.0.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: color_view,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -933,7 +921,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     store: true,
                 },
                 resolve_target,
-            }],
+            })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &self.depth_texture_view,
                 depth_ops: Some(wgpu::Operations {
@@ -1237,14 +1225,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 );
 
                 let mut render_pass = copy_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: &frame.frame_data.1.view(),
                         ops: wgpu::Operations {
                             load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                             store: true,
                         },
                         resolve_target: None,
-                    }],
+                    })],
                     depth_stencil_attachment: None,
                     label: None,
                 });
