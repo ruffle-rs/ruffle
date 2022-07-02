@@ -821,7 +821,7 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let instance = instance.try_borrow()?;
-                    Ok(f(&*instance))
+                    Ok(f(&instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
                 }
@@ -844,7 +844,7 @@ impl Ruffle {
                 let instances = instances.try_borrow()?;
                 if let Some(instance) = instances.get(self.0) {
                     let mut instance = instance.try_borrow_mut()?;
-                    Ok(f(&mut *instance))
+                    Ok(f(&mut instance))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
                 }
@@ -873,7 +873,7 @@ impl Ruffle {
                     let core = core
                         .try_lock()
                         .map_err(|_| RuffleInstanceError::TryLockError)?;
-                    Ok(f(&*core))
+                    Ok(f(&core))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
                 }
@@ -902,7 +902,7 @@ impl Ruffle {
                     let mut core = core
                         .try_lock()
                         .map_err(|_| RuffleInstanceError::TryLockError)?;
-                    Ok(f(&mut *core))
+                    Ok(f(&mut core))
                 } else {
                     Err(RuffleInstanceError::InstanceNotFound)
                 }
@@ -1022,7 +1022,7 @@ impl RuffleInstance {
         let ret = self
             .core
             .try_lock()
-            .map(|core| f(&*core))
+            .map(|core| f(&core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
             log::error!("{}", e);
@@ -1037,7 +1037,7 @@ impl RuffleInstance {
         let ret = self
             .core
             .try_lock()
-            .map(|mut core| f(&mut *core))
+            .map(|mut core| f(&mut core))
             .map_err(|_| RuffleInstanceError::TryLockError);
         if let Err(e) = &ret {
             log::error!("{}", e);
