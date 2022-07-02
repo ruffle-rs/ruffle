@@ -718,6 +718,7 @@ swf_tests! {
     (string_ops_swf6, "avm1/string_ops_swf6", 1),
     (swf4_actions_bool, "avm1/swf4_actions_bool", 1),
     (swf4_bool, "avm1/swf4_bool", 1),
+    (swf4_variables, "avm1/swf4_variables", 1),
     (swf5_encoding, "avm1/swf5_encoding", 1),
     (swf5_no_closure, "avm1/swf5_no_closure", 1),
     (swf5_to_6_cross_call, "avm1/swf5_to_6_cross_call", 2),

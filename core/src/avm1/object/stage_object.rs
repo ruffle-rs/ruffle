@@ -192,27 +192,29 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             return Some(value);
         }
 
-        // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
-        let magic_property = name.starts_with(b'_');
-        if magic_property {
-            if let Some(object) = self.resolve_path_property(name, activation) {
-                return Some(object);
+        if activation.swf_version() >= 5 {
+            // 2) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
+            let magic_property = name.starts_with(b'_');
+            if magic_property {
+                if let Some(object) = self.resolve_path_property(name, activation) {
+                    return Some(object);
+                }
             }
-        }
 
-        // 3) Child display objects with the given instance name
-        if let Some(child) = obj
-            .display_object
-            .as_container()
-            .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
-        {
-            return Some(child.object());
-        }
+            // 3) Child display objects with the given instance name
+            if let Some(child) = obj
+                .display_object
+                .as_container()
+                .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
+            {
+                return Some(child.object());
+            }
 
-        // 4) Display object properties such as `_x`, `_y` (never case sensitive)
-        if magic_property {
-            if let Some(property) = props.read().get_by_name(name) {
-                return Some(property.get(activation, obj.display_object));
+            // 4) Display object properties such as `_x`, `_y` (never case sensitive)
+            if magic_property {
+                if let Some(property) = props.read().get_by_name(name) {
+                    return Some(property.get(activation, obj.display_object));
+                }
             }
         }
 
@@ -248,17 +250,19 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         let display_object = obj.display_object;
         drop(obj);
 
-        if base.has_own_property(activation, name) {
+        if activation.swf_version() >= 5 {
             // 1) Actual properties on the underlying object
-            base.set_local(name, value, activation, this)
-        } else if let Some(property) = props.read().get_by_name(name) {
+            if base.has_own_property(activation, name) {
+                return base.set_local(name, value, activation, this);
+            }
+
             // 2) Display object properties such as _x, _y
-            property.set(activation, display_object, value)?;
-            Ok(())
-        } else {
-            // 3) TODO: Prototype
-            base.set_local(name, value, activation, this)
+            if let Some(property) = props.read().get_by_name(name) {
+                return property.set(activation, display_object, value);
+            }
         }
+
+        base.set_local(name, value, activation, this)
     }
 
     fn call(

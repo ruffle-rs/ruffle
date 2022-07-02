@@ -76,8 +76,8 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "updateAfterEvent" => method(update_after_event; DONT_ENUM);
     "escape" => method(escape; DONT_ENUM);
     "unescape" => method(unescape; DONT_ENUM);
-    "NaN" => property(get_nan; DONT_ENUM);
-    "Infinity" => property(get_infinity; DONT_ENUM);
+    "NaN" => float(f64::NAN; DONT_ENUM);
+    "Infinity" => float(f64::INFINITY; DONT_ENUM);
 };
 
 pub fn trace<'gc>(
@@ -227,30 +227,6 @@ pub fn parse_int<'gc>(
         Ok(f64::NAN.into())
     } else {
         Ok(result.copysign(sign).into())
-    }
-}
-
-pub fn get_infinity<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() > 4 {
-        Ok(f64::INFINITY.into())
-    } else {
-        Ok(Value::Undefined)
-    }
-}
-
-pub fn get_nan<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() > 4 {
-        Ok(f64::NAN.into())
-    } else {
-        Ok(Value::Undefined)
     }
 }
 
