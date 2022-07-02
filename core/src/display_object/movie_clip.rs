@@ -1261,10 +1261,19 @@ impl<'gc> MovieClip<'gc> {
     }
 
     #[cfg(not(feature = "timeline_debug"))]
-    fn assert_expected_tag_end(self) {}
+    fn assert_expected_tag_end(
+        self,
+        _context: &mut UpdateContext<'_, 'gc, '_>,
+        _hit_target_frame: bool,
+    ) {
+    }
 
     #[cfg(feature = "timeline_debug")]
-    fn assert_expected_tag_end(self, context: &mut UpdateContext<'_, 'gc, '_>, hit_target_frame: bool) {
+    fn assert_expected_tag_end(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        hit_target_frame: bool,
+    ) {
         // Gotos that do *not* hit their target frame will not update their tag
         // stream position, as they do not run the final frame's tags, and thus
         // cannot derive the end position of the clip anyway. This is not
@@ -1287,7 +1296,11 @@ impl<'gc> MovieClip<'gc> {
             // other asserts, so fix them up here.
             let mut write = self.0.write(context.gc_context);
 
-            if let Some((_, end)) = write.tag_frame_boundaries.get(&write.current_frame).cloned() {
+            if let Some((_, end)) = write
+                .tag_frame_boundaries
+                .get(&write.current_frame)
+                .cloned()
+            {
                 write.tag_stream_pos = end;
             }
         }
@@ -1299,7 +1312,16 @@ impl<'gc> MovieClip<'gc> {
         frame: FrameNumber,
         is_implicit: bool,
     ) {
-        self.assert_expected_tag_start();
+        if cfg!(feature = "timeline_debug") {
+            log::debug!(
+                "[{}]: {} from frame {} to frame {}",
+                self.name(),
+                if is_implicit { "looping" } else { "goto" },
+                self.current_frame(),
+                frame
+            );
+            self.assert_expected_tag_start();
+        }
 
         // Flash gotos are tricky:
         // 1) Conceptually, a goto should act like the playhead is advancing forward or
@@ -3133,6 +3155,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         *start_pos = end_pos;
         *cur_frame += 1;
+
         Ok(())
     }
 }
