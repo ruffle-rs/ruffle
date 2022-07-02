@@ -165,21 +165,17 @@ impl TextureTarget {
         }
     }
 
-    pub fn capture(&self) -> Option<image::RgbaImage> {
-        use std::sync::mpsc::channel;
-
-        let (sender, receiver) = channel();
-
-        self.buffer
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |result| {
-                sender.send(result).unwrap()
-            });
-
+    pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let buffer_slice = self.buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
+            sender.send(result).unwrap();
+        });
+        device.poll(wgpu::Maintain::Wait);
         let result = receiver.recv().unwrap();
         match result {
             Ok(()) => {
-                let map = self.buffer.slice(..).get_mapped_range();
+                let map = buffer_slice.get_mapped_range();
                 let mut buffer = Vec::with_capacity(
                     self.buffer_dimensions.height * self.buffer_dimensions.unpadded_bytes_per_row,
                 );

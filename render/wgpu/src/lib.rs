@@ -384,6 +384,10 @@ impl WgpuRenderBackend<target::TextureTarget> {
         let target = target::TextureTarget::new(&descriptors.device, size);
         Self::new(descriptors, target)
     }
+
+    pub fn capture_frame(&self) -> Option<image::RgbaImage> {
+        self.target.capture(&self.descriptors.device)
+    }
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
@@ -745,10 +749,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         }
 
         Mesh { draws }
-    }
-
-    pub fn target(&self) -> &T {
-        &self.target
     }
 }
 

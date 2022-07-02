@@ -122,7 +122,7 @@ fn take_screenshot(
                 .renderer_mut()
                 .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                 .unwrap();
-            if let Some(image) = renderer.target().capture() {
+            if let Some(image) = renderer.capture_frame() {
                 result.push(image);
             } else {
                 return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
