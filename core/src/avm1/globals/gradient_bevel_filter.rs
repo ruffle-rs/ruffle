@@ -387,13 +387,13 @@ pub fn set_quality<'gc>(
 }
 
 pub fn get_type<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(filter) = this.as_gradient_bevel_filter_object() {
         let type_: &WStr = filter.get_type().into();
-        return Ok(AvmString::new(activation.context.gc_context, type_).into());
+        return Ok(AvmString::from(type_).into());
     }
 
     Ok(Value::Undefined)

@@ -219,13 +219,13 @@ pub fn set_map_point<'gc>(
 }
 
 pub fn mode<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(object) = this.as_displacement_map_filter_object() {
         let mode: &WStr = object.mode().into();
-        return Ok(AvmString::new(activation.context.gc_context, mode).into());
+        return Ok(AvmString::from(mode).into());
     }
 
     Ok(Value::Undefined)
