@@ -361,9 +361,7 @@ impl DerefMut for WString {
 impl<'a> From<&'a WStr> for WString {
     #[inline]
     fn from(s: &'a WStr) -> Self {
-        let mut buf = Self::new();
-        buf.push_str(s);
-        buf
+        s.to_owned()
     }
 }
 
