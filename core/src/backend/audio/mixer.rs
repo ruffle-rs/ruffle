@@ -594,13 +594,13 @@ impl AudioMixer {
     /// Returns the position of a playing sound in milliseconds.
     ///
     ////// Returns `None` if the sound is no longer playing.
-    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration> {
+    pub fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration> {
         let sound_instances = self.sound_instances.lock().unwrap();
         sound_instances.get(instance).map(|instance| {
             // Get the current sample position from the underlying audio source.
             let num_sample_frames: f64 = instance.stream.source_position().into();
             let sample_rate: f64 = instance.stream.source_sample_rate().into();
-            RuffleDuration::from_millis(num_sample_frames * 1000.0 / sample_rate)
+            from_f64_millis(num_sample_frames * 1000.0 / sample_rate)
         })
     }
 
@@ -1044,7 +1044,7 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration> {
+        fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration> {
             self.$mixer.get_sound_position(instance)
         }
 

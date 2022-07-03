@@ -55,6 +55,8 @@ use std::ops::DerefMut;
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
+use std::time::Duration;
+use duration_helper::{duration_add_assign_signed_duration, from_f64_millis};
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -241,7 +243,7 @@ pub struct Player {
     /// Gained by passage of time between host frames, spent by executing SWF frames.
     /// This is how we support custom SWF framerates
     /// and compensate for small lags by "catching up" (up to MAX_FRAMES_PER_TICK).
-    frame_accumulator: RuffleDuration,
+    frame_accumulator: Duration,
     recent_run_frame_timings: VecDeque<f64>,
 
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
@@ -261,7 +263,7 @@ pub struct Player {
     instance_counter: i32,
 
     /// Time remaining until the next timer will fire.
-    time_til_next_timer: Option<RuffleDuration>,
+    time_til_next_timer: Option<Duration>,
 
     /// The instant at which the SWF was launched.
     start_time: Instant,
@@ -451,7 +453,7 @@ impl Player {
         }
     }
 
-    pub fn tick(&mut self, dt: RuffleDuration) {
+    pub fn tick(&mut self, dt: Duration) {
         // Don't run until preloading is complete.
         // TODO: Eventually we want to stream content similar to the Flash player.
         if !self.audio.is_loading_complete() {
@@ -461,7 +463,7 @@ impl Player {
         if self.is_playing() {
             self.frame_accumulator += dt;
             let frame_rate = self.frame_rate;
-            let frame_time = RuffleDuration::from_millis(1000.0 / frame_rate);
+            let frame_time = from_f64_millis(1000.0 / frame_rate);
 
             let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
@@ -480,7 +482,7 @@ impl Player {
                 // Then we need to actually pass this time, by decreasing frame_accumulator
                 // to delay the future frame.
                 if self.time_offset > 0 {
-                    self.frame_accumulator -= RuffleDuration::from_millis(self.time_offset.into());
+                    self.frame_accumulator -= Duration::from_millis(self.time_offset.into());
                 }
             }
 
@@ -496,7 +498,7 @@ impl Player {
             // Sanity: If we had too many frames to tick, just reset the accumulator
             // to prevent running at turbo speed.
             if self.frame_accumulator >= frame_time {
-                self.frame_accumulator = RuffleDuration::zero();
+                self.frame_accumulator = Duration::from_nanos(0);
             }
 
             // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
@@ -506,8 +508,9 @@ impl Player {
                 context
                     .audio_manager
                     .audio_skew_time(context.audio, cur_frame_offset)
+
             });
-            self.frame_accumulator += add;
+            duration_add_assign_signed_duration(&mut self.frame_accumulator, add);
 
             self.update_timers(dt);
             self.audio.tick();
@@ -520,12 +523,12 @@ impl Player {
 
     /// Returns the approximate duration of time until the next frame is due to run.
     /// This is only an approximation to be used for sleep durations.
-    pub fn time_til_next_frame(&self) -> RuffleDuration {
-        let frame_time = RuffleDuration::from_millis(1000.0 / self.frame_rate);
-        let mut dt = if self.frame_accumulator <= RuffleDuration::zero() {
+    pub fn time_til_next_frame(&self) -> std::time::Duration {
+        let frame_time = from_f64_millis(1000.0 / self.frame_rate);
+        let mut dt = if self.frame_accumulator <= Duration::from_secs(0) {
             frame_time
         } else if self.frame_accumulator >= frame_time {
-            RuffleDuration::zero()
+            Duration::from_secs(0)
         } else {
             frame_time - self.frame_accumulator
         };
@@ -534,7 +537,7 @@ impl Player {
             dt = dt.min(time_til_next_timer)
         }
 
-        dt = dt.max(RuffleDuration::zero());
+        dt = dt.max(Duration::from_millis(0));
 
         dt
     }
@@ -1809,7 +1812,7 @@ impl Player {
 
     /// Update all AVM-based timers (such as created via setInterval).
     /// Returns the approximate amount of time until the next timer tick.
-    pub fn update_timers(&mut self, dt: RuffleDuration) {
+    pub fn update_timers(&mut self, dt: Duration) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
     }
@@ -2092,7 +2095,7 @@ impl PlayerBuilder {
                 // Timing
                 frame_rate,
                 frame_phase: Default::default(),
-                frame_accumulator: RuffleDuration::zero(),
+                frame_accumulator: Duration::from_secs(0),
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
                 time_offset: 0,

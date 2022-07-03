@@ -11,6 +11,7 @@ use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
 use duration_helper::into_f64_millis;
 use gc_arena::MutationContext;
+use std::time::Duration;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);

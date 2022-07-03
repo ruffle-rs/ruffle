@@ -7,7 +7,8 @@ use downcast_rs::Downcast;
 use duration_helper::from_f64_millis;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
-use duration_helper::{from_f64_millis, into_f64_millis};
+use num_traits::real::Real;
+use duration_helper::{from_f64_millis, from_f64_seconds, into_f64_millis, into_f64_seconds, SignedDuration};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -79,7 +80,7 @@ pub trait AudioBackend: Downcast {
 
     /// Get the position of a sound instance in milliseconds.
     /// Returns `None` if ther sound is not/no longer playing
-    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<RuffleDuration>;
+    fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<Duration>;
 
     /// Get the duration of a sound in milliseconds.
     /// Returns `None` if sound is not registered.
@@ -219,8 +220,8 @@ impl AudioBackend for NullAudioBackend {
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
     fn stop_all_sounds(&mut self) {}
-    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<RuffleDuration> {
-        Some(RuffleDuration::zero())
+    fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<Duration> {
+        Some(Duration::from_secs(0))
     }
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<Duration> {
         if let Some(sound) = self.sounds.get(sound) {
@@ -299,7 +300,7 @@ impl<'gc> AudioManager<'gc> {
     pub const STREAM_SYNC_THRESHOLD: f64 = 1.0 / 60.0;
 
     /// The threshold in seconds where an audio stream is considered too out-of-sync and will be stopped.
-    pub const STREAM_RESTART_THRESHOLD: RuffleDuration = RuffleDuration::one_sec();
+    pub const STREAM_RESTART_THRESHOLD: Duration = Duration::from_secs(1);
 
     /// The minimum audio sycning threshold in seconds.
     ///
@@ -328,9 +329,9 @@ impl<'gc> AudioManager<'gc> {
             if let Some(pos) = audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position.
                 if let Some(avm1_object) = sound.avm1_object {
-                    avm1_object.set_position(gc_context, pos.as_millis().round() as u32);
+                    avm1_object.set_position(gc_context, into_f64_millis(pos).round() as u32);
                 } else if let Some(avm2_object) = sound.avm2_object {
-                    avm2_object.set_position(gc_context, pos.as_millis());
+                    avm2_object.set_position(gc_context, into_f64_millis(pos));
                 }
                 true
             } else {
@@ -502,11 +503,7 @@ impl<'gc> AudioManager<'gc> {
     }
 
     /// Returns the difference in seconds between the primary audio stream's time and the player's time.
-    pub fn audio_skew_time(
-        &mut self,
-        audio: &mut dyn AudioBackend,
-        offset: RuffleDuration,
-    ) -> RuffleDuration {
+    pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset: Duration) -> SignedDuration {
         // Consider the first playing "stream" sound to be the primary audio track.
         // Needs research: It's not clear how Flash handles the case of multiple stream sounds.
         let (i, skew) = self
@@ -523,10 +520,10 @@ impl<'gc> AudioManager<'gc> {
 
                 // Calculate the difference in time between the owning movie clip and its audio track.
                 // If the difference is beyond some threshold, inform the player to adjust playback speed.
-                let timeline_pos = RuffleDuration::from_secs(
+                let timeline_pos = SignedDuration::from_f64_secs(
                     f64::from(clip.current_frame().saturating_sub(start_frame)) / frame_rate,
                 ) + offset.into();
-                Some((i, RuffleDuration::from(stream_pos) - timeline_pos))
+                Some((i, SignedDuration::from(stream_pos) - timeline_pos))
             })
             .unwrap_or_default();
 
@@ -543,13 +540,13 @@ impl<'gc> AudioManager<'gc> {
             let instance = &self.sounds[i];
             audio.stop_sound(instance.instance);
             self.sounds.swap_remove(i);
-            RuffleDuration::zero()
+            SignedDuration::from_secs(0)
         } else if skew.abs() < sync_threshold {
             // Slightly out of sync, adjust player speed to compensate.
             skew
         } else {
             // More or less in sync, no adjustment.
-            RuffleDuration::zero()
+            SignedDuration::from_secs(0)
         }
     }
 

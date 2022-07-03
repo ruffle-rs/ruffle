@@ -29,6 +29,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use duration_helper::from_f64_millis;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
@@ -1386,7 +1387,7 @@ fn run_swf(
     let base_path = Path::new(swf_path).parent().unwrap();
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
-    let frame_time = RuffleDuration::from_millis(1000.0 / movie.frame_rate().to_f64());
+    let frame_time = from_f64_millis(1000.0 / movie.frame_rate().to_f64());
     let trace_output = Rc::new(RefCell::new(Vec::new()));
 
     #[allow(unused_mut)]

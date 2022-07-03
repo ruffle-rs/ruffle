@@ -29,6 +29,7 @@ use web_sys::{
     AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
     KeyboardEvent, PointerEvent, WheelEvent, Window,
 };
+use duration_helper::from_f64_millis;
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
@@ -986,7 +987,7 @@ impl Ruffle {
                 });
             }
 
-            core.tick(RuffleDuration::from_millis(dt));
+            core.tick(from_f64_millis(dt));
 
             // Render if the core signals a new frame, or if we resized.
             if core.needs_render() || new_dimensions.is_some() {
