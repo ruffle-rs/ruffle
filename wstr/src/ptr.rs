@@ -1,7 +1,8 @@
+use alloc::borrow::ToOwned;
 use core::ops::Range;
 use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
 
-use super::Units;
+use super::{Units, WString};
 
 #[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
 compile_error!("WStr only supports 32-bits and 64-bits targets");
@@ -44,6 +45,16 @@ pub struct WStr {
     /// One observable consequence of this is that `std::mem::size_of_val::<WStr>` won't return the actual
     /// byte length of the string contents, but will instead always return 0.
     _repr: [()],
+}
+
+impl ToOwned for WStr {
+    type Owned = WString;
+
+    fn to_owned(&self) -> Self::Owned {
+        let mut buf = WString::new();
+        buf.push_str(self);
+        buf
+    }
 }
 
 /// Convenience method to turn a `&T` into a `*mut T`.
