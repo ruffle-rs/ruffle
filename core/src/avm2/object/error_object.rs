@@ -96,9 +96,8 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
         Ok(this.into())
     }
 
-    fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        // Ok(self.display(mc).into())
-        Ok(Value::Null)
+    fn to_string(&self, activation: &mut Activation<'_, 'gc, '_>) -> Result<Value<'gc>, Error> {
+        Ok(self.display(activation)?.into())
     }
 
     fn as_error_object(self) -> Option<Self> {

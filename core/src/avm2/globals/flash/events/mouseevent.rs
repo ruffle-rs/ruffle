@@ -678,7 +678,7 @@ pub fn to_string<'gc>(
                     related_object.and_then(|ro| ro.as_displayobject().object2().as_object())
                 {
                     related_object
-                        .to_string(activation.context.gc_context)?
+                        .to_string(activation)?
                         .coerce_to_string(activation)?
                 } else {
                     "null".into()
