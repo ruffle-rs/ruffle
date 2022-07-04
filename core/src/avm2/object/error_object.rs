@@ -3,7 +3,7 @@ use crate::avm2::call_stack::StackTrace;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{Error, QName};
 use crate::string::{AvmString, WString};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -19,9 +19,6 @@ pub fn error_allocator<'gc>(
         activation.context.gc_context,
         ErrorObjectData {
             base,
-            id: 0,
-            message: AvmString::default(),
-            name: "Error".into(),
             stack_trace: if cfg!(feature = "avm_debug") {
                 activation.id.to_stack_trace()
             } else {
@@ -40,54 +37,39 @@ pub struct ErrorObject<'gc>(GcCell<'gc, ErrorObjectData<'gc>>);
 pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
-    name: AvmString<'gc>,
-    message: AvmString<'gc>,
-    id: i32,
     stack_trace: StackTrace<'gc>,
 }
 
 impl<'gc> ErrorObject<'gc> {
-    pub fn name(&self) -> AvmString<'gc> {
-        self.0.read().name
-    }
-
-    pub fn set_name(&self, mc: MutationContext<'gc, '_>, name: AvmString<'gc>) {
-        self.0.write(mc).name = name;
-    }
-
-    pub fn message(&self) -> AvmString<'gc> {
-        self.0.read().message
-    }
-
-    pub fn set_message(&self, mc: MutationContext<'gc, '_>, message: AvmString<'gc>) {
-        self.0.write(mc).message = message;
-    }
-
-    pub fn id(&self) -> i32 {
-        self.0.read().id
-    }
-
-    pub fn set_id(&self, mc: MutationContext<'gc, '_>, id: i32) {
-        self.0.write(mc).id = id;
-    }
-
-    pub fn display(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
-        let read = self.0.read();
-        if read.message.is_empty() {
-            return read.name;
+    pub fn display(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
+        let name = self
+            .get_property(&QName::dynamic_name("name").into(), activation)?
+            .coerce_to_string(activation)?;
+        let message = self
+            .get_property(&QName::dynamic_name("message").into(), activation)?
+            .coerce_to_string(activation)?;
+        if message.is_empty() {
+            return Ok(name);
         }
         let mut output = WString::new();
-        output.push_str(&read.name);
+        output.push_str(&name);
         output.push_utf8(": ");
-        output.push_str(&read.message);
-        AvmString::new(mc, output)
+        output.push_str(&message);
+        Ok(AvmString::new(activation.context.gc_context, output))
     }
 
-    pub fn display_full(&self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+    pub fn display_full(
+        &self,
+        activation: &mut Activation<'_, 'gc, '_>,
+    ) -> Result<AvmString<'gc>, Error> {
         let mut output = WString::new();
-        output.push_str(&self.display(mc));
-        self.stack_trace().display(mc, &mut output);
-        AvmString::new(mc, output)
+        output.push_str(&self.display(activation)?);
+        self.stack_trace()
+            .display(activation.context.gc_context, &mut output);
+        Ok(AvmString::new(activation.context.gc_context, output))
     }
 
     pub fn stack_trace(&self) -> Ref<StackTrace<'gc>> {
@@ -115,7 +97,8 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     }
 
     fn to_string(&self, mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
-        Ok(self.display(mc).into())
+        // Ok(self.display(mc).into())
+        Ok(Value::Null)
     }
 
     fn as_error_object(self) -> Option<Self> {
