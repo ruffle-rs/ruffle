@@ -21,7 +21,7 @@ ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = "1.3.2"
-smallvec = { version = "1.8.1", features = ["union"] }
+smallvec = { version = "1.9.0", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.3"
 quick-xml = { git = "https://github.com/ruffle-rs/quick-xml", rev = "8496365ec1412eb5ba5de350937b6bce352fa0ba" }
