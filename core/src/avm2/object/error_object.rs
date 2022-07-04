@@ -22,7 +22,11 @@ pub fn error_allocator<'gc>(
             id: 0,
             message: AvmString::default(),
             name: "Error".into(),
-            stack_trace: activation.id.to_stack_trace(),
+            stack_trace: if cfg!(feature = "avm_debug") {
+                activation.id.to_stack_trace()
+            } else {
+                StackTrace::default()
+            },
         },
     ))
     .into())

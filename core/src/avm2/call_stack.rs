@@ -55,7 +55,7 @@ impl<'gc> CallStackNode<'gc> {
     }
 }
 
-#[derive(Collect, Debug, Clone)]
+#[derive(Collect, Debug, Clone, Default)]
 #[collect(no_drop)]
 pub struct StackTrace<'gc> {
     stack: Vec<CallStackNode<'gc>>,
