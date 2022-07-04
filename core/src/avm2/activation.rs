@@ -56,9 +56,18 @@ impl<'a, 'gc> ActivationIdentifier<'a, 'gc> {
         if self.depth >= MAX_CALL_DEPTH {
             return Err("Error: Error #1023: Stack overflow occurred.".into());
         }
+
+        let node = if let Some(meta) = meta {
+            CallStackNode::Meta(meta)
+        } else if let Some(id) = method_id {
+            CallStackNode::Id(id)
+        } else {
+            panic!("Child activation identifier created with no data");
+        };
+
         Ok(Self {
             parent: Some(self),
-            node: CallStackNode::new(meta, method_id),
+            node,
             depth: self.depth + 1,
         })
     }
