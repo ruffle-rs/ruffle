@@ -26,7 +26,7 @@ fn instance_init<'gc>(
         let id = args.get(1).cloned().unwrap_or_else(|| 0.into());
 
         this.set_property(&QName::dynamic_name("message").into(), message, activation)?;
-        this.set_property(&QName::dynamic_name("id").into(), id, activation)?;
+        this.set_property(&QName::dynamic_name("errorID").into(), id, activation)?;
         this.set_property(
             &QName::dynamic_name("name").into(),
             "Error".into(),
