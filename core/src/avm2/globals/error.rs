@@ -112,6 +112,10 @@ fn get_stack_trace<'gc>(
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if cfg!(not(feature = "avm_debug")) {
+        return Ok(Value::Null);
+    }
+
     if let Some(this) = this.and_then(|this| this.as_error_object()) {
         return Ok(this.display_full(activation.context.gc_context).into());
     }

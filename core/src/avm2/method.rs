@@ -489,6 +489,7 @@ impl<'gc> Method<'gc> {
         }
     }
 
+    #[cfg(feature = "avm_debug")]
     pub fn set_meta(&mut self, meta: MethodMetadata<'gc>) {
         match self {
             Method::Native(_, m) => *m = Some(meta),
@@ -496,6 +497,10 @@ impl<'gc> Method<'gc> {
         }
     }
 
+    #[cfg(not(feature = "avm_debug"))]
+    pub fn set_meta(&mut self, _meta: MethodMetadata<'gc>) {}
+
+    #[cfg(feature = "avm_debug")]
     pub fn set_builtin_meta(
         &mut self,
         class_name: QName<'gc>,
@@ -511,5 +516,14 @@ impl<'gc> Method<'gc> {
             };
             self.set_meta(meta);
         }
+    }
+
+    #[cfg(not(feature = "avm_debug"))]
+    pub fn set_builtin_meta(
+        &mut self,
+        _class_name: QName<'gc>,
+        _position: MethodPosition,
+        _kind: MethodKind,
+    ) {
     }
 }
