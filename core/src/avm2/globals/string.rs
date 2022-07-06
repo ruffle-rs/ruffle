@@ -408,14 +408,43 @@ fn split<'gc>(
                     .into(),
             );
         }
+
+        let this = Value::from(this).coerce_to_string(activation)?;
         if delimiter
             .as_object()
             .map(|o| o.as_regexp().is_some())
             .unwrap_or(false)
         {
-            log::warn!("string.split(regex) - not implemented");
+            let regexp_object = delimiter.as_object().unwrap();
+            let mut regexp = regexp_object
+                .as_regexp_mut(activation.context.gc_context)
+                .unwrap();
+            let orig_flags = regexp.flags();
+            let orig_index = regexp.last_index();
+            regexp.set_flags(orig_flags | RegExpFlags::GLOBAL);
+
+            let mut start = 0;
+            let mut storage = ArrayStorage::new(0);
+            while let Some(result) = regexp.exec(this) {
+                if regexp.last_index() == start {
+                    break;
+                }
+                storage.push(
+                    AvmString::new(activation.context.gc_context, &this[start..result.start()])
+                        .into(),
+                );
+                start = regexp.last_index();
+            }
+
+            regexp.set_flags(orig_flags);
+            regexp.set_last_index(orig_index);
+
+            storage.push(AvmString::new(activation.context.gc_context, &this[start..]).into());
+            return Ok(ArrayObject::from_storage(activation, storage)
+                .unwrap()
+                .into());
         }
-        let this = Value::from(this).coerce_to_string(activation)?;
+
         let delimiter = delimiter.coerce_to_string(activation)?;
         let limit = match args.get(1).unwrap_or(&Value::Undefined) {
             Value::Undefined => usize::MAX,

@@ -18,7 +18,18 @@ trace(text.split(""));
 
 trace('// text.split()');
 trace(text.split());
-trace('// text.split(regex) - unimplemented');
+
+trace('// text.split(regex)');
+var regex = /b+/
+
+trace("abbabc".split(regex));
+
+// no match
+trace("ccccc".split(regex));
+
+var regex = /.*/
+trace("cccc".split(regex));
+trace("".split(regex));
 
 
 		}
