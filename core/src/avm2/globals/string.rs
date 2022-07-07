@@ -410,15 +410,12 @@ fn split<'gc>(
         }
 
         let this = Value::from(this).coerce_to_string(activation)?;
-        if delimiter
+
+        if let Some(mut regexp) = delimiter
             .as_object()
-            .map(|o| o.as_regexp().is_some())
-            .unwrap_or(false)
+            .as_ref()
+            .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            let regexp_object = delimiter.as_object().unwrap();
-            let mut regexp = regexp_object
-                .as_regexp_mut(activation.context.gc_context)
-                .unwrap();
             let orig_flags = regexp.flags();
             let orig_index = regexp.last_index();
             regexp.set_flags(orig_flags | RegExpFlags::GLOBAL);
