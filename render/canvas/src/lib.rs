@@ -397,7 +397,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                                     );
                                 }
                                 CanvasFillStyle::Gradient(gradient) => {
-                                    self.set_color_filter(&transform);
+                                    self.set_color_filter(transform);
                                     self.context.set_fill_style(gradient);
                                     self.context.fill_with_path_2d_and_winding(
                                         path,
@@ -409,7 +409,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                                     // Canvas has no easy way to draw gradients with an arbitrary transform,
                                     // but we can fake it by pushing the gradient's transform to the canvas,
                                     // then transforming the path itself by the inverse.
-                                    self.set_color_filter(&transform);
+                                    self.set_color_filter(transform);
                                     self.context.set_fill_style(&gradient.gradient);
                                     let matrix = &gradient.gradient_matrix;
                                     self.context
@@ -440,7 +440,7 @@ impl RenderBackend for WebCanvasRenderBackend {
                                     self.clear_color_filter();
                                 }
                                 CanvasFillStyle::Pattern(patt, smoothed) => {
-                                    self.set_color_filter(&transform);
+                                    self.set_color_filter(transform);
                                     self.context.set_image_smoothing_enabled(*smoothed);
                                     self.context.set_fill_style(patt);
                                     self.context.fill_with_path_2d_and_winding(
@@ -470,13 +470,13 @@ impl RenderBackend for WebCanvasRenderBackend {
                                         self.context.stroke_with_path(path);
                                     }
                                     CanvasFillStyle::Gradient(gradient) => {
-                                        self.set_color_filter(&transform);
+                                        self.set_color_filter(transform);
                                         self.context.set_stroke_style(gradient);
                                         self.context.stroke_with_path(path);
                                         self.clear_color_filter();
                                     }
                                     CanvasFillStyle::TransformedGradient(gradient) => {
-                                        self.set_color_filter(&transform);
+                                        self.set_color_filter(transform);
                                         self.context.set_stroke_style(&gradient.gradient);
                                         self.context.stroke_with_path(path);
                                         self.context
@@ -573,7 +573,7 @@ impl RenderBackend for WebCanvasRenderBackend {
             // A possible improvement is to choose the winding rule based on whether the shape has
             // layers or not (via a flag in DistilledShape?)
             self.context
-                .clip_with_path_2d_and_winding(&mask_path, CanvasWindingRule::Nonzero);
+                .clip_with_path_2d_and_winding(mask_path, CanvasWindingRule::Nonzero);
             self.mask_state = MaskState::DrawContent;
         }
     }

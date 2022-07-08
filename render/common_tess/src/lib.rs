@@ -47,7 +47,7 @@ impl ShapeTessellator {
                     is_closed,
                 } => (
                     style.fill_style(),
-                    ruffle_path_to_lyon_path(&commands, *is_closed),
+                    ruffle_path_to_lyon_path(commands, *is_closed),
                     true,
                 ),
             };
