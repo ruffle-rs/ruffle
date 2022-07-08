@@ -70,7 +70,7 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => Some(*class),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                let class = resolve_class_private(&name, *unit, activation)?;
+                let class = resolve_class_private(name, *unit, activation)?;
                 *self = match class {
                     Some(class) => PropertyClass::Class(class),
                     None => PropertyClass::Any,

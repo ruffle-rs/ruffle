@@ -150,7 +150,7 @@ impl<'gc> Value<'gc> {
             Value::Bool(true) => 1.0,
             Value::Number(v) => *v,
             Value::Object(_) => f64::NAN,
-            Value::String(v) => string_to_f64(&v, activation.swf_version()),
+            Value::String(v) => string_to_f64(v, activation.swf_version()),
         }
     }
 
@@ -424,7 +424,7 @@ impl<'gc> Value<'gc> {
                 if swf_version >= 7 {
                     !v.is_empty()
                 } else {
-                    let num = string_to_f64(&v, swf_version);
+                    let num = string_to_f64(v, swf_version);
                     !num.is_nan() && num != 0.0
                 }
             }
