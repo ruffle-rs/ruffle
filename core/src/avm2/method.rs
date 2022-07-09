@@ -11,7 +11,8 @@ use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::fmt;
 use std::rc::Rc;
 use swf::avm2::types::{
-    AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody, MethodParam as AbcMethodParam,
+    AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
+    MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
 };
 
 /// Represents a function defined in Ruffle's code.
@@ -241,7 +242,9 @@ impl<'gc> BytecodeMethod<'gc> {
     ///
     /// Variadic methods shove excess parameters into a final register.
     pub fn is_variadic(&self) -> bool {
-        self.method().needs_arguments_object || self.method().needs_rest
+        self.method()
+            .flags
+            .intersects(AbcMethodFlags::NEED_ARGUMENTS | AbcMethodFlags::NEED_REST)
     }
 
     /// Determine if a given method is unchecked.
@@ -262,7 +265,7 @@ impl<'gc> BytecodeMethod<'gc> {
             }
         }
 
-        !self.method().needs_rest
+        !self.method().flags.contains(AbcMethodFlags::NEED_REST)
     }
 }
 
@@ -371,7 +374,7 @@ impl<'gc> Method<'gc> {
     pub fn needs_arguments_object(&self) -> bool {
         match self {
             Method::Native { .. } => false,
-            Method::Bytecode(bm) => bm.method().needs_arguments_object,
+            Method::Bytecode(bm) => bm.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS),
         }
     }
 }

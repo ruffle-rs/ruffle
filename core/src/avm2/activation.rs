@@ -22,8 +22,8 @@ use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, Method as AbcMethod, Multiname as AbcMultiname,
-    Namespace as AbcNamespace, Op,
+    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
 /// Represents a particular register set.
@@ -407,7 +407,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             *write.get_mut(0).unwrap() = this.map(|t| t.into()).unwrap_or(Value::Null);
         }
 
-        let activation_class = if method.method().needs_activation {
+        let activation_class = if method
+            .method()
+            .flags
+            .contains(AbcMethodFlags::NEED_ACTIVATION)
+        {
             let translation_unit = method.translation_unit();
             let abc_method = method.method();
             let mut dummy_activation = Activation::from_nothing(context.reborrow());
@@ -454,9 +458,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
 
         if has_rest_or_args {
-            let args_array = if method.method().needs_arguments_object {
+            let args_array = if method
+                .method()
+                .flags
+                .contains(AbcMethodFlags::NEED_ARGUMENTS)
+            {
                 ArrayStorage::from_args(&arguments_list)
-            } else if method.method().needs_rest {
+            } else if method.method().flags.contains(AbcMethodFlags::NEED_REST) {
                 if let Some(rest_args) = arguments_list.get(signature.len()..) {
                     ArrayStorage::from_args(rest_args)
                 } else {
@@ -468,7 +476,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
             let mut args_object = ArrayObject::from_storage(&mut activation, args_array)?;
 
-            if method.method().needs_arguments_object {
+            if method
+                .method()
+                .flags
+                .contains(AbcMethodFlags::NEED_ARGUMENTS)
+            {
                 args_object.set_property(
                     &QName::new(Namespace::public(), "callee").into(),
                     callee.into(),
