@@ -1,3 +1,0 @@
-interface Error {
-    ruffleIndexError?: number;
-}

@@ -1,4 +1,0 @@
-# Unfortunately, `.eslintignore` can be placed only in the root directory:
-# https://eslint.org/docs/user-guide/configuring/ignoring-code#the-eslintignore-file
-ignorePatterns:
-  - swfobject.js

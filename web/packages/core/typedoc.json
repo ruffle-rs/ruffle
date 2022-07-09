@@ -1,5 +1,0 @@
-{
-   "entryPoints": ["./src/index.ts"],
-   "excludePrivate": true,
-   "excludeProtected": true
-}
