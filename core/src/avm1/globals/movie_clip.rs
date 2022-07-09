@@ -1379,8 +1379,18 @@ fn set_transform<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let transform = value.coerce_to_object(activation);
-    crate::avm1::globals::transform::apply_to_display_object(activation, transform, this.into())?;
+    if let Value::Object(object) = value {
+        if let Some(transform) = object.as_transform_object() {
+            if let Some(clip) = transform.clip() {
+                let matrix = *clip.base().matrix();
+                this.set_matrix(activation.context.gc_context, &matrix);
+                let color_transform = *clip.base().color_transform();
+                this.set_color_transform(activation.context.gc_context, &color_transform);
+                this.set_transformed_by_script(activation.context.gc_context, true);
+            }
+        }
+    }
+
     Ok(())
 }
 
