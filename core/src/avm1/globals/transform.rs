@@ -6,7 +6,7 @@ use crate::avm1::globals::{color_transform, matrix};
 use crate::avm1::object::transform_object::TransformObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::display_object::{MovieClip, TDisplayObject};
 use gc_arena::MutationContext;
 
 macro_rules! tx_getter {
@@ -169,22 +169,4 @@ fn pixel_bounds<'gc>(
         ],
     )?;
     Ok(result)
-}
-
-pub fn apply_to_display_object<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
-    transform: Object<'gc>,
-    display_object: DisplayObject<'gc>,
-) -> Result<(), Error<'gc>> {
-    if let Some(transform) = transform.as_transform_object() {
-        if let Some(clip) = transform.clip() {
-            let matrix = *clip.base().matrix();
-            display_object.set_matrix(activation.context.gc_context, &matrix);
-            let color_transform = *clip.base().color_transform();
-            display_object.set_color_transform(activation.context.gc_context, &color_transform);
-            display_object.set_transformed_by_script(activation.context.gc_context, true);
-        }
-    }
-
-    Ok(())
 }
