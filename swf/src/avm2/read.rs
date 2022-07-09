@@ -253,9 +253,9 @@ impl<'a> Reader<'a> {
             })
         }
         let name = self.read_index()?;
-        let flags = self.read_u8()?;
+        let flags = MethodFlags::from_bits_truncate(self.read_u8()?);
 
-        if flags & 0x08 != 0 {
+        if flags.contains(MethodFlags::HAS_OPTIONAL) {
             let num_optional_params = self.read_u30()? as usize;
             if let Some(start) = params.len().checked_sub(num_optional_params) {
                 for param in &mut params[start..] {
@@ -266,7 +266,7 @@ impl<'a> Reader<'a> {
             }
         }
 
-        if flags & 0x80 != 0 {
+        if flags.contains(MethodFlags::HAS_PARAM_NAMES) {
             for param in &mut params {
                 param.name = Some(self.read_index()?);
             }
@@ -276,10 +276,7 @@ impl<'a> Reader<'a> {
             name,
             params,
             return_type,
-            needs_arguments_object: flags & 0x01 != 0,
-            needs_activation: flags & 0x02 != 0,
-            needs_rest: flags & 0x04 != 0,
-            needs_dxns: flags & 0x40 != 0,
+            flags,
         })
     }
 

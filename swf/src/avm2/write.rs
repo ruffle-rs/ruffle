@@ -341,18 +341,7 @@ impl<W: Write> Writer<W> {
             }
         }
         self.write_index(&method.name)?;
-        self.write_u8(
-            if has_param_names { 0x80 } else { 0 }
-                | if method.needs_dxns { 0x40 } else { 0 }
-                | if num_optional_params > 0 { 0x08 } else { 0 }
-                | if method.needs_rest { 0x04 } else { 0 }
-                | if method.needs_activation { 0x02 } else { 0 }
-                | if method.needs_arguments_object {
-                    0x01
-                } else {
-                    0
-                },
-        )?;
+        self.write_u8(method.flags.bits())?;
 
         if num_optional_params > 0 {
             self.write_u30(num_optional_params)?;
