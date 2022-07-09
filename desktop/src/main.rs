@@ -256,7 +256,7 @@ impl App {
             };
 
             player.lock().unwrap().fetch_root_movie(
-                movie_url.as_str().to_owned(),
+                movie_url.to_string(),
                 parse_parameters(&opt).collect(),
                 Box::new(on_metadata),
             );
