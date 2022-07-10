@@ -185,8 +185,8 @@ impl<'gc> RegExp<'gc> {
                 );
                 parts += 1;
                 if parts >= limit {
-                    break;  // Intentional bug to match Flash.
-		            // Causes adding parts past limit.
+                    break; // Intentional bug to match Flash.
+                           // Causes adding parts past limit.
                 }
             }
 
