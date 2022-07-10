@@ -21,15 +21,35 @@ trace(text.split());
 
 trace('// text.split(regex)');
 var regex = /b+/
-
 trace("abbabc".split(regex));
 
-// no match
-trace("ccccc".split(regex));
+trace('// no match')
+trace("ccccc".split(/b/));
 
+trace('// match all')
 var regex = /.*/
 trace("cccc".split(regex));
-trace("".split(regex));
+
+trace('// empty string, match all')
+trace("".split(/.*/));
+
+trace('// multibyte chars')
+trace("ąąbąą".split(/b/))
+
+trace('// Group expansion')
+trace("abba".split(/(b(b))/))
+
+trace('// Split on empty regex')
+trace("aął".split(/(?:)/))
+
+trace('// Split on non-empty regex with zero-length match')
+trace("aąbcde".split(/f*/))
+
+trace('// Limit')
+trace("aąbaababa".split(/b/,3))
+
+trace('// Limit on group captures - flash returns 6 parts instead of 5')
+trace("aąbbaabbabbabbabbabba".split(/(b(b))/,5))
 
 
 		}

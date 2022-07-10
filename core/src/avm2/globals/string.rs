@@ -410,43 +410,20 @@ fn split<'gc>(
         }
 
         let this = Value::from(this).coerce_to_string(activation)?;
+        let limit = match args.get(1).unwrap_or(&Value::Undefined) {
+            Value::Undefined => usize::MAX,
+            limit => limit.coerce_to_i32(activation)?.max(0) as usize,
+        };
 
         if let Some(mut regexp) = delimiter
             .as_object()
             .as_ref()
             .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            let orig_flags = regexp.flags();
-            let orig_index = regexp.last_index();
-            regexp.set_flags(orig_flags | RegExpFlags::GLOBAL);
-
-            let mut start = 0;
-            let mut storage = ArrayStorage::new(0);
-            while let Some(result) = regexp.exec(this) {
-                if regexp.last_index() == start {
-                    break;
-                }
-                storage.push(
-                    AvmString::new(activation.context.gc_context, &this[start..result.start()])
-                        .into(),
-                );
-                start = regexp.last_index();
-            }
-
-            regexp.set_flags(orig_flags);
-            regexp.set_last_index(orig_index);
-
-            storage.push(AvmString::new(activation.context.gc_context, &this[start..]).into());
-            return Ok(ArrayObject::from_storage(activation, storage)
-                .unwrap()
-                .into());
+            return Ok(regexp.split(activation, this, limit).unwrap().into());
         }
 
         let delimiter = delimiter.coerce_to_string(activation)?;
-        let limit = match args.get(1).unwrap_or(&Value::Undefined) {
-            Value::Undefined => usize::MAX,
-            limit => limit.coerce_to_i32(activation)?.max(0) as usize,
-        };
 
         let storage = if delimiter.is_empty() {
             // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.
