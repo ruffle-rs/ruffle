@@ -408,19 +408,22 @@ fn split<'gc>(
                     .into(),
             );
         }
-        if delimiter
-            .as_object()
-            .map(|o| o.as_regexp().is_some())
-            .unwrap_or(false)
-        {
-            log::warn!("string.split(regex) - not implemented");
-        }
+
         let this = Value::from(this).coerce_to_string(activation)?;
-        let delimiter = delimiter.coerce_to_string(activation)?;
         let limit = match args.get(1).unwrap_or(&Value::Undefined) {
             Value::Undefined => usize::MAX,
             limit => limit.coerce_to_i32(activation)?.max(0) as usize,
         };
+
+        if let Some(mut regexp) = delimiter
+            .as_object()
+            .as_ref()
+            .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
+        {
+            return Ok(regexp.split(activation, this, limit)?.into());
+        }
+
+        let delimiter = delimiter.coerce_to_string(activation)?;
 
         let storage = if delimiter.is_empty() {
             // When using an empty delimiter, Str::split adds an extra beginning and trailing item, but Flash does not.

@@ -2,6 +2,10 @@
 
 use std::borrow::Cow;
 
+use crate::avm2::activation::Activation;
+use crate::avm2::Error;
+use crate::avm2::{ArrayObject, ArrayStorage, Object};
+use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
@@ -144,10 +148,55 @@ impl<'gc> RegExp<'gc> {
         }
     }
 
-    pub fn exec(&mut self, text: AvmString<'gc>) -> Option<regress::Match> {
-        let global = self.flags.contains(RegExpFlags::GLOBAL);
-        let start = if global { self.last_index } else { 0 };
-        let re_match = self.find_utf8_match_at(text, start, |text, mut re_match| {
+    pub fn split(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        text: AvmString<'gc>,
+        limit: usize,
+    ) -> Result<Object<'gc>, Error> {
+        let mut storage = ArrayStorage::new(0);
+        // The empty regex is a special case which splits into characters.
+        if self.source.is_empty() {
+            let mut it = text.chars().take(limit);
+            while let Some(Ok(c)) = it.next() {
+                storage.push(
+                    AvmString::new(activation.context.gc_context, WString::from_char(c)).into(),
+                );
+            }
+            return ArrayObject::from_storage(activation, storage);
+        }
+
+        let mut start = 0;
+        while let Some(m) = self.find_utf16_match(text, start) {
+            if m.range.end == start {
+                break;
+            }
+            storage.push(
+                AvmString::new(activation.context.gc_context, &text[start..m.range.start]).into(),
+            );
+            if storage.length() >= limit {
+                break;
+            }
+            for c in m.captures.iter().filter_map(Option::as_ref) {
+                storage.push(
+                    AvmString::new(activation.context.gc_context, &text[c.start..c.end]).into(),
+                );
+                if storage.length() >= limit {
+                    break; // Intentional bug to match Flash.
+                           // Causes adding parts past limit.
+                }
+            }
+
+            start = m.range.end;
+        }
+        if storage.length() < limit {
+            storage.push(AvmString::new(activation.context.gc_context, &text[start..]).into());
+        }
+        ArrayObject::from_storage(activation, storage)
+    }
+
+    fn find_utf16_match(&mut self, text: AvmString<'gc>, start: usize) -> Option<regress::Match> {
+        self.find_utf8_match_at(text, start, |text, mut re_match| {
             // Sort the capture endpoints by increasing index, so that CachedText::utf16_index is efficient.
             let mut utf8_indices = re_match
                 .captures
@@ -162,10 +211,13 @@ impl<'gc> RegExp<'gc> {
             for i in utf8_indices {
                 *i = text.utf16_index(*i).unwrap();
             }
-
             re_match
-        })?;
-
+        })
+    }
+    pub fn exec(&mut self, text: AvmString<'gc>) -> Option<regress::Match> {
+        let global = self.flags.contains(RegExpFlags::GLOBAL);
+        let start = if global { self.last_index } else { 0 };
+        let re_match = self.find_utf16_match(text, start)?;
         if global {
             self.last_index = re_match.end();
         }

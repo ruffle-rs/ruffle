@@ -7,4 +7,23 @@ a,b,c
 a,.,b,.,c
 // text.split()
 a.b.c
-// text.split(regex) - unimplemented
+// text.split(regex)
+a,a,c
+// no match
+ccccc
+// match all
+,
+// empty string, match all
+
+// multibyte chars
+ąą,ąą
+// Group expansion
+a,bb,b,a
+// Split on empty regex
+aął
+// Split on non-empty regex with zero-length match
+aąbcde
+// Limit
+aą,aa,a
+// Limit on group captures - flash returns 6 parts instead of 5
+aą,bb,b,aa,bb,a
