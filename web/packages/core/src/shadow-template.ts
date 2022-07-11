@@ -231,7 +231,7 @@ ruffleShadowTemplate.innerHTML = `
 
 export const preloaderTemplate = document.createElement("template");
 preloaderTemplate.innerHTML = `
-    <div id="preloader">
+    <div id="preloader" style="display: none;">
         <style>
             #preloader {
                 display: flex;

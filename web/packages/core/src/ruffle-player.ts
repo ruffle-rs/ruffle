@@ -214,6 +214,7 @@ export class RufflePlayer extends HTMLElement {
             this.shadow.getElementById("dynamic_styles")
         );
         this.container = this.shadow.getElementById("container")!;
+        this.container.appendChild(preloaderTemplate.content.cloneNode(true));
         this.playButton = this.shadow.getElementById("play_button")!;
         if (this.playButton) {
             this.playButton.addEventListener("click", () => this.play());
@@ -1470,21 +1471,18 @@ export class RufflePlayer extends HTMLElement {
 
     private get isPreloaderVisible(): boolean {
         return (
-            this.container.querySelector("#preloader") !== null ||
-            this.container.querySelector("#preloader") !== undefined
+            this.container.querySelector<HTMLElement>("#preloader")!.style
+                .display !== "none"
         );
     }
 
     private set isPreloaderVisible(visible: boolean) {
-        const preloader = this.container.querySelector("#preloader");
-        if (visible && !preloader) {
-            const preloaderElement = <HTMLElement>(
-                preloaderTemplate.content.cloneNode(true)
-            );
-            this.container.appendChild(preloaderElement);
-        } else if (!visible && preloader) {
-            // The remove method is overwritten by a somewhat common JS library called prototype.js
-            preloader.parentNode!.removeChild(preloader);
+        const preloader =
+            this.container.querySelector<HTMLElement>("#preloader");
+        if (visible) {
+            preloader!.style.display = "flex";
+        } else {
+            preloader!.style.display = "none";
         }
     }
 }
