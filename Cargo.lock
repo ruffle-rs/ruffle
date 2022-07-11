@@ -2658,9 +2658,9 @@ dependencies = [
 
 [[package]]
 name = "path-slash"
-version = "0.1.5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "498a099351efa4becc6a19c72aa9270598e8fd274ca47052e37455241c88b696"
+checksum = "c54014ba3c1880122928735226f78b6f5bf5bd1fed15e41e92cf7aa20278ce28"
 
 [[package]]
 name = "peeking_take_while"
