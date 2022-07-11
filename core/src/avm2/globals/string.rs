@@ -420,7 +420,7 @@ fn split<'gc>(
             .as_ref()
             .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            return Ok(regexp.split(activation, this, limit).unwrap().into());
+            return Ok(regexp.split(activation, this, limit)?.into());
         }
 
         let delimiter = delimiter.coerce_to_string(activation)?;

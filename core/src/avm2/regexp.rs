@@ -5,10 +5,10 @@ use std::borrow::Cow;
 use crate::avm2::activation::Activation;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Object};
+use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
-use ruffle_wstr::WString;
 
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
@@ -196,7 +196,7 @@ impl<'gc> RegExp<'gc> {
     }
 
     fn find_utf16_match(&mut self, text: AvmString<'gc>, start: usize) -> Option<regress::Match> {
-        let re_match = self.find_utf8_match_at(text, start, |text, mut re_match| {
+        self.find_utf8_match_at(text, start, |text, mut re_match| {
             // Sort the capture endpoints by increasing index, so that CachedText::utf16_index is efficient.
             let mut utf8_indices = re_match
                 .captures
@@ -211,10 +211,8 @@ impl<'gc> RegExp<'gc> {
             for i in utf8_indices {
                 *i = text.utf16_index(*i).unwrap();
             }
-
             re_match
-        })?;
-        Some(re_match)
+        })
     }
     pub fn exec(&mut self, text: AvmString<'gc>) -> Option<regress::Match> {
         let global = self.flags.contains(RegExpFlags::GLOBAL);
