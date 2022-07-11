@@ -38,9 +38,9 @@ pub fn find_files(root: &Path, ignore: &[String]) -> Vec<DirEntry> {
     results
 }
 
-pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: DirEntry, name: String) -> FileResults {
+pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> FileResults {
     let start = Instant::now();
-    let mut file_results = FileResults::new(&name);
+    let mut file_results = FileResults::new(name);
 
     let subproc = Command::new(exec_path)
         .args(&["execute-report", &file.path().to_string_lossy()])
@@ -139,10 +139,10 @@ pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
                 .strip_prefix(&input_path)
                 .unwrap_or_else(|_| file.path())
                 .to_slash_lossy();
-            let result = scan_file(&binary_path, file, name.clone());
+            let result = scan_file(&binary_path, &file, &name);
 
             closure_progress.inc(1);
-            closure_progress.set_message(name);
+            closure_progress.set_message(name.into_owned());
 
             result
         })
