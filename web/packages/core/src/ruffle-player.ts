@@ -477,10 +477,7 @@ export class RufflePlayer extends HTMLElement {
 
             if (this.audioState() !== "running") {
                 // Treat unspecified and invalid values as `UnmuteOverlay.Visible`.
-                if (
-                    !this.showPreloader &&
-                    config.unmuteOverlay !== UnmuteOverlay.Hidden
-                ) {
+                if (config.unmuteOverlay !== UnmuteOverlay.Hidden) {
                     this.unmuteOverlay.style.display = "block";
                 }
 
@@ -502,7 +499,7 @@ export class RufflePlayer extends HTMLElement {
                     };
                 }
             }
-        } else if (!this.showPreloader) {
+        } else {
             this.playButton.style.display = "block";
         }
     }
@@ -1452,18 +1449,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private hidePreloader(): void {
-        const config: BaseLoadOptions = {
-            ...(window.RufflePlayer?.config ?? {}),
-            ...this.config,
-            ...this.options,
-        };
-        if (this.audioState() !== "running") {
-            if (config.autoplay !== AutoPlay.On) {
-                this.playButton.style.display = "block";
-            } else if (config.unmuteOverlay !== UnmuteOverlay.Hidden) {
-                this.unmuteOverlay.style.display = "block";
-            }
-        }
         this.isPreloaderVisible = false;
     }
 
