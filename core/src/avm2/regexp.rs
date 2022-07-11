@@ -167,7 +167,6 @@ impl<'gc> RegExp<'gc> {
         }
 
         let mut start = 0;
-        let mut parts = 0;
         while let Some(m) = self.find_utf16_match(text, start) {
             if m.range.end == start {
                 break;
@@ -175,16 +174,14 @@ impl<'gc> RegExp<'gc> {
             storage.push(
                 AvmString::new(activation.context.gc_context, &text[start..m.range.start]).into(),
             );
-            parts += 1;
-            if parts >= limit {
+            if storage.length() >= limit {
                 break;
             }
             for c in m.captures.iter().filter_map(Option::as_ref) {
                 storage.push(
                     AvmString::new(activation.context.gc_context, &text[c.start..c.end]).into(),
                 );
-                parts += 1;
-                if parts >= limit {
+                if storage.length() >= limit {
                     break; // Intentional bug to match Flash.
                            // Causes adding parts past limit.
                 }
@@ -192,10 +189,10 @@ impl<'gc> RegExp<'gc> {
 
             start = m.range.end;
         }
-        if parts < limit {
+        if storage.length() < limit {
             storage.push(AvmString::new(activation.context.gc_context, &text[start..]).into());
         }
-        return ArrayObject::from_storage(activation, storage);
+        ArrayObject::from_storage(activation, storage)
     }
 
     fn find_utf16_match(&mut self, text: AvmString<'gc>, start: usize) -> Option<regress::Match> {
@@ -217,7 +214,7 @@ impl<'gc> RegExp<'gc> {
 
             re_match
         })?;
-        return Some(re_match);
+        Some(re_match)
     }
     pub fn exec(&mut self, text: AvmString<'gc>) -> Option<regress::Match> {
         let global = self.flags.contains(RegExpFlags::GLOBAL);
