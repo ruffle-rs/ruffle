@@ -242,6 +242,7 @@ preloaderTemplate.innerHTML = `
                 align-items: center;
                 justify-content: center;
                 aspect-ratio: 2;
+                max-height: 100%;
                 position: relative;
                 top: 50%;
                 left: 50%;
@@ -259,6 +260,7 @@ preloaderTemplate.innerHTML = `
 
             .loadbarInner {
                 width: 0px;
+                max-width: 100%;
                 height: 100%;
                 background: var(--ruffle-orange);
             }
