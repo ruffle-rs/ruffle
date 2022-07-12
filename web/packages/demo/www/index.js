@@ -154,7 +154,10 @@ window.addEventListener("load", () => {
             if (swfData.type) {
                 optionGroups[swfData.type].append(option);
             } else {
-                sampleFileInput.insertBefore(option, sampleFileInput.firstChild);
+                sampleFileInput.insertBefore(
+                    option,
+                    sampleFileInput.firstChild
+                );
             }
         }
         sampleFileInputContainer.classList.remove("hidden");
