@@ -515,7 +515,15 @@ export class RufflePlayer extends HTMLElement {
         const loadBar = <HTMLElement>(
             this.container.querySelector(".loadbarInner")
         );
-        if (loadBar) {
+        const outerLoadbar = <HTMLElement>(
+            this.container.querySelector(".loadbar")
+        );
+        if (Number.isNaN(bytesTotal) && outerLoadbar.style.display !== "none") {
+            if (outerLoadbar) {
+                outerLoadbar.style.display = "none";
+            }
+        }
+        if (loadBar && !Number.isNaN(bytesTotal)) {
             loadBar.style.width = `${100.0 * (bytesLoaded / bytesTotal)}%`;
         }
     }
