@@ -721,13 +721,10 @@ impl<'gc> Loader<'gc> {
                                 ByteArrayObject::from_storage(activation, storage).unwrap();
                             bytearray.into()
                         }
-                        DataFormat::Text => {
-                            // FIXME - what do we do if the data is not UTF-8?
-                            Avm2Value::String(
-                                AvmString::new_utf8_bytes(activation.context.gc_context, body)
-                                    .unwrap(),
-                            )
-                        }
+                        DataFormat::Text => Avm2Value::String(AvmString::new_utf8_bytes_lossy(
+                            activation.context.gc_context,
+                            body,
+                        )),
                         DataFormat::Variables => {
                             log::warn!(
                                 "Support for URLLoaderDataFormat.VARIABLES not yet implemented"
