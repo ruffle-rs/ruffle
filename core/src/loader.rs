@@ -723,7 +723,7 @@ impl<'gc> Loader<'gc> {
                         }
                         DataFormat::Text => Avm2Value::String(AvmString::new_utf8_bytes_lossy(
                             activation.context.gc_context,
-                            body,
+                            &body,
                         )),
                         DataFormat::Variables => {
                             log::warn!(
