@@ -13,7 +13,6 @@ let player;
 
 const main = document.getElementById("main");
 const overlay = document.getElementById("overlay");
-const prompt = document.getElementById("prompt");
 const authorContainer = document.getElementById("author-container");
 const author = document.getElementById("author");
 const sampleFileInputContainer = document.getElementById(
@@ -29,7 +28,7 @@ const optionGroups = {
 };
 
 // Default config used by the player.
-const config = {
+const defaultConfig = {
     letterbox: "on",
     logLevel: "warn",
 };
@@ -38,13 +37,10 @@ function unload() {
     if (player) {
         player.remove();
     }
-    prompt.classList.remove("hidden");
 }
 
 function load(options) {
     unload();
-    prompt.classList.add("hidden");
-
     player = ruffle.createPlayer();
     player.id = "player";
     main.append(player);
@@ -59,7 +55,7 @@ function showSample(swfData) {
 }
 
 function hideSample() {
-    sampleFileInput.selectedIndex = 0;
+    sampleFileInput.selectedIndex = -1;
     authorContainer.classList.add("hidden");
     author.textContent = "";
     author.href = "";
@@ -74,7 +70,7 @@ async function loadFile(file) {
     }
     hideSample();
     const data = await new Response(file).arrayBuffer();
-    load({ data, ...config });
+    load({ data, ...defaultConfig });
 }
 
 function loadSample() {
@@ -82,6 +78,7 @@ function loadSample() {
     localFileName.textContent = "No file selected.";
     if (swfData) {
         showSample(swfData);
+        const config = swfData.config || defaultConfig;
         load({ url: swfData.location, ...config });
     } else {
         hideSample();
@@ -154,11 +151,16 @@ window.addEventListener("load", () => {
             option.textContent = swfData.title;
             option.value = swfData.location;
             option.swfData = swfData;
-            optionGroups[swfData.type].append(option);
+            if (swfData.type) {
+                optionGroups[swfData.type].append(option);
+            } else {
+                sampleFileInput.insertBefore(option, sampleFileInput.firstChild);
+            }
         }
         sampleFileInputContainer.classList.remove("hidden");
     }
 
+    sampleFileInput.selectedIndex = 0;
     const initialFile = new URL(window.location).searchParams.get("file");
     if (initialFile) {
         const options = Array.from(sampleFileInput.options);
@@ -166,14 +168,6 @@ window.addEventListener("load", () => {
             options.findIndex((swfData) => swfData.value.endsWith(initialFile)),
             0
         );
-        loadSample();
-    } else {
-        load({
-            url: "logo-anim.swf",
-            autoplay: "on",
-            backgroundColor: "#31497D",
-            letterbox: "off",
-            unmuteOverlay: "hidden",
-        });
     }
+    loadSample();
 })();
