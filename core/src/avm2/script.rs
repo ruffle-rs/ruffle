@@ -140,7 +140,8 @@ impl<'gc> TranslationUnit<'gc> {
         // allowing us to use 'bc_method' later on without a borrow-checker error.
         let method = (|| {
             if is_global {
-                if let Some(native) = activation.avm2().native_table[method_index.0 as usize] {
+                if let Some(native) = activation.avm2().native_method_table[method_index.0 as usize]
+                {
                     let variadic = bc_method.is_variadic();
                     return Method::from_builtin_and_params(
                         native,

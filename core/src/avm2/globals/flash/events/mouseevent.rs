@@ -17,7 +17,9 @@ pub fn instance_init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
-        activation.super_init(this, args)?;
+        // Get up to three arguments
+        let event_args = &args[..(std::cmp::min(args.len(), 2))];
+        activation.super_init(this, event_args)?;
         if let Some(mut evt) = this.as_event_mut(activation.context.gc_context) {
             // This is technically duplicative of `Event`'s initializer, but
             // we have different default parameters.

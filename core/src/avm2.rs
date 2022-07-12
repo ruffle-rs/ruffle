@@ -1,5 +1,6 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+use crate::avm2::class::AllocatorFn;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::EventObject;
@@ -76,7 +77,10 @@ pub struct Avm2<'gc> {
     system_classes: Option<SystemClasses<'gc>>,
 
     #[collect(require_static)]
-    native_table: &'static [Option<NativeMethodImpl>],
+    native_method_table: &'static [Option<NativeMethodImpl>],
+
+    #[collect(require_static)]
+    native_instance_allocator_table: &'static [Option<AllocatorFn>],
 
     /// A list of objects which are capable of recieving broadcasts.
     ///
@@ -101,7 +105,8 @@ impl<'gc> Avm2<'gc> {
             stack: Vec::new(),
             globals,
             system_classes: None,
-            native_table: Default::default(),
+            native_method_table: Default::default(),
+            native_instance_allocator_table: Default::default(),
             broadcast_list: Default::default(),
 
             #[cfg(feature = "avm_debug")]

@@ -1,4 +1,6 @@
-// List is ordered alphabetically.
+// List is ordered alphabetically, except where superclasses
+// need to come before subclasses.
+
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
@@ -30,6 +32,12 @@ include "flash/display/StageQuality.as"
 include "flash/display/StageScaleMode.as"
 include "flash/display/SWFVersion.as"
 include "flash/display/TriangleCulling.as"
+
+// Event needs to come before its subclasses
+include "flash/events/Event.as"
+include "flash/events/ActivityEvent.as"
+include "flash/events/ContextMenuEvent.as"
+
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Orientation3D.as"
 include "flash/geom/Matrix.as"
