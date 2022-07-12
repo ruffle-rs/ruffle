@@ -47,6 +47,13 @@ impl<'gc> AvmString<'gc> {
         Ok(Self::new_utf8(gc_context, utf8))
     }
 
+    pub fn new_utf8_bytes_lossy<'b, B: Into<Cow<'b, [u8]>>>(
+        gc_context: MutationContext<'gc, '_>,
+        bytes: B,
+    ) -> Self {
+        Self::new_utf8(gc_context, String::from_utf8_lossy(&bytes.into()))
+    }
+
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         Self {
             source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(string.into()))),
