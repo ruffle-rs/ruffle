@@ -26,7 +26,7 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  * download.
  *
  * @param config The `window.RufflePlayer.config` object.
- * @param progressCallback The   * @param progressCallback The callback that will be run with Ruffle's download progress.
+ * @param progressCallback The callback that will be run with Ruffle's download progress.
  * @returns A ruffle constructor that may be used to create new Ruffle
  * instances.
  */
