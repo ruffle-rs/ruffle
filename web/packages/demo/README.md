@@ -29,43 +29,77 @@ To use this, add a new file `swfs.json` in this directory. The contents should l
 
 ```json
 {
-    "swfs": [
-        {
-            "location": "swfs/alien_hominid.swf",
-            "title": "Alien Hominid",
-            "author": "Tom Fulp and Dan Paladin",
-            "authorLink": "https://www.newgrounds.com",
-            "type": "Game"
-        },
-        {
-            "location": "swfs/saturday_morning_watchmen.swf",
-            "title": "Saturday Morning Watchmen",
-            "author": "Harry Partridge",
-            "authorLink": "https://twitter.com/HappyHarryToons",
-            "type": "Animation"
-        },
-        {
-            "location": "swfs/synj1.swf",
-            "title": "Synj vs. Horrid Part 1",
-            "author": "Dan Paladin",
-            "authorLink": "https://www.thebehemoth.com",
-            "type": "Animation"
-        },
-        {
-            "location": "swfs/synj2.swf",
-            "title": "Synj vs. Horrid Part 2",
-            "author": "Dan Paladin",
-            "authorLink": "https://www.thebehemoth.com",
-            "type": "Animation"
-        },
-        {
-            "location": "swfs/wasted_sky.swf",
-            "title": "Wasted Sky",
-            "author": "Tom Fulp",
-            "authorLink": "https://www.newgrounds.com",
-            "type": "Game"
-        }
-    ]
+  "swfs": [
+    {
+      "location": "logo-anim.swf",
+      "title": "Ruffle Logo",
+      "author": "Ruffle contributors",
+      "authorLink": "https://ruffle.rs",
+      "config": {
+        "autoplay": "on",
+        "backgroundColor": "#31497D",
+        "letterbox": "off",
+        "unmuteOverlay": "hidden"
+      }
+    },
+    {
+      "location": "swfs/bitey1.swf",
+      "title": "Bitey of Brackenwood",
+      "author": "Adam Phillips",
+      "authorLink": "https://bitey.com",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/saturday_morning_watchmen.swf",
+      "title": "Saturday Morning Watchmen",
+      "author": "Harry Partridge",
+      "authorLink": "https://twitter.com/HappyHarryToons",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/synj1.swf",
+      "title": "Synj vs. Horrid Part 1",
+      "author": "Dan Paladin",
+      "authorLink": "https://www.thebehemoth.com",
+      "type": "Animation"
+    },
+    {
+      "location": "swfs/synj2.swf",
+      "title": "Synj vs. Horrid Part 2",
+      "author": "Dan Paladin",
+      "authorLink": "https://www.thebehemoth.com",
+      "type": "Animation"
+    },
+
+    {
+      "location": "swfs/alien_hominid.swf",
+      "title": "Alien Hominid",
+      "author": "Tom Fulp and Dan Paladin",
+      "authorLink": "https://www.newgrounds.com",
+      "type": "Game"
+    },
+    {
+      "location": "swfs/flyguy.swf",
+      "title": "FlyGuy",
+      "author": "Trevor van Meter",
+      "authorLink": "https://www.heytvm.com",
+      "type": "Game"
+    },
+    {
+      "location": "swfs/marvin_spectrum.swf",
+      "title": "Marvin Spectrum",
+      "author": "Bryan Singh",
+      "authorLink": "https://www.hotbryan.com",
+      "type": "Game"
+    },
+    {
+      "location": "swfs/wasted_sky.swf",
+      "title": "Wasted Sky",
+      "author": "Tom Fulp",
+      "authorLink": "https://www.newgrounds.com",
+      "type": "Game"
+    }
+  ]
 }
 ```
 
