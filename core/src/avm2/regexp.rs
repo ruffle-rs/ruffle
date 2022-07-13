@@ -148,6 +148,93 @@ impl<'gc> RegExp<'gc> {
         }
     }
 
+    fn effective_replacement(
+        replacement: &AvmString<'gc>,
+        text: &AvmString<'gc>,
+        m: &regress::Match,
+    ) -> WString {
+        let mut ret = WString::new();
+        let s = replacement.as_wstr();
+        let mut chars = s.char_indices().peekable();
+        while let Some((_pos, Ok(c))) = chars.next() {
+            if c != '$' {
+                ret.push_char(c);
+                continue;
+            }
+            match chars.next() {
+                Some((_, Ok('$'))) => ret.push_char('$'),
+                Some((_, Ok('&'))) => ret.push_str(&text[m.range.start..m.range.end]),
+                Some((_, Ok('`'))) => ret.push_str(&text[..m.range.start]),
+                Some((_, Ok('\''))) => ret.push_str(&text[m.range.end..]),
+
+                Some((_, Ok(n))) => {
+                    if let Some(d) = n.to_digit(10) {
+                        let d_u = usize::try_from(d).unwrap_or(0);
+                        if d_u > m.captures.len() {
+                            ret.push_char('$');
+                            ret.push_char(n);
+                            continue;
+                        }
+                        let mut grp_index = d_u;
+                        if let Some((_, Ok(next_char))) = chars.peek() {
+                            if let Some(d1) = next_char.to_digit(10) {
+                                let d1_u = usize::try_from(d1).unwrap_or(0);
+                                let two_digit_index = d_u * 10 + d1_u;
+                                if two_digit_index <= m.captures.len() {
+                                    chars.next();
+                                    grp_index = two_digit_index
+                                }
+                            }
+                        }
+                        if let Some(Some(r)) = m.captures.get(grp_index - 1) {
+                            ret.push_str(&text[r.start..r.end])
+                        }
+                        continue;
+                    }
+
+                    {
+                        ret.push_char('$');
+                        ret.push_char(n)
+                    }
+                }
+
+                _ => ret.push_char('$'),
+            }
+        }
+        ret
+    }
+
+    pub fn replace(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        text: AvmString<'gc>,
+        replacement: AvmString<'gc>,
+    ) -> AvmString<'gc> {
+        let mut ret = WString::new();
+        let mut start = 0;
+        while let Some(m) = self.find_utf16_match(text, start) {
+            ret.push_str(&text[start..m.range.start]);
+            ret.push_str(&Self::effective_replacement(&replacement, &text, &m));
+
+            start = m.range.end;
+
+            if m.range.is_empty() {
+                if start == text.len() {
+                    break;
+                }
+                ret.push_str(&text[start..start + 1]);
+                start += 1;
+            }
+
+            if !self.flags().contains(RegExpFlags::GLOBAL) {
+                break;
+            }
+        }
+
+        ret.push_str(&text[start..]);
+        AvmString::new(activation.context.gc_context, ret)
+    }
+
     pub fn split(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
