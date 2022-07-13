@@ -30,6 +30,10 @@ ruffleShadowTemplate.innerHTML = `
             height: 100% !important;
         }
 
+        .hidden {
+            display: none;
+        }
+
         /* All of these use the dimensions specified by the embed. */
         #container,
         #play_button,

@@ -1489,8 +1489,12 @@ export class RufflePlayer extends HTMLElement {
             this.container.querySelector<HTMLElement>("#preloader");
         if (visible) {
             preloader!.style.display = "flex";
+            this.unmuteOverlay!.classList.add("hidden");
+            this.playButton!.classList.add("hidden");
         } else {
             preloader!.style.display = "none";
+            this.unmuteOverlay!.classList.remove("hidden");
+            this.playButton!.classList.remove("hidden");
         }
     }
 }
