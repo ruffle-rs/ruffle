@@ -301,50 +301,12 @@ fn replace<'gc>(
         }
         let replacement = replacement.coerce_to_string(activation)?;
 
-        if replacement.find(b'$').is_some() {
-            log::warn!("string.replace(_, \"...$...\") - not implemented");
-            return Err("NotImplemented".into());
-        }
-
-        if pattern
+        if let Some(mut regexp) = pattern
             .as_object()
-            .map(|o| o.as_regexp().is_some())
-            .unwrap_or(false)
+            .as_ref()
+            .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            let regexp_object = pattern.as_object().unwrap();
-            let mut regexp = regexp_object
-                .as_regexp_mut(activation.context.gc_context)
-                .unwrap();
-            let mut ret = WString::new();
-            let mut start = 0;
-
-            let old = regexp.last_index();
-            regexp.set_last_index(0);
-
-            while let Some(result) = regexp.exec(this) {
-                ret.push_str(&this[start..result.start()]);
-                ret.push_str(&replacement);
-
-                start = regexp.last_index();
-
-                if result.range().is_empty() {
-                    let last_index = regexp.last_index();
-                    if last_index == this.len() {
-                        break;
-                    }
-                    regexp.set_last_index(last_index + 1);
-                }
-
-                if !regexp.flags().contains(RegExpFlags::GLOBAL) {
-                    break;
-                }
-            }
-
-            regexp.set_last_index(old);
-
-            ret.push_str(&this[start..]);
-
-            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+            return Ok(regexp.replace(activation, this, replacement).into());
         } else {
             let pattern = pattern.coerce_to_string(activation)?;
             if let Some(position) = this.find(&pattern) {

@@ -33,3 +33,32 @@ var regex = /a/g;
 regex.lastIndex = 1;
 trace("aaaa".replace(regex, "x"));
 trace(regex.lastIndex);
+
+trace("// $ with non-special successor char")
+trace("abaa".replace(/b/,"$k"))
+
+trace("// $& ")
+trace("abaa".replace(/b/,"|$&|"))
+
+trace("// $` ")
+trace("axbfg".replace(/b/,"$`"))
+
+trace("// $' ")
+trace("axbfg".replace(/b/,"$'"))
+
+
+trace("// $1")
+trace("abc".replace(/(b)/, "<$1>"))
+
+trace("// not enough groups")
+trace("abc".replace(/(b)/, "<$2>"))
+
+trace("// two-digit capture group number, but not enough groups")
+trace("abc".replace(/(b)/, "<$10>"))
+
+trace("// Two-digit capture group number")
+var r=RegExp("(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)")
+trace("abbbbbbbbb#bbc".replace(r, "<$10>"))
+
+
+
