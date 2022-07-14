@@ -65,11 +65,11 @@ async function fetchRuffle(
     const wasmUrl = extensionsSupported
         ? new URL("../pkg/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../pkg/ruffle_web_bg.wasm", import.meta.url);
-    const wasmResponse = await fetch(wasmUrl.href);
+    const wasmResponse = await fetch(wasmUrl);
     if (progressCallback) {
         const contentLength = wasmResponse.headers.get("content-length")!;
         let bytesLoaded = 0;
-        const bytesTotal = parseInt(contentLength, 10);
+        const bytesTotal = Number(contentLength);
         response = new Response(
             new ReadableStream({
                 async start(controller) {
@@ -78,7 +78,7 @@ async function fetchRuffle(
                         throw "Response had no body";
                     }
                     progressCallback?.(bytesLoaded, bytesTotal);
-                    for (;;) {
+                    while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
                         if (value?.byteLength) bytesLoaded += value?.byteLength;

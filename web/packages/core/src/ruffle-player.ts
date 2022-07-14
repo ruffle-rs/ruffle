@@ -1,7 +1,7 @@
 import { Ruffle } from "../pkg/ruffle_web";
 
 import { loadRuffle } from "./load-ruffle";
-import { preloaderTemplate, ruffleShadowTemplate } from "./shadow-template";
+import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { Config } from "./config";
 import {
@@ -122,6 +122,7 @@ export class RufflePlayer extends HTMLElement {
     private container: HTMLElement;
     private playButton: HTMLElement;
     private unmuteOverlay: HTMLElement;
+    private preloader: HTMLElement;
 
     // Firefox has a read-only "contextMenu" property,
     // so avoid shadowing it.
@@ -132,7 +133,7 @@ export class RufflePlayer extends HTMLElement {
     private contextMenuForceDisabled = false;
 
     // Whether to show a preloader while Ruffle is still loading the SWF
-    private showPreloader = true;
+    private hasPreloader = true;
 
     // Whether this device is a touch device.
     // Set to true when a touch event is encountered.
@@ -214,13 +215,13 @@ export class RufflePlayer extends HTMLElement {
             this.shadow.getElementById("dynamic_styles")
         );
         this.container = this.shadow.getElementById("container")!;
-        this.container.appendChild(preloaderTemplate.content.cloneNode(true));
         this.playButton = this.shadow.getElementById("play_button")!;
         if (this.playButton) {
             this.playButton.addEventListener("click", () => this.play());
         }
 
         this.unmuteOverlay = this.shadow.getElementById("unmute_overlay")!;
+        this.preloader = this.shadow.getElementById("preloader")!;
 
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
         this.addEventListener("contextmenu", this.showContextMenu.bind(this));
@@ -397,8 +398,8 @@ export class RufflePlayer extends HTMLElement {
     private async ensureFreshInstance(config: BaseLoadOptions): Promise<void> {
         this.destroy();
 
-        if (this.showPreloader) {
-            this.isPreloaderVisible = true;
+        if (this.hasPreloader) {
+            this.showPreloader();
         }
         const ruffleConstructor = await loadRuffle(
             config,
@@ -513,10 +514,10 @@ export class RufflePlayer extends HTMLElement {
      */
     private onRuffleDownloadProgress(bytesLoaded: number, bytesTotal: number) {
         const loadBar = <HTMLElement>(
-            this.container.querySelector(".loadbarInner")
+            this.preloader.querySelector(".loadbarInner")
         );
         const outerLoadbar = <HTMLElement>(
-            this.container.querySelector(".loadbar")
+            this.preloader.querySelector(".loadbar")
         );
         if (Number.isNaN(bytesTotal) && outerLoadbar.style.display !== "none") {
             if (outerLoadbar) {
@@ -610,7 +611,7 @@ export class RufflePlayer extends HTMLElement {
             this.showSwfDownload = config.showSwfDownload === true;
             this.options = options;
             this.hasContextMenu = config.contextMenu !== false;
-            this.showPreloader = config.showPreloader !== false;
+            this.hasPreloader = config.hasPreloader !== false;
 
             // Pre-emptively set background color of container while Ruffle/SWF loads.
             if (
@@ -1121,7 +1122,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
         this.panicked = true;
-        this.isPreloaderVisible = false;
+        this.hidePreloader();
 
         if (
             error instanceof Error &&
@@ -1458,14 +1459,22 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private hidePreloader(): void {
-        this.isPreloaderVisible = false;
+        this.preloader.style.display = "none";
+        this.unmuteOverlay.classList.remove("hidden");
+        this.playButton.classList.remove("hidden");
+    }
+
+    private showPreloader(): void {
+        this.preloader.style.display = "flex";
+        this.unmuteOverlay.classList.add("hidden");
+        this.playButton.classList.add("hidden");
     }
 
     private setMetadata(metadata: MovieMetadata) {
         this._metadata = metadata;
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
-        if (this.showPreloader) {
+        if (this.hasPreloader) {
             this.hidePreloader();
         }
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
@@ -1475,27 +1484,6 @@ export class RufflePlayer extends HTMLElement {
 
     setIsExtension(isExtension: boolean): void {
         this.isExtension = isExtension;
-    }
-
-    private get isPreloaderVisible(): boolean {
-        return (
-            this.container.querySelector<HTMLElement>("#preloader")!.style
-                .display !== "none"
-        );
-    }
-
-    private set isPreloaderVisible(visible: boolean) {
-        const preloader =
-            this.container.querySelector<HTMLElement>("#preloader");
-        if (visible) {
-            preloader!.style.display = "flex";
-            this.unmuteOverlay!.classList.add("hidden");
-            this.playButton!.classList.add("hidden");
-        } else {
-            preloader!.style.display = "none";
-            this.unmuteOverlay!.classList.remove("hidden");
-            this.playButton!.classList.remove("hidden");
-        }
     }
 }
 
