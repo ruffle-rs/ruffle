@@ -219,7 +219,7 @@ export interface BaseLoadOptions {
      *
      * @default true
      */
-    hasPreloader?: boolean;
+    preloader?: boolean;
 
     /**
      * Maximum amount of time a script can take before scripting
