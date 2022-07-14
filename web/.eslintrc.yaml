@@ -29,6 +29,3 @@ overrides:
         - error
         - selector: 'TSEnumDeclaration:not([const=true])'
           message: Don't declare non-const enums
-      no-constant-condition:
-        - error
-        - checkLoops: false
