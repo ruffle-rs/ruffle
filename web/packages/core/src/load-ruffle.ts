@@ -77,13 +77,13 @@ async function fetchRuffle(
                     if (!reader) {
                         throw "Response had no body";
                     }
-                    progressCallback?.(bytesLoaded, bytesTotal);
+                    progressCallback(bytesLoaded, bytesTotal);
                     for (;;) {
                         const { done, value } = await reader.read();
                         if (done) break;
                         if (value?.byteLength) bytesLoaded += value?.byteLength;
                         controller.enqueue(value);
-                        progressCallback?.(bytesLoaded, bytesTotal);
+                        progressCallback(bytesLoaded, bytesTotal);
                     }
                     controller.close();
                 },
