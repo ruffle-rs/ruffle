@@ -528,15 +528,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         })
     }
 
-    /// Execute a script initializer.
-    pub fn run_stack_frame_for_script(&mut self, script: Script<'gc>) -> Result<(), Error> {
-        let init = script.init().0.into_bytecode()?;
-
-        self.run_actions(init)?;
-
-        Ok(())
-    }
-
     /// Call the superclass's instance initializer.
     pub fn super_init(
         &mut self,
