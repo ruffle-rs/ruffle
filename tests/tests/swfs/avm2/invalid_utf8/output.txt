@@ -1,0 +1,12 @@
+Invalid UTF8 sequences
+%ED%80
+%EDp%80
+%ED%00%80%80
+%ED%80p
+
+Illegal UTF8 sequences
+%uD8C0%uDC00%80
+%C1%80
+%uD83D
+🐌
+%uD83D%uDC0C

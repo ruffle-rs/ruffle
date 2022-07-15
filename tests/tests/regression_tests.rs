@@ -319,6 +319,7 @@ swf_tests! {
     (as3_int_tostring, "avm2/int_tostring", 1),
     (as3_interactiveobject_enabled, "avm2/interactiveobject_enabled", 1),
     (as3_interface_namespaces, "avm2/interface_namespaces", 1),
+    (as3_invalid_utf8, "avm2/invalid_utf8", 1),
     (as3_is_finite, "avm2/is_finite", 1),
     (as3_is_nan, "avm2/is_nan", 1),
     (as3_is_prototype_of, "avm2/is_prototype_of", 1),
