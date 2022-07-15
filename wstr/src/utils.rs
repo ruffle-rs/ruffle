@@ -104,6 +104,14 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
 
 /// This is the same idea as std::str::Chars, except it uses flash's weird UTF-8 decoding rules,
 /// and works on raw bytes. It also does not return `char`, but raw u32's that may or may not be valid chars.
+///
+/// The main difference between UTF-8 decoding in flash and regular UTF-8 decoding is that invalid UTF-8 sequences
+/// are interpreted as if they were LATIN1 characters. Flash also completely ignores the rule about UTF-8 sequences
+/// not being allowed to be in surrogate range (0xD800-0xDBFF, 0xDC00-0xDFFF).
+///
+/// Another difference is that if a multibyte sequence is expecting 4 bytes, rather than failing/replacing with a
+/// replacement character since the maximum is 3, Flash will instead just only read the next 3 bytes and completely
+/// ignore the fact that the starting byte was expecting 4.
 pub struct AvmUtf8Decoder<'a> {
     src: &'a [u8],
     index: usize,
