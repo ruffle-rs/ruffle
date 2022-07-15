@@ -147,7 +147,10 @@ impl<'a> Iterator for AvmUtf8Decoder<'a> {
                         ch <<= 6;
                         ch |= (*b & (u8::MAX >> 2)) as u32;
                     }
-                    if !fail {
+                    if ch <= 128 {
+                        self.index += 1;
+                        ch = first as u32;
+                    } else if !fail {
                         self.index += mb_count as usize + 1;
                     }
                 }
