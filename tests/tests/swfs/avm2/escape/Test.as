@@ -29,3 +29,13 @@ var input = "!\"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#\zxcvbnm,./QWERTYUIOP
 trace("// escape(\"" + input + "\")");
 trace(escape(input));
 trace("");
+
+var input = "\x05";
+trace("// escape(\"\\x05\")");
+trace(escape(input));
+trace("");
+
+var input = "😭";
+trace("// escape(\"" + input + "\")");
+trace(escape(input));
+trace("");

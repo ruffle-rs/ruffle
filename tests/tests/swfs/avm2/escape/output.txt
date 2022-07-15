@@ -16,3 +16,9 @@ test
 // escape("!"£$%^&*()1234567890qwertyuiop[]asdfghjkl;'#zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:@~|ZXCVBNM<>?")
 %21%22%A3%24%25%5E%26*%28%291234567890qwertyuiop%5B%5Dasdfghjkl%3B%27%23zxcvbnm%2C./QWERTYUIOP%7B%7DASDFGHJKL%3A@%7E%7CZXCVBNM%3C%3E%3F%10
 
+// escape("\x05")
+%05
+
+// escape("😭")
+%uD83D%uDE2D
+
