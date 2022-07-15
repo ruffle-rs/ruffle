@@ -223,10 +223,10 @@ impl ByteArrayStorage {
         Ok(buffer)
     }
 
-    pub fn read_utf(&self) -> Result<String, Error> {
+    pub fn read_utf(&self) -> Result<&[u8], Error> {
         let len = self.read_unsigned_short()?;
-        let val = String::from_utf8_lossy(self.read_bytes(len.into())?);
-        Ok(val.into_owned())
+        let val = self.read_bytes(len.into())?;
+        Ok(val)
     }
 
     pub fn write_boolean(&mut self, val: bool) -> Result<(), Error> {

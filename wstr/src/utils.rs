@@ -1,6 +1,7 @@
 ///! Utilities for operating on strings in SWF files.
 use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use super::Units;
+use alloc::vec::Vec;
 
 fn is_surrogate_pair_at(us: &[u16], pos: usize) -> bool {
     if let Some(pair) = us.get(pos..pos + 2) {
@@ -99,4 +100,80 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
         Ok(i) => UPPERCASE_TABLE[i].1,
         Err(_) => c,
     }
+}
+
+/// This is the same idea as std::str::Chars, except it uses flash's weird UTF-8 decoding rules,
+/// and works on raw bytes. It also does not return `char`, but raw u32's that may or may not be valid chars.
+pub struct AvmUtf8Decoder<'a> {
+    src: &'a [u8],
+    index: usize,
+}
+
+impl<'a> AvmUtf8Decoder<'a> {
+    pub fn new(src: &'a [u8]) -> Self {
+        Self { src, index: 0 }
+    }
+}
+
+impl<'a> Iterator for AvmUtf8Decoder<'a> {
+    type Item = u32;
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut ch: u32;
+        let first = *self.src.get(self.index)?;
+        let ones = first.leading_ones();
+
+        if ones <= 1 {
+            self.index += 1;
+            ch = first as u32;
+        } else {
+            let mb_count = core::cmp::min(ones - 1, 3);
+            let bm = u8::MAX >> ones;
+            ch = (bm & first) as u32;
+            match self
+                .src
+                .get(self.index + 1..)
+                .and_then(|src| src.get(..mb_count as usize))
+            {
+                Some(mb) => {
+                    let mut fail = false;
+                    for b in mb.iter() {
+                        // continuation bytes should start with a single leading 1
+                        if b.leading_ones() != 1 {
+                            self.index += 1;
+                            ch = first as u32;
+                            fail = true;
+                            break;
+                        }
+                        ch <<= 6;
+                        ch |= (*b & (u8::MAX >> 2)) as u32;
+                    }
+                    if !fail {
+                        self.index += mb_count as usize + 1;
+                    }
+                }
+                None => {
+                    self.index += 1;
+                    ch = first as u32;
+                }
+            }
+        };
+        debug_assert!(ch <= 0x10FFFF);
+        Some(ch)
+    }
+}
+
+/// Encodes a raw character point into UTF16. Unlike char::encode_utf16, this does not require
+/// that the character point is valid.
+pub fn encode_raw_utf16(mut ch: u32, dst: &mut Vec<u16>) {
+    if ch < 0x10000 {
+        dst.push(ch as u16);
+        return;
+    }
+    ch -= 0x10000;
+    let mut w1: u16 = 0xD800;
+    let mut w2: u16 = 0xDC00;
+    w1 |= (ch >> 10) as u16;
+    w2 |= (ch & !(u32::MAX << 10)) as u16;
+    dst.push(w1);
+    dst.push(w2);
 }

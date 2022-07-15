@@ -80,16 +80,16 @@ impl<'gc> XmlNode<'gc> {
         bs: BytesStart<'_>,
         id_map: ScriptObject<'gc>,
     ) -> Result<Self, quick_xml::Error> {
-        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name())?;
+        let name = AvmString::new_utf8_bytes(activation.context.gc_context, bs.name());
         let mut node = Self::new(activation.context.gc_context, ELEMENT_NODE, Some(name));
 
         // Reverse attributes so they appear in the `PropertyMap` in their definition order.
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
-            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key)?;
+            let key = AvmString::new_utf8_bytes(activation.context.gc_context, attribute.key);
             let value_bytes = attribute.unescaped_value()?;
-            let value = AvmString::new_utf8_bytes(activation.context.gc_context, value_bytes)?;
+            let value = AvmString::new_utf8_bytes(activation.context.gc_context, &value_bytes);
 
             // Insert an attribute.
             node.attributes().define_value(
