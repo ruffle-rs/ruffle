@@ -6,9 +6,9 @@ use core::mem::{self, ManuallyDrop};
 use core::ops::{Deref, DerefMut};
 use core::ptr::{self, NonNull};
 
-use crate::utils::AvmUtf8Decoder;
-
-use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes};
+use super::utils::{
+    encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, AvmUtf8Decoder,
+};
 use super::{Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
