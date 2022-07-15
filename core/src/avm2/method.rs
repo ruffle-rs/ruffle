@@ -353,18 +353,6 @@ impl<'gc> Method<'gc> {
         ))
     }
 
-    /// Access the bytecode of this method.
-    ///
-    /// This function returns `Err` if there is no bytecode for this method.
-    pub fn into_bytecode(self) -> Result<Gc<'gc, BytecodeMethod<'gc>>, Error> {
-        match self {
-            Method::Native { .. } => {
-                Err("Attempted to unwrap a native method as a user-defined one".into())
-            }
-            Method::Bytecode(bm) => Ok(bm),
-        }
-    }
-
     /// Check if this method needs `arguments`.
     pub fn needs_arguments_object(&self) -> bool {
         match self {
