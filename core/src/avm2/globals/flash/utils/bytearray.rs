@@ -280,7 +280,7 @@ pub fn read_utf<'gc>(
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
             return Ok(
-                AvmString::new_utf8(activation.context.gc_context, bytearray.read_utf()?).into(),
+                AvmString::new_utf8_bytes(activation.context.gc_context, bytearray.read_utf()?).into(),
             );
         }
     }
@@ -294,8 +294,7 @@ pub fn to_string<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         if let Some(bytearray) = this.as_bytearray() {
-            let (new_string, _, _) = UTF_8.decode(bytearray.bytes());
-            return Ok(AvmString::new_utf8(activation.context.gc_context, new_string).into());
+            return Ok(AvmString::new_utf8_bytes(activation.context.gc_context, bytearray.bytes()).into());
         }
     }
 

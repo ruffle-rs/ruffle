@@ -6,7 +6,9 @@ use core::mem::{self, ManuallyDrop};
 use core::ops::{Deref, DerefMut};
 use core::ptr::{self, NonNull};
 
-use super::utils::split_ascii_prefix;
+use crate::utils::AvmUtf8Decoder;
+
+use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes};
 use super::{Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
@@ -100,6 +102,32 @@ impl WString {
         let mut buf = Self::new();
         buf.push_utf8(s);
         buf
+    }
+
+    pub fn from_utf8_bytes(b: Vec<u8>) -> Self {
+        let (ascii, tail) = split_ascii_prefix_bytes(&b);
+        let ascii = ascii.as_bytes();
+        if tail.is_empty() {
+            // We can directly reinterpret ASCII bytes as LATIN1.
+            return Self::from_buf(b);
+        }
+
+        let is_wide = AvmUtf8Decoder::new(tail)
+            .find(|ch| *ch > u8::MAX.into())
+            .is_some();
+        if is_wide {
+            let mut buf = Vec::new();
+            buf.extend(ascii.iter().map(|c| u16::from(*c)));
+            for ch in AvmUtf8Decoder::new(tail) {
+                encode_raw_utf16(ch, &mut buf);
+            }
+            Self::from_buf(buf)
+        } else {
+            let mut buf = Vec::new();
+            buf.extend_from_slice(ascii);
+            buf.extend(tail.iter());
+            Self::from_buf(buf)
+        }
     }
 
     /// Creates a `WString` from a single UCS2 code unit.
