@@ -263,9 +263,9 @@ ruffleShadowTemplate.innerHTML = `
         .loadingAnimation {
             max-width: 28px;
             max-height: 28px;
-            margin-bottom: 5%;
-			width: 10%;
-			aspect-ratio: 1;
+            margin-bottom: 2%;
+            width: 10%;
+            aspect-ratio: 1;
         }
 
         .spinner {
