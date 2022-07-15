@@ -721,9 +721,10 @@ impl<'gc> Loader<'gc> {
                                 ByteArrayObject::from_storage(activation, storage).unwrap();
                             bytearray.into()
                         }
-                        DataFormat::Text => Avm2Value::String(
-                            AvmString::new_utf8_bytes(activation.context.gc_context, &body),
-                        ),
+                        DataFormat::Text => Avm2Value::String(AvmString::new_utf8_bytes(
+                            activation.context.gc_context,
+                            &body,
+                        )),
                         DataFormat::Variables => {
                             log::warn!(
                                 "Support for URLLoaderDataFormat.VARIABLES not yet implemented"
