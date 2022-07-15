@@ -112,9 +112,7 @@ impl WString {
             return Self::from_buf(b);
         }
 
-        let is_wide = AvmUtf8Decoder::new(tail)
-            .find(|ch| *ch > u8::MAX.into())
-            .is_some();
+        let is_wide = AvmUtf8Decoder::new(tail).any(|ch| ch > u8::MAX.into());
         if is_wide {
             let mut buf = Vec::new();
             buf.extend(ascii.iter().map(|c| u16::from(*c)));
