@@ -110,7 +110,11 @@ pub fn escape<'gc>(
         if not_converted.contains(x) {
             output.push(x);
         } else {
-            let encode = format!("%{:X}", x);
+            let encode = if x <= u8::MAX.into() {
+                format!("%{:02X}", x)
+            } else {
+                format!("%u{:04X}", x)
+            };
             output.push_str(WStr::from_units(encode.as_bytes()));
         }
     }
