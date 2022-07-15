@@ -1459,13 +1459,13 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private hidePreloader(): void {
-        this.preloader.style.display = "none";
+        this.preloader.classList.add("hidden");
         this.unmuteOverlay.classList.remove("hidden");
         this.playButton.classList.remove("hidden");
     }
 
     private showPreloader(): void {
-        this.preloader.style.display = "flex";
+        this.preloader.classList.remove("hidden");
         this.unmuteOverlay.classList.add("hidden");
         this.playButton.classList.add("hidden");
     }
@@ -1474,9 +1474,7 @@ export class RufflePlayer extends HTMLElement {
         this._metadata = metadata;
         // TODO: Switch this to ReadyState.Loading when we have streaming support.
         this._readyState = ReadyState.Loaded;
-        if (this.hasPreloader) {
-            this.hidePreloader();
-        }
+        this.hidePreloader();
         this.dispatchEvent(new Event(RufflePlayer.LOADED_METADATA));
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new Event(RufflePlayer.LOADED_DATA));
