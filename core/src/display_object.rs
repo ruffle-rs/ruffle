@@ -66,13 +66,13 @@ pub struct DisplayObjectBase<'gc> {
     // Cached transform properties `_xscale`, `_yscale`, `_rotation`.
     // These are expensive to calculate, so they will be calculated and cached
     // when AS requests one of these properties.
-    //
-    // `_xscale` and `_yscale` are stored in units of percentages to avoid
-    // floating-point precision errors with movies that accumulate onto the
-    // scale parameters.
+    #[collect(require_static)]
     rotation: Degrees,
+    #[collect(require_static)]
     scale_x: Percent,
+    #[collect(require_static)]
     scale_y: Percent,
+
     skew: f64,
 
     /// The next display object in order of execution.
@@ -266,10 +266,10 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos_y = f64::cos(degrees.into_radians() + self.skew);
         let sin_y = f64::sin(degrees.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
-        matrix.a = (self.scale_x.into_unit() * cos_x) as f32;
-        matrix.b = (self.scale_x.into_unit() * sin_x) as f32;
-        matrix.c = (self.scale_y.into_unit() * -sin_y) as f32;
-        matrix.d = (self.scale_y.into_unit() * cos_y) as f32;
+        matrix.a = (self.scale_x.unit() * cos_x) as f32;
+        matrix.b = (self.scale_x.unit() * sin_x) as f32;
+        matrix.c = (self.scale_y.unit() * -sin_y) as f32;
+        matrix.d = (self.scale_y.unit() * cos_y) as f32;
     }
 
     fn scale_x(&mut self) -> Percent {
@@ -284,8 +284,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos = f64::cos(self.rotation.into_radians());
         let sin = f64::sin(self.rotation.into_radians());
         let mut matrix = &mut self.transform.matrix;
-        matrix.a = (cos * value.into_unit()) as f32;
-        matrix.b = (sin * value.into_unit()) as f32;
+        matrix.a = (cos * value.unit()) as f32;
+        matrix.b = (sin * value.unit()) as f32;
     }
 
     fn scale_y(&mut self) -> Percent {
@@ -300,8 +300,8 @@ impl<'gc> DisplayObjectBase<'gc> {
         let cos = f64::cos(self.rotation.into_radians() + self.skew);
         let sin = f64::sin(self.rotation.into_radians() + self.skew);
         let mut matrix = &mut self.transform.matrix;
-        matrix.c = (-sin * value.into_unit()) as f32;
-        matrix.d = (cos * value.into_unit()) as f32;
+        matrix.c = (-sin * value.unit()) as f32;
+        matrix.d = (cos * value.unit()) as f32;
     }
 
     fn name(&self) -> AvmString<'gc> {
@@ -769,28 +769,24 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The X axis scale for this display object in local space.
-    /// The normal scale is 100.
     /// Returned by the `_xscale`/`scaleX` ActionScript properties.
     fn scale_x(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
         self.base_mut(gc_context).scale_x()
     }
 
-    /// Sets the scale of the X axis for this display object in local space.
-    /// The normal scale is 100.
+    /// Sets the X axis scale for this display object in local space.
     /// Set by the `_xscale`/`scaleX` ActionScript properties.
     fn set_scale_x(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_x(value);
     }
 
     /// The Y axis scale for this display object in local space.
-    /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn scale_y(&self, gc_context: MutationContext<'gc, '_>) -> Percent {
         self.base_mut(gc_context).scale_y()
     }
 
     /// Sets the Y axis scale for this display object in local space.
-    /// The normal scale is 1.
     /// Returned by the `_yscale`/`scaleY` ActionScript properties.
     fn set_scale_y(&self, gc_context: MutationContext<'gc, '_>, value: Percent) {
         self.base_mut(gc_context).set_scale_y(value);
@@ -823,8 +819,8 @@ pub trait TDisplayObject<'gc>:
         // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
         // A = sin(t) * a + cos(t) * b
         // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x(gc_context).into_unit();
-        let prev_scale_y = self.scale_y(gc_context).into_unit();
+        let prev_scale_x = self.scale_x(gc_context).unit();
+        let prev_scale_y = self.scale_y(gc_context).unit();
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
@@ -871,8 +867,8 @@ pub trait TDisplayObject<'gc>:
         // It has to do with the length of the sides A, B of an AABB enclosing the object's OBB with sides a, b:
         // A = sin(t) * a + cos(t) * b
         // B = cos(t) * a + sin(t) * b
-        let prev_scale_x = self.scale_x(gc_context).into_unit();
-        let prev_scale_y = self.scale_y(gc_context).into_unit();
+        let prev_scale_x = self.scale_x(gc_context).unit();
+        let prev_scale_y = self.scale_y(gc_context).unit();
         let rotation = self.rotation(gc_context);
         let cos = f64::abs(f64::cos(rotation.into_radians()));
         let sin = f64::abs(f64::sin(rotation.into_radians()));
