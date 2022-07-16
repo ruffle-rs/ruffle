@@ -132,7 +132,7 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
 
         if ones <= 1 {
             self.index += 1;
-            return Some(first as u32);
+            Some(first as u32)
         } else {
             let mb_count = core::cmp::min(ones - 1, 3);
             let bm = u8::MAX >> ones;
@@ -154,19 +154,19 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
                     }
                     if ch <= 128 {
                         self.index += 1;
-                        return Some(first as u32);
+                        Some(first as u32)
                     } else {
                         self.index += mb_count as usize + 1;
                         debug_assert!(ch <= 0x10FFFF);
-                        return Some(ch);
+                        Some(ch)
                     }
                 }
                 None => {
                     self.index += 1;
-                    return Some(first as u32);
+                    Some(first as u32)
                 }
             }
-        };
+        }
     }
 }
 
