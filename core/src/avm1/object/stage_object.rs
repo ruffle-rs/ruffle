@@ -672,9 +672,7 @@ fn set_y<'gc>(
 }
 
 fn x_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_x(activation.context.gc_context)
-        .into_fraction()
-        .into()
+    this.scale_x(activation.context.gc_context).percent().into()
 }
 
 fn set_x_scale<'gc>(
@@ -683,15 +681,13 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.context.gc_context, Percent::from_fraction(val));
+        this.set_scale_x(activation.context.gc_context, Percent::from(val));
     }
     Ok(())
 }
 
 fn y_scale<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.scale_y(activation.context.gc_context)
-        .into_fraction()
-        .into()
+    this.scale_y(activation.context.gc_context).percent().into()
 }
 
 fn set_y_scale<'gc>(
@@ -700,7 +696,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.context.gc_context, Percent::from_fraction(val));
+        this.set_scale_y(activation.context.gc_context, Percent::from(val));
     }
     Ok(())
 }

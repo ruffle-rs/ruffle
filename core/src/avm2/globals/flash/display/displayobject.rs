@@ -149,10 +149,7 @@ pub fn scale_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj
-            .scale_y(activation.context.gc_context)
-            .into_unit()
-            .into());
+        return Ok(dobj.scale_y(activation.context.gc_context).unit().into());
     }
 
     Ok(Value::Undefined)
@@ -217,10 +214,7 @@ pub fn scale_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj
-            .scale_x(activation.context.gc_context)
-            .into_unit()
-            .into());
+        return Ok(dobj.scale_x(activation.context.gc_context).unit().into());
     }
 
     Ok(Value::Undefined)
