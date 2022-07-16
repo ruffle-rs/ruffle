@@ -55,7 +55,7 @@ function is called from ActionScript.
 ## Custom instance allocator
 
 You can use a custom instance allocator method by applying the metadata
-`[Ruffle(InstanceAllocator = "true")]`
+`[Ruffle(InstanceAllocator)]`
 to your class definition. A reference to a function named `<classname>_allocator`
 will be generated - this should be an `AllocatorFn`, just like when defining
 a class in Rust. This allocator will automatically be registered when the corresponding

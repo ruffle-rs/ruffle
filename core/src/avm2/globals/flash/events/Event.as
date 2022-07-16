@@ -1,5 +1,5 @@
 package flash.events {
-	[Ruffle(InstanceAllocator = "true")]
+	[Ruffle(InstanceAllocator)]
 	public class Event {
 		public static const ACTIVATE:String = "activate";
       

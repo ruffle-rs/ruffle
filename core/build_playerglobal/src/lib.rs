@@ -21,7 +21,6 @@ const RUFFLE_METADATA_NAME: &str = "Ruffle";
 // Indicates that we should generate a reference to an instance allocator
 // method (used as a metadata key with `Ruffle` metadata)
 const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
-const METADATA_TRUE: &str = "true";
 
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
@@ -219,7 +218,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::er
             rust_method_path(&abc, trait_, parent, method_prefix, "");
     };
 
-    // Look for `[Ruffle(InstanceAllocator = "true")]` metadata - if present,
+    // Look for `[Ruffle(InstanceAllocator)]` metadata - if present,
     // generate a reference to an allocator function in the native instance
     // allocators table.
     let mut check_instance_allocator = |trait_: &Trait| {
@@ -246,16 +245,21 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::er
             }
 
             for item in &metadata.items {
-                let key = &abc.constant_pool.strings[item.key.0 as usize - 1];
+                let key = if item.key.0 != 0 {
+                    Some(abc.constant_pool.strings[item.key.0 as usize - 1].as_str())
+                } else {
+                    None
+                };
                 let value = &abc.constant_pool.strings[item.value.0 as usize - 1];
-                match (key.as_str(), value.as_str()) {
-                    (METADATA_INSTANCE_ALLOCATOR, METADATA_TRUE) => {
+                match (key, value.as_str()) {
+                    // Match `[Ruffle(InstanceAllocator)]`
+                    (None, METADATA_INSTANCE_ALLOCATOR) => {
                         // This results in a path of the form
                         // `crate::avm2::globals::<path::to::class>::<class_allocator>`
                         rust_instance_allocators[class_id as usize - 1] =
                             rust_method_path(&abc, trait_, None, "", &method_name);
                     }
-                    _ => panic!("Unexpected metadata pair ({}, {})", key, value),
+                    _ => panic!("Unexpected metadata pair ({:?}, {})", key, value),
                 }
             }
         }
