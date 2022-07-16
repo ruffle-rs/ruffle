@@ -105,23 +105,6 @@ impl Twips {
     pub fn to_pixels(self) -> f64 {
         f64::from(self.0) / Self::TWIPS_PER_PIXEL
     }
-
-    /// Saturating integer subtraction. Computes `self - rhs`, saturating at the numeric bounds
-    /// of [`i32`] instead of overflowing.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use swf::Twips;
-    ///
-    /// assert_eq!(Twips::new(40).saturating_sub(Twips::new(20)), Twips::new(20));
-    /// assert_eq!(Twips::new(i32::MIN).saturating_sub(Twips::new(5)), Twips::new(i32::MIN));
-    /// assert_eq!(Twips::new(i32::MAX).saturating_sub(Twips::new(-100)), Twips::new(i32::MAX));
-    /// ```
-    #[must_use]
-    pub const fn saturating_sub(self, rhs: Self) -> Self {
-        Self(self.0.saturating_sub(rhs.0))
-    }
 }
 
 impl std::ops::Add for Twips {
