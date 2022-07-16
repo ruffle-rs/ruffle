@@ -132,7 +132,7 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
 
         if ones <= 1 {
             self.index += 1;
-            ch = first as u32;
+            return Some(first as u32);
         } else {
             let mb_count = core::cmp::min(ones - 1, 3);
             let bm = u8::MAX >> ones;
@@ -143,35 +143,30 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
                 .and_then(|src| src.get(..mb_count as usize))
             {
                 Some(mb) => {
-                    let mut fail = false;
                     for b in mb.iter() {
                         // continuation bytes should start with a single leading 1
                         if b.leading_ones() != 1 {
                             self.index += 1;
-                            ch = first as u32;
-                            fail = true;
-                            break;
+                            return Some(first as u32);
                         }
                         ch <<= 6;
                         ch |= (*b & (u8::MAX >> 2)) as u32;
                     }
-                    if !fail {
-                        if ch <= 128 {
-                            self.index += 1;
-                            ch = first as u32;
-                        } else {
-                            self.index += mb_count as usize + 1;
-                        }
+                    if ch <= 128 {
+                        self.index += 1;
+                        return Some(first as u32);
+                    } else {
+                        self.index += mb_count as usize + 1;
+                        debug_assert!(ch <= 0x10FFFF);
+                        return Some(ch);
                     }
                 }
                 None => {
                     self.index += 1;
-                    ch = first as u32;
+                    return Some(first as u32);
                 }
             }
         };
-        debug_assert!(ch <= 0x10FFFF);
-        Some(ch)
     }
 }
 
