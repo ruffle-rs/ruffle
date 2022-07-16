@@ -31,3 +31,10 @@ a<$2>c
 a<b0>c
 // Two-digit capture group number
 <b>#bbc
+// replace function
+foobbbb
+// replace with functions returning non-string values
+2bbbb
+undefinedbbbb
+// replace a regex with function, check arguments
+<<a,a,,,2,<<a>>>>
