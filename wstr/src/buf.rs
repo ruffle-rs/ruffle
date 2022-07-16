@@ -121,7 +121,7 @@ impl WString {
         } else {
             let mut buf = Vec::new();
             buf.extend_from_slice(ascii);
-            buf.extend(tail.iter());
+            buf.extend(DecodeAvmUtf8::new(tail).map(|c| c as u8));
             Self::from_buf(buf)
         }
     }
