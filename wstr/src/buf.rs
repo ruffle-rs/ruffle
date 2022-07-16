@@ -6,9 +6,7 @@ use core::mem::{self, ManuallyDrop};
 use core::ops::{Deref, DerefMut};
 use core::ptr::{self, NonNull};
 
-use super::utils::{
-    encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, AvmUtf8Decoder,
-};
+use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
 use super::{Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
@@ -112,11 +110,11 @@ impl WString {
             return Self::from_buf(b);
         }
 
-        let is_wide = AvmUtf8Decoder::new(tail).any(|ch| ch > u8::MAX.into());
+        let is_wide = DecodeAvmUtf8::new(tail).any(|ch| ch > u8::MAX.into());
         if is_wide {
             let mut buf = Vec::new();
             buf.extend(ascii.iter().map(|c| u16::from(*c)));
-            for ch in AvmUtf8Decoder::new(tail) {
+            for ch in DecodeAvmUtf8::new(tail) {
                 encode_raw_utf16(ch, &mut buf);
             }
             Self::from_buf(buf)

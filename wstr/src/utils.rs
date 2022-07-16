@@ -112,18 +112,18 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
 /// Another difference is that if a multibyte sequence is expecting 4 bytes, rather than failing/replacing with a
 /// replacement character since the maximum is 3, Flash will instead just only read the next 3 bytes and completely
 /// ignore the fact that the starting byte was expecting 4.
-pub struct AvmUtf8Decoder<'a> {
+pub struct DecodeAvmUtf8<'a> {
     src: &'a [u8],
     index: usize,
 }
 
-impl<'a> AvmUtf8Decoder<'a> {
+impl<'a> DecodeAvmUtf8<'a> {
     pub fn new(src: &'a [u8]) -> Self {
         Self { src, index: 0 }
     }
 }
 
-impl<'a> Iterator for AvmUtf8Decoder<'a> {
+impl<'a> Iterator for DecodeAvmUtf8<'a> {
     type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
         let mut ch: u32;
