@@ -38,9 +38,7 @@ impl<'gc> AvmString<'gc> {
 
     pub fn new_utf8_bytes(gc_context: MutationContext<'gc, '_>, bytes: &[u8]) -> Self {
         let buf = WString::from_utf8_bytes(bytes.to_vec());
-        Self {
-            source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(buf))),
-        }
+        Self::new(gc_context, buf)
     }
 
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
