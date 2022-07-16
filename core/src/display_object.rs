@@ -132,16 +132,11 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
     }
 }
 
-#[allow(dead_code)]
 impl<'gc> DisplayObjectBase<'gc> {
     /// Reset all properties that would be adjusted by a movie load.
     fn reset_for_movie_load(&mut self) {
         let flags_to_keep = self.flags & DisplayObjectFlags::LOCK_ROOT;
         self.flags = flags_to_keep | DisplayObjectFlags::VISIBLE;
-    }
-
-    fn id(&self) -> CharacterId {
-        0
     }
 
     fn depth(&self) -> Depth {
@@ -245,21 +240,6 @@ impl<'gc> DisplayObjectBase<'gc> {
             self.skew = rotation_y - rotation_x;
             self.flags |= DisplayObjectFlags::SCALE_ROTATION_CACHED;
         }
-    }
-
-    fn set_scale(&mut self, scale_x: f32, scale_y: f32, rotation: f32) {
-        self.cache_scale_rotation();
-        let mut matrix = &mut self.transform.matrix;
-        let rotation = rotation.to_radians();
-        let cos_x = f32::cos(rotation);
-        let sin_x = f32::sin(rotation);
-        self.scale_x = Percent::from_unit(scale_x.into());
-        self.scale_y = Percent::from_unit(scale_y.into());
-        self.rotation = Degrees::from_radians(rotation.into());
-        matrix.a = (scale_x * cos_x) as f32;
-        matrix.b = (scale_x * sin_x) as f32;
-        matrix.c = (scale_y * -sin_x) as f32;
-        matrix.d = (scale_y * cos_x) as f32;
     }
 
     fn rotation(&mut self) -> Degrees {
@@ -464,19 +444,10 @@ impl<'gc> DisplayObjectBase<'gc> {
             .set(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE, value);
     }
 
-    fn swf_version(&self) -> u8 {
-        self.parent
-            .map(|p| p.swf_version())
-            .unwrap_or(NEWEST_PLAYER_VERSION)
-    }
-
-    fn movie(&self) -> Option<Arc<SwfMovie>> {
-        self.parent.and_then(|p| p.movie())
-    }
-
     fn masker(&self) -> Option<DisplayObject<'gc>> {
         self.masker
     }
+
     fn set_masker(&mut self, node: Option<DisplayObject<'gc>>) {
         self.masker = node;
     }
@@ -484,6 +455,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn maskee(&self) -> Option<DisplayObject<'gc>> {
         self.maskee
     }
+
     fn set_maskee(&mut self, node: Option<DisplayObject<'gc>>) {
         self.maskee = node;
     }
