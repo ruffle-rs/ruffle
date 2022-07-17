@@ -155,19 +155,18 @@ impl<'gc> RegExp<'gc> {
     ) -> WString {
         let mut ret = WString::new();
         let s = replacement.as_wstr();
-        let mut chars = s.char_indices().peekable();
-        while let Some((_pos, Ok(c))) = chars.next() {
+        let mut chars = s.chars().peekable();
+        while let Some(Ok(c)) = chars.next() {
             if c != '$' {
                 ret.push_char(c);
                 continue;
             }
             match chars.next() {
-                Some((_, Ok('$'))) => ret.push_char('$'),
-                Some((_, Ok('&'))) => ret.push_str(&text[m.range.start..m.range.end]),
-                Some((_, Ok('`'))) => ret.push_str(&text[..m.range.start]),
-                Some((_, Ok('\''))) => ret.push_str(&text[m.range.end..]),
-
-                Some((_, Ok(n))) => {
+                Some(Ok('$')) => ret.push_char('$'),
+                Some(Ok('&')) => ret.push_str(&text[m.range.start..m.range.end]),
+                Some(Ok('`')) => ret.push_str(&text[..m.range.start]),
+                Some(Ok('\'')) => ret.push_str(&text[m.range.end..]),
+                Some(Ok(n)) => {
                     if let Some(d) = n.to_digit(10) {
                         let d_u = usize::try_from(d).unwrap_or(0);
                         if d_u > m.captures.len() {
@@ -176,7 +175,7 @@ impl<'gc> RegExp<'gc> {
                             continue;
                         }
                         let mut grp_index = d_u;
-                        if let Some((_, Ok(next_char))) = chars.peek() {
+                        if let Some(Ok(next_char)) = chars.peek() {
                             if let Some(d1) = next_char.to_digit(10) {
                                 let d1_u = usize::try_from(d1).unwrap_or(0);
                                 let two_digit_index = d_u * 10 + d1_u;
@@ -192,12 +191,9 @@ impl<'gc> RegExp<'gc> {
                         continue;
                     }
 
-                    {
-                        ret.push_char('$');
-                        ret.push_char(n)
-                    }
+                    ret.push_char('$');
+                    ret.push_char(n);
                 }
-
                 _ => ret.push_char('$'),
             }
         }
