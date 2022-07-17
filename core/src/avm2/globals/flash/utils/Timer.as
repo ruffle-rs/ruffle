@@ -43,6 +43,9 @@ package flash.utils {
 
 		public function set repeatCount(value:int): void {
 			this._repeatCount = value;
+			if (this._repeatCount != 0 && this._repeatCount <= this._currentCount) {
+				this.stop();
+			}
 		}
 
 		public function get running(): Boolean {

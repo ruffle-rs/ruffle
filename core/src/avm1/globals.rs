@@ -296,7 +296,7 @@ pub fn create_timer<'gc>(
         Some(Value::Object(o)) if o.as_executable().is_some() => (
             TimerCallback::Avm1Function {
                 func: *o,
-                params: args.get(2..).map(|s| s.to_vec()).unwrap_or_default(),
+                params: args.get(2..).unwrap_or_default().to_vec(),
             },
             args.get(1),
         ),
