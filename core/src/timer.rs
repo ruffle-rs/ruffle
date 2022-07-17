@@ -83,6 +83,7 @@ impl<'gc> Timers<'gc> {
 
             // TODO: Can we avoid these clones?
             let callback = timer.callback.clone();
+            let expected_id = timer.id;
 
             let cancel_timer = match callback {
                 TimerCallback::Avm1Function { func, params } => {
@@ -119,13 +120,22 @@ impl<'gc> Timers<'gc> {
             crate::player::Player::run_actions(&mut activation.context);
 
             let mut timer = activation.context.timers.peek_mut().unwrap();
+            // Our timer should still be on the top of the heap.
+            // The only way that this could fail is the timer callback
+            // added a new callback with an *earlier* tick time than our
+            // current one. Our current timer has a 'tick_time' less than
+            // 'cur_time', so this could only happen if a new timer was
+            // added with a negative interval (which is not allowed).
+            assert_eq!(
+                timer.id, expected_id,
+                "Running timer callback created timer in the past!"
+            );
             if timer.is_timeout || cancel_timer {
                 // Timeouts only fire once.
                 drop(timer);
                 activation.context.timers.pop();
             } else {
                 // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
-                //timer.tick_time = new_cur_time.wrapping_add(timer.interval);
                 timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
             }
         }

@@ -49,7 +49,7 @@ macro_rules! val_or_false {
 // If 'img' is true, then we will render an image of the final frame
 // of the SWF, and compare it against a reference image on disk.
 macro_rules! swf_tests {
-    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, img = $img:literal)? ),)*) => {
+    ($($(#[$attr:meta])* ($name:ident, $path:expr, $num_frames:literal $(, img = $img:literal)? $(, frame_time_sleep = $frame_time_sleep:literal)? ),)*) => {
         $(
         #[test]
         $(#[$attr])*
@@ -60,7 +60,8 @@ macro_rules! swf_tests {
                 $num_frames,
                 concat!("tests/swfs/", $path, "/input.json"),
                 concat!("tests/swfs/", $path, "/output.txt"),
-                val_or_false!($($img)?)
+                val_or_false!($($img)?),
+                val_or_false!($($frame_time_sleep)?),
             )
         }
         )*
@@ -740,7 +741,7 @@ swf_tests! {
     (textfield_variable, "avm1/textfield_variable", 8),
     (this_scoping, "avm1/this_scoping", 1),
     (timeline_function_def, "avm1/timeline_function_def", 3),
-    (avm2_timer, "avm2/timer", 140),
+    (avm2_timer, "avm2/timer", 280, frame_time_sleep = true),
     (timer_run_actions, "avm1/timer_run_actions", 1),
     (trace, "avm1/trace", 1),
     (transform, "avm1/transform", 1),
@@ -882,6 +883,7 @@ fn external_interface_avm1() -> Result<(), Error> {
             Ok(())
         },
         false,
+        false,
     )
 }
 
@@ -929,6 +931,7 @@ fn external_interface_avm2() -> Result<(), Error> {
             Ok(())
         },
         false,
+        false,
     )
 }
 
@@ -953,6 +956,7 @@ fn shared_object_avm1() -> Result<(), Error> {
             std::mem::swap(player.storage_mut(), &mut memory_storage_backend);
             Ok(())
         },
+        false,
         false,
     )?;
 
@@ -979,6 +983,7 @@ fn shared_object_avm1() -> Result<(), Error> {
         },
         |_player| Ok(()),
         false,
+        false,
     )?;
 
     Ok(())
@@ -1001,6 +1006,7 @@ fn timeout_avm1() -> Result<(), Error> {
         },
         |_| Ok(()),
         false,
+        false,
     )
 }
 
@@ -1021,6 +1027,7 @@ fn stage_scale_mode() -> Result<(), Error> {
             Ok(())
         },
         |_| Ok(()),
+        false,
         false,
     )
 }
@@ -1061,6 +1068,7 @@ fn test_swf(
     simulated_input_path: &str,
     expected_output_path: &str,
     check_img: bool,
+    frame_time_sleep: bool,
 ) -> Result<(), Error> {
     test_swf_with_hooks(
         swf_path,
@@ -1070,11 +1078,13 @@ fn test_swf(
         |_| Ok(()),
         |_| Ok(()),
         check_img,
+        frame_time_sleep,
     )
 }
 
 /// Loads an SWF and runs it through the Ruffle core for a number of frames.
 /// Tests that the trace output matches the given expected output.
+#[allow(clippy::too_many_arguments)]
 fn test_swf_with_hooks(
     swf_path: &str,
     num_frames: u32,
@@ -1083,6 +1093,7 @@ fn test_swf_with_hooks(
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     check_img: bool,
+    frame_time_sleep: bool,
 ) -> Result<(), Error> {
     let injector =
         InputInjector::from_file(simulated_input_path).unwrap_or_else(|_| InputInjector::empty());
@@ -1100,6 +1111,7 @@ fn test_swf_with_hooks(
         injector,
         before_end,
         check_img,
+        frame_time_sleep,
     )?;
     assert_eq!(
         trace_log, expected_output,
@@ -1127,6 +1139,7 @@ fn test_swf_approx(
         |_| Ok(()),
         injector,
         |_| Ok(()),
+        false,
         false,
     )?;
     let mut expected_data = std::fs::read_to_string(expected_output_path)?;
@@ -1178,6 +1191,7 @@ fn run_swf(
     mut injector: InputInjector,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     mut check_img: bool,
+    frame_time_sleep: bool,
 ) -> Result<String, Error> {
     check_img &= RUN_IMG_TESTS;
 
@@ -1185,6 +1199,7 @@ fn run_swf(
     let mut executor = NullExecutor::new();
     let movie = SwfMovie::from_path(swf_path, None)?;
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
+    let frame_time_duration = Duration::from_millis(frame_time as u64);
     let trace_output = Rc::new(RefCell::new(Vec::new()));
     let mut builder = PlayerBuilder::new();
 
@@ -1224,7 +1239,23 @@ fn run_swf(
 
     before_start(player.clone())?;
 
-    for i in 0..num_frames {
+    for _ in 0..num_frames {
+        // If requested, ensure that the 'expected' amount of
+        // time actually elapses between frames. This is useful for
+        // tests that call 'flash.utils.getTimer()' and use
+        // 'setInterval'/'flash.utils.Timer'
+        //
+        // Note that when Ruffle actually runs frames, we can
+        // execute frames faster than this in order to 'catch up'
+        // if we've fallen behind. However, in order to make regression
+        // tests deterministic, we always call 'update_timers' with
+        // an elapsed time of 'frame_time'. By sleeping for 'frame_time_duration',
+        // we ensure that the result of 'flash.utils.getTimer()' is consistent
+        // with timer execution (timers will see an elapsed time of *at least*
+        // the requested timer interval).
+        if frame_time_sleep {
+            std::thread::sleep(frame_time_duration);
+        }
         player.lock().unwrap().run_frame();
         player.lock().unwrap().update_timers(frame_time);
         executor.run();
@@ -1253,19 +1284,6 @@ fn run_swf(
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
-        if i != num_frames - 1 {
-            // Ensure that the correct amount of time *actually* elapses.
-            // The actual time firing is deterministic (we always advance
-            // the timer clock by `frame_time` milliseconds), but tests
-            // can observe the actual time via `flash.utils.getTimer()`.
-            //
-            // This allows us to write tests that verify that the time
-            // elapsed between timer events is at least the specified
-            // timer delay.
-            if let Some(sleep) = player.lock().unwrap().time_til_next_timer() {
-                std::thread::sleep(Duration::from_millis(sleep as u64));
-            }
-        }
     }
 
     // Render the image to disk
