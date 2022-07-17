@@ -261,10 +261,10 @@ fn line_style<'gc>(
             .and_then(|v| v.coerce_to_string(activation).ok())
             .as_deref()
         {
-            Some(v) if v == b"normal" => (true, true),
+            Some(v) if v == b"none" => (false, false),
             Some(v) if v == b"vertical" => (true, false),
             Some(v) if v == b"horizontal" => (false, true),
-            _ => (false, false),
+            _ => (true, true),
         };
         let cap_style = match args
             .get(5)
