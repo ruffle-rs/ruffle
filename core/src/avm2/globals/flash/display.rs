@@ -11,8 +11,6 @@ pub mod interactiveobject;
 pub mod loader;
 pub mod loaderinfo;
 pub mod movieclip;
-pub mod nativemenu;
-pub mod nativemenuitem;
 pub mod shape;
 pub mod simplebutton;
 pub mod sprite;

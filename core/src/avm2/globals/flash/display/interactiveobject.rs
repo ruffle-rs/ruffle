@@ -141,7 +141,8 @@ fn set_context_menu<'gc>(
         .and_then(|t| t.as_display_object())
         .and_then(|dobj| dobj.as_interactive())
     {
-        let cls = activation.avm2().classes().nativemenu;
+        let cls_name = QName::new(Namespace::package("flash.display"), "NativeMenu");
+        let cls = activation.resolve_class(&cls_name.into())?;
         let value = args
             .get(0)
             .cloned()

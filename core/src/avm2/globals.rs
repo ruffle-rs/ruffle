@@ -87,8 +87,6 @@ pub struct SystemClasses<'gc> {
     pub date: ClassObject<'gc>,
     pub qname: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
-    pub nativemenu: ClassObject<'gc>,
-    pub contextmenu: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
     pub errorevent: ClassObject<'gc>,
@@ -151,8 +149,6 @@ impl<'gc> SystemClasses<'gc> {
             date: object,
             qname: object,
             sharedobject: object,
-            nativemenu: object,
-            contextmenu: object,
             mouseevent: object,
             textevent: object,
             errorevent: object,
@@ -658,17 +654,6 @@ pub fn load_player_globals<'gc>(
         flash::display::bitmapdata::create_class(mc),
         script
     );
-    avm2_system_class!(
-        nativemenu,
-        activation,
-        flash::display::nativemenu::create_class(mc),
-        script
-    );
-    class(
-        activation,
-        flash::display::nativemenuitem::create_class(mc),
-        script,
-    )?;
 
     // package `flash.filters`
     class(
@@ -716,17 +701,6 @@ pub fn load_player_globals<'gc>(
     );
 
     // package `flash.ui`
-    avm2_system_class!(
-        contextmenu,
-        activation,
-        flash::ui::contextmenu::create_class(mc),
-        script
-    );
-    class(
-        activation,
-        flash::ui::contextmenuitem::create_class(mc),
-        script,
-    )?;
     class(activation, flash::ui::mouse::create_class(mc), script)?;
     class(activation, flash::ui::keyboard::create_class(mc), script)?;
 
