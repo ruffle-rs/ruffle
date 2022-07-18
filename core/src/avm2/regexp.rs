@@ -4,10 +4,9 @@ use std::borrow::Cow;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::FunctionObject;
-
 use crate::avm2::object::TObject;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage, Object, Value};
+use crate::avm2::{ArrayObject, ArrayStorage, Object};
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
@@ -151,8 +150,8 @@ impl<'gc> RegExp<'gc> {
         }
     }
 
-    // Helper for replace_string. Evaluates the special $-sequences
-    // in `replacement`.
+    /// Helper for replace_string. Evaluates the special $-sequences
+    /// in `replacement`.
     fn effective_replacement(
         replacement: &AvmString<'gc>,
         text: &AvmString<'gc>,
@@ -209,40 +208,38 @@ impl<'gc> RegExp<'gc> {
         ret
     }
 
-    // Implements string.replace(regex, replacement) where the replacement is
-    // a function.
+    /// Implements string.replace(regex, replacement) where the replacement is
+    /// a function.
     pub fn replace_fn(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         f: &FunctionObject<'gc>,
-    ) -> AvmString<'gc> {
+    ) -> Result<AvmString<'gc>, Error> {
         self.replace_with_fn(activation, &text, |activation, txt, m| {
-            let mut args = std::iter::once(Some(&m.range))
+            let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => Value::from(AvmString::new(
-                        activation.context.gc_context,
-                        &txt[r.start..r.end],
-                    )),
-                    None => Value::from(AvmString::default()),
+                    Some(r) => {
+                        AvmString::new(activation.context.gc_context, &txt[r.start..r.end]).into()
+                    }
+                    None => "".into(),
                 })
+                .chain(std::iter::once(m.range.start.into()))
+                .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            args.push(Value::from(m.range.start));
-            args.push(Value::from(*txt));
 
-            let r = f.call(activation.global_scope(), &args, activation);
-            return WString::from(
-                r.unwrap_or_else(|_| Value::String("".into()))
-                    .coerce_to_string(activation)
-                    .unwrap_or_default()
-                    .as_wstr(),
-            );
+	    log::warn!("XXX trying {:?}", text);
+            let r = f.call(activation.global_scope(), &args, activation)?;
+	    log::warn!("XXXX should not be here");
+            return Ok(WString::from(
+                r.coerce_to_string(activation).unwrap_or_default().as_wstr(),
+            ));
         })
     }
 
-    // Implements string.replace(regex, replacement) where the replacement is
-    // a string with $-sequences.
+    /// Implements string.replace(regex, replacement) where the replacement is
+    /// a string with $-sequences.
     pub fn replace_string(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
@@ -250,8 +247,9 @@ impl<'gc> RegExp<'gc> {
         replacement: AvmString<'gc>,
     ) -> AvmString<'gc> {
         self.replace_with_fn(activation, &text, |_activation, txt, m| {
-            Self::effective_replacement(&replacement, txt, m)
+            Ok(Self::effective_replacement(&replacement, txt, m))
         })
+        .unwrap_or_else(|_| "".into())
     }
 
     // Helper for replace_string and replace_function.
@@ -262,15 +260,19 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: &AvmString<'gc>,
         mut f: F,
-    ) -> AvmString<'gc>
+    ) -> Result<AvmString<'gc>, Error>
     where
-        F: FnMut(&mut Activation<'_, 'gc, '_>, &AvmString<'gc>, &regress::Match) -> WString,
+        F: FnMut(
+            &mut Activation<'_, 'gc, '_>,
+            &AvmString<'gc>,
+            &regress::Match,
+        ) -> Result<WString, Error>,
     {
         let mut ret = WString::new();
         let mut start = 0;
         while let Some(m) = self.find_utf16_match(*text, start) {
             ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&f(activation, &text, &m));
+            ret.push_str(&f(activation, &text, &m)?);
 
             start = m.range.end;
 
@@ -288,7 +290,7 @@ impl<'gc> RegExp<'gc> {
         }
 
         ret.push_str(&text[start..]);
-        AvmString::new(activation.context.gc_context, ret)
+        Result::Ok(AvmString::new(activation.context.gc_context, ret))
     }
 
     pub fn split(

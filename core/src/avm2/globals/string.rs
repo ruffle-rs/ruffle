@@ -297,7 +297,7 @@ fn replace<'gc>(
                 .as_ref()
                 .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
             {
-                return Ok(regexp.replace_fn(activation, this, &f).into());
+                return Ok(regexp.replace_fn(activation, this, &f)?.into());
             } else {
                 log::warn!("string.replace(string, function) - not implemented");
                 return Err("NotImplemented".into());
