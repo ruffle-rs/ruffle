@@ -228,10 +228,7 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-
-	    log::warn!("XXX trying {:?}", text);
             let r = f.call(activation.global_scope(), &args, activation)?;
-	    log::warn!("XXXX should not be here");
             return Ok(WString::from(
                 r.coerce_to_string(activation).unwrap_or_default().as_wstr(),
             ));
