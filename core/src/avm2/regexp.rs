@@ -229,9 +229,7 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
             let r = f.call(activation.global_scope(), &args, activation)?;
-            return Ok(WString::from(
-                r.coerce_to_string(activation).unwrap_or_default().as_wstr(),
-            ));
+            return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
         })
     }
 
@@ -242,11 +240,10 @@ impl<'gc> RegExp<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
-    ) -> AvmString<'gc> {
+    ) -> Result<AvmString<'gc>, Error> {
         self.replace_with_fn(activation, &text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
-        .unwrap_or_else(|_| "".into())
     }
 
     // Helper for replace_string and replace_function.
@@ -287,7 +284,7 @@ impl<'gc> RegExp<'gc> {
         }
 
         ret.push_str(&text[start..]);
-        Result::Ok(AvmString::new(activation.context.gc_context, ret))
+        Ok(AvmString::new(activation.context.gc_context, ret))
     }
 
     pub fn split(

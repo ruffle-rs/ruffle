@@ -309,7 +309,7 @@ fn replace<'gc>(
             .as_ref()
             .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            return Ok(regexp.replace_string(activation, this, replacement).into());
+            return Ok(regexp.replace_string(activation, this, replacement)?.into());
         } else {
             let pattern = pattern.coerce_to_string(activation)?;
             if let Some(position) = this.find(&pattern) {
