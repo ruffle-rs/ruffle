@@ -151,7 +151,7 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
                     ch <<= 6;
                     ch |= (*b & (u8::MAX >> 2)) as u32;
                 }
-                if ch <= 128 {
+                if ch < 0x80 {
                     Some(first as u32)
                 } else {
                     self.index += mb_count as usize;
