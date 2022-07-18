@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::types::*;
+use swf::avm2::write::Writer;
 use swf::DoAbc;
 use swf::Header;
 use swf::SwfStr;
@@ -56,14 +57,14 @@ pub fn build_playerglobal(
     }
 
     let playerglobal = out_dir.join("playerglobal");
-    let bytes = std::fs::read(playerglobal.with_extension("abc"))?;
+    let mut bytes = std::fs::read(playerglobal.with_extension("abc"))?;
 
     // Cleanup the temporary files written out by 'asc.jar'
     std::fs::remove_file(playerglobal.with_extension("abc"))?;
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 
-    write_native_table(&bytes, &out_dir)?;
+    bytes = write_native_table(&bytes, &out_dir)?;
 
     let tags = vec![Tag::DoAbc(DoAbc {
         name: SwfStr::from_utf8_str(""),
@@ -163,6 +164,30 @@ fn rust_method_path(
     quote! { Some(#path_tokens) }
 }
 
+fn strip_metadata(abc: &mut AbcFile) {
+    abc.metadata.clear();
+    for instance in &mut abc.instances {
+        for trait_ in &mut instance.traits {
+            trait_.metadata.clear();
+        }
+    }
+    for class in &mut abc.classes {
+        for trait_ in &mut class.traits {
+            trait_.metadata.clear();
+        }
+    }
+    for script in &mut abc.scripts {
+        for trait_ in &mut script.traits {
+            trait_.metadata.clear();
+        }
+    }
+    for body in &mut abc.method_bodies {
+        for trait_ in &mut body.traits {
+            trait_.metadata.clear();
+        }
+    }
+}
+
 /// Handles native functons defined in our `playerglobal`
 ///
 /// The high-level idea is to generate code (specifically, a `TokenStream`)
@@ -177,9 +202,12 @@ fn rust_method_path(
 ///
 /// See `flash.system.Security.allowDomain` for an example of defining
 /// and using a native method.
-fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+///
+/// Returns a modified version of 'data' that should be saved to disk
+/// in our generated SWF
+fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut reader = swf::avm2::read::Reader::new(data);
-    let abc = reader.read()?;
+    let mut abc = reader.read()?;
 
     let none_tokens = quote! { None };
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
@@ -288,7 +316,6 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::er
             check_instance_allocator(trait_);
         }
     }
-
     // Finally, generate the actual code.
     let make_native_table = quote! {
         // This is a Rust array -
@@ -327,5 +354,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<(), Box<dyn std::er
     let mut native_table_file = File::create(out_dir.join("native_table.rs"))?;
     native_table_file.write_all(make_native_table.as_bytes())?;
 
-    Ok(())
+    // Ruffle doesn't need metadata items at runtime, so strip
+    // them out to save space
+    strip_metadata(&mut abc);
+
+    let mut out_bytes = Vec::new();
+    let mut writer = Writer::new(&mut out_bytes);
+    writer.write(abc).expect("Failed to write modified ABC");
+
+    Ok(out_bytes)
 }
