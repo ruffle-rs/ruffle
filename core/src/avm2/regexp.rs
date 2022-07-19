@@ -3,6 +3,8 @@
 use std::borrow::Cow;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::FunctionObject;
+use crate::avm2::object::TObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Object};
 use crate::string::WString;
@@ -148,6 +150,8 @@ impl<'gc> RegExp<'gc> {
         }
     }
 
+    /// Helper for replace_string. Evaluates the special $-sequences
+    /// in `replacement`.
     fn effective_replacement(
         replacement: &AvmString<'gc>,
         text: &AvmString<'gc>,
@@ -200,17 +204,65 @@ impl<'gc> RegExp<'gc> {
         ret
     }
 
-    pub fn replace(
+    /// Implements string.replace(regex, replacement) where the replacement is
+    /// a function.
+    pub fn replace_fn(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        text: AvmString<'gc>,
+        f: &FunctionObject<'gc>,
+    ) -> Result<AvmString<'gc>, Error> {
+        self.replace_with_fn(activation, &text, |activation, txt, m| {
+            let args = std::iter::once(Some(&m.range))
+                .chain((m.captures.iter()).map(|x| x.as_ref()))
+                .map(|o| match o {
+                    Some(r) => {
+                        AvmString::new(activation.context.gc_context, &txt[r.start..r.end]).into()
+                    }
+                    None => "".into(),
+                })
+                .chain(std::iter::once(m.range.start.into()))
+                .chain(std::iter::once((*txt).into()))
+                .collect::<Vec<_>>();
+            let r = f.call(activation.global_scope(), &args, activation)?;
+            return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
+        })
+    }
+
+    /// Implements string.replace(regex, replacement) where the replacement is
+    /// a string with $-sequences.
+    pub fn replace_string(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
-    ) -> AvmString<'gc> {
+    ) -> Result<AvmString<'gc>, Error> {
+        self.replace_with_fn(activation, &text, |_activation, txt, m| {
+            Ok(Self::effective_replacement(&replacement, txt, m))
+        })
+    }
+
+    // Helper for replace_string and replace_function.
+    //
+    // Replaces occurrences of regex with results of f(activation, &text, &match)
+    fn replace_with_fn<F>(
+        &mut self,
+        activation: &mut Activation<'_, 'gc, '_>,
+        text: &AvmString<'gc>,
+        mut f: F,
+    ) -> Result<AvmString<'gc>, Error>
+    where
+        F: FnMut(
+            &mut Activation<'_, 'gc, '_>,
+            &AvmString<'gc>,
+            &regress::Match,
+        ) -> Result<WString, Error>,
+    {
         let mut ret = WString::new();
         let mut start = 0;
-        while let Some(m) = self.find_utf16_match(text, start) {
+        while let Some(m) = self.find_utf16_match(*text, start) {
             ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&Self::effective_replacement(&replacement, &text, &m));
+            ret.push_str(&f(activation, &text, &m)?);
 
             start = m.range.end;
 
@@ -228,7 +280,7 @@ impl<'gc> RegExp<'gc> {
         }
 
         ret.push_str(&text[start..]);
-        AvmString::new(activation.context.gc_context, ret)
+        Ok(AvmString::new(activation.context.gc_context, ret))
     }
 
     pub fn split(

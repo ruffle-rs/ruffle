@@ -291,22 +291,25 @@ fn replace<'gc>(
         let pattern = args.get(0).unwrap_or(&Value::Undefined);
         let replacement = args.get(1).unwrap_or(&Value::Undefined);
 
-        if replacement
-            .as_object()
-            .and_then(|o| o.as_function_object())
-            .is_some()
-        {
-            log::warn!("string.replace(_, function) - not implemented");
-            return Err("NotImplemented".into());
+        if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
+            if let Some(mut regexp) = pattern
+                .as_object()
+                .as_ref()
+                .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
+            {
+                return Ok(regexp.replace_fn(activation, this, &f)?.into());
+            } else {
+                log::warn!("string.replace(string, function) - not implemented");
+                return Err("NotImplemented".into());
+            }
         }
         let replacement = replacement.coerce_to_string(activation)?;
-
         if let Some(mut regexp) = pattern
             .as_object()
             .as_ref()
             .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            return Ok(regexp.replace(activation, this, replacement).into());
+            return Ok(regexp.replace_string(activation, this, replacement)?.into());
         } else {
             let pattern = pattern.coerce_to_string(activation)?;
             if let Some(position) = this.find(&pattern) {

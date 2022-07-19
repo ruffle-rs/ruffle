@@ -60,5 +60,33 @@ trace("// Two-digit capture group number")
 var r=RegExp("(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)")
 trace("abbbbbbbbb#bbc".replace(r, "<$10>"))
 
+trace("// replace function")
+
+function replFN():String {
+      return "foo";
+}
 
 
+trace("abbbb".replace(/a/,replFN))
+
+trace("// replace with functions returning non-string values")
+
+function replFn2() {
+     return 2;
+}
+
+function replFn3() {
+}
+
+trace("abbbb".replace(/a/,replFn2))
+trace("abbbb".replace(/a/,replFn3))
+
+trace("// replace a regex with function, check arguments")
+
+// relies on implicit coercion to string
+function rFN() {
+  return arguments;
+}
+
+// The (b) and (c) groups have no matches.
+trace("<<a>>".replace(/(a)(b)?|(c)/, rFN))
