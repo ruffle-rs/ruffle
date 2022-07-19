@@ -40,6 +40,7 @@ ruffleShadowTemplate.innerHTML = `
         #unmute_overlay,
         #unmute_overlay .background,
         #panic,
+        #preloader,
         #message_overlay {
             position: absolute;
             top: 0;
@@ -227,16 +228,8 @@ ruffleShadowTemplate.innerHTML = `
             display: flex;
             flex-direction: column;
             background: var(--preloader-background, var(--ruffle-blue));
-            width: 60%;
-            height: auto;
             align-items: center;
             justify-content: center;
-            aspect-ratio: 2;
-            max-height: 100%;
-            position: relative;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
 
         .loadbar {
