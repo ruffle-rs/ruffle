@@ -1459,14 +1459,12 @@ export class RufflePlayer extends HTMLElement {
 
     private hidePreloader(): void {
         this.preloader.classList.add("hidden");
-        this.unmuteOverlay.classList.remove("hidden");
-        this.playButton.classList.remove("hidden");
+        this.container.classList.remove("hidden");
     }
 
     private showPreloader(): void {
         this.preloader.classList.remove("hidden");
-        this.unmuteOverlay.classList.add("hidden");
-        this.playButton.classList.add("hidden");
+        this.container.classList.add("hidden");
     }
 
     private setMetadata(metadata: MovieMetadata) {
