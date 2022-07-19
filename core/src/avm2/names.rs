@@ -224,7 +224,7 @@ impl<'gc> QName<'gc> {
     pub fn to_qualified_name(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
         let uri = self.namespace().as_uri();
         let name = self.local_name();
-        uri.is_empty().then(|| name).unwrap_or_else(|| {
+        uri.is_empty().then_some(name).unwrap_or_else(|| {
             let mut buf = WString::from(uri.as_wstr());
             buf.push_str(WStr::from_units(b"::"));
             buf.push_str(&name);
