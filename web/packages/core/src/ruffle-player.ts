@@ -1401,6 +1401,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
+        this.hidePreloader();
         const div = document.createElement("div");
         div.id = "message_overlay";
         div.innerHTML = `<div class="message">
