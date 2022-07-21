@@ -210,9 +210,10 @@ fn class<'gc>(
 
     let class_read = class_def.read();
     let super_class = if let Some(sc_name) = class_read.super_class_name() {
-        let super_class: Result<Object<'gc>, Error> = global
-            .get_property(sc_name, activation)
+        let super_class: Result<Object<'gc>, Error> = activation
+            .resolve_definition(sc_name)
             .ok()
+            .and_then(|v| v)
             .and_then(|v| v.as_object())
             .ok_or_else(|| {
                 format!(
@@ -441,13 +442,6 @@ pub fn load_player_globals<'gc>(
     )?;
     class(activation, flash::system::system::create_class(mc), script)?;
 
-    // package `flash.events`
-    avm2_system_class!(
-        event,
-        activation,
-        flash::events::event::create_class(mc),
-        script
-    );
     class(
         activation,
         flash::events::ieventdispatcher::create_interface(mc),
@@ -458,62 +452,6 @@ pub fn load_player_globals<'gc>(
         flash::events::eventdispatcher::create_class(mc),
         script,
     )?;
-    avm2_system_class!(
-        mouseevent,
-        activation,
-        flash::events::mouseevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        textevent,
-        activation,
-        flash::events::textevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        errorevent,
-        activation,
-        flash::events::errorevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        securityerrorevent,
-        activation,
-        flash::events::securityerrorevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        ioerrorevent,
-        activation,
-        flash::events::ioerrorevent::create_class(mc),
-        script
-    );
-    class(
-        activation,
-        flash::events::contextmenuevent::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::events::keyboardevent::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::events::progressevent::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::events::activityevent::create_class(mc),
-        script,
-    )?;
-    avm2_system_class!(
-        fullscreenevent,
-        activation,
-        flash::events::fullscreenevent::create_class(mc),
-        script
-    );
     class(
         activation,
         flash::events::eventphase::create_class(mc),
@@ -750,9 +688,63 @@ pub fn load_player_globals<'gc>(
     )?;
 
     // Inside this call, the macro `avm2_system_classes_playerglobal`
-    // triggers classloading. Therefore, we run `load_playerglobal` last,
-    // so that all of our classes have been defined.
+    // triggers classloading. Therefore, we run `load_playerglobal`
+    // relative late, so that it can access classes defined before
+    // this call.
     load_playerglobal(activation, domain)?;
+
+    // These are event definitions, which need to be able to
+    // load "flash.events.Event", which is defined in our playerglobal.
+    // Therefore, they need to come after "load_playerglobal"
+    // FIXME: Convert all of these event classes to ActionScript,
+    // which will allow us to remove all of these calls.
+
+    avm2_system_class!(
+        mouseevent,
+        activation,
+        flash::events::mouseevent::create_class(mc),
+        script
+    );
+    avm2_system_class!(
+        textevent,
+        activation,
+        flash::events::textevent::create_class(mc),
+        script
+    );
+    avm2_system_class!(
+        errorevent,
+        activation,
+        flash::events::errorevent::create_class(mc),
+        script
+    );
+    avm2_system_class!(
+        securityerrorevent,
+        activation,
+        flash::events::securityerrorevent::create_class(mc),
+        script
+    );
+    avm2_system_class!(
+        ioerrorevent,
+        activation,
+        flash::events::ioerrorevent::create_class(mc),
+        script
+    );
+    class(
+        activation,
+        flash::events::keyboardevent::create_class(mc),
+        script,
+    )?;
+    class(
+        activation,
+        flash::events::progressevent::create_class(mc),
+        script,
+    )?;
+    avm2_system_class!(
+        fullscreenevent,
+        activation,
+        flash::events::fullscreenevent::create_class(mc),
+        script
+    );
 
     Ok(())
 }
@@ -761,8 +753,9 @@ pub fn load_player_globals<'gc>(
 /// See that tool, and 'core/src/avm2/globals/README.md', for more details
 const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal.swf"));
 
-// This defines a const named `NATIVE_TABLE`
-include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
+mod native {
+    include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
+}
 
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
@@ -770,7 +763,8 @@ fn load_playerglobal<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     domain: Domain<'gc>,
 ) -> Result<(), Error> {
-    activation.avm2().native_table = NATIVE_TABLE;
+    activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
+    activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
 
     let movie = Arc::new(SwfMovie::from_data(PLAYERGLOBAL, None, None)?);
 
@@ -805,7 +799,14 @@ fn load_playerglobal<'gc>(
     // This acts the same way as 'avm2_system_class', but for classes
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
     // and are stored in 'avm2().system_classes'
-    avm2_system_classes_playerglobal!(activation, script, [("flash.display", "Scene", scene)]);
+    avm2_system_classes_playerglobal!(
+        activation,
+        script,
+        [
+            ("flash.display", "Scene", scene),
+            ("flash.events", "Event", event),
+        ]
+    );
 
     Ok(())
 }

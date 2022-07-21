@@ -52,6 +52,17 @@ The ActionScript method and the Rust function are automatically linked
 together, and the Rust function will be invoked when the corresponding
 function is called from ActionScript.
 
+## Custom instance allocator
+
+You can use a custom instance allocator method by applying the metadata
+`[Ruffle(InstanceAllocator)]`
+to your class definition. A reference to a function named `<classname>_allocator`
+will be generated - this should be an `AllocatorFn`, just like when defining
+a class in Rust. This allocator will automatically be registered when the corresponding
+class is loaded.
+
+See `flash/events/Event.as` for an example
+
 ## Compiling
 
 Java must be installed for the build process to complete.
