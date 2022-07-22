@@ -287,41 +287,42 @@ fn replace<'gc>(
 ) -> Result<Value<'gc>, Error> {
     if let Some(this) = this {
         let this = Value::from(this).coerce_to_string(activation)?;
-
         let pattern = args.get(0).unwrap_or(&Value::Undefined);
         let replacement = args.get(1).unwrap_or(&Value::Undefined);
-
-        if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            if let Some(mut regexp) = pattern
-                .as_object()
-                .as_ref()
-                .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
-            {
-                return Ok(regexp.replace_fn(activation, this, &f)?.into());
-            } else {
-                log::warn!("string.replace(string, function) - not implemented");
-                return Err("NotImplemented".into());
-            }
-        }
-        let replacement = replacement.coerce_to_string(activation)?;
+        // Handles regex patterns.
         if let Some(mut regexp) = pattern
             .as_object()
             .as_ref()
             .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
         {
-            return Ok(regexp.replace_string(activation, this, replacement)?.into());
-        } else {
-            let pattern = pattern.coerce_to_string(activation)?;
-            if let Some(position) = this.find(&pattern) {
-                let mut ret = WString::from(&this[..position]);
-                ret.push_str(&replacement);
-                ret.push_str(&this[position + pattern.len()..]);
-                return Ok(AvmString::new(activation.context.gc_context, ret).into());
+            // Replacement is either a function or treatable as string.
+            if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
+                return Ok(regexp.replace_fn(activation, this, &f)?.into());
             } else {
-                return Ok(this.into());
+                let replacement = replacement.coerce_to_string(activation)?;
+                return Ok(regexp.replace_string(activation, this, replacement)?.into());
             }
         }
+        // Handles patterns which are treatable as string.
+        let pattern = pattern.coerce_to_string(activation)?;
+        if let Some(position) = this.find(&pattern) {
+            let mut ret = WString::from(&this[..position]);
+            // Replacement is either a function or treatable as string.
+            if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
+                let args = [pattern.into(), position.into(), this.into()];
+                let v = f.call(activation.global_scope(), &args, activation)?;
+                ret.push_str(v.coerce_to_string(activation)?.as_wstr());
+            } else {
+                let replacement = replacement.coerce_to_string(activation)?;
+                ret.push_str(&replacement);
+            }
+            ret.push_str(&this[position + pattern.len()..]);
+            return Ok(AvmString::new(activation.context.gc_context, ret).into());
+        } else {
+            return Ok(this.into());
+        }
     }
+
     Ok(Value::Undefined)
 }
 
