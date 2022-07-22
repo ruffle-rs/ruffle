@@ -1,13 +1,11 @@
 # swf
-[![crates.io](https://img.shields.io/crates/v/swf.svg)](https://crates.io/crates/swf)
-[![docs.rs](https://docs.rs/swf/badge.svg)](https://docs.rs/swf)
 
 A Rust library for reading and writing the Adobe Flash SWF file format.
 
 ```toml
 # Cargo.toml
 [dependencies]
-swf = "0.1"
+swf = { package = "swf", git = "https://github.com/ruffle-rs/ruffle.git", rev = "78ebf06f55eff05db6939166973bbfa08641300b" }
 ```
 
 ## Reading
