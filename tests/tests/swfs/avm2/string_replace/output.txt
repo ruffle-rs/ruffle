@@ -38,3 +38,4 @@ foobbbb
 undefinedbbbb
 // replace a regex with function, check arguments
 <<a,a,,,2,<<a>>>>
+<<a,2,<<a>>>>

@@ -90,3 +90,6 @@ function rFN() {
 
 // The (b) and (c) groups have no matches.
 trace("<<a>>".replace(/(a)(b)?|(c)/, rFN))
+
+// The pattern is string and the replacement is a function
+trace("<<a>>".replace("a", rFN))
