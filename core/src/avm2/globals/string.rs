@@ -309,7 +309,7 @@ fn replace<'gc>(
             let mut ret = WString::from(&this[..position]);
             // Replacement is either a function or treatable as string.
             if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-                let args = vec![pattern.into(), position.into(), this.into()];
+                let args = [pattern.into(), position.into(), this.into()];
                 let v = f.call(activation.global_scope(), &args, activation)?;
                 ret.push_str(v.coerce_to_string(activation)?.as_wstr());
             } else {
