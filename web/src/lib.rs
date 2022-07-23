@@ -7,6 +7,7 @@ mod ui;
 
 use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Promise, Uint8Array};
+use ruffle_core::backend::ui::UiBackend;
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
@@ -461,9 +462,15 @@ impl Ruffle {
 
         let window = web_sys::window().ok_or("Expected window")?;
         let document = window.document().ok_or("Expected document")?;
+        let canvas: HtmlCanvasElement = document
+            .create_element("canvas")
+            .into_js_result()?
+            .dyn_into()
+            .map_err(|_| "Expected HtmlCanvasElement")?;
 
-        let (mut builder, canvas) =
-            create_renderer(PlayerBuilder::new(), &document, &config).await?;
+        let ui = ui::WebUiBackend::new(js_player.clone(), &canvas);
+
+        let mut builder = create_renderer(PlayerBuilder::new(), &canvas, &ui, &config).await?;
 
         parent
             .append_child(&canvas.clone().into())
@@ -492,7 +499,7 @@ impl Ruffle {
         let trace_observer = Arc::new(RefCell::new(JsValue::UNDEFINED));
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
-            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
+            .with_ui(ui)
             .with_software_video()
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
@@ -1206,9 +1213,10 @@ fn external_to_js_value(external: ExternalValue) -> JsValue {
 
 async fn create_renderer(
     builder: PlayerBuilder,
-    document: &web_sys::Document,
+    canvas: &HtmlCanvasElement,
+    ui: &ui::WebUiBackend,
     config: &Config,
-) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
+) -> Result<PlayerBuilder, Box<dyn Error>> {
     #[cfg(not(any(feature = "canvas", feature = "webgl", feature = "wgpu")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
@@ -1226,15 +1234,10 @@ async fn create_renderer(
             .unwrap_or_default()
         {
             log::info!("Creating wgpu renderer...");
-            let canvas: HtmlCanvasElement = document
-                .create_element("canvas")
-                .into_js_result()?
-                .dyn_into()
-                .map_err(|_| "Expected HtmlCanvasElement")?;
 
             match ruffle_render_wgpu::WgpuRenderBackend::for_canvas(&canvas).await {
                 Ok(renderer) => {
-                    return Ok((builder.with_renderer(renderer), canvas));
+                    return Ok(builder.with_renderer(renderer));
                 }
                 Err(error) => log::error!("Error creating wgpu renderer: {}", error),
             }
@@ -1247,14 +1250,9 @@ async fn create_renderer(
     #[cfg(feature = "webgl")]
     {
         log::info!("Creating WebGL renderer...");
-        let canvas: HtmlCanvasElement = document
-            .create_element("canvas")
-            .into_js_result()?
-            .dyn_into()
-            .map_err(|_| "Expected HtmlCanvasElement")?;
         match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => {
-                return Ok((builder.with_renderer(renderer), canvas));
+                return Ok(builder.with_renderer(renderer));
             }
             Err(error) => log::error!("Error creating WebGL renderer: {}", error),
         }
@@ -1263,14 +1261,10 @@ async fn create_renderer(
     #[cfg(feature = "canvas")]
     {
         log::info!("Falling back to Canvas renderer...");
-        let canvas: HtmlCanvasElement = document
-            .create_element("canvas")
-            .into_js_result()?
-            .dyn_into()
-            .map_err(|_| "Expected HtmlCanvasElement")?;
         match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas, _is_transparent) {
             Ok(renderer) => {
-                return Ok((builder.with_renderer(renderer), canvas));
+                ui.message("Using deprecated canvas backend! Please file a bug report");
+                return Ok(builder.with_renderer(renderer));
             }
             Err(error) => log::error!("Error creating canvas renderer: {}", error),
         }
