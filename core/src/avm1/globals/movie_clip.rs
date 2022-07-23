@@ -375,15 +375,7 @@ fn begin_bitmap_fill<'gc>(
             activation,
         )?;
         // Flash matrix is in pixels. Scale from pixels to twips.
-        const PIXELS_TO_TWIPS: Matrix = Matrix {
-            a: 20.0,
-            b: 0.0,
-            c: 0.0,
-            d: 20.0,
-            tx: Twips::ZERO,
-            ty: Twips::ZERO,
-        };
-        matrix *= PIXELS_TO_TWIPS;
+        matrix *= Matrix::scale(Twips::TWIPS_PER_PIXEL as f32, Twips::TWIPS_PER_PIXEL as f32);
 
         // `repeating` defaults to true, `smoothed` to false.
         // `smoothed` parameter may not be listed in some documentation.
