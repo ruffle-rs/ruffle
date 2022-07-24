@@ -1,24 +1,13 @@
-use crate::html::Position;
 use crate::prelude::*;
 use gc_arena::Collect;
 
 /// Represents the transform for a DisplayObject.
 /// This includes both the transformation matrix and the color transform.
-///
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(require_static)]
 pub struct Transform {
     pub matrix: Matrix,
     pub color_transform: ColorTransform,
-}
-
-impl From<Position<Twips>> for Transform {
-    fn from(pos: Position<Twips>) -> Self {
-        Self {
-            matrix: Matrix::translate(pos.x(), pos.y()),
-            color_transform: Default::default(),
-        }
-    }
 }
 
 pub struct TransformStack(Vec<Transform>);

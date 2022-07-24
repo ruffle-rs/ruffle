@@ -893,8 +893,11 @@ impl<'gc> EditText<'gc> {
 
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
-        let box_transform: Transform = lbox.bounds().origin().into();
-        context.transform_stack.push(&box_transform);
+        let origin = lbox.bounds().origin();
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(origin.x(), origin.y()),
+            ..Default::default()
+        });
 
         let edit_text = self.0.read();
         let selection = edit_text.selection;
@@ -1190,8 +1193,8 @@ impl<'gc> EditText<'gc> {
         );
 
         for layout_box in text.layout.iter() {
-            let transform: Transform = layout_box.bounds().origin().into();
-            let mut matrix = transform.matrix;
+            let origin = layout_box.bounds().origin();
+            let mut matrix = Matrix::translate(origin.x(), origin.y());
             matrix.invert();
             let local_position = matrix * position;
 
