@@ -176,6 +176,5 @@ pub fn encode_raw_utf16(mut ch: u32, dst: &mut Vec<u16>) {
     let mut w2: u16 = 0xDC00;
     w1 |= (ch >> 10) as u16;
     w2 |= (ch & !(u32::MAX << 10)) as u16;
-    dst.push(w1);
-    dst.push(w2);
+    dst.extend_from_slice(&[w1, w2]);
 }
