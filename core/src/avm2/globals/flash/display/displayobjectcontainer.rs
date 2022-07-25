@@ -114,7 +114,7 @@ fn remove_child_from_displaylist<'gc>(
 }
 
 /// Add the `child` to `parent`'s display list.
-fn add_child_to_displaylist<'gc>(
+pub(super) fn add_child_to_displaylist<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
     parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,

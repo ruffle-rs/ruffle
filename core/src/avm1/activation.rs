@@ -1153,7 +1153,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     if url.is_empty() {
                         //Blank URL on movie loads = unload!
                         if let Some(mut mc) = level.as_movie_clip() {
-                            mc.replace_with_movie(&mut self.context, None)
+                            mc.replace_with_movie(&mut self.context, None, None)
                         }
                     } else {
                         let future = self.context.load_manager.load_movie_into_clip(
@@ -1269,7 +1269,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
-                        mc.replace_with_movie(&mut self.context, None)
+                        mc.replace_with_movie(&mut self.context, None, None)
                     }
                 } else {
                     let request = self.locals_into_request(
@@ -1293,7 +1293,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mut mc) = clip_target.as_movie_clip() {
-                        mc.replace_with_movie(&mut self.context, None)
+                        mc.replace_with_movie(&mut self.context, None, None)
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(

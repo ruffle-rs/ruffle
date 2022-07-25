@@ -1,5 +1,4 @@
 package flash.system {
-
     import flash.display.DisplayObjectContainer;
     import flash.system.ApplicationDomain;
 

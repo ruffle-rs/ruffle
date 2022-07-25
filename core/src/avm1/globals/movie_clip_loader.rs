@@ -10,6 +10,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
+use crate::loader::MovieLoaderEventHandler;
 use gc_arena::MutationContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -63,7 +64,7 @@ fn load_clip<'gc>(
                     target,
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
-                    Some(this),
+                    Some(MovieLoaderEventHandler::Avm1Broadcast(this)),
                 );
                 activation.context.navigator.spawn_future(future);
 
@@ -99,7 +100,7 @@ fn unload_clip<'gc>(
         if let Some(target) = target {
             target.unload(&mut activation.context);
             if let Some(mut mc) = target.as_movie_clip() {
-                mc.replace_with_movie(&mut activation.context, None);
+                mc.replace_with_movie(&mut activation.context, None, None);
             }
             return Ok(true.into());
         }

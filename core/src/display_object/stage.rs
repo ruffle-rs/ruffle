@@ -1,7 +1,6 @@
 //! Root stage impl
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::TObject;
 use crate::avm2::{
     Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
@@ -172,6 +171,14 @@ impl<'gc> Stage<'gc> {
     /// Set the size of the SWF file.
     pub fn set_movie_size(self, gc_context: MutationContext<'gc, '_>, width: u32, height: u32) {
         self.0.write(gc_context).movie_size = (width, height);
+    }
+
+    pub fn set_loader_info(
+        self,
+        gc_context: MutationContext<'gc, '_>,
+        loader_info: Avm2Object<'gc>,
+    ) {
+        self.0.write(gc_context).loader_info = loader_info;
     }
 
     /// Returns the quality setting of the stage.
@@ -662,10 +669,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             Ok(avm2_stage) => {
                 let mut write = self.0.write(activation.context.gc_context);
                 write.avm2_object = avm2_stage.into();
-                match LoaderInfoObject::from_stage(&mut activation) {
-                    Ok(loader_info) => write.loader_info = loader_info,
-                    Err(e) => log::error!("Unable to set AVM2 Stage loaderInfo: {}", e),
-                }
             }
             Err(e) => log::error!("Unable to construct AVM2 Stage: {}", e),
         }

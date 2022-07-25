@@ -18,7 +18,6 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::bitmap::bitmap_data::BitmapData;
-use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -903,6 +902,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
+    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
+        None
+    }
+
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
         None
     }
@@ -1008,13 +1011,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Unwrap this object as a mutable regexp.
     fn as_regexp_mut(&self, _mc: MutationContext<'gc, '_>) -> Option<RefMut<RegExp<'gc>>> {
-        None
-    }
-
-    fn loader_stream_init(&self, _context: &mut UpdateContext<'_, 'gc, '_>) {}
-
-    /// Unwrap this object's loader stream
-    fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
         None
     }
 

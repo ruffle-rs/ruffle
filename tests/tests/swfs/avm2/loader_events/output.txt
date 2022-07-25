@@ -1,0 +1,14 @@
+loader.content = null
+loader.contentLoaderInfo.content = null
+loader.contentLoaderInfo.bytesLoaded = 0
+loader.contentLoaderInfo.bytesTotal = 0
+loader.contentLoaderInfo.bytes = null
+loader.contentLoaderInfo.url = null
+Event [Event type="open" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=674]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=674 bytesTotal=674]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 0, loader.contentLoaderInfo.url = null
+Hello from loaded SWF!
+loader.contentLoaderInfo === loader.content.loaderInfo : true
+loader.contentLoaderInfo.content === loader.content : true
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 674, loader.contentLoaderInfo.bytesTotal = 674, loader.contentLoaderInfo.url = file:///
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LoadableMainTimeline], loader.contentLoaderInfo.bytesLoaded = 674, loader.contentLoaderInfo.bytesTotal = 674, loader.contentLoaderInfo.url = file:///
