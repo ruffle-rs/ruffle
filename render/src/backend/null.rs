@@ -57,6 +57,9 @@ impl RenderBackend for NullRenderer {
     fn deactivate_mask(&mut self) {}
     fn pop_mask(&mut self) {}
 
+    fn push_blend_mode(&mut self, _blend_mode: swf::BlendMode) {}
+    fn pop_blend_mode(&mut self) {}
+
     fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
         None
     }

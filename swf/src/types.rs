@@ -5,6 +5,7 @@
 //! <https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf>
 use crate::string::SwfStr;
 use bitflags::bitflags;
+use enum_map::Enum;
 
 mod color;
 mod fixed;
@@ -459,7 +460,7 @@ pub struct GradientBevelFilter {
     pub num_passes: u8,
 }
 
-#[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum)]
 pub enum BlendMode {
     #[default]
     Normal = 0,

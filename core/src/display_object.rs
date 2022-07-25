@@ -466,6 +466,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         return;
     }
     context.transform_stack.push(this.base().transform());
+    context.renderer.push_blend_mode(this.blend_mode());
 
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
@@ -491,6 +492,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.renderer.pop_mask();
     }
 
+    context.renderer.pop_blend_mode();
     context.transform_stack.pop();
 }
 

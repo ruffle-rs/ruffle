@@ -99,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: swf_images
-          path: tests/**/*.png.updated
+          path: tests/**/actual.png
 
   check-required:
     needs: changes

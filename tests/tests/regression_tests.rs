@@ -227,6 +227,7 @@ swf_tests! {
     (as3_dictionary_in, "avm2/dictionary_in", 1),
     (as3_dictionary_namespaces, "avm2/dictionary_namespaces", 1),
     (as3_displayobject_alpha, "avm2/displayobject_alpha", 1),
+    (as3_displayobject_blendmode, "avm2/displayobject_blendmode", 1, img = true),
     (as3_displayobject_hittestobject, "avm2/displayobject_hittestobject", 1),
     (as3_displayobject_hittestpoint, "avm2/displayobject_hittestpoint", 2),
     (as3_displayobject_name, "avm2/displayobject_name", 4),
@@ -1301,6 +1302,11 @@ fn run_swf(
         .with_log(TestLogBackend::new(trace_output.clone()))
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
         .with_max_execution_duration(Duration::from_secs(300))
+        .with_viewport_dimensions(
+            movie.width().to_pixels() as u32,
+            movie.height().to_pixels() as u32,
+            1.0,
+        )
         .with_movie(movie)
         .build();
 

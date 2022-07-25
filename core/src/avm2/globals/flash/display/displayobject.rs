@@ -13,6 +13,7 @@ use crate::display_object::{HitTestOptions, TDisplayObject};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
+use swf::BlendMode;
 use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
@@ -642,6 +643,62 @@ pub fn set_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObject.blendMode`'s getter.
+pub fn blend_mode<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    Ok(Value::Undefined)
+}
+
+/// Implements `DisplayObject.blendMode`'s setter.
+pub fn set_blend_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(mut dobj) = this.and_then(|this| this.as_display_object()) {
+        if let Some(Value::String(mode)) = args.get(0).cloned() {
+            let mode = &*mode;
+            let mode = if mode == b"add" {
+                BlendMode::Add
+            } else if mode == b"alpha" {
+                BlendMode::Alpha
+            } else if mode == b"darken" {
+                BlendMode::Darken
+            } else if mode == b"difference" {
+                BlendMode::Difference
+            } else if mode == b"erase" {
+                BlendMode::Erase
+            } else if mode == b"hardlight" {
+                BlendMode::HardLight
+            } else if mode == b"invert" {
+                BlendMode::Invert
+            } else if mode == b"layer" {
+                BlendMode::Layer
+            } else if mode == b"lighten" {
+                BlendMode::Lighten
+            } else if mode == b"multiply" {
+                BlendMode::Multiply
+            } else if mode == b"normal" {
+                BlendMode::Normal
+            } else if mode == b"overlay" {
+                BlendMode::Overlay
+            } else if mode == b"screen" {
+                BlendMode::Screen
+            } else if mode == b"subtract" {
+                BlendMode::Subtract
+            } else {
+                log::error!("Unknown blend mode {:?}", mode);
+                BlendMode::Normal
+            };
+            dobj.set_blend_mode(activation.context.gc_context, mode);
+        }
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -669,6 +726,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Option<NativeMethodImpl>,
     )] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
+        ("blendMode", Some(blend_mode), Some(set_blend_mode)),
         ("height", Some(height), Some(set_height)),
         ("scaleY", Some(scale_y), Some(set_scale_y)),
         ("width", Some(width), Some(set_width)),
