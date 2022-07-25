@@ -7,6 +7,7 @@ use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
 use crate::display_object::edit_text::EditText;
+use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{
@@ -109,6 +110,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
         Avm2Button(Avm2Button<'gc>),
         MovieClip(MovieClip<'gc>),
         EditText(EditText<'gc>),
+        LoaderDisplay(LoaderDisplay<'gc>),
     }
 )]
 pub trait TInteractiveObject<'gc>:

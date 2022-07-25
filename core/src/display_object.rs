@@ -28,6 +28,7 @@ mod container;
 mod edit_text;
 mod graphic;
 mod interactive;
+mod loader_display;
 mod morph_shape;
 mod movie_clip;
 mod stage;
@@ -44,6 +45,7 @@ pub use bitmap::Bitmap;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use interactive::{InteractiveObject, TInteractiveObject};
+pub use loader_display::LoaderDisplay;
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
 pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMode, WindowMode};
@@ -520,6 +522,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         MovieClip(MovieClip<'gc>),
         Text(Text<'gc>),
         Video(Video<'gc>),
+        LoaderDisplay(LoaderDisplay<'gc>)
     }
 )]
 pub trait TDisplayObject<'gc>:

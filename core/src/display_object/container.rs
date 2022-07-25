@@ -3,6 +3,7 @@
 use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
+use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{Depth, DisplayObject, TDisplayObject};
@@ -142,6 +143,7 @@ bitflags! {
         Stage(Stage<'gc>),
         Avm1Button(Avm1Button<'gc>),
         MovieClip(MovieClip<'gc>),
+        LoaderDisplay(LoaderDisplay<'gc>),
     }
 )]
 pub trait TDisplayObjectContainer<'gc>:

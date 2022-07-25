@@ -89,6 +89,7 @@ pub struct SystemClasses<'gc> {
     pub qname: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
+    pub progressevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
     pub errorevent: ClassObject<'gc>,
     pub ioerrorevent: ClassObject<'gc>,
@@ -96,6 +97,8 @@ pub struct SystemClasses<'gc> {
     pub transform: ClassObject<'gc>,
     pub colortransform: ClassObject<'gc>,
     pub matrix: ClassObject<'gc>,
+    pub illegaloperationerror: ClassObject<'gc>,
+    pub eventdispatcher: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -154,6 +157,7 @@ impl<'gc> SystemClasses<'gc> {
             qname: object,
             sharedobject: object,
             mouseevent: object,
+            progressevent: object,
             textevent: object,
             errorevent: object,
             ioerrorevent: object,
@@ -161,6 +165,8 @@ impl<'gc> SystemClasses<'gc> {
             transform: object,
             colortransform: object,
             matrix: object,
+            illegaloperationerror: object,
+            eventdispatcher: object,
         }
     }
 }
@@ -454,11 +460,12 @@ pub fn load_player_globals<'gc>(
         flash::events::ieventdispatcher::create_interface(mc),
         script,
     )?;
-    class(
+    avm2_system_class!(
+        eventdispatcher,
         activation,
         flash::events::eventdispatcher::create_class(mc),
-        script,
-    )?;
+        script
+    );
 
     // package `flash.utils`
     avm2_system_class!(
@@ -567,7 +574,6 @@ pub fn load_player_globals<'gc>(
         flash::display::graphics::create_class(mc),
         script
     );
-    class(activation, flash::display::loader::create_class(mc), script)?;
     avm2_system_class!(
         loaderinfo,
         activation,
@@ -734,9 +740,15 @@ fn load_playerglobal<'gc>(
         script,
         [
             ("flash.display", "Scene", scene),
+            (
+                "flash.errors",
+                "IllegalOperationError",
+                illegaloperationerror
+            ),
             ("flash.events", "Event", event),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
+            ("flash.events", "ProgressEvent", progressevent),
             ("flash.events", "SecurityErrorEvent", securityerrorevent),
             ("flash.events", "IOErrorEvent", ioerrorevent),
             ("flash.events", "MouseEvent", mouseevent),

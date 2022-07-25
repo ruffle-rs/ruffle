@@ -26,7 +26,14 @@ pub fn loaderinfo_allocator<'gc>(
         LoaderInfoObjectData {
             base,
             loaded_stream: None,
-            init_fired: false,
+            loader: None,
+            events_fired: false,
+            shared_events: activation
+                .context
+                .avm2
+                .classes()
+                .eventdispatcher
+                .construct(activation, &[])?,
         },
     ))
     .into())
@@ -36,12 +43,10 @@ pub fn loaderinfo_allocator<'gc>(
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
 pub enum LoaderStream<'gc> {
-    /// The current stage.
-    ///
     /// While it makes no sense to actually retrieve loader info properties off
     /// the stage, it's possible to do so. Some properties yield the
     /// not-yet-loaded error while others are pulled from the root SWF.
-    Stage,
+    NotYetLoaded(Arc<SwfMovie>),
 
     /// A loaded SWF movie.
     ///
@@ -64,8 +69,15 @@ pub struct LoaderInfoObjectData<'gc> {
     /// The loaded stream that this gets it's info from.
     loaded_stream: Option<LoaderStream<'gc>>,
 
-    /// Whether or not we've fired an 'init' event
-    init_fired: bool,
+    loader: Option<Object<'gc>>,
+
+    /// Whether or not we've fired our 'init' and 'complete' events
+    events_fired: bool,
+
+    /// The `EventDispatcher` used for `LoaderInfo.sharedEvents`.
+    // FIXME: If we ever implement sandboxing, then ensure that we allow
+    // events to be fired across security boundaries using this object.
+    shared_events: Object<'gc>,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -74,6 +86,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
+        loader: Option<Object<'gc>>,
     ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
@@ -84,7 +97,14 @@ impl<'gc> LoaderInfoObject<'gc> {
             LoaderInfoObjectData {
                 base,
                 loaded_stream,
-                init_fired: false,
+                loader,
+                events_fired: false,
+                shared_events: activation
+                    .context
+                    .avm2
+                    .classes()
+                    .eventdispatcher
+                    .construct(activation, &[])?,
             },
         ))
         .into();
@@ -96,7 +116,11 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Create a loader info object for the stage.
-    pub fn from_stage(activation: &mut Activation<'_, 'gc, '_>) -> Result<Object<'gc>, Error> {
+    pub fn not_yet_loaded(
+        activation: &mut Activation<'_, 'gc, '_>,
+        movie: Arc<SwfMovie>,
+        loader: Option<Object<'gc>>,
+    ) -> Result<Object<'gc>, Error> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
@@ -104,10 +128,15 @@ impl<'gc> LoaderInfoObject<'gc> {
             activation.context.gc_context,
             LoaderInfoObjectData {
                 base,
-                loaded_stream: Some(LoaderStream::Stage),
-                // We never want to fire an "init" event for the special
-                // Stagee loaderInfo
-                init_fired: true,
+                loaded_stream: Some(LoaderStream::NotYetLoaded(movie)),
+                loader,
+                events_fired: false,
+                shared_events: activation
+                    .context
+                    .avm2
+                    .classes()
+                    .eventdispatcher
+                    .construct(activation, &[])?,
             },
         ))
         .into();
@@ -116,6 +145,55 @@ impl<'gc> LoaderInfoObject<'gc> {
         class.call_native_init(Some(this), &[], activation)?;
 
         Ok(this)
+    }
+
+    pub fn loader(&self) -> Option<Object<'gc>> {
+        return self.0.read().loader;
+    }
+
+    pub fn shared_events(&self) -> Object<'gc> {
+        return self.0.read().shared_events;
+    }
+
+    pub fn fire_init_and_complete_events(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
+        if !self.0.read().events_fired {
+            self.0.write(context.gc_context).events_fired = true;
+
+            // TODO - 'init' should be fired earlier during the download.
+            // Right now, we fire it when downloading is fully completed.
+            let init_evt = EventObject::bare_default_event(context, "init");
+
+            if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
+                log::error!(
+                    "Encountered AVM2 error when broadcasting `init` event: {}",
+                    e
+                );
+            }
+
+            let complete_evt = EventObject::bare_default_event(context, "complete");
+
+            if let Err(e) = Avm2::dispatch_event(context, complete_evt, (*self).into()) {
+                log::error!(
+                    "Encountered AVM2 error when broadcasting `complete` event: {}",
+                    e
+                );
+            }
+        }
+    }
+
+    /// Unwrap this object's loader stream
+    pub fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
+        if self.0.read().loaded_stream.is_some() {
+            Some(Ref::map(self.0.read(), |v: &LoaderInfoObjectData<'gc>| {
+                v.loaded_stream.as_ref().unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+
+    pub fn set_loader_stream(&self, stream: LoaderStream<'gc>, mc: MutationContext<'gc, '_>) {
+        self.0.write(mc).loaded_stream = Some(stream);
     }
 }
 
@@ -136,28 +214,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
         Ok(Value::Object((*self).into()))
     }
 
-    fn loader_stream_init(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if !self.0.read().init_fired {
-            self.0.write(context.gc_context).init_fired = true;
-            let init_evt = EventObject::bare_default_event(context, "init");
-
-            if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
-                log::error!(
-                    "Encountered AVM2 error when broadcasting `init` event: {}",
-                    e
-                );
-            }
-        }
-    }
-
-    /// Unwrap this object's loader stream
-    fn as_loader_stream(&self) -> Option<Ref<LoaderStream<'gc>>> {
-        if self.0.read().loaded_stream.is_some() {
-            Some(Ref::map(self.0.read(), |v| {
-                v.loaded_stream.as_ref().unwrap()
-            }))
-        } else {
-            None
-        }
+    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
+        Some(self)
     }
 }
