@@ -1,6 +1,7 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
 use crate::Error;
+use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
@@ -177,6 +178,8 @@ impl TextureTarget {
         })
     }
 
+    /// Captures the current contents of our texture buffer
+    /// as an `RgbaImage` (using straight alpha).
     pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
         let (sender, receiver) = std::sync::mpsc::channel();
         let buffer_slice = self.buffer.slice(..);
@@ -197,6 +200,10 @@ impl TextureTarget {
                     buffer
                         .extend_from_slice(&chunk[..self.buffer_dimensions.unpadded_bytes_per_row]);
                 }
+
+                // Our texture uses premutliplied alpha - convert to straight alpha
+                // so that this image can be saved directly as a PNG.
+                unmultiply_alpha_rgba(&mut buffer);
 
                 let image = image::RgbaImage::from_raw(self.size.width, self.size.height, buffer);
                 drop(map);
