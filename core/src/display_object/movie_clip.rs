@@ -1915,7 +1915,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn on_exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // Attempt to fire an "init" event on our `LoaderInfo`.
         // This fires after we've exited our first frame, but before
-        // but before we enter a new frame. `loader_strean_init`
+        // but before we enter a new frame. `loader_stream_init`
         // keeps track if an "init" event has already been fired,
         // so this becomes a no-op after the event has been fired.
         if self.0.read().initialized() {
