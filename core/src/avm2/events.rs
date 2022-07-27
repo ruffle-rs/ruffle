@@ -121,7 +121,7 @@ pub enum EventData<'gc> {
         modifiers: KeyModifiers,
         key_code: u32,
         direction: AvmString<'gc>,
-    }
+    },
 }
 
 impl<'gc> EventData<'gc> {

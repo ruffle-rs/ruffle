@@ -46,38 +46,37 @@ fn instance_init<'gc>(
                 .as_object()
                 .and_then(|o| o.as_display_object())
                 .and_then(|o| o.as_interactive());
-            
+
             let shift_key = args
                 .get(4)
                 .cloned()
                 .unwrap_or_else(|| false.into())
                 .coerce_to_boolean();
-            
+
             let key_code = args
                 .get(5)
                 .cloned()
                 .unwrap_or_else(|| 0.into())
                 .coerce_to_u32(activation)?;
-            
+
             let direction = args
                 .get(6)
                 .cloned()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)?;
-            
+
             let mut modifiers = KeyModifiers::default();
 
             if shift_key {
                 modifiers.insert(KeyModifiers::SHIFT);
             }
-            
+
             evt.set_event_data(EventData::Focus {
                 related_object,
                 key_code,
                 direction,
                 modifiers,
             });
-
         }
     }
     Ok(Value::Undefined)
@@ -276,8 +275,8 @@ pub fn to_string<'gc>(
     if let Some(this) = this {
         if let Some(event) = this.as_event() {
             if let EventData::Focus {
-                related_object, 
-                modifiers, 
+                related_object,
+                modifiers,
                 key_code,
                 ..
             } = event.event_data()
@@ -313,7 +312,6 @@ pub fn to_string<'gc>(
     Ok(Value::Undefined)
 }
 
-
 /// Construct `FocusEvent`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -329,10 +327,10 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     write.set_attributes(ClassAttributes::SEALED);
 
     const CONSTANTS: &[(&str, &str)] = &[
-        ("FOCUS_IN", "focusIn"), 
-        ("FOCUS_OUT", "focusOut"), 
-        ("KEY_FOCUS_CHANGE", "keyFocusChange"), 
-        ("MOUSE_FOCUS_CHANGE", "mouseFocusChange")
+        ("FOCUS_IN", "focusIn"),
+        ("FOCUS_OUT", "focusOut"),
+        ("KEY_FOCUS_CHANGE", "keyFocusChange"),
+        ("MOUSE_FOCUS_CHANGE", "mouseFocusChange"),
     ];
 
     write.define_public_constant_string_class_traits(CONSTANTS);
@@ -354,7 +352,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
             Some(related_object),
             Some(set_related_object),
         ),
-        ("shiftKey", Some(shift_key), Some(set_shift_key))
+        ("shiftKey", Some(shift_key), Some(set_shift_key)),
     ];
 
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
