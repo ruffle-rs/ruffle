@@ -130,6 +130,27 @@ body {
     display: none !important;
 }
 
+#stats {
+    background: var(--ruffle-blue);
+    box-shadow: 0 3px 6px 5px var(--ruffle-blue);
+    color: white;
+    height: 24px;
+    padding: 10px;
+}
+
+.floatright {
+    float: right;
+}
+
+@media only screen and (max-width: 1080px) {
+    #stats {
+        height: 36px;
+    }
+    .floatright {
+        float: none;    
+    }
+}
+
 @media only screen and (max-width: 800px) {
     #local-file-container,
     #sample-swfs-container {
@@ -155,5 +176,8 @@ body {
 
     #nav {
         flex-flow: column;
+    }
+    #stats {
+        height: 52px;
     }
 }
