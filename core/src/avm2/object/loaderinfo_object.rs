@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
-use crate::avm2::{Event, EventData};
+use crate::avm2::EventObject;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::tag_utils::SwfMovie;
@@ -139,9 +139,7 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     fn loader_stream_init(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if !self.0.read().init_fired {
             self.0.write(context.gc_context).init_fired = true;
-            let mut init_evt = Event::new("init", EventData::Empty);
-            init_evt.set_bubbles(false);
-            init_evt.set_cancelable(false);
+            let init_evt = EventObject::bare_default_event(context, "init");
 
             if let Err(e) = Avm2::dispatch_event(context, init_evt, (*self).into()) {
                 log::error!(

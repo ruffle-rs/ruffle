@@ -35,9 +35,17 @@ include "flash/display/TriangleCulling.as"
 
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
+include "flash/events/TextEvent.as"
+include "flash/events/ErrorEvent.as"
+include "flash/events/IOErrorEvent.as"
+include "flash/events/SecurityErrorEvent.as"
 include "flash/events/ActivityEvent.as"
 include "flash/events/ContextMenuEvent.as"
 include "flash/events/TimerEvent.as"
+include "flash/events/FullScreenEvent.as"
+include "flash/events/ProgressEvent.as"
+include "flash/events/MouseEvent.as"
+include "flash/events/KeyboardEvent.as"
 
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Orientation3D.as"

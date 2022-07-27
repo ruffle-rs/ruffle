@@ -4,7 +4,9 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
-use crate::avm2::{Activation as Avm2Activation, Avm2, Domain as Avm2Domain};
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, Domain as Avm2Domain, EventObject as Avm2EventObject,
+};
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     log::LogBackend,
@@ -1436,7 +1438,8 @@ impl Player {
                     }
                 }
 
-                ActionType::Event2 { event, target } => {
+                ActionType::Event2 { event_type, target } => {
+                    let event = Avm2EventObject::bare_default_event(context, event_type);
                     if let Err(e) = Avm2::dispatch_event(context, event, target) {
                         log::error!("Unhandled AVM2 exception in event handler: {}", e);
                     }

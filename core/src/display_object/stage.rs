@@ -2,10 +2,10 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::object::TObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Event as Avm2Event, EventData as Avm2EventData,
-    Object as Avm2Object, ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
+    ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
@@ -595,9 +595,7 @@ impl<'gc> Stage<'gc> {
                 &[],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let mut resized_event = Avm2Event::new("resize", Avm2EventData::Empty);
-            resized_event.set_bubbles(false);
-            resized_event.set_cancelable(false);
+            let resized_event = Avm2EventObject::bare_default_event(context, "resize");
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, resized_event, stage) {
                 log::error!("Encountered AVM2 error when dispatching event: {}", e);
             }
@@ -616,15 +614,20 @@ impl<'gc> Stage<'gc> {
                 &[self.is_fullscreen().into()],
             );
         } else if let Avm2Value::Object(stage) = self.object2() {
-            let mut full_screen_event = Avm2Event::new(
-                "fullScreen",
-                Avm2EventData::FullScreen {
-                    full_screen: self.is_fullscreen(),
-                    interactive: true,
-                },
-            );
-            full_screen_event.set_bubbles(false);
-            full_screen_event.set_cancelable(false);
+            let full_screen_event_cls = context.avm2.classes().fullscreenevent;
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let full_screen_event = full_screen_event_cls
+                .construct(
+                    &mut activation,
+                    &[
+                        "fullScreen".into(),
+                        false.into(),
+                        false.into(),
+                        self.is_fullscreen().into(),
+                        true.into(),
+                    ],
+                )
+                .unwrap(); // we don't expect to break here
 
             if let Err(e) = crate::avm2::Avm2::dispatch_event(context, full_screen_event, stage) {
                 log::error!("Encountered AVM2 error when dispatching event: {}", e);
