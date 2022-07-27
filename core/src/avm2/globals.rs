@@ -452,11 +452,6 @@ pub fn load_player_globals<'gc>(
         flash::events::eventdispatcher::create_class(mc),
         script,
     )?;
-    class(
-        activation,
-        flash::events::eventphase::create_class(mc),
-        script,
-    )?;
 
     // package `flash.utils`
     avm2_system_class!(
@@ -691,59 +686,6 @@ pub fn load_player_globals<'gc>(
     // this call.
     load_playerglobal(activation, domain)?;
 
-    // These are event definitions, which need to be able to
-    // load "flash.events.Event", which is defined in our playerglobal.
-    // Therefore, they need to come after "load_playerglobal"
-    // FIXME: Convert all of these event classes to ActionScript,
-    // which will allow us to remove all of these calls.
-
-    avm2_system_class!(
-        mouseevent,
-        activation,
-        flash::events::mouseevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        textevent,
-        activation,
-        flash::events::textevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        errorevent,
-        activation,
-        flash::events::errorevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        securityerrorevent,
-        activation,
-        flash::events::securityerrorevent::create_class(mc),
-        script
-    );
-    avm2_system_class!(
-        ioerrorevent,
-        activation,
-        flash::events::ioerrorevent::create_class(mc),
-        script
-    );
-    class(
-        activation,
-        flash::events::keyboardevent::create_class(mc),
-        script,
-    )?;
-    class(
-        activation,
-        flash::events::progressevent::create_class(mc),
-        script,
-    )?;
-    avm2_system_class!(
-        fullscreenevent,
-        activation,
-        flash::events::fullscreenevent::create_class(mc),
-        script
-    );
-
     Ok(())
 }
 
@@ -803,6 +745,12 @@ fn load_playerglobal<'gc>(
         [
             ("flash.display", "Scene", scene),
             ("flash.events", "Event", event),
+            ("flash.events", "TextEvent", textevent),
+            ("flash.events", "ErrorEvent", errorevent),
+            ("flash.events", "SecurityErrorEvent", securityerrorevent),
+            ("flash.events", "IOErrorEvent", ioerrorevent),
+            ("flash.events", "MouseEvent", mouseevent),
+            ("flash.events", "FullScreenEvent", fullscreenevent),
         ]
     );
 

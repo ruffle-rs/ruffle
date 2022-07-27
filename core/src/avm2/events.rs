@@ -5,11 +5,8 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, InteractiveObject, TDisplayObject};
-use crate::events::KeyCode;
+use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
-use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
@@ -45,101 +42,6 @@ pub enum PropagationMode {
     StopImmediate,
 }
 
-bitflags! {
-    /// Keyboard modifiers.
-    #[derive(Collect, Default)]
-    #[collect(require_static)]
-    pub struct KeyModifiers: u8 {
-        const CTRL = 0b00000001;
-        const ALT = 0b00000010;
-        const SHIFT = 0b00000100;
-        const COMMAND = 0b00001000;
-    }
-}
-
-impl KeyModifiers {
-    fn from_current_keys<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) -> Self {
-        let mut keymods = KeyModifiers::default();
-
-        if context.input.is_key_down(KeyCode::Control) {
-            keymods.insert(KeyModifiers::CTRL);
-        }
-
-        if context.input.is_key_down(KeyCode::Alt) {
-            keymods.insert(KeyModifiers::ALT);
-        }
-
-        if context.input.is_key_down(KeyCode::Shift) {
-            keymods.insert(KeyModifiers::SHIFT);
-        }
-
-        //TODO: We don't have a UI keycode for ⌘.
-
-        keymods
-    }
-}
-
-/// The data for a dispatched event.
-///
-/// This roughly corresponds to properties provided on specific AS3 `Event`
-/// subclasses.
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
-pub enum EventData<'gc> {
-    Empty,
-    Error {
-        text: AvmString<'gc>,
-        error_id: i32,
-    },
-    FullScreen {
-        full_screen: bool,
-        interactive: bool,
-    },
-    IOError {
-        text: AvmString<'gc>,
-        error_id: i32,
-    },
-    Mouse {
-        local_x: f64,
-        local_y: f64,
-        movement_x: f64,
-        movement_y: f64,
-        related_object: Option<InteractiveObject<'gc>>,
-        modifiers: KeyModifiers,
-        button_down: bool,
-        delta: i32,
-    },
-    SecurityError {
-        text: AvmString<'gc>,
-        error_id: i32,
-    },
-    Text {
-        text: AvmString<'gc>,
-    },
-}
-
-impl<'gc> EventData<'gc> {
-    pub fn mouse_event(
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        target: DisplayObject<'gc>,
-        related_object: Option<InteractiveObject<'gc>>,
-        delta: i32,
-    ) -> Self {
-        let local_pos = target.global_to_local(*context.mouse_position);
-
-        Self::Mouse {
-            local_x: local_pos.0.to_pixels(),
-            local_y: local_pos.1.to_pixels(),
-            movement_x: 0.0, //TODO: Implement mouselocking.
-            movement_y: 0.0,
-            related_object,
-            modifiers: KeyModifiers::from_current_keys(context),
-            button_down: context.input.is_mouse_down(),
-            delta,
-        }
-    }
-}
-
 /// Represents data fields of an event that can be fired on an object that
 /// implements `IEventDispatcher`.
 #[derive(Clone, Collect, Debug)]
@@ -170,14 +72,11 @@ pub struct Event<'gc> {
 
     /// The name of the event being triggered.
     event_type: AvmString<'gc>,
-
-    /// The event's data set.
-    event_data: EventData<'gc>,
 }
 
 impl<'gc> Event<'gc> {
     /// Construct a new event of a given type.
-    pub fn new<S>(event_type: S, event_data: EventData<'gc>) -> Self
+    pub fn new<S>(event_type: S) -> Self
     where
         S: Into<AvmString<'gc>>,
     {
@@ -190,7 +89,6 @@ impl<'gc> Event<'gc> {
             event_phase: EventPhase::AtTarget,
             target: None,
             event_type: event_type.into(),
-            event_data,
         }
     }
 
@@ -271,18 +169,6 @@ impl<'gc> Event<'gc> {
 
     pub fn set_current_target(&mut self, current_target: Object<'gc>) {
         self.current_target = Some(current_target)
-    }
-
-    pub fn event_data(&self) -> &EventData<'gc> {
-        &self.event_data
-    }
-
-    pub fn event_data_mut(&mut self) -> &mut EventData<'gc> {
-        &mut self.event_data
-    }
-
-    pub fn set_event_data(&mut self, event_data: EventData<'gc>) {
-        self.event_data = event_data;
     }
 }
 

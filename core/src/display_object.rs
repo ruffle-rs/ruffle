@@ -1,8 +1,8 @@
 use crate::avm1::{Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, Event as Avm2Event,
-    EventData as Avm2EventData, Namespace as Avm2Namespace, Object as Avm2Object,
-    QName as Avm2QName, TObject as Avm2TObject, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
+    Namespace as Avm2Namespace, Object as Avm2Object, QName as Avm2QName, TObject as Avm2TObject,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -1082,9 +1082,7 @@ pub trait TDisplayObject<'gc>:
     /// Emit an `enterFrame` event on this DisplayObject and any children it
     /// may have.
     fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut enter_frame_evt = Avm2Event::new("enterFrame", Avm2EventData::Empty);
-        enter_frame_evt.set_bubbles(false);
-        enter_frame_evt.set_cancelable(false);
+        let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
 
         let dobject_constr = context.avm2.classes().display_object;
 
@@ -1128,9 +1126,8 @@ pub trait TDisplayObject<'gc>:
     /// Emit a `frameConstructed` event on this DisplayObject and any children it
     /// may have.
     fn frame_constructed(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut frame_constructed_evt = Avm2Event::new("frameConstructed", Avm2EventData::Empty);
-        frame_constructed_evt.set_bubbles(false);
-        frame_constructed_evt.set_cancelable(false);
+        let frame_constructed_evt =
+            Avm2EventObject::bare_default_event(context, "frameConstructed");
 
         let dobject_constr = context.avm2.classes().display_object;
 
@@ -1153,9 +1150,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Emit an `exitFrame` broadcast event.
     fn exit_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut exit_frame_evt = Avm2Event::new("exitFrame", Avm2EventData::Empty);
-        exit_frame_evt.set_bubbles(false);
-        exit_frame_evt.set_cancelable(false);
+        let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
 
         let dobject_constr = context.avm2.classes().display_object;
 

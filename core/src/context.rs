@@ -2,9 +2,7 @@
 
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{
-    Avm2, Event as Avm2Event, Object as Avm2Object, SoundChannelObject, Value as Avm2Value,
-};
+use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -476,9 +474,10 @@ pub enum ActionType<'gc> {
         args: Vec<Avm2Value<'gc>>,
     },
 
-    /// An AVM2 event to be dispatched.
+    /// An AVM2 event to be dispatched. This translates to an Event class instance.
+    /// Creating an Event subclass via this dispatch is TODO.
     Event2 {
-        event: Avm2Event<'gc>,
+        event_type: &'static str,
         target: Avm2Object<'gc>,
     },
 }
@@ -538,9 +537,9 @@ impl fmt::Debug for ActionType<'_> {
                 .field("reciever", reciever)
                 .field("args", args)
                 .finish(),
-            ActionType::Event2 { event, target } => f
+            ActionType::Event2 { event_type, target } => f
                 .debug_struct("ActionType::Event2")
-                .field("event", event)
+                .field("event_type", event_type)
                 .field("target", target)
                 .finish(),
         }

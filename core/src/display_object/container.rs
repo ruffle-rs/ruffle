@@ -1,6 +1,6 @@
 //! Container mix-in for display objects
 
-use crate::avm2::{Avm2, Event as Avm2Event, EventData as Avm2EventData, Value as Avm2Value};
+use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::movie_clip::MovieClip;
@@ -22,9 +22,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("removedFromStage", Avm2EventData::Empty);
-        removed_evt.set_bubbles(false);
-        removed_evt.set_cancelable(false);
+        let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
 
         if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
@@ -45,9 +43,7 @@ pub fn dispatch_removed_event<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("removed", Avm2EventData::Empty);
-        removed_evt.set_bubbles(true);
-        removed_evt.set_cancelable(false);
+        let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
 
         if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
@@ -65,11 +61,9 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("addedToStage", Avm2EventData::Empty);
-        removed_evt.set_bubbles(false);
-        removed_evt.set_cancelable(false);
+        let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
 
-        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+        if let Err(e) = Avm2::dispatch_event(context, added_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
     }
@@ -97,11 +91,9 @@ pub fn dispatch_added_event_only<'gc>(
     context: &mut UpdateContext<'_, 'gc, '_>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
-        let mut removed_evt = Avm2Event::new("added", Avm2EventData::Empty);
-        removed_evt.set_bubbles(true);
-        removed_evt.set_cancelable(false);
+        let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
 
-        if let Err(e) = Avm2::dispatch_event(context, removed_evt, object) {
+        if let Err(e) = Avm2::dispatch_event(context, added_evt, object) {
             log::error!("Encountered AVM2 error when dispatching event: {}", e);
         }
     }

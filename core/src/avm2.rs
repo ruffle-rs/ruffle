@@ -3,7 +3,6 @@
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::EventObject;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -48,10 +47,10 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
-pub use crate::avm2::events::{Event, EventData};
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{
-    ArrayObject, ClassObject, Object, ScriptObject, SoundChannelObject, StageObject, TObject,
+    ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
+    TObject,
 };
 pub use crate::avm2::value::Value;
 
@@ -156,16 +155,12 @@ impl<'gc> Avm2<'gc> {
     /// The `bool` parameter reads true if the event was cancelled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: Event<'gc>,
+        event: Object<'gc>,
         target: Object<'gc>,
     ) -> Result<bool, Error> {
         use crate::avm2::events::dispatch_event;
-
         let mut activation = Activation::from_nothing(context.reborrow());
-
-        let event_object = EventObject::from_event(&mut activation, event)?;
-
-        dispatch_event(&mut activation, target, event_object)
+        dispatch_event(&mut activation, target, event)
     }
 
     /// Add an object to the broadcast list.
@@ -209,10 +204,12 @@ impl<'gc> Avm2<'gc> {
     /// new broadcast type, you must add it to the `BROADCAST_WHITELIST` first.
     pub fn broadcast_event(
         context: &mut UpdateContext<'_, 'gc, '_>,
-        event: Event<'gc>,
+        event: Object<'gc>,
         on_type: ClassObject<'gc>,
     ) -> Result<(), Error> {
-        let event_name = event.event_type();
+        let base_event = event.as_event().unwrap(); // TODO: unwrap?
+        let event_name = base_event.event_type();
+        drop(base_event);
         if !BROADCAST_WHITELIST
             .iter()
             .any(|x| AvmString::from(*x) == event_name)
@@ -240,7 +237,7 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
                 if object.is_of_type(on_type, &mut activation)? {
-                    Avm2::dispatch_event(&mut activation.context, event.clone(), object)?;
+                    Avm2::dispatch_event(&mut activation.context, event, object)?;
                 }
             }
         }
