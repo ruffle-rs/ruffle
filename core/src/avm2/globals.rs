@@ -88,6 +88,7 @@ pub struct SystemClasses<'gc> {
     pub qname: ClassObject<'gc>,
     pub sharedobject: ClassObject<'gc>,
     pub mouseevent: ClassObject<'gc>,
+    pub focusevent: ClassObject<'gc>,
     pub textevent: ClassObject<'gc>,
     pub errorevent: ClassObject<'gc>,
     pub ioerrorevent: ClassObject<'gc>,
@@ -150,6 +151,7 @@ impl<'gc> SystemClasses<'gc> {
             qname: object,
             sharedobject: object,
             mouseevent: object,
+            focusevent: object,
             textevent: object,
             errorevent: object,
             ioerrorevent: object,
@@ -701,6 +703,12 @@ pub fn load_player_globals<'gc>(
         mouseevent,
         activation,
         flash::events::mouseevent::create_class(mc),
+        script
+    );
+    avm2_system_class!(
+        focusevent,
+        activation,
+        flash::events::focusevent::create_class(mc),
         script
     );
     avm2_system_class!(

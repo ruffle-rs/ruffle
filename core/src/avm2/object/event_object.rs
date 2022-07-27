@@ -57,6 +57,7 @@ impl<'gc> EventObject<'gc> {
             EventData::Mouse { .. } => activation.avm2().classes().mouseevent,
             EventData::SecurityError { .. } => activation.avm2().classes().securityerrorevent,
             EventData::Text { .. } => activation.avm2().classes().textevent,
+            EventData::Focus { .. } => activation.avm2().classes().focusevent
         };
 
         let base = ScriptObjectData::new(class);

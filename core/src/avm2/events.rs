@@ -116,6 +116,12 @@ pub enum EventData<'gc> {
     Text {
         text: AvmString<'gc>,
     },
+    Focus {
+        related_object: Option<InteractiveObject<'gc>>,
+        modifiers: KeyModifiers,
+        key_code: u32,
+        direction: AvmString<'gc>,
+    }
 }
 
 impl<'gc> EventData<'gc> {
