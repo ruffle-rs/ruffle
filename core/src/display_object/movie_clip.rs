@@ -1204,13 +1204,7 @@ impl<'gc> MovieClip<'gc> {
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
                     child.set_parent(context.gc_context, Some(self.into()));
-                    if movie.is_action_script_3() {
-                        // In AVM2 instantiation happens before frame advance so we
-                        // have to special-case that
-                        child.set_place_frame(context.gc_context, self.current_frame() + 1);
-                    } else {
-                        child.set_place_frame(context.gc_context, self.current_frame());
-                    }
+                    child.set_place_frame(context.gc_context, self.current_frame());
 
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
@@ -3341,13 +3335,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
                     child.apply_place_object(context, &place_object);
-                    if context.is_action_script_3() {
-                        // In AVM2 instantiation happens before frame advance so we
-                        // have to special-case that
-                        child.set_place_frame(context.gc_context, self.current_frame() + 1);
-                    } else {
-                        child.set_place_frame(context.gc_context, self.current_frame());
-                    }
+                    child.set_place_frame(context.gc_context, self.current_frame());
                 }
             }
             PlaceObjectAction::Modify => {
