@@ -40,6 +40,7 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use ruffle_core::duration::RuffleDuration;
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
@@ -369,12 +370,12 @@ impl App {
                     // Core loop
                     winit::event::Event::MainEventsCleared if loaded => {
                         let new_time = Instant::now();
-                        let dt = new_time.duration_since(time);
+                        let dt = RuffleDuration::from(new_time.duration_since(time));
                         if !dt.is_zero() {
                             time = new_time;
                             let mut player_lock = self.player.lock().unwrap();
                             player_lock.tick(dt);
-                            next_frame_time = new_time + player_lock.time_til_next_frame();
+                            next_frame_time = new_time + player_lock.time_til_next_frame().into();
                             if player_lock.needs_render() {
                                 self.window.request_redraw();
                             }

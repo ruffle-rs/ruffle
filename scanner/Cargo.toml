@@ -18,4 +18,3 @@ swf = { path = "../swf" }
 rayon = "1.6.0"
 crossbeam-channel = "0.5"
 sha2 = "0.10.6"
-duration_helper = { path = "../duration_helper" }

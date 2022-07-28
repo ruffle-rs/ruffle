@@ -1231,15 +1231,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
-name = "duration_helper"
-version = "0.1.0"
-dependencies = [
- "chrono",
-]
-
-[[package]]
-name = "dwrote"
-version = "0.11.0"
+name = "either"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439a1c2ba5611ad3ed731280541d36d2e9c4ac5e7fb818a27b604bdc5a6aa65b"
 dependencies = [
@@ -3405,7 +3398,6 @@ dependencies = [
  "chrono",
  "dasp",
  "downcast-rs",
- "duration_helper",
  "encoding_rs",
  "enumset",
  "flash-lso",
@@ -3570,7 +3562,6 @@ dependencies = [
  "clap",
  "crossbeam-channel",
  "csv",
- "duration_helper",
  "indicatif",
  "log",
  "path-slash",
@@ -3618,7 +3609,6 @@ dependencies = [
  "chrono",
  "console_error_panic_hook",
  "console_log",
- "duration_helper",
  "generational-arena",
  "getrandom",
  "js-sys",
@@ -4257,7 +4247,6 @@ name = "tests"
 version = "0.1.0"
 dependencies = [
  "approx",
- "duration_helper",
  "env_logger",
  "futures",
  "image",

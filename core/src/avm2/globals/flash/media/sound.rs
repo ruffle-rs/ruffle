@@ -12,7 +12,6 @@ use crate::avm2::QName;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
-use duration_helper::into_f64_millis;
 use gc_arena::{GcCell, MutationContext};
 use swf::{SoundEvent, SoundInfo};
 
@@ -105,7 +104,7 @@ pub fn length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
-            return Ok((into_f64_millis(duration)).into());
+            return Ok(duration.as_millis().into());
         }
     }
 

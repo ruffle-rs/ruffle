@@ -46,7 +46,6 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.147", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.13.1"
-duration_helper = { path = "../duration_helper" }
 
 [dependencies.ruffle_core]
 path = "../core"

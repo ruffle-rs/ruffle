@@ -28,6 +28,7 @@ use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use swf::Twips;
 use url::form_urlencoded;
+use crate::duration::RuffleDuration;
 
 macro_rules! avm_debug {
     ($avm: expr, $($arg:tt)*) => (

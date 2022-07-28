@@ -11,7 +11,6 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_input_format = { path = "input-format" }
 image = "0.24.5"
 regex = "1.7.0"
-duration_helper = { path = "../duration_helper"}
 
 [features]
 # Enable running image comparison tests. This is off by default,

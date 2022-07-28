@@ -19,9 +19,7 @@ members = [
 
     "video",
     "video/software",
-    "duration_helper",
 
-    "tests",
     "tests/input-format",
 ]
 resolver = "2"

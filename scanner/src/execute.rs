@@ -14,13 +14,13 @@ use std::io::{stdout, Write};
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::time::{Duration, Instant};
-use duration_helper::from_f64_millis;
+use ruffle_core::duration::RuffleDuration;
 
 fn execute_swf(file: &Path) {
     let base_path = file.parent().unwrap();
     let executor = NullExecutor::new();
     let movie = SwfMovie::from_path(file, None).unwrap();
-    let frame_time =  from_f64_millis(1000.0 / movie.frame_rate().to_f64());
+    let frame_time =  RuffleDuration::from_millis(1000.0 / movie.frame_rate().to_f64());
     let player = PlayerBuilder::new()
         .with_log(ScanLogBackend::new())
         .with_navigator(NullNavigatorBackend::with_base_path(base_path, &executor))
