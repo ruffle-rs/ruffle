@@ -234,6 +234,7 @@ pub mod symphonia {
                 formats::SeekTo::TimeStamp { track_id: 0, ts: 0 },
             );
             self.sample_buf.clear();
+            self.decoder.reset();
             self.cur_sample = 0;
             self.stream_ended = false;
             self.next_frame();
