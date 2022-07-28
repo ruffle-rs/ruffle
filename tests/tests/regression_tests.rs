@@ -28,7 +28,6 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use ruffle_core::duration::RuffleDuration;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");

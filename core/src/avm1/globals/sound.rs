@@ -10,7 +10,6 @@ use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::{SoundTransform, TDisplayObject};
 use gc_arena::MutationContext;
-use std::time::Duration;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
