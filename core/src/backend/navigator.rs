@@ -88,6 +88,12 @@ impl Request {
         }
     }
 
+    /// Construct a request with the given method and data
+    #[allow(clippy::self_named_constructors)]
+    pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
+        Self { url, method, body }
+    }
+
     /// Retrieve the URL of this request.
     pub fn url(&self) -> &str {
         &self.url
