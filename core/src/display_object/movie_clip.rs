@@ -105,6 +105,9 @@ pub struct MovieClipData<'gc> {
     /// The tag stream start and stop positions for each frame in the clip.
     #[cfg(feature = "timeline_debug")]
     tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
+
+    /// List of tags queued up for the current frame.
+    queued_tags: HashMap<Depth, QueuedTag>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -137,6 +140,7 @@ impl<'gc> MovieClip<'gc> {
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
             },
         ))
     }
@@ -175,6 +179,7 @@ impl<'gc> MovieClip<'gc> {
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
             },
         ))
     }
@@ -217,6 +222,7 @@ impl<'gc> MovieClip<'gc> {
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
             },
         ))
     }
@@ -277,6 +283,7 @@ impl<'gc> MovieClip<'gc> {
 
                 #[cfg(feature = "timeline_debug")]
                 tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
             },
         ));
 
@@ -1137,6 +1144,24 @@ impl<'gc> MovieClip<'gc> {
             TagCode::RemoveObject2 if run_display_actions && !context.is_action_script_3() => {
                 self.remove_object(context, reader, 2)
             }
+            TagCode::PlaceObject if run_display_actions && context.is_action_script_3() => {
+                self.queue_place_object(context, reader, tag_len, 1)
+            }
+            TagCode::PlaceObject2 if run_display_actions && context.is_action_script_3() => {
+                self.queue_place_object(context, reader, tag_len, 2)
+            }
+            TagCode::PlaceObject3 if run_display_actions && context.is_action_script_3() => {
+                self.queue_place_object(context, reader, tag_len, 3)
+            }
+            TagCode::PlaceObject4 if run_display_actions && context.is_action_script_3() => {
+                self.queue_place_object(context, reader, tag_len, 4)
+            }
+            TagCode::RemoveObject if run_display_actions && context.is_action_script_3() => {
+                self.queue_remove_object(context, reader, tag_len, 1)
+            }
+            TagCode::RemoveObject2 if run_display_actions && context.is_action_script_3() => {
+                self.queue_remove_object(context, reader, tag_len, 2)
+            }
             TagCode::SetBackgroundColor => self.set_background_color(context, reader),
             TagCode::StartSound => self.start_sound_1(context, reader),
             TagCode::SoundStreamBlock => self.sound_stream_block(context, reader),
@@ -1834,6 +1859,31 @@ impl<'gc> MovieClip<'gc> {
                 .any(|handler| object.has_property(&mut activation, handler.into()))
         }
     }
+
+    fn unqueue_tags_matching<F>(
+        &self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        mut matching: F,
+    ) -> Vec<(Depth, QueuedTag)>
+    where
+        F: FnMut(&QueuedTag) -> bool,
+    {
+        let mut write = self.0.write(context.gc_context);
+        let mut unqueued: Vec<_> = write
+            .queued_tags
+            .iter()
+            .filter(|(_, t)| matching(t))
+            .map(|(d, t)| (*d, t.clone()))
+            .collect();
+
+        unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
+
+        for (depth, _) in unqueued.iter() {
+            write.queued_tags.remove(depth);
+        }
+
+        unqueued
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -1874,22 +1924,23 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             let is_playing = self.playing();
 
             if is_playing {
-                // Frame destruction happens in-line with frame number advance.
-                // If we expect to loop, we do not run `RemoveObject` tags.
-                if self.current_frame() < self.total_frames() {
-                    let mc = self.0.read();
-                    let data = mc.static_data.swf.clone();
-                    let mut reader = data.read_from(mc.tag_stream_pos);
-                    drop(mc);
+                self.run_frame_internal(context, true);
 
-                    use swf::TagCode;
-                    let tag_callback =
-                        |reader: &mut SwfStream<'_>, tag_code, _tag_len| match tag_code {
-                            TagCode::RemoveObject => self.remove_object(context, reader, 1),
-                            TagCode::RemoveObject2 => self.remove_object(context, reader, 2),
-                            _ => Ok(()),
-                        };
-                    let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+                let data = self.0.read().static_data.swf.clone();
+                let remove_actions = self.unqueue_tags_matching(context, |t| {
+                    matches!(t.tag_type, QueuedTagAction::Remove(_))
+                });
+
+                for (_, tag) in remove_actions {
+                    let mut reader = data.read_from(tag.tag_start);
+                    let version = match tag.tag_type {
+                        QueuedTagAction::Remove(v) => v,
+                        _ => unreachable!(),
+                    };
+
+                    if let Err(e) = self.remove_object(context, &mut reader, version) {
+                        log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                    }
                 }
             }
         }
@@ -1913,21 +1964,21 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
-            if self.determine_next_frame() != NextFrame::First {
-                let mc = self.0.read();
-                let data = mc.static_data.swf.clone();
-                let mut reader = data.read_from(mc.tag_stream_pos);
-                drop(mc);
+            let data = self.0.read().static_data.swf.clone();
+            let place_actions = self.unqueue_tags_matching(context, |t| {
+                matches!(t.tag_type, QueuedTagAction::Place(_))
+            });
 
-                use swf::TagCode;
-                let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::PlaceObject => self.place_object(context, reader, tag_len, 1),
-                    TagCode::PlaceObject2 => self.place_object(context, reader, tag_len, 2),
-                    TagCode::PlaceObject3 => self.place_object(context, reader, tag_len, 3),
-                    TagCode::PlaceObject4 => self.place_object(context, reader, tag_len, 4),
-                    _ => Ok(()),
+            for (_, tag) in place_actions {
+                let mut reader = data.read_from(tag.tag_start);
+                let version = match tag.tag_type {
+                    QueuedTagAction::Place(v) => v,
+                    _ => unreachable!(),
                 };
-                let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
+
+                if let Err(e) = self.place_object(context, &mut reader, tag.tag_len, version) {
+                    log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+                }
             }
 
             if needs_construction {
@@ -1959,7 +2010,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
 
         // Run my SWF tags.
-        if self.playing() {
+        // In AVM2, SWF tags are processed at enterFrame time.
+        if self.playing() && !context.is_action_script_3() {
             self.run_frame_internal(context, true);
         }
     }
@@ -3240,6 +3292,34 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
+    fn queue_place_object(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<'a>,
+        tag_len: usize,
+        version: u8,
+    ) -> DecodeResult {
+        let mut write = self.0.write(context.gc_context);
+        let tag_start =
+            reader.get_ref().as_ptr() as u64 - write.static_data.swf.as_ref().as_ptr() as u64;
+        let place_object = if version == 1 {
+            reader.read_place_object(tag_len)
+        } else {
+            reader.read_place_object_2_or_3(version)
+        }?;
+
+        write.queued_tags.insert(
+            place_object.depth as Depth,
+            QueuedTag {
+                tag_type: QueuedTagAction::Place(version),
+                tag_start,
+                tag_len,
+            },
+        );
+
+        Ok(())
+    }
+
     fn place_object(
         self,
         context: &mut UpdateContext<'_, 'gc, '_>,
@@ -3300,6 +3380,35 @@ impl<'gc, 'a> MovieClip<'gc> {
                 self.remove_child(context, child, Lists::DEPTH);
             }
         }
+
+        Ok(())
+    }
+
+    #[inline]
+    fn queue_remove_object(
+        self,
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        reader: &mut SwfStream<'a>,
+        tag_len: usize,
+        version: u8,
+    ) -> DecodeResult {
+        let mut write = self.0.write(context.gc_context);
+        let tag_start =
+            reader.get_ref().as_ptr() as u64 - write.static_data.swf.as_ref().as_ptr() as u64;
+        let remove_object = if version == 1 {
+            reader.read_remove_object_1()
+        } else {
+            reader.read_remove_object_2()
+        }?;
+
+        write.queued_tags.insert(
+            remove_object.depth as Depth,
+            QueuedTag {
+                tag_type: QueuedTagAction::Remove(version),
+                tag_start,
+                tag_len,
+            },
+        );
 
         Ok(())
     }
@@ -3570,6 +3679,27 @@ impl<'a> GotoPlaceObject<'a> {
         // and can not be modified by subsequent PlaceObject tags.
         // TODO: Filters need to be applied here. New filters will overwrite old filters.
     }
+}
+
+/// A single tag we encountered this frame that we intend to process on a queue.
+///
+/// No more than one queued action is allowed to be processed on-queue.
+#[derive(Debug, Eq, PartialEq, Clone, Collect)]
+#[collect(require_static)]
+pub struct QueuedTag {
+    pub tag_type: QueuedTagAction,
+    pub tag_start: u64,
+    pub tag_len: usize,
+}
+
+/// The type of queued tag.
+///
+/// The u8 parameter is the tag version.
+#[derive(Debug, Eq, PartialEq, Clone, Collect)]
+#[collect(require_static)]
+pub enum QueuedTagAction {
+    Place(u8),
+    Remove(u8),
 }
 
 bitflags! {
