@@ -85,15 +85,16 @@ impl<'gc> VTable<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
-        let mut slot_class =
-            { self.0.write(activation.context.gc_context).slot_classes[slot_id as usize].clone() };
-        let value = slot_class.coerce(activation, value);
-        // Calling coerce modifies `PropertyClass` to cache the class lookup,
+        let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
+
+        let (value, changed) = slot_class.coerce(activation, value)?;
+
+        // Calling coerce modified `PropertyClass` to cache the class lookup,
         // so store the new value back in the vtable.
-        {
+        if changed {
             self.0.write(activation.context.gc_context).slot_classes[slot_id as usize] = slot_class;
         }
-        value
+        Ok(value)
     }
 
     pub fn has_trait(self, name: &Multiname<'gc>) -> bool {

@@ -50,24 +50,28 @@ impl<'gc> PropertyClass<'gc> {
     ) -> Self {
         PropertyClass::Name(Gc::allocate(activation.context.gc_context, (name, unit)))
     }
+
+    /// Returns `value` coerced to the type of this `PropertyClass`.
+    /// The bool is `true` if this `PropertyClass` was just modified
+    /// to cache a class resolution, and `false` if it was not modified.
     pub fn coerce(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
-        let class = match self {
-            PropertyClass::Class(class) => Some(*class),
+    ) -> Result<(Value<'gc>, bool), Error> {
+        let (class, changed) = match self {
+            PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
                 let outcome = resolve_class_private(name, *unit, activation)?;
                 let class = match outcome {
                     ResolveOutcome::Class(class) => {
                         *self = PropertyClass::Class(class);
-                        Some(class)
+                        (Some(class), true)
                     }
                     ResolveOutcome::Any => {
                         *self = PropertyClass::Any;
-                        None
+                        (None, true)
                     }
                     ResolveOutcome::NotFound => {
                         // FP allows a class to reference its own type in a static initializer:
@@ -92,7 +96,9 @@ impl<'gc> PropertyClass<'gc> {
                                     && unit.map(|u| u.domain())
                                         == Some(class.class_scope().domain())
                                 {
-                                    return Ok(value);
+                                    // Even though resolution succeeded, we haven't modified
+                                    // this `PropertyClass`, so return `false`
+                                    return Ok((value, false));
                                 }
                             }
                         }
@@ -104,15 +110,15 @@ impl<'gc> PropertyClass<'gc> {
                 };
                 class
             }
-            PropertyClass::Any => None,
+            PropertyClass::Any => (None, false),
         };
 
         if let Some(class) = class {
-            value.coerce_to_type(activation, class)
+            Ok((value.coerce_to_type(activation, class)?, changed))
         } else {
             // We have a type of '*' ("any"), so don't
             // perform any coercions
-            Ok(value)
+            Ok((value, changed))
         }
     }
 }
