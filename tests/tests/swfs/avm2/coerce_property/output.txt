@@ -1,3 +1,8 @@
+///var self_ref:SelfRef = new SelfRef();
+/// self_ref
+[object SelfRef]
+///SelfRef.field
+[object SelfRef]
 ///any_var
 undefined
 ///object_var

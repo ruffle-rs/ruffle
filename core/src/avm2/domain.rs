@@ -201,3 +201,11 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 }
+
+impl<'gc> PartialEq for Domain<'gc> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.as_ptr() == other.0.as_ptr()
+    }
+}
+
+impl<'gc> Eq for Domain<'gc> {}
