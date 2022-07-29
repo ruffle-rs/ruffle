@@ -142,8 +142,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id, class: _ })
-            | Some(Property::ConstSlot { slot_id, class: _ }) => self.base().get_slot(slot_id),
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                self.base().get_slot(slot_id)
+            }
             Some(Property::Method { disp_id }) => {
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
@@ -197,8 +198,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id, mut class }) => {
-                let value = class.coerce(activation, value)?;
+            Some(Property::Slot { slot_id }) => {
+                let value = self
+                    .vtable()
+                    .unwrap()
+                    .coerce_trait_value(slot_id, value, activation)?;
                 self.base_mut(activation.context.gc_context).set_slot(
                     slot_id,
                     value,
@@ -247,9 +251,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<(), Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id, mut class })
-            | Some(Property::ConstSlot { slot_id, mut class }) => {
-                let value = class.coerce(activation, value)?;
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                let value = self
+                    .vtable()
+                    .unwrap()
+                    .coerce_trait_value(slot_id, value, activation)?;
                 self.base_mut(activation.context.gc_context).set_slot(
                     slot_id,
                     value,
@@ -303,8 +309,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc, '_>,
     ) -> Result<Value<'gc>, Error> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
-            Some(Property::Slot { slot_id, class: _ })
-            | Some(Property::ConstSlot { slot_id, class: _ }) => {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 let obj = self.base().get_slot(slot_id)?.as_callable(
                     activation,
                     Some(multiname),

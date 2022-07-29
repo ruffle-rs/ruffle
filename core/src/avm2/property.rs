@@ -11,22 +11,11 @@ use gc_arena::{Collect, Gc};
 
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub enum Property<'gc> {
-    Virtual {
-        get: Option<u32>,
-        set: Option<u32>,
-    },
-    Method {
-        disp_id: u32,
-    },
-    Slot {
-        slot_id: u32,
-        class: PropertyClass<'gc>,
-    },
-    ConstSlot {
-        slot_id: u32,
-        class: PropertyClass<'gc>,
-    },
+pub enum Property {
+    Virtual { get: Option<u32>, set: Option<u32> },
+    Method { disp_id: u32 },
+    Slot { slot_id: u32 },
+    ConstSlot { slot_id: u32 },
 }
 
 /// The type of a `Slot`/`ConstSlot` property, represented
@@ -42,7 +31,7 @@ pub enum Property<'gc> {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Debug, Collect, Clone, Copy)]
+#[derive(Debug, Collect, Clone)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows
@@ -191,7 +180,7 @@ fn resolve_class_private<'gc>(
     }
 }
 
-impl<'gc> Property<'gc> {
+impl Property {
     pub fn new_method(disp_id: u32) -> Self {
         Property::Method { disp_id }
     }
@@ -210,11 +199,11 @@ impl<'gc> Property<'gc> {
         }
     }
 
-    pub fn new_slot(slot_id: u32, class: PropertyClass<'gc>) -> Self {
-        Property::Slot { slot_id, class }
+    pub fn new_slot(slot_id: u32) -> Self {
+        Property::Slot { slot_id }
     }
 
-    pub fn new_const_slot(slot_id: u32, class: PropertyClass<'gc>) -> Self {
-        Property::ConstSlot { slot_id, class }
+    pub fn new_const_slot(slot_id: u32) -> Self {
+        Property::ConstSlot { slot_id }
     }
 }
