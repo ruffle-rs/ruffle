@@ -17,7 +17,7 @@ use crate::avm2::TranslationUnit;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
-use std::cell::{Ref, RefMut};
+use std::cell::{BorrowError, Ref, RefMut};
 use std::hash::{Hash, Hasher};
 
 /// An Object which can be called to execute its function code.
@@ -704,6 +704,15 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn class_vtable(self) -> VTable<'gc> {
         self.0.read().class_vtable
+    }
+
+    /// Like `inner_class_definition`, but returns an `Err(BorrowError)` instead of panicking
+    /// if our `GcCell` is already mutably borrowed. This is useful
+    /// in contexts where panicking would be extremely undesirable,
+    /// and there's a fallback if we cannot obtain the `Class`
+    /// (such as `Debug` impls),
+    pub fn try_inner_class_definition(&self) -> Result<GcCell<'gc, Class<'gc>>, BorrowError> {
+        self.0.try_read().map(|c| c.class)
     }
 
     pub fn inner_class_definition(self) -> GcCell<'gc, Class<'gc>> {
