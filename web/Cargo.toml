@@ -27,10 +27,8 @@ webgl = ["ruffle_render_webgl"]
 wgpu = ["ruffle_render_wgpu"]
 
 [dependencies]
-byteorder = "1.4"
 console_error_panic_hook = { version = "0.1.7", optional = true }
 console_log = { version = "0.2", optional = true }
-fnv = "1.0.7"
 generational-arena = "0.2.8"
 js-sys = "0.3.59"
 log = { version = "0.4", features = ["serde"] }
