@@ -686,7 +686,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_bit_rshift(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let a = self.context.avm1.pop().coerce_to_i32(self)? & 0b11111; // Only 5 bits used for shift count
+        let a = self.context.avm1.pop().coerce_to_u32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_i32(self)?;
         let result = b >> a;
         self.context.avm1.push(result.into());
@@ -697,7 +697,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let a = self.context.avm1.pop().coerce_to_u32(self)? & 0b11111; // Only 5 bits used for shift count
         let b = self.context.avm1.pop().coerce_to_u32(self)?;
         let result = b >> a;
-        self.context.avm1.push(result.into());
+        let result = if matches!(self.swf_version(), 8..=9) {
+            // In SWF8 and SWF9, unsigned right shift actually has a signed result.
+            (result as i32).into()
+        } else {
+            result.into()
+        };
+        self.context.avm1.push(result);
         Ok(FrameControl::Continue)
     }
 
