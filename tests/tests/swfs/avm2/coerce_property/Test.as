@@ -13,6 +13,18 @@ class Second {
 	var prop2:First;
 }
 
+class SelfRef {
+	static var field:SelfRef = new SelfRef()
+}
+
+trace("///var self_ref:SelfRef = new SelfRef();");
+var self_ref:SelfRef = new SelfRef();
+trace("/// self_ref");
+trace(self_ref);
+
+trace("///SelfRef.field");
+trace(SelfRef.field);
+
 var any_var:* = undefined;
 trace("///any_var");
 trace(any_var);

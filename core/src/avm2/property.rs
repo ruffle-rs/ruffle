@@ -70,10 +70,48 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => Some(*class),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                let class = resolve_class_private(name, *unit, activation)?;
-                *self = match class {
-                    Some(class) => PropertyClass::Class(class),
-                    None => PropertyClass::Any,
+                let outcome = resolve_class_private(name, *unit, activation)?;
+                let class = match outcome {
+                    ResolveOutcome::Class(class) => {
+                        *self = PropertyClass::Class(class);
+                        Some(class)
+                    }
+                    ResolveOutcome::Any => {
+                        *self = PropertyClass::Any;
+                        None
+                    }
+                    ResolveOutcome::NotFound => {
+                        // FP allows a class to reference its own type in a static initializer:
+                        // `class Foo { static var INSTANCE: Foo = new Foo(); }`
+                        // When this happens, the `ClassObject` for `Foo` will not yet
+                        // be available when we perform the coercion, since we're still
+                        // in the process of constructing it.
+                        //
+                        // Fortunately, a coercion to a non-primitive class either
+                        // succeeds with the value unchanged, or fails (if the object
+                        // is not an instance of the class). Therefore, we can just check
+                        // if the class name and domain match our property name, without
+                        // actually needing to perform resolution. This does not handle subclasses,
+                        // but that's fine - a superclass cannot reference a subclass from a class
+                        // initializer.
+                        //
+                        // We should eventually be able to remove this when we refactor
+                        // `Class`/`ClassObject` to be closer to what avmplus does.
+                        if let Some(object) = value.as_object() {
+                            if let Some(class) = object.instance_of() {
+                                if name.contains_name(&class.inner_class_definition().read().name())
+                                    && unit.map(|u| u.domain())
+                                        == Some(class.class_scope().domain())
+                                {
+                                    return Ok(value);
+                                }
+                            }
+                        }
+                        return Err(Error::from(format!(
+                            "Attempted to perform (private) resolution of nonexistent type {:?}",
+                            name
+                        )));
+                    }
                 };
                 class
             }
@@ -90,6 +128,12 @@ impl<'gc> PropertyClass<'gc> {
     }
 }
 
+enum ResolveOutcome<'gc> {
+    Class(ClassObject<'gc>),
+    Any,
+    NotFound,
+}
+
 /// Resolves a class definition referenced by the type of a property.
 /// This supports private (`Namespace::Private`) classes,
 /// and does not use the `ScopeStack`/`ScopeChain`.
@@ -100,14 +144,14 @@ fn resolve_class_private<'gc>(
     name: &Multiname<'gc>,
     unit: Option<TranslationUnit<'gc>>,
     activation: &mut Activation<'_, 'gc, '_>,
-) -> Result<Option<ClassObject<'gc>>, Error> {
+) -> Result<ResolveOutcome<'gc>, Error> {
     // A Property may have a type of '*' (which corresponds to 'Multiname::any()')
     // We don't want to perform any coercions in this case - in particular,
     // this means that the property can have a value of `Undefined`.
     // If the type is `Object`, then a value of `Undefind` gets coerced
     // to `Null`
     if name.is_any() {
-        Ok(None)
+        Ok(ResolveOutcome::Any)
     } else {
         // First, check the domain for an exported (non-private) class.
         // If the property we're resolving for lacks a `TranslationUnit`,
@@ -139,18 +183,11 @@ fn resolve_class_private<'gc>(
             return Err(format!("Missing script and translation unit for class {:?}", name).into());
         };
 
-        Ok(Some(
-            globals
-                .get_property(name, activation)?
-                .as_object()
-                .and_then(|o| o.as_class_object())
-                .ok_or_else(|| {
-                    Error::from(format!(
-                        "Attempted to perform (private) resolution of nonexistent type {:?}",
-                        name
-                    ))
-                })?,
-        ))
+        Ok(globals
+            .get_property(name, activation)?
+            .as_object()
+            .and_then(|o| o.as_class_object())
+            .map_or(ResolveOutcome::NotFound, ResolveOutcome::Class))
     }
 }
 
