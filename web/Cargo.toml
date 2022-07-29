@@ -32,15 +32,15 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 console_log = { version = "0.2", optional = true }
 fnv = "1.0.7"
 generational-arena = "0.2.8"
-js-sys = "0.3.58"
+js-sys = "0.3.59"
 log = { version = "0.4", features = ["serde"] }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 url = "2.2.2"
-wasm-bindgen = { version = "=0.2.81", features = ["serde-serialize"] }
-wasm-bindgen-futures = "0.4.31"
+wasm-bindgen = { version = "=0.2.82", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4.32"
 chrono = { version = "0.4", features = ["wasmbind"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.139", features = ["derive"] }
@@ -53,7 +53,7 @@ default-features = false
 features = ["h263", "vp6", "screenvideo", "symphonia", "wasm-bindgen"]
 
 [dependencies.web-sys]
-version = "0.3.58"
+version = "0.3.59"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
     "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
