@@ -6,10 +6,10 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-js-sys = "0.3.58"
+js-sys = "0.3.59"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
-wasm-bindgen = "=0.2.81"
+wasm-bindgen = "=0.2.82"
 fnv = "1.0.7"
 
 [dependencies.ruffle_core]
@@ -17,7 +17,7 @@ path = "../../core"
 default-features = false
 
 [dependencies.web-sys]
-version = "0.3.58"
+version = "0.3.59"
 features = [
     "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
     "Document", "DomMatrix", "Element", "HtmlCanvasElement", "ImageData", "Navigator", "Path2d", "SvgMatrix",
