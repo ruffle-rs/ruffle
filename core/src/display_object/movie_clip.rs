@@ -1450,12 +1450,64 @@ impl<'gc> MovieClip<'gc> {
         }
         let hit_target_frame = self.0.read().current_frame == frame;
 
+        if is_rewind {
+            // Remove all display objects that were created after the
+            // destination frame.
+            //
+            // We do this after reading the clip timeline so that AS3 can't
+            // observe side effects of the rewinding process.
+            //
+            // TODO: We want to do something like self.children.retain here,
+            // but BTreeMap::retain does not exist.
+            // TODO: AS3 children don't live on the depth list. Do they respect
+            // or ignore GOTOs?
+            let children: SmallVec<[_; 16]> = self
+                .0
+                .read()
+                .container
+                .iter_children_by_depth()
+                .filter_map(|(depth, clip)| {
+                    if clip.place_frame() > frame {
+                        Some((depth, clip))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            for (_depth, child) in children {
+                if !child.placed_by_script() {
+                    self.remove_child(context, child, Lists::all());
+                } else {
+                    self.remove_child(context, child, Lists::DEPTH);
+                }
+            }
+        }
+
         // Run the list of goto commands to actually create and update the display objects.
         let run_goto_command = |clip: MovieClip<'gc>,
                                 context: &mut UpdateContext<'_, 'gc, '_>,
                                 params: &GotoPlaceObject<'_>| {
             use swf::PlaceObjectAction;
             let child_entry = clip.child_by_depth(params.depth());
+            if context.is_action_script_3() && is_implicit && child_entry.is_none() {
+                // Looping gotos do not run their PlaceObject commands at goto
+                // time. They are instead held to frameConstructed like normal
+                // playback.
+                //
+                // TODO: We can only queue *new* object placement, existing
+                // objects still get updated too early.
+                self.0.write(context.gc_context).queued_tags.insert(
+                    params.place_object.depth as Depth,
+                    QueuedTag {
+                        tag_type: QueuedTagAction::Place(params.version),
+                        tag_start: params.tag_start,
+                        tag_len: params.tag_len,
+                    },
+                );
+
+                return;
+            }
+
             match (params.place_object.action, child_entry, is_rewind) {
                 // Apply final delta to display parameters.
                 // For rewinds, if an object was created before the final frame,
@@ -1489,39 +1541,6 @@ impl<'gc> MovieClip<'gc> {
                 }
             }
         };
-
-        if is_rewind {
-            // Remove all display objects that were created after the
-            // destination frame.
-            //
-            // We do this after reading the clip timeline so that AS3 can't
-            // observe side effects of the rewinding process.
-            //
-            // TODO: We want to do something like self.children.retain here,
-            // but BTreeMap::retain does not exist.
-            // TODO: AS3 children don't live on the depth list. Do they respect
-            // or ignore GOTOs?
-            let children: SmallVec<[_; 16]> = self
-                .0
-                .read()
-                .container
-                .iter_children_by_depth()
-                .filter_map(|(depth, clip)| {
-                    if clip.place_frame() > frame {
-                        Some((depth, clip))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            for (_depth, child) in children {
-                if !child.placed_by_script() {
-                    self.remove_child(context, child, Lists::all());
-                } else {
-                    self.remove_child(context, child, Lists::DEPTH);
-                }
-            }
-        }
 
         // We have to be sure that queued actions are generated in the same order
         // as if the playhead had reached this frame normally.
@@ -2531,6 +2550,8 @@ impl<'gc> MovieClipData<'gc> {
         is_rewind: bool,
         index: usize,
     ) -> DecodeResult {
+        let tag_start =
+            reader.get_ref().as_ptr() as u64 - self.static_data.swf.as_ref().as_ptr() as u64;
         let place_object = if version == 1 {
             reader.read_place_object(tag_len)
         } else {
@@ -2539,8 +2560,15 @@ impl<'gc> MovieClipData<'gc> {
 
         // We merge the deltas from this PlaceObject with the previous command.
         let depth: Depth = place_object.depth.into();
-        let mut goto_place =
-            GotoPlaceObject::new(self.current_frame(), place_object, is_rewind, index);
+        let mut goto_place = GotoPlaceObject::new(
+            self.current_frame(),
+            place_object,
+            is_rewind,
+            index,
+            tag_start,
+            tag_len,
+            version,
+        );
         if let Some(i) = goto_commands.iter().position(|o| o.depth() == depth) {
             goto_commands[i].merge(&mut goto_place);
         } else {
@@ -3582,6 +3610,18 @@ struct GotoPlaceObject<'a> {
     place_object: swf::PlaceObject<'a>,
     /// Increasing index of this place command, for sorting.
     index: usize,
+
+    /// The location of the *first* SWF tag that created this command.
+    ///
+    /// NOTE: Only intended to be used in looping gotos, where tag merging is
+    /// not possible and we want to add children after the goto completes.
+    tag_start: u64,
+
+    /// The length of the PlaceObject tag at `tag_start`.
+    tag_len: usize,
+
+    /// The version of the PlaceObject tag at `tag_start`.
+    version: u8,
 }
 
 impl<'a> GotoPlaceObject<'a> {
@@ -3590,6 +3630,9 @@ impl<'a> GotoPlaceObject<'a> {
         mut place_object: swf::PlaceObject<'a>,
         is_rewind: bool,
         index: usize,
+        tag_start: u64,
+        tag_len: usize,
+        version: u8,
     ) -> Self {
         if is_rewind {
             if let swf::PlaceObjectAction::Place(_) = place_object.action {
@@ -3625,6 +3668,9 @@ impl<'a> GotoPlaceObject<'a> {
             frame,
             place_object,
             index,
+            tag_start,
+            tag_len,
+            version,
         }
     }
 
