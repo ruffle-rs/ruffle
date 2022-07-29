@@ -293,154 +293,64 @@ fn create_shape_pipeline(
         push_constant_ranges: &[],
     });
 
-    let mask_pipelines = enum_map! {
-        MaskState::NoMask => {
-            let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("{} pipeline no mask", name).as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::DrawMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("{} pipeline draw mask stencil", name).as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::DrawMaskedContent => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("{} pipeline draw masked content", name).as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Equal,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::ClearMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("{} pipeline clear mask stencil", name).as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
+    let mask_render_state = |mask_name, stencil_state, write_mask| {
+        device.create_render_pipeline(&create_pipeline_descriptor(
+            create_debug_label!("{} pipeline {}", name, mask_name).as_deref(),
+            shader,
+            shader,
+            &pipeline_layout,
+            Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth24PlusStencil8,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Always,
+                stencil: wgpu::StencilState {
+                    front: stencil_state,
+                    back: stencil_state,
+                    read_mask: !0,
+                    write_mask: !0,
+                },
+                bias: Default::default(),
+            }),
+            &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                write_mask,
+            })],
+            vertex_buffers_layout,
+            msaa_sample_count,
+        ))
     };
 
-    ShapePipeline { mask_pipelines }
-}
-
-fn mask_render_state(state: MaskState) -> (wgpu::StencilState, wgpu::ColorWrites) {
-    let (stencil_state, color_write) = match state {
-        MaskState::NoMask => (
-            wgpu::StencilFaceState {
+    let mask_pipelines = enum_map! {
+        MaskState::NoMask => mask_render_state("no mask", wgpu::StencilFaceState {
                 compare: wgpu::CompareFunction::Always,
                 fail_op: wgpu::StencilOperation::Keep,
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::Keep,
             },
-            wgpu::ColorWrites::ALL,
-        ),
-        MaskState::DrawMaskStencil => (
-            wgpu::StencilFaceState {
+            wgpu::ColorWrites::ALL),
+        MaskState::DrawMaskStencil => mask_render_state("draw mask stencil", wgpu::StencilFaceState {
                 compare: wgpu::CompareFunction::Equal,
                 fail_op: wgpu::StencilOperation::Keep,
                 depth_fail_op: wgpu::StencilOperation::Keep,
                 pass_op: wgpu::StencilOperation::IncrementClamp,
             },
-            wgpu::ColorWrites::empty(),
-        ),
-        MaskState::DrawMaskedContent => (
-            wgpu::StencilFaceState {
-                compare: wgpu::CompareFunction::Equal,
-                fail_op: wgpu::StencilOperation::Keep,
-                depth_fail_op: wgpu::StencilOperation::Keep,
-                pass_op: wgpu::StencilOperation::Keep,
-            },
-            wgpu::ColorWrites::ALL,
-        ),
-        MaskState::ClearMaskStencil => (
-            wgpu::StencilFaceState {
-                compare: wgpu::CompareFunction::Equal,
-                fail_op: wgpu::StencilOperation::Keep,
-                depth_fail_op: wgpu::StencilOperation::Keep,
-                pass_op: wgpu::StencilOperation::DecrementClamp,
-            },
-            wgpu::ColorWrites::empty(),
-        ),
+            wgpu::ColorWrites::empty()),
+        MaskState::DrawMaskedContent => mask_render_state("draw masked content", wgpu::StencilFaceState {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                wgpu::ColorWrites::ALL),
+        MaskState::ClearMaskStencil => mask_render_state("clear mask stencil", wgpu::StencilFaceState {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::DecrementClamp,
+                },
+                wgpu::ColorWrites::empty()),
     };
 
-    (
-        wgpu::StencilState {
-            front: stencil_state,
-            back: stencil_state,
-            read_mask: 0xff,
-            write_mask: 0xff,
-        },
-        color_write,
-    )
+    ShapePipeline { mask_pipelines }
 }
