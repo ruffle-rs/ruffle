@@ -1307,7 +1307,7 @@ impl<'gc> MovieClip<'gc> {
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
             use swf::TagCode;
-            let tag_callback = |reader: &mut SwfStream<'gc>, tag_code, tag_len| match tag_code {
+            let tag_callback = |reader: &mut _, tag_code, tag_len| match tag_code {
                 TagCode::PlaceObject => {
                     index += 1;
                     let mut mc = self.0.write(context.gc_context);
