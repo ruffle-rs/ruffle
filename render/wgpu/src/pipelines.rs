@@ -56,14 +56,14 @@ impl Pipelines {
             ],
         }];
 
-        let color_pipelines = create_color_pipelines(
+        let color_pipelines = create_shape_pipeline(
+            "Color",
             device,
             frame_buffer_format,
             &color_shader,
             msaa_sample_count,
             &vertex_buffers_description,
-            globals_layout,
-            dynamic_uniforms_layout,
+            &[globals_layout, dynamic_uniforms_layout],
         );
 
         let bitmap_bind_layout_label = create_debug_label!("Bitmap shape bind group layout");
@@ -94,16 +94,19 @@ impl Pipelines {
                 label: bitmap_bind_layout_label.as_deref(),
             });
 
-        let bitmap_pipelines = create_bitmap_pipeline(
+        let bitmap_pipelines = create_shape_pipeline(
+            "Bitmap",
             device,
             frame_buffer_format,
             &bitmap_shader,
             msaa_sample_count,
             &vertex_buffers_description,
-            sampler_layout,
-            globals_layout,
-            dynamic_uniforms_layout,
-            &bitmap_bind_layout,
+            &[
+                globals_layout,
+                dynamic_uniforms_layout,
+                &bitmap_bind_layout,
+                sampler_layout,
+            ],
         );
 
         let gradient_bind_layout_label = create_debug_label!("Gradient shape bind group");
@@ -134,15 +137,18 @@ impl Pipelines {
                 label: gradient_bind_layout_label.as_deref(),
             });
 
-        let gradient_pipelines = create_gradient_pipeline(
+        let gradient_pipelines = create_shape_pipeline(
+            "Gradient",
             device,
             frame_buffer_format,
             &gradient_shader,
             msaa_sample_count,
             &vertex_buffers_description,
-            globals_layout,
-            dynamic_uniforms_layout,
-            &gradient_bind_layout,
+            &[
+                globals_layout,
+                dynamic_uniforms_layout,
+                &gradient_bind_layout,
+            ],
         );
 
         let copy_srgb_bind_layout =
@@ -271,145 +277,19 @@ fn create_pipeline_descriptor<'a>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn create_color_pipelines(
-    device: &wgpu::Device,
-    format: wgpu::TextureFormat,
-    shader: &wgpu::ShaderModule,
-    msaa_sample_count: u32,
-    vertex_buffers_description: &[wgpu::VertexBufferLayout<'_>],
-    globals_layout: &wgpu::BindGroupLayout,
-    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
-) -> ShapePipeline {
-    let pipeline_layout_label = create_debug_label!("Color shape pipeline layout");
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[globals_layout, dynamic_uniforms_layout],
-        push_constant_ranges: &[],
-    });
-
-    let mask_pipelines = enum_map! {
-        MaskState::NoMask => {
-            let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Color pipeline no mask").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_description,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::DrawMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Color pipeline draw mask stencil").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_description,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::DrawMaskedContent => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Color pipeline draw masked content").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_description,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::ClearMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Color pipeline clear mask stencil").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_description,
-                msaa_sample_count,
-            ))
-        },
-    };
-
-    ShapePipeline { mask_pipelines }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn create_bitmap_pipeline(
+fn create_shape_pipeline(
+    name: &'static str,
     device: &wgpu::Device,
     format: wgpu::TextureFormat,
     shader: &wgpu::ShaderModule,
     msaa_sample_count: u32,
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
-    sampler_layout: &wgpu::BindGroupLayout,
-    globals_layout: &wgpu::BindGroupLayout,
-    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
-    bitmap_bind_layout: &wgpu::BindGroupLayout,
+    bind_group_layouts: &[&wgpu::BindGroupLayout],
 ) -> ShapePipeline {
-    let pipeline_layout_label = create_debug_label!("Bitmap shape pipeline layout");
+    let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[
-            globals_layout,
-            dynamic_uniforms_layout,
-            bitmap_bind_layout,
-            sampler_layout,
-        ],
+        bind_group_layouts,
         push_constant_ranges: &[],
     });
 
@@ -417,7 +297,7 @@ fn create_bitmap_pipeline(
         MaskState::NoMask => {
             let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
             device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Bitmap pipeline no mask").as_deref(),
+                create_debug_label!("{} pipeline no mask", name).as_deref(),
                 shader,
                 shader,
                 &pipeline_layout,
@@ -441,7 +321,7 @@ fn create_bitmap_pipeline(
         MaskState::DrawMaskStencil => {
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Bitmap pipeline draw mask stencil").as_deref(),
+                create_debug_label!("{} pipeline draw mask stencil", name).as_deref(),
                 shader,
                 shader,
                 &pipeline_layout,
@@ -465,131 +345,7 @@ fn create_bitmap_pipeline(
         MaskState::DrawMaskedContent => {
             let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
             device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Bitmap pipeline draw masked content").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::ClearMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Bitmap pipeline clear mask stencil").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        }
-    };
-
-    ShapePipeline { mask_pipelines }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn create_gradient_pipeline(
-    device: &wgpu::Device,
-    format: wgpu::TextureFormat,
-    shader: &wgpu::ShaderModule,
-    msaa_sample_count: u32,
-    vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
-    globals_layout: &wgpu::BindGroupLayout,
-    dynamic_uniforms_layout: &wgpu::BindGroupLayout,
-    gradient_bind_layout: &wgpu::BindGroupLayout,
-) -> ShapePipeline {
-    let pipeline_layout_label = create_debug_label!("Gradient shape pipeline layout");
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: pipeline_layout_label.as_deref(),
-        bind_group_layouts: &[
-            globals_layout,
-            dynamic_uniforms_layout,
-            gradient_bind_layout,
-        ],
-        push_constant_ranges: &[],
-    });
-
-    let mask_pipelines = enum_map! {
-        MaskState::NoMask => {
-            let (stencil, write_mask) = mask_render_state(MaskState::NoMask);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Gradient pipeline no mask").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-        MaskState::DrawMaskStencil => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskStencil);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Gradient pipeline draw mask stencil").as_deref(),
-                shader,
-                shader,
-                &pipeline_layout,
-                Some(wgpu::DepthStencilState {
-                    format: wgpu::TextureFormat::Depth24PlusStencil8,
-                    depth_write_enabled: false,
-                    depth_compare: wgpu::CompareFunction::Always,
-                    stencil,
-                    bias: Default::default(),
-                }),
-                &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-                    write_mask,
-                })],
-                vertex_buffers_layout,
-                msaa_sample_count,
-            ))
-        },
-
-
-        MaskState::DrawMaskedContent => {
-            let (stencil, write_mask) = mask_render_state(MaskState::DrawMaskedContent);
-            device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Gradient pipeline draw masked content").as_deref(),
+                create_debug_label!("{} pipeline draw masked content", name).as_deref(),
                 shader,
                 shader,
                 &pipeline_layout,
@@ -613,7 +369,7 @@ fn create_gradient_pipeline(
         MaskState::ClearMaskStencil => {
             let (stencil, write_mask) = mask_render_state(MaskState::ClearMaskStencil);
             device.create_render_pipeline(&create_pipeline_descriptor(
-                create_debug_label!("Gradient pipeline clear mask stencil").as_deref(),
+                create_debug_label!("{} pipeline clear mask stencil", name).as_deref(),
                 shader,
                 shader,
                 &pipeline_layout,
@@ -632,7 +388,7 @@ fn create_gradient_pipeline(
                 vertex_buffers_layout,
                 msaa_sample_count,
             ))
-        }
+        },
     };
 
     ShapePipeline { mask_pipelines }
