@@ -7,6 +7,7 @@ use crate::avm2::Error;
 use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
+use std::fmt::Debug;
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,
     NamespaceSet as AbcNamespaceSet,
@@ -136,7 +137,7 @@ impl<'gc> Namespace<'gc> {
 /// `QName`. All other forms of names and multinames are either versions of
 /// `QName` with unspecified parameters, or multiple names to be checked in
 /// order.
-#[derive(Clone, Copy, Collect, Debug, Hash)]
+#[derive(Clone, Copy, Collect, Hash)]
 #[collect(no_drop)]
 pub struct QName<'gc> {
     ns: Namespace<'gc>,
@@ -280,6 +281,15 @@ impl<'gc> QName<'gc> {
         uri.push_str(WStr::from_units(b"::"));
         uri.push_str(&self.name);
         AvmString::new(mc, uri)
+    }
+}
+
+impl<'gc> Debug for QName<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self.to_qualified_name_no_mc() {
+            Either::Left(name) => write!(f, "{}", name),
+            Either::Right(name) => write!(f, "{}", name),
+        }
     }
 }
 

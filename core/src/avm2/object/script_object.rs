@@ -6,7 +6,6 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObjec
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
-use crate::either::Either;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -448,16 +447,13 @@ impl<'gc> Debug for ScriptObject<'gc> {
 
         match class_name {
             Some(Ok(class_name)) => {
-                match class_name.to_qualified_name_no_mc() {
-                    Either::Left(name) => fmt.field("class", &name),
-                    Either::Right(name) => fmt.field("class", &name),
-                };
+                fmt.field("class", &class_name);
             }
             Some(Err(err)) => {
                 fmt.field("class", &err);
             }
             None => {
-                fmt.field("class", &"None");
+                fmt.field("class", &"<None>");
             }
         }
 
