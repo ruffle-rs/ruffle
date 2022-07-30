@@ -22,7 +22,7 @@ use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Class as AbcClass, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
+    Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
 
@@ -861,6 +861,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::SetSuper { index } => self.op_set_super(method, index),
                 Op::In => self.op_in(),
                 Op::PushScope => self.op_push_scope(),
+                Op::NewCatch { index } => self.op_newcatch(method, index),
                 Op::PushWith => self.op_push_with(),
                 Op::PopScope => self.op_pop_scope(),
                 Op::GetOuterScope { index } => self.op_get_outer_scope(index),
@@ -999,9 +1000,27 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 _ => self.unknown_op(op),
             };
 
-            if let Err(e) = result {
-                log::error!("AVM2 error: {}", e);
-                return Err(e);
+            if let Err(error) = result {
+                if let Some(body) = method.body() {
+                    for e in body.exceptions.iter() {
+                        if instruction_start >= e.from_offset as usize
+                            && instruction_start < e.to_offset as usize
+                            && e.type_name.0 == 0
+                        // Currently we support only typeless catch clauses
+                        {
+                            // Emulate pushing the exception object
+                            let ws = WString::from_utf8_owned(error.to_string());
+                            let exception = AvmString::new(self.context.gc_context, ws);
+                            self.context.avm2.push(exception);
+
+                            reader.seek_absolute(full_data, e.target_offset as usize);
+                            return Ok(FrameControl::Continue);
+                        }
+                    }
+                }
+
+                log::error!("AVM2 error: {}", error);
+                return Err(error);
             }
             result
         } else if let Err(e) = op {
@@ -1546,6 +1565,26 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let has_prop = obj.has_property_via_in(self, &multiname)?;
 
         self.context.avm2.push(has_prop);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_newcatch(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<Exception>,
+    ) -> Result<FrameControl<'gc>, Error> {
+        if let Some(body) = method.body() {
+            let ex = &body.exceptions[index.0 as usize];
+            let vname = ex.variable_name;
+            let qname = QName::from_abc_multiname(
+                method.translation_unit(),
+                vname,
+                self.context.gc_context,
+            )?;
+            let so = ScriptObject::catch_scope(self.context.gc_context, &qname);
+            self.context.avm2.push(so);
+        }
 
         Ok(FrameControl::Continue)
     }

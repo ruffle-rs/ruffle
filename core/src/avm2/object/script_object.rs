@@ -5,7 +5,7 @@ use crate::avm2::names::Multiname;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Error;
+use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -102,6 +102,17 @@ impl<'gc> ScriptObject<'gc> {
         ))
         .into()
     }
+
+    /// A special case for `newcatch` implementation. Basically a variable (q)name
+    /// which maps to slot 1.
+    pub fn catch_scope(mc: MutationContext<'gc, '_>, qname: &QName<'gc>) -> Object<'gc> {
+        let mut base = ScriptObjectData::custom_new(None, None);
+        let vt = VTable::newcatch(mc, &qname);
+        base.set_vtable(vt);
+        base.install_slot();
+        base.install_slot();
+        ScriptObject(GcCell::allocate(mc, base)).into()
+    }
 }
 
 impl<'gc> ScriptObjectData<'gc> {
@@ -126,6 +137,10 @@ impl<'gc> ScriptObjectData<'gc> {
             vtable: instance_of.map(|cls| cls.instance_vtable()),
             enumerants: Vec::new(),
         }
+    }
+
+    pub fn install_slot(&mut self) {
+        self.slots.push(Value::Undefined);
     }
 
     pub fn get_property_local(
