@@ -2707,7 +2707,7 @@ pub mod tests {
             super::read_compression_type(&b"ZWS"[..]).unwrap(),
             Compression::Lzma
         );
-        assert!(super::read_compression_type(&b"ABC"[..]).is_err());
+        super::read_compression_type(&b"ABC"[..]).unwrap_err();
     }
 
     #[test]
@@ -2901,11 +2901,11 @@ pub mod tests {
             assert_eq!(reader.read_str().unwrap(), "Testing");
             assert_eq!(reader.read_str().unwrap(), "More testing");
             assert_eq!(reader.read_str().unwrap(), "");
-            assert!(reader.read_str().is_err());
+            reader.read_str().unwrap_err();
         }
         {
             let mut reader = Reader::new(&[], 1);
-            assert!(reader.read_str().is_err());
+            reader.read_str().unwrap_err();
         }
         {
             let buf = b"\0Testing";
