@@ -69,6 +69,9 @@ jobs:
         run: conda install -c conda-forge binaryen
 
       - name: Build
+        env:
+          # Verify that all features build.
+          CARGO_FLAGS: --all-features
         working-directory: web
         shell: bash -l {0}
         run: |
