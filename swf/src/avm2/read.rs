@@ -242,7 +242,7 @@ impl<'a> Reader<'a> {
     }
 
     fn read_method(&mut self) -> Result<Method> {
-        let num_params = self.read_u8()?;
+        let num_params = self.read_u30()?;
         let return_type = self.read_index()?;
         let mut params = Vec::with_capacity(num_params as usize);
         for _ in 0..num_params {
