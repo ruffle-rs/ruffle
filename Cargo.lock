@@ -3010,7 +3010,6 @@ dependencies = [
  "chrono",
  "dasp",
  "downcast-rs",
- "either",
  "encoding_rs",
  "flash-lso",
  "flate2",

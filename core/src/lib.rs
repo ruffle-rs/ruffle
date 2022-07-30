@@ -23,6 +23,7 @@ pub mod context;
 pub mod context_menu;
 mod drawing;
 mod ecma_conversions;
+pub(crate) mod either;
 pub mod events;
 pub mod focus_tracker;
 mod font;

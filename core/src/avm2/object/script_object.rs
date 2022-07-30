@@ -6,8 +6,8 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObjec
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
+use crate::either::Either;
 use crate::string::AvmString;
-use either::Either;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
