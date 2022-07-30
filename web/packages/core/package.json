@@ -26,7 +26,7 @@
         "//5": "# This just chains together the three commands after it.",
         "build:cargo_bindgen_opt": "npm run build:cargo && npm run build:wasm-bindgen && npm run build:wasm-opt",
 
-        "build:cargo": "cross-env-shell cargo build --profile \"$CARGO_PROFILE\" --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\"",
+        "build:cargo": "cross-env-shell cargo build --profile \"$CARGO_PROFILE\" --target wasm32-unknown-unknown --features \\\"$CARGO_FEATURES\\\" $CARGO_FLAGS",
         "build:wasm-bindgen": "cross-env-shell wasm-bindgen \"../../../target/wasm32-unknown-unknown/${CARGO_PROFILE}/ruffle_web.wasm\" --target web --out-dir ./pkg --out-name \"$OUT_NAME\"",
         "build:wasm-opt": "cross-env-shell wasm-opt -o \"./pkg/${OUT_NAME}_bg.wasm\" -O -g \"./pkg/${OUT_NAME}_bg.wasm\" || npm run build:wasm-opt-failed",
 
