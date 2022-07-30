@@ -20,6 +20,11 @@ pub trait ReadSwfExt<'a> {
         *self.as_mut_slice() = &data[pos..];
     }
 
+    fn seek_absolute(&mut self, data: &'a [u8], pos: usize) {
+        let pos = pos.min(data.len());
+        *self.as_mut_slice() = &data[pos..];
+    }
+
     #[inline]
     fn read_u8(&mut self) -> Result<u8> {
         Ok(ReadBytesExt::read_u8(self.as_mut_slice())?)

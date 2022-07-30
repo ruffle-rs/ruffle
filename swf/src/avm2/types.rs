@@ -139,7 +139,7 @@ pub struct Exception {
     pub from_offset: u32,
     pub to_offset: u32,
     pub target_offset: u32,
-    pub variable_name: Index<String>,
+    pub variable_name: Index<Multiname>,
     pub type_name: Index<Multiname>,
 }
 

@@ -1,0 +1,2 @@
+// Trying to raise and catch an error
+RangeError

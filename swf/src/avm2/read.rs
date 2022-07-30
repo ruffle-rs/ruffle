@@ -29,6 +29,11 @@ impl<'a> Reader<'a> {
         ReadSwfExt::seek(self, data, relative_offset as isize)
     }
 
+    #[inline]
+    pub fn seek_absolute(&mut self, data: &'a [u8], pos: usize) {
+        ReadSwfExt::seek_absolute(self, data, pos)
+    }
+
     pub fn read(&mut self) -> Result<AbcFile> {
         let minor_version = self.read_u16()?;
         let major_version = self.read_u16()?;
