@@ -1,6 +1,6 @@
 #[cfg(feature = "minimp3")]
 pub mod minimp3 {
-    use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
+    use crate::backend::audio::decoders::{Decoder, Mp3Metadata, SeekableDecoder};
     use std::io::{Cursor, Read};
     use thiserror::Error;
 
@@ -107,12 +107,21 @@ pub mod minimp3 {
             self.sample_rate
         }
     }
+
+    /// Returns the number of samples frames in the given MP3 data.
+    pub fn mp3_metadata(data: &std::sync::Arc<[u8]>) -> Result<Mp3Metadata, Error> {
+        let decoder = Mp3Decoder::new(Cursor::new(data.clone()))?;
+        Ok(Mp3Metadata {
+            sample_rate: decoder.sample_rate(),
+            num_sample_frames: decoder.count() as u32,
+        })
+    }
 }
 
 #[cfg(feature = "symphonia")]
 #[allow(dead_code)]
 pub mod symphonia {
-    use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
+    use crate::backend::audio::decoders::{Decoder, Mp3Metadata, SeekableDecoder};
     use std::io::{Cursor, Read};
     use symphonia::{
         core::{
@@ -284,5 +293,22 @@ pub mod symphonia {
         fn sample_rate(&self) -> u16 {
             self.sample_rate
         }
+    }
+
+    /// Returns the sample rate and length of the given MP3.
+    pub fn mp3_metadata(data: &std::sync::Arc<[u8]>) -> Result<Mp3Metadata, Error> {
+        let source =
+            io::MediaSourceStream::new(Box::new(Cursor::new(data.clone())), Default::default());
+        let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
+        let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
+        let num_sample_frames = track.codec_params.n_frames.unwrap_or_default() as u32;
+        let sample_rate = track
+            .codec_params
+            .sample_rate
+            .ok_or(Error::InvalidSampleRate)? as u16;
+        Ok(Mp3Metadata {
+            num_sample_frames,
+            sample_rate,
+        })
     }
 }

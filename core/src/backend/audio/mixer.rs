@@ -386,23 +386,28 @@ impl AudioMixer {
     }
 
     /// Registers an external MP3 with the audio mixer.
+    #[cfg(any(feature = "symphonia", feature = "minimp3"))]
     pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
-        let mut sound = Sound {
+        let data = Arc::from(data);
+        // Validate that this is actually MP3 data, and calculate duration and sample rate.
+        let metadata = decoders::mp3_metadata(&data)?;
+        let sound = Sound {
             format: swf::SoundFormat {
                 compression: AudioCompression::Mp3,
-                // This value is ignored; the sample rate from the MP3 data itself will be used.
-                sample_rate: 44100,
+                sample_rate: metadata.sample_rate,
                 is_stereo: true,
                 is_16_bit: true,
             },
-            data: Arc::from(data),
-            num_sample_frames: 0, // TODO
+            data,
+            num_sample_frames: metadata.num_sample_frames,
             skip_sample_frames: 0,
         };
-        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
-        let decoder = Self::make_seekable_decoder(&sound.format, data)?;
-        sound.num_sample_frames = decoder.count() as u32;
         Ok(self.sounds.insert(sound))
+    }
+
+    #[cfg(not(any(feature = "symphonia", feature = "minimp3")))]
+    pub fn register_mp3(&mut self, data: &[u8]) -> Result<SoundHandle, DecodeError> {
+        Err(decoders::Error::UnhandledCompression(AudioCompression::Mp3))
     }
 
     /// Starts a timeline audio stream.

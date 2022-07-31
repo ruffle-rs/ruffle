@@ -9,9 +9,9 @@ mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 #[cfg(feature = "minimp3")]
-pub use mp3::minimp3::Mp3Decoder;
+pub use mp3::minimp3::{mp3_metadata, Mp3Decoder};
 #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
-pub use mp3::symphonia::Mp3Decoder;
+pub use mp3::symphonia::{mp3_metadata, Mp3Decoder};
 #[cfg(feature = "nellymoser")]
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
@@ -367,4 +367,10 @@ impl Read for StreamTagReader {
         self.current_audio_data.start += len;
         Ok(len)
     }
+}
+
+#[derive(Debug)]
+pub struct Mp3Metadata {
+    pub sample_rate: u16,
+    pub num_sample_frames: u32,
 }
