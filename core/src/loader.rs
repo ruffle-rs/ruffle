@@ -120,6 +120,9 @@ pub enum Error {
     #[error("Non-data loader spawned as data loader")]
     NotLoadDataLoader,
 
+    #[error("Non-sound loader spawned as sound loader")]
+    NotSoundLoader,
+
     #[error("Could not fetch: {0}")]
     FetchError(String),
 
@@ -181,8 +184,9 @@ impl<'gc> LoadManager<'gc> {
             | Loader::Movie { self_handle, .. }
             | Loader::Form { self_handle, .. }
             | Loader::LoadVars { self_handle, .. }
-            | Loader::LoadURLLoader { self_handle, .. } => *self_handle = Some(handle),
-            Loader::Sound { self_handle, .. } => *self_handle = Some(handle),
+            | Loader::LoadURLLoader { self_handle, .. }
+            | Loader::SoundAvm1 { self_handle, .. }
+            | Loader::SoundAvm2 { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -311,23 +315,41 @@ impl<'gc> LoadManager<'gc> {
         loader.load_url_loader(player, request, data_format)
     }
 
-    /// Kick off an audio load.
+    /// Kick off an AVM1 audio load.
     ///
     /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_sound(
+    pub fn load_sound_avm1(
         &mut self,
         player: Weak<Mutex<Player>>,
         target_object: SoundObject<'gc>,
         request: Request,
         is_streaming: bool,
     ) -> OwnedFuture<(), Error> {
-        let loader = Loader::Sound {
+        let loader = Loader::SoundAvm1 {
             self_handle: None,
             target_object,
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.sound_loader(player, request, is_streaming)
+        loader.sound_loader_avm1(player, request, is_streaming)
+    }
+
+    /// Kick off an AVM2 audio load.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    pub fn load_sound_avm2(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        target_object: Avm2Object<'gc>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let loader = Loader::SoundAvm2 {
+            self_handle: None,
+            target_object,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.sound_loader_avm2(player, request)
     }
 }
 
@@ -423,13 +445,23 @@ pub enum Loader<'gc> {
     },
 
     /// Loader that is loading an MP3 into an AVM1 Sound object.
-    Sound {
+    SoundAvm1 {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
         self_handle: Option<Handle>,
 
         /// The target AVM1 object to load the audio into.
         target_object: SoundObject<'gc>,
+    },
+
+    /// Loader that is loading an MP3 into an AVM2 Sound object.
+    SoundAvm2 {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<Handle>,
+
+        /// The target AVM1 object to load the audio into.
+        target_object: Avm2Object<'gc>,
     },
 }
 
@@ -948,14 +980,16 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Creates a future for a Sound load call.
-    fn sound_loader(
+    fn sound_loader_avm1(
         &mut self,
         player: Weak<Mutex<Player>>,
         request: Request,
         is_streaming: bool,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
-            Loader::Sound { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
+            Loader::SoundAvm1 { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
             _ => return Box::pin(async { Err(Error::NotLoadVarsLoader) }),
         };
 
@@ -971,9 +1005,9 @@ impl<'gc> Loader<'gc> {
             player.lock().unwrap().update(|uc| {
                 let loader = uc.load_manager.get_loader(handle);
                 let sound_object = match loader {
-                    Some(&Loader::Sound { target_object, .. }) => target_object,
+                    Some(&Loader::SoundAvm1 { target_object, .. }) => target_object,
                     None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotLoadVarsLoader),
+                    _ => return Err(Error::NotSoundLoader),
                 };
 
                 let success = data
@@ -1001,6 +1035,95 @@ impl<'gc> Loader<'gc> {
                 // Streaming sounds should auto-play.
                 if is_streaming {
                     crate::avm1::start_sound(&mut activation, sound_object.into(), &[])?;
+                }
+
+                Ok(())
+            })
+        })
+    }
+
+    /// Creates a future for a LoadURLLoader load call.
+    fn sound_loader_avm2(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::SoundAvm2 { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotLoadDataLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let response = fetch.await;
+
+            player.lock().unwrap().update(|uc| {
+                let loader = uc.load_manager.get_loader(handle);
+                let sound_object = match loader {
+                    Some(&Loader::SoundAvm2 { target_object, .. }) => target_object,
+                    None => return Err(Error::Cancelled),
+                    _ => return Err(Error::NotSoundLoader),
+                };
+
+                match response {
+                    Ok(response) => {
+                        let handle = uc.audio.register_mp3(&response.body)?;
+                        sound_object.set_sound(uc.gc_context, handle);
+
+                        // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
+                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        let open_evt =
+                            Avm2EventObject::bare_default_event(&mut activation.context, "open");
+                        if let Err(e) =
+                            Avm2::dispatch_event(&mut activation.context, open_evt, sound_object)
+                        {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `open` event: {}",
+                                e
+                            );
+                        }
+
+                        let complete_evt = Avm2EventObject::bare_default_event(
+                            &mut activation.context,
+                            "complete",
+                        );
+                        if let Err(e) = Avm2::dispatch_event(uc, complete_evt, sound_object) {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `complete` event: {}",
+                                e
+                            );
+                        }
+                    }
+                    Err(_err) => {
+                        // FIXME: Match the exact error message generated by Flash.
+                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        let io_error_evt_cls = activation.avm2().classes().ioerrorevent;
+                        let io_error_evt = io_error_evt_cls
+                            .construct(
+                                &mut activation,
+                                &[
+                                    "ioError".into(),
+                                    false.into(),
+                                    false.into(),
+                                    "Error #2032: Stream Error".into(),
+                                    2032.into(),
+                                ],
+                            )
+                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+
+                        if let Err(e) = Avm2::dispatch_event(uc, io_error_evt, sound_object) {
+                            log::error!(
+                                "Encountered AVM2 error when broadcasting `ioError` event: {}",
+                                e
+                            );
+                        }
+                    }
                 }
 
                 Ok(())

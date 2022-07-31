@@ -251,7 +251,7 @@ fn load_sound<'gc>(
                 .get(1)
                 .unwrap_or(&Value::Undefined)
                 .as_bool(activation.swf_version());
-            let future = activation.context.load_manager.load_sound(
+            let future = activation.context.load_manager.load_sound_avm1(
                 activation.context.player.clone(),
                 sound,
                 Request::get(url.to_utf8_lossy().into_owned()),
