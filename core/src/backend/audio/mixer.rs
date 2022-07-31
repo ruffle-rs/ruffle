@@ -193,6 +193,16 @@ impl AudioMixer {
         data: Cursor<ArcAsRef>,
     ) -> Result<Box<dyn SeekableDecoder>, Error> {
         let decoder: Box<dyn SeekableDecoder> = match format.compression {
+            AudioCompression::UncompressedUnknownEndian => {
+                // Cross fingers that it's little endian.
+                log::warn!("make_decoder: PCM sound is unknown endian; assuming little endian");
+                Box::new(PcmDecoder::new(
+                    data,
+                    format.is_stereo,
+                    format.sample_rate,
+                    format.is_16_bit,
+                ))
+            }
             AudioCompression::Uncompressed => Box::new(PcmDecoder::new(
                 data,
                 format.is_stereo,
