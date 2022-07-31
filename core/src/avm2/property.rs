@@ -11,22 +11,11 @@ use gc_arena::{Collect, Gc};
 
 #[derive(Debug, Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub enum Property<'gc> {
-    Virtual {
-        get: Option<u32>,
-        set: Option<u32>,
-    },
-    Method {
-        disp_id: u32,
-    },
-    Slot {
-        slot_id: u32,
-        class: PropertyClass<'gc>,
-    },
-    ConstSlot {
-        slot_id: u32,
-        class: PropertyClass<'gc>,
-    },
+pub enum Property {
+    Virtual { get: Option<u32>, set: Option<u32> },
+    Method { disp_id: u32 },
+    Slot { slot_id: u32 },
+    ConstSlot { slot_id: u32 },
 }
 
 /// The type of a `Slot`/`ConstSlot` property, represented
@@ -42,7 +31,7 @@ pub enum Property<'gc> {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Debug, Collect, Clone, Copy)]
+#[derive(Debug, Collect, Clone)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows
@@ -61,24 +50,28 @@ impl<'gc> PropertyClass<'gc> {
     ) -> Self {
         PropertyClass::Name(Gc::allocate(activation.context.gc_context, (name, unit)))
     }
+
+    /// Returns `value` coerced to the type of this `PropertyClass`.
+    /// The bool is `true` if this `PropertyClass` was just modified
+    /// to cache a class resolution, and `false` if it was not modified.
     pub fn coerce(
         &mut self,
         activation: &mut Activation<'_, 'gc, '_>,
         value: Value<'gc>,
-    ) -> Result<Value<'gc>, Error> {
-        let class = match self {
-            PropertyClass::Class(class) => Some(*class),
+    ) -> Result<(Value<'gc>, bool), Error> {
+        let (class, changed) = match self {
+            PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
                 let outcome = resolve_class_private(name, *unit, activation)?;
                 let class = match outcome {
                     ResolveOutcome::Class(class) => {
                         *self = PropertyClass::Class(class);
-                        Some(class)
+                        (Some(class), true)
                     }
                     ResolveOutcome::Any => {
                         *self = PropertyClass::Any;
-                        None
+                        (None, true)
                     }
                     ResolveOutcome::NotFound => {
                         // FP allows a class to reference its own type in a static initializer:
@@ -103,7 +96,9 @@ impl<'gc> PropertyClass<'gc> {
                                     && unit.map(|u| u.domain())
                                         == Some(class.class_scope().domain())
                                 {
-                                    return Ok(value);
+                                    // Even though resolution succeeded, we haven't modified
+                                    // this `PropertyClass`, so return `false`
+                                    return Ok((value, false));
                                 }
                             }
                         }
@@ -115,15 +110,15 @@ impl<'gc> PropertyClass<'gc> {
                 };
                 class
             }
-            PropertyClass::Any => None,
+            PropertyClass::Any => (None, false),
         };
 
         if let Some(class) = class {
-            value.coerce_to_type(activation, class)
+            Ok((value.coerce_to_type(activation, class)?, changed))
         } else {
             // We have a type of '*' ("any"), so don't
             // perform any coercions
-            Ok(value)
+            Ok((value, changed))
         }
     }
 }
@@ -191,7 +186,7 @@ fn resolve_class_private<'gc>(
     }
 }
 
-impl<'gc> Property<'gc> {
+impl Property {
     pub fn new_method(disp_id: u32) -> Self {
         Property::Method { disp_id }
     }
@@ -210,11 +205,11 @@ impl<'gc> Property<'gc> {
         }
     }
 
-    pub fn new_slot(slot_id: u32, class: PropertyClass<'gc>) -> Self {
-        Property::Slot { slot_id, class }
+    pub fn new_slot(slot_id: u32) -> Self {
+        Property::Slot { slot_id }
     }
 
-    pub fn new_const_slot(slot_id: u32, class: PropertyClass<'gc>) -> Self {
-        Property::ConstSlot { slot_id, class }
+    pub fn new_const_slot(slot_id: u32) -> Self {
+        Property::ConstSlot { slot_id }
     }
 }
