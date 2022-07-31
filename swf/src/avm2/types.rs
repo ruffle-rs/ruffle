@@ -139,6 +139,8 @@ pub struct Exception {
     pub from_offset: u32,
     pub to_offset: u32,
     pub target_offset: u32,
+    // Both of the following fields are actually `Multiname` indexes
+    // despite AVM 2 description saying they are `String` ones.
     pub variable_name: Index<Multiname>,
     pub type_name: Index<Multiname>,
 }

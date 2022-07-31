@@ -176,6 +176,10 @@ impl<'gc> ScopeStack<'gc> {
         Self { scopes: Vec::new() }
     }
 
+    pub fn clear(&mut self) {
+        self.scopes.clear();
+    }
+
     pub fn push(&mut self, scope: Scope<'gc>) {
         self.scopes.push(scope);
     }

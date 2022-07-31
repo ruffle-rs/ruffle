@@ -1,2 +1,5 @@
 // Trying to raise and catch an error
 RangeError
+// Check if scope is cleared on exception
+number
+undefined

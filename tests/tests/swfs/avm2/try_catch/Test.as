@@ -17,8 +17,24 @@ try {
   trace(foobar.toString().slice(0,10));
 }
 
-        }
-    }
+try {
+  trace("// Check if scope is cleared on exception");
+  var o = new Object();
+  o["foo"] = 5
+  with(o) {
+    trace(typeof(foo));
+    var v = new Vector.<String>();
+    v.fixed = true;
+    v.push("a");
+  }
+} catch(foobar) {
+  var u = new Object();
+  with (u) {  // wrapped in "with" to suppress compiler error on possibly undefined "foo"
+    trace(typeof(foo));
+  }
 }
+
+
+}}}
 
 

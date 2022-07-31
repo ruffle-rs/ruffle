@@ -109,6 +109,10 @@ impl<'gc> ScriptObject<'gc> {
         let mut base = ScriptObjectData::custom_new(None, None);
         let vt = VTable::newcatch(mc, &qname);
         base.set_vtable(vt);
+        // Compilers expect `setslot 1` to work on the `newcatch` object.
+        // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
+        // maps setslot arg directly to the slot array index, unlike AVM which does the
+        // -1 shift.
         base.install_slot();
         base.install_slot();
         ScriptObject(GcCell::allocate(mc, base)).into()
