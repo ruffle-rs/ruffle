@@ -69,13 +69,7 @@ impl<'gc> VTable<'gc> {
     pub fn newcatch(mc: MutationContext<'gc, '_>, vname: &QName<'gc>) -> Self {
         let mut rt = PropertyMap::new();
 
-        rt.insert(
-            *vname,
-            Property::Slot {
-                slot_id: 1,
-                class: PropertyClass::Any,
-            },
-        );
+        rt.insert(*vname, Property::Slot { slot_id: 1 });
 
         let vt = VTable(GcCell::allocate(
             mc,
@@ -86,6 +80,7 @@ impl<'gc> VTable<'gc> {
                 resolved_traits: rt,
                 method_table: vec![],
                 default_slots: vec![None, None],
+                slot_classes: vec![PropertyClass::Any, PropertyClass::Any],
             },
         ));
 
