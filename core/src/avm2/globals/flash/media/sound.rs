@@ -8,6 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
 use gc_arena::{GcCell, MutationContext};
@@ -190,11 +191,33 @@ pub fn close<'gc>(
 
 /// Stubs `Sound.load`
 pub fn load<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    Err("Sound.load is a stub.".into())
+    if let Some(this) = this {
+        let url_request = match args.get(0) {
+            Some(Value::Object(request)) => request,
+            // This should never actually happen
+            _ => return Ok(Value::Undefined),
+        };
+
+        let url = url_request
+            .get_property(&QName::dynamic_name("url").into(), activation)?
+            .coerce_to_string(activation)?;
+
+        // TODO: context parameter currently unused.
+        let _sound_context = args.get(1);
+
+        let future = activation.context.load_manager.load_sound_avm2(
+            activation.context.player.clone(),
+            this,
+            // FIXME: Set options from the `URLRequest`.
+            Request::get(url.to_string()),
+        );
+        activation.context.navigator.spawn_future(future);
+    }
+    Ok(Value::Undefined)
 }
 
 /// Stubs `Sound.loadCompressedDataFromByteArray`
