@@ -1013,6 +1013,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                             let exception = AvmString::new(self.context.gc_context, ws);
                             self.context.avm2.push(exception);
 
+                            self.scope_stack.clear();
                             reader.seek_absolute(full_data, e.target_offset as usize);
                             return Ok(FrameControl::Continue);
                         }

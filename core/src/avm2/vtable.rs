@@ -89,7 +89,7 @@ impl<'gc> VTable<'gc> {
             },
         ));
 
-        return vt;
+        vt
     }
 
     pub fn duplicate(self, mc: MutationContext<'gc, '_>) -> Self {
