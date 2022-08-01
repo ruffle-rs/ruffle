@@ -17,7 +17,7 @@
         "@wdio/local-runner": "^7.19.5",
         "@wdio/mocha-framework": "^7.20.7",
         "@wdio/spec-reporter": "^7.19.5",
-        "@wdio/static-server-service": "^7.20.3",
+        "@wdio/static-server-service": "^7.20.7",
         "chai": "^4.3.6",
         "chai-html": "^2.1.0",
         "chromedriver": "^102.0.0",
