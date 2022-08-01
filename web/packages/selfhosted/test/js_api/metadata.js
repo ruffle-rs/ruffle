@@ -21,6 +21,7 @@ describe("RufflePlayer.metadata", () => {
             swfVersion: 15,
             isActionScript3: false,
             backgroundColor: "#FF0000",
+            uncompressedLength: 1450,
         });
     });
 });
