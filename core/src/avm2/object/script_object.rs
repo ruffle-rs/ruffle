@@ -105,18 +105,13 @@ impl<'gc> ScriptObject<'gc> {
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
-    pub fn catch_scope(
-        activation: &mut Activation<'_, 'gc, '_>,
-        qname: &QName<'gc>,
-    ) -> Object<'gc> {
+    pub fn catch_scope(mc: MutationContext<'gc, '_>, qname: &QName<'gc>) -> Object<'gc> {
         let mut base = ScriptObjectData::custom_new(None, None);
-        let mc = activation.context.gc_context;
         let vt = VTable::newcatch(mc, &qname);
         base.set_vtable(vt);
+        base.install_instance_slots();
 
-        let mut so = ScriptObject(GcCell::allocate(mc, base));
-        so.install_instance_slots(activation);
-        so.into()
+        ScriptObject(GcCell::allocate(mc, base)).into()
     }
 }
 
