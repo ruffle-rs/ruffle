@@ -37,4 +37,9 @@ export interface MovieMetadata {
      * Whether this movie is an ActionScript 3.0 movie.
      */
     readonly isActionScript3: boolean;
+
+    /**
+     * Uncompressed length
+     */
+    readonly uncompressedLength: number;
 }

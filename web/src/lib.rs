@@ -186,6 +186,8 @@ struct MovieMetadata {
     background_color: Option<String>,
     #[serde(rename = "isActionScript3")]
     is_action_script_3: bool,
+    #[serde(rename = "uncompressedLength")]
+    uncompressed_len: u32,
 }
 
 /// An opaque handle to a `RuffleInstance` inside the pool.
@@ -1001,6 +1003,7 @@ impl Ruffle {
                 height: height.to_pixels(),
                 frame_rate: swf_header.frame_rate().to_f32(),
                 num_frames: swf_header.num_frames(),
+                uncompressed_len: swf_header.uncompressed_len(),
                 swf_version: swf_header.version(),
                 background_color,
                 is_action_script_3: swf_header.is_action_script_3(),
