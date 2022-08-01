@@ -403,6 +403,7 @@ swf_tests! {
     (as3_qname_tostring, "avm2/qname_tostring", 1),
     (as3_qname_valueof, "avm2/qname_valueof", 1),
     (as3_rectangle, "avm2/rectangle", 1),
+    (as3_vector3d, "avm2/vector3d", 1),
     (as3_regexp_constr, "avm2/regexp_constr", 1),
     (as3_regexp_exec, "avm2/regexp_exec", 1),
     (as3_regexp_test, "avm2/regexp_test", 1),

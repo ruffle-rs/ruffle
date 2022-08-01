@@ -1,0 +1,399 @@
+/// Constructors
+// new Vector3D()
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D(1)
+Vector3D(1, 0, 0) w=0
+
+// new Vector3D(1, 2)
+Vector3D(1, 2, 0) w=0
+
+// new Vector3D(1, 2, 3)
+Vector3D(1, 2, 3) w=0
+
+// new Vector3D(1, 2, 3, 4)
+Vector3D(1, 2, 3) w=4
+
+// new Vector3D({}, 2)
+Vector3D(NaN, 2, 0) w=0
+
+
+/// toString
+// new Vector3D().toString()
+Vector3D(0, 0, 0)
+
+// new Vector3D(1, 2, 3).toString()
+Vector3D(1, 2, 3)
+
+// new Vector3D(1, 2, 3, 4).toString()
+Vector3D(1, 2, 3)
+
+
+/// Constants
+// Vector3D.X_AXIS
+Vector3D(1, 0, 0) w=0
+// Vector3D.Y_AXIS
+Vector3D(0, 1, 0) w=0
+// Vector3D.Z_AXIS
+Vector3D(0, 0, 1) w=0
+
+
+/// copyFrom
+// new Vector3D(1, 2, 3, 4).copyFrom(new Vector3D())
+Vector3D(0, 0, 0) w=4
+
+// new Vector3D().copyFrom(new Vector3D(4, 5, 6, 7))
+Vector3D(4, 5, 6) w=0
+
+// new Vector3D(1, 2, 3, 4).copyFrom(new Vector3D(4, 5, 6, 7))
+Vector3D(4, 5, 6) w=4
+
+
+/// setTo
+// new Vector3D().setTo(6, 7, 8)
+Vector3D(6, 7, 8) w=0
+
+// new Vector3D(1, 2, 3, 4).setTo(6, 7, 8)
+Vector3D(6, 7, 8) w=4
+
+
+/// Add
+// vector.add(new Vector3D(1, 2, 3, 4))
+Vector3D(1, 2, 3) w=0
+
+// vector
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D(5, 6, 8, 9).add(new Vector3D())
+Vector3D(5, 6, 8) w=0
+
+// new Vector3D(6, -7, 8, -9).add(new Vector3D(-10, 20, -30, 40))
+Vector3D(-4, 13, -22) w=0
+
+
+/// Subtract
+// vector.subtract(new Vector3D(1, 2, 3, 4))
+Vector3D(-1, -2, -3) w=0
+
+// vector
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D(5, 6, 8, 9).subtract(new Vector3D())
+Vector3D(5, 6, 8) w=0
+
+// new Vector3D(6, -7, 8, -9).subtract(new Vector3D(-10, 20, -30, 40))
+Vector3D(16, -27, 38) w=0
+
+
+/// incrementBy
+// new Vector3D().incrementBy(new Vector3D())
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D().incrementBy(new Vector3D(1, 2, -3, 4))
+Vector3D(1, 2, -3) w=0
+
+// new Vector3D(3, -4, 5, 6).incrementBy(new Vector3D(1, 2, -3, 4))
+Vector3D(4, -2, 2) w=6
+
+
+/// decrementBy
+// new Vector3D().decrementBy(new Vector3D())
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D().decrementBy(new Vector3D(1, 2, -3, 4))
+Vector3D(-1, -2, 3) w=0
+
+// new Vector3D(3, -4, 5, 6).decrementBy(new Vector3D(1, 2, -3, 4))
+Vector3D(2, -6, 8) w=6
+
+
+/// scaleBy
+// new Vector3D(2, -4, 0, 5).scaleBy(10)
+Vector3D(20, -40, 0) w=5
+
+// new Vector3D(2, -4, 0, 5).scaleBy(-0.5)
+Vector3D(-1, 2, 0) w=5
+
+// new Vector3D(2, -4, 0, 5).scaleBy(0)
+Vector3D(0, 0, 0) w=5
+
+// new Vector3D(2, -4, 0, 5).scaleBy(1)
+Vector3D(2, -4, 0) w=5
+
+// new Vector3D().scaleBy(100)
+Vector3D(0, 0, 0) w=0
+
+
+/// negate
+// new Vector3D(2, -4, 0).negate()
+Vector3D(-2, 4, 0) w=0
+
+// new Vector3D(2, -4, 0, 5).negate()
+Vector3D(-2, 4, 0) w=5
+
+// new Vector3D().negate()
+Vector3D(0, 0, 0) w=0
+
+
+/// Distance
+// Vector3D.distance(new Vector3D(), new Vector3D())
+0
+
+// Vector3D.distance(new Point(-100, 200, 300, -400), new Point(100, 200, 300, -400))
+200
+
+// Vector3D.distance(new Point(-100, 200, 300, -400), new Point(-102, 210, 311, -420))
+15
+
+/// Equals
+// vector.equals(new Vector3D(1, 2, 3, 4))
+false
+
+// vector.equals(vector)
+true
+
+// vector
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D(1, 2, 3).equals(new Vector3D(1, 2, 3, 4))
+true
+
+
+/// nearEquals
+// (100, 200, 300).nearEquals((100, 200, 300), 0, false)
+false
+// (100, 200, 300).nearEquals((100, 200, 300), 1, false)
+true
+// (100, 200, 300).nearEquals((100, 200, 300), 10, false)
+true
+
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 0, false)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 1, false)
+true
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 10, false)
+true
+
+// (100, 200, 300, 400).nearEquals((100, 200, 350, 400), 10, false)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 350, 400), 100, false)
+true
+
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 450), 10, false)
+true
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 450), 100, false)
+true
+
+// (100, 200, 300).nearEquals((100, 200, 300), 0, true)
+false
+// (100, 200, 300).nearEquals((100, 200, 300), 1, true)
+true
+// (100, 200, 300).nearEquals((100, 200, 300), 10, true)
+true
+
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 0, true)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 1, true)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 400), 10, true)
+false
+
+// (100, 200, 300, 400).nearEquals((100, 200, 350, 400), 10, true)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 350, 400), 100, true)
+false
+
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 450), 10, true)
+false
+// (100, 200, 300, 400).nearEquals((100, 200, 300, 450), 100, true)
+false
+
+
+// buggy case with allFour=true:
+// (100, 200, 300, 10).nearEquals((100, 200, 300, 20), 100, true)
+true
+// (100, 200, 300, 210).nearEquals((100, 200, 300, 220), 100, true)
+false
+// (100, 200, 300, 0).nearEquals((100, 200, 300, 200), 100, true)
+false
+// (100, 200, 300, 200).nearEquals((100, 200, 300, 0), 100, true)
+true
+// (100, 200, 300, 0).nearEquals((100, 200, 300, -200), 100, true)
+false
+// (100, 200, 300, -200).nearEquals((100, 200, 300, 0), 100, true)
+true
+
+
+/// Clone
+// vector
+Vector3D(1, 2, 3) w=4
+
+// clone
+Vector3D(1, 2, 3) w=4
+
+// vector === clone
+false
+
+// vector.equals(clone)
+true
+
+
+/// length
+// new Vector3D().length
+0
+
+// new Vector3D(100, 0).length
+100
+
+// new Vector3D(2, -10, 11, -20).length
+15
+
+
+/// lengthSquared
+// new Vector3D().lengthSquared
+0
+
+// new Vector3D(100, 0).lengthSquared
+10000
+
+// new Vector3D(100, -200, 300, -400).lengthSquared
+140000
+
+
+/// Normalize
+// new Vector3D() normalize()
+0
+Vector3D(0, 0, 0) w=0
+
+// new Vector3D(30, 40) normalize()
+50
+Vector3D(0.6, 0.8, 0) w=0
+
+// new Vector3D(-9, 12, 20) normalize()
+25
+Vector3D(-0.36, 0.48, 0.8) w=0
+
+// new Vector3D(-9, 12, 20, -100) normalize()
+25
+Vector3D(-0.36, 0.48, 0.8) w=-100
+
+// new Vector3D(undefined, 100, 100, 100).normalize()
+NaN
+Vector3D(NaN, NaN, NaN) w=100
+
+
+// new Vector3D(7, null, 24, 365).normalize()
+25
+Vector3D(0.28, 0, 0.96) w=365
+
+
+/// Project
+// new Vector3D().project()
+Vector3D(NaN, NaN, NaN) w=0
+
+// new Vector3D(1, 2, 3).project()
+Vector3D(Infinity, Infinity, Infinity) w=0
+
+// new Vector3D(1, 2, 3, 1).project()
+Vector3D(1, 2, 3) w=1
+
+// new Vector3D(0, 0, 0, 1).project()
+Vector3D(0, 0, 0) w=1
+
+// new Vector3D(20, 30, 40, 10).project()
+Vector3D(2, 3, 4) w=10
+
+// new Vector3D(5, -6, 7, 0.1).project()
+Vector3D(50, -60, 70) w=0.1
+
+// new Vector3D(5, -6, 7, -0.2).project()
+Vector3D(-25, 30, -35) w=-0.2
+
+
+/// angleBetween
+// Vector3D.angleBetween(new Vector3D(), new Vector3D())
+NaN
+
+// Vector3D.angleBetween(new Vector3D(), new Vector3D(1, 0, 0))
+NaN
+
+// Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D())
+NaN
+
+// Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D(0, 1, 0))
+1.5707963267948966
+
+// Vector3D.angleBetween(new Vector3D(0, -1, 0), new Vector3D(0, 0, 1))
+1.5707963267948966
+
+// Vector3D.angleBetween(new Vector3D(0, -20, 0), new Vector3D(0, 0, 0.1))
+1.5707963267948966
+
+// Vector3D.angleBetween(new Vector3D(2, 4, 6), new Vector3D(0.6, 0.5, 0.1))
+0.8699012499232629
+
+// Vector3D.angleBetween(new Vector3D(0.6, 0.5, 0.1), new Vector3D(2, 4, 6))
+0.8699012499232629
+
+// Vector3D.angleBetween(new Vector3D(2, 4, 6, 8), new Vector3D(0.6, 0.5, 0.1, -0.2))
+0.8699012499232629
+
+
+/// dotProduct
+// new Vector3D().dotProduct(new Vector3D())
+0
+
+// new Vector3D().dotProduct(new Vector3D(1, 0, 0))
+0
+
+// new Vector3D(1, 0, 0).dotProduct(new Vector3D())
+0
+
+// new Vector3D(1, 0, 0).dotProduct(new Vector3D(0, 1, 0))
+0
+
+// new Vector3D(0, -1, 0).dotProduct(new Vector3D(0, 0, 1))
+0
+
+// new Vector3D(0, -20, 0).dotProduct(new Vector3D(0, 0, 0.1))
+0
+
+// new Vector3D(2, 4, 6).dotProduct(new Vector3D(0.6, 0.5, 0.1))
+3.8000000000000003
+
+// new Vector3D(0.6, 0.5, 0.1).dotProduct(new Vector3D(2, 4, 6))
+3.8000000000000003
+
+// new Vector3D(2, 4, 6, 8).dotProduct(new Vector3D(0.6, 0.5, 0.1, -0.2))
+3.8000000000000003
+
+
+/// crossProduct
+// new Vector3D().crossProduct(new Vector3D())
+Vector3D(0, 0, 0) w=1
+
+// new Vector3D().crossProduct(new Vector3D(1, 0, 0))
+Vector3D(0, 0, 0) w=1
+
+// new Vector3D(1, 0, 0).crossProduct(new Vector3D())
+Vector3D(0, 0, 0) w=1
+
+// new Vector3D(1, 0, 0).crossProduct(new Vector3D(0, 1, 0))
+Vector3D(0, 0, 1) w=1
+
+// new Vector3D(0, -1, 0).crossProduct(new Vector3D(0, 0, 1))
+Vector3D(-1, 0, 0) w=1
+
+// new Vector3D(0, -20, 0).crossProduct(new Vector3D(0, 0, 0.1))
+Vector3D(-2, 0, 0) w=1
+
+// new Vector3D(2, 4, 6).crossProduct(new Vector3D(0.6, 0.5, 0.1))
+Vector3D(-2.6, 3.3999999999999995, -1.4) w=1
+
+// new Vector3D(0.6, 0.5, 0.1).crossProduct(new Vector3D(2, 4, 6))
+Vector3D(2.6, -3.3999999999999995, 1.4) w=1
+
+// new Vector3D(2, 4, 6, 8).crossProduct(new Vector3D(0.6, 0.5, 0.1, -0.2))
+Vector3D(-2.6, 3.3999999999999995, -1.4) w=1
+
+
