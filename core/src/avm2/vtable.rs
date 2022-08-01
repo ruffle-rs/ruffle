@@ -79,6 +79,10 @@ impl<'gc> VTable<'gc> {
                 protected_namespace: None,
                 resolved_traits: rt,
                 method_table: vec![],
+                // Compilers expect `setslot 1` to work on the `newcatch` object.
+                // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
+                // maps setslot arg directly to the slot array index, unlike AVM which does the
+                // -1 shift.
                 default_slots: vec![None, None],
                 slot_classes: vec![PropertyClass::Any, PropertyClass::Any],
             },

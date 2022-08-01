@@ -105,17 +105,18 @@ impl<'gc> ScriptObject<'gc> {
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
-    pub fn catch_scope(mc: MutationContext<'gc, '_>, qname: &QName<'gc>) -> Object<'gc> {
+    pub fn catch_scope(
+        activation: &mut Activation<'_, 'gc, '_>,
+        qname: &QName<'gc>,
+    ) -> Object<'gc> {
         let mut base = ScriptObjectData::custom_new(None, None);
+        let mc = activation.context.gc_context;
         let vt = VTable::newcatch(mc, &qname);
         base.set_vtable(vt);
-        // Compilers expect `setslot 1` to work on the `newcatch` object.
-        // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
-        // maps setslot arg directly to the slot array index, unlike AVM which does the
-        // -1 shift.
-        base.install_slot();
-        base.install_slot();
-        ScriptObject(GcCell::allocate(mc, base)).into()
+
+        let mut so = ScriptObject(GcCell::allocate(mc, base));
+        so.install_instance_slots(activation);
+        so.into()
     }
 }
 

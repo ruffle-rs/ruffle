@@ -1583,7 +1583,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 vname,
                 self.context.gc_context,
             )?;
-            let so = ScriptObject::catch_scope(self.context.gc_context, &qname);
+            let so = ScriptObject::catch_scope(self, &qname);
             self.context.avm2.push(so);
         }
 
