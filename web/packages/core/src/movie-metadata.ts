@@ -39,7 +39,7 @@ export interface MovieMetadata {
     readonly isActionScript3: boolean;
 
     /**
-     * Uncompressed length
+     * Uncompressed length in bytes.
      */
     readonly uncompressedLength: number;
 }
