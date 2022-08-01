@@ -38,13 +38,51 @@
                         <span>Author: </span><a href="#" target="_blank" id="author"></a>
                     </div>
                 </div>
+                &emsp;
+                <svg width="20px" id="openModal" viewBox="0 0 416.979 416.979"><path fill="white" d="M356.004 61.156c-81.37-81.47-213.377-81.551-294.848-.182-81.47 81.371-81.552 213.379-.181 294.85 81.369 81.47 213.378 81.551 294.849.181 81.469-81.369 81.551-213.379.18-294.849zM237.6 340.786a5.821 5.821 0 0 1-5.822 5.822h-46.576a5.821 5.821 0 0 1-5.822-5.822V167.885a5.821 5.821 0 0 1 5.822-5.822h46.576a5.82 5.82 0 0 1 5.822 5.822v172.901zm-29.11-202.885c-18.618 0-33.766-15.146-33.766-33.765 0-18.617 15.147-33.766 33.766-33.766s33.766 15.148 33.766 33.766c0 18.619-15.149 33.765-33.766 33.765z"/></g></svg>
             </div>
         </div>
         <div id="main" aria-label="Select a demo or drag an SWF">
             <div id="overlay" class="hidden"></div>
         </div>
-        <div id="stats">
-            size: <span id="filesize">loading</span>, movie width: <span id="width">loading</span>, movie height: <span id="height">loading</span>, flash: <span id="flashversion">loading</span>, isActionScript3: <span id="asversion">loading</span> <span class="floatright">backgroundColor: <span id="backgroundColor">loading</span>, numFrames: <span id="numFrames">loading</span>, frameRate: <span id="frameRate">loading</span></span>
+        <div id="metadataModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeModal">×</span>
+                <table id="metadata">
+                    <tr>
+                        <td>SWF Version</td>
+                        <td><span class="metadata" id="swfVersion">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>FP Version</td>
+                        <td><span class="metadata" id="flashVersion">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>ActionScript 3</td>
+                        <td><span class="metadata" id="isActionScript3">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>Total Frames</td>
+                        <td><span class="metadata" id="numFrames">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>Frame Rate</td>
+                        <td><span class="metadata" id="frameRate">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>SWF Width</td>
+                        <td><span class="metadata" id="width">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>SWF Height</td>
+                        <td><span class="metadata" id="height">Loading</span></td>
+                    </tr>
+                    <tr>
+                        <td>SWF Background Color</td>
+                        <td><input class="metadata" type="color" id="backgroundColor" disabled value="#FFFFFF"></td>
+                    </tr>
+                </table>
+            </div>
         </div>
         <script src="index.js"></script>
     </body>
