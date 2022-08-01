@@ -17,6 +17,9 @@ const sampleFileInputContainer = document.getElementById(
 const localFileInput = document.getElementById("local-file");
 const sampleFileInput = document.getElementById("sample-swfs");
 const localFileName = document.getElementById("local-file-name");
+const closeModal = document.getElementById("closeModal");
+const openModal = document.getElementById("openModal");
+const metadataModal = document.getElementById("metadataModal");
 // prettier-ignore
 const optionGroups = {
     "Animation": document.getElementById("anim-optgroup"),
@@ -30,62 +33,58 @@ const defaultConfig = {
 };
 
 const swfToFlashVersion = {
-    1: "FP1",
-    2: "FP2",
-    3: "FP3",
-    4: "FP4",
-    5: "FP5",
-    6: "FP6",
-    7: "FP7",
-    8: "FP8",
-    9: "FP9.0",
-    10: "FP10.0 or FP10.1",
-    11: "FP10.2",
-    12: "FP10.3",
-    13: "FP11.0",
-    14: "FP11.1",
-    15: "FP11.2",
-    16: "FP11.3",
-    17: "FP11.4",
-    18: "FP11.5",
-    19: "FP11.6",
-    20: "FP11.7",
-    21: "FP11.8",
-    22: "FP11.9",
-    23: "FP12",
-    24: "FP13",
-    25: "FP14",
-    26: "FP15",
-    27: "FP16",
-    28: "FP17",
-    29: "FP18",
-    30: "FP19",
-    31: "FP20",
-    32: "FP21",
-    33: "FP22",
-    34: "FP23",
-    35: "FP24",
-    36: "FP25",
-    37: "FP26",
-    38: "FP27",
-    39: "FP28",
-    40: "FP29",
-    41: "FP30",
-    42: "FP31",
-    43: "FP32",
-}
+    1: "1",
+    2: "2",
+    3: "3",
+    4: "4",
+    5: "5",
+    6: "6",
+    7: "7",
+    8: "8",
+    9: "9.0",
+    10: "10.0/10.1",
+    11: "10.2",
+    12: "10.3",
+    13: "11.0",
+    14: "11.1",
+    15: "11.2",
+    16: "11.3",
+    17: "11.4",
+    18: "11.5",
+    19: "11.6",
+    20: "11.7",
+    21: "11.8",
+    22: "11.9",
+    23: "12",
+    24: "13",
+    25: "14",
+    26: "15",
+    27: "16",
+    28: "17",
+    29: "18",
+    30: "19",
+    31: "20",
+    32: "21",
+    33: "22",
+    34: "23",
+    35: "24",
+    36: "25",
+    37: "26",
+    38: "27",
+    39: "28",
+    40: "29",
+    41: "30",
+    42: "31",
+    43: "32",
+};
 
 function unload() {
     if (player) {
         player.remove();
-        document.getElementById("flashversion").textContent = "loading";
-        document.getElementById("asversion").textContent = "loading";
-        document.getElementById("frameRate").textContent = "loading";
-        document.getElementById("filesize").textContent = "loading";
-        document.getElementById("width").textContent = "loading";
-        document.getElementById("height").textContent = "loading";
-        document.getElementById("numFrames").textContent = "loading";
-        document.getElementById("backgroundColor").textContent = "loading";
+        document.querySelectorAll("span.metadata").forEach((el) => {
+            el.textContent = "Loading";
+        });
+        document.getElementById("backgroundColor").value = "#FFFFFF";
     }
 }
 
@@ -95,31 +94,24 @@ function load(options) {
     player.id = "player";
     main.append(player);
     player.load(options);
-    player.addEventListener("loadedmetadata", function() {
+    player.addEventListener("loadedmetadata", function () {
         if (this.metadata) {
-            if (this.metadata.swfVersion) {
-                document.getElementById("flashversion").textContent = swfToFlashVersion[this.metadata.swfVersion];
-            }
-            if (this.metadata.isActionScript3) {
-                document.getElementById("asversion").textContent = "yes";
-            } else {
-                document.getElementById("asversion").textContent = "no";
-            }
-            if (this.metadata.frameRate) {
-                document.getElementById("frameRate").textContent = `${this.metadata.frameRate} FPS`;
-            }
-            if (this.metadata.width) {
-                document.getElementById("width").textContent = `${this.metadata.width}px`;
-            }
-            if (this.metadata.height) {
-                document.getElementById("height").textContent = `${this.metadata.height}px`;
-            }
-            if (this.metadata.numFrames) {
-                document.getElementById("numFrames").textContent = this.metadata.numFrames;
-            }
-            if (this.metadata.backgroundColor) {
-                document.getElementById("backgroundColor").textContent = this.metadata.backgroundColor;
-            }
+            Object.keys(this.metadata).forEach((el) => {
+                const metadataElement = document.getElementById(el);
+                if (metadataElement) {
+                    if (el === "backgroundColor") {
+                        metadataElement.value = this.metadata[el] ?? "#FFFFFF";
+                    } else {
+                        if (el === "swfVersion") {
+                            document.getElementById(
+                                "flashVersion"
+                            ).textContent =
+                                swfToFlashVersion[this.metadata[el]];
+                        }
+                        metadataElement.textContent = this.metadata[el] ?? "?";
+                    }
+                }
+            });
         }
     });
 }
@@ -148,27 +140,12 @@ async function loadFile(file) {
     hideSample();
     const data = await new Response(file).arrayBuffer();
     load({ data, ...defaultConfig });
-    if (file.size) {
-        document.getElementById("filesize").textContent = `${Math.round(file.size/1024)}Kb`;
-    }
-}
-
-function getFileSize(url, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("HEAD", url, true);
-    xhr.onreadystatechange = function() {
-        if (this.readyState == this.DONE) {
-            document.getElementById("filesize").textContent = `${Math.round(parseInt(xhr.getResponseHeader("Content-Length"))/1024)}Kb`;
-        }
-    };
-    xhr.send();
 }
 
 function loadSample() {
     const swfData = sampleFileInput[sampleFileInput.selectedIndex].swfData;
     localFileName.textContent = "No file selected.";
     if (swfData) {
-        getFileSize(swfData.location);
         showSample(swfData);
         const config = swfData.config || defaultConfig;
         load({ url: swfData.location, ...config });
@@ -223,6 +200,14 @@ localFileInput.addEventListener("drop", (event) => {
     loadFile(event.dataTransfer.files[0]);
 });
 
+closeModal.addEventListener("click", () => {
+    metadataModal.style.display = "none";
+});
+
+openModal.addEventListener("click", () => {
+    metadataModal.style.display = "block";
+});
+
 window.addEventListener("load", () => {
     if (
         navigator.userAgent.match(/iPad/i) ||
@@ -232,6 +217,12 @@ window.addEventListener("load", () => {
     }
     overlay.classList.remove("hidden");
 });
+
+window.onclick = (event) => {
+    if (event.target === metadataModal) {
+        metadataModal.style.display = "none";
+    }
+};
 
 (async () => {
     const response = await fetch("swfs.json");
