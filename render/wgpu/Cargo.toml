@@ -12,7 +12,7 @@ ruffle_core = { path = "../../core", default-features = false }
 ruffle_render_common_tess = { path = "../common_tess" }
 bytemuck = { version = "1.10.0", features = ["derive"] }
 raw-window-handle = "0.4"
-clap = { version = "3.2.15", features = ["derive"], optional = true }
+clap = { version = "3.2.16", features = ["derive"], optional = true }
 enum-map = "2.4.1"
 fnv = "1.0.7"
 
