@@ -42,7 +42,7 @@
     "devDependencies": {
         "@types/mocha": "^9.1.1",
         "@typescript-eslint/eslint-plugin": "^5.32.0",
-        "@typescript-eslint/parser": "^5.30.3",
+        "@typescript-eslint/parser": "^5.32.0",
         "eslint": "^8.21.0",
         "eslint-plugin-jsdoc": "^39.3.4",
         "mocha": "^10.0.0",
