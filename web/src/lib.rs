@@ -268,6 +268,14 @@ impl Ruffle {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
     }
 
+    pub fn volume(&self) -> f32 {
+        self.with_core(|core| core.volume()).unwrap_or_default()
+    }
+
+    pub fn set_volume(&mut self, value: f32) {
+        let _ = self.with_core_mut(|core| core.set_volume(value));
+    }
+
     // after the context menu is closed, remember to call `clear_custom_menu_items`!
     pub fn prepare_context_menu(&mut self) -> JsValue {
         self.with_core_mut(|core| {

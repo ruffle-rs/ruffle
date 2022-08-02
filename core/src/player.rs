@@ -481,6 +481,16 @@ impl Player {
         self.is_playing
     }
 
+    /// Returns the master volume of the player. 1.0 is 100% volume.
+    pub fn volume(&self) -> f32 {
+        self.audio.volume()
+    }
+
+    /// Sets the master volume of the player. 1.0 is 100% volume.
+    pub fn set_volume(&mut self, volume: f32) {
+        self.audio.set_volume(volume)
+    }
+
     pub fn prepare_context_menu(&mut self) -> Vec<ContextMenuItem> {
         self.mutate_with_update_context(|context| {
             if !context.stage.show_menu() {

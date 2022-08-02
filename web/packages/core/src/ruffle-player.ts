@@ -672,6 +672,29 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Returns the master volume of the player.
+     *
+     * @returns The volume. 1.0 is 100% volume.
+     */
+    get volume(): number {
+        if (this.instance) {
+            return this.instance.volume();
+        }
+        return 1.0;
+    }
+
+    /**
+     * Sets the master volume of the player.
+     *
+     * @param value The volume. 1.0 is 100% volume.
+     */
+    set volume(value: number) {
+        if (this.instance) {
+            this.instance.set_volume(value);
+        }
+    }
+
+    /**
      * Checks if this player is allowed to be fullscreen by the browser.
      *
      * @returns True if you may call [[enterFullscreen]].
