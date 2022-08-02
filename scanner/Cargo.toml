@@ -12,7 +12,7 @@ log = "0.4"
 walkdir = "2.3.2"
 serde = { version = "1.0", features = ["derive"] }
 csv = "1.1"
-indicatif = "0.16"
+indicatif = "0.17"
 path-slash = "0.2.0"
 swf = { path = "../swf" }
 rayon = "1.5.3"

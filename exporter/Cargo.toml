@@ -13,7 +13,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 image = "0.24.2"
 log = "0.4"
 walkdir = "2.3.2"
-indicatif = "0.16"
+indicatif = "0.17"
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
