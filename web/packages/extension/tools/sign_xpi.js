@@ -1,5 +1,4 @@
 const fs = require("fs");
-const { signAddon } = require("sign-addon");
 
 async function sign(
     apiKey,
@@ -9,6 +8,7 @@ async function sign(
     version,
     destination
 ) {
+    const { signAddon } = await import("sign-addon");
     const tempDir = require("temp-dir");
     const result = await signAddon({
         xpiPath: unsignedPath,
