@@ -96,29 +96,27 @@ function load(options) {
     player.load(options);
     player.addEventListener("loadedmetadata", function () {
         if (this.metadata) {
-            Object.keys(this.metadata).forEach((el) => {
-                const metadataElement = document.getElementById(el);
+            for (const [key, value] of Object.entries(this.metadata)) {
+                const metadataElement = document.getElementById(key);
                 if (metadataElement) {
-                    if (el === "backgroundColor") {
-                        metadataElement.value = this.metadata[el] ?? "#FFFFFF";
+                    if (key === "backgroundColor") {
+                        metadataElement.value = value ?? "#FFFFFF";
                     } else {
-                        if (el === "swfVersion") {
+                        if (key === "swfVersion") {
                             document.getElementById(
                                 "flashVersion"
-                            ).textContent =
-                                swfToFlashVersion[this.metadata[el]];
+                            ).textContent = swfToFlashVersion[value];
                         }
-                        if (el === "uncompressedLength") {
-                            metadataElement.textContent =
-                                `${Math.round(this.metadata[el] / 1024)}Kb` ??
-                                "?";
+                        if (key === "uncompressedLength") {
+                            metadataElement.textContent = `${Math.round(
+                                value / 1024
+                            )}Kb`;
                         } else {
-                            metadataElement.textContent =
-                                this.metadata[el] ?? "?";
+                            metadataElement.textContent = value;
                         }
                     }
                 }
-            });
+            }
         }
     });
 }
