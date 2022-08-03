@@ -417,7 +417,14 @@ pub fn dispatch_event_to_target<'gc>(
 
         let object = activation.global_scope();
 
-        handler.call(object, &[event.into()], activation)?;
+        if let Err(err) = handler.call(object, &[event.into()], activation) {
+            log::error!(
+                "Error dispatching event {:?} to handler {:?} : {:?}",
+                event,
+                handler,
+                err
+            );
+        }
     }
 
     Ok(())
