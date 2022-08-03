@@ -108,9 +108,7 @@ function load(options) {
                             ).textContent = swfToFlashVersion[value];
                         }
                         if (key === "uncompressedLength") {
-                            metadataElement.textContent = `${Math.round(
-                                value / 1024
-                            )}Kb`;
+                            metadataElement.textContent = `${value >> 10}Kb`;
                         } else {
                             metadataElement.textContent = value;
                         }
