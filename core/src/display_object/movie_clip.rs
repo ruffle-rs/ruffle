@@ -32,7 +32,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::frame_lifecycle::{catchup_display_object_to_frame, FramePhase};
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
@@ -1612,7 +1612,10 @@ impl<'gc> MovieClip<'gc> {
             let mut write = self.0.write(context.gc_context);
             write.queued_script_frame = Some(clamped_frame);
 
-            if write.current_frame != from_frame {
+            if (*context.frame_phase == FramePhase::Construct
+                || *context.frame_phase == FramePhase::Enter)
+                && write.current_frame != from_frame
+            {
                 write.last_queued_script_frame = None;
             }
         }
