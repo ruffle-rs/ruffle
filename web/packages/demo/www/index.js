@@ -108,7 +108,14 @@ function load(options) {
                             ).textContent =
                                 swfToFlashVersion[this.metadata[el]];
                         }
-                        metadataElement.textContent = this.metadata[el] ?? "?";
+                        if (el === "uncompressedLength") {
+                            metadataElement.textContent =
+                                `${Math.round(this.metadata[el] / 1024)}Kb` ??
+                                "?";
+                        } else {
+                            metadataElement.textContent =
+                                this.metadata[el] ?? "?";
+                        }
                     }
                 }
             });
