@@ -99,19 +99,21 @@ function load(options) {
             for (const [key, value] of Object.entries(this.metadata)) {
                 const metadataElement = document.getElementById(key);
                 if (metadataElement) {
-                    if (key === "backgroundColor") {
-                        metadataElement.value = value ?? "#FFFFFF";
-                    } else {
-                        if (key === "swfVersion") {
+                    switch (key) {
+                        case "backgroundColor":
+                            metadataElement.value = value ?? "#FFFFFF";
+                            break;
+                        case "uncompressedLength":
+                            metadataElement.textContent = `${value >> 10}Kb`;
+                            break;
+                        case "swfVersion":
                             document.getElementById(
                                 "flashVersion"
                             ).textContent = swfToFlashVersion[value];
-                        }
-                        if (key === "uncompressedLength") {
-                            metadataElement.textContent = `${value >> 10}Kb`;
-                        } else {
+                        // falls through and executes the default case as well
+                        default:
                             metadataElement.textContent = value;
-                        }
+                            break;
                     }
                 }
             }
