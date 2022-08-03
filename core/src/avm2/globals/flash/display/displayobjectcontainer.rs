@@ -168,14 +168,12 @@ pub fn get_child_by_name<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
-        let child = dobj.child_by_name(&name, false).ok_or_else(|| {
-            format!(
-                "RangeError: Display object container has no child with name {}",
-                name
-            )
-        })?;
-
-        return Ok(child.object2());
+        if let Some(child) = dobj.child_by_name(&name, false) {
+            return Ok(child.object2());
+        } else {
+            log::warn!("Display object container has no child with name {}", name);
+            return Ok(Value::Null);
+        }
     }
 
     Ok(Value::Undefined)
