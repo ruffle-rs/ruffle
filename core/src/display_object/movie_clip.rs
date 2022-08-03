@@ -107,7 +107,12 @@ pub struct MovieClipData<'gc> {
     tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
 
     /// List of tags queued up for the current frame.
-    queued_tags: HashMap<Depth, QueuedTag>,
+    ///
+    /// There are only a handful of valid tag configurations per depth: namely,
+    /// the empty set, one removal, one add, or a removal followed by an add.
+    /// Any other configuration in the SWF tag stream is normalized to one of
+    /// these patterns.
+    queued_tags: HashMap<Depth, Vec<QueuedTag>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -1532,14 +1537,25 @@ impl<'gc> MovieClip<'gc> {
                 //
                 // TODO: We can only queue *new* object placement, existing
                 // objects still get updated too early.
-                self.0.write(context.gc_context).queued_tags.insert(
-                    params.place_object.depth as Depth,
-                    QueuedTag {
-                        tag_type: QueuedTagAction::Place(params.version),
-                        tag_start: params.tag_start,
-                        tag_len: params.tag_len,
-                    },
-                );
+                let mut write = self.0.write(context.gc_context);
+                let new_tag = QueuedTag {
+                    tag_type: QueuedTagAction::Place(params.version),
+                    tag_start: params.tag_start,
+                    tag_len: params.tag_len,
+                };
+                let bucket = write
+                    .queued_tags
+                    .entry(params.place_object.depth as Depth)
+                    .or_insert_with(|| Vec::with_capacity(2));
+
+                if let Some(slot) = bucket
+                    .iter_mut()
+                    .rfind(|i| matches!(i.tag_type, QueuedTagAction::Place(_)))
+                {
+                    *slot = new_tag
+                } else {
+                    bucket.push(new_tag);
+                }
 
                 return;
             }
@@ -1923,23 +1939,33 @@ impl<'gc> MovieClip<'gc> {
     fn unqueue_tags_matching<F>(
         &self,
         context: &mut UpdateContext<'_, 'gc, '_>,
-        mut matching: F,
+        matching: F,
     ) -> Vec<(Depth, QueuedTag)>
     where
-        F: FnMut(&QueuedTag) -> bool,
+        F: Fn(&QueuedTag) -> bool,
     {
         let mut write = self.0.write(context.gc_context);
         let mut unqueued: Vec<_> = write
             .queued_tags
             .iter()
-            .filter(|(_, t)| matching(t))
-            .map(|(d, t)| (*d, t.clone()))
+            .flat_map(|(d, b)| b.iter().filter(|t| matching(t)).map(|t| (*d, t.clone())))
             .collect();
 
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
-        for (depth, _) in unqueued.iter() {
-            write.queued_tags.remove(depth);
+        for (depth, tag) in unqueued.iter_mut() {
+            let bucket = write
+                .queued_tags
+                .get_mut(depth)
+                .expect("Unqueued tag to come from a depth that exists");
+            let pos = bucket
+                .iter()
+                .enumerate()
+                .find(|(_, o)| *o == tag)
+                .map(|(i, _)| i)
+                .expect("Unqueued tag to still be present in source bucket");
+
+            bucket.remove(pos);
         }
 
         unqueued
@@ -3361,14 +3387,24 @@ impl<'gc, 'a> MovieClip<'gc> {
             reader.read_place_object_2_or_3(version)
         }?;
 
-        write.queued_tags.insert(
-            place_object.depth as Depth,
-            QueuedTag {
-                tag_type: QueuedTagAction::Place(version),
-                tag_start,
-                tag_len,
-            },
-        );
+        let new_tag = QueuedTag {
+            tag_type: QueuedTagAction::Place(version),
+            tag_start,
+            tag_len,
+        };
+        let bucket = write
+            .queued_tags
+            .entry(place_object.depth as Depth)
+            .or_insert_with(|| Vec::with_capacity(2));
+
+        if let Some(slot) = bucket
+            .iter_mut()
+            .rfind(|i| matches!(i.tag_type, QueuedTagAction::Place(_)))
+        {
+            *slot = new_tag
+        } else {
+            bucket.push(new_tag);
+        }
 
         Ok(())
     }
@@ -3448,14 +3484,32 @@ impl<'gc, 'a> MovieClip<'gc> {
             reader.read_remove_object_2()
         }?;
 
-        write.queued_tags.insert(
-            remove_object.depth as Depth,
-            QueuedTag {
-                tag_type: QueuedTagAction::Remove(version),
-                tag_start,
-                tag_len,
-            },
-        );
+        let new_tag = QueuedTag {
+            tag_type: QueuedTagAction::Remove(version),
+            tag_start,
+            tag_len,
+        };
+        let bucket = write
+            .queued_tags
+            .entry(remove_object.depth as Depth)
+            .or_insert_with(|| Vec::with_capacity(2));
+
+        let place_slot_id = bucket
+            .iter()
+            .enumerate()
+            .rfind(|(_, i)| matches!(i.tag_type, QueuedTagAction::Place(_)))
+            .map(|(i, _)| i);
+
+        if let Some(place_slot_id) = place_slot_id {
+            bucket.remove(place_slot_id); // Add + Remove cancel each other out.
+        } else if let Some(slot) = bucket
+            .iter_mut()
+            .rfind(|i| matches!(i.tag_type, QueuedTagAction::Remove(_)))
+        {
+            *slot = new_tag
+        } else {
+            bucket.push(new_tag);
+        }
 
         Ok(())
     }
