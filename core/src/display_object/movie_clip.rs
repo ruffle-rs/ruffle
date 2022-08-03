@@ -1111,7 +1111,10 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         run_display_actions: bool,
     ) {
-        match self.determine_next_frame() {
+        let next_frame = self.determine_next_frame();
+        match next_frame {
+            //Removals happen before frame advance.
+            NextFrame::Next if context.is_action_script_3() => {}
             NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
             NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
@@ -1169,7 +1172,24 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
 
+        let remove_actions = self.unqueue_tags_matching(context, |t| {
+            matches!(t.tag_type, QueuedTagAction::Remove(_))
+        });
+
+        for (_, tag) in remove_actions {
+            let mut reader = data.read_from(tag.tag_start);
+            let version = match tag.tag_type {
+                QueuedTagAction::Remove(v) => v,
+                _ => unreachable!(),
+            };
+
+            if let Err(e) = self.remove_object(context, &mut reader, version) {
+                log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
+            }
+        }
+
         let mut write = self.0.write(context.gc_context);
+
         write.tag_stream_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
         // Check if our audio track has finished playing.
@@ -1177,6 +1197,10 @@ impl<'gc> MovieClip<'gc> {
             if !context.is_sound_playing(audio_stream) {
                 write.audio_stream = None;
             }
+        }
+
+        if matches!(next_frame, NextFrame::Next) && context.is_action_script_3() {
+            write.current_frame += 1;
         }
 
         let frame_id = write.current_frame;
@@ -1962,23 +1986,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
             if is_playing {
                 self.run_frame_internal(context, true);
-
-                let data = self.0.read().static_data.swf.clone();
-                let remove_actions = self.unqueue_tags_matching(context, |t| {
-                    matches!(t.tag_type, QueuedTagAction::Remove(_))
-                });
-
-                for (_, tag) in remove_actions {
-                    let mut reader = data.read_from(tag.tag_start);
-                    let version = match tag.tag_type {
-                        QueuedTagAction::Remove(v) => v,
-                        _ => unreachable!(),
-                    };
-
-                    if let Err(e) = self.remove_object(context, &mut reader, version) {
-                        log::error!("Error running queued tag: {:?}, got {}", tag.tag_type, e);
-                    }
-                }
             }
         }
     }
