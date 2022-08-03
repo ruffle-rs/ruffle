@@ -260,6 +260,7 @@ swf_tests! {
     (as3_event_cancelable, "avm2/event_cancelable", 1),
     (as3_event_clone, "avm2/event_clone", 1),
     (as3_event_formattostring, "avm2/event_formattostring", 1),
+    (as3_event_handler_exception, "avm2/event_handler_exception", 2),
     (as3_event_isdefaultprevented, "avm2/event_isdefaultprevented", 1),
     (as3_event_type, "avm2/event_type", 1),
     (as3_event_valueof_tostring, "avm2/event_valueof_tostring", 1),
