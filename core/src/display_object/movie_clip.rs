@@ -1409,7 +1409,7 @@ impl<'gc> MovieClip<'gc> {
 
         self.0.write(context.gc_context).stop_audio_stream(context);
 
-        let is_rewind = if frame < self.current_frame() {
+        let is_rewind = if frame <= self.current_frame() {
             // Because we can only step forward, we have to start at frame 1
             // when rewinding. We don't actually remove children yet because
             // otherwise AS3 can observe byproducts of the rewinding process.
