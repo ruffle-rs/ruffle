@@ -32,7 +32,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
-use crate::frame_lifecycle::{catchup_display_object_to_frame, FramePhase};
+use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
@@ -1208,8 +1208,13 @@ impl<'gc> MovieClip<'gc> {
             write.current_frame += 1;
         }
 
-        let frame_id = write.current_frame;
-        write.queued_script_frame = Some(frame_id);
+        write.queued_script_frame = Some(write.current_frame);
+        if write.last_queued_script_frame != Some(write.current_frame) {
+            // We explicitly clear this variable since AS3 may later GOTO back
+            // to the already-ran frame. Since the frame number *has* changed
+            // in the meantime, it should absolutely run again.
+            write.last_queued_script_frame = None;
+        }
     }
 
     /// Instantiate a given child object on the timeline at a given depth.
@@ -1621,18 +1626,6 @@ impl<'gc> MovieClip<'gc> {
             .iter()
             .filter(|params| params.frame < frame)
             .for_each(|goto| run_goto_command(self, context, goto));
-
-        if context.is_action_script_3() {
-            let mut write = self.0.write(context.gc_context);
-            write.queued_script_frame = Some(clamped_frame);
-
-            if (*context.frame_phase == FramePhase::Construct
-                || *context.frame_phase == FramePhase::Enter)
-                && write.current_frame != from_frame
-            {
-                write.last_queued_script_frame = None;
-            }
-        }
 
         // Next, run the final frame for the parent clip.
         // Re-run the final frame without display tags (DoAction, StartSound, etc.)
