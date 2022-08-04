@@ -1426,6 +1426,16 @@ impl<'gc> MovieClip<'gc> {
 
         let from_frame = self.current_frame();
 
+        let mut write = self.0.write(context.gc_context);
+        if write.loop_queued() {
+            write.queued_tags = HashMap::new();
+        }
+
+        if is_implicit {
+            write.set_loop_queued();
+        }
+        drop(write);
+
         // Step through the intermediate frames, and aggregate the deltas of each frame.
         let mc = self.0.read();
         let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
@@ -2076,6 +2086,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 }
             }
 
+            self.0.write(context.gc_context).unset_loop_queued();
+
             if needs_construction {
                 self.construct_as_avm2_object(context);
 
@@ -2597,6 +2609,18 @@ impl<'gc> MovieClipData<'gc> {
 
     fn set_programmatically_played(&mut self) {
         self.flags |= MovieClipFlags::PROGRAMMATICALLY_PLAYED;
+    }
+
+    fn loop_queued(&self) -> bool {
+        self.flags.contains(MovieClipFlags::LOOP_QUEUED)
+    }
+
+    fn set_loop_queued(&mut self) {
+        self.flags |= MovieClipFlags::LOOP_QUEUED;
+    }
+
+    fn unset_loop_queued(&mut self) {
+        self.flags.remove(MovieClipFlags::LOOP_QUEUED);
     }
 
     fn play(&mut self) {
@@ -3867,6 +3891,12 @@ bitflags! {
         ///
         /// This causes any goto action to be queued and executed at the end of the script.
         const EXECUTING_AVM2_FRAME_SCRIPT = 1 << 3;
+
+        /// Flag set when AVM2 loops to the next frame.
+        ///
+        /// Because AVM2 queues PlaceObject tags to run later, explicit gotos
+        /// that happen while those tags run should cancel the loop.
+        const LOOP_QUEUED = 1 << 4;
     }
 }
 
