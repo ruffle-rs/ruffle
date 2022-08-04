@@ -3,3 +3,5 @@ RangeError
 // Check if scope is cleared on exception
 number
 undefined
+// Errors propagate through the stack
+RangeError
