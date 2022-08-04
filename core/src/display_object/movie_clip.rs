@@ -1653,6 +1653,7 @@ impl<'gc> MovieClip<'gc> {
             .for_each(|goto| run_goto_command(self, context, goto));
 
         if !is_implicit {
+            self.construct_frame(context);
             self.frame_constructed(context);
             self.avm2_root(context)
                 .unwrap_or_else(|| self.into())
