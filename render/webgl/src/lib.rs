@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
@@ -96,6 +96,10 @@ pub struct WebGlRenderBackend {
 
     bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
     next_bitmap_handle: BitmapHandle,
+
+    // This is currently unused - we just hold on to it
+    // to expose via `get_viewport_dimensions`
+    viewport_scale_factor: f64,
 }
 
 struct RegistryData {
@@ -252,6 +256,8 @@ impl WebGlRenderBackend {
             add_color: None,
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
+
+            viewport_scale_factor: 1.0,
         };
 
         renderer.push_blend_mode(BlendMode::Normal);
@@ -260,7 +266,11 @@ impl WebGlRenderBackend {
         renderer.meshes.push(color_quad_mesh);
         let bitmap_quad_mesh = renderer.build_quad_mesh(&renderer.bitmap_program)?;
         renderer.meshes.push(bitmap_quad_mesh);
-        renderer.set_viewport_dimensions(1, 1);
+        renderer.set_viewport_dimensions(ViewportDimensions {
+            width: 1,
+            height: 1,
+            scale_factor: 1.0,
+        });
 
         Ok(renderer)
     }
@@ -686,11 +696,19 @@ impl WebGlRenderBackend {
 }
 
 impl RenderBackend for WebGlRenderBackend {
-    fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+    fn viewport_dimensions(&self) -> ViewportDimensions {
+        ViewportDimensions {
+            width: self.renderbuffer_width as u32,
+            height: self.renderbuffer_height as u32,
+            scale_factor: self.viewport_scale_factor,
+        }
+    }
+
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         // Build view matrix based on canvas size.
         self.view_matrix = [
-            [1.0 / (width as f32 / 2.0), 0.0, 0.0, 0.0],
-            [0.0, -1.0 / (height as f32 / 2.0), 0.0, 0.0],
+            [1.0 / (dimensions.width as f32 / 2.0), 0.0, 0.0, 0.0],
+            [0.0, -1.0 / (dimensions.height as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
             [-1.0, 1.0, 0.0, 1.0],
         ];
@@ -699,8 +717,12 @@ impl RenderBackend for WebGlRenderBackend {
         // We don't use `.clamp()` here because `self.gl.drawing_buffer_width()` and
         // `self.gl.drawing_buffer_height()` return zero when the WebGL context is lost,
         // then an assertion error would be triggered.
-        self.renderbuffer_width = (width as i32).max(1).min(self.gl.drawing_buffer_width());
-        self.renderbuffer_height = (height as i32).max(1).min(self.gl.drawing_buffer_height());
+        self.renderbuffer_width = (dimensions.width as i32)
+            .max(1)
+            .min(self.gl.drawing_buffer_width());
+        self.renderbuffer_height = (dimensions.height as i32)
+            .max(1)
+            .min(self.gl.drawing_buffer_height());
 
         // Recreate framebuffers with the new size.
         let _ = self.build_msaa_buffers();

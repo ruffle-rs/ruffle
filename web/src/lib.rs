@@ -14,7 +14,7 @@ use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -984,9 +984,11 @@ impl Ruffle {
                 canvas.set_width(viewport_width);
                 canvas.set_height(viewport_height);
 
-                core.set_viewport_dimensions(viewport_width, viewport_height, device_pixel_ratio);
-                core.renderer_mut()
-                    .set_viewport_dimensions(viewport_width, viewport_height);
+                core.set_viewport_dimensions(ViewportDimensions {
+                    width: viewport_width,
+                    height: viewport_height,
+                    scale_factor: device_pixel_ratio,
+                });
             }
 
             core.tick(dt);

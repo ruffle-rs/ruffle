@@ -223,28 +223,8 @@ impl RenderTarget for TextureTarget {
     type Frame = TextureTargetFrame;
 
     fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-        // TODO: find a way to bubble an error when the size is too large
-        self.size.width = width;
-        self.size.height = height;
-
-        let label = create_debug_label!("Render target texture");
-        self.texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: label.as_deref(),
-            size: self.size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: self.format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-        });
-
-        let buffer_label = create_debug_label!("Render target buffer");
-        self.buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: buffer_label.as_deref(),
-            size: width as u64 * height as u64 * 4,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
+        *self =
+            TextureTarget::new(device, (width, height)).expect("Unable to resize texture target");
     }
 
     fn format(&self) -> wgpu::TextureFormat {
