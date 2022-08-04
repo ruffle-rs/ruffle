@@ -852,6 +852,11 @@ export class RufflePlayer extends HTMLElement {
             });
         }
 
+        items.push({
+            text: `Copy debug info`,
+            onClick: () => navigator.clipboard.writeText(this.getPanicData()),
+        });
+
         items.push(null);
 
         const extensionString = this.isExtension ? "extension" : "";
@@ -1126,6 +1131,43 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Get data included in any panic of this ruffle-player
+     *
+     * @returns A string containing all the data included in the panic.
+     */
+    private getPanicData(): string {
+        const dataArray = [];
+        dataArray.push("\n# Player Info\n");
+        dataArray.push(this.debugPlayerInfo());
+
+        dataArray.push("\n# Page Info\n");
+        dataArray.push(`Page URL: ${document.location.href}\n`);
+        if (this.swfUrl) dataArray.push(`SWF URL: ${this.swfUrl}\n`);
+
+        dataArray.push("\n# Browser Info\n");
+        dataArray.push(`User Agent: ${window.navigator.userAgent}\n`);
+        dataArray.push(`Platform: ${window.navigator.platform}\n`);
+        dataArray.push(
+            `Has touch support: ${window.navigator.maxTouchPoints > 0}\n`
+        );
+
+        dataArray.push("\n# Ruffle Info\n");
+        dataArray.push(`Version: %VERSION_NUMBER%\n`);
+        dataArray.push(`Name: %VERSION_NAME%\n`);
+        dataArray.push(`Channel: %VERSION_CHANNEL%\n`);
+        dataArray.push(`Built: %BUILD_DATE%\n`);
+        dataArray.push(`Commit: %COMMIT_HASH%\n`);
+        dataArray.push(`Is extension: ${this.isExtension}\n`);
+        dataArray.push("\n# Metadata\n");
+        if (this.metadata) {
+            for (const [key, value] of Object.entries(this.metadata)) {
+                dataArray.push(`${key}: ${value}\n`);
+            }
+        }
+        return dataArray.join("");
+    }
+
+    /**
      * Panics this specific player, forcefully destroying all resources and displays an error message to the user.
      *
      * This should be called when something went absolutely, incredibly and disastrously wrong and there is no chance
@@ -1179,27 +1221,7 @@ export class RufflePlayer extends HTMLElement {
             errorArray.push(`Error: ${error}\n`);
         }
 
-        errorArray.push("\n# Player Info\n");
-        errorArray.push(this.debugPlayerInfo());
-
-        errorArray.push("\n# Page Info\n");
-        errorArray.push(`Page URL: ${document.location.href}\n`);
-        if (this.swfUrl) errorArray.push(`SWF URL: ${this.swfUrl}\n`);
-
-        errorArray.push("\n# Browser Info\n");
-        errorArray.push(`User Agent: ${window.navigator.userAgent}\n`);
-        errorArray.push(`Platform: ${window.navigator.platform}\n`);
-        errorArray.push(
-            `Has touch support: ${window.navigator.maxTouchPoints > 0}\n`
-        );
-
-        errorArray.push("\n# Ruffle Info\n");
-        errorArray.push(`Version: %VERSION_NUMBER%\n`);
-        errorArray.push(`Name: %VERSION_NAME%\n`);
-        errorArray.push(`Channel: %VERSION_CHANNEL%\n`);
-        errorArray.push(`Built: %BUILD_DATE%\n`);
-        errorArray.push(`Commit: %COMMIT_HASH%\n`);
-        errorArray.push(`Is extension: ${this.isExtension}\n`);
+        errorArray.push(this.getPanicData());
 
         const errorText = errorArray.join("");
 
