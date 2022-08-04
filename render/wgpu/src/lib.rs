@@ -7,7 +7,7 @@ use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
 use fnv::FnvHashMap;
-use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::shape_utils::DistilledShape;
@@ -161,6 +161,9 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     blend_modes: Vec<BlendMode>,
     bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
     next_bitmap_handle: BitmapHandle,
+    // This is currently unused - we just store it to report in
+    // `get_viewport_dimensions`
+    viewport_scale_factor: f64,
 }
 
 struct RegistryData {
@@ -523,6 +526,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             blend_modes: vec![BlendMode::Normal],
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
+            viewport_scale_factor: 1.0,
         })
     }
 
@@ -788,12 +792,11 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
-    fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         // Avoid panics from creating 0-sized framebuffers.
         // TODO: find a way to bubble an error when the size is too large
-        let width = std::cmp::max(width, 1);
-        let height = std::cmp::max(height, 1);
-
+        let width = std::cmp::max(dimensions.width, 1);
+        let height = std::cmp::max(dimensions.height, 1);
         self.target.resize(&self.descriptors.device, width, height);
 
         let size = wgpu::Extent3d {
@@ -880,6 +883,15 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         };
 
         self.globals.set_resolution(width, height);
+        self.viewport_scale_factor = dimensions.scale_factor;
+    }
+
+    fn viewport_dimensions(&self) -> ViewportDimensions {
+        ViewportDimensions {
+            width: self.target.width(),
+            height: self.target.height(),
+            scale_factor: self.viewport_scale_factor,
+        }
     }
 
     fn register_shape(

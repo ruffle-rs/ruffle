@@ -24,6 +24,7 @@ use crate::string::{FromWStr, WStr};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_render::backend::ViewportDimensions;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
@@ -85,14 +86,6 @@ pub struct StageData<'gc> {
     /// This setting is currently ignored in Ruffle.
     use_bitmap_downsampling: bool,
 
-    /// The dimensions of the stage's containing viewport.
-    #[collect(require_static)]
-    viewport_size: (u32, u32),
-
-    /// The scale factor of the containing viewport from standard-size pixels
-    /// to device-scale pixels.
-    viewport_scale_factor: f64,
-
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: BoundingBox,
 
@@ -115,12 +108,7 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(
-        gc_context: MutationContext<'gc, '_>,
-        width: u32,
-        height: u32,
-        fullscreen: bool,
-    ) -> Stage<'gc> {
+    pub fn empty(gc_context: MutationContext<'gc, '_>, fullscreen: bool) -> Stage<'gc> {
         let stage = Self(GcCell::allocate(
             gc_context,
             StageData {
@@ -128,9 +116,11 @@ impl<'gc> Stage<'gc> {
                 child: Default::default(),
                 background_color: None,
                 letterbox: Letterbox::Fullscreen,
-                movie_size: (width, height),
+                // This is updated when we set the root movie
+                movie_size: (0, 0),
                 quality: Default::default(),
-                stage_size: (width, height),
+                // This is updated in `build_matrices`
+                stage_size: (0, 0),
                 scale_mode: Default::default(),
                 display_state: if fullscreen {
                     StageDisplayState::FullScreen
@@ -139,8 +129,6 @@ impl<'gc> Stage<'gc> {
                 },
                 align: Default::default(),
                 use_bitmap_downsampling: false,
-                viewport_size: (width, height),
-                viewport_scale_factor: 1.0,
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
                 show_menu: true,
@@ -330,36 +318,6 @@ impl<'gc> Stage<'gc> {
         self.0.write(gc_context).use_bitmap_downsampling = value;
     }
 
-    /// Get the current viewport size, in device pixels.
-    pub fn viewport_size(self) -> (u32, u32) {
-        self.0.read().viewport_size
-    }
-
-    /// Get the scale factor - the number of device pixels that make up a
-    /// standard-size pixel.
-    pub fn viewport_scale_factor(self) -> f64 {
-        self.0.read().viewport_scale_factor
-    }
-
-    /// Set the current viewport size.
-    ///
-    /// The width and height are in device pixels; while the `scale_factor`
-    /// is the number of device pixels needed to make one standard scale pixel.
-    pub fn set_viewport_size(
-        self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        width: u32,
-        height: u32,
-        scale_factor: f64,
-    ) {
-        let mut write = self.0.write(context.gc_context);
-        write.viewport_size = (width, height);
-        write.viewport_scale_factor = scale_factor;
-        drop(write);
-
-        self.build_matrices(context);
-    }
-
     /// Get the stage mode.
     /// This controls how the content layers with other content on the page.
     /// Only used on web.
@@ -408,12 +366,13 @@ impl<'gc> Stage<'gc> {
         let scale_mode = stage.scale_mode;
         let align = stage.align;
         let prev_stage_size = stage.stage_size;
+        let viewport_size = context.renderer.viewport_dimensions();
 
         // Update stage size based on scale mode and DPI.
         stage.stage_size = if stage.scale_mode == StageScaleMode::NoScale {
             // Viewport size is adjusted for HiDPI.
-            let width = f64::from(stage.viewport_size.0) / stage.viewport_scale_factor;
-            let height = f64::from(stage.viewport_size.1) / stage.viewport_scale_factor;
+            let width = f64::from(viewport_size.width) / viewport_size.scale_factor;
+            let height = f64::from(viewport_size.height) / viewport_size.scale_factor;
             (width.round() as u32, height.round() as u32)
         } else {
             stage.movie_size
@@ -425,9 +384,8 @@ impl<'gc> Stage<'gc> {
         let movie_width = movie_width as f64;
         let movie_height = movie_height as f64;
 
-        let (viewport_width, viewport_height) = stage.viewport_size;
-        let viewport_width = viewport_width as f64;
-        let viewport_height = viewport_height as f64;
+        let viewport_width = viewport_size.width as f64;
+        let viewport_height = viewport_size.height as f64;
 
         let movie_aspect = movie_width / movie_height;
         let viewport_aspect = viewport_width / viewport_height;
@@ -457,7 +415,7 @@ impl<'gc> Stage<'gc> {
             }
             StageScaleMode::NoScale => {
                 // No adjustment.
-                (stage.viewport_scale_factor, stage.viewport_scale_factor)
+                (viewport_size.scale_factor, viewport_size.scale_factor)
             }
         };
 
@@ -522,7 +480,11 @@ impl<'gc> Stage<'gc> {
 
     /// Draw the stage's letterbox.
     fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
-        let (viewport_width, viewport_height) = self.0.read().viewport_size;
+        let ViewportDimensions {
+            width: viewport_width,
+            height: viewport_height,
+            scale_factor: _,
+        } = context.renderer.viewport_dimensions();
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 

@@ -311,15 +311,21 @@ pub fn set_align<'gc>(
 
 /// Implement `browserZoomFactor`'s getter
 pub fn browser_zoom_factor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this
+    if this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
+        .is_some()
     {
-        return Ok(dobj.viewport_scale_factor().into());
+        return Ok(activation
+            .context
+            .renderer
+            .viewport_dimensions()
+            .scale_factor
+            .into());
     }
 
     Ok(Value::Undefined)
@@ -367,15 +373,21 @@ pub fn set_color<'gc>(
 
 /// Implement `contentsScaleFactor`'s getter
 pub fn contents_scale_factor<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(dobj) = this
+    if this
         .and_then(|this| this.as_display_object())
         .and_then(|this| this.as_stage())
+        .is_some()
     {
-        return Ok(dobj.viewport_scale_factor().into());
+        return Ok(activation
+            .context
+            .renderer
+            .viewport_dimensions()
+            .scale_factor
+            .into());
     }
 
     Ok(Value::Undefined)

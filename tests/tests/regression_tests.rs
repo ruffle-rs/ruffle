@@ -14,7 +14,7 @@ use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
@@ -1053,7 +1053,11 @@ fn stage_scale_mode() -> Result<(), Error> {
             player
                 .lock()
                 .unwrap()
-                .set_viewport_dimensions(900, 900, 1.0);
+                .set_viewport_dimensions(ViewportDimensions {
+                    width: 900,
+                    height: 900,
+                    scale_factor: 1.0,
+                });
             Ok(())
         },
         |_| Ok(()),
@@ -1287,16 +1291,14 @@ fn run_swf(
                 None,
             ))?;
 
-        let target = TextureTarget::new(
-            &descriptors.device,
-            (
-                movie.width().to_pixels() as u32,
-                movie.height().to_pixels() as u32,
-            ),
-        )?;
+        let width = movie.width().to_pixels() as u32;
+        let height = movie.height().to_pixels() as u32;
+
+        let target = TextureTarget::new(&descriptors.device, (width, height))?;
 
         builder = builder
             .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)
+            .with_viewport_dimensions(width, height, 1.0)
             .with_software_video();
     };
 

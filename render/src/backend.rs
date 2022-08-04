@@ -10,7 +10,10 @@ use downcast_rs::{impl_downcast, Downcast};
 use swf;
 
 pub trait RenderBackend: Downcast {
-    fn set_viewport_dimensions(&mut self, width: u32, height: u32);
+    fn viewport_dimensions(&self) -> ViewportDimensions;
+    // Do not call this method directly - use `player.set_viewport_dimensions`,
+    // which will ensure that the stage is properly updated as well.
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions);
     fn register_shape(
         &mut self,
         shape: DistilledShape,
@@ -106,3 +109,14 @@ impl_downcast!(RenderBackend);
 
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
+
+#[derive(Copy, Clone, Debug)]
+pub struct ViewportDimensions {
+    /// The dimensions of the stage's containing viewport.
+    pub width: u32,
+    pub height: u32,
+
+    /// The scale factor of the containing viewport from standard-size pixels
+    /// to device-scale pixels.
+    pub scale_factor: f64,
+}
