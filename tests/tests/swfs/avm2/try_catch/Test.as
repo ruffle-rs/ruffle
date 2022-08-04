@@ -34,6 +34,23 @@ try {
   }
 }
 
+function triggerException() {
+  var v = new Vector.<String>();
+  v.fixed = true;
+  v.push("a");  // throws error
+}
+
+function try_passing() {
+   try {
+      triggerException();
+   } catch(foobar) {
+     // Like above, cut the part where the error messages agree between Ruffle and FP
+     trace(foobar.toString().slice(0,10));
+   }
+}
+
+trace("// Errors propagate through the stack");
+try_passing();
 
 }}}
 

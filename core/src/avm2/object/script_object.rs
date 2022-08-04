@@ -139,10 +139,6 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    pub fn install_slot(&mut self) {
-        self.slots.push(Value::Undefined);
-    }
-
     pub fn get_property_local(
         &self,
         multiname: &Multiname<'gc>,
