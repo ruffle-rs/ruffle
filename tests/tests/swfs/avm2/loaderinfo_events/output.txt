@@ -4,3 +4,4 @@ Called addedToStage
 Called exitFrame
 Called init!
 Called enterFrame
+Called exitFrame
