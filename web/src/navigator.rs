@@ -92,7 +92,7 @@ impl NavigatorBackend for WebNavigatorBackend {
     fn navigate_to_url(
         &self,
         url: String,
-        window_spec: Option<String>,
+        target: String,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         // If the URL is empty, we ignore the request
@@ -121,8 +121,8 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             //TODO: Should we return a result for failed opens? Does Flash care?
-            match (vars_method, window_spec) {
-                (Some((navmethod, formvars)), window_spec) => {
+            match vars_method {
+                Some((navmethod, formvars)) => {
                     let form_url = self.pre_process_url(url).to_string();
 
                     let body = match document.body() {
@@ -146,7 +146,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
                     let _ = form.set_attribute("action", &form_url);
 
-                    if let Some(target) = window_spec {
+                    if !target.is_empty() {
                         let _ = form.set_attribute("target", &target);
                     }
 
@@ -163,11 +163,12 @@ impl NavigatorBackend for WebNavigatorBackend {
                     let _ = body.append_child(&form);
                     let _ = form.submit();
                 }
-                (_, Some(ref window_name)) if !window_name.is_empty() => {
-                    let _ = window.open_with_url_and_target(url.as_str(), window_name);
-                }
-                _ => {
-                    let _ = window.location().assign(url.as_str());
+                None => {
+                    if target.is_empty() {
+                        let _ = window.location().assign(url.as_str());
+                    } else {
+                        let _ = window.open_with_url_and_target(url.as_str(), &target);
+                    }
                 }
             };
         }

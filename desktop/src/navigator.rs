@@ -62,7 +62,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     fn navigate_to_url(
         &self,
         url: String,
-        _window_spec: Option<String>,
+        _target: String,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
         //TODO: Should we return a result for failed opens? Does Flash care?
