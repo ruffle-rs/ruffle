@@ -24,7 +24,7 @@ pub fn scriptobject_allocator<'gc>(
 }
 
 /// Default implementation of `avm2::Object`.
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(GcCell<'gc, ScriptObjectData<'gc>>);
 
@@ -427,5 +427,37 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
         self.vtable = Some(vtable);
+    }
+}
+
+impl<'gc> Debug for ScriptObject<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let mut fmt = f.debug_struct("ScriptObject");
+
+        let class_name = self
+            .0
+            .try_read()
+            .map(|obj| obj.instance_of())
+            .transpose()
+            .map(|class_obj| {
+                class_obj
+                    .and_then(|class_obj| class_obj.try_inner_class_definition())
+                    .and_then(|class| class.try_read().map(|c| c.name()))
+            });
+
+        match class_name {
+            Some(Ok(class_name)) => {
+                fmt.field("class", &class_name);
+            }
+            Some(Err(err)) => {
+                fmt.field("class", &err);
+            }
+            None => {
+                fmt.field("class", &"<None>");
+            }
+        }
+
+        fmt.field("ptr", &self.0.as_ptr());
+        fmt.finish()
     }
 }

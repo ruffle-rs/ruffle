@@ -4,8 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::{Collect, MutationContext};
+use std::fmt::Debug;
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, Namespace as AbcNamespace,
     NamespaceSet as AbcNamespaceSet,
@@ -135,7 +137,7 @@ impl<'gc> Namespace<'gc> {
 /// `QName`. All other forms of names and multinames are either versions of
 /// `QName` with unspecified parameters, or multiple names to be checked in
 /// order.
-#[derive(Clone, Copy, Collect, Debug, Hash)]
+#[derive(Clone, Copy, Collect, Hash)]
 #[collect(no_drop)]
 pub struct QName<'gc> {
     ns: Namespace<'gc>,
@@ -222,14 +224,32 @@ impl<'gc> QName<'gc> {
 
     /// Converts this `QName` to a fully qualified name.
     pub fn to_qualified_name(self, mc: MutationContext<'gc, '_>) -> AvmString<'gc> {
+        match self.to_qualified_name_no_mc() {
+            Either::Left(avm_string) => avm_string,
+            Either::Right(wstring) => AvmString::new(mc, wstring),
+        }
+    }
+
+    /// Like `to_qualified_name`, but avoids the need for a `MutationContext`
+    /// by returning `Either::Right(wstring)` when it would otherwise
+    /// be necessary to allocate a new `AvmString`.
+    ///
+    /// This method is intended for contexts like `Debug` impls where
+    /// a `MutationContext` is not available. Normally, you should
+    /// use `to_qualified_name`
+    pub fn to_qualified_name_no_mc(self) -> Either<AvmString<'gc>, WString> {
         let uri = self.namespace().as_uri();
         let name = self.local_name();
-        uri.is_empty().then_some(name).unwrap_or_else(|| {
-            let mut buf = WString::from(uri.as_wstr());
-            buf.push_str(WStr::from_units(b"::"));
-            buf.push_str(&name);
-            AvmString::new(mc, buf)
-        })
+        if uri.is_empty() {
+            Either::Left(name)
+        } else {
+            Either::Right({
+                let mut buf = WString::from(uri.as_wstr());
+                buf.push_str(WStr::from_units(b"::"));
+                buf.push_str(&name);
+                buf
+            })
+        }
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
@@ -261,6 +281,15 @@ impl<'gc> QName<'gc> {
         uri.push_str(WStr::from_units(b"::"));
         uri.push_str(&self.name);
         AvmString::new(mc, uri)
+    }
+}
+
+impl<'gc> Debug for QName<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self.to_qualified_name_no_mc() {
+            Either::Left(name) => write!(f, "{}", name),
+            Either::Right(name) => write!(f, "{}", name),
+        }
     }
 }
 
