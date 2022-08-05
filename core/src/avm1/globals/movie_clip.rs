@@ -1246,9 +1246,9 @@ pub fn get_url<'gc>(
         }
 
         let window = if let Some(window) = args.get(1) {
-            Some(window.coerce_to_string(activation)?.to_string())
+            window.coerce_to_string(activation)?.to_string()
         } else {
-            None
+            "".into()
         };
 
         let method = match args.get(2) {

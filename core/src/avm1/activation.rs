@@ -1183,7 +1183,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             self.context
                 .navigator
-                .navigate_to_url(url.to_owned(), Some(target.into_owned()), None);
+                .navigate_to_url(url.to_owned(), target.into_owned(), None);
         }
 
         Ok(FrameControl::Continue)
@@ -1311,7 +1311,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
         self.context
             .navigator
-            .navigate_to_url(url.to_string(), Some(target.to_string()), vars);
+            .navigate_to_url(url.to_string(), target.to_string(), vars);
 
         Ok(FrameControl::Continue)
     }

@@ -125,8 +125,8 @@ pub trait NavigatorBackend {
     /// be meaningful for all environments: for example, `javascript:` URLs may
     /// not be executable in a desktop context.
     ///
-    /// The `window` parameter, if provided, should be treated identically to
-    /// the `window` parameter on an HTML `<a>nchor` tag.
+    /// The `target` parameter, should be treated identically to the `target`
+    /// parameter on an HTML `<a>nchor` tag.
     ///
     /// This function may be used to send variables to an eligible target. If
     /// desired, the `vars_method` will be specified with a suitable
@@ -144,7 +144,7 @@ pub trait NavigatorBackend {
     fn navigate_to_url(
         &self,
         url: String,
-        window: Option<String>,
+        target: String,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
 
@@ -285,7 +285,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     fn navigate_to_url(
         &self,
         _url: String,
-        _window: Option<String>,
+        _target: String,
         _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
     }
