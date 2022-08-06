@@ -106,6 +106,8 @@ impl<'gc> ScriptObject<'gc> {
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
     pub fn catch_scope(mc: MutationContext<'gc, '_>, qname: &QName<'gc>) -> Object<'gc> {
+        // TODO: use a proper ClassObject here; purposefully crafted bytecode
+        // can observe (the lack of) it.
         let mut base = ScriptObjectData::custom_new(None, None);
         let vt = VTable::newcatch(mc, &qname);
         base.set_vtable(vt);
