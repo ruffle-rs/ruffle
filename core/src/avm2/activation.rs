@@ -794,6 +794,39 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         }
     }
 
+    /// If a local exception handler exists for the error, use it to handle
+    /// the error. Otherwise pass the error down the stack.
+    fn handle_err<'b>(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        reader: &mut Reader<'b>,
+        full_data: &'b [u8],
+        instruction_start: usize,
+        error: Error,
+    ) -> Result<FrameControl<'gc>, Error> {
+        if let Some(body) = method.body() {
+            for e in body.exceptions.iter() {
+                if instruction_start >= e.from_offset as usize
+                    && instruction_start < e.to_offset as usize
+                    && e.type_name.0 == 0
+                // Currently we support only typeless catch clauses
+                {
+                    // Emulate pushing the exception object
+                    let ws = WString::from_utf8_owned(error.to_string());
+                    let exception = AvmString::new(self.context.gc_context, ws);
+                    self.context.avm2.push(exception);
+
+                    self.scope_stack.clear();
+                    reader.seek_absolute(full_data, e.target_offset as usize);
+                    return Ok(FrameControl::Continue);
+                }
+            }
+        }
+
+        log::error!("AVM2 error: {}", error);
+        Err(error)
+    }
+
     /// Run a single action from a given action reader.
     fn do_next_opcode<'b>(
         &mut self,
@@ -1001,27 +1034,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             };
 
             if let Err(error) = result {
-                if let Some(body) = method.body() {
-                    for e in body.exceptions.iter() {
-                        if instruction_start >= e.from_offset as usize
-                            && instruction_start < e.to_offset as usize
-                            && e.type_name.0 == 0
-                        // Currently we support only typeless catch clauses
-                        {
-                            // Emulate pushing the exception object
-                            let ws = WString::from_utf8_owned(error.to_string());
-                            let exception = AvmString::new(self.context.gc_context, ws);
-                            self.context.avm2.push(exception);
-
-                            self.scope_stack.clear();
-                            reader.seek_absolute(full_data, e.target_offset as usize);
-                            return Ok(FrameControl::Continue);
-                        }
-                    }
-                }
-
-                log::error!("AVM2 error: {}", error);
-                return Err(error);
+                return self.handle_err(method, reader, &full_data, instruction_start, error);
             }
             result
         } else if let Err(e) = op {
