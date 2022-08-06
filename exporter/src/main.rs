@@ -193,11 +193,11 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
     let progress = if !opt.silent {
         let progress = ProgressBar::new(opt.frames as u64);
         progress.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-                )
-                .progress_chars("##-"),
+            ProgressStyle::with_template(
+                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
+            )
+            .unwrap()
+            .progress_chars("##-"),
         );
         Some(progress)
     } else {
@@ -259,11 +259,11 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
     let progress = if !opt.silent {
         let progress = ProgressBar::new((files.len() as u64) * (opt.frames as u64));
         progress.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-                )
-                .progress_chars("##-"),
+            ProgressStyle::with_template(
+                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
+            )
+            .unwrap()
+            .progress_chars("##-"),
         );
         Some(progress)
     } else {
