@@ -116,33 +116,29 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
 pub fn scan_main(opt: ScanOpt) -> Result<(), std::io::Error> {
     let binary_path = env::current_exe()?;
     let to_scan = find_files(&opt.input_path, &opt.ignore);
-    let total = to_scan.len() as u64;
-    let progress = ProgressBar::new(total);
     let mut writer = csv::Writer::from_path(opt.output_path.clone())?;
 
+    let progress = ProgressBar::new(to_scan.len() as u64);
     progress.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-            )
-            .progress_chars("##-"),
+        ProgressStyle::with_template(
+            "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
+        )
+        .unwrap()
+        .progress_chars("##-"),
     );
-
-    let input_path = opt.input_path;
-    let closure_progress = progress;
 
     let result_iter = to_scan
         .into_par_iter()
         .map(move |file| {
             let name = file
                 .path()
-                .strip_prefix(&input_path)
+                .strip_prefix(&opt.input_path)
                 .unwrap_or_else(|_| file.path())
                 .to_slash_lossy();
             let result = scan_file(&binary_path, &file, &name);
 
-            closure_progress.inc(1);
-            closure_progress.set_message(name.into_owned());
+            progress.inc(1);
+            progress.set_message(name.into_owned());
 
             result
         })
