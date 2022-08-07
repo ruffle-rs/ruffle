@@ -8,6 +8,7 @@ use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::{wgpu, Descriptors, WgpuRenderBackend};
 use std::error::Error;
 use std::fs::create_dir_all;
+use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
@@ -116,16 +117,24 @@ fn take_screenshot(
         }
         player.lock().unwrap().run_frame();
         if i >= skipframes {
-            player.lock().unwrap().render();
-            let mut player = player.lock().unwrap();
-            let renderer = player
-                .renderer_mut()
-                .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
-                .unwrap();
-            if let Some(image) = renderer.capture_frame() {
-                result.push(image);
-            } else {
-                return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into());
+            match catch_unwind(|| {
+                player.lock().unwrap().render();
+                let mut player = player.lock().unwrap();
+                let renderer = player
+                    .renderer_mut()
+                    .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
+                    .unwrap();
+                renderer.capture_frame()
+            }) {
+                Ok(Some(image)) => result.push(image),
+                Ok(None) => {
+                    return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into())
+                }
+                Err(e) => {
+                    return Err(
+                        format!("Unable to capture frame {} of {:?}: {:?}", i, swf_path, e).into(),
+                    )
+                }
             }
         }
 
