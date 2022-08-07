@@ -192,6 +192,7 @@ pub struct Player {
     gc_arena: GcArena,
 
     frame_rate: f64,
+    actions_since_timeout_check: u16,
 
     /// A time budget for executing frames.
     /// Gained by passage of time between host frames, spent by executing SWF frames.
@@ -1515,6 +1516,7 @@ impl Player {
                 time_offset: &mut self.time_offset,
                 audio_manager,
                 frame_rate: &mut self.frame_rate,
+                actions_since_timeout_check: &mut self.actions_since_timeout_check,
             };
 
             let old_frame_rate = *update_context.frame_rate;
@@ -1870,6 +1872,7 @@ impl PlayerBuilder {
                 time_offset: 0,
                 time_til_next_timer: None,
                 max_execution_duration: self.max_execution_duration,
+                actions_since_timeout_check: 0,
 
                 // Input
                 input: Default::default(),

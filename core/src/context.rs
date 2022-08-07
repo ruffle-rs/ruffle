@@ -166,6 +166,9 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The current stage frame rate.
     pub frame_rate: &'a mut f64,
+
+    /// Amount of actions performed since the last timeout check
+    pub actions_since_timeout_check: &'a mut u16,
 }
 
 /// Convenience methods for controlling audio.
@@ -324,6 +327,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
             times_get_time_called: self.times_get_time_called,
             time_offset: self.time_offset,
             frame_rate: self.frame_rate,
+            actions_since_timeout_check: self.actions_since_timeout_check,
         }
     }
 
