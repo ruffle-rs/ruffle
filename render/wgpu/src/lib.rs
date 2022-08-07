@@ -42,7 +42,7 @@ pub struct Descriptors {
     pub surface_format: wgpu::TextureFormat,
     frame_buffer_format: wgpu::TextureFormat,
     queue: wgpu::Queue,
-    globals: Globals,
+    globals_layout: wgpu::BindGroupLayout,
     uniform_buffers: UniformBuffer<Transforms>,
     pipelines: Pipelines,
     bitmap_samplers: BitmapSamplers,
@@ -60,7 +60,6 @@ impl Descriptors {
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
         let bitmap_samplers = BitmapSamplers::new(&device);
-        let globals = Globals::new(&device);
         let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
         let uniform_buffer_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -104,13 +103,28 @@ impl Descriptors {
             _ => surface_format,
         };
 
+        let globals_layout_label = create_debug_label!("Globals bind group layout");
+        let globals_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: globals_layout_label.as_deref(),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
         let pipelines = Pipelines::new(
             &device,
             surface_format,
             frame_buffer_format,
             msaa_sample_count,
             bitmap_samplers.layout(),
-            globals.layout(),
+            &globals_layout,
             uniform_buffers.layout(),
         )?;
 
@@ -121,7 +135,7 @@ impl Descriptors {
             surface_format,
             frame_buffer_format,
             queue,
-            globals,
+            globals_layout,
             uniform_buffers,
             pipelines,
             bitmap_samplers,
@@ -132,6 +146,7 @@ impl Descriptors {
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Descriptors,
+    globals: Globals,
     target: T,
     frame_buffer_view: Option<wgpu::TextureView>,
     depth_texture_view: wgpu::TextureView,
@@ -392,7 +407,7 @@ impl WgpuRenderBackend<target::TextureTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(mut descriptors: Descriptors, target: T) -> Result<Self, Error> {
+    pub fn new(descriptors: Descriptors, target: T) -> Result<Self, Error> {
         let extent = wgpu::Extent3d {
             width: target.width(),
             height: target.height(),
@@ -469,12 +484,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             (None, None)
         };
 
-        descriptors
-            .globals
-            .set_resolution(target.width(), target.height());
+        let mut globals = Globals::new(&descriptors.device, &descriptors.globals_layout);
+        globals.set_resolution(target.width(), target.height());
 
         Ok(Self {
             descriptors,
+            globals,
             target,
             frame_buffer_view,
             depth_texture_view,
@@ -847,7 +862,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             (None, None)
         };
 
-        self.descriptors.globals.set_resolution(width, height);
+        self.globals.set_resolution(width, height);
     }
 
     fn register_shape(
@@ -917,8 +932,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 });
         let mut frame_data = Box::new((draw_encoder, frame_output, uniform_encoder));
 
-        self.descriptors
-            .globals
+        self.globals
             .update_uniform(&self.descriptors.device, &mut frame_data.0);
 
         // Use intermediate render targets when resolving MSAA or copying from linear-to-sRGB texture.
@@ -1007,7 +1021,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             );
             frame
                 .render_pass
-                .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+                .set_bind_group(0, self.globals.bind_group(), &[]);
 
             self.descriptors.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
@@ -1076,7 +1090,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         frame
             .render_pass
-            .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+            .set_bind_group(0, self.globals.bind_group(), &[]);
 
         self.descriptors.uniform_buffers.write_uniforms(
             &self.descriptors.device,
@@ -1202,7 +1216,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         frame
             .render_pass
-            .set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+            .set_bind_group(0, self.globals.bind_group(), &[]);
 
         self.descriptors.uniform_buffers.write_uniforms(
             &self.descriptors.device,
@@ -1271,7 +1285,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 });
 
                 render_pass.set_pipeline(&self.descriptors.pipelines.copy_srgb_pipeline);
-                render_pass.set_bind_group(0, self.descriptors.globals.bind_group(), &[]);
+                render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
                 self.descriptors.uniform_buffers.write_uniforms(
                     &self.descriptors.device,
                     &mut uniform_encoder,
