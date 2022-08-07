@@ -229,9 +229,6 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
-    /// Amount of actions performed since the last timeout check
-    actions_since_timeout_check: u16,
-
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
@@ -274,7 +271,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this,
             callee,
             local_registers: None,
-            actions_since_timeout_check: 0,
         }
     }
 
@@ -298,7 +294,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: self.this,
             callee: self.callee,
             local_registers: self.local_registers,
-            actions_since_timeout_check: 0,
         }
     }
 
@@ -333,7 +328,6 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             this: globals.into(),
             callee: None,
             local_registers: None,
-            actions_since_timeout_check: 0,
         }
     }
 
@@ -445,9 +439,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         data: &'b SwfSlice,
         reader: &mut Reader<'b>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.actions_since_timeout_check += 1;
-        if self.actions_since_timeout_check >= 2000 {
-            self.actions_since_timeout_check = 0;
+        *self.context.actions_since_timeout_check += 1;
+        if *self.context.actions_since_timeout_check >= 2000 {
+            *self.context.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
                 return Err(Error::ExecutionTimeout);
             }
