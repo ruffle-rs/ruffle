@@ -274,15 +274,6 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     };
 
     files.par_iter().try_for_each(|file| -> Result<()> {
-        let frames = take_screenshot(
-            descriptors.clone(),
-            file.path(),
-            opt.frames,
-            opt.skipframes,
-            &progress,
-            opt.size,
-        )?;
-
         if let Some(progress) = &progress {
             progress.set_message(
                 file.path()
@@ -292,30 +283,38 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                     .into_owned(),
             );
         }
+        if let Ok(frames) = take_screenshot(
+            descriptors.clone(),
+            file.path(),
+            opt.frames,
+            opt.skipframes,
+            &progress,
+            opt.size,
+        ) {
+            let mut relative_path = file
+                .path()
+                .strip_prefix(&opt.swf)
+                .unwrap_or_else(|_| file.path())
+                .to_path_buf();
 
-        let mut relative_path = file
-            .path()
-            .strip_prefix(&opt.swf)
-            .unwrap_or_else(|_| file.path())
-            .to_path_buf();
-
-        if frames.len() == 1 {
-            let mut destination: PathBuf = (&output).into();
-            relative_path.set_extension("png");
-            destination.push(relative_path);
-            if let Some(parent) = destination.parent() {
-                let _ = create_dir_all(parent);
-            }
-            frames.get(0).unwrap().save(&destination)?;
-        } else {
-            let mut parent: PathBuf = (&output).into();
-            relative_path.set_extension("");
-            parent.push(&relative_path);
-            let _ = create_dir_all(&parent);
-            for (frame, image) in frames.iter().enumerate() {
-                let mut destination = parent.clone();
-                destination.push(format!("{}.png", frame));
-                image.save(&destination)?;
+            if frames.len() == 1 {
+                let mut destination: PathBuf = (&output).into();
+                relative_path.set_extension("png");
+                destination.push(relative_path);
+                if let Some(parent) = destination.parent() {
+                    let _ = create_dir_all(parent);
+                }
+                frames.get(0).unwrap().save(&destination)?;
+            } else {
+                let mut parent: PathBuf = (&output).into();
+                relative_path.set_extension("");
+                parent.push(&relative_path);
+                let _ = create_dir_all(&parent);
+                for (frame, image) in frames.iter().enumerate() {
+                    let mut destination = parent.clone();
+                    destination.push(format!("{}.png", frame));
+                    image.save(&destination)?;
+                }
             }
         }
 
