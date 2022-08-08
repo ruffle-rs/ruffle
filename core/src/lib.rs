@@ -40,7 +40,7 @@ pub mod tag_utils;
 pub mod timer;
 mod transform;
 mod types;
-mod vminterface;
+pub mod vminterface;
 mod xml;
 
 pub mod backend;
