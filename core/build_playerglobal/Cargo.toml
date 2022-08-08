@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 convert_case = "0.5.0"
 proc-macro2 = "1.0.42"
-quote = "1.0.20"
+quote = "1.0.21"
 swf = { path = "../../swf" }
