@@ -43,7 +43,7 @@ pub struct Descriptors {
     frame_buffer_format: wgpu::TextureFormat,
     queue: wgpu::Queue,
     globals_layout: wgpu::BindGroupLayout,
-    uniform_buffers: UniformBuffer<Transforms>,
+    uniform_buffers_layout: wgpu::BindGroupLayout,
     pipelines: Pipelines,
     bitmap_samplers: BitmapSamplers,
     msaa_sample_count: u32,
@@ -61,7 +61,7 @@ impl Descriptors {
         let msaa_sample_count = 4;
         let bitmap_samplers = BitmapSamplers::new(&device);
         let uniform_buffer_layout_label = create_debug_label!("Uniform buffer bind group layout");
-        let uniform_buffer_layout =
+        let uniform_buffers_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -75,10 +75,6 @@ impl Descriptors {
                 }],
                 label: uniform_buffer_layout_label.as_deref(),
             });
-        let uniform_buffers = UniformBuffer::new(
-            uniform_buffer_layout,
-            limits.min_uniform_buffer_offset_alignment,
-        );
 
         // We want to render directly onto a linear render target to avoid any gamma correction.
         // If our surface is sRGB, render to a linear texture and than copy over to the surface.
@@ -125,7 +121,7 @@ impl Descriptors {
             msaa_sample_count,
             bitmap_samplers.layout(),
             &globals_layout,
-            uniform_buffers.layout(),
+            &uniform_buffers_layout,
         )?;
 
         Ok(Self {
@@ -136,7 +132,7 @@ impl Descriptors {
             frame_buffer_format,
             queue,
             globals_layout,
-            uniform_buffers,
+            uniform_buffers_layout,
             pipelines,
             bitmap_samplers,
             msaa_sample_count,
@@ -147,6 +143,7 @@ impl Descriptors {
 pub struct WgpuRenderBackend<T: RenderTarget> {
     descriptors: Descriptors,
     globals: Globals,
+    uniform_buffers: UniformBuffer<Transforms>,
     target: T,
     frame_buffer_view: Option<wgpu::TextureView>,
     depth_texture_view: wgpu::TextureView,
@@ -487,9 +484,13 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let mut globals = Globals::new(&descriptors.device, &descriptors.globals_layout);
         globals.set_resolution(target.width(), target.height());
 
+        let uniform_buffers =
+            UniformBuffer::new(descriptors.limits.min_uniform_buffer_offset_alignment);
+
         Ok(Self {
             descriptors,
             globals,
+            uniform_buffers,
             target,
             frame_buffer_view,
             depth_texture_view,
@@ -900,7 +901,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn begin_frame(&mut self, clear: Color) {
         self.mask_state = MaskState::NoMask;
         self.num_masks = 0;
-        self.descriptors.uniform_buffers.reset();
+        self.uniform_buffers.reset();
 
         let frame_output = match self.target.get_next_texture() {
             Ok(frame) => frame,
@@ -1023,8 +1024,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 .render_pass
                 .set_bind_group(0, self.globals.bind_group(), &[]);
 
-            self.descriptors.uniform_buffers.write_uniforms(
+            self.uniform_buffers.write_uniforms(
                 &self.descriptors.device,
+                &self.descriptors.uniform_buffers_layout,
                 &mut frame.frame_data.2,
                 &mut frame.render_pass,
                 1,
@@ -1092,8 +1094,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .render_pass
             .set_bind_group(0, self.globals.bind_group(), &[]);
 
-        self.descriptors.uniform_buffers.write_uniforms(
+        self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
+            &self.descriptors.uniform_buffers_layout,
             &mut frame.frame_data.2,
             &mut frame.render_pass,
             1,
@@ -1218,8 +1221,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .render_pass
             .set_bind_group(0, self.globals.bind_group(), &[]);
 
-        self.descriptors.uniform_buffers.write_uniforms(
+        self.uniform_buffers.write_uniforms(
             &self.descriptors.device,
+            &self.descriptors.uniform_buffers_layout,
             &mut frame.frame_data.2,
             &mut frame.render_pass,
             1,
@@ -1286,8 +1290,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
                 render_pass.set_pipeline(&self.descriptors.pipelines.copy_srgb_pipeline);
                 render_pass.set_bind_group(0, self.globals.bind_group(), &[]);
-                self.descriptors.uniform_buffers.write_uniforms(
+                self.uniform_buffers.write_uniforms(
                     &self.descriptors.device,
+                    &self.descriptors.uniform_buffers_layout,
                     &mut uniform_encoder,
                     &mut render_pass,
                     1,
@@ -1325,7 +1330,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 vec![uniform_encoder.finish(), draw_encoder.finish()]
             };
 
-            self.descriptors.uniform_buffers.finish();
+            self.uniform_buffers.finish();
             self.target.submit(
                 &self.descriptors.device,
                 &self.descriptors.queue,

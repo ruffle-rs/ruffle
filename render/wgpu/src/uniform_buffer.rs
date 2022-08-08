@@ -7,7 +7,6 @@ use wgpu::util::StagingBelt;
 /// the upload of uniform data to the GPU.
 pub struct UniformBuffer<T: Pod> {
     blocks: Vec<Block>,
-    buffer_layout: wgpu::BindGroupLayout,
     staging_belt: StagingBelt,
     aligned_uniforms_size: u32,
     cur_block: usize,
@@ -25,25 +24,19 @@ impl<T: Pod> UniformBuffer<T> {
     const UNIFORMS_SIZE: u64 = mem::size_of::<T>() as u64;
 
     /// Creates a new `UniformBuffer` with the given uniform layout.
-    pub fn new(buffer_layout: wgpu::BindGroupLayout, uniform_alignment: u32) -> Self {
+    pub fn new(uniform_alignment: u32) -> Self {
         // Calculate alignment of uniforms.
         let align_mask = uniform_alignment - 1;
         let aligned_uniforms_size = (Self::UNIFORMS_SIZE as u32 + align_mask) & !align_mask;
 
         Self {
             blocks: Vec::with_capacity(8),
-            buffer_layout,
             staging_belt: StagingBelt::new(u64::from(Self::BLOCK_SIZE) / 2),
             aligned_uniforms_size,
             cur_block: 0,
             cur_offset: 0,
             _phantom: PhantomData,
         }
-    }
-
-    /// Returns the bind group layout for the uniforms in this buffer.
-    pub fn layout(&self) -> &wgpu::BindGroupLayout {
-        &self.buffer_layout
     }
 
     /// Resets the buffer and staging belt.
@@ -59,6 +52,7 @@ impl<T: Pod> UniformBuffer<T> {
     pub fn write_uniforms<'a>(
         &'a mut self,
         device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
         command_encoder: &mut wgpu::CommandEncoder,
         render_pass: &mut wgpu::RenderPass<'a>,
         bind_group_index: u32,
@@ -66,7 +60,7 @@ impl<T: Pod> UniformBuffer<T> {
     ) {
         // Allocate a new block if we've exceeded our capacity.
         if self.cur_block >= self.blocks.len() {
-            self.allocate_block(device);
+            self.allocate_block(device, layout);
         }
         let block = &self.blocks[self.cur_block];
 
@@ -99,7 +93,7 @@ impl<T: Pod> UniformBuffer<T> {
     }
 
     /// Adds a newly allocated buffer to the block list, and returns it.
-    fn allocate_block(&mut self, device: &wgpu::Device) -> &Block {
+    fn allocate_block(&mut self, device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> &Block {
         let buffer_label = create_debug_label!("Dynamic buffer");
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: buffer_label.as_deref(),
@@ -111,7 +105,7 @@ impl<T: Pod> UniformBuffer<T> {
         let bind_group_label = create_debug_label!("Dynamic buffer bind group");
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: bind_group_label.as_deref(),
-            layout: &self.buffer_layout,
+            layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
