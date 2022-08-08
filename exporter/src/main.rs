@@ -4,6 +4,7 @@ use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::vminterface::AvmType;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
@@ -73,6 +74,10 @@ struct Opt {
     #[clap(long, value_parser)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<PathBuf>,
+
+    /// Skip unsupported movie types (currently AVM 2)
+    #[clap(long, action)]
+    skip_unsupported: bool,
 }
 
 fn take_screenshot(
@@ -82,8 +87,13 @@ fn take_screenshot(
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
+    skip_unsupported: bool,
 ) -> Result<Vec<RgbaImage>> {
     let movie = SwfMovie::from_path(&swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+
+    if movie.avm_type() == AvmType::Avm2 && skip_unsupported {
+        return Err(anyhow!("Skipping unsupported movie"));
+    }
 
     let width = size
         .width
@@ -214,6 +224,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         opt.skipframes,
         &progress,
         opt.size,
+        opt.skip_unsupported,
     )?;
 
     if let Some(progress) = &progress {
@@ -290,6 +301,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
             opt.skipframes,
             &progress,
             opt.size,
+            opt.skip_unsupported,
         ) {
             let mut relative_path = file
                 .path()
