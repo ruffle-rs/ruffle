@@ -1232,7 +1232,7 @@ fn run_swf(
         );
 
         builder = builder
-            .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
+            .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)
             .with_software_video();
     };
 
