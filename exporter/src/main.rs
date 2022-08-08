@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -6,7 +7,6 @@ use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::{wgpu, Descriptors, WgpuRenderBackend};
-use std::error::Error;
 use std::fs::create_dir_all;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
@@ -81,8 +81,8 @@ fn take_screenshot(
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
-) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
-    let movie = SwfMovie::from_path(&swf_path, None)?;
+) -> Result<Vec<RgbaImage>> {
+    let movie = SwfMovie::from_path(&swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
     let width = size
         .width
@@ -98,7 +98,9 @@ fn take_screenshot(
 
     let target = TextureTarget::new(&descriptors.device, (width, height));
     let player = PlayerBuilder::new()
-        .with_renderer(WgpuRenderBackend::new(descriptors, target)?)
+        .with_renderer(
+            WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
+        )
         .with_software_video()
         .with_movie(movie)
         .with_viewport_dimensions(width, height, size.scale as f64)
@@ -127,13 +129,14 @@ fn take_screenshot(
                 renderer.capture_frame()
             }) {
                 Ok(Some(image)) => result.push(image),
-                Ok(None) => {
-                    return Err(format!("Unable to capture frame {} of {:?}", i, swf_path).into())
-                }
+                Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
                 Err(e) => {
-                    return Err(
-                        format!("Unable to capture frame {} of {:?}: {:?}", i, swf_path, e).into(),
-                    )
+                    return Err(anyhow!(
+                        "Unable to capture frame {} of {:?}: {:?}",
+                        i,
+                        swf_path,
+                        e
+                    ))
                 }
             }
         }
@@ -175,7 +178,7 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
-fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
@@ -251,7 +254,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<(), Bo
 }
 
 #[allow(clippy::branches_sharing_code)]
-fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
@@ -355,25 +358,28 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
-    let descriptors = Arc::new(futures::executor::block_on(WgpuRenderBackend::<
-        TextureTarget,
-    >::build_descriptors(
-        opt.graphics.into(),
-        instance,
-        None,
-        opt.power.into(),
-        trace_path(&opt),
-    ))?);
+    let descriptors = Arc::new(
+        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
+            opt.graphics.into(),
+            instance,
+            None,
+            opt.power.into(),
+            trace_path(&opt),
+        ))
+        .map_err(|e| anyhow!(e.to_string()))?,
+    );
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;
     } else if opt.output_path.is_some() {
         capture_multiple_swfs(descriptors, &opt)?;
     } else {
-        return Err("Output directory is required when exporting multiple files.".into());
+        return Err(anyhow!(
+            "Output directory is required when exporting multiple files."
+        ));
     }
 
     Ok(())
