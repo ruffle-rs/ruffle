@@ -75,13 +75,13 @@ struct Opt {
 }
 
 fn take_screenshot(
-    descriptors: Descriptors,
+    descriptors: Arc<Descriptors>,
     swf_path: &Path,
     frames: u32,
     skipframes: u32,
     progress: &Option<ProgressBar>,
     size: SizeOpt,
-) -> Result<(Descriptors, Vec<RgbaImage>), Box<dyn std::error::Error>> {
+) -> Result<Vec<RgbaImage>, Box<dyn std::error::Error>> {
     let movie = SwfMovie::from_path(&swf_path, None)?;
 
     let width = size
@@ -142,17 +142,7 @@ fn take_screenshot(
             progress.inc(1);
         }
     }
-
-    let descriptors = Arc::try_unwrap(player)
-        .ok()
-        .unwrap()
-        .into_inner()?
-        .destroy()
-        .downcast::<WgpuRenderBackend<TextureTarget>>()
-        .ok()
-        .unwrap()
-        .descriptors();
-    Ok((descriptors, result))
+    Ok(result)
 }
 
 fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
@@ -185,7 +175,7 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
-fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
         result.set_file_name(opt.swf.file_stem().unwrap());
@@ -213,7 +203,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
         None
     };
 
-    let (_, frames) = take_screenshot(
+    let frames = take_screenshot(
         descriptors,
         &opt.swf,
         opt.frames,
@@ -261,7 +251,7 @@ fn capture_single_swf(descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn
 }
 
 #[allow(clippy::branches_sharing_code)]
-fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), Box<dyn Error>> {
+fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<(), Box<dyn Error>> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
@@ -280,15 +270,14 @@ fn capture_multiple_swfs(mut descriptors: Descriptors, opt: &Opt) -> Result<(), 
     };
 
     for file in &files {
-        let (new_descriptors, frames) = take_screenshot(
-            descriptors,
+        let frames = take_screenshot(
+            descriptors.clone(),
             file.path(),
             opt.frames,
             opt.skipframes,
             &progress,
             opt.size,
         )?;
-        descriptors = new_descriptors;
 
         if let Some(progress) = &progress {
             progress.set_message(
@@ -369,14 +358,15 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 fn main() -> Result<(), Box<dyn Error>> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
-    let descriptors =
-        futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
-            opt.graphics.into(),
-            instance,
-            None,
-            opt.power.into(),
-            trace_path(&opt),
-        ))?;
+    let descriptors = Arc::new(futures::executor::block_on(WgpuRenderBackend::<
+        TextureTarget,
+    >::build_descriptors(
+        opt.graphics.into(),
+        instance,
+        None,
+        opt.power.into(),
+        trace_path(&opt),
+    ))?);
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

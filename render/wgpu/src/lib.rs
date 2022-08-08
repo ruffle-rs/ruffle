@@ -19,6 +19,7 @@ use ruffle_render_common_tess::{
 };
 use std::num::NonZeroU32;
 use std::path::Path;
+use std::sync::Arc;
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
@@ -141,7 +142,7 @@ impl Descriptors {
 }
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
-    descriptors: Descriptors,
+    descriptors: Arc<Descriptors>,
     globals: Globals,
     uniform_buffers: UniformBuffer<Transforms>,
     target: T,
@@ -336,7 +337,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             (1, 1),
             &descriptors.device,
         );
-        Self::new(descriptors, target)
+        Self::new(Arc::new(descriptors), target)
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -368,7 +369,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             size,
             &descriptors.device,
         );
-        Self::new(descriptors, target)
+        Self::new(Arc::new(descriptors), target)
     }
 }
 
@@ -395,7 +396,7 @@ impl WgpuRenderBackend<target::TextureTarget> {
             trace_path,
         ))?;
         let target = target::TextureTarget::new(&descriptors.device, size);
-        Self::new(descriptors, target)
+        Self::new(Arc::new(descriptors), target)
     }
 
     pub fn capture_frame(&self) -> Option<image::RgbaImage> {
@@ -404,7 +405,7 @@ impl WgpuRenderBackend<target::TextureTarget> {
 }
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
-    pub fn new(descriptors: Descriptors, target: T) -> Result<Self, Error> {
+    pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
         let extent = wgpu::Extent3d {
             width: target.width(),
             height: target.height(),
@@ -566,10 +567,6 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
         Descriptors::new(device, queue, info, surface_format)
-    }
-
-    pub fn descriptors(self) -> Descriptors {
-        self.descriptors
     }
 
     fn register_shape_internal(
