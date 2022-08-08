@@ -133,7 +133,7 @@ impl AudioBackend for NullAudioBackend {
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let data = if sound.format.compression == swf::AudioCompression::Mp3 {
-            &sound.data[2..]
+            sound.data.get(2..).ok_or("MP3 sound is too short")?
         } else {
             sound.data
         };
