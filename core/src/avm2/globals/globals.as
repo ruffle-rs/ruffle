@@ -41,16 +41,77 @@ include "flash/display/TriangleCulling.as"
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
 include "flash/events/TextEvent.as"
-include "flash/events/ErrorEvent.as"
-include "flash/events/IOErrorEvent.as"
-include "flash/events/SecurityErrorEvent.as"
 include "flash/events/ActivityEvent.as"
-include "flash/events/ContextMenuEvent.as"
-include "flash/events/TimerEvent.as"
-include "flash/events/FullScreenEvent.as"
-include "flash/events/ProgressEvent.as"
+include "flash/events/ErrorEvent.as"
+include "flash/events/GestureEvent.as"
 include "flash/events/MouseEvent.as"
+include "flash/events/AccelerometerEvent.as"
+include "flash/events/AsyncErrorEvent.as"
+include "flash/events/AudioOutputChangeEvent.as"
+include "flash/events/AVDictionaryDataEvent.as"
+include "flash/events/AVHTTPStatusEvent.as"
+include "flash/events/AVPauseAtPeriodEndEvent.as"
+include "flash/events/BrowserInvokeEvent.as"
+include "flash/events/ContextMenuEvent.as"
+include "flash/events/DataEvent.as"
+include "flash/events/DatagramSocketDataEvent.as"
+include "flash/events/DeviceRotationEvent.as"
+include "flash/events/DNSResolverEvent.as"
+// include "flash/events/DRMAuthenticateEvent.as" Unknown Type - NetStream
+include "flash/events/DRMAuthenticationCompleteEvent.as"
+include "flash/events/DRMAuthenticationErrorEvent.as"
+// include "flash/events/DRMDeviceGroupErrorEvent.as" Unknown Type - DRMDeviceGroup
+// include "flash/events/DRMDeviceGroupEvent.as" Unknown Type - DRMDeviceGroup
+// include "flash/events/DRMErrorEvent.as" Unknown Type - DRMContentData
+include "flash/events/DRMLicenseRequestEvent.as"
+// include "flash/events/DRMMetadataEvent.as" Unknown Type - DRMContentData
+include "flash/events/DRMReturnVoucherCompleteEvent.as"
+include "flash/events/DRMReturnVoucherErrorEvent.as"
+// include "flash/events/DRMStatusEvent.as" Unknown Types - DRMContentData, DRMVoucher
+include "flash/events/FileListEvent.as"
+include "flash/events/FocusEvent.as"
+include "flash/events/FullScreenEvent.as"
+// include "flash/events/GameInputEvent.as" Unknown Type - GameInputDevice
+include "flash/events/GeolocationEvent.as"
+include "flash/events/HTTPStatusEvent.as"
+// include "flash/events/IMEEvent.as" Unknown Type - IIMEClient
+// include "flash/events/InvokeEvent.as" Unknown Type - File
+include "flash/events/IOErrorEvent.as"
 include "flash/events/KeyboardEvent.as"
+include "flash/events/LocationChangeEvent.as"
+// include "flash/events/MediaEvent.as" Unknown Type - MediaPromise
+include "flash/events/MouseEvent.as"
+// include "flash/events/NativeProcessExitEvent.as" NaN is unknown
+include "flash/events/NativeWindowBoundsEvent.as"
+include "flash/events/NativeWindowDisplayStateEvent.as"
+include "flash/events/NetDataEvent.as"
+// include "flash/events/NetMonitorEvent.as" Unknown Type - NetStream
+include "flash/events/NetStatusEvent.as"
+include "flash/events/OutputProgressEvent.as"
+include "flash/events/PermissionEvent.as"
+include "flash/events/ProgressEvent.as"
+include "flash/events/RemoteNotificationEvent.as"
+include "flash/events/SampleDataEvent.as"
+include "flash/events/SecurityErrorEvent.as"
+// include "flash/events/ServerSocketConnectEvent.as" Unknown Type - Socket
+include "flash/events/ShaderEvent.as"
+include "flash/events/SoftKeyboardEvent.as"
+// include "flash/events/SQLErrorEvent.as" Unknown Type - SQLError
+include "flash/events/SQLEvent.as"
+include "flash/events/SQLUpdateEvent.as"
+include "flash/events/StageOrientationEvent.as"
+include "flash/events/StageVideoAvailabilityEvent.as"
+include "flash/events/StageVideoEvent.as"
+include "flash/events/StatusEvent.as"
+// include "flash/events/StorageVolumeChangeEvent.as" Unknown Types - StorageVolume, File
+include "flash/events/SyncEvent.as"
+include "flash/events/ThrottleEvent.as"
+include "flash/events/TimerEvent.as"
+// include "flash/events/TouchEvent.as" behavior isn't implmented
+include "flash/events/UncaughtErrorEvent.as"
+include "flash/events/VideoEvent.as"
+include "flash/events/VideoTextureEvent.as"
+include "flash/events/VsyncStateChangeAvailabilityEvent.as"
 include "flash/errors/IllegalOperationError.as"
 include "flash/filters/BitmapFilter.as"
 include "flash/filters/BlurFilter.as"
