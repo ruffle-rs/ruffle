@@ -107,7 +107,8 @@ fn take_screenshot(
         .unwrap_or_else(|| movie.height().to_pixels());
     let height = (height * size.scale).round() as u32;
 
-    let target = TextureTarget::new(&descriptors.device, (width, height));
+    let target = TextureTarget::new(&descriptors.device, (width, height))
+        .map_err(|e| anyhow!(e.to_string()))?;
     let player = PlayerBuilder::new()
         .with_renderer(
             WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,

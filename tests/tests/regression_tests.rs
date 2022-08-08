@@ -1232,7 +1232,7 @@ fn run_swf(
                 movie.width().to_pixels() as u32,
                 movie.height().to_pixels() as u32,
             ),
-        );
+        )?;
 
         builder = builder
             .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)

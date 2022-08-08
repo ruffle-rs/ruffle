@@ -1,5 +1,6 @@
 #[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
+use crate::Error;
 use std::fmt::Debug;
 
 pub trait RenderTargetFrame: Debug {
@@ -130,7 +131,18 @@ impl RenderTargetFrame for TextureTargetFrame {
 
 #[cfg(not(target_family = "wasm"))]
 impl TextureTarget {
-    pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Self {
+    pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Result<Self, Error> {
+        if size.0 > device.limits().max_texture_dimension_2d
+            || size.1 > device.limits().max_texture_dimension_2d
+        {
+            return Err(format!(
+                "Texture target cannot be larger than {}px on either dimension (requested {} x {})",
+                device.limits().max_texture_dimension_2d,
+                size.0,
+                size.1
+            )
+            .into());
+        }
         let buffer_dimensions = BufferDimensions::new(size.0 as usize, size.1 as usize);
         let size = wgpu::Extent3d {
             width: size.0,
@@ -156,13 +168,13 @@ impl TextureTarget {
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
-        Self {
+        Ok(Self {
             size,
             texture,
             format,
             buffer,
             buffer_dimensions,
-        }
+        })
     }
 
     pub fn capture(&self, device: &wgpu::Device) -> Option<image::RgbaImage> {
@@ -204,6 +216,7 @@ impl RenderTarget for TextureTarget {
     type Frame = TextureTargetFrame;
 
     fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
+        // TODO: find a way to bubble an error when the size is too large
         self.size.width = width;
         self.size.height = height;
 
