@@ -4,7 +4,7 @@ use rayon::prelude::*;
 
 /// Parallel-to-serial iterator bridge trait
 ///
-/// Proposed in and copied from https://github.com/rayon-rs/rayon/issues/858
+/// Proposed in and copied from <https://github.com/rayon-rs/rayon/issues/858>
 pub trait SerBridge<T>
 where
     T: Send + 'static,
@@ -24,7 +24,7 @@ where
 
 /// Parallel-to-serial iterator bridge
 ///
-/// Proposed in and copied from https://github.com/rayon-rs/rayon/issues/858
+/// Proposed in and copied from <https://github.com/rayon-rs/rayon/issues/858>
 pub struct SerBridgeImpl<T> {
     rx: crossbeam_channel::Receiver<T>,
 }

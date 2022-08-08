@@ -2,7 +2,7 @@
 //!
 //! These structures are documented in the Adobe SWF File Format Specification
 //! version 19 (henceforth SWF19):
-//! https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf
+//! <https://www.adobe.com/content/dam/acom/en/devnet/pdf/swf-file-format-spec.pdf>
 use crate::string::SwfStr;
 use bitflags::bitflags;
 
@@ -1452,7 +1452,7 @@ pub type JpegTables<'a> = &'a [u8];
 
 /// `ProductInfo` contains information about the software used to generate the SWF.
 /// Not documented in the SWF19 reference. Emitted by mxmlc.
-/// See http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/
+/// See <http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/>
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProductInfo {
     pub product_id: u32,

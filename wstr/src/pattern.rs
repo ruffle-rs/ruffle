@@ -1,4 +1,4 @@
-//! Like [`std::str::Pattern`], but for [`WStr`].
+//! Like [`core::str::pattern::Pattern`], but for [`WStr`].
 
 // TODO: Is performance good? ideas for improvements:
 //  - add some inlines?

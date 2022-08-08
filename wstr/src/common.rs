@@ -671,7 +671,7 @@ macro_rules! __wstr_impl_internal {
 
 /// Implements standard traits for `WStr`-like types.
 ///
-/// This macro requires a pre-existing [`Deref<Target=WStr>`][std::ops::Deref] impl, and will emit
+/// This macro requires a pre-existing [`Deref<Target=WStr>`][core::ops::Deref] impl, and will emit
 /// delegating impls for the following traits:
 ///
 ///   - [`AsRef<WStr>`], [`Borrow<WStr>`][core::borrow::Borrow];
