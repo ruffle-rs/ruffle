@@ -23,8 +23,6 @@ pub struct WebCanvasRenderBackend {
     color_matrix: Element,
     shapes: Vec<ShapeData>,
     bitmaps: FnvHashMap<BitmapHandle, BitmapData>,
-    viewport_width: u32,
-    viewport_height: u32,
     rect: Path2d,
     mask_state: MaskState,
     next_bitmap_handle: BitmapHandle,
@@ -283,8 +281,6 @@ impl WebCanvasRenderBackend {
             context,
             shapes: vec![],
             bitmaps: Default::default(),
-            viewport_width: 0,
-            viewport_height: 0,
             rect,
             mask_state: MaskState::DrawContent,
             next_bitmap_handle: BitmapHandle(0),
@@ -347,10 +343,7 @@ impl WebCanvasRenderBackend {
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
-    fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.viewport_width = width;
-        self.viewport_height = height;
-    }
+    fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
 
     fn register_shape(
         &mut self,
