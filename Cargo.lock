@@ -1224,6 +1224,7 @@ dependencies = [
  "image",
  "indicatif",
  "log",
+ "rayon",
  "ruffle_core",
  "ruffle_render_wgpu",
  "walkdir",

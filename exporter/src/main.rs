@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use clap::Parser;
 use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -272,7 +273,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
         None
     };
 
-    for file in &files {
+    files.par_iter().try_for_each(|file| -> Result<()> {
         let frames = take_screenshot(
             descriptors.clone(),
             file.path(),
@@ -317,7 +318,9 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 image.save(&destination)?;
             }
         }
-    }
+
+        Ok(())
+    })?;
 
     let message = if opt.frames == 1 {
         format!(
