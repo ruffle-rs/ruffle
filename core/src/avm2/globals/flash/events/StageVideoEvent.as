@@ -9,10 +9,7 @@ package flash.events
     {
         public const codecInfo:String; 
         public static const RENDER_STATE:String = "renderState"; // The StageVideoEvent.RENDER_STATE constant defines the value of the type property of a renderState event object.
-        public static const RENDER_STATUS_ACCELERATED:String = "accelerated"; // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.ACCELERATED Indicates that hardware is decoding and displaying the video.
-        public static const RENDER_STATUS_SOFTWARE:String = "software"; // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.SOFTWARE Indicates that software is decoding and displaying the video.
-        public static const RENDER_STATUS_UNAVAILABLE:String = "unavailable"; // Deprecated since Flash Player 10.2, AIR 3: Please Use flash.media.VideoStatus.UNAVAILABLE Indicates that displaying the video using the StageVideo object is not possible.
-
+        
         private var _status: String; // The status of the StageVideo object.
         private var _colorSpace: String; // The color space used by the video being displayed in the StageVideo object.
 

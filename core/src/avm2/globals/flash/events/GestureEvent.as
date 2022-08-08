@@ -15,10 +15,9 @@ package flash.events
         public var ctrlKey: Boolean; // On Windows or Linux, indicates whether the Ctrl key is active (true) or inactive (false).
         public var altKey: Boolean; // Indicates whether the Alt key is active (true) or inactive (false).
         public var shiftKey: Boolean; // Indicates whether the Shift key is active (true) or inactive (false).
-        public var commandKey: Boolean; // Indicates whether the command key is activated (Mac only).
         public var controlKey: Boolean; // Indicates whether the Control key is activated on Mac and whether the Ctrl key is activated on Windows or Linux.
 
-        public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0, localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, commandKey:Boolean = false, controlKey:Boolean = false)
+        public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0, localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, controlKey:Boolean = false)
         {
             super(type,bubbles,cancelable);
             this.phase = phase;
@@ -27,7 +26,6 @@ package flash.events
             this.ctrlKey = ctrlKey;
             this.altKey = altKey;
             this.shiftKey = shiftKey;
-            this.commandKey = commandKey;
             this.controlKey = controlKey;
         }
         
