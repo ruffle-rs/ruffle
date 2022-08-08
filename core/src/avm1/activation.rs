@@ -1291,14 +1291,21 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if level_target > -1 {
             // `loadMovieNum` call.
             if let Some(clip_target) = clip_target {
-                let future = self.context.load_manager.load_movie_into_clip(
-                    self.context.player.clone(),
-                    clip_target,
-                    Request::get(url.to_utf8_lossy().into_owned()),
-                    None,
-                    None,
-                );
-                self.context.navigator.spawn_future(future);
+                if url.is_empty() {
+                    // Blank URL on movie loads = unload!
+                    if let Some(mut mc) = clip_target.as_movie_clip() {
+                        mc.replace_with_movie(&mut self.context, None)
+                    }
+                } else {
+                    let future = self.context.load_manager.load_movie_into_clip(
+                        self.context.player.clone(),
+                        clip_target,
+                        Request::get(url.to_utf8_lossy().into_owned()),
+                        None,
+                        None,
+                    );
+                    self.context.navigator.spawn_future(future);
+                }
             }
             return Ok(FrameControl::Continue);
         }
