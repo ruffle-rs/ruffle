@@ -3,7 +3,7 @@ use core::num::Wrapping;
 
 use super::WStr;
 
-/// Analog of [`std::str::FromStr`], but for Ruffle's [`&WStr`].
+/// Analog of [`core::str::FromStr`], but for Ruffle's &[`WStr`].
 pub trait FromWStr: Sized {
     type Err;
 

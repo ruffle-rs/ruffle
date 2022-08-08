@@ -5,7 +5,7 @@ pub mod turbulence;
 /// Determine if a particular bitmap data size is valid.
 ///
 /// This enforces limits on BitmapData as specified in the Flash documentation.
-/// Specifically, from https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/BitmapData.html:
+/// Specifically, from <https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/BitmapData.html>:
 ///
 /// "In AIR 1.5 and Flash Player 10, the maximum size for a BitmapData object
 /// is 8,191 pixels in width or height, and the total number of pixels cannot
