@@ -28,12 +28,13 @@ use crate::display_object::{
     MorphShape, TDisplayObject, Text, Video,
 };
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
 use crate::vminterface::AvmObject;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_types::binary_data::BinaryData;
+use ruffle_types::events::ButtonKeyCode;
 use ruffle_types::string::{AvmString, WStr, WString};
 use ruffle_types::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use ruffle_types::vminterface::AvmType;

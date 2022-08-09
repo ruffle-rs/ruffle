@@ -3,8 +3,8 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::events::KeyCode;
 use gc_arena::MutationContext;
+use ruffle_types::events::KeyCode;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALT" => int(KeyCode::Alt as i32; DONT_ENUM | DONT_DELETE | READ_ONLY);

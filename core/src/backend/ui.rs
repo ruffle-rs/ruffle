@@ -1,4 +1,4 @@
-use crate::events::{KeyCode, PlayerEvent};
+use ruffle_types::events::{KeyCode, PlayerEvent};
 use std::collections::HashSet;
 
 pub type Error = Box<dyn std::error::Error>;

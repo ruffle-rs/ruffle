@@ -6,8 +6,8 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::names::{Namespace, QName};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
-use crate::events::KeyCode;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::events::KeyCode;
 use ruffle_types::string::AvmString;
 
 /// Implements `flash.ui.Keyboard`'s class constructor.

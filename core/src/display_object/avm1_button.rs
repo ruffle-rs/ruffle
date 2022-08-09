@@ -8,9 +8,10 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::events::ButtonKeyCode;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
 use ruffle_types::vminterface::Instantiator;

@@ -21,7 +21,7 @@ use crate::display_object::{
     EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
     StageScaleMode, TInteractiveObject, WindowMode,
 };
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
@@ -36,6 +36,7 @@ use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_types::backend::log::{LogBackend, NullLogBackend};
 use ruffle_types::backend::storage::StorageBackend;
+use ruffle_types::events::{ButtonKeyCode, KeyCode, MouseButton, PlayerEvent};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;
@@ -818,7 +819,9 @@ impl Player {
 
                 // Special keys have custom values for keyPress.
                 PlayerEvent::KeyDown { key_code, .. } => {
-                    if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
+                    if let Some(key_code) =
+                        ruffle_types::events::key_code_to_button_key_code(key_code)
+                    {
                         Some(ClipEvent::KeyPress { key_code })
                     } else {
                         None

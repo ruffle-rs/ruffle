@@ -16,7 +16,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
-use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
+use crate::events::{ClipEvent, ClipEventResult};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
@@ -25,6 +25,7 @@ use crate::transform::Transform;
 use crate::vminterface::AvmObject;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_types::events::{ButtonKeyCode, KeyCode};
 use ruffle_types::string::{utils as string_utils, AvmString, WStr, WString};
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;

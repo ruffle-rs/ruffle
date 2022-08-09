@@ -9,11 +9,11 @@ use generational_arena::{Arena, Index};
 use js_sys::{Array, Function, Object, Promise, Uint8Array};
 use ruffle_core::config::Letterbox;
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
-use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::{Color, Player, PlayerBuilder};
+use ruffle_types::events::{KeyCode, MouseButton, MouseWheelDelta, PlayerEvent};
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};

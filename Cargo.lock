@@ -3179,6 +3179,8 @@ version = "0.1.0"
 dependencies = [
  "gc-arena",
  "log",
+ "num-derive",
+ "num-traits",
  "ruffle_wstr",
  "swf",
  "url",

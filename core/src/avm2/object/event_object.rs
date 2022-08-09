@@ -9,8 +9,8 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
-use crate::events::KeyCode;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::events::KeyCode;
 use ruffle_types::string::AvmString;
 use std::cell::{Ref, RefMut};
 

@@ -45,8 +45,8 @@ pub mod config;
 pub mod external;
 
 pub use context_menu::ContextMenuItem;
-pub use events::PlayerEvent;
 pub use indexmap;
 pub use player::{Player, PlayerBuilder};
+pub use ruffle_types::events::PlayerEvent;
 pub use swf;
 pub use swf::Color;

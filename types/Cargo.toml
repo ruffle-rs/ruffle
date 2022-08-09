@@ -11,3 +11,5 @@ swf = { path = "../swf" }
 log = "0.4"
 url = "2.2.2"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
+num-traits = "0.2"
+num-derive = "0.3"

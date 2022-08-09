@@ -18,11 +18,10 @@ use crate::executor::GlutinAsyncExecutor;
 use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
-use ruffle_core::{
-    config::Letterbox, events::KeyCode, Player, PlayerBuilder, PlayerEvent, StageDisplayState,
-};
+use ruffle_core::{config::Letterbox, Player, PlayerBuilder, StageDisplayState};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
+use ruffle_types::events::{KeyCode, PlayerEvent};
 use ruffle_types::tag_utils::SwfMovie;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -387,7 +386,7 @@ impl App {
                             }
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
-                            use ruffle_core::events::MouseButton as RuffleMouseButton;
+                            use ruffle_types::events::MouseButton as RuffleMouseButton;
                             let mut player_lock = self.player.lock().unwrap();
                             let x = mouse_pos.x;
                             let y = mouse_pos.y;
@@ -407,7 +406,7 @@ impl App {
                             }
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
-                            use ruffle_core::events::MouseWheelDelta;
+                            use ruffle_types::events::MouseWheelDelta;
                             let mut player_lock = self.player.lock().unwrap();
                             let delta = match delta {
                                 MouseScrollDelta::LineDelta(_, dy) => {

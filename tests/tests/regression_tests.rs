@@ -5,16 +5,16 @@
 use approx::assert_relative_eq;
 use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::context::UpdateContext;
-use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
-use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::{Player, PlayerBuilder};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use ruffle_render_wgpu::WgpuRenderBackend;
 use ruffle_types::backend::log::LogBackend;
 use ruffle_types::backend::storage::{MemoryStorageBackend, StorageBackend};
+use ruffle_types::events::{MouseButton as RuffleMouseButton, PlayerEvent};
 use ruffle_types::tag_utils::SwfMovie;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
