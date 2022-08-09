@@ -4,11 +4,11 @@ use ruffle_core::backend::render::{
     Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
     ShapeHandle, Transform,
 };
-use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
 use ruffle_render_common_tess::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };
+use ruffle_types::shape_utils::DistilledShape;
 use ruffle_web_common::JsResult;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -705,7 +705,7 @@ impl RenderBackend for WebGlRenderBackend {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
+        let shape = ruffle_types::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal((&shape).into(), &NullBitmapSource);
         self.meshes.push(mesh);

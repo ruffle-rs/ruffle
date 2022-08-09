@@ -32,7 +32,6 @@ pub mod loader;
 mod locale;
 mod player;
 mod prelude;
-pub mod shape_utils;
 pub mod timer;
 mod transform;
 pub mod vminterface;

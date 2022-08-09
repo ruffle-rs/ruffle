@@ -11,12 +11,12 @@ use ruffle_core::backend::render::{
     Bitmap, BitmapHandle, BitmapSource, Color, RenderBackend, ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf;
 use ruffle_render_common_tess::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
     Vertex as TessVertex,
 };
+use ruffle_types::shape_utils::DistilledShape;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
@@ -885,7 +885,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
+        let shape = ruffle_types::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal(
             (&shape).into(),

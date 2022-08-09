@@ -6,7 +6,7 @@ use lyon::tessellation::{
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
 use ruffle_core::backend::render::{swf, BitmapHandle, BitmapSource};
-use ruffle_core::shape_utils::{DistilledShape, DrawCommand, DrawPath};
+use ruffle_types::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
     fill_tess: FillTessellator,

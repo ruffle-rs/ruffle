@@ -3187,6 +3187,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "ruffle_wstr",
+ "smallvec",
  "swf",
  "url",
 ]
