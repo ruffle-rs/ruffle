@@ -1,5 +1,5 @@
 use super::JavascriptPlayer;
-use ruffle_core::backend::ui::{Error, MouseCursor, UiBackend};
+use ruffle_types::backend::ui::{Error, MouseCursor, UiBackend};
 use ruffle_web_common::JsResult;
 use web_sys::HtmlCanvasElement;
 

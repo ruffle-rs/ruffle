@@ -3,7 +3,6 @@ use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Error as Avm2Error,
     Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
@@ -14,6 +13,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip, TDis
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::ui::MouseCursor;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};

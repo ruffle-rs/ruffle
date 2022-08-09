@@ -2,7 +2,6 @@
 
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
-use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
@@ -17,6 +16,7 @@ use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use ruffle_macros::enum_trait_object;
+use ruffle_types::backend::ui::MouseCursor;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;

@@ -10,8 +10,8 @@ use crate::avm2::{
     TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
-use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
+use ruffle_types::backend::ui::MouseCursor;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::character::Character;

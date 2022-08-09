@@ -1,6 +1,6 @@
 use clipboard::{ClipboardContext, ClipboardProvider};
 use rfd::{MessageButtons, MessageDialog, MessageLevel};
-use ruffle_core::backend::ui::{Error, MouseCursor, UiBackend};
+use ruffle_types::backend::ui::{Error, MouseCursor, UiBackend};
 use std::rc::Rc;
 use winit::window::{Fullscreen, Window};
 

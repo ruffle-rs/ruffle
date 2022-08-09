@@ -9,7 +9,6 @@ use crate::avm1::{
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
-use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -25,6 +24,7 @@ use crate::transform::Transform;
 use crate::vminterface::AvmObject;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_types::backend::ui::MouseCursor;
 use ruffle_types::events::{ButtonKeyCode, KeyCode};
 use ruffle_types::string::{utils as string_utils, AvmString, WStr, WString};
 use ruffle_types::tag_utils::SwfMovie;

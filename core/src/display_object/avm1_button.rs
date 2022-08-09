@@ -1,5 +1,4 @@
 use crate::avm1::{Object, StageObject, Value};
-use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
     dispatch_added_event, dispatch_removed_event, ChildContainer,
@@ -11,6 +10,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::ui::MouseCursor;
 use ruffle_types::events::ButtonKeyCode;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
