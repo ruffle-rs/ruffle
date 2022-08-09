@@ -5,8 +5,8 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::backend::audio::SoundInstanceHandle;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::audio::SoundInstanceHandle;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates SoundChannel objects.

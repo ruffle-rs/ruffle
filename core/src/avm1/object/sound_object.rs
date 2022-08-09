@@ -1,10 +1,10 @@
 //! AVM1 object type to represent Sound objects.
 
 use crate::avm1::{Object, ScriptObject, TObject};
-use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::display_object::DisplayObject;
 use crate::impl_custom_object;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::audio::{SoundHandle, SoundInstanceHandle};
 use std::fmt;
 
 /// A SoundObject that is tied to a sound from the AudioBackend.

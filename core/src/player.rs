@@ -8,7 +8,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, EventObject as Avm2EventObject,
 };
 use crate::backend::{
-    audio::{AudioBackend, AudioManager},
+    audio::AudioManager,
     navigator::{NavigatorBackend, Request},
 };
 use crate::config::Letterbox;
@@ -30,6 +30,8 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+use ruffle_types::backend::audio::AudioBackend;
+use ruffle_types::backend::audio::NullAudioBackend;
 use ruffle_types::backend::log::{LogBackend, NullLogBackend};
 use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
@@ -1833,7 +1835,7 @@ impl PlayerBuilder {
         use ruffle_types::backend::{render, storage, ui, video};
         let audio = self
             .audio
-            .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
+            .unwrap_or_else(|| Box::new(NullAudioBackend::new()));
         let log = self.log.unwrap_or_else(|| Box::new(NullLogBackend::new()));
         let navigator = self
             .navigator

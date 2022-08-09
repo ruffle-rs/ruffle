@@ -1,8 +1,8 @@
-use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioMixer, AudioMixerProxy, SoundHandle, SoundInstanceHandle,
-    SoundTransform,
-};
+use ruffle_core::backend::audio::{swf, AudioMixer, AudioMixerProxy};
 use ruffle_core::impl_audio_mixer_backend;
+use ruffle_types::backend::audio::{
+    AudioBackend, SoundHandle, SoundInstanceHandle, SoundTransform,
+};
 use ruffle_web_common::JsResult;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;

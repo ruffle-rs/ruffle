@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod log;
 pub mod render;
 pub mod storage;

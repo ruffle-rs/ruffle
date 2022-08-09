@@ -7,9 +7,6 @@ pub use ruffle_types::string;
 extern crate smallvec;
 
 #[macro_use]
-extern crate downcast_rs;
-
-#[macro_use]
 extern crate num_derive;
 
 #[macro_use]
