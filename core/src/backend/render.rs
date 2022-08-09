@@ -1,8 +1,9 @@
-pub use crate::{library::MovieLibrary, transform::Transform, Color};
+pub use crate::{library::MovieLibrary, Color};
 use downcast_rs::Downcast;
 use gc_arena::Collect;
 use ruffle_types::matrix::Matrix;
 use ruffle_types::shape_utils::DistilledShape;
+pub use ruffle_types::transform::Transform;
 use std::borrow::Cow;
 use std::io::Read;
 pub use swf;

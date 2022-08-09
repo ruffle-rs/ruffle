@@ -8,13 +8,13 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
 use crate::player::NEWEST_PLAYER_VERSION;
 use crate::prelude::*;
-use crate::transform::Transform;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
 use ruffle_types::numbers::{Degrees, Percent};
 use ruffle_types::string::{AvmString, WString};
 use ruffle_types::tag_utils::SwfMovie;
+use ruffle_types::transform::Transform;
 use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -469,7 +469,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     context.transform_stack.push(this.base().transform());
 
     let mask = this.masker();
-    let mut mask_transform = crate::transform::Transform::default();
+    let mut mask_transform = ruffle_types::transform::Transform::default();
     if let Some(m) = mask {
         mask_transform.matrix = this.global_to_local_matrix();
         mask_transform.matrix *= m.local_to_global_matrix();

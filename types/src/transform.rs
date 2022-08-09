@@ -1,4 +1,5 @@
-use crate::prelude::*;
+use crate::color_transform::ColorTransform;
+use crate::matrix::Matrix;
 use gc_arena::Collect;
 
 /// Represents the transform for a DisplayObject.

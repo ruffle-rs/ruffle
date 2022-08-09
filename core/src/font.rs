@@ -1,9 +1,9 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::html::TextSpan;
 use crate::prelude::*;
-use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
 use ruffle_types::string::WStr;
+use ruffle_types::transform::Transform;
 use std::cell::{Cell, Ref, RefCell};
 
 pub use swf::TextGridFit;

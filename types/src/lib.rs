@@ -11,4 +11,5 @@ pub mod numbers;
 pub mod shape_utils;
 pub mod string;
 pub mod tag_utils;
+pub mod transform;
 pub mod vminterface;

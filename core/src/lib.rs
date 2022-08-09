@@ -32,7 +32,6 @@ mod locale;
 mod player;
 mod prelude;
 pub mod timer;
-mod transform;
 pub mod vminterface;
 mod xml;
 
