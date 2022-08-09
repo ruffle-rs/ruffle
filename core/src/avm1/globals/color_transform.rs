@@ -5,8 +5,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::color_transform_object::ColorTransformObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::color_transform::ColorTransform;
 use gc_arena::MutationContext;
+use ruffle_types::color_transform::ColorTransform;
 use ruffle_types::string::AvmString;
 use swf::Fixed8;
 

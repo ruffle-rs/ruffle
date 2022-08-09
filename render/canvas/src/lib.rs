@@ -3,7 +3,7 @@ use ruffle_core::backend::render::{
     swf, Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
     ShapeHandle, Transform,
 };
-use ruffle_core::color_transform::ColorTransform;
+use ruffle_types::color_transform::ColorTransform;
 use ruffle_types::matrix::Matrix;
 use ruffle_types::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_web_common::{JsError, JsResult};
