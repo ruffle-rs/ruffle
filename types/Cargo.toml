@@ -6,3 +6,5 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+ruffle_wstr = { path = "../wstr" }
+gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }

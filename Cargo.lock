@@ -3047,7 +3047,6 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_types",
- "ruffle_wstr",
  "serde",
  "serde_json",
  "smallvec",
@@ -3174,6 +3173,10 @@ dependencies = [
 [[package]]
 name = "ruffle_types"
 version = "0.1.0"
+dependencies = [
+ "gc-arena",
+ "ruffle_wstr",
+]
 
 [[package]]
 name = "ruffle_web"

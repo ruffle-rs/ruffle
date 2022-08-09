@@ -1,6 +1,7 @@
 #[macro_use]
 mod display_object;
 pub use display_object::StageDisplayState;
+pub use ruffle_types::string;
 
 #[macro_use]
 extern crate smallvec;
@@ -35,7 +36,6 @@ pub mod matrix;
 mod player;
 mod prelude;
 pub mod shape_utils;
-pub mod string;
 pub mod tag_utils;
 pub mod timer;
 mod transform;
