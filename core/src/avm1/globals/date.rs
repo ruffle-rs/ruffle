@@ -5,10 +5,10 @@ use crate::avm1::object::date_object::DateObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::AvmString;
 use chrono::{DateTime, Datelike, Duration, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{Collect, MutationContext};
 use num_traits::ToPrimitive;
+use ruffle_types::string::AvmString;
 
 macro_rules! local_getter {
     ($fn:expr) => {

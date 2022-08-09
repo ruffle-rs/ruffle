@@ -7,8 +7,8 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::string::{utils as string_utils, AvmString, WString};
 use gc_arena::MutationContext;
+use ruffle_types::string::{utils as string_utils, AvmString, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);

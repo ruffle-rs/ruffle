@@ -5,8 +5,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::displacement_map_filter::DisplacementMapFilterObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
+use ruffle_types::string::{AvmString, WStr};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "alpha" => property(alpha, set_alpha);

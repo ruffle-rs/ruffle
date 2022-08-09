@@ -8,13 +8,13 @@ use crate::avm2::object::{bytearray_allocator, ArrayObject, ByteArrayObject, Obj
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
-use crate::string::AvmString;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 
 pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

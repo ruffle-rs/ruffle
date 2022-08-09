@@ -7,8 +7,8 @@ use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
-use crate::string::{AvmString, WStr};
 use gc_arena::MutationContext;
+use ruffle_types::string::{AvmString, WStr};
 
 macro_rules! tf_method {
     ($fn:expr) => {

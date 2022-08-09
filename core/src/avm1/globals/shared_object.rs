@@ -7,10 +7,10 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use flash_lso::types::{AMFVersion, Element, Lso};
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 use std::borrow::Cow;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

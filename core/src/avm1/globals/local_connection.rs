@@ -5,8 +5,8 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "domain" => method(domain; DONT_DELETE | READ_ONLY);

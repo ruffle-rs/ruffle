@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
+use ruffle_types::string::AvmString;
 
 pub fn get_sandbox_type<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

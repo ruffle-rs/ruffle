@@ -9,8 +9,8 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{StageDisplayState, TDisplayObject};
-use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WString};
 use swf::Color;
 
 /// Implements `flash.display.Stage`'s instance constructor.

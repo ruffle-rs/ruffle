@@ -4,10 +4,10 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
-use crate::string::{AvmString, WStr, WString};
 use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::{events::Event, Reader};
+use ruffle_types::string::{AvmString, WStr, WString};
 use std::fmt;
 
 #[derive(Clone, Copy, Collect)]

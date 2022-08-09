@@ -2,10 +2,10 @@
 
 use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
-use crate::string::{Integer, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
+use ruffle_types::string::{Integer, Units, WStr, WString};
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::VecDeque;

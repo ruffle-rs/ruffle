@@ -2,7 +2,7 @@
 
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
-use crate::string::{WStr, WString};
+use ruffle_types::string::{WStr, WString};
 use swf::{Rectangle, Twips};
 
 #[test]

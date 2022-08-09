@@ -9,8 +9,8 @@ use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WString};
 use std::iter;
 
 /// Implements `String`'s instance initializer.

@@ -7,8 +7,8 @@ use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject,
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, MutationContext};
+use ruffle_types::string::{AvmString, WStr};
 use std::cell::Ref;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 

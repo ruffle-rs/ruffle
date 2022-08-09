@@ -13,8 +13,8 @@ use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, Vec
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 use std::cmp::{max, min, Ordering};
 
 /// Implements `Vector`'s instance constructor.

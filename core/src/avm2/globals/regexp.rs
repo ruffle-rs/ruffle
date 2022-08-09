@@ -8,8 +8,8 @@ use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{activation::Activation, array::ArrayStorage};
-use crate::string::{AvmString, WString};
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WString};
 
 /// Implements `RegExp`'s instance initializer.
 pub fn instance_init<'gc>(

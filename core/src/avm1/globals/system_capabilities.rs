@@ -4,8 +4,8 @@ use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use crate::string::AvmString;
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);

@@ -8,9 +8,9 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{array_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use bitflags::bitflags;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 

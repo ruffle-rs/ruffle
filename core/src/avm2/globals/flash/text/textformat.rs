@@ -9,8 +9,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{AvmString, WStr};
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WStr};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.
 pub fn instance_init<'gc>(

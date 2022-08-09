@@ -7,8 +7,8 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::events::KeyCode;
-use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 
 /// Implements `flash.ui.Keyboard`'s class constructor.
 pub fn class_init<'gc>(

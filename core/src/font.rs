@@ -1,9 +1,9 @@
 use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::html::TextSpan;
 use crate::prelude::*;
-use crate::string::WStr;
 use crate::transform::Transform;
 use gc_arena::{Collect, Gc, MutationContext};
+use ruffle_types::string::WStr;
 use std::cell::{Cell, Ref, RefCell};
 
 pub use swf::TextGridFit;
@@ -541,8 +541,8 @@ mod tests {
     use crate::backend::render::{NullRenderer, RenderBackend};
     use crate::font::{EvalParameters, Font};
     use crate::player::{Player, DEVICE_FONT_TAG};
-    use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
+    use ruffle_types::string::WStr;
     use std::ops::DerefMut;
     use swf::Twips;
 

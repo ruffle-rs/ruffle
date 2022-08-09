@@ -11,9 +11,9 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use crate::tag_utils::{self, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 use std::sync::Arc;
 use swf::TagCode;
 

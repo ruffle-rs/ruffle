@@ -4,10 +4,10 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string::{utils as string_utils, AvmString, WStr};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use indexmap::{Equivalent, IndexMap};
+use ruffle_types::string::{utils as string_utils, AvmString, WStr};
 use std::hash::{Hash, Hasher};
 
 type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;

@@ -7,10 +7,10 @@ use crate::avm2::object::FunctionObject;
 use crate::avm2::object::TObject;
 use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Object};
-use crate::string::WString;
-use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
+use ruffle_types::string::WString;
+use ruffle_types::string::{AvmString, Units, WStrToUtf8};
 
 #[derive(Collect, Debug)]
 #[collect(no_drop)]

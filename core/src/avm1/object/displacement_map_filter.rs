@@ -1,8 +1,8 @@
 use crate::add_field_accessors;
 use crate::avm1::{Object, ScriptObject, TObject};
 use crate::impl_custom_object;
-use crate::string::WStr;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::WStr;
 
 use std::fmt;
 

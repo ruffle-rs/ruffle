@@ -4,8 +4,8 @@ use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
-use crate::string::AvmString;
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);

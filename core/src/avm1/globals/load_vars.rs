@@ -9,8 +9,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::string::AvmString;
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);

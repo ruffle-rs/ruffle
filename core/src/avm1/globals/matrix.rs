@@ -7,8 +7,8 @@ use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::matrix::Matrix;
-use crate::string::AvmString;
 use gc_arena::MutationContext;
+use ruffle_types::string::AvmString;
 use swf::Twips;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

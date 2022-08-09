@@ -9,9 +9,9 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene, TDisplayObject};
-use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WString};
 use std::sync::Arc;
 
 /// Implements `flash.display.MovieClip`'s instance constructor.

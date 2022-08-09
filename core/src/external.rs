@@ -13,8 +13,8 @@ use crate::avm2::Value as Avm2Value;
 use crate::avm2::{ArrayObject as Avm2ArrayObject, Error as Avm2Error, Object as Avm2Object};
 
 use crate::context::UpdateContext;
-use crate::string::AvmString;
 use gc_arena::Collect;
+use ruffle_types::string::AvmString;
 use std::collections::BTreeMap;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.

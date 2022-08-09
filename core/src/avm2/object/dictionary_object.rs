@@ -5,9 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.

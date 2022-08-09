@@ -8,9 +8,9 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Valu
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
-use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::{AvmString, WStr};
 use std::fmt;
 
 /// A ScriptObject that is inherently tied to a display node.

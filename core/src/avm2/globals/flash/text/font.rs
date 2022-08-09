@@ -8,8 +8,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
-use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 
 /// Implements `flash.text.Font`'s instance constructor.
 pub fn instance_init<'gc>(

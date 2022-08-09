@@ -4,9 +4,9 @@ use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
-use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 
 #[derive(Debug, Clone, Collect)]
 #[collect(no_drop)]

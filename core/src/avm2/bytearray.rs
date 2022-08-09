@@ -1,8 +1,8 @@
 use crate::avm2::Error;
-use crate::string::{FromWStr, WStr};
 use flate2::read::*;
 use flate2::Compression;
 use gc_arena::Collect;
+use ruffle_types::string::{FromWStr, WStr};
 use std::cell::Cell;
 use std::cmp;
 use std::fmt::{self, Display, Formatter};

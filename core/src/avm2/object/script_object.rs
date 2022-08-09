@@ -6,9 +6,9 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObjec
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, QName};
-use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::string::AvmString;
 use std::cell::{Ref, RefMut};
 use std::collections::hash_map::Entry;
 use std::fmt::Debug;

@@ -6,8 +6,8 @@ use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Va
 use crate::avm_warn;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::WStr;
 use gc_arena::MutationContext;
+use ruffle_types::string::WStr;
 
 macro_rules! getter {
     ($name:ident) => {

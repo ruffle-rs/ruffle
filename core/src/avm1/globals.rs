@@ -5,9 +5,9 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::display_object::{DisplayObject, Lists, TDisplayObject, TDisplayObjectContainer};
-use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
 use gc_arena::MutationContext;
+use ruffle_types::string::{AvmString, WStr, WString};
 use std::str;
 
 mod accessibility;

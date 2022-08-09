@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{AvmString, WStr, WString};
+use ruffle_types::string::{AvmString, WStr, WString};
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

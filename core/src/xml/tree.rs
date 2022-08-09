@@ -4,11 +4,11 @@ use crate::avm1::activation::Activation;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Error, Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, MutationContext};
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
+use ruffle_types::string::{AvmString, WStr, WString};
 use std::fmt;
 
 pub const ELEMENT_NODE: u8 = 1;

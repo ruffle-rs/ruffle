@@ -8,10 +8,10 @@ use crate::avm2::object::{date_allocator, DateObject, FunctionObject, Object, TO
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use gc_arena::{GcCell, MutationContext};
 use num_traits::ToPrimitive;
+use ruffle_types::string::{utils as string_utils, AvmString, WStr};
 
 // All of these methods will be defined as both
 // AS3 instance methods and methods on the `Date` class prototype.

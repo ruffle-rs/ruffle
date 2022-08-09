@@ -11,8 +11,8 @@ use crate::avm1::{
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object};
 use crate::context::UpdateContext;
-use crate::string::AvmString;
 use gc_arena::Collect;
+use ruffle_types::string::AvmString;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 
 /// Manages the collection of timers.

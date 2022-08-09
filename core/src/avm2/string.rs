@@ -1,3 +1,3 @@
 //! AVM2 String representation
 
-pub use crate::string::AvmString;
+pub use ruffle_types::string::AvmString;
