@@ -44,6 +44,7 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.143", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.13.0"
+ruffle_types = { path = "../types" }
 
 [dependencies.ruffle_core]
 path = "../core"

@@ -1,10 +1,10 @@
 use crate::backend::audio::SoundHandle;
-use crate::binary_data::BinaryData;
 use crate::display_object::{
     Avm1Button, Avm2Button, Bitmap, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
 use crate::font::Font;
 use gc_arena::Collect;
+use ruffle_types::binary_data::BinaryData;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]

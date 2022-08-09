@@ -14,7 +14,6 @@ use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -32,10 +31,11 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
-use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::AvmObject;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_types::binary_data::BinaryData;
 use ruffle_types::string::{AvmString, WStr, WString};
+use ruffle_types::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
 use ruffle_types::vminterface::AvmType;
 use ruffle_types::vminterface::Instantiator;
 use smallvec::SmallVec;

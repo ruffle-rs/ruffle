@@ -15,7 +15,6 @@ extern crate num_derive;
 #[macro_use]
 mod avm1;
 mod avm2;
-mod binary_data;
 pub mod bitmap;
 mod bounding_box;
 mod character;
@@ -36,7 +35,6 @@ pub mod matrix;
 mod player;
 mod prelude;
 pub mod shape_utils;
-pub mod tag_utils;
 pub mod timer;
 mod transform;
 pub mod vminterface;

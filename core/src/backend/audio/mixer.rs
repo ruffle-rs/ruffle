@@ -2,8 +2,8 @@ use super::decoders::{
     self, AdpcmDecoder, Decoder, NellymoserDecoder, PcmDecoder, SeekableDecoder,
 };
 use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
-use crate::tag_utils::SwfSlice;
 use generational_arena::Arena;
+use ruffle_types::tag_utils::SwfSlice;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex};
 use swf::AudioCompression;
@@ -860,7 +860,7 @@ macro_rules! impl_audio_mixer_backend {
             &mut self,
             stream_handle: Option<SoundHandle>,
             clip_frame: u16,
-            clip_data: $crate::tag_utils::SwfSlice,
+            clip_data: ruffle_types::tag_utils::SwfSlice,
             stream_info: &swf::SoundStreamHead,
         ) -> Result<SoundInstanceHandle, Error> {
             self.$mixer

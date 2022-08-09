@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.21"
 ruffle_core = { path = "../core", features = ["deterministic"] }
+ruffle_types = { path = "../types" }
 ruffle_render_wgpu = { path = "../render/wgpu" }
 ruffle_input_format = { path = "input-format" }
 image = "0.24.2"

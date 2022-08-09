@@ -8,8 +8,8 @@ use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayObject, AvmString, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, CollectionContext, Gc, GcCell, MutationContext};
+use ruffle_types::tag_utils::SwfSlice;
 use std::{borrow::Cow, fmt, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 

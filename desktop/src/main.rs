@@ -19,11 +19,11 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState,
+    config::Letterbox, events::KeyCode, Player, PlayerBuilder, PlayerEvent, StageDisplayState,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
+use ruffle_types::tag_utils::SwfMovie;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;

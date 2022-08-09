@@ -1227,6 +1227,7 @@ dependencies = [
  "rayon",
  "ruffle_core",
  "ruffle_render_wgpu",
+ "ruffle_types",
  "walkdir",
 ]
 
@@ -3074,6 +3075,7 @@ dependencies = [
  "rfd",
  "ruffle_core",
  "ruffle_render_wgpu",
+ "ruffle_types",
  "url",
  "webbrowser",
  "winapi",
@@ -3164,6 +3166,7 @@ dependencies = [
  "path-slash",
  "rayon",
  "ruffle_core",
+ "ruffle_types",
  "serde",
  "sha2",
  "swf",
@@ -3175,7 +3178,10 @@ name = "ruffle_types"
 version = "0.1.0"
 dependencies = [
  "gc-arena",
+ "log",
  "ruffle_wstr",
+ "swf",
+ "url",
 ]
 
 [[package]]
@@ -3194,6 +3200,7 @@ dependencies = [
  "ruffle_render_canvas",
  "ruffle_render_webgl",
  "ruffle_render_wgpu",
+ "ruffle_types",
  "ruffle_web_common",
  "serde",
  "thiserror",
@@ -3626,6 +3633,7 @@ dependencies = [
  "ruffle_core",
  "ruffle_input_format",
  "ruffle_render_wgpu",
+ "ruffle_types",
 ]
 
 [[package]]

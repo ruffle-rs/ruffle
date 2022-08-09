@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 clap = { version = "3.2.16", features = ["derive"] }
 cpal = "0.13.5"
 ruffle_core = { path = "../core" }
+ruffle_types = { path = "../types" }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 env_logger = { version = "0.9", default-features = false, features = ["humantime"] }
 generational-arena = "0.2.8"

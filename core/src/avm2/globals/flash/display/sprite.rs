@@ -10,8 +10,8 @@ use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
-use crate::tag_utils::SwfMovie;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::tag_utils::SwfMovie;
 use std::sync::Arc;
 
 /// Implements `flash.display.Sprite`'s instance constructor.

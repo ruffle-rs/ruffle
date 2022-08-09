@@ -13,8 +13,8 @@ use ruffle_core::events::{KeyCode, MouseButton, MouseWheelDelta};
 use ruffle_core::external::{
     ExternalInterfaceMethod, ExternalInterfaceProvider, Value as ExternalValue, Value,
 };
-use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent};
+use ruffle_types::tag_utils::SwfMovie;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

@@ -13,8 +13,8 @@ use crate::display_object::interactive::{
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip, TDisplayObject};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
-use crate::tag_utils::{SwfMovie, SwfSlice};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;

@@ -9,8 +9,8 @@ use crate::avm2::Error;
 use crate::avm2::EventObject;
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
-use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::tag_utils::SwfMovie;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 

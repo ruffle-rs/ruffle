@@ -20,11 +20,11 @@ use crate::display_object::{
 };
 use crate::events::ClipEvent;
 use crate::player::Player;
-use crate::tag_utils::SwfMovie;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use ruffle_types::string::AvmString;
+use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::Instantiator;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
@@ -120,7 +120,7 @@ pub enum Error {
     FetchError(String),
 
     #[error("Invalid SWF")]
-    InvalidSwf(#[from] crate::tag_utils::Error),
+    InvalidSwf(#[from] ruffle_types::tag_utils::Error),
 
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),

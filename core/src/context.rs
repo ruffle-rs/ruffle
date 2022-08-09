@@ -20,13 +20,13 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::player::Player;
 use crate::prelude::*;
-use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::transform::TransformStack;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
+use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
@@ -257,7 +257,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         stream_handle: Option<SoundHandle>,
         movie_clip: MovieClip<'gc>,
         frame: u16,
-        data: crate::tag_utils::SwfSlice,
+        data: ruffle_types::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager.start_stream(

@@ -44,7 +44,7 @@ pub trait AudioBackend: Downcast {
         &mut self,
         stream_handle: Option<SoundHandle>,
         clip_frame: u16,
-        clip_data: crate::tag_utils::SwfSlice,
+        clip_data: ruffle_types::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, Error>;
 
@@ -162,7 +162,7 @@ impl AudioBackend for NullAudioBackend {
         &mut self,
         _stream_handle: Option<SoundHandle>,
         _clip_frame: u16,
-        _clip_data: crate::tag_utils::SwfSlice,
+        _clip_data: ruffle_types::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, Error> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
@@ -408,7 +408,7 @@ impl<'gc> AudioManager<'gc> {
         stream_handle: Option<SoundHandle>,
         movie_clip: MovieClip<'gc>,
         clip_frame: u16,
-        data: crate::tag_utils::SwfSlice,
+        data: ruffle_types::tag_utils::SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {

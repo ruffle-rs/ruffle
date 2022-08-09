@@ -1,5 +1,5 @@
+use crate::vminterface::AvmType;
 use gc_arena::Collect;
-use ruffle_types::vminterface::AvmType;
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 

@@ -9,7 +9,7 @@ use gc_arena::{Collect, GcCell, MutationContext};
 use swf::avm1::read::Reader;
 
 use crate::display_object::DisplayObject;
-use crate::tag_utils::SwfSlice;
+use ruffle_types::tag_utils::SwfSlice;
 
 #[cfg(test)]
 #[macro_use]
