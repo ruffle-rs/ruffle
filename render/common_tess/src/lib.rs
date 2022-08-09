@@ -270,7 +270,7 @@ pub struct Bitmap {
 }
 
 #[allow(clippy::many_single_char_names)]
-fn swf_to_gl_matrix(m: ruffle_core::matrix::Matrix) -> [[f32; 3]; 3] {
+fn swf_to_gl_matrix(m: ruffle_types::matrix::Matrix) -> [[f32; 3]; 3] {
     let tx = m.tx.get() as f32;
     let ty = m.ty.get() as f32;
     let det = m.a * m.d - m.c * m.b;
@@ -295,7 +295,7 @@ fn swf_to_gl_matrix(m: ruffle_core::matrix::Matrix) -> [[f32; 3]; 3] {
 
 #[allow(clippy::many_single_char_names)]
 fn swf_bitmap_to_gl_matrix(
-    m: ruffle_core::matrix::Matrix,
+    m: ruffle_types::matrix::Matrix,
     bitmap_width: u32,
     bitmap_height: u32,
 ) -> [[f32; 3]; 3] {

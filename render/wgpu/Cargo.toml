@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 wgpu = "0.13.0"
 log = "0.4"
 ruffle_core = { path = "../../core", default-features = false }
+ruffle_types = {path = "../../types"}
 ruffle_render_common_tess = { path = "../common_tess" }
 bytemuck = { version = "1.10.0", features = ["derive"] }
 raw-window-handle = "0.4"

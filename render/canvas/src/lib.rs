@@ -4,8 +4,8 @@ use ruffle_core::backend::render::{
     ShapeHandle, Transform,
 };
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::matrix::Matrix;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
+use ruffle_types::matrix::Matrix;
 use ruffle_web_common::{JsError, JsResult};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{

@@ -3107,6 +3107,7 @@ dependencies = [
  "js-sys",
  "log",
  "ruffle_core",
+ "ruffle_types",
  "ruffle_web_common",
  "wasm-bindgen",
  "web-sys",
@@ -3119,6 +3120,7 @@ dependencies = [
  "log",
  "lyon",
  "ruffle_core",
+ "ruffle_types",
 ]
 
 [[package]]
@@ -3131,6 +3133,7 @@ dependencies = [
  "log",
  "ruffle_core",
  "ruffle_render_common_tess",
+ "ruffle_types",
  "ruffle_web_common",
  "wasm-bindgen",
  "web-sys",
@@ -3150,6 +3153,7 @@ dependencies = [
  "raw-window-handle 0.4.3",
  "ruffle_core",
  "ruffle_render_common_tess",
+ "ruffle_types",
  "web-sys",
  "wgpu",
 ]
@@ -3177,6 +3181,7 @@ dependencies = [
 name = "ruffle_types"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "gc-arena",
  "log",
  "num-derive",

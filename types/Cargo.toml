@@ -13,3 +13,6 @@ url = "2.2.2"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 num-traits = "0.2"
 num-derive = "0.3"
+
+[dev-dependencies]
+approx = "0.5.1"

@@ -851,7 +851,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             // Scale the quad to the bitmap's dimensions.
             let matrix = transform.matrix
-                * ruffle_core::matrix::Matrix {
+                * ruffle_types::matrix::Matrix {
                     a: width,
                     d: height,
                     ..Default::default()
@@ -1092,7 +1092,7 @@ impl RenderBackend for WebGlRenderBackend {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &ruffle_core::matrix::Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: &ruffle_types::matrix::Matrix) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],

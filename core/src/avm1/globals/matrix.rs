@@ -6,8 +6,8 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::matrix::Matrix;
 use gc_arena::MutationContext;
+use ruffle_types::matrix::Matrix;
 use ruffle_types::string::AvmString;
 use swf::Twips;
 

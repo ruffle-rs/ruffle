@@ -1,4 +1,5 @@
-use crate::{bounding_box::BoundingBox, matrix::Matrix};
+use crate::bounding_box::BoundingBox;
+use ruffle_types::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
