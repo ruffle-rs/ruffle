@@ -4,7 +4,6 @@
 
 use approx::assert_relative_eq;
 use ruffle_core::backend::{
-    log::LogBackend,
     navigator::{NullExecutor, NullNavigatorBackend},
     storage::{MemoryStorageBackend, StorageBackend},
 };
@@ -17,6 +16,7 @@ use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMou
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 use ruffle_render_wgpu::WgpuRenderBackend;
+use ruffle_types::backend::log::LogBackend;
 use ruffle_types::tag_utils::SwfMovie;
 use std::cell::RefCell;
 use std::collections::BTreeMap;

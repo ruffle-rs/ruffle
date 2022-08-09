@@ -1,5 +1,5 @@
 use js_sys::Function;
-use ruffle_core::backend::log::LogBackend;
+use ruffle_types::backend::log::LogBackend;
 use std::cell::RefCell;
 use std::sync::Arc;
 use wasm_bindgen::{JsCast, JsValue};

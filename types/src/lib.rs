@@ -1,3 +1,4 @@
+pub mod backend;
 pub mod binary_data;
 pub mod numbers;
 pub mod string;

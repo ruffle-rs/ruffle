@@ -9,7 +9,6 @@ use crate::avm2::{
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
-    log::LogBackend,
     navigator::{NavigatorBackend, Request},
     render::RenderBackend,
     storage::StorageBackend,
@@ -36,6 +35,7 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+use ruffle_types::backend::log::{LogBackend, NullLogBackend};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;
@@ -1830,9 +1830,7 @@ impl PlayerBuilder {
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
-        let log = self
-            .log
-            .unwrap_or_else(|| Box::new(log::NullLogBackend::new()));
+        let log = self.log.unwrap_or_else(|| Box::new(NullLogBackend::new()));
         let navigator = self
             .navigator
             .unwrap_or_else(|| Box::new(navigator::NullNavigatorBackend::new()));

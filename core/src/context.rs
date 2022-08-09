@@ -5,7 +5,6 @@ use crate::avm1::{Avm1, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
-    log::LogBackend,
     navigator::NavigatorBackend,
     render::RenderBackend,
     storage::StorageBackend,
@@ -26,6 +25,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
+use ruffle_types::backend::log::LogBackend;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
 use std::collections::{HashMap, VecDeque};

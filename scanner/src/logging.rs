@@ -1,7 +1,7 @@
 //! Utilities and mock objects needed for log output capture
 
 use log::{Level, LevelFilter, Log, Metadata, Record};
-use ruffle_core::backend::log::LogBackend;
+use ruffle_types::backend::log::LogBackend;
 use std::cell::RefCell;
 use std::rc::Rc;
 
