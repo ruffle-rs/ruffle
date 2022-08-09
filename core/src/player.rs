@@ -938,7 +938,9 @@ impl Player {
             self.mouse_pos = inverse_view_matrix * (Twips::from_pixels(x), Twips::from_pixels(y));
 
             // Update the dragged object here to keep it constantly in sync with the mouse position.
-            self.update_drag();
+            self.mutate_with_update_context(|context| {
+                Self::update_drag(context);
+            });
 
             let is_mouse_moved = old_pos != self.mouse_pos;
 
@@ -964,46 +966,44 @@ impl Player {
     }
 
     /// Update dragged object, if any.
-    fn update_drag(&mut self) {
-        let (mouse_x, mouse_y) = self.mouse_pos;
-        self.mutate_with_update_context(|context| {
-            if let Some(drag_object) = &mut context.drag_object {
-                let display_object = drag_object.display_object;
-                if drag_object.display_object.removed() {
-                    // Be sure to clear the drag if the object was removed.
-                    *context.drag_object = None;
-                } else {
-                    let (offset_x, offset_y) = drag_object.offset;
-                    let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
-                    if let Some(parent) = display_object.parent() {
-                        drag_point = parent.global_to_local(drag_point);
-                    }
-                    drag_point = drag_object.constraint.clamp(drag_point);
-                    display_object.set_x(context.gc_context, drag_point.0.to_pixels());
-                    display_object.set_y(context.gc_context, drag_point.1.to_pixels());
+    pub fn update_drag<'gc>(context: &mut UpdateContext<'_, 'gc, '_>) {
+        let (mouse_x, mouse_y) = *context.mouse_position;
+        if let Some(drag_object) = &mut context.drag_object {
+            let display_object = drag_object.display_object;
+            if drag_object.display_object.removed() {
+                // Be sure to clear the drag if the object was removed.
+                *context.drag_object = None;
+            } else {
+                let (offset_x, offset_y) = drag_object.offset;
+                let mut drag_point = (mouse_x + offset_x, mouse_y + offset_y);
+                if let Some(parent) = display_object.parent() {
+                    drag_point = parent.global_to_local(drag_point);
+                }
+                drag_point = drag_object.constraint.clamp(drag_point);
+                display_object.set_x(context.gc_context, drag_point.0.to_pixels());
+                display_object.set_y(context.gc_context, drag_point.1.to_pixels());
 
-                    // Update _droptarget property of dragged object.
-                    if let Some(movie_clip) = display_object.as_movie_clip() {
-                        // Turn the dragged object invisible so that we don't pick it.
-                        // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
-                        let was_visible = display_object.visible();
-                        display_object.set_visible(context.gc_context, false);
-                        // Set _droptarget to the object the mouse is hovering over.
-                        let drop_target_object =
-                            context.stage.iter_render_list().rev().find_map(|level| {
-                                level.as_interactive().and_then(|l| {
-                                    l.mouse_pick(context, *context.mouse_position, false)
-                                })
-                            });
-                        movie_clip.set_drop_target(
-                            context.gc_context,
-                            drop_target_object.map(|d| d.as_displayobject()),
-                        );
-                        display_object.set_visible(context.gc_context, was_visible);
-                    }
+                // Update _droptarget property of dragged object.
+                if let Some(movie_clip) = display_object.as_movie_clip() {
+                    // Turn the dragged object invisible so that we don't pick it.
+                    // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
+                    let was_visible = display_object.visible();
+                    display_object.set_visible(context.gc_context, false);
+                    // Set _droptarget to the object the mouse is hovering over.
+                    let drop_target_object =
+                        context.stage.iter_render_list().rev().find_map(|level| {
+                            level
+                                .as_interactive()
+                                .and_then(|l| l.mouse_pick(context, *context.mouse_position, false))
+                        });
+                    movie_clip.set_drop_target(
+                        context.gc_context,
+                        drop_target_object.map(|d| d.as_displayobject()),
+                    );
+                    display_object.set_visible(context.gc_context, was_visible);
                 }
             }
-        });
+        }
     }
 
     /// Updates the hover state of buttons.
@@ -1586,7 +1586,9 @@ impl Player {
         });
 
         // Update mouse state (check for new hovered button, etc.)
-        self.update_drag();
+        self.mutate_with_update_context(|context| {
+            Self::update_drag(context);
+        });
         self.update_mouse_state(false, false);
 
         // GC
