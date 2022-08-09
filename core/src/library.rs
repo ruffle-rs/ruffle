@@ -1,11 +1,12 @@
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
-use crate::backend::{audio::SoundHandle, render};
+use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use gc_arena::{Collect, MutationContext};
+use ruffle_types::backend::render;
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;

@@ -6,7 +6,6 @@ use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2V
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     navigator::NavigatorBackend,
-    render::RenderBackend,
     video::VideoBackend,
 };
 use crate::context_menu::ContextMenuState;
@@ -23,6 +22,7 @@ use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_types::backend::log::LogBackend;
+use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::backend::ui::{InputManager, UiBackend};
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};

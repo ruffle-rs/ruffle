@@ -1,6 +1,6 @@
-use crate::backend::render::{BitmapInfo, BitmapSource, ShapeHandle};
 use crate::context::RenderContext;
 use gc_arena::Collect;
+use ruffle_types::backend::render::{BitmapInfo, BitmapSource, ShapeHandle};
 use ruffle_types::bounding_box::BoundingBox;
 use ruffle_types::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use std::cell::Cell;

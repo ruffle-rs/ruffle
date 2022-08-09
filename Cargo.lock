@@ -3182,10 +3182,15 @@ name = "ruffle_types"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "downcast-rs",
+ "flate2",
  "gc-arena",
+ "gif",
+ "jpeg-decoder",
  "log",
  "num-derive",
  "num-traits",
+ "png",
  "ruffle_wstr",
  "smallvec",
  "swf",

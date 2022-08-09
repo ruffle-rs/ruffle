@@ -1,5 +1,5 @@
 use fnv::FnvHashMap;
-use ruffle_core::backend::render::{
+use ruffle_types::backend::render::{
     swf, Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
     ShapeHandle, Transform,
 };

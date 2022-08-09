@@ -5,11 +5,11 @@ use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_types::backend::render::BitmapHandle;
 use ruffle_types::vminterface::AvmType;
 use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};

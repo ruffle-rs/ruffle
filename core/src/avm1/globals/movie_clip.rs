@@ -8,13 +8,14 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
-use crate::backend::{navigator::NavigationMethod, render};
+use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use gc_arena::MutationContext;
+use ruffle_types::backend::render;
 use ruffle_types::shape_utils::DrawCommand;
 use ruffle_types::vminterface::Instantiator;
 use swf::{

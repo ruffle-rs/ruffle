@@ -13,7 +13,6 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
-use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -23,6 +22,7 @@ use crate::player::Player;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
+use ruffle_types::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::Instantiator;

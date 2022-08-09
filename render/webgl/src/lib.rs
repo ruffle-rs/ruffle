@@ -1,12 +1,12 @@
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
-use ruffle_core::backend::render::{
-    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
-    ShapeHandle, Transform,
-};
 use ruffle_core::swf;
 use ruffle_render_common_tess::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
+};
+use ruffle_types::backend::render::{
+    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
+    ShapeHandle, Transform,
 };
 use ruffle_types::shape_utils::DistilledShape;
 use ruffle_web_common::JsResult;

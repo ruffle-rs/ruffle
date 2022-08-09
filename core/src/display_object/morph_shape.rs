@@ -1,9 +1,9 @@
-use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::library::Library;
 use crate::prelude::*;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_types::backend::render::{RenderBackend, ShapeHandle};
 use ruffle_types::tag_utils::SwfMovie;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;

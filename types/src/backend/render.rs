@@ -1,12 +1,12 @@
-pub use crate::{library::MovieLibrary, Color};
-use downcast_rs::Downcast;
+use crate::matrix::Matrix;
+use crate::shape_utils::DistilledShape;
+pub use crate::transform::Transform;
+use downcast_rs::{impl_downcast, Downcast};
 use gc_arena::Collect;
-use ruffle_types::matrix::Matrix;
-use ruffle_types::shape_utils::DistilledShape;
-pub use ruffle_types::transform::Transform;
 use std::borrow::Cow;
 use std::io::Read;
 pub use swf;
+pub use swf::Color;
 
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);

@@ -2,12 +2,12 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
-use crate::backend::render::ShapeHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::drawing::Drawing;
 use crate::prelude::*;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::render::ShapeHandle;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;
 use ruffle_types::vminterface::Instantiator;

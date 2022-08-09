@@ -4,13 +4,13 @@ use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
-use crate::backend::render::BitmapInfo;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
 use crate::vminterface::AvmObject;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::backend::render::BitmapInfo;
 use ruffle_types::bounding_box::BoundingBox;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;

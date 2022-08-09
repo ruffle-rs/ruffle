@@ -5,7 +5,7 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_core::backend::render::{swf, BitmapHandle, BitmapSource};
+use ruffle_types::backend::render::{swf, BitmapHandle, BitmapSource};
 use ruffle_types::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
