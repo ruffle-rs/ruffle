@@ -976,6 +976,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_end_drag(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        // we might not have had an opportunity to call `update_drag`
+        // if AS did `startDrag(mc);stopDrag();` in one go
+        // so let's do it here
+        crate::player::Player::update_drag(&mut self.context);
+
         *self.context.drag_object = None;
         Ok(FrameControl::Continue)
     }
