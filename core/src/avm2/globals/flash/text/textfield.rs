@@ -10,9 +10,9 @@ use crate::avm2::Error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
 use ruffle_types::string::AvmString;
+use ruffle_types::vminterface::AvmType;
 use std::sync::Arc;
 
 /// Implements `flash.text.TextField`'s instance constructor.

@@ -20,10 +20,11 @@ use crate::display_object::{
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
-use crate::vminterface::{AvmType, Instantiator};
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_types::string::{FromWStr, WStr};
+use ruffle_types::vminterface::AvmType;
+use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;

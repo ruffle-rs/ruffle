@@ -23,10 +23,12 @@ use crate::prelude::*;
 use crate::shape_utils::DrawCommand;
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
-use crate::vminterface::{AvmObject, AvmType, Instantiator};
+use crate::vminterface::AvmObject;
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_types::string::{utils as string_utils, AvmString, WStr, WString};
+use ruffle_types::vminterface::AvmType;
+use ruffle_types::vminterface::Instantiator;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::Twips;
 

@@ -11,8 +11,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::Graphic;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::vminterface::AvmType;
 use std::sync::Arc;
 
 /// Implements `flash.display.Shape`'s instance constructor.

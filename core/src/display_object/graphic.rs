@@ -8,8 +8,9 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::drawing::Drawing;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::vminterface::AvmType;
+use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 

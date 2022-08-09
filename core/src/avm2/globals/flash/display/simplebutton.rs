@@ -9,8 +9,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
-use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::vminterface::Instantiator;
 use swf::ButtonState;
 
 /// Implements `flash.display.SimpleButton`'s instance constructor.

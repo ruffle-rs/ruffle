@@ -21,11 +21,11 @@ use crate::display_object::{
 use crate::events::ClipEvent;
 use crate::player::Player;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
 use ruffle_types::string::AvmString;
+use ruffle_types::vminterface::Instantiator;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use swf::read::read_compression_type;

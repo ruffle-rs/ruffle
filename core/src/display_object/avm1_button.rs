@@ -11,8 +11,9 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::vminterface::AvmType;
+use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;

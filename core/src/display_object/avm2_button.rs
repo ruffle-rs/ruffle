@@ -14,8 +14,8 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip, TDis
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::vminterface::Instantiator;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
