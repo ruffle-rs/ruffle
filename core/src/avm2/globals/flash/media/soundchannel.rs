@@ -8,6 +8,7 @@ use crate::avm2::object::{soundchannel_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::SoundTransform;
+use crate::display_object::SoundTransformExt;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.media.SoundChannel`'s instance constructor.

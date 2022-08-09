@@ -9,6 +9,7 @@ use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::display_object::SoundTransformExt;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use gc_arena::{GcCell, MutationContext};
 use ruffle_types::tag_utils::SwfMovie;

@@ -8,6 +8,7 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::SoundTransform;
+use crate::display_object::SoundTransformExt;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.media.SoundMixer`'s instance constructor.

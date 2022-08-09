@@ -5,6 +5,7 @@ pub mod backend;
 pub mod binary_data;
 pub mod bounding_box;
 pub mod color_transform;
+pub mod display_object;
 pub mod events;
 pub mod matrix;
 pub mod numbers;

@@ -9,6 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
+use crate::display_object::SoundTransformExt;
 use gc_arena::{GcCell, MutationContext};
 use swf::{SoundEvent, SoundInfo};
 
