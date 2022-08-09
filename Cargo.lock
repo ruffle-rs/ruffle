@@ -3106,9 +3106,9 @@ dependencies = [
  "fnv",
  "js-sys",
  "log",
- "ruffle_core",
  "ruffle_types",
  "ruffle_web_common",
+ "swf",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -3119,8 +3119,8 @@ version = "0.1.0"
 dependencies = [
  "log",
  "lyon",
- "ruffle_core",
  "ruffle_types",
+ "swf",
 ]
 
 [[package]]
@@ -3131,10 +3131,10 @@ dependencies = [
  "fnv",
  "js-sys",
  "log",
- "ruffle_core",
  "ruffle_render_common_tess",
  "ruffle_types",
  "ruffle_web_common",
+ "swf",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -3151,9 +3151,9 @@ dependencies = [
  "image",
  "log",
  "raw-window-handle 0.4.3",
- "ruffle_core",
  "ruffle_render_common_tess",
  "ruffle_types",
+ "swf",
  "web-sys",
  "wgpu",
 ]

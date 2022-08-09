@@ -1,6 +1,5 @@
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
-use ruffle_core::swf;
 use ruffle_render_common_tess::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };

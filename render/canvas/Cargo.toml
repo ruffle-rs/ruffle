@@ -10,12 +10,9 @@ js-sys = "0.3.59"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
 ruffle_types = {path = "../../types"}
+swf = {path = "../../swf"}
 wasm-bindgen = "=0.2.82"
 fnv = "1.0.7"
-
-[dependencies.ruffle_core]
-path = "../../core"
-default-features = false
 
 [dependencies.web-sys]
 version = "0.3.58"

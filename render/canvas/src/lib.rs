@@ -1,6 +1,6 @@
 use fnv::FnvHashMap;
 use ruffle_types::backend::render::{
-    swf, Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
+    Bitmap, BitmapFormat, BitmapHandle, BitmapSource, Color, NullBitmapSource, RenderBackend,
     ShapeHandle, Transform,
 };
 use ruffle_types::color_transform::ColorTransform;
