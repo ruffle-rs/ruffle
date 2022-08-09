@@ -8,7 +8,7 @@ use ruffle_core::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
-use ruffle_core::loader::Error;
+use ruffle_types::loader::Error;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;
 use url::Url;

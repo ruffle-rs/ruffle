@@ -4,7 +4,7 @@ use ruffle_core::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
-use ruffle_core::loader::Error;
+use ruffle_types::loader::Error;
 use std::borrow::Cow;
 use url::Url;
 use wasm_bindgen::JsCast;

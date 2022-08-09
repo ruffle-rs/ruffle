@@ -20,6 +20,7 @@ downcast-rs = "1.2.0"
 flate2 = "1.0.24"
 generational-arena = "0.2.8"
 instant = "0.1"
+thiserror = "1.0"
 
 [dependencies.jpeg-decoder]
 version = "0.2.6"

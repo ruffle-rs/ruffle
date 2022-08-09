@@ -1,7 +1,7 @@
 //! Task state information
 
 use ruffle_core::backend::navigator::OwnedFuture;
-use ruffle_core::loader::Error;
+use ruffle_types::loader::Error;
 use std::task::{Context, Poll};
 
 /// Indicates the state of a given task.

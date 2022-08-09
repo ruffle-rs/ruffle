@@ -7,6 +7,7 @@ pub mod bounding_box;
 pub mod color_transform;
 pub mod display_object;
 pub mod events;
+pub mod loader;
 pub mod matrix;
 pub mod numbers;
 pub mod shape_utils;

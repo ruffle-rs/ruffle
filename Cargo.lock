@@ -3196,6 +3196,7 @@ dependencies = [
  "ruffle_wstr",
  "smallvec",
  "swf",
+ "thiserror",
  "url",
 ]
 

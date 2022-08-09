@@ -6,7 +6,7 @@ use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::loader::DataFormat;
+use ruffle_types::loader::DataFormat;
 
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
