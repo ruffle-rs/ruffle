@@ -6,6 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+ruffle_types = { path = "../types" }
 byteorder = "1.4"
 bitstream-io = "1.5.0"
 flate2 = "1.0.24"

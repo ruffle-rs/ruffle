@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "types",
     "core",
     "core/macros",
     "core/build_playerglobal",

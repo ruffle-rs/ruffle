@@ -3046,6 +3046,7 @@ dependencies = [
  "rand",
  "regress",
  "ruffle_macros",
+ "ruffle_types",
  "ruffle_wstr",
  "serde",
  "serde_json",
@@ -3169,6 +3170,10 @@ dependencies = [
  "swf",
  "walkdir",
 ]
+
+[[package]]
+name = "ruffle_types"
+version = "0.1.0"
 
 [[package]]
 name = "ruffle_web"
