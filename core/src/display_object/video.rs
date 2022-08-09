@@ -6,12 +6,12 @@ use crate::avm2::{
 };
 use crate::backend::render::BitmapInfo;
 use crate::backend::video::{EncodedFrame, VideoStreamHandle};
-use crate::bounding_box::BoundingBox;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
 use crate::vminterface::AvmObject;
 use gc_arena::{Collect, GcCell, MutationContext};
+use ruffle_types::bounding_box::BoundingBox;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
 use ruffle_types::vminterface::Instantiator;

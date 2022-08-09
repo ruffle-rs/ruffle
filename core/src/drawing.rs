@@ -1,8 +1,8 @@
 use crate::backend::render::{BitmapInfo, BitmapSource, ShapeHandle};
-use crate::bounding_box::BoundingBox;
 use crate::context::RenderContext;
 use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use gc_arena::Collect;
+use ruffle_types::bounding_box::BoundingBox;
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Twips};
 

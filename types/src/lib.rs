@@ -3,6 +3,7 @@ extern crate num_derive;
 
 pub mod backend;
 pub mod binary_data;
+pub mod bounding_box;
 pub mod events;
 pub mod matrix;
 pub mod numbers;

@@ -16,7 +16,6 @@ extern crate num_derive;
 mod avm1;
 mod avm2;
 pub mod bitmap;
-mod bounding_box;
 mod character;
 pub mod color_transform;
 pub mod context;
