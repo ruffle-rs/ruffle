@@ -7,7 +7,6 @@ use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     navigator::NavigatorBackend,
     render::RenderBackend,
-    storage::StorageBackend,
     ui::{InputManager, UiBackend},
     video::VideoBackend,
 };
@@ -26,6 +25,7 @@ use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_types::backend::log::LogBackend;
+use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::vminterface::AvmType;
 use std::collections::{HashMap, VecDeque};

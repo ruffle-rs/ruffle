@@ -1,4 +1,4 @@
-use ruffle_core::backend::storage::StorageBackend;
+use ruffle_types::backend::storage::StorageBackend;
 use web_sys::Storage;
 
 pub struct LocalStorageBackend {

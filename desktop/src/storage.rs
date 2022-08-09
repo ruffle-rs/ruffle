@@ -1,4 +1,4 @@
-use ruffle_core::backend::storage::StorageBackend;
+use ruffle_types::backend::storage::StorageBackend;
 use std::fs;
 use std::fs::File;
 use std::io::Write;

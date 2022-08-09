@@ -11,7 +11,6 @@ use crate::backend::{
     audio::{AudioBackend, AudioManager},
     navigator::{NavigatorBackend, Request},
     render::RenderBackend,
-    storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
     video::VideoBackend,
 };
@@ -36,6 +35,7 @@ use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_types::backend::log::{LogBackend, NullLogBackend};
+use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
 use ruffle_types::vminterface::AvmType;
@@ -1827,6 +1827,7 @@ impl PlayerBuilder {
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
+        use ruffle_types::backend::storage;
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
