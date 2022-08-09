@@ -70,6 +70,14 @@ jobs:
           command: clippy
           args: --all --all-features --tests -- -D warnings
 
+      - name: Check documentation
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
       - name: Run tests with image tests
         if: runner.os == 'Linux' || runner.os == 'Windows'
         uses: actions-rs/cargo@v1
