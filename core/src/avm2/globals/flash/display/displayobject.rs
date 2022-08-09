@@ -9,10 +9,9 @@ use crate::avm2::value::Value;
 use crate::avm2::ArrayObject;
 use crate::avm2::Error;
 use crate::display_object::{HitTestOptions, TDisplayObject};
-use crate::types::Degrees;
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
-use ruffle_types::numbers::Percent;
+use ruffle_types::numbers::{Degrees, Percent};
 use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
