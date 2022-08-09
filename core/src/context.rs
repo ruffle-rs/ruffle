@@ -3,7 +3,7 @@
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::{Avm1, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2Value};
-use crate::backend::{audio::AudioManager, navigator::NavigatorBackend};
+use crate::backend::audio::AudioManager;
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
@@ -19,6 +19,7 @@ use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_types::backend::audio::{AudioBackend, SoundHandle, SoundInstanceHandle};
 use ruffle_types::backend::log::LogBackend;
+use ruffle_types::backend::navigator::NavigatorBackend;
 use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::backend::ui::{InputManager, UiBackend};

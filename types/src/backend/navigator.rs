@@ -1,8 +1,8 @@
 //! Browser-related platform functions
 
+use crate::loader::Error;
 use indexmap::IndexMap;
-use ruffle_types::loader::Error;
-use ruffle_types::string::WStr;
+use ruffle_wstr::WStr;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;

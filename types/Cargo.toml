@@ -21,10 +21,17 @@ flate2 = "1.0.24"
 generational-arena = "0.2.8"
 instant = "0.1"
 thiserror = "1.0"
+indexmap = "1.9.1"
 
 [dependencies.jpeg-decoder]
 version = "0.2.6"
 default-features = false # can't use rayon on web
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
+version = "0.3.21"
+
+[target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
+version = "0.4.32"
 
 [dev-dependencies]
 approx = "0.5.1"

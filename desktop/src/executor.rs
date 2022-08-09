@@ -3,7 +3,7 @@
 use crate::custom_event::RuffleEvent;
 use crate::task::Task;
 use generational_arena::{Arena, Index};
-use ruffle_core::backend::navigator::OwnedFuture;
+use ruffle_types::backend::navigator::OwnedFuture;
 use ruffle_types::loader::Error;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex, Weak};

@@ -3,9 +3,9 @@
 use crate::cli_options::ExecuteReportOpt;
 use crate::file_results::{AvmType, FileResults, Step};
 use crate::logging::{ScanLogBackend, ThreadLocalScanLogger, LOCAL_LOGGER};
-use ruffle_core::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_core::swf::{decompress_swf, parse_swf};
 use ruffle_core::PlayerBuilder;
+use ruffle_types::backend::navigator::{NullExecutor, NullNavigatorBackend};
 use ruffle_types::tag_utils::SwfMovie;
 use sha2::{Digest, Sha256};
 use std::io::{stdout, Write};

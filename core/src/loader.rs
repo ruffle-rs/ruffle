@@ -12,7 +12,6 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object, QName,
     Value as Avm2Value,
 };
-use crate::backend::navigator::{OwnedFuture, Request};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -22,6 +21,7 @@ use crate::player::Player;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
+use ruffle_types::backend::navigator::{OwnedFuture, Request};
 use ruffle_types::loader::{ContentType, DataFormat, Error, LoaderStatus};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;

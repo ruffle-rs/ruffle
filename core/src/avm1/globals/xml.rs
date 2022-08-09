@@ -7,9 +7,9 @@ use crate::avm1::object::xml_object::XmlObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm_warn;
-use crate::backend::navigator::Request;
 use crate::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::MutationContext;
+use ruffle_types::backend::navigator::Request;
 use ruffle_types::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {

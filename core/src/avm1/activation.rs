@@ -7,7 +7,6 @@ use crate::avm1::scope::Scope;
 use crate::avm1::{
     fscommand, globals, scope, skip_actions, start_drag, ArrayObject, ScriptObject, Value,
 };
-use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::ecma_conversions::f64_to_wrapping_u32;
@@ -16,6 +15,7 @@ use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use instant::Instant;
 use rand::Rng;
+use ruffle_types::backend::navigator::{NavigationMethod, Request};
 use ruffle_types::string::{AvmString, WStr, WString};
 use ruffle_types::tag_utils::SwfSlice;
 use ruffle_types::vminterface::Instantiator;

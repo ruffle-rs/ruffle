@@ -4,10 +4,10 @@ use crate::custom_event::RuffleEvent;
 use isahc::{
     config::RedirectPolicy, prelude::*, AsyncReadResponseExt, HttpClient, Request as IsahcRequest,
 };
-use ruffle_core::backend::navigator::{
+use ruffle_core::indexmap::IndexMap;
+use ruffle_types::backend::navigator::{
     NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
-use ruffle_core::indexmap::IndexMap;
 use ruffle_types::loader::Error;
 use std::rc::Rc;
 use std::sync::mpsc::Sender;

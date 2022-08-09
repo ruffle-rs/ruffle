@@ -1,9 +1,9 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
-use ruffle_core::backend::navigator::{
+use ruffle_core::indexmap::IndexMap;
+use ruffle_types::backend::navigator::{
     url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
-use ruffle_core::indexmap::IndexMap;
 use ruffle_types::loader::Error;
 use std::borrow::Cow;
 use url::Url;

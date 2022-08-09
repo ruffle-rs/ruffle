@@ -3184,9 +3184,11 @@ dependencies = [
  "approx",
  "downcast-rs",
  "flate2",
+ "futures",
  "gc-arena",
  "generational-arena",
  "gif",
+ "indexmap",
  "instant",
  "jpeg-decoder",
  "log",
@@ -3198,6 +3200,7 @@ dependencies = [
  "swf",
  "thiserror",
  "url",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
