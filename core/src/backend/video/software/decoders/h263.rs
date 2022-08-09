@@ -1,8 +1,8 @@
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
 use h263_rs::parser::H263Reader;
 use h263_rs::{DecoderOption, H263State, PictureTypeCode};
 use h263_rs_yuv::bt601::yuv420_to_rgba;
+use ruffle_types::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
 
 /// H263 video decoder.
 pub struct H263Decoder(H263State);

@@ -10,7 +10,6 @@ use crate::avm2::{
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
     navigator::{NavigatorBackend, Request},
-    video::VideoBackend,
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
@@ -35,6 +34,7 @@ use ruffle_types::backend::log::{LogBackend, NullLogBackend};
 use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::backend::ui::{InputManager, MouseCursor, UiBackend};
+use ruffle_types::backend::video::VideoBackend;
 use ruffle_types::events::{ButtonKeyCode, KeyCode, MouseButton, PlayerEvent};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;
@@ -1830,7 +1830,7 @@ impl PlayerBuilder {
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
-        use ruffle_types::backend::{render, storage, ui};
+        use ruffle_types::backend::{render, storage, ui, video};
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));

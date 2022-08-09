@@ -1,5 +1,5 @@
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
+use ruffle_types::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
 
 use h263_rs_yuv::bt601::yuv420_to_rgba;
 

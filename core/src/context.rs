@@ -6,7 +6,6 @@ use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject, Value as Avm2V
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     navigator::NavigatorBackend,
-    video::VideoBackend,
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
@@ -25,6 +24,7 @@ use ruffle_types::backend::log::LogBackend;
 use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::backend::ui::{InputManager, UiBackend};
+use ruffle_types::backend::video::VideoBackend;
 use ruffle_types::tag_utils::{SwfMovie, SwfSlice};
 use ruffle_types::transform::TransformStack;
 use ruffle_types::vminterface::AvmType;
