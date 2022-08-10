@@ -46,9 +46,14 @@ pub use graphic::Graphic;
 pub use interactive::{InteractiveObject, TInteractiveObject};
 pub use morph_shape::{MorphShape, MorphShapeStatic};
 pub use movie_clip::{MovieClip, Scene};
+pub use ruffle_types::display_object::stage::StageAlign;
+pub use ruffle_types::display_object::stage::StageDisplayState;
+pub use ruffle_types::display_object::stage::StageQuality;
+pub use ruffle_types::display_object::stage::StageScaleMode;
+pub use ruffle_types::display_object::stage::WindowMode;
 pub use ruffle_types::display_object::SoundTransform;
 use ruffle_types::vminterface::AvmType;
-pub use stage::{Stage, StageAlign, StageDisplayState, StageQuality, StageScaleMode, WindowMode};
+pub use stage::Stage;
 pub use text::Text;
 pub use video::Video;
 

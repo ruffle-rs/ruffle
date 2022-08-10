@@ -7,8 +7,8 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::display_object::StageDisplayState;
 use gc_arena::MutationContext;
+use ruffle_types::display_object::stage::StageDisplayState;
 use ruffle_types::string::{AvmString, WStr, WString};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {

@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use swf::{CharacterId, DefineVideoStream, VideoFrame};
 
-use super::StageQuality;
+use ruffle_types::display_object::stage::StageQuality;
 
 /// A Video display object is a high-level interface to a video player.
 ///

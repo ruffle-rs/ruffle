@@ -3176,6 +3176,7 @@ name = "ruffle_types"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "bitflags",
  "downcast-rs",
  "flate2",
  "futures",

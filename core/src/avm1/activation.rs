@@ -2066,7 +2066,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn action_toggle_quality(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        use crate::display_object::StageQuality;
+        use ruffle_types::display_object::stage::StageQuality;
         // Toggle between `Low` and `High`/`Best` quality.
         // This op remembers whether the stage quality was `Best` or higher, so we have to maintain
         // the bitmap downsampling flag to ensure we toggle back to the proper quality.

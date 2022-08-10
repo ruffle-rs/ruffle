@@ -8,8 +8,9 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{StageDisplayState, TDisplayObject};
+use crate::display_object::TDisplayObject;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::display_object::stage::StageDisplayState;
 use ruffle_types::string::{AvmString, WString};
 use swf::Color;
 

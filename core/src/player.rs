@@ -12,8 +12,7 @@ use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{ContextMenuCallback, ContextMenuItem, ContextMenuState};
 use crate::display_object::{
-    EditText, InteractiveObject, MovieClip, Stage, StageAlign, StageDisplayState, StageQuality,
-    StageScaleMode, TInteractiveObject, WindowMode,
+    EditText, InteractiveObject, MovieClip, Stage, StageAlign, TInteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::external::Value as ExternalValue;
@@ -35,6 +34,9 @@ use ruffle_types::backend::render::RenderBackend;
 use ruffle_types::backend::storage::StorageBackend;
 use ruffle_types::backend::ui::{InputManager, MouseCursor, UiBackend};
 use ruffle_types::backend::video::VideoBackend;
+use ruffle_types::display_object::stage::{
+    StageDisplayState, StageQuality, StageScaleMode, WindowMode,
+};
 use ruffle_types::events::{ButtonKeyCode, KeyCode, MouseButton, PlayerEvent};
 use ruffle_types::string::AvmString;
 use ruffle_types::tag_utils::SwfMovie;

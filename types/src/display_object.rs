@@ -1,5 +1,7 @@
 use gc_arena::Collect;
 
+pub mod stage;
+
 /// Represents the sound transform of sounds played inside a Flash MovieClip.
 /// Every value is a percentage (0-100), but out of range values are allowed.
 /// In AVM1, this is returned by `Sound.getTransform`.

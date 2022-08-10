@@ -1,6 +1,6 @@
 #[macro_use]
 mod display_object;
-pub use display_object::StageDisplayState;
+pub use ruffle_types::display_object::stage::StageDisplayState;
 pub use ruffle_types::string;
 
 #[macro_use]
