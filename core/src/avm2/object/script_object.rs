@@ -452,11 +452,7 @@ impl<'gc> Debug for ScriptObject<'gc> {
             .try_read()
             .map(|obj| obj.instance_of())
             .transpose()
-            .map(|class_obj| {
-                class_obj
-                    .and_then(|class_obj| class_obj.try_inner_class_definition())
-                    .and_then(|class| class.try_read().map(|c| c.name()))
-            });
+            .map(|class_obj| class_obj.map(|c| c.debug_class_name()));
 
         match class_name {
             Some(Ok(class_name)) => {

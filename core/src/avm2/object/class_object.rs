@@ -18,10 +18,11 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{BorrowError, Ref, RefMut};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 /// An Object which can be called to execute its function code.
-#[derive(Collect, Debug, Clone, Copy)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ClassObject<'gc>(GcCell<'gc, ClassObjectData<'gc>>);
 
@@ -746,6 +747,24 @@ impl<'gc> ClassObject<'gc> {
     fn instance_allocator(self) -> Option<AllocatorFn> {
         Some(self.0.read().instance_allocator.0)
     }
+
+    /// Attempts to obtain the name of this class.
+    /// If we are unable to read from a necessary `GcCell`,
+    /// the returned value will be some kind of error message.
+    ///
+    /// This should only be used in a debug context, where
+    /// we need infallible access to *something* to print
+    /// out.
+    pub fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
+        let class_name = self
+            .try_inner_class_definition()
+            .and_then(|class| class.try_read().map(|c| c.name()));
+
+        match class_name {
+            Ok(class_name) => Box::new(class_name),
+            Err(err) => Box::new(err),
+        }
+    }
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
@@ -969,5 +988,14 @@ impl<'gc> Eq for ClassObject<'gc> {}
 impl<'gc> Hash for ClassObject<'gc> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ptr().hash(state);
+    }
+}
+
+impl<'gc> Debug for ClassObject<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("ClassObject")
+            .field("name", &self.debug_class_name())
+            .field("ptr", &self.0.as_ptr())
+            .finish()
     }
 }
