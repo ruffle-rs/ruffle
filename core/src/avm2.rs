@@ -28,6 +28,7 @@ pub mod bytearray;
 mod class;
 mod domain;
 mod events;
+mod frame;
 mod function;
 mod globals;
 mod method;
@@ -47,6 +48,7 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
+pub use crate::avm2::frame::StackFrame;
 pub use crate::avm2::names::{Namespace, QName};
 pub use crate::avm2::object::{
     ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
@@ -93,6 +95,52 @@ pub struct Avm2<'gc> {
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
+}
+
+pub struct ValueStackFrame<'a, 'gc> {
+    show_debug: bool,
+    stack: StackFrame<'a, Value<'gc>>,
+}
+
+impl<'a, 'gc> ValueStackFrame<'a, 'gc> {
+    pub fn push(&mut self, value: impl Into<Value<'gc>>) {
+        let mut value = value.into();
+        if let Value::Object(o) = value {
+            if let Some(prim) = o.as_primitive() {
+                value = *prim;
+            }
+        }
+        if self.show_debug {
+            log::debug!("Stack push {}: {:?}", self.stack.len(), value);
+        }
+        self.stack.push(value);
+    }
+
+    /// Retrieve the top-most value on the operand stack.
+    #[allow(clippy::let_and_return)]
+    pub fn pop(&mut self) -> Value<'gc> {
+        let value = self.stack.pop().unwrap_or_else(|| {
+            log::warn!("Avm2::pop: Stack underflow");
+            Value::Undefined
+        });
+
+        if self.show_debug {
+            log::debug!("Stack pop {}: {:?}", self.stack.len(), value);
+        }
+        value
+    }
+
+    pub fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
+        let mut args = vec![Value::Undefined; arg_count as usize];
+        for arg in args.iter_mut().rev() {
+            *arg = self.pop();
+        }
+        args
+    }
+
+    pub fn clear(&mut self) {
+        self.stack.clear()
+    }
 }
 
 impl<'gc> Avm2<'gc> {
@@ -318,38 +366,14 @@ impl<'gc> Avm2<'gc> {
         self.globals
     }
 
-    /// Push a value onto the operand stack.
-    fn push(&mut self, value: impl Into<Value<'gc>>) {
-        let mut value = value.into();
-        if let Value::Object(o) = value {
-            if let Some(prim) = o.as_primitive() {
-                value = *prim;
-            }
+    fn create_stack_frame<'a>(&'a mut self, depth: usize, max: usize) -> ValueStackFrame<'a, 'gc> {
+        debug_assert!(depth <= self.stack.len());
+        let show_debug = self.show_debug_output();
+        let stack_frame = StackFrame::new(&mut self.stack, depth, max);
+        ValueStackFrame {
+            show_debug,
+            stack: stack_frame,
         }
-
-        avm_debug!(self, "Stack push {}: {:?}", self.stack.len(), value);
-        self.stack.push(value);
-    }
-
-    /// Retrieve the top-most value on the operand stack.
-    #[allow(clippy::let_and_return)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().unwrap_or_else(|| {
-            log::warn!("Avm1::pop: Stack underflow");
-            Value::Undefined
-        });
-
-        avm_debug!(self, "Stack pop {}: {:?}", self.stack.len(), value);
-
-        value
-    }
-
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = vec![Value::Undefined; arg_count as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop();
-        }
-        args
     }
 
     #[cfg(feature = "avm_debug")]

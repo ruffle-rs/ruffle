@@ -398,7 +398,7 @@ impl<'gc> Multiname<'gc> {
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => {
-                let ns_value = activation.avm2().pop();
+                let ns_value = activation.stack_frame().pop();
                 let ns = ns_value.as_namespace()?;
                 Self {
                     ns: vec![*ns],
@@ -408,8 +408,11 @@ impl<'gc> Multiname<'gc> {
                 }
             }
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => {
-                let name = activation.avm2().pop().coerce_to_string(activation)?;
-                let ns_value = activation.avm2().pop();
+                let name = activation
+                    .stack_frame()
+                    .pop()
+                    .coerce_to_string(activation)?;
+                let ns_value = activation.stack_frame().pop();
                 let ns = ns_value.as_namespace()?;
                 Self {
                     ns: vec![*ns],
@@ -434,7 +437,7 @@ impl<'gc> Multiname<'gc> {
                 params: Vec::new(),
             },
             AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. } => {
-                let name = activation.avm2().pop();
+                let name = activation.stack_frame().pop();
                 Self::from_multiname_late(translation_unit, abc_multiname, name, activation)?
             }
             AbcMultiname::TypeName { .. } => {
