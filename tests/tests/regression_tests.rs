@@ -455,6 +455,7 @@ swf_tests! {
     (as3_subtract, "avm2/subtract", 1),
     (as3_symbol_class_binary_data, "avm2/symbol_class_binary_data", 1),
     (as3_textformat, "avm2/textformat", 1),
+    (as3_throw, "avm2/throw", 1),
     (as3_timeline_scripts, "avm2/timeline_scripts", 3),
     (as3_trace, "avm2/trace", 1),
     (as3_truthiness, "avm2/truthiness", 1),

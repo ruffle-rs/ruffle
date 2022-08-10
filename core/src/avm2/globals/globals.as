@@ -1,6 +1,8 @@
 // List is ordered alphabetically, except where superclasses
 // need to come before subclasses.
 
+include "Error.as"
+
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
@@ -46,6 +48,8 @@ include "flash/events/FullScreenEvent.as"
 include "flash/events/ProgressEvent.as"
 include "flash/events/MouseEvent.as"
 include "flash/events/KeyboardEvent.as"
+
+include "flash/errors/IllegalOperationError.as"
 
 include "flash/geom/ColorTransform.as"
 include "flash/geom/Orientation3D.as"
