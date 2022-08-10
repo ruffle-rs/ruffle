@@ -3,6 +3,7 @@
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::scope::Scope;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
@@ -70,6 +71,8 @@ pub type Error = Box<dyn std::error::Error>;
 pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
+
+    scope_stack: Vec<Scope<'gc>>,
 
     /// Global scope object.
     globals: Domain<'gc>,
@@ -150,6 +153,7 @@ impl<'gc> Avm2<'gc> {
 
         Self {
             stack: Vec::new(),
+            scope_stack: Vec::new(),
             globals,
             system_classes: None,
             native_method_table: Default::default(),

@@ -9,7 +9,7 @@ use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
 };
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::scope::{Scope, ScopeChain, ScopeStack};
+use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::{value, Avm2, Error, ValueStackFrame};
@@ -25,6 +25,8 @@ use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
+
+use super::StackFrame;
 
 /// Represents a particular register set.
 ///
@@ -97,9 +99,6 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     #[allow(dead_code)]
     return_value: Option<Value<'gc>>,
 
-    /// The current scope stack.
-    scope_stack: ScopeStack<'gc>,
-
     /// This represents the outer scope of the method that is executing.
     ///
     /// The outer scope gives an activation access to the "outer world", including
@@ -139,7 +138,11 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
 
     stack_depth: usize,
 
+    scope_depth: usize,
+
     max_stack_size: usize,
+
+    max_scope_size: usize,
 
     pub context: UpdateContext<'a, 'gc, 'gc_context>,
 }
@@ -163,13 +166,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
-            scope_stack: ScopeStack::new(),
             outer: ScopeChain::new(context.avm2.globals),
             caller_domain: context.avm2.globals,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: 0,
+            max_scope_size: 0,
             context,
         }
     }
@@ -182,13 +186,17 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<Self, Error> {
         let (method, global_object, domain) = script.init();
 
-        let (num_locals, max_stack) = match method {
-            Method::Native { .. } => (0, 0),
+        let (num_locals, max_stack, max_scope) = match method {
+            Method::Native { .. } => (0, 0, 0),
             Method::Bytecode(bytecode) => {
                 let body = bytecode
                     .body()
                     .ok_or("Cannot execute non-native method (for script) without body")?;
-                (body.num_locals, body.max_stack)
+                (
+                    body.num_locals,
+                    body.max_stack,
+                    body.max_scope_depth - body.init_scope_depth,
+                )
             }
         };
         let local_registers =
@@ -206,13 +214,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
-            scope_stack: ScopeStack::new(),
             outer: ScopeChain::new(domain),
             caller_domain: domain,
             subclass_object: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: max_stack as usize,
+            max_scope_size: max_scope as usize,
             context,
         })
     }
@@ -221,7 +230,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn find_definition(&mut self, name: &Multiname<'gc>) -> Result<Option<Object<'gc>>, Error> {
         let outer_scope = self.outer;
 
-        if let Some(obj) = self.scope_stack.find(name, outer_scope.is_empty())? {
+        if let Some(obj) = search_scope_stack(&self.scope_frame(), name, outer_scope.is_empty())? {
             Ok(Some(obj))
         } else if let Some(obj) = outer_scope.find(name, self)? {
             Ok(Some(obj))
@@ -237,7 +246,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ) -> Result<Option<Value<'gc>>, Error> {
         let outer_scope = self.outer;
 
-        if let Some(obj) = self.scope_stack.find(name, outer_scope.is_empty())? {
+        if let Some(obj) = search_scope_stack(&self.scope_frame(), name, outer_scope.is_empty())? {
             Ok(Some(obj.get_property(name, self)?))
         } else if let Some(result) = outer_scope.resolve(name, self)? {
             Ok(Some(result))
@@ -443,13 +452,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
-            scope_stack: ScopeStack::new(),
             outer,
             caller_domain: outer.domain(),
             subclass_object,
             activation_class,
             stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: body.max_stack as usize,
+            max_scope_size: (body.max_scope_depth - body.init_scope_depth) as usize,
             context,
         };
 
@@ -529,13 +539,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             actions_since_timeout_check: 0,
             local_registers,
             return_value: None,
-            scope_stack: ScopeStack::new(),
             outer,
             caller_domain,
             subclass_object,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
+            scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: 0,
+            max_scope_size: 0,
             context,
         })
     }
@@ -610,9 +621,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     /// Creates a new ScopeChain by chaining the current state of this
     /// activation's scope stack with the outer scope.
-    pub fn create_scopechain(&self) -> ScopeChain<'gc> {
-        self.outer
-            .chain(self.context.gc_context, self.scope_stack.scopes())
+    pub fn create_scopechain(&mut self) -> ScopeChain<'gc> {
+        let outer = self.outer;
+        outer.chain(self.context.gc_context, &self.scope_frame())
     }
 
     /// Returns the domain of the original AS3 caller.
@@ -628,11 +639,11 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     ///
     /// A return value of `None` implies that both the outer scope, and
     /// the current scope stack were both empty.
-    pub fn global_scope(&self) -> Option<Object<'gc>> {
+    pub fn global_scope(&mut self) -> Option<Object<'gc>> {
         let outer_scope = self.outer;
         outer_scope
             .get(0)
-            .or_else(|| self.scope_stack.get(0))
+            .or_else(|| self.scope_frame().first().cloned())
             .map(|scope| scope.values())
     }
 
@@ -644,6 +655,14 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.context
             .avm2
             .create_stack_frame(self.stack_depth, self.max_stack_size)
+    }
+
+    pub fn scope_frame<'b>(&'b mut self) -> StackFrame<'b, Scope<'gc>> {
+        StackFrame::new(
+            &mut self.context.avm2.scope_stack,
+            self.scope_depth,
+            self.max_scope_size,
+        )
     }
 
     /// Set the return value.
@@ -812,6 +831,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
 
         self.stack_frame().clear();
+        self.scope_frame().clear();
         val
     }
 
@@ -840,7 +860,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.stack_frame().clear();
                     self.stack_frame().push(exception);
 
-                    self.scope_stack.clear();
+                    self.scope_frame().clear();
 
                     reader.seek_absolute(full_data, e.target_offset as usize);
                     return Ok(FrameControl::Continue);
@@ -1619,20 +1639,20 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
 
     fn op_push_scope(&mut self) -> Result<FrameControl<'gc>, Error> {
         let object = self.stack_frame().pop().coerce_to_object(self)?;
-        self.scope_stack.push(Scope::new(object));
+        self.scope_frame().push(Scope::new(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_push_with(&mut self) -> Result<FrameControl<'gc>, Error> {
         let object = self.stack_frame().pop().coerce_to_object(self)?;
-        self.scope_stack.push(Scope::new_with(object));
+        self.scope_frame().push(Scope::new_with(object));
 
         Ok(FrameControl::Continue)
     }
 
     fn op_pop_scope(&mut self) -> Result<FrameControl<'gc>, Error> {
-        self.scope_stack.pop();
+        self.scope_frame().pop();
 
         Ok(FrameControl::Continue)
     }
@@ -1650,7 +1670,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     fn op_get_scope_object(&mut self, index: u8) -> Result<FrameControl<'gc>, Error> {
-        let scope = self.scope_stack.get(index as usize);
+        let scope = self.scope_frame().get(index as usize).cloned();
 
         if let Some(scope) = scope {
             self.stack_frame().push(scope.values());

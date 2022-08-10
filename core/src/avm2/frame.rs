@@ -1,3 +1,6 @@
+use std::cmp::min;
+use std::ops::Deref;
+
 #[derive(Debug)]
 pub struct StackFrame<'a, T> {
     stack: &'a mut Vec<T>,
@@ -9,24 +12,15 @@ impl<'a, T> StackFrame<'a, T> {
     pub fn new(stack: &'a mut Vec<T>, depth: usize, max: usize) -> Self {
         Self { stack, depth, max }
     }
-    pub fn len(&self) -> usize {
-        self.stack.len() - self.depth
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
 
     pub fn clear(&mut self) {
         self.stack.truncate(self.depth);
     }
 
     pub fn push(&mut self, value: T) {
-        // TODO: Currently we push anyways when the stack frame exceeds its max size.
-        // This is fine because the worst that can happen is the stack reallocates, but it might
-        // be better to return an error.
         if self.len() > self.max {
             log::warn!("Avm2::StackFrame::push overflow");
+            return;
         }
         self.stack.push(value);
     }
@@ -37,5 +31,16 @@ impl<'a, T> StackFrame<'a, T> {
         } else {
             None
         }
+    }
+}
+
+impl<'a, T> Deref for StackFrame<'a, T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.stack
+            .get(self.depth..)
+            .and_then(|v| v.get(..min(v.len(), self.max)))
+            .expect("StackFrame out of range")
     }
 }
