@@ -211,6 +211,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .get_mut(0)
             .unwrap() = global_object.into();
 
+        context.avm2.prepare_stack_frame(max_stack as usize);
+        context.avm2.prepare_scope_frame(max_scope as usize);
+
         Ok(Self {
             this: Some(global_object),
             arguments: None,
@@ -448,6 +451,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             None
         };
+        context.avm2.prepare_stack_frame(body.max_stack as usize);
+        context
+            .avm2
+            .prepare_scope_frame((body.max_scope_depth - body.init_scope_depth) as usize);
 
         let mut activation = Self {
             this,

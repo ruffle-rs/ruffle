@@ -371,6 +371,21 @@ impl<'gc> Avm2<'gc> {
         self.globals
     }
 
+    /// Ensures the next stack frame has enough capacity for `max` elements.
+    fn prepare_stack_frame(&mut self, max: usize) {
+        if self.stack.capacity() - self.stack.len() < max {
+            self.stack.reserve(max);
+        }
+    }
+
+    /// Ensures the next scope frame has enough capacity for `max` elements.
+    fn prepare_scope_frame(&mut self, max: usize) {
+        if self.scope_stack.capacity() - self.scope_stack.len() < max {
+            self.scope_stack.reserve(max);
+        }
+    }
+
+    /// Creates a new stack frame at a specific depth with a maximum size.
     fn create_stack_frame<'a>(&'a mut self, depth: usize, max: usize) -> ValueStackFrame<'a, 'gc> {
         debug_assert!(depth <= self.stack.len());
         let show_debug = self.show_debug_output();
