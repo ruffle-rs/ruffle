@@ -1030,6 +1030,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 Op::Sxi1 => self.op_sxi1(),
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
+                Op::Throw => self.op_throw(),
                 _ => self.unknown_op(op),
             };
 
@@ -3138,5 +3139,18 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn op_timestamp(&mut self) -> Result<FrameControl<'gc>, Error> {
         // while a debugger is not attached, this is a no-op
         Ok(FrameControl::Continue)
+    }
+
+    fn op_throw(&mut self) -> Result<FrameControl<'gc>, Error> {
+        let error_val = self.context.avm2.pop();
+        // FIXME - preserve the original thrown value.
+        // We include 'Ruffle' in the message to make it obvious that
+        // this is a temporary hack, and that the original object
+        // may not have been a String
+        let error_string = format!(
+            "Ruffle thrown error: {}",
+            error_val.coerce_to_debug_string(self)?
+        );
+        Err(error_string.into())
     }
 }
