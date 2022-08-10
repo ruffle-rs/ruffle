@@ -57,6 +57,7 @@ pub struct InputManager {
 }
 
 impl InputManager {
+    #[inline]
     pub fn new() -> Self {
         Self {
             keys_down: HashSet::new(),
@@ -79,6 +80,7 @@ impl InputManager {
         }
     }
 
+    #[inline]
     pub fn handle_event(&mut self, event: &PlayerEvent) {
         match *event {
             PlayerEvent::KeyDown { key_code, key_char } => {
@@ -95,24 +97,29 @@ impl InputManager {
         }
     }
 
+    #[inline]
     pub fn is_key_down(&self, key: KeyCode) -> bool {
         self.keys_down.contains(&key)
     }
 
+    #[inline]
     pub fn last_key_code(&self) -> KeyCode {
         self.last_key
     }
 
+    #[inline]
     pub fn last_key_char(&self) -> Option<char> {
         self.last_char
     }
 
+    #[inline]
     pub fn is_mouse_down(&self) -> bool {
         self.is_key_down(KeyCode::MouseLeft)
     }
 }
 
 impl Default for InputManager {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -122,34 +129,44 @@ impl Default for InputManager {
 pub struct NullUiBackend {}
 
 impl NullUiBackend {
+    #[inline]
     pub fn new() -> Self {
         Self {}
     }
 }
 
 impl UiBackend for NullUiBackend {
+    #[inline]
     fn mouse_visible(&self) -> bool {
         true
     }
 
+    #[inline]
     fn set_mouse_visible(&mut self, _visible: bool) {}
 
+    #[inline]
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 
+    #[inline]
     fn set_clipboard_content(&mut self, _content: String) {}
 
+    #[inline]
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), Error> {
         Ok(())
     }
 
+    #[inline]
     fn display_unsupported_message(&self) {}
 
+    #[inline]
     fn display_root_movie_download_failed_message(&self) {}
 
+    #[inline]
     fn message(&self, _message: &str) {}
 }
 
 impl Default for NullUiBackend {
+    #[inline]
     fn default() -> Self {
         NullUiBackend::new()
     }

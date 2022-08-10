@@ -37,6 +37,7 @@ pub struct SwfMovie {
 
 impl SwfMovie {
     /// Construct an empty movie.
+    #[inline]
     pub fn empty(swf_version: u8) -> Self {
         Self {
             header: HeaderExt::default_with_swf_version(swf_version),
@@ -51,6 +52,7 @@ impl SwfMovie {
 
     /// Utility method to construct a movie from a file on disk.
     #[cfg(any(unix, windows, target_os = "redox"))]
+    #[inline]
     pub fn from_path<P: AsRef<std::path::Path>>(
         path: P,
         loader_url: Option<String>,
@@ -64,6 +66,7 @@ impl SwfMovie {
     }
 
     /// Construct a movie based on the contents of the SWF datastream.
+    #[inline]
     pub fn from_data(
         swf_data: &[u8],
         url: Option<String>,
@@ -83,15 +86,18 @@ impl SwfMovie {
         })
     }
 
+    #[inline]
     pub fn header(&self) -> &HeaderExt {
         &self.header
     }
 
     /// Get the version of the SWF.
+    #[inline]
     pub fn version(&self) -> u8 {
         self.header.version()
     }
 
+    #[inline]
     pub fn data(&self) -> &[u8] {
         &self.data
     }
@@ -100,46 +106,56 @@ impl SwfMovie {
     /// For SWF version 6 and higher, this is always UTF-8.
     /// For SWF version 5 and lower, this is locale-dependent,
     /// and we default to WINDOWS-1252.
+    #[inline]
     pub fn encoding(&self) -> &'static swf::Encoding {
         self.encoding
     }
 
     /// The width of the movie in twips.
+    #[inline]
     pub fn width(&self) -> Twips {
         self.header.stage_size().x_max - self.header.stage_size().x_min
     }
 
     /// The height of the movie in twips.
+    #[inline]
     pub fn height(&self) -> Twips {
         self.header.stage_size().y_max - self.header.stage_size().y_min
     }
 
     /// Get the URL this SWF was fetched from.
+    #[inline]
     pub fn url(&self) -> Option<&str> {
         self.url.as_deref()
     }
 
     /// Get the URL that triggered the fetch of this SWF.
+    #[inline]
     pub fn loader_url(&self) -> Option<&str> {
         self.loader_url.as_deref()
     }
 
+    #[inline]
     pub fn parameters(&self) -> &[(String, String)] {
         &self.parameters
     }
 
+    #[inline]
     pub fn append_parameters(&mut self, params: impl IntoIterator<Item = (String, String)>) {
         self.parameters.extend(params);
     }
 
+    #[inline]
     pub fn compressed_len(&self) -> usize {
         self.compressed_len
     }
 
+    #[inline]
     pub fn uncompressed_len(&self) -> u32 {
         self.header.uncompressed_len()
     }
 
+    #[inline]
     pub fn avm_type(&self) -> AvmType {
         if self.header.is_action_script_3() {
             AvmType::Avm2
@@ -148,14 +164,17 @@ impl SwfMovie {
         }
     }
 
+    #[inline]
     pub fn stage_size(&self) -> &Rectangle {
         self.header.stage_size()
     }
 
+    #[inline]
     pub fn num_frames(&self) -> u16 {
         self.header.num_frames()
     }
 
+    #[inline]
     pub fn frame_rate(&self) -> Fixed8 {
         self.header.frame_rate()
     }
@@ -171,6 +190,7 @@ pub struct SwfSlice {
 }
 
 impl From<Arc<SwfMovie>> for SwfSlice {
+    #[inline]
     fn from(movie: Arc<SwfMovie>) -> Self {
         let end = movie.data().len();
 
@@ -204,6 +224,7 @@ impl SwfSlice {
     ///
     /// This function returns None if the given slice is not a subslice of the
     /// current slice.
+    #[inline]
     pub fn to_subslice(&self, slice: &[u8]) -> Option<Self> {
         let self_pval = self.movie.data().as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
@@ -223,6 +244,7 @@ impl SwfSlice {
     ///
     /// This function allows subslices outside the current slice to be formed,
     /// as long as they are valid subslices of the movie itself.
+    #[inline]
     pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Option<Self> {
         let self_pval = self.movie.data().as_ptr() as usize;
         let self_len = self.movie.data().len();
@@ -249,6 +271,7 @@ impl SwfSlice {
     /// If the resulting slice would be outside the bounds of the underlying
     /// movie, or the given reader refers to a different underlying movie, this
     /// function returns None.
+    #[inline]
     pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Option<Self> {
         if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
             && (reader.get_ref().as_ptr() as usize)
@@ -281,6 +304,7 @@ impl SwfSlice {
     /// Furthermore, this function will yield None if the calculated slice
     /// would be invalid (e.g. negative length) or would extend past the end of
     /// the current slice.
+    #[inline]
     pub fn to_start_and_end(&self, start: usize, end: usize) -> Option<Self> {
         let new_start = self.start + start;
         let new_end = self.start + end;
@@ -293,11 +317,13 @@ impl SwfSlice {
     }
 
     /// Convert the SwfSlice into a standard data slice.
+    #[inline]
     pub fn data(&self) -> &[u8] {
         &self.movie.data()[self.start..self.end]
     }
 
     /// Get the version of the SWF this data comes from.
+    #[inline]
     pub fn version(&self) -> u8 {
         self.movie.header().version()
     }
@@ -305,11 +331,13 @@ impl SwfSlice {
     /// Construct a reader for this slice.
     ///
     /// The `from` parameter is the offset to start reading the slice from.
+    #[inline]
     pub fn read_from(&self, from: u64) -> swf::read::Reader<'_> {
         swf::read::Reader::new(&self.data()[from as usize..], self.movie.version())
     }
 }
 
+#[inline]
 pub fn decode_tags<'a, F>(
     reader: &mut SwfStream<'a>,
     mut tag_callback: F,

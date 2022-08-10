@@ -14,6 +14,7 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     /// Clamps the given point inside this bounding box.
+    #[inline]
     pub fn clamp(&self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
         if self.valid {
             (
@@ -25,6 +26,7 @@ impl BoundingBox {
         }
     }
 
+    #[inline]
     pub fn transform(&self, matrix: &Matrix) -> Self {
         if !self.valid {
             return Self::default();
@@ -44,6 +46,7 @@ impl BoundingBox {
         }
     }
 
+    #[inline]
     pub fn encompass(&mut self, x: Twips, y: Twips) {
         if self.valid {
             if x < self.x_min {
@@ -67,6 +70,7 @@ impl BoundingBox {
         }
     }
 
+    #[inline]
     pub fn union(&mut self, other: &BoundingBox) {
         use std::cmp::{max, min};
         if other.valid {
@@ -81,6 +85,7 @@ impl BoundingBox {
         }
     }
 
+    #[inline]
     pub fn intersects(&self, other: &BoundingBox) -> bool {
         if !self.valid || !other.valid {
             return false;
@@ -95,12 +100,14 @@ impl BoundingBox {
         x_min <= x_max && y_min <= y_max
     }
 
+    #[inline]
     pub fn contains(&self, (x, y): (Twips, Twips)) -> bool {
         self.valid && x >= self.x_min && x <= self.x_max && y >= self.y_min && y <= self.y_max
     }
 
     /// Set the X coordinate to a particular value, maintaining the width of
     /// this box (if possible).
+    #[inline]
     pub fn set_x(&mut self, x: Twips) {
         let width = self.width();
         self.x_min = x;
@@ -113,6 +120,7 @@ impl BoundingBox {
 
     /// Set the Y coordinate to a particular value, maintaining the width of
     /// this box (if possible).
+    #[inline]
     pub fn set_y(&mut self, y: Twips) {
         let height = self.height();
         self.y_min = y;
@@ -124,6 +132,7 @@ impl BoundingBox {
     }
 
     /// Determine the width of the bounding box.
+    #[inline]
     pub fn width(&self) -> Twips {
         if self.valid {
             self.x_max - self.x_min
@@ -133,6 +142,7 @@ impl BoundingBox {
     }
 
     /// Adjust the width of the bounding box.
+    #[inline]
     pub fn set_width(&mut self, width: Twips) {
         self.x_max = self.x_min + width;
 
@@ -140,6 +150,7 @@ impl BoundingBox {
     }
 
     /// Determine the height of the bounding box.
+    #[inline]
     pub fn height(&self) -> Twips {
         if self.valid {
             self.y_max - self.y_min
@@ -149,6 +160,7 @@ impl BoundingBox {
     }
 
     /// Adjust the height of the bounding box.
+    #[inline]
     pub fn set_height(&mut self, height: Twips) {
         self.y_max = self.y_min + height;
 
@@ -157,6 +169,7 @@ impl BoundingBox {
 }
 
 impl From<swf::Rectangle> for BoundingBox {
+    #[inline]
     fn from(rect: swf::Rectangle) -> Self {
         Self {
             x_min: rect.x_min,
@@ -169,6 +182,7 @@ impl From<swf::Rectangle> for BoundingBox {
 }
 
 impl From<&swf::Rectangle> for BoundingBox {
+    #[inline]
     fn from(rect: &swf::Rectangle) -> Self {
         Self {
             x_min: rect.x_min,

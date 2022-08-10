@@ -23,6 +23,7 @@ pub trait RenderBackend: Downcast {
     );
     fn register_glyph_shape(&mut self, shape: &swf::Glyph) -> ShapeHandle;
 
+    #[inline]
     fn register_bitmap_jpeg(
         &mut self,
         data: &[u8],
@@ -32,6 +33,7 @@ pub trait RenderBackend: Downcast {
         self.register_bitmap_jpeg_2(&data)
     }
 
+    #[inline]
     fn register_bitmap_jpeg_2(&mut self, data: &[u8]) -> Result<BitmapInfo, Error> {
         let bitmap = decode_define_bits_jpeg(data, None)?;
         let width = bitmap.width() as u16;
@@ -44,6 +46,7 @@ pub trait RenderBackend: Downcast {
         })
     }
 
+    #[inline]
     fn register_bitmap_jpeg_3_or_4(
         &mut self,
         jpeg_data: &[u8],
@@ -60,6 +63,7 @@ pub trait RenderBackend: Downcast {
         })
     }
 
+    #[inline]
     fn register_bitmap_png(
         &mut self,
         swf_tag: &swf::DefineBitsLossless,
@@ -127,6 +131,7 @@ pub trait BitmapSource {
 
 pub struct NullBitmapSource;
 impl BitmapSource for NullBitmapSource {
+    #[inline]
     fn bitmap(&self, _id: u16) -> Option<BitmapInfo> {
         None
     }
@@ -135,19 +140,24 @@ impl BitmapSource for NullBitmapSource {
 pub struct NullRenderer;
 
 impl NullRenderer {
+    #[inline]
     pub fn new() -> Self {
         Self
     }
 }
 
 impl Default for NullRenderer {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl RenderBackend for NullRenderer {
+    #[inline]
     fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
+
+    #[inline]
     fn register_shape(
         &mut self,
         _shape: DistilledShape,
@@ -155,6 +165,8 @@ impl RenderBackend for NullRenderer {
     ) -> ShapeHandle {
         ShapeHandle(0)
     }
+
+    #[inline]
     fn replace_shape(
         &mut self,
         _shape: DistilledShape,
@@ -162,29 +174,55 @@ impl RenderBackend for NullRenderer {
         _handle: ShapeHandle,
     ) {
     }
+
+    #[inline]
     fn register_glyph_shape(&mut self, _shape: &swf::Glyph) -> ShapeHandle {
         ShapeHandle(0)
     }
+
+    #[inline]
     fn begin_frame(&mut self, _clear: Color) {}
+
+    #[inline]
     fn end_frame(&mut self) {}
+
+    #[inline]
     fn render_bitmap(&mut self, _bitmap: BitmapHandle, _transform: &Transform, _smoothing: bool) {}
+
+    #[inline]
     fn render_shape(&mut self, _shape: ShapeHandle, _transform: &Transform) {}
+
+    #[inline]
     fn draw_rect(&mut self, _color: Color, _matrix: &Matrix) {}
+
+    #[inline]
     fn push_mask(&mut self) {}
+
+    #[inline]
     fn activate_mask(&mut self) {}
+
+    #[inline]
     fn deactivate_mask(&mut self) {}
+
+    #[inline]
     fn pop_mask(&mut self) {}
 
+    #[inline]
     fn get_bitmap_pixels(&mut self, _bitmap: BitmapHandle) -> Option<Bitmap> {
         None
     }
+
+    #[inline]
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }
+
+    #[inline]
     fn unregister_bitmap(&mut self, _bitmap: BitmapHandle) -> Result<(), Error> {
         Ok(())
     }
 
+    #[inline]
     fn update_texture(
         &mut self,
         _bitmap: BitmapHandle,
@@ -218,6 +256,7 @@ pub struct Bitmap {
 
 impl Bitmap {
     /// Ensures that `data` is the correct size for the given `width` and `height`.
+    #[inline]
     pub fn new(width: u32, height: u32, format: BitmapFormat, mut data: Vec<u8>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = width as usize * height as usize * format.bytes_per_pixel();
@@ -239,6 +278,7 @@ impl Bitmap {
         }
     }
 
+    #[inline]
     pub fn to_rgba(mut self) -> Self {
         // Converts this bitmap to RGBA, if it is not already.
         if self.format == BitmapFormat::Rgb {
@@ -279,6 +319,7 @@ impl Bitmap {
 }
 
 impl From<Bitmap> for Vec<i32> {
+    #[inline]
     fn from(bitmap: Bitmap) -> Self {
         match bitmap.format {
             BitmapFormat::Rgb => bitmap
@@ -327,6 +368,7 @@ impl BitmapFormat {
 }
 
 /// Determines the format of the image data in `data` from a DefineBitsJPEG2/3 tag.
+#[inline]
 pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
     match data {
         [0xff, 0xd8, ..] => JpegTagFormat::Jpeg,
@@ -377,6 +419,7 @@ fn glue_tables_to_jpeg<'a>(jpeg_data: &'a [u8], jpeg_tables: Option<&'a [u8]>) -
 /// SWF19 p.138:
 /// "Before version 8 of the SWF file format, SWF files could contain an erroneous header of 0xFF, 0xD9, 0xFF, 0xD8 before the JPEG SOI marker."
 /// These bytes need to be removed for the JPEG to decode properly.
+#[inline]
 pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> Cow<[u8]> {
     // TODO: Might be better to return an Box<Iterator<Item=u8>> instead of a Cow here,
     // where the spliced iter is a data[..n].chain(data[n+4..])?

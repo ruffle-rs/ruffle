@@ -21,16 +21,19 @@ pub enum Percent {
 
 impl Percent {
     /// Construct a percent from a unit proportion.
+    #[inline]
     pub fn from_unit(unit: f64) -> Self {
         Self::Unit(unit)
     }
 
     /// Construct a percent from an upper fraction.
+    #[inline]
     pub fn from_fraction(unit: f64) -> Self {
         Self::Fraction(unit)
     }
 
     /// Get the unit proportion form of a percentage.
+    #[inline]
     pub fn into_unit(self) -> f64 {
         match self {
             Self::Unit(unit) => unit,
@@ -39,6 +42,7 @@ impl Percent {
     }
 
     /// Get the fraction form of a percentage.
+    #[inline]
     pub fn into_fraction(self) -> f64 {
         match self {
             Self::Unit(unit) => unit * 100.0,
@@ -62,23 +66,27 @@ pub struct Degrees(f64);
 
 impl Degrees {
     /// Convert a radian value into degrees.
+    #[inline]
     pub fn from_radians(rads: f64) -> Self {
         Self(rads.to_degrees())
     }
 
     /// Convert a degree value into radians.
+    #[inline]
     pub fn into_radians(self) -> f64 {
         self.0.to_radians()
     }
 }
 
 impl From<f64> for Degrees {
+    #[inline]
     fn from(degrees: f64) -> Self {
         Self(degrees)
     }
 }
 
 impl From<Degrees> for f64 {
+    #[inline]
     fn from(degrees: Degrees) -> Self {
         degrees.0
     }

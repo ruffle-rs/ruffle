@@ -34,6 +34,7 @@ impl Matrix {
         ty: Twips::ZERO,
     };
 
+    #[inline]
     pub fn scale(scale_x: f32, scale_y: f32) -> Self {
         Self {
             a: scale_x,
@@ -45,6 +46,7 @@ impl Matrix {
         }
     }
 
+    #[inline]
     pub fn rotate(angle: f32) -> Self {
         Self {
             a: angle.cos(),
@@ -56,6 +58,7 @@ impl Matrix {
         }
     }
 
+    #[inline]
     pub fn translate(x: Twips, y: Twips) -> Self {
         Self {
             a: 1.0,
@@ -67,6 +70,7 @@ impl Matrix {
         }
     }
 
+    #[inline]
     pub fn create_box(
         scale_x: f32,
         scale_y: f32,
@@ -95,6 +99,7 @@ impl Matrix {
         }
     }
 
+    #[inline]
     pub fn create_gradient_box(
         width: f32,
         height: f32,
@@ -111,6 +116,7 @@ impl Matrix {
         )
     }
 
+    #[inline]
     pub fn invert(&mut self) {
         let (tx, ty) = (self.tx.get() as f32, self.ty.get() as f32);
         let det = self.a * self.d - self.b * self.c;
@@ -135,6 +141,8 @@ impl Matrix {
 
 impl std::ops::Mul for Matrix {
     type Output = Self;
+
+    #[inline]
     fn mul(self, rhs: Self) -> Self {
         let (rhs_tx, rhs_ty) = (rhs.tx.get() as f32, rhs.ty.get() as f32);
         let (out_tx, out_ty) = (
@@ -154,6 +162,8 @@ impl std::ops::Mul for Matrix {
 
 impl std::ops::Mul<(Twips, Twips)> for Matrix {
     type Output = (Twips, Twips);
+
+    #[inline]
     fn mul(self, (x, y): (Twips, Twips)) -> (Twips, Twips) {
         let (x, y) = (x.get() as f32, y.get() as f32);
         let out_x = round_to_i32(self.a * x + self.c * y).wrapping_add(self.tx.get());
@@ -163,12 +173,14 @@ impl std::ops::Mul<(Twips, Twips)> for Matrix {
 }
 
 impl Default for Matrix {
+    #[inline]
     fn default() -> Matrix {
         Matrix::IDENTITY
     }
 }
 
 impl std::ops::MulAssign for Matrix {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         let (rhs_tx, rhs_ty) = (rhs.tx.get() as f32, rhs.ty.get() as f32);
         let (out_tx, out_ty) = (
@@ -752,6 +764,7 @@ mod tests {
 }
 
 impl From<swf::Matrix> for Matrix {
+    #[inline]
     fn from(matrix: swf::Matrix) -> Self {
         Self {
             a: matrix.a.to_f32(),
@@ -765,6 +778,7 @@ impl From<swf::Matrix> for Matrix {
 }
 
 impl From<Matrix> for swf::Matrix {
+    #[inline]
     fn from(matrix: Matrix) -> Self {
         Self {
             a: Fixed16::from_f32(matrix.a),

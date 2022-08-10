@@ -18,6 +18,7 @@ impl SoundTransform {
     pub const MAX_VOLUME: i32 = 100;
 
     /// Applies another SoundTransform on top of this SoundTransform.
+    #[inline]
     pub fn concat(&mut self, other: &SoundTransform) {
         const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
 
@@ -47,6 +48,7 @@ impl SoundTransform {
     /// Returns the pan of this transform.
     /// -100 is full left and 100 is full right.
     /// This matches the behavior of AVM1 `Sound.getPan()`
+    #[inline]
     pub fn pan(&self) -> i32 {
         // It's not clear why Flash has the weird `abs` behavior, but this
         // mathes the values that Flash returns (see `sound` regression test).
@@ -60,6 +62,7 @@ impl SoundTransform {
     /// Sets this transform of this pan.
     /// -100 is full left and 100 is full right.
     /// This matches the behavior of AVM1 `Sound.setPan()`.
+    #[inline]
     pub fn set_pan(&mut self, pan: i32) {
         if pan >= 0 {
             self.left_to_left = Self::MAX_VOLUME - pan;
@@ -74,6 +77,7 @@ impl SoundTransform {
 }
 
 impl Default for SoundTransform {
+    #[inline]
     fn default() -> Self {
         Self {
             volume: 100,

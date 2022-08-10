@@ -68,6 +68,7 @@ pub trait AudioBackend: Downcast {
     fn set_sound_transform(&mut self, instance: SoundInstanceHandle, transform: SoundTransform);
 
     // TODO: Eventually remove this/move it to library.
+    #[inline]
     fn is_loading_complete(&self) -> bool {
         true
     }
@@ -75,6 +76,7 @@ pub trait AudioBackend: Downcast {
     /// Allows the audio backend to update.
     ///
     /// Runs once per event loop iteration.
+    #[inline]
     fn tick(&mut self) {}
 
     /// Inform the audio backend of the current stage frame rate.
@@ -82,12 +84,14 @@ pub trait AudioBackend: Downcast {
     /// This is only necessary if your particular audio backend needs to know
     /// what the stage frame rate is. Otherwise, you are free to avoid
     /// implementing it.
+    #[inline]
     fn set_frame_rate(&mut self, _frame_rate: f64) {}
 
     /// The approximate interval that this backend updates a sound's position value. `None` if the
     /// value is unknown.
     ///
     /// This determines the time threshold for syncing embedded audio streams to the animation.
+    #[inline]
     fn position_resolution(&self) -> Option<Duration> {
         None
     }
@@ -113,6 +117,7 @@ pub struct NullAudioBackend {
 }
 
 impl NullAudioBackend {
+    #[inline]
     pub fn new() -> NullAudioBackend {
         NullAudioBackend {
             sounds: Arena::new(),
@@ -121,8 +126,13 @@ impl NullAudioBackend {
 }
 
 impl AudioBackend for NullAudioBackend {
+    #[inline]
     fn play(&mut self) {}
+
+    #[inline]
     fn pause(&mut self) {}
+
+    #[inline]
     fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
         // Slice off latency seek for MP3 data.
         let data = if sound.format.compression == swf::AudioCompression::Mp3 {
@@ -143,6 +153,7 @@ impl AudioBackend for NullAudioBackend {
         }))
     }
 
+    #[inline]
     fn start_sound(
         &mut self,
         _sound: SoundHandle,
@@ -151,6 +162,7 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
+    #[inline]
     fn start_stream(
         &mut self,
         _stream_handle: Option<SoundHandle>,
@@ -161,12 +173,18 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
+    #[inline]
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
 
+    #[inline]
     fn stop_all_sounds(&mut self) {}
+
+    #[inline]
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<f64> {
         Some(0.0)
     }
+
+    #[inline]
     fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.duration)
@@ -174,6 +192,8 @@ impl AudioBackend for NullAudioBackend {
             None
         }
     }
+
+    #[inline]
     fn get_sound_size(&self, sound: SoundHandle) -> Option<u32> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.size)
@@ -182,14 +202,17 @@ impl AudioBackend for NullAudioBackend {
         }
     }
 
+    #[inline]
     fn get_sound_format(&self, sound: SoundHandle) -> Option<&swf::SoundFormat> {
         self.sounds.get(sound).map(|s| &s.format)
     }
 
+    #[inline]
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
 }
 
 impl Default for NullAudioBackend {
+    #[inline]
     fn default() -> Self {
         NullAudioBackend::new()
     }
@@ -209,6 +232,7 @@ pub struct SoundTransform {
 
 impl From<display_object::SoundTransform> for SoundTransform {
     /// Converts from a `display_object::SoundTransform` to a `backend::audio::SoundTransform`.
+    #[inline]
     fn from(other: display_object::SoundTransform) -> Self {
         const SCALE: f32 = display_object::SoundTransform::MAX_VOLUME.pow(2) as f32;
 
@@ -223,6 +247,7 @@ impl From<display_object::SoundTransform> for SoundTransform {
 }
 
 impl Default for SoundTransform {
+    #[inline]
     fn default() -> Self {
         Self {
             left_to_left: 1.0,

@@ -1,3 +1,5 @@
+#![deny(clippy::missing_inline_in_public_items)]
+
 #[macro_use]
 extern crate num_derive;
 

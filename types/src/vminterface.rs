@@ -45,6 +45,7 @@ impl Instantiator {
     ///
     /// If that is the case, then any constructor calls necessary to finish the
     /// object must happen on-stack.
+    #[inline]
     pub fn is_avm(self) -> bool {
         matches!(self, Self::Avm1 | Self::Avm2)
     }
@@ -57,6 +58,7 @@ impl Instantiator {
 pub struct ClaimError();
 
 impl From<Instantiator> for Option<AvmType> {
+    #[inline]
     fn from(instantiator: Instantiator) -> Option<AvmType> {
         match instantiator {
             Instantiator::Avm1 => Some(AvmType::Avm1),
@@ -75,6 +77,7 @@ pub enum AvmType {
 }
 
 impl AvmType {
+    #[inline]
     pub fn into_avm2_loader_version(self) -> u32 {
         match self {
             AvmType::Avm1 => 2,

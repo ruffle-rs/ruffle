@@ -6,18 +6,21 @@ pub trait LogBackend {
 pub struct NullLogBackend {}
 
 impl NullLogBackend {
+    #[inline]
     pub fn new() -> Self {
         Self {}
     }
 }
 
 impl LogBackend for NullLogBackend {
+    #[inline]
     fn avm_trace(&self, message: &str) {
         log::info!(target: "avm_trace", "{}", message);
     }
 }
 
 impl Default for NullLogBackend {
+    #[inline]
     fn default() -> Self {
         NullLogBackend::new()
     }

@@ -13,6 +13,7 @@ use url::{ParseError, Url};
 /// if necessary.
 ///
 /// If the relative URL is actually absolute, then the base will not be used.
+#[inline]
 pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseError> {
     let parsed = Url::parse(relative);
     if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
@@ -35,6 +36,7 @@ pub enum NavigationMethod {
 
 impl NavigationMethod {
     /// Convert an SWF method enum into a NavigationMethod.
+    #[inline]
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {
         match s {
             SendVarsMethod::None => None,
@@ -43,6 +45,7 @@ impl NavigationMethod {
         }
     }
 
+    #[inline]
     pub fn from_method_str(method: &WStr) -> Option<Self> {
         if method == b"GET" {
             Some(Self::Get)
@@ -71,6 +74,7 @@ pub struct Request {
 
 impl Request {
     /// Construct a GET request.
+    #[inline]
     pub fn get(url: String) -> Self {
         Self {
             url,
@@ -80,6 +84,7 @@ impl Request {
     }
 
     /// Construct a POST request.
+    #[inline]
     pub fn post(url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
             url,
@@ -90,21 +95,25 @@ impl Request {
 
     /// Construct a request with the given method and data
     #[allow(clippy::self_named_constructors)]
+    #[inline]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self { url, method, body }
     }
 
     /// Retrieve the URL of this request.
+    #[inline]
     pub fn url(&self) -> &str {
         &self.url
     }
 
     /// Retrieve the navigation method for this request.
+    #[inline]
     pub fn method(&self) -> NavigationMethod {
         self.method
     }
 
     /// Retrieve the body of this request, if it exists.
+    #[inline]
     pub fn body(&self) -> &Option<(Vec<u8>, String)> {
         &self.body
     }
@@ -179,20 +188,24 @@ pub struct NullExecutor(futures::executor::LocalPool);
 
 #[cfg(not(target_family = "wasm"))]
 impl NullExecutor {
+    #[inline]
     pub fn new() -> Self {
         Self(futures::executor::LocalPool::new())
     }
 
+    #[inline]
     pub fn spawner(&self) -> NullSpawner {
         NullSpawner(self.0.spawner())
     }
 
+    #[inline]
     pub fn run(&mut self) {
         self.0.run();
     }
 }
 
 impl Default for NullExecutor {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -203,6 +216,7 @@ pub struct NullSpawner(futures::executor::LocalSpawner);
 
 #[cfg(not(target_family = "wasm"))]
 impl NullSpawner {
+    #[inline]
     pub fn spawn_local(&self, future: OwnedFuture<(), Error>) {
         use futures::task::LocalSpawnExt;
         let _ = self.0.spawn_local(async move {
@@ -255,6 +269,7 @@ pub struct NullNavigatorBackend {
 }
 
 impl NullNavigatorBackend {
+    #[inline]
     pub fn new() -> Self {
         let executor = NullExecutor::new();
         Self {
@@ -263,6 +278,7 @@ impl NullNavigatorBackend {
         }
     }
 
+    #[inline]
     pub fn with_base_path(path: &Path, executor: &NullExecutor) -> Self {
         Self {
             spawner: executor.spawner(),
@@ -271,23 +287,27 @@ impl NullNavigatorBackend {
     }
 
     #[cfg(any(unix, windows, target_os = "redox"))]
+    #[inline]
     fn url_from_file_path(path: &Path) -> Result<Url, ()> {
         Url::from_file_path(path)
     }
 
     #[cfg(not(any(unix, windows, target_os = "redox")))]
+    #[inline]
     fn url_from_file_path(_path: &Path) -> Result<Url, ()> {
         Err(())
     }
 }
 
 impl Default for NullNavigatorBackend {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl NavigatorBackend for NullNavigatorBackend {
+    #[inline]
     fn navigate_to_url(
         &self,
         _url: String,
@@ -296,6 +316,7 @@ impl NavigatorBackend for NullNavigatorBackend {
     ) {
     }
 
+    #[inline]
     fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
         let mut path = self.relative_base_path.clone();
         path.push(request.url);
@@ -311,10 +332,12 @@ impl NavigatorBackend for NullNavigatorBackend {
         })
     }
 
+    #[inline]
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         self.spawner.spawn_local(future);
     }
 
+    #[inline]
     fn pre_process_url(&self, url: Url) -> Url {
         url
     }

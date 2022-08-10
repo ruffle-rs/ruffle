@@ -42,6 +42,7 @@ impl MouseWheelDelta {
     const MOUSE_WHEEL_SCALE: f64 = 100.0;
 
     /// Returns the number of lines that this delta represents.
+    #[inline]
     pub fn lines(self) -> f64 {
         // TODO: Should we always return an integer here?
         match self {
@@ -52,6 +53,7 @@ impl MouseWheelDelta {
 }
 
 impl PartialEq for MouseWheelDelta {
+    #[inline]
     fn eq(&self, rhs: &Self) -> bool {
         match (self, rhs) {
             (Self::Lines(s), Self::Lines(r))
@@ -183,6 +185,7 @@ pub enum KeyCode {
 }
 
 impl KeyCode {
+    #[inline]
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
@@ -198,6 +201,7 @@ pub enum MouseButton {
 }
 
 impl From<MouseButton> for KeyCode {
+    #[inline]
     fn from(button: MouseButton) -> Self {
         match button {
             MouseButton::Unknown => Self::Unknown,
@@ -328,11 +332,13 @@ pub enum ButtonKeyCode {
 }
 
 impl ButtonKeyCode {
+    #[inline]
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
 }
 
+#[inline]
 pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
     let out = match key_code {
         KeyCode::Left => ButtonKeyCode::Left,

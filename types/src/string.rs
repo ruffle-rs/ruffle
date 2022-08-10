@@ -23,6 +23,7 @@ pub struct AvmString<'gc> {
 }
 
 impl<'gc> AvmString<'gc> {
+    #[inline]
     pub fn new_utf8<'s, S: Into<Cow<'s, str>>>(
         gc_context: MutationContext<'gc, '_>,
         string: S,
@@ -36,17 +37,20 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    #[inline]
     pub fn new_utf8_bytes(gc_context: MutationContext<'gc, '_>, bytes: &[u8]) -> Self {
         let buf = WString::from_utf8_bytes(bytes.to_vec());
         Self::new(gc_context, buf)
     }
 
+    #[inline]
     pub fn new<S: Into<WString>>(gc_context: MutationContext<'gc, '_>, string: S) -> Self {
         Self {
             source: Source::Owned(Gc::allocate(gc_context, OwnedWStr(string.into()))),
         }
     }
 
+    #[inline]
     pub fn as_wstr(&self) -> &WStr {
         match &self.source {
             Source::Owned(s) => &s.0,
@@ -54,6 +58,7 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
+    #[inline]
     pub fn concat(
         gc_context: MutationContext<'gc, '_>,
         left: AvmString<'gc>,
@@ -81,6 +86,7 @@ impl<'gc> AvmString<'gc> {
 }
 
 impl Default for AvmString<'_> {
+    #[inline]
     fn default() -> Self {
         Self {
             source: Source::Static(WStr::empty()),

@@ -17,6 +17,7 @@ pub enum ContentType {
 }
 
 impl From<JpegTagFormat> for ContentType {
+    #[inline]
     fn from(jtf: JpegTagFormat) -> Self {
         match jtf {
             JpegTagFormat::Jpeg => Self::Jpeg,
@@ -28,6 +29,7 @@ impl From<JpegTagFormat> for ContentType {
 }
 
 impl fmt::Display for ContentType {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Swf => write!(f, "SWF"),
@@ -40,6 +42,7 @@ impl fmt::Display for ContentType {
 }
 
 impl ContentType {
+    #[inline]
     pub fn sniff(data: &[u8]) -> ContentType {
         if read_compression_type(data).is_ok() {
             ContentType::Swf
@@ -49,6 +52,7 @@ impl ContentType {
     }
 
     /// Assert that content is of a given type, and error otherwise.
+    #[inline]
     pub fn expect(self, expected: Self) -> Result<Self, Error> {
         if self == expected {
             Ok(self)

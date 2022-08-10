@@ -3,6 +3,7 @@ use crate::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 
+#[inline]
 pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectangle {
     let mut bounds = swf::Rectangle {
         x_min: Twips::new(i32::MAX),
@@ -86,6 +87,7 @@ pub struct DistilledShape<'a> {
 }
 
 impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
+    #[inline]
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
@@ -117,6 +119,7 @@ pub enum DrawCommand {
 }
 
 impl DrawCommand {
+    #[inline]
     pub fn end_point(&self) -> (Twips, Twips) {
         match self {
             DrawCommand::MoveTo { x, y } => (*x, *y),
@@ -717,6 +720,7 @@ mod tests {
 
 /// Test whether the given point in object space is contained within the contour of the given shape.
 /// local_matrix is used to calculate the proper stroke widths.
+#[inline]
 pub fn shape_hit_test(
     shape: &swf::Shape,
     (point_x, point_y): (Twips, Twips),
@@ -831,6 +835,7 @@ pub fn shape_hit_test(
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
+#[inline]
 pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, Twips)) -> bool {
     let mut cursor = (Twips::ZERO, Twips::ZERO);
     let mut fill_start = (Twips::ZERO, Twips::ZERO);
@@ -863,6 +868,7 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: (Twips, 
 
 /// Test whether the given point is contained within the strokes specified by the draw commands.
 /// local_matrix is used to calculate the minimum stroke width.
+#[inline]
 pub fn draw_command_stroke_hit_test(
     commands: &[DrawCommand],
     stroke_width: Twips,
@@ -1292,6 +1298,7 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 }
 
 /// Converts an SWF glyph into an SWF shape, for ease of use by rendering backends.
+#[inline]
 pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
     // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
     // SWF19 says this is true through SWFv7, but it seems like it might be generally true?

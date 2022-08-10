@@ -13,6 +13,7 @@ pub struct ColorTransform {
 }
 
 impl From<swf::ColorTransform> for ColorTransform {
+    #[inline]
     fn from(color_transform: swf::ColorTransform) -> ColorTransform {
         ColorTransform {
             r_mult: color_transform.r_multiply,
@@ -29,6 +30,7 @@ impl From<swf::ColorTransform> for ColorTransform {
 
 impl ColorTransform {
     #[allow(clippy::float_cmp)]
+    #[inline]
     pub fn is_identity(&self) -> bool {
         self.r_mult.is_one()
             && self.g_mult.is_one()
@@ -42,6 +44,7 @@ impl ColorTransform {
 
     /// Returns the multiplicative component of this color transform in RGBA order
     /// with the values normalized [0.0, 1.0].
+    #[inline]
     pub fn mult_rgba_normalized(&self) -> [f32; 4] {
         [
             self.r_mult.into(),
@@ -53,6 +56,7 @@ impl ColorTransform {
 
     /// Returns the additive component of this color transform in RGBA order
     /// with the values normalized [-1.0, 1.0].
+    #[inline]
     pub fn add_rgba_normalized(&self) -> [f32; 4] {
         [
             f32::from(self.r_add) / 255.0,
@@ -63,6 +67,7 @@ impl ColorTransform {
     }
 
     /// Sets the multiplicate component of this color transform.
+    #[inline]
     pub fn set_mult_color(&mut self, color: &swf::Color) {
         self.r_mult = Fixed8::from_f32(f32::from(color.r) / 255.0);
         self.g_mult = Fixed8::from_f32(f32::from(color.g) / 255.0);
@@ -72,6 +77,7 @@ impl ColorTransform {
 }
 
 impl Default for ColorTransform {
+    #[inline]
     fn default() -> ColorTransform {
         ColorTransform {
             r_mult: Fixed8::ONE,
@@ -88,6 +94,8 @@ impl Default for ColorTransform {
 
 impl std::ops::Mul for ColorTransform {
     type Output = Self;
+
+    #[inline]
     fn mul(self, rhs: Self) -> Self {
         ColorTransform {
             r_mult: self.r_mult.wrapping_mul(rhs.r_mult),
@@ -112,6 +120,7 @@ impl std::ops::Mul for ColorTransform {
 }
 
 impl std::ops::MulAssign for ColorTransform {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs;
     }

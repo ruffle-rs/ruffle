@@ -14,10 +14,12 @@ pub struct Transform {
 pub struct TransformStack(Vec<Transform>);
 
 impl TransformStack {
+    #[inline]
     pub fn new() -> Self {
         Self(vec![Transform::default()])
     }
 
+    #[inline]
     pub fn push(&mut self, transform: &Transform) {
         let cur_transform = self.transform();
         let matrix = cur_transform.matrix * transform.matrix;
@@ -28,17 +30,20 @@ impl TransformStack {
         });
     }
 
+    #[inline]
     pub fn pop(&mut self) {
         assert!(self.0.len() > 1, "Transform stack underflow");
         self.0.pop();
     }
 
+    #[inline]
     pub fn transform(&self) -> &Transform {
         &self.0[self.0.len() - 1]
     }
 }
 
 impl Default for TransformStack {
+    #[inline]
     fn default() -> Self {
         TransformStack::new()
     }

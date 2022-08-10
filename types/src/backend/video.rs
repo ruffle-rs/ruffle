@@ -23,6 +23,7 @@ pub struct EncodedFrame<'a> {
 
 impl<'a> EncodedFrame<'a> {
     /// Borrow this frame's data.
+    #[inline]
     pub fn data(&'a self) -> &'a [u8] {
         self.data
     }
@@ -55,6 +56,7 @@ impl FrameDependency {
     ///
     /// A keyframe is a frame that can be independently seeked to without
     /// decoding any prior or future frames.
+    #[inline]
     pub fn is_keyframe(self) -> bool {
         matches!(self, FrameDependency::None)
     }
@@ -135,6 +137,7 @@ pub struct NullVideoBackend {
 ///  * Video stream decoding fails with an error that video decoding is
 ///    unimplemented
 impl NullVideoBackend {
+    #[inline]
     pub fn new() -> Self {
         Self {
             streams: Arena::new(),
@@ -143,12 +146,14 @@ impl NullVideoBackend {
 }
 
 impl Default for NullVideoBackend {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl VideoBackend for NullVideoBackend {
+    #[inline]
     fn register_video_stream(
         &mut self,
         _num_frames: u32,
@@ -159,6 +164,7 @@ impl VideoBackend for NullVideoBackend {
         Ok(self.streams.insert(()))
     }
 
+    #[inline]
     fn preload_video_stream_frame(
         &mut self,
         _stream: VideoStreamHandle,
@@ -167,6 +173,7 @@ impl VideoBackend for NullVideoBackend {
         Ok(FrameDependency::None)
     }
 
+    #[inline]
     fn decode_video_stream_frame(
         &mut self,
         _stream: VideoStreamHandle,
