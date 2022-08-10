@@ -165,7 +165,7 @@ fn set_transform<'gc>(
             let n = transform
                 .get(property, activation)?
                 .coerce_to_f64(activation)?;
-            *out = Fixed8::from_bits(crate::ecma_conversions::f64_to_wrapping_i16(
+            *out = Fixed8::from_bits(ruffle_types::ecma_conversions::f64_to_wrapping_i16(
                 n * 256.0 / 100.0,
             ));
         }

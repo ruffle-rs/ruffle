@@ -7,9 +7,9 @@ use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{textformat_allocator, ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_types::ecma_conversions::round_to_even;
 use ruffle_types::string::{AvmString, WStr};
 
 /// Implements `flash.text.TextFormat`'s instance constructor.

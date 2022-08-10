@@ -4,9 +4,9 @@ use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, AvmString, Error, Object, TObject, Value};
 use crate::avm_warn;
-use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
 use gc_arena::MutationContext;
+use ruffle_types::ecma_conversions::round_to_even;
 use ruffle_types::string::WStr;
 
 macro_rules! getter {

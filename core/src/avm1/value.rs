@@ -4,11 +4,11 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Object, TObject};
 use crate::display_object::TDisplayObject;
-use crate::ecma_conversions::{
+use gc_arena::Collect;
+use ruffle_types::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
-use gc_arena::Collect;
 use ruffle_types::string::{AvmString, Integer, WStr};
 use std::{borrow::Cow, io::Write, num::Wrapping};
 

@@ -8,6 +8,7 @@ pub mod binary_data;
 pub mod bounding_box;
 pub mod color_transform;
 pub mod display_object;
+pub mod ecma_conversions;
 pub mod events;
 pub mod loader;
 pub mod matrix;

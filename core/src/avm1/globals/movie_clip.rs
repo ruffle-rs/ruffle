@@ -11,11 +11,11 @@ use crate::avm_warn;
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use gc_arena::MutationContext;
 use ruffle_types::backend::navigator::NavigationMethod;
 use ruffle_types::backend::render;
+use ruffle_types::ecma_conversions::f64_to_wrapping_i32;
 use ruffle_types::shape_utils::DrawCommand;
 use ruffle_types::vminterface::Instantiator;
 use swf::{
@@ -1115,7 +1115,9 @@ fn swap_depths<'gc>(
 
     let mut depth = None;
     if let Value::Number(n) = arg {
-        depth = Some(crate::ecma_conversions::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS));
+        depth = Some(
+            ruffle_types::ecma_conversions::f64_to_wrapping_i32(n).wrapping_add(AVM_DEPTH_BIAS),
+        );
     } else if let Some(target) =
         activation.resolve_target_display_object(movie_clip.into(), arg, false)?
     {

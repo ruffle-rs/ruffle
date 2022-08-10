@@ -5,9 +5,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::ecma_conversions::f64_to_wrapping_i32;
 use bitflags::bitflags;
 use gc_arena::MutationContext;
+use ruffle_types::ecma_conversions::f64_to_wrapping_i32;
 use ruffle_types::string::AvmString;
 use std::cmp::Ordering;
 
