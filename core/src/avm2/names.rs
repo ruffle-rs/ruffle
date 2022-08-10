@@ -4,8 +4,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::either::Either;
 use gc_arena::{Collect, MutationContext};
+use ruffle_types::either::Either;
 use ruffle_types::string::{AvmString, WStr, WString};
 use std::fmt::Debug;
 use swf::avm2::types::{

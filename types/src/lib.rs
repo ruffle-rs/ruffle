@@ -9,6 +9,7 @@ pub mod bounding_box;
 pub mod color_transform;
 pub mod display_object;
 pub mod ecma_conversions;
+pub mod either;
 pub mod events;
 pub mod loader;
 pub mod matrix;
