@@ -136,12 +136,16 @@ pub struct Activation<'a, 'gc: 'a, 'gc_context: 'a> {
     /// and we will not allocate a class for one.
     activation_class: Option<ClassObject<'gc>>,
 
+    /// The index where the stack frame starts.
     stack_depth: usize,
 
+    /// The index where the scope frame starts.
     scope_depth: usize,
 
+    /// Maximum size for the stack frame.
     max_stack_size: usize,
 
+    /// Maximum size for the scope frame.
     max_scope_size: usize,
 
     pub context: UpdateContext<'a, 'gc, 'gc_context>,

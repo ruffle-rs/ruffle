@@ -72,6 +72,7 @@ pub struct Avm2<'gc> {
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
 
+    /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
 
     /// Global scope object.
