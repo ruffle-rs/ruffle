@@ -166,11 +166,19 @@ impl<'gc> ScriptObjectData<'gc> {
         };
 
         let value = self.values.get(&local_name);
-
         if let Some(value) = value {
             return Ok(*value);
-        } else if let Some(proto) = self.proto() {
-            return proto.get_property_local(multiname, activation);
+        }
+
+        // follow the prototype chain
+        let mut proto = self.proto();
+        while let Some(obj) = proto {
+            let obj = obj.base();
+            let value = obj.values.get(&local_name);
+            if let Some(value) = value {
+                return Ok(*value);
+            }
+            proto = obj.proto();
         }
 
         // Special case: Unresolvable properties on dynamic classes are treated

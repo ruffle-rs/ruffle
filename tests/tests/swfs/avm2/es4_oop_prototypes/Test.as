@@ -1,5 +1,11 @@
-﻿package {
-	public class Test {}
+﻿// compiled with mxmlc
+
+package {
+    import flash.display.MovieClip;
+    public class Test extends MovieClip {
+        public function Test() {
+        }
+    }
 }
 
 class ES4Class extends Object {
@@ -51,3 +57,22 @@ x.test_method();
 ES4Class.test_static();
 x.test_proto_method();
 trace(x.test_get);
+
+trace("-----------------")
+
+class SealedClass{}
+SealedClass.prototype.field = 1;
+x = new SealedClass();
+trace(x.field);
+try {
+	trace(x.nofield);
+} catch (e) {
+	trace("Caught missing field")
+}
+
+dynamic class DynamicClass{}
+DynamicClass.prototype.field = 1;
+x = new DynamicClass();
+trace(x.field);
+trace(x.nofield);
+
