@@ -8,6 +8,7 @@ use crate::avm2::Error;
 use crate::display_object::DisplayObject;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
+use std::fmt::Debug;
 
 /// A class instance allocator that allocates Stage objects.
 pub fn stage_allocator<'gc>(
@@ -26,7 +27,7 @@ pub fn stage_allocator<'gc>(
     .into())
 }
 
-#[derive(Clone, Collect, Debug, Copy)]
+#[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct StageObject<'gc>(GcCell<'gc, StageObjectData<'gc>>);
 
@@ -129,5 +130,24 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
     fn value_of(&self, _mc: MutationContext<'gc, '_>) -> Result<Value<'gc>, Error> {
         Ok(Value::Object(Object::from(*self)))
+    }
+}
+
+impl<'gc> Debug for StageObject<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self.0.try_read() {
+            Ok(obj) => f
+                .debug_struct("StageObject")
+                .field("name", &obj.base.debug_class_name())
+                .field("display_object", &obj.display_object)
+                .field("ptr", &self.0.as_ptr())
+                .finish(),
+            Err(err) => f
+                .debug_struct("StageObject")
+                .field("name", &err)
+                .field("display_object", &err)
+                .field("ptr", &self.0.as_ptr())
+                .finish(),
+        }
     }
 }
