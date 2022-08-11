@@ -1,8 +1,6 @@
 // ExternalInterface.available
 true
 
-// ExternalInterface.addCallback("dump", thisTarget.dump)
-
 // ExternalInterface.addCallback("parrot", thisTarget.parrot)
 
 // ExternalInterface.addCallback("callWith", thatTarget.callWith)
