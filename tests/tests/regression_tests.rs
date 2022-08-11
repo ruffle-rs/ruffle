@@ -335,6 +335,7 @@ swf_tests! {
     (as3_lessthan, "avm2/lessthan", 1),
     (as3_loaderinfo_events, "avm2/loaderinfo_events", 2),
     (as3_loaderinfo_properties, "avm2/loaderinfo_properties", 2),
+    (as3_loaderinfo_root, "avm2/loaderinfo_root", 1),
     (as3_loaderinfo_quine, "avm2/loaderinfo_quine", 2),
     (as3_lshift, "avm2/lshift", 1),
     (as3_modulo, "avm2/modulo", 1),
