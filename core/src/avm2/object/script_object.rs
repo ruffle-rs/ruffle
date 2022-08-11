@@ -189,7 +189,12 @@ impl<'gc> ScriptObjectData<'gc> {
             .map(|cls| cls.inner_class_definition().read().is_sealed())
             .unwrap_or(false)
         {
-            Err(format!("Cannot get undefined property {:?}", local_name).into())
+            Err(format!(
+                "Cannot get undefined property {:?} on class {:?}",
+                local_name,
+                self.instance_of()
+            )
+            .into())
         } else {
             Ok(Value::Undefined)
         }
@@ -449,32 +454,28 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
         self.vtable = Some(vtable);
     }
+
+    pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
+        let class_name = self
+            .instance_of()
+            .map(|class_obj| class_obj.debug_class_name());
+
+        match class_name {
+            Some(class_name) => Box::new(class_name),
+            None => Box::new("<None>"),
+        }
+    }
 }
 
 impl<'gc> Debug for ScriptObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let mut fmt = f.debug_struct("ScriptObject");
+        let mut f = f.debug_struct("ScriptObject");
 
-        let class_name = self
-            .0
-            .try_read()
-            .map(|obj| obj.instance_of())
-            .transpose()
-            .map(|class_obj| class_obj.map(|c| c.debug_class_name()));
+        match self.0.try_read() {
+            Ok(obj) => f.field("name", &obj.debug_class_name()),
+            Err(err) => f.field("name", &err),
+        };
 
-        match class_name {
-            Some(Ok(class_name)) => {
-                fmt.field("class", &class_name);
-            }
-            Some(Err(err)) => {
-                fmt.field("class", &err);
-            }
-            None => {
-                fmt.field("class", &"<None>");
-            }
-        }
-
-        fmt.field("ptr", &self.0.as_ptr());
-        fmt.finish()
+        f.field("ptr", &self.0.as_ptr()).finish()
     }
 }
