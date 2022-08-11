@@ -151,20 +151,25 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
     let mut write = class.write(mc);
     write.set_instance_allocator(appdomain_allocator);
 
-    const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[
-        ("currentDomain", current_domain),
-        ("parentDomain", parent_domain),
-        ("getDefinition", get_definition),
-        ("hasDefinition", has_definition),
-    ];
-    write.define_public_builtin_class_methods(mc, PUBLIC_CLASS_METHODS);
+    const PUBLIC_CLASS_PROPERTIES: &[(&str, Option<NativeMethodImpl>, Option<NativeMethodImpl>)] =
+        &[("currentDomain", Some(current_domain), None)];
+    write.define_public_builtin_class_properties(mc, PUBLIC_CLASS_PROPERTIES);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("domainMemory", Some(domain_memory), Some(set_domain_memory))];
+    )] = &[
+        ("domainMemory", Some(domain_memory), Some(set_domain_memory)),
+        ("parentDomain", Some(parent_domain), None),
+    ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
+
+    const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
+        ("getDefinition", get_definition),
+        ("hasDefinition", has_definition),
+    ];
+    write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 
     class
 }
