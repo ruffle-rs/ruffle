@@ -29,6 +29,7 @@ use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
 use crate::library::Library;
 use crate::loader::LoadManager;
+use crate::locale::get_current_date_time;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -1883,7 +1884,7 @@ impl PlayerBuilder {
                 mouse_cursor_needs_check: false,
 
                 // Misc. state
-                rng: SmallRng::seed_from_u64(chrono::Utc::now().timestamp_millis() as u64),
+                rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
                 system: SystemProperties::default(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,
