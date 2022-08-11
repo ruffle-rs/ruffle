@@ -76,10 +76,6 @@ trace("// ExternalInterface.available");
 trace(ExternalInterface.available);
 trace("");
 
-trace("// ExternalInterface.addCallback(\"dump\", thisTarget.dump)");
-ExternalInterface.addCallback("dump", thisTarget.dump);
-trace("");
-
 trace("// ExternalInterface.addCallback(\"parrot\", thisTarget.parrot)");
 ExternalInterface.addCallback("parrot", thisTarget.parrot);
 trace("");
