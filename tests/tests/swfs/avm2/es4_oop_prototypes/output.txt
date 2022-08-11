@@ -6,3 +6,8 @@ ES4Class test_method
 ES4Class test_static
 ES4Class test_proto_method
 ES4Class test_get
+-----------------
+1
+Caught missing field
+1
+undefined
