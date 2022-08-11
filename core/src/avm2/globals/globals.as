@@ -55,22 +55,15 @@ include "flash/events/ContextMenuEvent.as"
 include "flash/events/DataEvent.as"
 include "flash/events/DRMAuthenticationCompleteEvent.as"
 include "flash/events/DRMAuthenticationErrorEvent.as"
-// include "flash/events/DRMDeviceGroupErrorEvent.as" Unknown Type - DRMDeviceGroup
-// include "flash/events/DRMDeviceGroupEvent.as" Unknown Type - DRMDeviceGroup
-// include "flash/events/DRMErrorEvent.as" Unknown Type - DRMContentData
 include "flash/events/DRMLicenseRequestEvent.as"
-// include "flash/events/DRMMetadataEvent.as" Unknown Type - DRMContentData
 include "flash/events/DRMReturnVoucherCompleteEvent.as"
 include "flash/events/DRMReturnVoucherErrorEvent.as"
-// include "flash/events/DRMStatusEvent.as" Unknown Types - DRMContentData, DRMVoucher
 include "flash/events/FocusEvent.as"
 include "flash/events/FullScreenEvent.as"
 include "flash/events/HTTPStatusEvent.as"
-// include "flash/events/IMEEvent.as" Unknown Type - IIMEClient
 include "flash/events/IOErrorEvent.as"
 include "flash/events/KeyboardEvent.as"
 include "flash/events/NetDataEvent.as"
-// include "flash/events/NetMonitorEvent.as" Unknown Type - NetStream
 include "flash/events/NetStatusEvent.as"
 include "flash/events/ProgressEvent.as"
 include "flash/events/SampleDataEvent.as"
@@ -83,7 +76,6 @@ include "flash/events/StatusEvent.as"
 include "flash/events/SyncEvent.as"
 include "flash/events/ThrottleEvent.as"
 include "flash/events/TimerEvent.as"
-// include "flash/events/TouchEvent.as" behavior isn't implmented
 include "flash/events/UncaughtErrorEvent.as"
 include "flash/events/VideoEvent.as"
 include "flash/events/VideoTextureEvent.as"
