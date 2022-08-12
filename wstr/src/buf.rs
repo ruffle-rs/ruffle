@@ -5,6 +5,7 @@ use core::fmt;
 use core::mem::{self, ManuallyDrop};
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
+use static_assertions::assert_eq_size;
 
 use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
 use super::{ptr, Units, WStr, MAX_STRING_LEN};
@@ -15,6 +16,12 @@ pub struct WString {
     meta: ptr::WStrMetadata,
     capacity: u32,
 }
+
+#[cfg(target_pointer_width = "32")]
+assert_eq_size!(WString, [u8; 12]);
+
+#[cfg(target_pointer_width = "64")]
+assert_eq_size!(WString, [u8; 16]);
 
 impl WString {
     /// Creates a new empty `WString`.
