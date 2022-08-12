@@ -205,24 +205,29 @@ impl<'gc> Executable<'gc> {
                 // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
                 // rather than the name of the method itself.
                 if let Some(class_def) = class_def {
-                    if Gc::ptr_eq(
-                        class_def.read().class_init().into_bytecode().unwrap(),
-                        *method,
-                    ) {
+                    if class_def
+                        .read()
+                        .class_init()
+                        .into_bytecode()
+                        .map(|b| Gc::ptr_eq(b, *method))
+                        .unwrap_or(false)
+                    {
                         output.push_utf8("$cinit");
-                    } else if !Gc::ptr_eq(
-                        class_def.read().instance_init().into_bytecode().unwrap(),
-                        *method,
-                    ) {
+                    } else if !class_def
+                        .read()
+                        .instance_init()
+                        .into_bytecode()
+                        .map(|b| Gc::ptr_eq(b, *method))
+                        .unwrap_or(false)
+                    {
                         // TODO: Ideally, the declaring trait of this executable should already be attached here, that way
                         // we can avoid needing to lookup the trait like this.
                         let class_def = class_def.read();
                         let mut method_trait = None;
                         // First search instance traits for the method
                         for t in class_def.instance_traits() {
-                            if let Some(m) = t.as_method() {
-                                let bytecode = m.into_bytecode().unwrap();
-                                if Gc::ptr_eq(bytecode, *method) {
+                            if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
+                                if Gc::ptr_eq(b, *method) {
                                     method_trait = Some(t);
                                     break;
                                 }
@@ -231,9 +236,9 @@ impl<'gc> Executable<'gc> {
                         if method_trait.is_none() {
                             // If we can't find it in instance traits, search class traits instead
                             for t in class_def.class_traits() {
-                                if let Some(m) = t.as_method() {
-                                    let bytecode = m.into_bytecode().unwrap();
-                                    if Gc::ptr_eq(bytecode, *method) {
+                                if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok())
+                                {
+                                    if Gc::ptr_eq(b, *method) {
                                         // Class traits always start with $
                                         output.push_char('$');
                                         method_trait = Some(t);
