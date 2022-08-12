@@ -2,10 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::NS_FLASH_PROXY;
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};

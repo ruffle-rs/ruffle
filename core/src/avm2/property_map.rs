@@ -1,7 +1,9 @@
 //! Property map
 
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::AvmString;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use fnv::FnvBuildHasher;
 use gc_arena::{Collect, CollectionContext};
 use smallvec::SmallVec;

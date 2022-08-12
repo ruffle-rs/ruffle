@@ -3,10 +3,11 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::Method;
-use crate::avm2::names::{Multiname, QName};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::QName;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell};
 use swf::avm2::types::{

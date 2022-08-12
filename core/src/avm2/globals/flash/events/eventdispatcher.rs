@@ -6,10 +6,11 @@ use crate::avm2::events::{
     dispatch_event as dispatch_event_internal, parent_of, NS_EVENT_DISPATCHER,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
 use gc_arena::{GcCell, MutationContext};
 
