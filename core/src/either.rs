@@ -14,8 +14,8 @@ where
 
     fn deref(&self) -> &Self::Target {
         match self {
-            Self::Left(a) => &*a,
-            Self::Right(b) => &*b,
+            Self::Left(a) => a,
+            Self::Right(b) => b,
         }
     }
 }
