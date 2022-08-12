@@ -59,14 +59,14 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct GcRoot<'gc> {
-    global: GcCell<'gc, GcGlobalData<'gc>>,
-    data: GcCell<'gc, GcRootData<'gc>>,
+    pub global: GcCell<'gc, GcGlobalData<'gc>>,
+    pub data: GcCell<'gc, GcRootData<'gc>>,
 }
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
 pub struct GcGlobalData<'gc> {
-    avm2_callstack: Option<GcCell<'gc, CallStack<'gc>>>,
+    pub avm2_callstack: Option<GcCell<'gc, CallStack<'gc>>>,
 }
 
 #[derive(Collect)]

@@ -1,6 +1,6 @@
 use crate::avm2::function::Executable;
 use crate::string::WString;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::Collect;
 
 #[derive(Collect, Debug, Clone)]
 #[collect(no_drop)]
@@ -32,12 +32,12 @@ impl<'gc> CallStack<'gc> {
         self.stack.pop()
     }
 
-    pub fn display(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
+    pub fn display(&self, output: &mut WString) {
         for call in self.stack.iter().rev() {
             output.push_utf8("\n\tat ");
             match call {
                 CallNode::GlobalInit => output.push_utf8("global$init()"),
-                CallNode::Method(exec) => exec.write_full_name(mc, output),
+                CallNode::Method(exec) => exec.write_full_name(output),
             }
         }
     }
@@ -46,5 +46,13 @@ impl<'gc> CallStack<'gc> {
 impl<'gc> Default for CallStack<'gc> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<'gc> std::fmt::Display for CallStack<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output = WString::new();
+        self.display(&mut output);
+        write!(f, "{}", output)
     }
 }

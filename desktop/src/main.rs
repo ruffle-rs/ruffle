@@ -823,7 +823,28 @@ fn init() {
         AttachConsole(ATTACH_PARENT_PROCESS);
     }
 
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        prev_hook(info);
+        panic_hook();
+    }));
+
     env_logger::init();
+}
+
+fn panic_hook() {
+    GC_ARENA.with(|arena| {
+        if let Some(arena) = arena.borrow().clone().and_then(|a| a.upgrade()) {
+            if let Ok(arena) = arena.try_borrow() {
+                arena.mutate(|_mc, root| {
+                    let global = root.global.read();
+                    if let Some(call_stack) = global.avm2_callstack {
+                        println!("AVM2 stack backtrace: {}", &*call_stack.read());
+                    }
+                })
+            }
+        }
+    });
 }
 
 fn shutdown() {

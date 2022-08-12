@@ -8,7 +8,7 @@ use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
-use gc_arena::{Collect, Gc, MutationContext};
+use gc_arena::{Collect, Gc};
 use std::fmt;
 
 /// Represents code written in AVM2 bytecode that can be executed by some
@@ -189,11 +189,11 @@ impl<'gc> Executable<'gc> {
         }
     }
 
-    pub fn write_full_name(&self, mc: MutationContext<'gc, '_>, output: &mut WString) {
+    pub fn write_full_name(&self, output: &mut WString) {
         let class_def = self.bound_superclass().map(|superclass| {
             let class_def = superclass.inner_class_definition();
-            let name = class_def.read().name().to_qualified_name(mc);
-            output.push_str(&name);
+            let name = class_def.read().name().to_qualified_name_no_mc();
+            output.push_str(&*name);
             class_def
         });
         match self {
