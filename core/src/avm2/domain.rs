@@ -1,12 +1,13 @@
 //! Application Domains
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::{Multiname, QName};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::QName;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Represents a set of scripts and movies that share traits across different

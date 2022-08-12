@@ -2,12 +2,14 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
@@ -75,7 +77,7 @@ macro_rules! define_indirect_properties {
                     this: Option<Object<'gc>>,
                     _args: &[Value<'gc>]
                 ) -> Result<Value<'gc>, Error> {
-                    use crate::avm2::names::QName;
+                    use crate::avm2::QName;
                     use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 
                     if let Some(this) = this {

@@ -4,7 +4,6 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
 };
@@ -12,6 +11,9 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::{Scope, ScopeChain, ScopeStack};
 use crate::avm2::script::Script;
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr, WString};

@@ -31,10 +31,12 @@ mod events;
 mod function;
 mod globals;
 mod method;
-pub mod names;
+mod multiname;
+mod namespace;
 pub mod object;
 mod property;
 mod property_map;
+mod qname;
 mod regexp;
 mod scope;
 mod script;
@@ -47,11 +49,13 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::domain::Domain;
-pub use crate::avm2::names::{Namespace, QName};
+pub use crate::avm2::multiname::Multiname;
+pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
     ArrayObject, ClassObject, EventObject, Object, ScriptObject, SoundChannelObject, StageObject,
     TObject,
 };
+pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
 
 const BROADCAST_WHITELIST: [&str; 3] = ["enterFrame", "exitFrame", "frameConstructed"];

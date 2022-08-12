@@ -4,10 +4,10 @@ use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::{Avm1, Object, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::names::Namespace;
 use crate::avm2::object::ByteArrayObject;
 use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::object::TObject as _;
+use crate::avm2::Namespace;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, Object as Avm2Object, QName,
     Value as Avm2Value,

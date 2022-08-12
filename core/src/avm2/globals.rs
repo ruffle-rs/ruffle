@@ -2,7 +2,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{
     ClassObject, FunctionObject, NamespaceObject, Object, ScriptObject, TObject,
 };
@@ -11,6 +10,8 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::string::AvmString;
 use crate::tag_utils::{self, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::{Collect, GcCell, MutationContext};

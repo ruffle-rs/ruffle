@@ -1,11 +1,11 @@
 //! Boxed namespaces
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Namespace;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Namespace;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 

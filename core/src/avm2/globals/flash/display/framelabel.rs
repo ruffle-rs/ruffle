@@ -4,10 +4,11 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{define_indirect_properties, Class};
 use crate::avm2::globals::NS_RUFFLE_INTERNAL;
 use crate::avm2::method::Method;
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use gc_arena::{GcCell, MutationContext};
 
 /// Implements `flash.display.FrameLabel`'s instance constructor.

@@ -1,11 +1,11 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Multiname;
 use crate::avm2::object::Object;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::string::AvmString;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::borrow::Cow;

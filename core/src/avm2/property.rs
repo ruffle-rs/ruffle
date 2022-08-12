@@ -1,10 +1,10 @@
 //! Property data structures
 
-use crate::avm2::names::Multiname;
 use crate::avm2::object::TObject;
 use crate::avm2::Activation;
 use crate::avm2::ClassObject;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
 use gc_arena::{Collect, Gc};
