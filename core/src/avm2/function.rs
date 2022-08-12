@@ -197,7 +197,10 @@ impl<'gc> Executable<'gc> {
             class_def
         });
         match self {
-            Executable::Native(NativeExecutable { method, .. }) => output.push_utf8(&method.name),
+            Executable::Native(NativeExecutable { method, .. }) => {
+                output.push_char('/');
+                output.push_utf8(&method.name)
+            }
             Executable::Action(BytecodeExecutable { method, .. }) => {
                 // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
                 // rather than the name of the method itself.
