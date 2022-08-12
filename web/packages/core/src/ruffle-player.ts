@@ -1220,9 +1220,11 @@ export class RufflePlayer extends HTMLElement {
                 if (error.avmStack) {
                     const avmStackIndex =
                         errorArray.push(
-                            `AVM2 stack:\n\`\`\`\n    ${error.avmStack.trim().replace(/\t/g,"    ")}\n\`\`\`\n`
+                            `AVM2 stack:\n\`\`\`\n    ${error.avmStack
+                                .trim()
+                                .replace(/\t/g, "    ")}\n\`\`\`\n`
                         ) - 1;
-                        errorArray.avmStackIndex = avmStackIndex;
+                    errorArray.avmStackIndex = avmStackIndex;
                 }
                 errorArray.stackIndex = stackIndex;
             }
