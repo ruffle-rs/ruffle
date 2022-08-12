@@ -193,7 +193,7 @@ impl<'gc> Executable<'gc> {
         let class_def = self.bound_superclass().map(|superclass| {
             let class_def = superclass.inner_class_definition();
             let name = class_def.read().name().to_qualified_name_no_mc();
-            output.push_str(&*name);
+            output.push_str(&name);
             class_def
         });
         match self {
