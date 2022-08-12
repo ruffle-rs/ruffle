@@ -7,21 +7,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use swf::avm1::types::SendVarsMethod;
-use url::{ParseError, Url};
-
-/// Attempt to convert a relative URL into an absolute URL, using the base URL
-/// if necessary.
-///
-/// If the relative URL is actually absolute, then the base will not be used.
-pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseError> {
-    let parsed = Url::parse(relative);
-    if let Err(ParseError::RelativeUrlWithoutBase) = parsed {
-        let base = Url::parse(base)?;
-        return base.join(relative);
-    }
-
-    parsed
-}
+use url::Url;
 
 /// Enumerates all possible navigation methods.
 #[derive(Copy, Clone)]

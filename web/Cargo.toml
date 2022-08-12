@@ -55,7 +55,7 @@ version = "0.3.58"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioDestinationNode",
     "AudioNode", "AudioParam", "Blob", "BlobPropertyBag", "ChannelMergerNode",
-    "ChannelSplitterNode", "Document", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
+    "ChannelSplitterNode", "Element", "Event", "EventTarget", "GainNode", "HtmlCanvasElement",
     "HtmlElement", "HtmlFormElement", "KeyboardEvent", "Location", "PointerEvent", "Request", "RequestInit", "Response",
     "Storage", "WheelEvent", "Window",
 ]
