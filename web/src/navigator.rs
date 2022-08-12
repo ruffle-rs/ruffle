@@ -1,7 +1,7 @@
 //! Navigator backend for web
 use js_sys::{Array, ArrayBuffer, Uint8Array};
 use ruffle_core::backend::navigator::{
-    url_from_relative_url, NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
+    NavigationMethod, NavigatorBackend, OwnedFuture, Request, Response,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -10,51 +10,52 @@ use url::Url;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{
-    window, Blob, BlobPropertyBag, Document, Request as WebRequest, RequestInit,
-    Response as WebResponse,
+    window, Blob, BlobPropertyBag, Request as WebRequest, RequestInit, Response as WebResponse,
 };
 
 pub struct WebNavigatorBackend {
     allow_script_access: bool,
     upgrade_to_https: bool,
-    base_url: Option<String>,
+    base_url: Option<Url>,
 }
 
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
         upgrade_to_https: bool,
-        mut base_url: Option<String>,
+        base_url: Option<String>,
     ) -> Self {
         let window = web_sys::window().expect("window()");
 
         // Upgrade to HTTPS takes effect if the current page is hosted on HTTPS.
         let upgrade_to_https =
-            upgrade_to_https && window.location().protocol().unwrap_or_default() == "https:";
+            upgrade_to_https && window.location().protocol().expect("protocol()") == "https:";
 
-        if let Some(base) = &mut base_url {
-            // Adding trailing slash so url::parse will not drop last part
-            if !base.ends_with('/') {
-                base.push('/');
+        // Retrieve and parse `document.baseURI`.
+        let document_base_uri = || {
+            let document = window.document().expect("document()");
+            if let Ok(Some(base_uri)) = document.base_uri() {
+                return Url::parse(&base_uri).ok();
             }
 
-            if Url::parse(base).is_err() {
-                let document = window.document().expect("Could not get document");
-                if let Ok(Some(doc_base_uri)) = document.base_uri() {
-                    let doc_url =
-                        Url::parse(&doc_base_uri).expect("Could not parse document base uri");
+            None
+        };
 
-                    if let Ok(joined_url) = doc_url.join(base) {
-                        base_url = Some(joined_url.into());
-                    } else {
-                        log::error!("Bad base directory {}", base);
-                        base_url = None;
-                    }
-                } else {
-                    log::error!("Could not get document base_uri for base directory inference");
-                    base_url = None;
-                }
+        let base_url = if let Some(mut base_url) = base_url {
+            // Adding trailing slash so `Url::parse` will not drop the last part.
+            if !base_url.ends_with('/') {
+                base_url.push('/');
             }
+
+            Url::parse(&base_url)
+                .ok()
+                .or_else(|| document_base_uri().and_then(|base_uri| base_uri.join(&base_url).ok()))
+        } else {
+            document_base_uri()
+        };
+
+        if base_url.is_none() {
+            log::error!("Could not get base URL for base directory inference.");
         }
 
         Self {
@@ -64,23 +65,10 @@ impl WebNavigatorBackend {
         }
     }
 
-    fn base_uri(&self, document: &Document) -> Option<String> {
-        if let Some(base_url) = self.base_url.clone() {
-            Some(base_url)
-        } else if let Ok(Some(base_uri)) = document.base_uri() {
-            Some(base_uri)
-        } else {
-            None
-        }
-    }
-
-    fn resolve_relative_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
-        let window = web_sys::window().expect("window()");
-        let document = window.document().expect("document()");
-
-        if let Some(base_uri) = self.base_uri(&document) {
-            if let Ok(new_url) = url_from_relative_url(&base_uri, url) {
-                return String::from(new_url).into();
+    fn resolve_url<'a>(&self, url: &'a str) -> Cow<'a, str> {
+        if let Some(base_url) = &self.base_url {
+            if let Ok(url) = base_url.join(url) {
+                return self.pre_process_url(url).to_string().into();
             }
         }
 
@@ -95,91 +83,76 @@ impl NavigatorBackend for WebNavigatorBackend {
         target: String,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     ) {
-        // If the URL is empty, we ignore the request
+        // If the URL is empty, ignore the request.
         if url.is_empty() {
             return;
         }
 
-        if let Some(window) = window() {
-            let document = window.document().expect("Could not get document");
+        let url = self.resolve_url(&url);
 
-            let base_uri = match self.base_uri(&document) {
-                Some(base_uri) => base_uri,
-                _ => return,
-            };
-
-            let url = if let Ok(new_url) = url_from_relative_url(&base_uri, &url) {
-                new_url
-            } else {
-                return;
-            };
-
-            // If allowScriptAccess is disabled, we should reject the javascript scheme
+        // If `allowScriptAccess` is disabled, reject the `javascript:` scheme.
+        if let Ok(url) = Url::parse(&url) {
             if !self.allow_script_access && url.scheme() == "javascript" {
                 log::warn!("SWF tried to run a script, but script access is not allowed");
                 return;
             }
-
-            //TODO: Should we return a result for failed opens? Does Flash care?
-            match vars_method {
-                Some((navmethod, formvars)) => {
-                    let form_url = self.pre_process_url(url).to_string();
-
-                    let body = match document.body() {
-                        Some(body) => body,
-                        None => return,
-                    };
-
-                    let form = document
-                        .create_element("form")
-                        .unwrap()
-                        .dyn_into::<web_sys::HtmlFormElement>()
-                        .unwrap();
-
-                    let _ = form.set_attribute(
-                        "method",
-                        match navmethod {
-                            NavigationMethod::Get => "get",
-                            NavigationMethod::Post => "post",
-                        },
-                    );
-
-                    let _ = form.set_attribute("action", &form_url);
-
-                    if !target.is_empty() {
-                        let _ = form.set_attribute("target", &target);
-                    }
-
-                    for (k, v) in formvars.iter() {
-                        let hidden = document.create_element("input").unwrap();
-
-                        let _ = hidden.set_attribute("type", "hidden");
-                        let _ = hidden.set_attribute("name", k);
-                        let _ = hidden.set_attribute("value", v);
-
-                        let _ = form.append_child(&hidden);
-                    }
-
-                    let _ = body.append_child(&form);
-                    let _ = form.submit();
-                }
-                None => {
-                    if target.is_empty() {
-                        let _ = window.location().assign(url.as_str());
-                    } else {
-                        let _ = window.open_with_url_and_target(url.as_str(), &target);
-                    }
-                }
-            };
         }
+
+        // TODO: Should we return a result for failed opens? Does Flash care?
+        let window = window().expect("window()");
+        match vars_method {
+            Some((navmethod, formvars)) => {
+                let document = window.document().expect("document()");
+                let body = match document.body() {
+                    Some(body) => body,
+                    None => return,
+                };
+
+                let form = document
+                    .create_element("form")
+                    .unwrap()
+                    .dyn_into::<web_sys::HtmlFormElement>()
+                    .unwrap();
+
+                let _ = form.set_attribute(
+                    "method",
+                    match navmethod {
+                        NavigationMethod::Get => "get",
+                        NavigationMethod::Post => "post",
+                    },
+                );
+
+                let _ = form.set_attribute("action", &url);
+
+                if !target.is_empty() {
+                    let _ = form.set_attribute("target", &target);
+                }
+
+                for (k, v) in formvars.iter() {
+                    let hidden = document.create_element("input").unwrap();
+
+                    let _ = hidden.set_attribute("type", "hidden");
+                    let _ = hidden.set_attribute("name", k);
+                    let _ = hidden.set_attribute("value", v);
+
+                    let _ = form.append_child(&hidden);
+                }
+
+                let _ = body.append_child(&form);
+                let _ = form.submit();
+            }
+            None => {
+                if target.is_empty() {
+                    let _ = window.location().assign(&url);
+                } else {
+                    let _ = window.open_with_url_and_target(&url, &target);
+                }
+            }
+        };
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Response, Error> {
-        let url = if let Ok(parsed_url) = Url::parse(request.url()) {
-            self.pre_process_url(parsed_url).to_string()
-        } else {
-            self.resolve_relative_url(request.url()).to_string()
-        };
+        let url = self.resolve_url(request.url()).into_owned();
 
         Box::pin(async move {
             let mut init = RequestInit::new();
@@ -215,7 +188,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             let request = WebRequest::new_with_str_and_init(&url, &init)
                 .map_err(|_| Error::FetchError(format!("Unable to create request for {}", url)))?;
 
-            let window = web_sys::window().unwrap();
+            let window = web_sys::window().expect("window()");
             let fetchval = JsFuture::from(window.fetch_with_request(&request))
                 .await
                 .map_err(|_| Error::FetchError("Got JS error".to_string()))?;
