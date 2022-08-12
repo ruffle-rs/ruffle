@@ -50,15 +50,14 @@ impl WString {
     pub unsafe fn from_buf_unchecked(buf: Units<Vec<u8>, Vec<u16>>) -> Self {
         // SAFETY: we take ownership of the buffer; avoid double frees
         let mut buf = ManuallyDrop::new(buf);
-        let (cap, ptr) = match buf.deref_mut() {
-            Units::Bytes(buf) => (buf.capacity(), Units::Bytes(&mut buf[..] as *mut _)),
-            Units::Wide(buf) => (buf.capacity(), Units::Wide(&mut buf[..] as *mut _)),
+        let (cap, len, ptr, is_wide) = match buf.deref_mut() {
+            Units::Bytes(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, false),
+            Units::Wide(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, true),
         };
 
-        let wstr = ptr::from_units(ptr);
         Self {
-            data: NonNull::new_unchecked(ptr::data(wstr)),
-            meta: ptr::metadata(wstr),
+            data: NonNull::new_unchecked(ptr),
+            meta: ptr::WStrMetadata::new(len, is_wide),
             capacity: cap as u32,
         }
     }
