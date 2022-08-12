@@ -8,7 +8,7 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
-use crate::vminterface::{AvmType, Instantiator};
+use crate::vminterface::Instantiator;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapHandle;
 use std::cell::{Ref, RefMut};
@@ -223,11 +223,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if context.avm_type() == AvmType::Avm1 {
-            context
-                .avm1
-                .add_to_exec_list(context.gc_context, (*self).into());
-        } else if context.avm_type() == AvmType::Avm2 {
+        if context.is_action_script_3() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let bitmap = activation.avm2().classes().bitmap;
             match Avm2StageObject::for_display_object_childless(
@@ -240,6 +236,10 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 }
                 Err(e) => log::error!("Got error when creating AVM2 side of bitmap: {}", e),
             }
+        } else {
+            context
+                .avm1
+                .add_to_exec_list(context.gc_context, (*self).into());
         }
 
         if run_frame {

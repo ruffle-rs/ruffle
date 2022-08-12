@@ -4,7 +4,6 @@ use image::RgbaImage;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::vminterface::AvmType;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::target::TextureTarget;
@@ -91,7 +90,7 @@ fn take_screenshot(
 ) -> Result<Vec<RgbaImage>> {
     let movie = SwfMovie::from_path(&swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
-    if movie.avm_type() == AvmType::Avm2 && skip_unsupported {
+    if movie.is_action_script_3() && skip_unsupported {
         return Err(anyhow!("Skipping unsupported movie"));
     }
 

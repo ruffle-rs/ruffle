@@ -21,7 +21,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
-use crate::vminterface::{AvmType, Instantiator};
+use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
@@ -585,8 +585,7 @@ impl<'gc> Stage<'gc> {
     fn fire_resize_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
-        let library = context.library.library_for_movie_mut(context.swf.clone());
-        if library.avm_type() == AvmType::Avm1 {
+        if !context.is_action_script_3() {
             crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
                 context,
@@ -604,8 +603,7 @@ impl<'gc> Stage<'gc> {
 
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
     pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let library = context.library.library_for_movie_mut(context.swf.clone());
-        if library.avm_type() == AvmType::Avm1 {
+        if !context.is_action_script_3() {
             crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
                 context,

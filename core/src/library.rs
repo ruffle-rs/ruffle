@@ -7,7 +7,6 @@ use crate::font::{Font, FontDescriptor};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
 use ruffle_render::utils::remove_invalid_jpeg_data;
 use std::collections::HashMap;
@@ -100,18 +99,16 @@ pub struct MovieLibrary<'gc> {
     export_characters: Avm1PropertyMap<'gc, Character<'gc>>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: HashMap<FontDescriptor, Font<'gc>>,
-    avm_type: AvmType,
     avm2_domain: Option<Avm2Domain<'gc>>,
 }
 
 impl<'gc> MovieLibrary<'gc> {
-    pub fn new(avm_type: AvmType) -> Self {
+    pub fn new() -> Self {
         Self {
             characters: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
             fonts: HashMap::new(),
-            avm_type,
             avm2_domain: None,
         }
     }
@@ -302,20 +299,6 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables.as_ref().map(|data| &data[..])
     }
 
-    /// Get the VM type of this movie.
-    pub fn avm_type(&self) -> AvmType {
-        self.avm_type
-    }
-
-    /// Forcibly set the AVM type of this movie.
-    ///
-    /// This is intended for display object types which can be created
-    /// dynamically but need a placeholder movie. You should *not* attempt to
-    /// change the AVM type of an actual SWF.
-    pub fn force_avm_type(&mut self, new_type: AvmType) {
-        self.avm_type = new_type;
-    }
-
     pub fn set_avm2_domain(&mut self, avm2_domain: Avm2Domain<'gc>) {
         self.avm2_domain = Some(avm2_domain);
     }
@@ -340,6 +323,12 @@ impl<'gc> ruffle_render::bitmap::BitmapSource for MovieLibrary<'gc> {
                 height: bitmap.height(),
             })
         })
+    }
+}
+
+impl Default for MovieLibrary<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -381,10 +370,9 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        let avm_type = movie.avm_type();
         self.movie_libraries
             .entry(movie)
-            .or_insert_with(|| MovieLibrary::new(avm_type))
+            .or_insert_with(MovieLibrary::new)
     }
 
     /// Returns the device font for use when a font is unavailable.
