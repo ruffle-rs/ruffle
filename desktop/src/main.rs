@@ -20,14 +20,15 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState, ViewportDimensions,
+    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, GcArena, Player, PlayerBuilder,
+    PlayerEvent, StageDisplayState, ViewportDimensions,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
+use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use url::Url;
@@ -38,6 +39,12 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+
+type RuffleGcArena = Weak<RefCell<GcArena>>;
+
+thread_local! {
+    static GC_ARENA: RefCell<Option<RuffleGcArena>> = RefCell::default();
+}
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -273,6 +280,10 @@ impl App {
                 parse_parameters(&opt).collect(),
                 Box::new(on_metadata),
             );
+
+            GC_ARENA.with(|arena| {
+                *arena.borrow_mut() = Some(player.lock().unwrap().arena());
+            })
         }
 
         Ok(Self {

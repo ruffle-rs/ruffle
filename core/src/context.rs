@@ -18,12 +18,12 @@ use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
 use crate::library::Library;
 use crate::loader::LoadManager;
-use crate::player::Player;
+use crate::player::{GcGlobalData, Player};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use core::fmt;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::RenderBackend;
@@ -42,6 +42,8 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The mutation context to allocate and mutate `GcCell` types.
     pub gc_context: MutationContext<'gc, 'gc_context>,
+
+    pub global: GcCell<'gc, GcGlobalData<'gc>>,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
@@ -295,6 +297,7 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         UpdateContext {
             action_queue: self.action_queue,
             gc_context: self.gc_context,
+            global: self.global,
             library: self.library,
             player_version: self.player_version,
             needs_render: self.needs_render,
