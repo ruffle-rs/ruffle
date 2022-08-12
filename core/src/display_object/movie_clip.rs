@@ -34,7 +34,7 @@ use crate::font::Font;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
 use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
-use crate::vminterface::{AvmObject, AvmType, Instantiator};
+use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
 use std::cell::{Ref, RefMut};
@@ -282,7 +282,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     fn set_loader_info(&self, context: &mut UpdateContext<'_, 'gc, '_>, movie: Arc<SwfMovie>) {
-        if movie.avm_type() == AvmType::Avm2 {
+        if movie.is_action_script_3() {
             let gc_context = context.gc_context;
             let mc = self.0.write(gc_context);
             if mc.base.base.is_root() {
@@ -483,7 +483,7 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> DecodeResult {
-        if context.avm_type() != AvmType::Avm1 {
+        if context.is_action_script_3() {
             log::warn!("DoInitAction tag in AVM2 movie");
             return Ok(());
         }
@@ -520,12 +520,12 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> DecodeResult {
-        let movie = self.movie().unwrap();
-        if context.avm_type() != AvmType::Avm2 {
+        if !context.is_action_script_3() {
             log::warn!("DoABC tag in AVM1 movie");
             return Ok(());
         }
 
+        let movie = self.movie().unwrap();
         let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
         if let Err(e) = Avm2::load_abc_from_do_abc(
@@ -1072,21 +1072,19 @@ impl<'gc> MovieClip<'gc> {
         let mut reader = data.read_from(mc.tag_stream_pos);
         drop(mc);
 
-        let vm_type = context.avm_type();
-
         use swf::TagCode;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| match tag_code {
             TagCode::DoAction => self.do_action(context, reader, tag_len),
-            TagCode::PlaceObject if run_display_actions && vm_type == AvmType::Avm1 => {
+            TagCode::PlaceObject if run_display_actions && !context.is_action_script_3() => {
                 self.place_object(context, reader, tag_len, 1)
             }
-            TagCode::PlaceObject2 if run_display_actions && vm_type == AvmType::Avm1 => {
+            TagCode::PlaceObject2 if run_display_actions && !context.is_action_script_3() => {
                 self.place_object(context, reader, tag_len, 2)
             }
-            TagCode::PlaceObject3 if run_display_actions && vm_type == AvmType::Avm1 => {
+            TagCode::PlaceObject3 if run_display_actions && !context.is_action_script_3() => {
                 self.place_object(context, reader, tag_len, 3)
             }
-            TagCode::PlaceObject4 if run_display_actions && vm_type == AvmType::Avm1 => {
+            TagCode::PlaceObject4 if run_display_actions && !context.is_action_script_3() => {
                 self.place_object(context, reader, tag_len, 4)
             }
             TagCode::RemoveObject if run_display_actions => self.remove_object(context, reader, 1),
@@ -1120,8 +1118,8 @@ impl<'gc> MovieClip<'gc> {
         depth: Depth,
         place_object: &swf::PlaceObject,
     ) -> Option<DisplayObject<'gc>> {
-        let library = context.library.library_for_movie_mut(self.movie().unwrap()); //TODO
-        let avm_type = library.avm_type();
+        let movie = self.movie().unwrap();
+        let library = context.library.library_for_movie_mut(movie.clone());
         match library.instantiate_by_id(id, context.gc_context) {
             Ok(child) => {
                 // Remove previous child from children list,
@@ -1133,7 +1131,7 @@ impl<'gc> MovieClip<'gc> {
                     child.set_instantiated_by_timeline(context.gc_context, true);
                     child.set_depth(context.gc_context, depth);
                     child.set_parent(context.gc_context, Some(self.into()));
-                    if avm_type == AvmType::Avm2 {
+                    if movie.is_action_script_3() {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
                         child.set_place_frame(context.gc_context, self.current_frame() + 1);
@@ -1160,24 +1158,14 @@ impl<'gc> MovieClip<'gc> {
                         (&place_object.clip_actions, child.as_movie_clip())
                     {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
-                        if let Some(movie) = self.movie() {
-                            clip.set_clip_event_handlers(
-                                context.gc_context,
-                                clip_actions
-                                    .iter()
-                                    .cloned()
-                                    .map(|a| {
-                                        ClipEventHandler::from_action_and_movie(
-                                            a,
-                                            Arc::clone(&movie),
-                                        )
-                                    })
-                                    .collect(),
-                            );
-                        } else {
-                            // This probably shouldn't happen; we should always have a movie.
-                            log::error!("No movie when trying to set clip event");
-                        }
+                        clip.set_clip_event_handlers(
+                            context.gc_context,
+                            clip_actions
+                                .iter()
+                                .cloned()
+                                .map(|a| ClipEventHandler::from_action_and_movie(a, movie.clone()))
+                                .collect(),
+                        );
                     }
                     // TODO: Missing PlaceObject properties: amf_data, filters
 
@@ -1187,7 +1175,7 @@ impl<'gc> MovieClip<'gc> {
                     // In AVM1, children are added in `run_frame` so this is necessary.
                     // In AVM2 we add them in `construct_frame` so calling this causes
                     // duplicate frames
-                    if avm_type == AvmType::Avm1 {
+                    if !movie.is_action_script_3() {
                         child.run_frame(context);
                     }
                 }
@@ -1760,7 +1748,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
-        if context.avm_type() == AvmType::Avm2 {
+        if context.is_action_script_3() {
             let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
                 self.allocate_as_avm2_object(context, (*self).into());
 
@@ -1823,7 +1811,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn run_frame_scripts(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut index = 0;
         let mut write = self.0.write(context.gc_context);
-        let avm2_object = write.object.and_then(|o| o.as_avm2_object().ok());
+        let avm2_object = write.object.and_then(|o| o.as_avm2_object());
 
         if let Some(avm2_object) = avm2_object {
             if let Some(frame_id) = write.queued_script_frame {
@@ -1994,7 +1982,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if context.avm_type() == AvmType::Avm1 {
+        if !context.is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
@@ -2007,7 +1995,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0
             .read()
             .object
-            .and_then(|o| o.as_avm1_object().ok())
+            .and_then(|o| o.as_avm1_object())
             .map(Avm1Value::from)
             .unwrap_or(Avm1Value::Undefined)
     }
@@ -2016,7 +2004,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0
             .read()
             .object
-            .and_then(|o| o.as_avm2_object().ok())
+            .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Undefined)
     }
@@ -2646,22 +2634,21 @@ impl<'gc, 'a> MovieClipData<'gc> {
         swf_button: swf::Button<'a>,
     ) -> DecodeResult {
         let movie = self.movie();
-        let library = context.library.library_for_movie_mut(movie.clone());
-        if library.avm_type() == AvmType::Avm1 {
-            let button =
-                Avm1Button::from_swf_tag(&swf_button, &self.static_data.swf, context.gc_context);
-            context
-                .library
-                .library_for_movie_mut(movie)
-                .register_character(swf_button.id, Character::Avm1Button(button));
+        let button = if movie.is_action_script_3() {
+            Character::Avm2Button(Avm2Button::from_swf_tag(
+                &swf_button,
+                &self.static_data.swf,
+                context,
+            ))
         } else {
-            let button = Avm2Button::from_swf_tag(&swf_button, &self.static_data.swf, context);
-            context
-                .library
-                .library_for_movie_mut(movie)
-                .register_character(swf_button.id, Character::Avm2Button(button));
-        }
-
+            Character::Avm1Button(Avm1Button::from_swf_tag(
+                &swf_button,
+                &self.static_data.swf,
+                context.gc_context,
+            ))
+        };
+        let library = context.library.library_for_movie_mut(movie);
+        library.register_character(swf_button.id, button);
         Ok(())
     }
 
@@ -3049,7 +3036,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> DecodeResult {
-        if context.avm_type() != AvmType::Avm1 {
+        if context.is_action_script_3() {
             log::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
@@ -3096,7 +3083,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 if let Some(child) = self.child_by_depth(place_object.depth.into()) {
                     child.replace_with(context, id);
                     child.apply_place_object(context, &place_object);
-                    if context.avm_type() == AvmType::Avm2 {
+                    if context.is_action_script_3() {
                         // In AVM2 instantiation happens before frame advance so we
                         // have to special-case that
                         child.set_place_frame(context.gc_context, self.current_frame() + 1);

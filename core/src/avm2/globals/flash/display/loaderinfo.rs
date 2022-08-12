@@ -46,7 +46,7 @@ pub fn class_init<'gc>(
 
 /// `actionScriptVersion` getter
 pub fn action_script_version<'gc>(
-    activation: &mut Activation<'_, 'gc, '_>,
+    _activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
@@ -57,11 +57,8 @@ pub fn action_script_version<'gc>(
                     return Err("Error: The stage's loader info does not have an AS version".into())
                 }
                 LoaderStream::Swf(movie, _) => {
-                    let library = activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie.clone());
-                    return Ok(library.avm_type().into_avm2_loader_version().into());
+                    let version = if movie.is_action_script_3() { 3 } else { 2 };
+                    return Ok(version.into());
                 }
             }
         }
