@@ -6,3 +6,4 @@ authors = ["Arthur Heuillard <arthur.heuillard<orange.fr>"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+static_assertions = "1.1.0"
