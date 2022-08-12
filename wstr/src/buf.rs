@@ -284,6 +284,14 @@ impl WString {
         })
     }
 
+    /// Truncates this `WString`, removing all contents.
+    pub fn clear(&mut self) {
+        // SAFETY: 0 is always a valid length.
+        unsafe {
+            self.meta = ptr::WStrMetadata::new(0, self.meta.is_wide());
+        }
+    }
+
     /// Appends a UTF-16 code unit to `self`.
     ///
     /// This will convert this `WString` into its wide form if necessary.
@@ -412,6 +420,11 @@ impl ToOwned for WStr {
         let mut buf = WString::new();
         buf.push_str(self);
         buf
+    }
+
+    fn clone_into(&self, target: &mut Self::Owned) {
+        target.clear();
+        target.push_str(self);
     }
 }
 
