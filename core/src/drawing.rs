@@ -299,7 +299,11 @@ impl Drawing {
         self.shape_bounds.clone()
     }
 
-    pub fn hit_test(&self, point: (Twips, Twips), local_matrix: &crate::matrix::Matrix) -> bool {
+    pub fn hit_test(
+        &self,
+        point: (Twips, Twips),
+        local_matrix: &ruffle_render::matrix::Matrix,
+    ) -> bool {
         use crate::shape_utils;
         for path in &self.paths {
             match path {

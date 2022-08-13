@@ -1,10 +1,10 @@
 use fnv::FnvHashMap;
 use ruffle_core::backend::render::{NullBitmapSource, RenderBackend, ShapeHandle, Transform};
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::matrix::Matrix;
 use ruffle_core::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_core::swf::{self, Color};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
+use ruffle_render::matrix::Matrix;
 use ruffle_web_common::{JsError, JsResult};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{

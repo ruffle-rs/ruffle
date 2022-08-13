@@ -1,5 +1,5 @@
-use crate::matrix::Matrix;
 use gc_arena::Collect;
+use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
 #[derive(Clone, Collect, Debug, Default, Eq, PartialEq)]
