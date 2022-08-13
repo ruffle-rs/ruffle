@@ -74,12 +74,12 @@ impl<'gc> SoundChannelObject<'gc> {
         self.0.read().sound
     }
 
-    /// Return the position of the playing sound in seconds.
+    /// Return the position of the playing sound in milliseconds.
     pub fn position(self) -> f64 {
         self.0.read().position
     }
 
-    /// Set the position of the playing sound in seconds.
+    /// Set the position of the playing sound in milliseconds.
     pub fn set_position(self, mc: MutationContext<'gc, '_>, value: f64) {
         self.0.write(mc).position = value;
     }
