@@ -34,7 +34,6 @@ mod prelude;
 pub mod string;
 pub mod tag_utils;
 pub mod timer;
-mod transform;
 mod types;
 pub mod vminterface;
 mod xml;
