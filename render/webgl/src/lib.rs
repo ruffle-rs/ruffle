@@ -4,10 +4,10 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::transform::Transform;
-use ruffle_render_common_tess::{
+use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };
+use ruffle_render::transform::Transform;
 use ruffle_web_common::JsResult;
 use swf::Color;
 use wasm_bindgen::{JsCast, JsValue};
@@ -493,7 +493,7 @@ impl WebGlRenderBackend {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> Mesh {
-        use ruffle_render_common_tess::DrawType as TessDrawType;
+        use ruffle_render::tessellator::DrawType as TessDrawType;
 
         let lyon_mesh = self
             .shape_tessellator

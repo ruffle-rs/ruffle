@@ -3105,6 +3105,7 @@ dependencies = [
  "gif",
  "jpeg-decoder",
  "log",
+ "lyon",
  "png",
  "smallvec",
  "swf",
@@ -3125,16 +3126,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruffle_render_common_tess"
-version = "0.1.0"
-dependencies = [
- "log",
- "lyon",
- "ruffle_render",
- "swf",
-]
-
-[[package]]
 name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
@@ -3143,7 +3134,6 @@ dependencies = [
  "js-sys",
  "log",
  "ruffle_render",
- "ruffle_render_common_tess",
  "ruffle_web_common",
  "swf",
  "wasm-bindgen",
@@ -3163,7 +3153,6 @@ dependencies = [
  "log",
  "raw-window-handle 0.4.3",
  "ruffle_render",
- "ruffle_render_common_tess",
  "swf",
  "web-sys",
  "wgpu",

@@ -7,3 +7,6 @@ pub mod matrix;
 pub mod shape_utils;
 pub mod transform;
 pub mod utils;
+
+#[cfg(feature = "tessellator")]
+pub mod tessellator;
