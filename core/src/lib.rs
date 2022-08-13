@@ -17,7 +17,6 @@ mod avm2;
 mod binary_data;
 pub mod bitmap;
 mod character;
-pub mod color_transform;
 pub mod context;
 pub mod context_menu;
 mod drawing;
