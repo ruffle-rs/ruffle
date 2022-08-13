@@ -17,6 +17,7 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{value, Avm2, Error};
 use crate::context::UpdateContext;
+use crate::duration::RuffleDuration;
 use crate::string::{AvmString, WStr, WString};
 use crate::swf::extensions::ReadSwfExt;
 use gc_arena::{Gc, GcCell};
@@ -946,7 +947,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         self.actions_since_timeout_check += 1;
         if self.actions_since_timeout_check >= 2000 {
             self.actions_since_timeout_check = 0;
-            if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+            if RuffleDuration::from(self.context.update_start.elapsed())
+                >= self.context.max_execution_duration
+            {
                 return Err(
                     "A script in this movie has taken too long to execute and has been terminated."
                         .into(),

@@ -44,6 +44,7 @@ mod xml;
 
 pub mod backend;
 pub mod config;
+pub mod duration;
 pub mod external;
 
 pub use context_menu::ContextMenuItem;

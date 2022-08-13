@@ -1162,7 +1162,7 @@ impl<'gc> Loader<'gc> {
                         let duration = uc
                             .audio
                             .get_sound_duration(handle)
-                            .map(|d| d.round() as u32);
+                            .map(|d| d.as_millis().round() as u32);
                         sound_object.set_duration(uc.gc_context, duration);
                         Ok(())
                     })

@@ -105,7 +105,7 @@ pub fn scan_file<P: AsRef<OsStr>>(exec_path: P, file: &DirEntry, name: &str) -> 
         Err(e) => file_results.error = Some(e.to_string()),
     }
 
-    file_results.testing_time = start.elapsed().as_millis();
+    file_results.testing_time = start.elapsed().into();
 
     file_results
 }

@@ -11,9 +11,11 @@ use crate::avm1::{
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
+use crate::duration::RuffleDuration;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
+use std::ops::{Add, AddAssign, Sub};
 
 /// Manages the collection of timers.
 pub struct Timers<'gc> {
@@ -24,16 +26,17 @@ pub struct Timers<'gc> {
     timer_counter: i32,
 
     /// The current global time.
-    cur_time: u64,
+    cur_time: RuffleDuration,
 }
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc, '_>, dt: f64) -> Option<f64> {
-        context.timers.cur_time = context
-            .timers
-            .cur_time
-            .wrapping_add((dt * Self::TIMER_SCALE) as u64);
+    pub fn update_timers(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        dt: RuffleDuration,
+    ) -> Option<RuffleDuration> {
+        context.timers.cur_time.add_assign(dt);
+
         let num_timers = context.timers.num_timers();
 
         if num_timers == 0 {
@@ -56,7 +59,7 @@ impl<'gc> Timers<'gc> {
             .context
             .timers
             .peek()
-            .map(|timer| timer.tick_time)
+            .map(|timer| RuffleDuration::from_micros(timer.tick_time as f64))
             .unwrap_or(cur_time)
             < cur_time
         {
@@ -73,8 +76,11 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per timer per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = activation.context.timers.peek_mut().unwrap().tick_time;
-                activation.context.timers.cur_time = next_time.wrapping_sub(100);
+                let next_time = RuffleDuration::from_micros(
+                    activation.context.timers.peek_mut().unwrap().tick_time as f64,
+                );
+                activation.context.timers.cur_time =
+                    next_time.add(RuffleDuration::from_millis(100.0));
                 break;
             }
 
@@ -156,7 +162,7 @@ impl<'gc> Timers<'gc> {
             .context
             .timers
             .peek()
-            .map(|timer| (timer.tick_time.wrapping_sub(cur_time)) as f64 / Self::TIMER_SCALE)
+            .map(|timer| (RuffleDuration::from_micros(timer.tick_time as f64).sub(cur_time)))
     }
 
     /// The minimum interval we allow for timers.
@@ -165,15 +171,12 @@ impl<'gc> Timers<'gc> {
     /// The maximum timer ticks per call to `update_ticks`, for sanity.
     const MAX_TICKS: i32 = 10;
 
-    /// The scale of the timers (microseconds).
-    const TIMER_SCALE: f64 = 1000.0;
-
     /// Creates a new `Timers` collection.
     pub fn new() -> Self {
         Self {
             timers: Default::default(),
             timer_counter: 0,
-            cur_time: 0,
+            cur_time: RuffleDuration::zero(),
         }
     }
 
@@ -190,15 +193,15 @@ impl<'gc> Timers<'gc> {
         is_timeout: bool,
     ) -> i32 {
         // SANITY: Set a minimum interval so we don't spam too much.
-        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
+        let interval = RuffleDuration::from_millis(interval.max(Self::MIN_INTERVAL) as f64);
 
         self.timer_counter = self.timer_counter.wrapping_add(1);
         let id = self.timer_counter;
         let timer = Timer {
             id,
             callback,
-            tick_time: self.cur_time + interval,
-            interval,
+            tick_time: (self.cur_time + interval).as_micros() as u64,
+            interval: interval.as_micros() as u64,
             is_timeout,
             is_alive: std::cell::Cell::new(true),
         };

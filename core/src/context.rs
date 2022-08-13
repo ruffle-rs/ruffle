@@ -13,6 +13,7 @@ use crate::backend::{
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
+use crate::duration::RuffleDuration;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
@@ -32,7 +33,6 @@ use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
-use std::time::Duration;
 
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
@@ -158,7 +158,7 @@ pub struct UpdateContext<'a, 'gc, 'gc_context> {
 
     /// The maximum amount of time that can be called before a `Error::ExecutionTimeout`
     /// is raised. This defaults to 15 seconds but can be changed.
-    pub max_execution_duration: Duration,
+    pub max_execution_duration: RuffleDuration,
 
     /// A tracker for the current keyboard focused element
     pub focus_tracker: FocusTracker<'gc>,

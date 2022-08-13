@@ -13,6 +13,7 @@ use crate::display_object::stage::Stage;
 use crate::display_object::{
     DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
+use crate::duration::RuffleDuration;
 use crate::events::{ClipEvent, ClipEventResult};
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
@@ -20,7 +21,6 @@ use instant::Instant;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
-use std::time::Duration;
 use swf::Twips;
 
 /// Find the lowest common ancestor between the display objects in `from` and
@@ -265,7 +265,9 @@ pub trait TInteractiveObject<'gc>:
                     .flags
                     .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
                     && last_click
-                        .map(|lc| this_click - lc < Duration::from_secs(1))
+                        .map(|lc| {
+                            RuffleDuration::from(this_click - lc) < RuffleDuration::from_secs(1.0)
+                        })
                         .unwrap_or(false);
 
                 drop(read);

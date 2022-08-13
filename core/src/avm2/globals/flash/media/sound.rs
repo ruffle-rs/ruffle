@@ -104,7 +104,7 @@ pub fn length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound) = this.and_then(|this| this.as_sound()) {
         if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
-            return Ok((duration).into());
+            return Ok(duration.as_millis().into());
         }
     }
 
@@ -131,7 +131,7 @@ pub fn play<'gc>(
         let sound_transform = args.get(2).cloned().unwrap_or(Value::Null).as_object();
 
         if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
-            if position > duration {
+            if position > duration.as_millis() as f64 {
                 return Ok(Value::Null);
             }
         }

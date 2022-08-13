@@ -4,6 +4,7 @@ use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
     SoundTransform,
 };
+use ruffle_core::duration::RuffleDuration;
 use ruffle_core::impl_audio_mixer_backend;
 
 pub struct CpalAudioBackend {

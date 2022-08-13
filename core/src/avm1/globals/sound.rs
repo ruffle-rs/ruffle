@@ -93,7 +93,7 @@ fn attach_sound<'gc>(
                         .context
                         .audio
                         .get_sound_duration(*sound)
-                        .map(|d| d.round() as u32),
+                        .map(|d| d.as_millis().round() as u32),
                 );
                 sound_object.set_position(activation.context.gc_context, 0);
             } else {
