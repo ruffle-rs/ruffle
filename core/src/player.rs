@@ -11,7 +11,6 @@ use crate::backend::{
     audio::{AudioBackend, AudioManager},
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
-    render::RenderBackend,
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
     video::VideoBackend,
@@ -39,6 +38,7 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::transform::TransformStack;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
@@ -1827,6 +1827,7 @@ impl PlayerBuilder {
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
+        use ruffle_render::backend::null::NullRenderer;
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
@@ -1838,7 +1839,7 @@ impl PlayerBuilder {
             .unwrap_or_else(|| Box::new(navigator::NullNavigatorBackend::new()));
         let renderer = self
             .renderer
-            .unwrap_or_else(|| Box::new(render::NullRenderer::new()));
+            .unwrap_or_else(|| Box::new(NullRenderer::new()));
         let storage = self
             .storage
             .unwrap_or_else(|| Box::new(storage::MemoryStorageBackend::new()));

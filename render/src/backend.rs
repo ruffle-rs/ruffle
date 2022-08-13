@@ -1,15 +1,13 @@
-mod null;
+pub mod null;
 
-pub use null::{NullBitmapSource, NullRenderer};
-pub use ruffle_render::utils::{determine_jpeg_tag_format, remove_invalid_jpeg_data};
-
-use downcast_rs::Downcast;
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
-use ruffle_render::matrix::Matrix;
-use ruffle_render::shape_utils::DistilledShape;
-pub use ruffle_render::transform::Transform;
-use ruffle_render::utils;
-pub use swf;
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::error::Error;
+use crate::matrix::Matrix;
+use crate::shape_utils::DistilledShape;
+use crate::transform::Transform;
+use crate::utils;
+use downcast_rs::{impl_downcast, Downcast};
+use swf;
 
 pub trait RenderBackend: Downcast {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32);
@@ -102,8 +100,6 @@ pub trait RenderBackend: Downcast {
     ) -> Result<BitmapHandle, Error>;
 }
 impl_downcast!(RenderBackend);
-
-type Error = Box<dyn std::error::Error>;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);

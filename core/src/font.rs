@@ -1,8 +1,8 @@
-use crate::backend::render::{RenderBackend, ShapeHandle};
 use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
 use gc_arena::{Collect, Gc, MutationContext};
+use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::transform::Transform;
 use std::cell::{Cell, Ref, RefCell};
 
@@ -540,11 +540,11 @@ impl From<swf::CsmTextSettings> for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::backend::render::{NullRenderer, RenderBackend};
     use crate::font::{EvalParameters, Font};
     use crate::player::{Player, DEVICE_FONT_TAG};
     use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
+    use ruffle_render::backend::{null::NullRenderer, RenderBackend};
     use std::ops::DerefMut;
     use swf::Twips;
 
