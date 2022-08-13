@@ -1,14 +1,14 @@
 mod null;
-mod utils;
 
 pub use null::{NullBitmapSource, NullRenderer};
-pub use utils::{determine_jpeg_tag_format, remove_invalid_jpeg_data};
+pub use ruffle_render::utils::{determine_jpeg_tag_format, remove_invalid_jpeg_data};
 
 use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
 pub use crate::transform::Transform;
 use downcast_rs::Downcast;
-use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use ruffle_render::utils;
 pub use swf;
 
 pub trait RenderBackend: Downcast {
@@ -107,14 +107,3 @@ type Error = Box<dyn std::error::Error>;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ShapeHandle(pub usize);
-
-/// The format of image data in a DefineBitsJpeg2/3 tag.
-/// Generally this will be JPEG, but according to SWF19, these tags can also contain PNG and GIF data.
-/// SWF19 pp.138-139
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum JpegTagFormat {
-    Jpeg,
-    Png,
-    Gif,
-    Unknown,
-}

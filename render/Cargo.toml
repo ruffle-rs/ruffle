@@ -9,4 +9,11 @@ license = "MIT OR Apache-2.0"
 swf = {path = "../swf"}
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 log = "0.4"
+gif = "0.11.4"
+png = { version = "0.17.5" }
+flate2 = "1.0.24"
+
+[dependencies.jpeg-decoder]
+version = "0.2.6"
+default-features = false # can't use rayon on web
 

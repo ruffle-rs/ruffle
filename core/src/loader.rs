@@ -13,7 +13,6 @@ use crate::avm2::{
     Value as Avm2Value,
 };
 use crate::backend::navigator::{OwnedFuture, Request};
-use crate::backend::render::{determine_jpeg_tag_format, JpegTagFormat};
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -26,6 +25,7 @@ use crate::vminterface::Instantiator;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, CollectionContext};
 use generational_arena::{Arena, Index};
+use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
 use swf::read::read_compression_type;

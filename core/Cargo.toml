@@ -12,11 +12,9 @@ flate2 = "1.0.24"
 fnv = "1.0.7"
 gc-arena = { git = "https://github.com/ruffle-rs/gc-arena" }
 generational-arena = "0.2.8"
-gif = "0.11.4"
 indexmap = "1.9.1"
 log = "0.4"
 minimp3 = { version = "0.5.1", optional = true }
-png = { version = "0.17.5" }
 ruffle_render = { path = "../render" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
@@ -48,10 +46,6 @@ symphonia = { version = "0.5.1", default-features = false, features = ["mp3"], o
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
-
-[dependencies.jpeg-decoder]
-version = "0.2.6"
-default-features = false # can't use rayon on web
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.21"

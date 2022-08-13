@@ -3025,12 +3025,10 @@ dependencies = [
  "futures",
  "gc-arena",
  "generational-arena",
- "gif",
  "h263-rs",
  "h263-rs-yuv",
  "indexmap",
  "instant",
- "jpeg-decoder",
  "log",
  "lzma-rs",
  "minimp3",
@@ -3041,7 +3039,6 @@ dependencies = [
  "num-derive",
  "num-traits",
  "percent-encoding",
- "png",
  "quick-xml",
  "rand",
  "regress",
@@ -3102,8 +3099,12 @@ dependencies = [
 name = "ruffle_render"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "gc-arena",
+ "gif",
+ "jpeg-decoder",
  "log",
+ "png",
  "swf",
 ]
 
