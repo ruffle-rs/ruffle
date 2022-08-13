@@ -1,5 +1,4 @@
 use fnv::FnvHashMap;
-use ruffle_core::swf::{self, Color};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
@@ -8,6 +7,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use swf::Color;
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,

@@ -1,6 +1,5 @@
 use bytemuck::{Pod, Zeroable};
 use fnv::FnvHashMap;
-use ruffle_core::swf::{self, Color};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
@@ -10,6 +9,7 @@ use ruffle_render_common_tess::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };
 use ruffle_web_common::JsResult;
+use swf::Color;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,

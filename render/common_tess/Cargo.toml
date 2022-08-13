@@ -9,7 +9,4 @@ license = "MIT OR Apache-2.0"
 log = "0.4"
 lyon = "1.0.0"
 ruffle_render = { path = ".." }
-
-[dependencies.ruffle_core]
-path = "../../core"
-default-features = false
+swf = { path = "../../swf" }
