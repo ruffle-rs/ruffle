@@ -13,8 +13,12 @@ gif = "0.11.4"
 png = { version = "0.17.5" }
 flate2 = "1.0.24"
 smallvec = { version = "1.9.0", features = ["union"] }
+downcast-rs = "1.2.0"
 
 [dependencies.jpeg-decoder]
 version = "0.2.6"
 default-features = false # can't use rayon on web
+
+[dev-dependencies]
+approx = "0.5.1"
 

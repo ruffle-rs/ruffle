@@ -3010,7 +3010,6 @@ dependencies = [
 name = "ruffle_core"
 version = "0.1.0"
 dependencies = [
- "approx",
  "bitflags",
  "bitstream-io",
  "build_playerglobal",
@@ -3099,6 +3098,8 @@ dependencies = [
 name = "ruffle_render"
 version = "0.1.0"
 dependencies = [
+ "approx",
+ "downcast-rs",
  "flate2",
  "gc-arena",
  "gif",

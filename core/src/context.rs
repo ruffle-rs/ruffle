@@ -7,7 +7,6 @@ use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
     navigator::NavigatorBackend,
-    render::RenderBackend,
     storage::StorageBackend,
     ui::{InputManager, UiBackend},
     video::VideoBackend,
@@ -27,6 +26,7 @@ use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
 use rand::rngs::SmallRng;
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::transform::TransformStack;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};

@@ -1,10 +1,10 @@
 use gc_arena::Collect;
 
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::backend::render::RenderBackend;
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
 use std::ops::Range;
 

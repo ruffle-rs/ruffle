@@ -1,6 +1,6 @@
 use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
-use crate::backend::{audio::SoundHandle, render};
+use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor};
@@ -9,6 +9,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::AvmType;
 use gc_arena::{Collect, MutationContext};
+use ruffle_render::utils::remove_invalid_jpeg_data;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 use swf::CharacterId;
@@ -293,7 +294,7 @@ impl<'gc> MovieLibrary<'gc> {
         self.jpeg_tables = if data.is_empty() {
             None
         } else {
-            Some(render::remove_invalid_jpeg_data(&data[..]).to_vec())
+            Some(remove_invalid_jpeg_data(&data[..]).to_vec())
         }
     }
 

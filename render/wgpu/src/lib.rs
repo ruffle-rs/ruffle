@@ -7,11 +7,12 @@ use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
 use fnv::FnvHashMap;
-use ruffle_core::backend::render::{RenderBackend, ShapeHandle, Transform};
 use ruffle_core::swf::{self, Color};
+use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::shape_utils::DistilledShape;
+use ruffle_render::transform::Transform;
 use ruffle_render_common_tess::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
     Vertex as TessVertex,
@@ -901,7 +902,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal(
             (&shape).into(),
-            &ruffle_core::backend::render::NullBitmapSource,
+            &ruffle_render::backend::null::NullBitmapSource,
         );
         self.meshes.push(mesh);
         handle

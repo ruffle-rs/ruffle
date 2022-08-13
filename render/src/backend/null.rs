@@ -1,8 +1,9 @@
-use crate::backend::render::{Error, RenderBackend, ShapeHandle};
-use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
-use ruffle_render::matrix::Matrix;
-use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::transform::Transform;
+use crate::backend::{RenderBackend, ShapeHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::error::Error;
+use crate::matrix::Matrix;
+use crate::shape_utils::DistilledShape;
+use crate::transform::Transform;
 use swf::Color;
 
 pub struct NullBitmapSource;

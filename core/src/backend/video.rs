@@ -1,7 +1,7 @@
 //! Video decoder backends
 
-use crate::backend::render::RenderBackend;
 use generational_arena::{Arena, Index};
+use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
 use swf::{VideoCodec, VideoDeblocking};
 
