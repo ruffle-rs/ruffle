@@ -201,7 +201,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                             let glyph_shape = glyph.as_shape();
                             let glyph_bounds: BoundingBox = (&glyph_shape.shape_bounds).into();
                             if glyph_bounds.contains(point)
-                                && crate::shape_utils::shape_hit_test(
+                                && ruffle_render::shape_utils::shape_hit_test(
                                     &glyph_shape,
                                     point,
                                     &local_matrix,

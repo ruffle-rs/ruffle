@@ -3105,6 +3105,7 @@ dependencies = [
  "jpeg-decoder",
  "log",
  "png",
+ "smallvec",
  "swf",
 ]
 

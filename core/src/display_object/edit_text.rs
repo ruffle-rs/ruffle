@@ -20,13 +20,13 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
-use crate::shape_utils::DrawCommand;
 use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::transform::Transform;
 use crate::vminterface::{AvmObject, AvmType, Instantiator};
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_render::shape_utils::DrawCommand;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::Twips;
 

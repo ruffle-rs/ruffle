@@ -14,9 +14,9 @@ use crate::display_object::{
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
-use crate::shape_utils::DrawCommand;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
+use ruffle_render::shape_utils::DrawCommand;
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Twips,

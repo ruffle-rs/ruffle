@@ -116,7 +116,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             if let Some(frame) = self.0.read().static_data.frames.borrow().get(&self.ratio()) {
                 let local_matrix = self.global_to_local_matrix();
                 let point = local_matrix * point;
-                return crate::shape_utils::shape_hit_test(&frame.shape, point, &local_matrix);
+                return ruffle_render::shape_utils::shape_hit_test(
+                    &frame.shape,
+                    point,
+                    &local_matrix,
+                );
             } else {
                 log::warn!("Missing ratio for morph shape");
             }
@@ -293,7 +297,7 @@ impl MorphShapeStatic {
             line_styles,
         };
 
-        let bounds = crate::shape_utils::calculate_shape_bounds(&shape[..]);
+        let bounds = ruffle_render::shape_utils::calculate_shape_bounds(&shape[..]);
         let shape = swf::Shape {
             version: 4,
             id: 0,
