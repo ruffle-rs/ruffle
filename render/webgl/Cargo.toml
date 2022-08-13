@@ -14,10 +14,7 @@ ruffle_render = { path = ".." }
 wasm-bindgen = "=0.2.82"
 bytemuck = { version = "1.10.0", features = ["derive"] }
 fnv = "1.0.7"
-
-[dependencies.ruffle_core]
-path = "../../core"
-default-features = false
+swf = { path = "../../swf" }
 
 [dependencies.web-sys]
 version = "0.3.58"

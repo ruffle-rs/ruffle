@@ -7,7 +7,6 @@ use crate::utils::{create_buffer_with_data, format_list, get_backend_names};
 use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
 use fnv::FnvHashMap;
-use ruffle_core::swf::{self, Color};
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
@@ -20,6 +19,7 @@ use ruffle_render_common_tess::{
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
+use swf::Color;
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
