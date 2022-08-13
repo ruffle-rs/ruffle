@@ -1,6 +1,5 @@
-use crate::backend::render::{
-    Bitmap, BitmapHandle, BitmapInfo, BitmapSource, Error, RenderBackend, ShapeHandle,
-};
+use crate::backend::render::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
+use crate::backend::render::{Error, RenderBackend, ShapeHandle};
 use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
 use crate::transform::Transform;
