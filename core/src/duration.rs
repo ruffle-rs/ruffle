@@ -86,13 +86,14 @@ impl SubAssign for RuffleDuration {
     }
 }
 
-impl From<std::time::Duration> for RuffleDuration {
+impl From<Duration> for RuffleDuration {
     fn from(d: std::time::Duration) -> Self {
         Self::from_nanos(d.as_nanos() as f64)
     }
 }
 
-impl Into<std::time::Duration> for RuffleDuration {
+#[allow(clippy::from_over_into)]
+impl Into<Duration> for RuffleDuration {
     fn into(self) -> Duration {
         Duration::from_nanos(self.as_nanos() as u64)
     }

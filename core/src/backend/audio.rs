@@ -8,7 +8,6 @@ use downcast_rs::Downcast;
 use duration_helper::from_f64_millis;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
-use num_traits::real::Real;
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -503,7 +502,11 @@ impl<'gc> AudioManager<'gc> {
     }
 
     /// Returns the difference in seconds between the primary audio stream's time and the player's time.
-    pub fn audio_skew_time(&mut self, audio: &mut dyn AudioBackend, offset: RuffleDuration) -> RuffleDuration {
+    pub fn audio_skew_time(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        offset: RuffleDuration,
+    ) -> RuffleDuration {
         // Consider the first playing "stream" sound to be the primary audio track.
         // Needs research: It's not clear how Flash handles the case of multiple stream sounds.
         let (i, skew) = self
@@ -522,17 +525,15 @@ impl<'gc> AudioManager<'gc> {
                 // If the difference is beyond some threshold, inform the player to adjust playback speed.
                 let timeline_pos = RuffleDuration::from_secs(
                     f64::from(clip.current_frame().saturating_sub(start_frame)) / frame_rate,
-                ) + offset.into();
-                Some((i, RuffleDuration::from(stream_pos) - timeline_pos))
+                ) + offset;
+                Some((i, stream_pos - timeline_pos))
             })
             .unwrap_or_default();
 
         // Calculate the syncing threshold based on the audio backend's frequency in updating sound position.
-        let sync_threshold = audio
-            .position_resolution()
-            .unwrap_or(RuffleDuration::from_secs(
-                Self::STREAM_DEFAULT_SYNC_THRESHOLD_SECONDS,
-            ));
+        let sync_threshold = audio.position_resolution().unwrap_or_else(|| {
+            RuffleDuration::from_secs(Self::STREAM_DEFAULT_SYNC_THRESHOLD_SECONDS)
+        });
 
         if skew.abs() >= Self::STREAM_RESTART_THRESHOLD {
             // Way out of sync, let's stop the entire stream.

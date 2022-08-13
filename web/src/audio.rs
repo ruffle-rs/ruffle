@@ -7,7 +7,6 @@ use ruffle_core::duration::RuffleDuration;
 use ruffle_core::impl_audio_mixer_backend;
 use ruffle_web_common::JsResult;
 use std::sync::{Arc, RwLock};
-use std::time::Duration;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::AudioContext;
 

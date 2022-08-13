@@ -22,14 +22,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use web_sys::{
     AddEventListenerOptions, Element, Event, EventTarget, HtmlCanvasElement, HtmlElement,
     KeyboardEvent, PointerEvent, WheelEvent, Window,
 };
-use ruffle_core::duration::RuffleDuration;
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
