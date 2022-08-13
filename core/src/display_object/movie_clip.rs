@@ -107,12 +107,7 @@ pub struct MovieClipData<'gc> {
     tag_frame_boundaries: HashMap<FrameNumber, (u64, u64)>,
 
     /// List of tags queued up for the current frame.
-    ///
-    /// There are only a handful of valid tag configurations per depth: namely,
-    /// the empty set, one removal, one add, or a removal followed by an add.
-    /// Any other configuration in the SWF tag stream is normalized to one of
-    /// these patterns.
-    queued_tags: HashMap<Depth, Vec<QueuedTag>>,
+    queued_tags: HashMap<Depth, QueuedTagList>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -1177,9 +1172,7 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
 
-        let remove_actions = self.unqueue_tags_matching(context, |t| {
-            matches!(t.tag_type, QueuedTagAction::Remove(_))
-        });
+        let remove_actions = self.unqueue_removes(context);
 
         for (_, tag) in remove_actions {
             let mut reader = data.read_from(tag.tag_start);
@@ -1565,16 +1558,9 @@ impl<'gc> MovieClip<'gc> {
                 let bucket = write
                     .queued_tags
                     .entry(params.place_object.depth as Depth)
-                    .or_insert_with(|| Vec::with_capacity(2));
+                    .or_insert_with(|| QueuedTagList::None);
 
-                if let Some(slot) = bucket
-                    .iter_mut()
-                    .rfind(|i| matches!(i.tag_type, QueuedTagAction::Place(_)))
-                {
-                    *slot = new_tag
-                } else {
-                    bucket.push(new_tag);
-                }
+                bucket.queue_add(new_tag);
 
                 return;
             }
@@ -1965,36 +1951,39 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    fn unqueue_tags_matching<F>(
-        &self,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        matching: F,
-    ) -> Vec<(Depth, QueuedTag)>
-    where
-        F: Fn(&QueuedTag) -> bool,
-    {
+    fn unqueue_adds(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Vec<(Depth, QueuedTag)> {
         let mut write = self.0.write(context.gc_context);
         let mut unqueued: Vec<_> = write
             .queued_tags
-            .iter()
-            .flat_map(|(d, b)| b.iter().filter(|t| matching(t)).map(|t| (*d, t.clone())))
+            .iter_mut()
+            .filter_map(|(d, b)| b.unqueue_add().map(|b| (*d, b)))
             .collect();
 
         unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
 
-        for (depth, tag) in unqueued.iter_mut() {
-            let bucket = write
-                .queued_tags
-                .get_mut(depth)
-                .expect("Unqueued tag to come from a depth that exists");
-            let pos = bucket
-                .iter()
-                .enumerate()
-                .find(|(_, o)| *o == tag)
-                .map(|(i, _)| i)
-                .expect("Unqueued tag to still be present in source bucket");
+        for (depth, _tag) in unqueued.iter() {
+            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
+                write.queued_tags.remove(depth);
+            }
+        }
 
-            bucket.remove(pos);
+        unqueued
+    }
+
+    fn unqueue_removes(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Vec<(Depth, QueuedTag)> {
+        let mut write = self.0.write(context.gc_context);
+        let mut unqueued: Vec<_> = write
+            .queued_tags
+            .iter_mut()
+            .filter_map(|(d, b)| b.unqueue_remove().map(|b| (*d, b)))
+            .collect();
+
+        unqueued.sort_by(|(_, t1), (_, t2)| t1.tag_start.cmp(&t2.tag_start));
+
+        for (depth, _tag) in unqueued.iter() {
+            if matches!(write.queued_tags.get(depth), Some(QueuedTagList::None)) {
+                write.queued_tags.remove(depth);
+            }
         }
 
         unqueued
@@ -2064,9 +2053,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             };
 
             let data = self.0.read().static_data.swf.clone();
-            let place_actions = self.unqueue_tags_matching(context, |t| {
-                matches!(t.tag_type, QueuedTagAction::Place(_))
-            });
+            let place_actions = self.unqueue_adds(context);
 
             for (_, tag) in place_actions {
                 let mut reader = data.read_from(tag.tag_start);
@@ -3438,16 +3425,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         let bucket = write
             .queued_tags
             .entry(place_object.depth as Depth)
-            .or_insert_with(|| Vec::with_capacity(2));
+            .or_insert_with(|| QueuedTagList::None);
 
-        if let Some(slot) = bucket
-            .iter_mut()
-            .rfind(|i| matches!(i.tag_type, QueuedTagAction::Place(_)))
-        {
-            *slot = new_tag
-        } else {
-            bucket.push(new_tag);
-        }
+        bucket.queue_add(new_tag);
 
         Ok(())
     }
@@ -3535,24 +3515,9 @@ impl<'gc, 'a> MovieClip<'gc> {
         let bucket = write
             .queued_tags
             .entry(remove_object.depth as Depth)
-            .or_insert_with(|| Vec::with_capacity(2));
+            .or_insert_with(|| QueuedTagList::None);
 
-        let place_slot_id = bucket
-            .iter()
-            .enumerate()
-            .rfind(|(_, i)| matches!(i.tag_type, QueuedTagAction::Place(_)))
-            .map(|(i, _)| i);
-
-        if let Some(place_slot_id) = place_slot_id {
-            bucket.remove(place_slot_id); // Add + Remove cancel each other out.
-        } else if let Some(slot) = bucket
-            .iter_mut()
-            .rfind(|i| matches!(i.tag_type, QueuedTagAction::Remove(_)))
-        {
-            *slot = new_tag
-        } else {
-            bucket.push(new_tag);
-        }
+        bucket.queue_remove(new_tag);
 
         Ok(())
     }
@@ -3843,10 +3808,77 @@ impl<'a> GotoPlaceObject<'a> {
     }
 }
 
+/// A list of add/remove tags to process on a given depth this frame.
+///
+/// There are only a handful of valid tag configurations per depth: namely,
+/// no tags, one removal, one add, or a removal followed by an add.
+///
+/// Any other configuration in the SWF tag stream is normalized to one of
+/// these patterns.
+#[derive(Default, Debug, Eq, PartialEq, Clone, Copy, Collect)]
+#[collect(require_static)]
+pub enum QueuedTagList {
+    #[default]
+    None,
+    Add(QueuedTag),
+    Remove(QueuedTag),
+    RemoveThenAdd(QueuedTag, QueuedTag),
+}
+
+impl QueuedTagList {
+    fn queue_add(&mut self, add_tag: QueuedTag) {
+        let new = match self {
+            QueuedTagList::None => QueuedTagList::Add(add_tag),
+            QueuedTagList::Add(_) => QueuedTagList::Add(add_tag),
+            QueuedTagList::Remove(r) => QueuedTagList::RemoveThenAdd(*r, add_tag),
+            QueuedTagList::RemoveThenAdd(r, _) => QueuedTagList::RemoveThenAdd(*r, add_tag),
+        };
+
+        *self = new;
+    }
+
+    fn queue_remove(&mut self, remove_tag: QueuedTag) {
+        let new = match self {
+            QueuedTagList::None => QueuedTagList::Remove(remove_tag),
+            QueuedTagList::Add(_) => QueuedTagList::None,
+            QueuedTagList::Remove(_) => QueuedTagList::Remove(remove_tag),
+            QueuedTagList::RemoveThenAdd(r, _) => QueuedTagList::Remove(*r),
+        };
+
+        *self = new;
+    }
+
+    fn unqueue_add(&mut self) -> Option<QueuedTag> {
+        let (new_queue, return_val) = match self {
+            QueuedTagList::None => (QueuedTagList::None, None),
+            QueuedTagList::Add(a) => (QueuedTagList::None, Some(*a)),
+            QueuedTagList::Remove(r) => (QueuedTagList::Remove(*r), None),
+            QueuedTagList::RemoveThenAdd(r, a) => (QueuedTagList::Remove(*r), Some(*a)),
+        };
+
+        *self = new_queue;
+
+        return_val
+    }
+
+    fn unqueue_remove(&mut self) -> Option<QueuedTag> {
+        let (new_queue, return_val) = match self {
+            QueuedTagList::None => (QueuedTagList::None, None),
+            QueuedTagList::Add(a) => (QueuedTagList::Add(*a), None),
+            QueuedTagList::Remove(r) => (QueuedTagList::None, Some(*r)),
+            QueuedTagList::RemoveThenAdd(r, a) => (QueuedTagList::Add(*a), Some(*r)),
+        };
+
+        *self = new_queue;
+
+        return_val
+    }
+}
+
 /// A single tag we encountered this frame that we intend to process on a queue.
 ///
 /// No more than one queued action is allowed to be processed on-queue.
-#[derive(Debug, Eq, PartialEq, Clone, Collect)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
 #[collect(require_static)]
 pub struct QueuedTag {
     pub tag_type: QueuedTagAction,
@@ -3857,7 +3889,7 @@ pub struct QueuedTag {
 /// The type of queued tag.
 ///
 /// The u8 parameter is the tag version.
-#[derive(Debug, Eq, PartialEq, Clone, Collect)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Collect)]
 #[collect(require_static)]
 pub enum QueuedTagAction {
     Place(u8),
