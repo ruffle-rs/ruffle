@@ -1,3 +1,5 @@
+use crate::bitmap::{BitmapHandle, BitmapSource};
+use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use lyon::path::Path;
 use lyon::tessellation::{
     self,
@@ -5,8 +7,6 @@ use lyon::tessellation::{
     FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
-use ruffle_render::bitmap::{BitmapHandle, BitmapSource};
-use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 
 pub struct ShapeTessellator {
     fill_tess: FillTessellator,
@@ -270,7 +270,7 @@ pub struct Bitmap {
 }
 
 #[allow(clippy::many_single_char_names)]
-fn swf_to_gl_matrix(m: ruffle_render::matrix::Matrix) -> [[f32; 3]; 3] {
+fn swf_to_gl_matrix(m: crate::matrix::Matrix) -> [[f32; 3]; 3] {
     let tx = m.tx.get() as f32;
     let ty = m.ty.get() as f32;
     let det = m.a * m.d - m.c * m.b;
@@ -295,7 +295,7 @@ fn swf_to_gl_matrix(m: ruffle_render::matrix::Matrix) -> [[f32; 3]; 3] {
 
 #[allow(clippy::many_single_char_names)]
 fn swf_bitmap_to_gl_matrix(
-    m: ruffle_render::matrix::Matrix,
+    m: crate::matrix::Matrix,
     bitmap_width: u32,
     bitmap_height: u32,
 ) -> [[f32; 3]; 3] {

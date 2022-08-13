@@ -11,11 +11,11 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::transform::Transform;
-use ruffle_render_common_tess::{
+use ruffle_render::tessellator::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
     Vertex as TessVertex,
 };
+use ruffle_render::transform::Transform;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
