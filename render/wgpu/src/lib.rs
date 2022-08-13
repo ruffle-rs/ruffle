@@ -8,9 +8,9 @@ use bytemuck::{Pod, Zeroable};
 use enum_map::Enum;
 use fnv::FnvHashMap;
 use ruffle_core::backend::render::{RenderBackend, ShapeHandle, Transform};
-use ruffle_core::color_transform::ColorTransform;
 use ruffle_core::swf::{self, Color};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
+use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render_common_tess::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
