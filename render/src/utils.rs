@@ -1,7 +1,19 @@
-use crate::backend::render::{Bitmap, BitmapFormat, Error, JpegTagFormat};
+use crate::bitmap::{Bitmap, BitmapFormat};
+use crate::error::Error;
 use std::borrow::Cow;
 use std::io::Read;
 use swf::Color;
+
+/// The format of image data in a DefineBitsJpeg2/3 tag.
+/// Generally this will be JPEG, but according to SWF19, these tags can also contain PNG and GIF data.
+/// SWF19 pp.138-139
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum JpegTagFormat {
+    Jpeg,
+    Png,
+    Gif,
+    Unknown,
+}
 
 /// Determines the format of the image data in `data` from a DefineBitsJPEG2/3 tag.
 pub fn determine_jpeg_tag_format(data: &[u8]) -> JpegTagFormat {
