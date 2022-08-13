@@ -16,7 +16,6 @@ mod avm1;
 mod avm2;
 mod binary_data;
 pub mod bitmap;
-mod bounding_box;
 mod character;
 pub mod color_transform;
 pub mod context;
