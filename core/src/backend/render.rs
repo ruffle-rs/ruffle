@@ -3,11 +3,11 @@ mod null;
 pub use null::{NullBitmapSource, NullRenderer};
 pub use ruffle_render::utils::{determine_jpeg_tag_format, remove_invalid_jpeg_data};
 
-pub use crate::transform::Transform;
 use downcast_rs::Downcast;
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::DistilledShape;
+pub use ruffle_render::transform::Transform;
 use ruffle_render::utils;
 pub use swf;
 
