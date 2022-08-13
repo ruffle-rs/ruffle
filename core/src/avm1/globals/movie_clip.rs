@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, Object, ScriptObject, TObject, Value};
 use crate::avm_error;
 use crate::avm_warn;
-use crate::backend::{navigator::NavigationMethod, render};
+use crate::backend::navigator::NavigationMethod;
 use crate::display_object::{
     Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
@@ -358,7 +358,7 @@ fn begin_bitmap_fill<'gc>(
         } else {
             return Ok(Value::Undefined);
         };
-        let bitmap = render::BitmapInfo {
+        let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
             width: bitmap_data.width() as u16,
             height: bitmap_data.height() as u16,

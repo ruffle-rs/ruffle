@@ -1,10 +1,11 @@
 use gc_arena::Collect;
 
 use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
-use crate::backend::render::{Bitmap, BitmapFormat, BitmapHandle, RenderBackend};
+use crate::backend::render::RenderBackend;
 use crate::bitmap::color_transform_params::ColorTransformParams;
 use crate::bitmap::turbulence::Turbulence;
 use bitflags::bitflags;
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle};
 use std::ops::Range;
 
 /// An implementation of the Lehmer/Park-Miller random number generator

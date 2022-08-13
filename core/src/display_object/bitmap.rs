@@ -5,12 +5,12 @@ use crate::avm2::{
     Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
     StageObject as Avm2StageObject, Value as Avm2Value,
 };
-use crate::backend::render::BitmapHandle;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
 use crate::vminterface::{AvmType, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
+use ruffle_render::bitmap::BitmapHandle;
 use std::cell::{Ref, RefMut};
 
 /// A Bitmap display object is a raw bitamp on the stage.

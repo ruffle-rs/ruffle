@@ -3046,6 +3046,7 @@ dependencies = [
  "rand",
  "regress",
  "ruffle_macros",
+ "ruffle_render",
  "ruffle_wstr",
  "serde",
  "serde_json",
@@ -3098,6 +3099,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_render"
+version = "0.1.0"
+dependencies = [
+ "gc-arena",
+ "log",
+ "swf",
+]
+
+[[package]]
 name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
@@ -3105,6 +3115,7 @@ dependencies = [
  "js-sys",
  "log",
  "ruffle_core",
+ "ruffle_render",
  "ruffle_web_common",
  "wasm-bindgen",
  "web-sys",
@@ -3117,6 +3128,7 @@ dependencies = [
  "log",
  "lyon",
  "ruffle_core",
+ "ruffle_render",
 ]
 
 [[package]]
@@ -3128,6 +3140,7 @@ dependencies = [
  "js-sys",
  "log",
  "ruffle_core",
+ "ruffle_render",
  "ruffle_render_common_tess",
  "ruffle_web_common",
  "wasm-bindgen",
@@ -3147,6 +3160,7 @@ dependencies = [
  "log",
  "raw-window-handle 0.4.3",
  "ruffle_core",
+ "ruffle_render",
  "ruffle_render_common_tess",
  "web-sys",
  "wgpu",
