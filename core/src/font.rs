@@ -432,7 +432,9 @@ impl Glyph {
     pub fn as_shape(&self) -> Ref<'_, swf::Shape> {
         let mut write = self.shape.borrow_mut();
         if write.is_none() {
-            *write = Some(crate::shape_utils::swf_glyph_to_shape(&self.swf_glyph));
+            *write = Some(ruffle_render::shape_utils::swf_glyph_to_shape(
+                &self.swf_glyph,
+            ));
         }
         drop(write);
         let read = self.shape.borrow();

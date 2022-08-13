@@ -1,5 +1,5 @@
-use ruffle_render::bounding_box::BoundingBox;
-use ruffle_render::matrix::Matrix;
+use crate::bounding_box::BoundingBox;
+use crate::matrix::Matrix;
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Shape, ShapeRecord, Twips};
 

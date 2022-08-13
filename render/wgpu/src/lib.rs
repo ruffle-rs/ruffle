@@ -9,9 +9,9 @@ use enum_map::Enum;
 use fnv::FnvHashMap;
 use ruffle_core::backend::render::{RenderBackend, ShapeHandle, Transform};
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::shape_utils::DistilledShape;
 use ruffle_core::swf::{self, Color};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
+use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render_common_tess::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
     Vertex as TessVertex,
@@ -897,7 +897,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
+        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         let handle = ShapeHandle(self.meshes.len());
         let mesh = self.register_shape_internal(
             (&shape).into(),

@@ -192,7 +192,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 }
             } else {
                 let shape = &self.0.read().static_data.shape;
-                return crate::shape_utils::shape_hit_test(shape, point, &local_matrix);
+                return ruffle_render::shape_utils::shape_hit_test(shape, point, &local_matrix);
             }
         }
 

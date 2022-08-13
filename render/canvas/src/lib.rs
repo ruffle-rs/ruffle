@@ -1,10 +1,10 @@
 use fnv::FnvHashMap;
 use ruffle_core::backend::render::{NullBitmapSource, RenderBackend, ShapeHandle, Transform};
 use ruffle_core::color_transform::ColorTransform;
-use ruffle_core::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_core::swf::{self, Color};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::matrix::Matrix;
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_web_common::{JsError, JsResult};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{
@@ -375,7 +375,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     }
 
     fn register_glyph_shape(&mut self, glyph: &swf::Glyph) -> ShapeHandle {
-        let shape = ruffle_core::shape_utils::swf_glyph_to_shape(glyph);
+        let shape = ruffle_render::shape_utils::swf_glyph_to_shape(glyph);
         self.register_shape((&shape).into(), &NullBitmapSource)
     }
 
@@ -740,7 +740,7 @@ fn swf_shape_to_canvas_commands(
     bitmaps: &FnvHashMap<BitmapHandle, BitmapData>,
     context: &CanvasRenderingContext2d,
 ) -> ShapeData {
-    use ruffle_core::shape_utils::DrawPath;
+    use ruffle_render::shape_utils::DrawPath;
     use swf::{FillStyle, LineCapStyle, LineJoinStyle};
 
     // Some browsers will vomit if you try to load/draw an image with 0 width/height.

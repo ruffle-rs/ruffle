@@ -10,9 +10,9 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
-use crate::shape_utils::DrawCommand;
 use crate::string::WStr;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::shape_utils::DrawCommand;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{Color, FillStyle, Fixed8, LineCapStyle, LineJoinStyle, LineStyle, Twips};
 

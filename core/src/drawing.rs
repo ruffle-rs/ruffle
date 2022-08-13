@@ -1,9 +1,9 @@
 use crate::backend::render::ShapeHandle;
 use crate::context::RenderContext;
-use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use gc_arena::Collect;
 use ruffle_render::bitmap::{BitmapInfo, BitmapSource};
 use ruffle_render::bounding_box::BoundingBox;
+use ruffle_render::shape_utils::{DistilledShape, DrawCommand, DrawPath};
 use std::cell::Cell;
 use swf::{FillStyle, LineStyle, Twips};
 
@@ -304,7 +304,7 @@ impl Drawing {
         point: (Twips, Twips),
         local_matrix: &ruffle_render::matrix::Matrix,
     ) -> bool {
-        use crate::shape_utils;
+        use ruffle_render::shape_utils;
         for path in &self.paths {
             match path {
                 DrawingPath::Fill(fill) => {
