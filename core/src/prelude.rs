@@ -6,8 +6,8 @@ pub use crate::display_object::{
     TDisplayObjectContainer,
 };
 pub use crate::impl_display_object_container;
-pub use crate::matrix::Matrix;
 pub use log::{error, info, trace, warn};
+pub use ruffle_render::matrix::Matrix;
 pub use std::ops::{Bound, RangeBounds};
 pub use swf::{CharacterId, Color, Twips};
 

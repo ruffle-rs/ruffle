@@ -1003,7 +1003,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
             let transform = Transform {
                 matrix: transform.matrix
-                    * ruffle_core::matrix::Matrix {
+                    * ruffle_render::matrix::Matrix {
                         a: texture.width as f32,
                         d: texture.height as f32,
                         ..Default::default()
@@ -1192,7 +1192,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         }
     }
 
-    fn draw_rect(&mut self, color: Color, matrix: &ruffle_core::matrix::Matrix) {
+    fn draw_rect(&mut self, color: Color, matrix: &ruffle_render::matrix::Matrix) {
         let frame = if let Some(frame) = &mut self.current_frame {
             frame.get()
         } else {
