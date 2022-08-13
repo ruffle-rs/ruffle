@@ -17,6 +17,7 @@ indexmap = "1.9.1"
 log = "0.4"
 minimp3 = { version = "0.5.1", optional = true }
 png = { version = "0.17.5" }
+ruffle_render = { path = "../render" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }

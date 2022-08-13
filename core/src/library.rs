@@ -330,10 +330,10 @@ impl<'gc> MovieLibrary<'gc> {
     }
 }
 
-impl<'gc> render::BitmapSource for MovieLibrary<'gc> {
-    fn bitmap(&self, id: u16) -> Option<render::BitmapInfo> {
+impl<'gc> ruffle_render::bitmap::BitmapSource for MovieLibrary<'gc> {
+    fn bitmap(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapInfo> {
         self.get_bitmap(id).and_then(|bitmap| {
-            Some(render::BitmapInfo {
+            Some(ruffle_render::bitmap::BitmapInfo {
                 handle: bitmap.bitmap_handle()?,
                 width: bitmap.width(),
                 height: bitmap.height(),

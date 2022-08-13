@@ -10,6 +10,7 @@ js-sys = "0.3.59"
 log = "0.4"
 ruffle_render_common_tess = { path = "../common_tess" }
 ruffle_web_common = { path = "../../web/common" }
+ruffle_render = { path = ".." }
 wasm-bindgen = "=0.2.82"
 bytemuck = { version = "1.10.0", features = ["derive"] }
 fnv = "1.0.7"

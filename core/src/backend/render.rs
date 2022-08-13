@@ -1,4 +1,3 @@
-mod bitmap;
 mod null;
 mod utils;
 
@@ -7,9 +6,9 @@ pub use utils::{determine_jpeg_tag_format, remove_invalid_jpeg_data};
 
 use crate::matrix::Matrix;
 use crate::shape_utils::DistilledShape;
-pub use crate::{transform::Transform, Color};
-pub use bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource};
+pub use crate::transform::Transform;
 use downcast_rs::Downcast;
+use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo, BitmapSource};
 pub use swf;
 
 pub trait RenderBackend: Downcast {
@@ -79,10 +78,10 @@ pub trait RenderBackend: Downcast {
         })
     }
 
-    fn begin_frame(&mut self, clear: Color);
+    fn begin_frame(&mut self, clear: swf::Color);
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool);
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform);
-    fn draw_rect(&mut self, color: Color, matrix: &Matrix);
+    fn draw_rect(&mut self, color: swf::Color, matrix: &Matrix);
     fn end_frame(&mut self);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
