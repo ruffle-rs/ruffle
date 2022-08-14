@@ -44,9 +44,7 @@ impl Pmd {
         let mut count = 0;
         if let Some(files) = self.files.as_ref() {
             for file in files.iter() {
-                for _ in file.violations.iter() {
-                    count += 1;
-                }
+                count += file.violations.len();
             }
         }
         count
