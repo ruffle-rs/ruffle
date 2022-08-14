@@ -15,7 +15,7 @@ fn main() {
     let tmp = root.join("tmp");
     if let Err(e) = std::fs::create_dir(&tmp) {
         if e.kind() != ErrorKind::AlreadyExists {
-            panic!("Failed to create file {}", e);
+            panic!("Failed to create temporary folder {}", e);
         }
     }
 
@@ -39,6 +39,7 @@ fn main() {
     }
 
     let pmd = Pmd::open(tmp.join("pmd.xml")).expect("Invalid PMD xml file");
+    std::fs::remove_dir_all(tmp).expect("Failed to delete temp folder");
     if pmd.contains_violations() {
         eprintln!("{}", pmd);
         std::process::exit(1);
