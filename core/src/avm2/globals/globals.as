@@ -2,6 +2,7 @@
 // need to come before subclasses.
 
 include "Error.as"
+include "Math.as"
 
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/crypto.as"

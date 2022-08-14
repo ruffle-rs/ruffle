@@ -1,7 +1,7 @@
 //! An internal Ruffle utility to build our playerglobal
 //! `library.swf`
 
-use convert_case::{Case, Casing};
+use convert_case::{Boundary, Case, Casing};
 use proc_macro2::TokenStream;
 use quote::quote;
 use std::fs::File;
@@ -109,7 +109,13 @@ fn flash_to_rust_path(path: &str) -> String {
     // so 'URLLoader' becomes 'url_loader'
     let components = path
         .split('.')
-        .map(|component| component.to_case(Case::Snake))
+        .map(|component| {
+            component
+                .from_case(Case::Camel)
+                // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
+                .without_boundaries(&[Boundary::UpperDigit, Boundary::LowerDigit])
+                .to_case(Case::Snake)
+        })
         .collect::<Vec<_>>();
     // Form a Rust path from the snake-case components
     components.join("::")
