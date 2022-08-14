@@ -132,8 +132,11 @@ fn rust_method_path(
         // For example, a namespace of "flash.system" and a name of "Security"
         // turns into the path "flash::system::security"
         let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
-        path += &flash_to_rust_path(resolve_multiname_ns(&abc, multiname));
-        path += "::";
+        let ns = flash_to_rust_path(resolve_multiname_ns(&abc, multiname));
+        if !ns.is_empty() {
+            path += &ns;
+            path += "::";
+        }
         path += &flash_to_rust_path(resolve_multiname_name(&abc, multiname));
         path += "::";
     } else {
