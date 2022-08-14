@@ -29,7 +29,6 @@ use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
     Multiname as AbcMultiname, Namespace as AbcNamespace, Op,
 };
-use crate::duration::RuffleDuration;
 
 /// Represents a particular register set.
 ///

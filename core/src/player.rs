@@ -55,7 +55,6 @@ use std::ops::DerefMut;
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
-use crate::duration::RuffleDuration;
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -507,7 +506,6 @@ impl Player {
                 context
                     .audio_manager
                     .audio_skew_time(context.audio, cur_frame_offset)
-
             });
             self.frame_accumulator += add;
 

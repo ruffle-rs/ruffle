@@ -10,6 +10,7 @@ use ruffle_core::backend::{
     storage::{MemoryStorageBackend, StorageBackend},
 };
 use ruffle_core::context::UpdateContext;
+use ruffle_core::duration::RuffleDuration;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
@@ -28,7 +29,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use ruffle_core::duration::RuffleDuration;
+use std::time::Duration;
 
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 

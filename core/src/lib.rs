@@ -46,7 +46,6 @@ pub mod backend;
 pub mod config;
 pub mod duration;
 pub mod external;
-pub mod duration;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;

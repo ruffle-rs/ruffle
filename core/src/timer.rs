@@ -16,7 +16,6 @@ use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::{binary_heap::PeekMut, BinaryHeap};
 use std::ops::{Add, AddAssign, Sub};
-use crate::duration::RuffleDuration;
 
 /// Manages the collection of timers.
 pub struct Timers<'gc> {
@@ -32,7 +31,10 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc, '_>, dt: RuffleDuration) -> Option<RuffleDuration> {
+    pub fn update_timers(
+        context: &mut UpdateContext<'_, 'gc, '_>,
+        dt: RuffleDuration,
+    ) -> Option<RuffleDuration> {
         context.timers.cur_time.add_assign(dt);
 
         let num_timers = context.timers.num_timers();
@@ -74,8 +76,11 @@ impl<'gc> Timers<'gc> {
             // SANITY: Only allow so many ticks per timer per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = RuffleDuration::from_micros(activation.context.timers.peek_mut().unwrap().tick_time as f64);
-                activation.context.timers.cur_time = next_time.add(RuffleDuration::from_millis(100.0));
+                let next_time = RuffleDuration::from_micros(
+                    activation.context.timers.peek_mut().unwrap().tick_time as f64,
+                );
+                activation.context.timers.cur_time =
+                    next_time.add(RuffleDuration::from_millis(100.0));
                 break;
             }
 

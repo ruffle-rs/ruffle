@@ -22,7 +22,6 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use swf::Twips;
-use crate::duration::RuffleDuration;
 
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.

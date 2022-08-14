@@ -40,7 +40,6 @@ use winit::event::{
 };
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
-use ruffle_core::duration::RuffleDuration;
 
 thread_local! {
     static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();

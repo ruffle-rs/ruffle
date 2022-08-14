@@ -8,7 +8,6 @@ use serde::ser::Error as SerError;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::fmt::Write;
-use ruffle_core::duration::RuffleDuration;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AvmType {
