@@ -69,6 +69,12 @@ jobs:
           command: fmt
           args: --all -- --check
 
+      - name: Lint AS3 playerglobals 
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: -p as3lint
+
       - name: Check clippy
         uses: actions-rs/cargo@v1
         with:
