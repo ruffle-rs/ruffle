@@ -7,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Pmd {
     #[serde(rename = "$value")]
-    files: Vec<File>,
+    files: Option<Vec<File>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,14 +37,16 @@ impl Pmd {
     }
 
     pub fn contains_violations(&self) -> bool {
-        !self.files.is_empty()
+        self.files.is_some()
     }
 
     pub fn violation_count(&self) -> usize {
         let mut count = 0;
-        for file in self.files.iter() {
-            for _ in file.violations.iter() {
-                count += 1;
+        if let Some(files) = self.files.as_ref() {
+            for file in files.iter() {
+                for _ in file.violations.iter() {
+                    count += 1;
+                }
             }
         }
         count
@@ -102,10 +104,12 @@ impl fmt::Display for File {
 
 impl fmt::Display for Pmd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for file in self.files.iter() {
-            writeln!(f, "{}", file)?;
+        if let Some(files) = self.files.as_ref() {
+            for file in files.iter() {
+                writeln!(f, "{}", file)?;
+            }
+            write!(f, "{} total warnings emitted", self.violation_count())?;
         }
-        write!(f, "{} total warnings emitted", self.violation_count())?;
         Ok(())
     }
 }
