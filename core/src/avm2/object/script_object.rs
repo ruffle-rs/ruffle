@@ -1,10 +1,10 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::names::Multiname;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
+use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use fnv::FnvHashMap;

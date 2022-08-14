@@ -1,0 +1,10 @@
+main = [object MainTimeline], main.root = [object MainTimeline]
+main.loaderInfo = [object LoaderInfo]
+main.root.loaderInfo = [object LoaderInfo]
+Not on stage: child.loaderInfo = null
+On stage: child.loaderInfo = [object LoaderInfo]
+child.loaderInfo === child.root.loaderInfo: true
+child.loaderInfo.content === child.root.loaderInfo.content: true
+On stage: grandChild.loaderInfo = [object LoaderInfo]
+grandChild.loaderInfo === grandChild.root.loaderInfo: true
+grandChild.loaderInfo === main.loaderInfo: true

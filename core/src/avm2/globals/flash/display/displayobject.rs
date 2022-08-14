@@ -3,11 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::ArrayObject;
 use crate::avm2::Error;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
@@ -574,14 +575,21 @@ pub fn hit_test_object<'gc>(
 
 /// Implements `loaderInfo` getter
 pub fn loader_info<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(loader_info) = dobj.loader_info() {
+        // Contrary to the DisplayObject.loaderInfo documentation,
+        // Flash Player defines 'loaderInfo' for non-root DisplayObjects.
+        // It always returns the LoaderInfo from the root object.
+        if let Some(loader_info) = dobj
+            .avm2_root(&mut activation.context)
+            .and_then(|root_dobj| root_dobj.loader_info())
+        {
             return Ok(loader_info.into());
         }
+        return Ok(Value::Null);
     }
     Ok(Value::Undefined)
 }

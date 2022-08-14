@@ -3,10 +3,11 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Namespace, QName};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::character::Character;
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};

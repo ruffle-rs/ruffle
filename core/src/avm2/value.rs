@@ -2,10 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::NS_VECTOR;
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, PrimitiveObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmString, WStr};
 use gc_arena::{Collect, MutationContext};

@@ -3,10 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{bitmapdata_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::is_size_valid;
 use crate::character::Character;

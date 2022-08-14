@@ -395,7 +395,7 @@ impl WgpuRenderBackend<target::TextureTarget> {
             power_preference,
             trace_path,
         ))?;
-        let target = target::TextureTarget::new(&descriptors.device, size);
+        let target = target::TextureTarget::new(&descriptors.device, size)?;
         Self::new(Arc::new(descriptors), target)
     }
 
@@ -406,6 +406,18 @@ impl WgpuRenderBackend<target::TextureTarget> {
 
 impl<T: RenderTarget> WgpuRenderBackend<T> {
     pub fn new(descriptors: Arc<Descriptors>, target: T) -> Result<Self, Error> {
+        if target.width() > descriptors.limits.max_texture_dimension_2d
+            || target.height() > descriptors.limits.max_texture_dimension_2d
+        {
+            return Err(format!(
+                "Render target texture cannot be larger than {}px on either dimension (requested {} x {})",
+                descriptors.limits.max_texture_dimension_2d,
+                target.width(),
+                target.height()
+            )
+            .into());
+        }
+
         let extent = wgpu::Extent3d {
             width: target.width(),
             height: target.height(),
@@ -772,6 +784,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
         // Avoid panics from creating 0-sized framebuffers.
+        // TODO: find a way to bubble an error when the size is too large
         let width = std::cmp::max(width, 1);
         let height = std::cmp::max(height, 1);
 
@@ -1370,6 +1383,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        if bitmap.width() > self.descriptors.limits.max_texture_dimension_2d
+            || bitmap.height() > self.descriptors.limits.max_texture_dimension_2d
+        {
+            return Err(format!(
+                "Bitmap texture cannot be larger than {}px on either dimension (requested {} x {})",
+                self.descriptors.limits.max_texture_dimension_2d,
+                bitmap.width(),
+                bitmap.height()
+            )
+            .into());
+        }
+
         let bitmap = bitmap.to_rgba();
         let extent = wgpu::Extent3d {
             width: bitmap.width(),

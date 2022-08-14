@@ -8,11 +8,13 @@ use crate::avm2::globals::array::{
 };
 use crate::avm2::globals::NS_VECTOR;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::names::{Multiname, Namespace, QName};
 use crate::avm2::object::{vector_allocator, FunctionObject, Object, TObject, VectorObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
+use crate::avm2::QName;
 use crate::string::AvmString;
 use gc_arena::{GcCell, MutationContext};
 use std::cmp::{max, min, Ordering};
