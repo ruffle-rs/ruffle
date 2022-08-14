@@ -7,6 +7,11 @@ package flash.events {
 			super(type, bubbles, cancelable);
 		}
 
+		override public function clone() : Event
+        {
+            return new TimerEvent(this.type,this.bubbles,this.cancelable);
+        }
+
 		public function updateAfterEvent():void {
 			// TODO - determine when we should actually force a frame to be rendered.
 		}
