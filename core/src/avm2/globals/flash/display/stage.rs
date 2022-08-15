@@ -544,6 +544,43 @@ pub fn set_scale_mode<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implement `stageFocusRect`'s getter
+///
+/// This setting is currently ignored in Ruffle.
+pub fn stage_focus_rect<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        return Ok(dobj.stage_focus_rect().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implement `stageFocusRect`'s setter
+///
+/// This setting is currently ignored in Ruffle.
+pub fn set_stage_focus_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_stage())
+    {
+        let rf = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        dobj.set_stage_focus_rect(activation.context.gc_context, rf);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implement `stageWidth`'s getter
 pub fn stage_width<'gc>(
     _activation: &mut Activation<'_, 'gc, '_>,
@@ -748,6 +785,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ),
         ("stageWidth", Some(stage_width), Some(set_stage_width)),
         ("stageHeight", Some(stage_height), Some(set_stage_height)),
+        (
+            "stageFocusRect",
+            Some(stage_focus_rect),
+            Some(set_stage_focus_rect),
+        ),
         ("allowsFullScreen", Some(allows_full_screen), None),
         (
             "allowsFullScreenInteractive",

@@ -24,3 +24,7 @@ HIGH
 400
 //this.stage.stageWidth
 550
+//this.stage.stageFocusRect - default value
+true
+//this.stage.stageFocusRect - set to false
+false

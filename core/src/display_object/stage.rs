@@ -101,6 +101,9 @@ pub struct StageData<'gc> {
     /// Only used on web to control how the Flash content layers with other content on the page.
     window_mode: WindowMode,
 
+    /// Whether or not objects display a glowing border when they have focus.
+    stage_focus_rect: bool,
+
     /// Whether to show default context menu items
     show_menu: bool,
 
@@ -141,6 +144,7 @@ impl<'gc> Stage<'gc> {
                 view_bounds: Default::default(),
                 window_mode: Default::default(),
                 show_menu: true,
+                stage_focus_rect: true,
                 avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
                 loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
             },
@@ -207,6 +211,23 @@ impl<'gc> Stage<'gc> {
                 | StageQuality::High16x16
                 | StageQuality::High16x16Linear
         );
+    }
+
+    /// Get the boolean flag which determines whether or not objects display a glowing border
+    /// when they have focus.
+    ///
+    /// This setting is currently ignored in Ruffle.
+    pub fn stage_focus_rect(self) -> bool {
+        self.0.read().stage_focus_rect
+    }
+
+    /// Set the boolean flag which determines whether or not objects display a glowing border
+    /// when they have focus.
+    ///
+    /// This setting is currently ignored in Ruffle.
+    pub fn set_stage_focus_rect(self, gc_context: MutationContext<'gc, '_>, fr: bool) {
+        let mut this = self.0.write(gc_context);
+        this.stage_focus_rect = fr
     }
 
     /// Get the size of the stage.
