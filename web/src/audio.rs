@@ -21,7 +21,7 @@ pub struct WebAudioBackend {
 }
 
 impl WebAudioBackend {
-    const BUFFER_SIZE: u32 = 2048;
+    const BUFFER_SIZE: u32 = 4096;
 
     pub fn new() -> Result<Self, Error> {
         let context = AudioContext::new().into_js_result()?;
