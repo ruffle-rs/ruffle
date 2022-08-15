@@ -1,6 +1,6 @@
 [package]
 name = "swf"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 repository = "https://github.com/ruffle-rs/ruffle"
