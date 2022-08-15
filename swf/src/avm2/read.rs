@@ -905,6 +905,24 @@ pub mod tests {
     }
 
     #[test]
+    fn test_round_trip_default_value() {
+        use crate::avm2::write::Writer;
+
+        let orig_bytes = read_abc_from_file("tests/swfs/Avm2DefaultValue.swf");
+        let mut reader = Reader::new(&orig_bytes[..]);
+        let parsed = reader.read().unwrap();
+
+        let mut out = vec![];
+        let mut writer = Writer::new(&mut out);
+        writer.write(parsed).unwrap();
+
+        assert_eq!(
+            orig_bytes, out,
+            "Incorrectly written Avm2DefaultValue class"
+        );
+    }
+
+    #[test]
     fn read_u30() {
         let read = |data: &[u8]| Reader::new(data).read_u30().unwrap();
         assert_eq!(read(&[0]), 0);
