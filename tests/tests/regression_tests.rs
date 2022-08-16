@@ -721,7 +721,7 @@ swf_tests! {
     (mouse_events, "avm1/mouse_events", 8),
     (movieclip_depth_methods, "avm1/movieclip_depth_methods", 3),
     (movieclip_get_instance_at_depth, "avm1/movieclip_get_instance_at_depth", 1),
-    (movieclip_hittest_shapeflag, "avm1/movieclip_hittest_shapeflag", 10),
+    (movieclip_hittest_shapeflag, "avm1/movieclip_hittest_shapeflag", 11),
     (movieclip_hittest, "avm1/movieclip_hittest", 1),
     (movieclip_init_object, "avm1/movieclip_init_object", 1),
     (movieclip_lockroot, "avm1/movieclip_lockroot", 10),
