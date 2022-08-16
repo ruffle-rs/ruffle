@@ -10,7 +10,6 @@ members = [
     "wstr",
     "scanner",
     "exporter",
-    "as3lint",
 
     "render",
     "render/canvas",

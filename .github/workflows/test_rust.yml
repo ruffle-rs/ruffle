@@ -74,7 +74,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: run
-          args: -p as3lint
+          args: -p build_playerglobal -- lint
 
       - name: Check clippy
         uses: actions-rs/cargo@v1

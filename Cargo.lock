@@ -105,15 +105,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "as3lint"
-version = "0.1.0"
-dependencies = [
- "colored",
- "serde",
- "serde-xml-rs",
-]
-
-[[package]]
 name = "ash"
 version = "0.37.0+1.3.209"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -279,9 +270,13 @@ checksum = "b4ae4235e6dac0694637c763029ecea1a2ec9e4e06ec2729bd21ba4d9c863eb7"
 name = "build_playerglobal"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "colored",
  "convert_case",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde-xml-rs",
  "swf",
 ]
 
