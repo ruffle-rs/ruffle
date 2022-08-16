@@ -141,10 +141,10 @@ body {
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: var(--ruffle-blue);
     margin: 15vh auto;
     padding: 20px;
-    border: 1px solid #666;
+    border: 2px solid white;
     width: 300px;
     height: 270px;
     overflow: auto;
@@ -158,6 +158,11 @@ body {
     cursor: pointer;
 }
 
+#openModal {
+    vertical-align: middle;
+    cursor: pointer;
+}
+
 #metadata {
     margin: 0 auto;
 }
@@ -165,13 +170,12 @@ body {
 #metadata td {
     padding: 2px 1px;
     border: 1px solid #ddd;
+    color: var(--ruffle-orange);
 }
 
 #metadata tr td:nth-child(1) {
     font-weight: bold;
-    background-color: black;
     padding: 0 10px;
-    color: white;
 }
 
 @media only screen and (max-width: 800px) {
