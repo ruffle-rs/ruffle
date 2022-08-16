@@ -11,10 +11,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::Graphic;
-use crate::tag_utils::SwfMovie;
-use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
-use std::sync::Arc;
 
 /// Implements `flash.display.Shape`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -26,10 +23,6 @@ pub fn instance_init<'gc>(
         activation.super_init(this, &[])?;
 
         if this.as_display_object().is_none() {
-            let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let library = activation.context.library.library_for_movie_mut(movie);
-            library.force_avm_type(AvmType::Avm2);
-
             let new_do = Graphic::new_with_avm2(&mut activation.context, this);
 
             this.init_display_object(activation.context.gc_context, new_do.into());

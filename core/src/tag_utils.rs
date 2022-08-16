@@ -1,4 +1,3 @@
-use crate::vminterface::AvmType;
 use gc_arena::Collect;
 use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, TagCode, Twips};
@@ -140,12 +139,8 @@ impl SwfMovie {
         self.header.uncompressed_len()
     }
 
-    pub fn avm_type(&self) -> AvmType {
-        if self.header.is_action_script_3() {
-            AvmType::Avm2
-        } else {
-            AvmType::Avm1
-        }
+    pub fn is_action_script_3(&self) -> bool {
+        self.header.is_action_script_3()
     }
 
     pub fn stage_size(&self) -> &Rectangle {

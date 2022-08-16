@@ -21,7 +21,6 @@ use crate::player::Player;
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
-use crate::vminterface::AvmType;
 use core::fmt;
 use gc_arena::{Collect, MutationContext};
 use instant::Instant;
@@ -331,9 +330,8 @@ impl<'a, 'gc, 'gc_context> UpdateContext<'a, 'gc, 'gc_context> {
         }
     }
 
-    /// Return the VM that this object belongs to
-    pub fn avm_type(&self) -> AvmType {
-        self.swf.avm_type()
+    pub fn is_action_script_3(&self) -> bool {
+        self.swf.is_action_script_3()
     }
 
     pub fn avm_trace(&self, message: &str) {

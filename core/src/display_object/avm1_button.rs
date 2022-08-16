@@ -11,7 +11,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject}
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::vminterface::{AvmType, Instantiator};
+use crate::vminterface::Instantiator;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::cell::{Ref, RefMut};
 use std::collections::BTreeMap;
@@ -260,7 +260,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if context.avm_type() == AvmType::Avm1 {
+        if !context.is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());

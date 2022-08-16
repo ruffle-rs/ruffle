@@ -12,7 +12,6 @@ use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelectio
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::AvmType;
 use gc_arena::{GcCell, MutationContext};
 use std::sync::Arc;
 
@@ -27,12 +26,6 @@ pub fn instance_init<'gc>(
 
         if this.as_display_object().is_none() {
             let movie = Arc::new(SwfMovie::empty(activation.context.swf.version()));
-            let movie_library = activation
-                .context
-                .library
-                .library_for_movie_mut(movie.clone());
-            movie_library.force_avm_type(AvmType::Avm2);
-
             let new_do = EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0);
 
             this.init_display_object(activation.context.gc_context, new_do.into());

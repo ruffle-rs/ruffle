@@ -33,7 +33,7 @@ use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
-use crate::vminterface::{AvmType, Instantiator};
+use crate::vminterface::Instantiator;
 use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
@@ -1226,41 +1226,38 @@ impl Player {
             let root = context.stage.root_clip();
             root.as_movie_clip().unwrap().preload(context);
         });
-        if self.swf.avm_type() == AvmType::Avm2 && self.warn_on_unsupported_content {
+        if self.swf.is_action_script_3() && self.warn_on_unsupported_content {
             self.ui.display_unsupported_message();
         }
     }
 
     pub fn run_frame(&mut self) {
         self.update(|context| {
-            let stage = context.stage;
-            match context.swf.avm_type() {
-                AvmType::Avm1 => {
-                    // AVM1 execution order is determined by the global execution list, based on instantiation order.
-                    for clip in context.avm1.clip_exec_iter() {
-                        if clip.removed() {
-                            // Clean up removed objects from this frame or a previous frame.
-                            // Can be safely removed while iterating here, because the iterator advances
-                            // to the next node before returning the current node.
-                            context.avm1.remove_from_exec_list(context.gc_context, clip);
-                        } else {
-                            clip.run_frame(context);
-                        }
+            if context.is_action_script_3() {
+                let stage = context.stage;
+                stage.exit_frame(context);
+                stage.enter_frame(context);
+                stage.construct_frame(context);
+                stage.frame_constructed(context);
+                stage.run_frame_avm2(context);
+                stage.run_frame_scripts(context);
+            } else {
+                // AVM1 execution order is determined by the global execution list, based on instantiation order.
+                for clip in context.avm1.clip_exec_iter() {
+                    if clip.removed() {
+                        // Clean up removed objects from this frame or a previous frame.
+                        // Can be safely removed while iterating here, because the iterator advances
+                        // to the next node before returning the current node.
+                        context.avm1.remove_from_exec_list(context.gc_context, clip);
+                    } else {
+                        clip.run_frame(context);
                     }
+                }
 
-                    // Fire "onLoadInit" events.
-                    context
-                        .load_manager
-                        .movie_clip_on_load(context.action_queue);
-                }
-                AvmType::Avm2 => {
-                    stage.exit_frame(context);
-                    stage.enter_frame(context);
-                    stage.construct_frame(context);
-                    stage.frame_constructed(context);
-                    stage.run_frame_avm2(context);
-                    stage.run_frame_scripts(context);
-                }
+                // Fire "onLoadInit" events.
+                context
+                    .load_manager
+                    .movie_clip_on_load(context.action_queue);
             }
             context.update_sounds();
         });
