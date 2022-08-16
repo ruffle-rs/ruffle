@@ -17,9 +17,9 @@ const sampleFileInputContainer = document.getElementById(
 const localFileInput = document.getElementById("local-file");
 const sampleFileInput = document.getElementById("sample-swfs");
 const localFileName = document.getElementById("local-file-name");
-const closeModal = document.getElementById("closeModal");
-const openModal = document.getElementById("openModal");
-const metadataModal = document.getElementById("metadataModal");
+const closeModal = document.getElementById("close-modal");
+const openModal = document.getElementById("open-modal");
+const metadataModal = document.getElementById("metadata-modal");
 // prettier-ignore
 const optionGroups = {
     "Animation": document.getElementById("anim-optgroup"),
