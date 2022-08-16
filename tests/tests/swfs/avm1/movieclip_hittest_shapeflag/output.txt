@@ -244,3 +244,34 @@ true
 /// inside the clipping layer itself (false)
 // _level0.clip.mc_inner_clipped.hitTest(224, 200, true)
 false
+
+// wonderputt (#7684)
+// _level0.clip.hitTest(151.85, 635.1, true)
+false
+// _level0.clip.hitTest(163.25, 648.9, true)
+false
+// _level0.clip.hitTest(162.55, 648.9, true)
+false
+// _level0.clip.hitTest(150.5, 648.9, true)
+false
+// _level0.clip.hitTest(165.4, 648.9, true)
+false
+// _level0.clip.hitTest(164.7, 648.9, true)
+false
+// _level0.clip.hitTest(164, 648.9, true)
+false
+// _level0.clip.hitTest(163.3, 648.9, true)
+false
+// _level0.clip.hitTest(162.6, 648.9, true)
+false
+// _level0.clip.hitTest(161.9, 648.9, true)
+false
+// _level0.clip.hitTest(161.2, 648.9, true)
+false
+// _level0.clip.hitTest(160.5, 648.9, true)
+false
+// _level0.clip.hitTest(159.75, 648.9, true)
+false
+// _level0.clip.hitTest(159.25, 648.9, true)
+false
+

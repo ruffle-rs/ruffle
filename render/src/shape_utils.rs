@@ -1073,14 +1073,14 @@ fn winding_number_line(
     // An upward segment (-y) increments the winding number (including the initial endpoint).
     // A downward segment (+y) decrements the winding number (including the final endpoint)
     // Perp-dot indicates which side of the segment the point is on.
-    if y0 <= point_y {
-        if y1 > point_y {
+    if y0 < point_y {
+        if y1 >= point_y {
             let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
             if val > 0.0 {
                 return 1;
             }
         }
-    } else if y1 <= point_y {
+    } else if y1 < point_y {
         let val = (x1 - x0) * (point_y - y0) - (y1 - y0) * (point_x - x0);
 
         if val < 0.0 {
@@ -1107,13 +1107,13 @@ fn winding_number_curve(
     // However, there are two issues:
     // 1) Solving the quadratic needs to be numerically robust, particularly near the endpoints 0.0 and 1.0, and as the curve is tangent to the ray.
     //    We use the "Citardauq" method for improved numerical stability.
-    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial point included if the curve is "downward",
-    //    and the final point included if the curve is pointing "upward". This is complicated by the fact that the curve could be tangent to the ray
+    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial point included if the curve is "upward",
+    //    and the final point included if the curve is pointing "downward". This is complicated by the fact that the curve could be tangent to the ray
     //    at the endpoint (this is still considered "upward" or "downward" depending on the slope at earlier t).
     //    We solve this by splitting the curve into y-monotonic subcurves. This is helpful because
     //    a) each subcurve will have 1 intersection with the ray
     //    b) if the subcurve surrounds the ray, we know it has an intersection without having to check if t is in [0, 1]
-    //    c) we can determine the winding of the segment upward/downward by comparing the subcurve endpoints, also properly handling the endpoint convention.
+    //    c) we know the winding of the segment upward/downward based on which root it contains
 
     let x0 = ax0.get() - point_x.get();
     let y0 = ay0.get() - point_y.get();
@@ -1141,63 +1141,68 @@ fn winding_number_curve(
     let b = 2.0 * (y1 - y0);
     let c = y0;
 
-    let roots = solve_quadratic(a, b, c);
-
-    if roots.is_empty() {
+    let (t0, t1) = solve_quadratic(a, b, c);
+    let is_t0_valid = t0.is_finite();
+    let is_t1_valid = t1.is_finite();
+    if !is_t0_valid && !is_t1_valid {
         return 0;
     }
 
     // Split the curve into two y-monotonic segments.
-    let mut y_start = y0;
-    let mut y_end = if roots.len() == 1 {
-        // Linear, so already monotonic.
-        y2
-    } else {
-        // Find the extrema point where the curve is horizontal.
-        // This is the point that splits the curve into 2 y-monotonic segments.
-        let t_extrema = -b / (2.0 * a);
-        a * t_extrema * t_extrema + b * t_extrema + c
-    };
-
+    let mut winding = 0;
     let ax = x0 - 2.0 * x1 + x2;
     let bx = 2.0 * (x1 - x0);
-
-    let mut winding = 0;
-    for t in roots {
-        // Verify that this monotonic segment straddles the ray, and choose winding direction.
-        // This also handles the endpoint conventions.
-        let direction = if y_end > y_start {
-            // Downward edge: initial point included, increments winding.
-            if y_start > 0.0 || y_end <= 0.0 {
-                0
-            } else {
-                1
-            }
-        } else if y_start > y_end {
-            // Upward edge: final point included, increments winding.
-            if y_start <= 0.0 || y_end > 0.0 {
-                0
-            } else {
-                -1
-            }
+    let t_extrema = -0.5 * b / a;
+    let is_monotonic = t_extrema <= 0.0 || t_extrema >= 1.0;
+    if a >= 0.0 {
+        // Downward opening parabola.
+        let y_min = if is_monotonic {
+            y0.min(y2)
         } else {
-            0
+            a * t_extrema * t_extrema + b * t_extrema + c
         };
 
-        // If curve point is to the right of the ray origin, the ray will hit it.
-        // We don't have to do the problematic 0 <= t <= 1 check because this vertical slice is guaranteed
-        // to contain the monotonic segment, and our roots are returned in order by `solve_quadratic`.
-        // Adjust the winding as appropriate.
-        if direction != 0 {
-            let t_x = x0 + bx * t + ax * t * t;
-            if t_x > 0.0 {
-                winding += direction;
+        // First subcurve is moving upward, include initial point.
+        if is_t0_valid && y0 >= 0.0 && y_min < 0.0 {
+            // If curve point is to the right of the ray origin (x > 0), the ray will hit it.
+            // We don't have to check 0 <= t <= 1 check because we've already guaranteed that the subcurve
+            // straddles the ray.
+            let x = x0 + bx * t0 + ax * t0 * t0;
+            if x > 0.0 {
+                winding += 1;
             }
         }
 
-        // Advance to next monotonic segment
-        y_start = y_end;
-        y_end = y2;
+        // Second subcurve is moving downard, include final point.
+        if is_t1_valid && y_min < 0.0 && y2 >= 0.0 {
+            let x = x0 + bx * t1 + ax * t1 * t1;
+            if x > 0.0 {
+                winding -= 1;
+            }
+        }
+    } else {
+        // Upward opening parabola.
+        let y_max = if is_monotonic {
+            y0.max(y2)
+        } else {
+            a * t_extrema * t_extrema + b * t_extrema + c
+        };
+
+        // First subcurve is moving downward, include extrema point.
+        if is_t1_valid && y0 < 0.0 && y_max >= 0.0 {
+            let x = x0 + bx * t1 + ax * t1 * t1;
+            if x > 0.0 {
+                winding -= 1;
+            }
+        }
+
+        // Second subcurve is moving upward, include extrema point.
+        if is_t0_valid && y_max >= 0.0 && y2 < 0.0 {
+            let x = x0 + bx * t0 + ax * t0 * t0;
+            if x > 0.0 {
+                winding += 1;
+            }
+        }
     }
 
     winding
@@ -1206,43 +1211,35 @@ fn winding_number_curve(
 const COEFFICIENT_EPSILON: f64 = 0.0000001;
 
 /// Returns the roots of the quadratic ax^2 + bx + c = 0.
-/// The roots may not be unique.
+/// The roots may not be unique. NAN is returned for invalid roots. The first root will be where
+/// the curve is sloping upward, the second root will be where the curve is slopping downward.
 /// Uses the "Citardauq" formula for numerical stability.
-/// Originally from https://github.com/linebender/kurbo/blob/master/src/common.rs
 /// See https://math.stackexchange.com/questions/866331
-fn solve_quadratic(a: f64, b: f64, c: f64) -> SmallVec<[f64; 2]> {
-    let mut result = SmallVec::new();
-    let sc0 = c * a.recip();
-    let sc1 = b * a.recip();
-    if !sc0.is_finite() || !sc1.is_finite() {
-        // c2 is zero or very small, treat as linear eqn
-        let root = -c / b;
-        if root.is_finite() {
-            result.push(root);
+fn solve_quadratic(a: f64, b: f64, c: f64) -> (f64, f64) {
+    if a.abs() <= COEFFICIENT_EPSILON {
+        // Nearly linear, solve as linear equation.
+        if b >= 0.0 {
+            return (f64::NAN, -c / b);
+        } else {
+            return (-c / b, f64::NAN);
         }
-        return result;
     }
-    let arg = sc1 * sc1 - 4.0 * sc0;
-    let root1 = if !arg.is_finite() {
-        // Likely, calculation of sc1 * sc1 overflowed. Find one root
-        // using sc1 x + x² = 0, other root as sc0 / root1.
-        -sc1
-    } else {
-        if arg < 0.0 {
-            return result;
-        }
-        -0.5 * (sc1 + arg.sqrt().copysign(sc1))
-    };
-    let root2 = sc0 / root1;
-    // Sort just to be friendly and make results deterministic.
-    if root2 > root1 {
-        result.push(root1);
-        result.push(root2);
-    } else {
-        result.push(root2);
-        result.push(root1);
+    let mut disc = b * b - 4.0 * a * c;
+    if disc < 0.0 {
+        return (f64::NAN, f64::NAN);
     }
-    result
+    disc = disc.sqrt();
+    // Order the roots so that the first root is where the curve slopes upward,
+    // and the second root is where the root slopes downward.
+    if b >= 0.0 {
+        let root0 = (-b - disc) / (2.0 * a);
+        let root1 = c / (a * root0);
+        (root0, root1)
+    } else {
+        let root0 = (-b + disc) / (2.0 * a);
+        let root1 = c / (a * root0);
+        (root1, root0)
+    }
 }
 
 /// Returns the roots of a cubic polynomial, ax^3 + bx^2 + cx + d = 0
@@ -1255,7 +1252,8 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 
     if a.abs() <= COEFFICIENT_EPSILON {
         // Fall back to quadratic formula.
-        roots.extend_from_slice(&solve_quadratic(b, c, d));
+        let (t0, t1) = solve_quadratic(b, c, d);
+        roots.extend_from_slice(&[t0, t1]);
         return roots;
     }
 
