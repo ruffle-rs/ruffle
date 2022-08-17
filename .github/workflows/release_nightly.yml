@@ -11,7 +11,7 @@ on:
 jobs:
   create-nightly-release:
     name: Create Nightly Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       activity_check: ${{ env.GHA_REPO_ALIVE }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -77,7 +77,7 @@ jobs:
       matrix:
         include:
           - build_name: linux-x86_64
-            os: ubuntu-latest
+            os: ubuntu-22.04
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
@@ -163,7 +163,7 @@ jobs:
           asset_path: ./${{ env.PACKAGE_FILE }}
           asset_name: ${{ env.PACKAGE_FILE }}
           asset_content_type: ${{ endsWith(env.PACKAGE_FILE, 'tar.gz') && 'application/gzip' || 'application/zip' }}
-      
+
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
         uses: actions-rs/cargo@v1
@@ -219,7 +219,7 @@ jobs:
         run: |
           lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
           chmod +x package/ruffle_web_safari
-      
+
       - name: Create app bundle
         run: |
           cp -r desktop/packages/macOS package/Ruffle.app
@@ -230,7 +230,7 @@ jobs:
         run: |
           mkdir package/Ruffle.app/Contents/Resources
           xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
-      
+
       - name: Create extension bundle
         continue-on-error: true
         run: |
@@ -259,7 +259,7 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
           codesign --deep -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/assets/macOSEntitlements.plist --options runtime package/Ruffle.app
           codesign --verify -vvvv package/Ruffle.app
-      
+
       - name: Notarize bundle
         continue-on-error: true
         run: |
@@ -291,7 +291,7 @@ jobs:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.activity_check == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         demo: [false, true]
@@ -391,13 +391,13 @@ jobs:
           asset_path: ./web/packages/extension/dist/ruffle_extension.zip
           asset_name: ${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip
           asset_content_type: application/zip
-      
+
       - name: Upload Safari build artifact
         uses: actions/upload-artifact@v2
         with:
           name: macos-safari
           path: ./web/packages/extension/dist/ruffle_extension.zip
-      
+
       - name: Upload Firefox extension (unsigned)
         if: steps.sign-firefox.outcome != 'success' && !matrix.demo
         uses: actions/upload-release-asset@v1
@@ -495,7 +495,7 @@ jobs:
   publish-aur-package:
     name: Publish AUR package
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
       - uses: actions/checkout@v2
