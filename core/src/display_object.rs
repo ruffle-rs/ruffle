@@ -466,7 +466,10 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         return;
     }
     context.transform_stack.push(this.base().transform());
-    context.renderer.push_blend_mode(this.blend_mode());
+    let blend_mode = this.blend_mode();
+    if blend_mode != BlendMode::Normal {
+        context.renderer.push_blend_mode(this.blend_mode());
+    }
 
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
@@ -491,8 +494,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.allow_mask = true;
         context.renderer.pop_mask();
     }
-
-    context.renderer.pop_blend_mode();
+    if blend_mode != BlendMode::Normal {
+        context.renderer.pop_blend_mode();
+    }
     context.transform_stack.pop();
 }
 
@@ -967,7 +971,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Sets the blend mode used when rendering this display object.
     /// Values other than the defualt `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
-    fn set_blend_mode(&mut self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
+    fn set_blend_mode(&self, gc_context: MutationContext<'gc, '_>, value: BlendMode) {
         self.base_mut(gc_context).set_blend_mode(value);
     }
 
@@ -1260,6 +1264,9 @@ pub trait TDisplayObject<'gc>:
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
                 self.set_is_bitmap_cached(context.gc_context, is_bitmap_cached);
+            }
+            if let Some(blend_mode) = place_object.blend_mode {
+                self.set_blend_mode(context.gc_context, blend_mode);
             }
             if self.swf_version() >= 11 {
                 if let Some(visible) = place_object.is_visible {
