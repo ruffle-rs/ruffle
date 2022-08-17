@@ -54,48 +54,6 @@ impl Instantiator {
     }
 }
 
-impl From<Instantiator> for Option<AvmType> {
-    fn from(instantiator: Instantiator) -> Option<AvmType> {
-        match instantiator {
-            Instantiator::Avm1 => Some(AvmType::Avm1),
-            Instantiator::Avm2 => Some(AvmType::Avm2),
-            _ => None,
-        }
-    }
-}
-
-/// Represents an error generated due to a failure to convert or claim an
-/// object for a given VM.
-#[derive(Copy, Clone, Debug, Collect)]
-#[collect(require_static)]
-pub struct ClaimError();
-
-/// Denotes an AVM type.
-#[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
-#[collect(no_drop)]
-pub enum AvmType {
-    Avm1,
-    Avm2,
-}
-
-impl From<AvmObject<'_>> for AvmType {
-    fn from(vmo: AvmObject<'_>) -> Self {
-        match vmo {
-            AvmObject::Avm1(_) => AvmType::Avm1,
-            AvmObject::Avm2(_) => AvmType::Avm2,
-        }
-    }
-}
-
-impl AvmType {
-    pub fn into_avm2_loader_version(self) -> u32 {
-        match self {
-            AvmType::Avm1 => 2,
-            AvmType::Avm2 => 3,
-        }
-    }
-}
-
 /// A reference to either an AVM1 or AVM2 object.
 ///
 /// Used by non-AVM code to retain VM objects that may have been customized or
@@ -119,31 +77,21 @@ pub enum AvmObject<'gc> {
 }
 
 impl<'gc> AvmObject<'gc> {
-    /// Determine if this object is an AVM1 object.
-    pub fn is_avm1_object(&self) -> bool {
-        matches!(self, Self::Avm1(_))
-    }
-
-    /// Attempt to access the AVM1 claim to this object, generating an error if
+    /// Attempt to access the AVM1 claim to this object, returning `None` if
     /// the object cannot be accessed by the VM.
-    pub fn as_avm1_object(&self) -> Result<Avm1Object<'gc>, ClaimError> {
+    pub fn as_avm1_object(&self) -> Option<Avm1Object<'gc>> {
         match self {
-            Self::Avm1(o) => Ok(*o),
-            Self::Avm2(_) => Err(ClaimError()),
+            Self::Avm1(o) => Some(*o),
+            Self::Avm2(_) => None,
         }
     }
 
-    /// Determine if this object is an AVM2 object.
-    pub fn is_avm2_object(&self) -> bool {
-        matches!(self, Self::Avm2(_))
-    }
-
-    /// Attempt to access the AVM2 claim to this object, generating an error if
+    /// Attempt to access the AVM2 claim to this object, returning `None` if
     /// the object cannot be accessed by the VM.
-    pub fn as_avm2_object(&self) -> Result<Avm2Object<'gc>, ClaimError> {
+    pub fn as_avm2_object(&self) -> Option<Avm2Object<'gc>> {
         match self {
-            Self::Avm1(_) => Err(ClaimError()),
-            Self::Avm2(o) => Ok(*o),
+            Self::Avm1(_) => None,
+            Self::Avm2(o) => Some(*o),
         }
     }
 }

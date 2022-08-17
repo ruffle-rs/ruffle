@@ -4,21 +4,24 @@ use alloc::vec::Vec;
 use core::fmt;
 use core::mem::{self, ManuallyDrop};
 use core::ops::{Deref, DerefMut};
-use core::ptr::{self, NonNull};
+use core::ptr::NonNull;
+use static_assertions::assert_eq_size;
 
 use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
-use super::{Units, WStr, MAX_STRING_LEN};
+use super::{ptr, Units, WStr, MAX_STRING_LEN};
 
 /// An owned, extensible UCS2 string, analoguous to `String`.
 pub struct WString {
-    // TODO: better packing on 64bit targets
-    //
-    // On 64bit targets, this struct is 24 bytes, but we could do better by stuffing
-    // capacity inside the unused bits in `NonNull<WStr>` and make `WString` only
-    // 16 bytes.
-    ptr: NonNull<WStr>,
-    capacity: usize,
+    data: NonNull<()>,
+    meta: ptr::WStrMetadata,
+    capacity: u32,
 }
+
+#[cfg(target_pointer_width = "32")]
+assert_eq_size!(WString, [u8; 12]);
+
+#[cfg(target_pointer_width = "64")]
+assert_eq_size!(WString, [u8; 16]);
 
 impl WString {
     /// Creates a new empty `WString`.
@@ -30,7 +33,11 @@ impl WString {
     /// Creates a new empty `WString` with the given capacity and wideness.
     #[inline]
     pub fn with_capacity(capacity: usize, wide: bool) -> Self {
-        // SAFETY: the buffer is created empty.
+        if capacity > MAX_STRING_LEN {
+            super::panic_on_invalid_length(capacity);
+        }
+
+        // SAFETY: the buffer is created empty, and we checked the capacity above.
         unsafe {
             Self::from_buf_unchecked(if wide {
                 Units::Wide(Vec::with_capacity(capacity))
@@ -41,34 +48,64 @@ impl WString {
     }
 
     /// Creates a `WString` from an owned buffer containing 1 or 2-bytes code units,
-    /// without checking the length.
+    /// without checking its length or capacity.
     ///
     /// # Safety
     ///
-    /// The length cannot be greater than `MAX_STRING_LEN`.
+    /// The length and the capacity cannot be greater than `MAX_STRING_LEN`.
     #[inline]
     pub unsafe fn from_buf_unchecked(buf: Units<Vec<u8>, Vec<u16>>) -> Self {
         // SAFETY: we take ownership of the buffer; avoid double frees
         let mut buf = ManuallyDrop::new(buf);
-        let (capacity, ptr) = match buf.deref_mut() {
-            Units::Bytes(buf) => (buf.capacity(), Units::Bytes(&mut buf[..] as *mut _)),
-            Units::Wide(buf) => (buf.capacity(), Units::Wide(&mut buf[..] as *mut _)),
+        let (cap, len, ptr, is_wide) = match buf.deref_mut() {
+            Units::Bytes(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, false),
+            Units::Wide(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, true),
         };
 
-        let ptr = NonNull::new_unchecked(super::ptr::from_units(ptr));
-        Self { ptr, capacity }
+        Self {
+            data: NonNull::new_unchecked(ptr),
+            meta: ptr::WStrMetadata::new(len, is_wide),
+            capacity: cap as u32,
+        }
     }
 
     /// Creates a `WString` from an owned buffer containing 1 or 2-bytes code units.
     #[inline]
     pub fn from_buf(buf: impl Into<Units<Vec<u8>, Vec<u16>>>) -> Self {
-        let buf = buf.into();
+        // Tries to shrink the capacity below the maximum allowed WStr length.
+        #[cold]
+        fn shrink<T>(buf: &mut Vec<T>) {
+            assert!(buf.capacity() > MAX_STRING_LEN);
 
-        if buf.len() > MAX_STRING_LEN {
-            super::panic_on_invalid_length(buf.len());
+            let len = buf.len();
+            if len > MAX_STRING_LEN {
+                super::panic_on_invalid_length(len);
+            }
+
+            buf.shrink_to(MAX_STRING_LEN);
+            let ptr = ManuallyDrop::new(mem::take(buf)).as_mut_ptr();
+            // SAFETY:
+            // Per its contract, `Vec::shrink_to` reallocated the buffer to have
+            // a capacity between `MAX_STRING_LEN` and `buf.capacity()`.
+            unsafe {
+                *buf = Vec::from_raw_parts(ptr, len, MAX_STRING_LEN);
+            }
         }
 
-        // SAFETY: the length was checked above.
+        #[inline(always)]
+        fn ensure_valid_cap<T>(buf: &mut Vec<T>) {
+            if buf.capacity() > MAX_STRING_LEN {
+                shrink(buf)
+            }
+        }
+
+        let mut buf = buf.into();
+        match &mut buf {
+            Units::Bytes(buf) => ensure_valid_cap(buf),
+            Units::Wide(buf) => ensure_valid_cap(buf),
+        }
+
+        // SAFETY: the length and the capacity was checked above.
         unsafe { Self::from_buf_unchecked(buf) }
     }
 
@@ -144,14 +181,16 @@ impl WString {
 
     /// Converts this `WString` into a string slice.
     pub fn as_wstr(&self) -> &WStr {
-        // SAFETY: `self` is immutably borrowed.
-        unsafe { self.ptr.as_ref() }
+        let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
+        // SAFETY:`self` is immutably borrowed.
+        unsafe { &*wstr }
     }
 
     /// Converts this `WString` into a mutable string slice.
     pub fn as_wstr_mut(&mut self) -> &mut WStr {
-        // SAFETY: `self` is mutably borrowed.
-        unsafe { self.ptr.as_mut() }
+        let wstr = ptr::from_raw_parts(self.data.as_ptr(), self.meta);
+        // SAFETY:`self` is mutably borrowed.
+        unsafe { &mut *wstr }
     }
 
     /// Steals the internal buffer.
@@ -162,16 +201,21 @@ impl WString {
     /// - the returned buffer shouldn't be dropped unless self is forgotten.
     #[inline]
     unsafe fn steal_buf(&mut self) -> ManuallyDrop<Units<Vec<u8>, Vec<u16>>> {
-        let ptr = self.ptr.as_ptr();
-        let data = super::ptr::data(ptr);
-        let len = super::ptr::len(ptr);
-        let cap = self.capacity;
+        let cap = self.capacity as usize;
 
         // SAFETY: we reconstruct the Vec<T> deconstructed in `Self::from_buf`.
-        let buffer = if super::ptr::is_wide(ptr) {
-            Units::Wide(Vec::from_raw_parts(data as *mut u16, len, cap))
+        let buffer = if self.meta.is_wide() {
+            Units::Wide(Vec::from_raw_parts(
+                self.data.cast().as_ptr(),
+                self.meta.len(),
+                cap,
+            ))
         } else {
-            Units::Bytes(Vec::from_raw_parts(data as *mut u8, len, cap))
+            Units::Bytes(Vec::from_raw_parts(
+                self.data.cast().as_ptr(),
+                self.meta.len(),
+                cap,
+            ))
         };
         ManuallyDrop::new(buffer)
     }
@@ -206,7 +250,7 @@ impl WString {
                 // SAFETY: we disable the Drop impl, so we can put the ManuallyDrop'd buffer back
                 unsafe {
                     let buffer = ManuallyDrop::take(&mut self.buffer);
-                    ptr::write(self.source, WString::from_buf(buffer));
+                    core::ptr::write(self.source, WString::from_buf(buffer));
                     mem::forget(self);
                 }
             }
@@ -216,7 +260,7 @@ impl WString {
             fn drop(&mut self) {
                 // SAFETY: something has gone wrong, replace the buffer with an empty one and drop it.
                 unsafe {
-                    ptr::write(self.source, WString::new());
+                    core::ptr::write(self.source, WString::new());
                     ManuallyDrop::drop(&mut self.buffer);
                 }
             }
@@ -244,6 +288,14 @@ impl WString {
 
             f(units)
         })
+    }
+
+    /// Truncates this `WString`, removing all contents.
+    pub fn clear(&mut self) {
+        // SAFETY: 0 is always a valid length.
+        unsafe {
+            self.meta = ptr::WStrMetadata::new(0, self.meta.is_wide());
+        }
     }
 
     /// Appends a UTF-16 code unit to `self`.
@@ -364,6 +416,21 @@ impl Clone for WString {
             }
             _ => unreachable!(),
         })
+    }
+}
+
+impl ToOwned for WStr {
+    type Owned = WString;
+
+    fn to_owned(&self) -> Self::Owned {
+        let mut buf = WString::new();
+        buf.push_str(self);
+        buf
+    }
+
+    fn clone_into(&self, target: &mut Self::Owned) {
+        target.clear();
+        target.push_str(self);
     }
 }
 

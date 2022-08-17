@@ -1,22 +1,21 @@
-use alloc::borrow::ToOwned;
 use core::ops::Range;
 use core::ptr::{slice_from_raw_parts, slice_from_raw_parts_mut};
 
-use super::{Units, WString};
+use super::Units;
 
 #[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
 compile_error!("WStr only supports 32-bits and 64-bits targets");
 
 /// The maximum string length, equals to 2³¹-1.
 pub const MAX_STRING_LEN: usize = 0x7FFF_FFFF;
-const WIDE_MASK: usize = MAX_STRING_LEN + 1;
+const WIDE_MASK: u32 = MAX_STRING_LEN as u32 + 1;
 
 /// A UCS2 string slice, analoguous to `&'a str`.
 #[repr(transparent)]
 pub struct WStr {
     /// The internal `WStr` representation.
     ///
-    /// What we actually want here is a custom DST, but they don't exist be we must cheat
+    /// What we actually want here is a custom DST, but they don't exist so we must cheat
     /// and abuse the slice metadata field.
     ///
     /// The data pointer points to the start of the units buffer, which is either a
@@ -28,7 +27,6 @@ pub struct WStr {
     ///  - for `Units::Wide`, it is a one.
     ///
     /// Note that on 64-bits targets, this leaves the high 32 bits of the length unused.
-    /// (TODO: find a nice way to expose them for usage by other types?)
     ///
     /// # (Un)soundness
     ///
@@ -47,19 +45,54 @@ pub struct WStr {
     _repr: [()],
 }
 
-impl ToOwned for WStr {
-    type Owned = WString;
+/// The metadata of a `WStr` pointer. This is always 4 bytes wide, even on 64-bits targets.
+///
+/// The layout of `WStr` depends on the value of `self.is_wide()`:
+///  - if `false`, it has the layout of `[u8; self.len()]`;
+///  - if `true`, it has the layout of `[u16; self.len()]`.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct WStrMetadata(u32);
 
-    fn to_owned(&self) -> Self::Owned {
-        let mut buf = WString::new();
-        buf.push_str(self);
-        buf
+impl WStrMetadata {
+    /// SAFETY: raw must fit in a u32
+    #[inline(always)]
+    const unsafe fn from_usize(raw: usize) -> Self {
+        if raw > u32::MAX as usize {
+            if cfg!(debug_assertions) {
+                panic!("invalid WStr metadata");
+            } else {
+                core::hint::unreachable_unchecked()
+            }
+        }
+
+        Self(raw as u32)
+    }
+
+    /// Assemble `WStr` metadata from its components.
+    ///
+    /// # Safety
+    /// `len` must be less than or equal to `MAX_STRING_LEN`.
+    #[inline(always)]
+    pub const unsafe fn new(len: usize, is_wide: bool) -> Self {
+        Self::from_usize(len | if is_wide { WIDE_MASK as usize } else { 0 })
+    }
+
+    /// Returns whether this metadata describes a wide `WStr`.
+    #[inline(always)]
+    pub const fn is_wide(self) -> bool {
+        (self.0 & WIDE_MASK) != 0
+    }
+
+    /// Returns the length of the described `WStr`. This is never greater than `MAX_STRING_LEN`.
+    #[inline(always)]
+    pub const fn len(self) -> usize {
+        (self.0 & (WIDE_MASK - 1)) as usize
     }
 }
 
 /// Convenience method to turn a `&T` into a `*mut T`.
 #[inline]
-pub fn ptr_mut<T: ?Sized>(t: &T) -> *mut T {
+pub(crate) fn ptr_mut<T: ?Sized>(t: &T) -> *mut T {
     t as *const T as *mut T
 }
 
@@ -83,37 +116,21 @@ pub fn data(ptr: *mut WStr) -> *mut () {
     ptr.cast::<()>()
 }
 
-/// Returns the length of the raw `WStr` slice.
-///
-/// This is always less than or equals to `MAX_STRING_LEN`.
+/// Returns the metadata part of a a raw `WStr` pointer.
 ///
 /// # Safety
 ///  - `ptr` must point to some allocated storage of arbitrary size.
+///  - the pointer metadata must be valid.
 #[inline]
-pub unsafe fn len(ptr: *mut WStr) -> usize {
-    raw_len(ptr as *mut [()]) & MAX_STRING_LEN
-}
-
-/// Returns `true` if the raw `WStr` slice is wide.
-///
-/// # Safety
-///  - `ptr` must point to some allocated storage of arbitrary size.
-#[inline]
-pub unsafe fn is_wide(ptr: *mut WStr) -> bool {
-    raw_len(ptr as *mut [()]) & WIDE_MASK != 0
+pub unsafe fn metadata(ptr: *mut WStr) -> WStrMetadata {
+    let raw = raw_len(ptr as *mut [()]);
+    WStrMetadata::from_usize(raw)
 }
 
 /// Creates a `WStr` pointer from its raw parts.
-///
-/// # Safety
-///  - `len` must be less than or equals to `MAX_STRING_LEN`
-///  - `data` must point to allocated storage fitting the layout of:
-///     - `[u8; len]` if `is_wide` is `false`;
-///     - `[u16; len]` if `is_wide` is `true`.
 #[inline]
-pub unsafe fn from_raw_parts(data: *mut (), len: usize, is_wide: bool) -> *mut WStr {
-    let raw_len = len | if is_wide { WIDE_MASK } else { 0 };
-    let slice = slice_from_raw_parts(data, raw_len);
+pub fn from_raw_parts(data: *mut (), metadata: WStrMetadata) -> *mut WStr {
+    let slice = slice_from_raw_parts(data, metadata.0 as usize);
     slice as *mut WStr
 }
 
@@ -121,54 +138,49 @@ pub unsafe fn from_raw_parts(data: *mut (), len: usize, is_wide: bool) -> *mut W
 ///
 /// # Safety
 ///  - the buffer length must be less than or equals to `MAX_STRING_LEN`
-///  - the buffer must point to allocated storage fitting the layout of:
-///     - `[u8; len]` if it is a `Units::Bytes`;
-///     - `[u16; len]` if it is a `Units::Wide`.
+///  - the buffer must point to allocated storage of arbitrary size.
 #[inline]
 pub unsafe fn from_units(units: Units<*mut [u8], *mut [u16]>) -> *mut WStr {
     let (data, len, is_wide) = match units {
         Units::Bytes(us) => (us as *mut (), raw_len(us), false),
         Units::Wide(us) => (us as *mut (), raw_len(us), true),
     };
-    from_raw_parts(data, len, is_wide)
+
+    from_raw_parts(data, WStrMetadata::new(len, is_wide))
 }
 
-/// Gets a reference to the buffer pointed by `ptr`.
+/// Gets a pointer to the buffer designated by `ptr`.
 ///
 /// # Safety
 ///  - `ptr` must point to some allocated storage of arbitrary size.
 #[inline]
 pub unsafe fn units(ptr: *mut WStr) -> Units<*mut [u8], *mut [u16]> {
-    let (data, len) = (data(ptr), len(ptr));
-    if is_wide(ptr) {
-        Units::Wide(slice_from_raw_parts_mut(data as *mut u16, len))
+    let (data, meta) = (data(ptr), metadata(ptr));
+    if meta.is_wide() {
+        Units::Wide(slice_from_raw_parts_mut(data as *mut u16, meta.len()))
     } else {
-        Units::Bytes(slice_from_raw_parts_mut(data as *mut u8, len))
+        Units::Bytes(slice_from_raw_parts_mut(data as *mut u8, meta.len()))
     }
 }
 
-/// Gets a pointer to the `n`th unit of this `WStr.
+/// Gets a pointer to the `n`th unit of this `WStr`.
 ///
 /// # Safety
 ///  - `ptr` must point to a valid `WStr`;
-///  - `i` must be less than or equals to `len(ptr)`.
+///  - `i` must be less than or equals to `metadata(ptr).len()`.
 #[inline]
 pub unsafe fn offset(ptr: *mut WStr, i: usize) -> Units<*mut u8, *mut u16> {
-    // SAFETY: we have `index <= len(ptr) <= MAX_STRING_LEN < i32::MAX`, so:
-    //  - `i` can be casted to `isize` on 32-bit and 64-bit targets;
-    //  - the offset call is in bounds.
-    let n = i as isize;
-    if is_wide(ptr) {
-        Units::Wide((ptr as *mut u16).offset(n))
+    if metadata(ptr).is_wide() {
+        Units::Wide((ptr as *mut u16).add(i))
     } else {
-        Units::Bytes((ptr as *mut u8).offset(n))
+        Units::Bytes((ptr as *mut u8).add(i))
     }
 }
 /// Dereferences the `n`th unit of this `WStr`.
 ///
 /// # Safety
 ///  - `ptr` must point to a valid `WStr` for reading;
-///  - `i` must be less than `len(ptr)`.
+///  - `i` must be less than `metadata(ptr).len()`.
 pub unsafe fn read_at(ptr: *mut WStr, i: usize) -> u16 {
     match offset(ptr, i) {
         Units::Bytes(p) => (*p).into(),
@@ -181,7 +193,7 @@ pub unsafe fn read_at(ptr: *mut WStr, i: usize) -> u16 {
 /// # Safety
 ///  - `ptr` must point to a valid `WStr`;
 ///  - `range.start` must be less than or equals to `range.end`;
-///  - `range.end` must be less than or equals to `len(ptr)`.
+///  - `range.end` must be less than or equals to `metadata(ptr).len()`.
 #[inline]
 pub unsafe fn slice(ptr: *mut WStr, range: Range<usize>) -> *mut WStr {
     let len = range.end - range.start;
@@ -189,5 +201,5 @@ pub unsafe fn slice(ptr: *mut WStr, range: Range<usize>) -> *mut WStr {
         Units::Bytes(p) => (p as *mut (), false),
         Units::Wide(p) => (p as *mut (), true),
     };
-    from_raw_parts(data, len, is_wide)
+    from_raw_parts(data, WStrMetadata::new(len, is_wide))
 }

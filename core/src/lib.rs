@@ -35,7 +35,7 @@ pub mod string;
 pub mod tag_utils;
 pub mod timer;
 mod types;
-pub mod vminterface;
+mod vminterface;
 mod xml;
 
 pub mod backend;

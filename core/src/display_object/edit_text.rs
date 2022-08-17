@@ -22,7 +22,7 @@ use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
-use crate::vminterface::{AvmObject, AvmType, Instantiator};
+use crate::vminterface::{AvmObject, Instantiator};
 use chrono::Utc;
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use ruffle_render::shape_utils::DrawCommand;
@@ -1475,7 +1475,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        if context.avm_type() == AvmType::Avm2 && matches!(self.object2(), Avm2Value::Undefined) {
+        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Undefined) {
             self.construct_as_avm2_object(context, (*self).into());
         }
     }
@@ -1501,17 +1501,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     ) {
         self.set_default_instance_name(context);
 
-        if context.avm_type() == AvmType::Avm1 {
+        if !context.is_action_script_3() {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
         }
 
-        let movie = self.movie().unwrap();
-        let library = context.library.library_for_movie_mut(movie);
-        let vm_type = library.avm_type();
-
-        if vm_type == AvmType::Avm1 {
+        if !self.movie().unwrap().is_action_script_3() {
             self.construct_as_avm1_object(context, run_frame);
         }
     }
@@ -1520,7 +1516,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0
             .read()
             .object
-            .and_then(|o| o.as_avm1_object().ok())
+            .and_then(|o| o.as_avm1_object())
             .map(Avm1Value::from)
             .unwrap_or(Avm1Value::Undefined)
     }
@@ -1529,7 +1525,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0
             .read()
             .object
-            .and_then(|o| o.as_avm2_object().ok())
+            .and_then(|o| o.as_avm2_object())
             .map(Avm2Value::from)
             .unwrap_or(Avm2Value::Undefined)
     }

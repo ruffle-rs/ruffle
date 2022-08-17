@@ -9,7 +9,7 @@ on:
 jobs:
   changes:
     name: Paths filter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       src: ${{ steps.filter.outputs.src }}
     steps:
@@ -32,12 +32,12 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
         include:
           - rust_version: nightly
-            os: ubuntu-latest
+            os: ubuntu-22.04
           - rust_version: beta
-            os: ubuntu-latest
+            os: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v2
@@ -109,12 +109,12 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
         include:
           - rust_version: nightly
-            os: ubuntu-latest
+            os: ubuntu-22.04
           - rust_version: beta
-            os: ubuntu-latest
+            os: ubuntu-22.04
 
     steps:
       - name: No-op

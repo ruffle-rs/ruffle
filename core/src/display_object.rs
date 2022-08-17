@@ -11,7 +11,7 @@ use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
-use crate::vminterface::{AvmType, Instantiator};
+use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::{Collect, MutationContext};
 use ruffle_macros::enum_trait_object;
@@ -1441,12 +1441,10 @@ pub trait TDisplayObject<'gc>:
     /// The default root names change based on the AVM configuration of the
     /// clip; AVM2 clips get `rootN` while AVM1 clips get blank strings.
     fn set_default_root_name(&self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let vm_type = context.avm_type();
-
-        if matches!(vm_type, AvmType::Avm2) {
+        if context.is_action_script_3() {
             let name = AvmString::new_utf8(context.gc_context, format!("root{}", self.depth() + 1));
             self.set_name(context.gc_context, name);
-        } else if matches!(vm_type, AvmType::Avm1) {
+        } else {
             self.set_name(context.gc_context, Default::default());
         }
     }

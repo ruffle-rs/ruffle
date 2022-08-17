@@ -25,8 +25,6 @@ pub struct ConstantPool {
     pub multinames: Vec<Multiname>,
 }
 
-// clippy false positive: https://github.com/rust-lang/rust-clippy/issues/8867
-#[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Index<T>(pub u32, pub PhantomData<T>);
 
