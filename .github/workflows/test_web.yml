@@ -9,7 +9,7 @@ on:
 jobs:
   changes:
     name: Paths filter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       src: ${{ steps.filter.outputs.src }}
     steps:
@@ -33,7 +33,7 @@ jobs:
       matrix:
         node_version: ["16", "18"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -97,7 +97,7 @@ jobs:
       matrix:
         node_version: ["16", "18"]
         rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
 
     steps:
       - name: No-op
