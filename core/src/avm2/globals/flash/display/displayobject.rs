@@ -658,7 +658,7 @@ pub fn set_blend_mode<'gc>(
     this: Option<Object<'gc>>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
-    if let Some(mut dobj) = this.and_then(|this| this.as_display_object()) {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
         if let Some(Value::String(mode)) = args.get(0).cloned() {
             let mode = &*mode;
             let mode = if mode == b"add" {
