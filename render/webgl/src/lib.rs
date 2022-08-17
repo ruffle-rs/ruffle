@@ -661,21 +661,74 @@ impl WebGlRenderBackend {
     }
 
     fn apply_blend_mode(&mut self, mode: BlendMode) {
-        match mode {
+        let (blend_op, src_rgb, dst_rgb) = match mode {
+            BlendMode::Normal => {
+                // src + (1-a)
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Layer => {
+                // TODO: Needs intermediate buffer.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Multiply => {
+                // src * dst
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+            BlendMode::Screen => {
+                // 1 - (1 - src) * (1 - dst)
+                // TODO: Needs shader. Rendering as additive for now
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Lighten => {
+                // max(src, dst)
+                (Gl2::MAX, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Darken => {
+                // min(src, dst)
+                (Gl2::MIN, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Difference => {
+                // abs(src - dst)
+                (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
+            }
             BlendMode::Add => {
-                self.gl.blend_equation(Gl::FUNC_ADD);
-                // Add RGB values, use normal alpha blending
-                self.gl
-                    .blend_func_separate(Gl::ONE, Gl::ONE, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
+                // abs(src - dst)
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
             }
-            _ => {
-                if mode != BlendMode::Normal {
-                    log::warn!("Webgl backend does not yet support blendmode {:?}", mode);
-                }
-                self.gl.blend_equation(Gl::FUNC_ADD);
-                self.gl.blend_func(Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            BlendMode::Subtract => {
+                // abs(src - dst)
+                (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
             }
-        }
+            BlendMode::Invert => {
+                // 1 - dst
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Alpha => {
+                // dst.a = src.a
+                // TODO: Unimplemeneted, needs intermediate buffer.
+                // Parent display object needs to have Layer blend mode.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Erase => {
+                // dst.a = 1 - src.a
+                // TODO: Unimplemeneted, needs intermediate buffer.
+                // Parent display object needs to have Layer blend mode.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::HardLight => {
+                // if src > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+                // TODO: Needs shader, rendered as multiply for now.
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+            BlendMode::Overlay => {
+                // if dst > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+                // TODO: Needs shader, rendered as multiply for now.
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+        };
+        self.gl.blend_equation_separate(blend_op, Gl::FUNC_ADD);
+        self.gl
+            .blend_func_separate(src_rgb, dst_rgb, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
     }
 }
 
