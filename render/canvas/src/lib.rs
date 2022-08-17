@@ -349,13 +349,25 @@ impl WebCanvasRenderBackend {
     }
 
     fn apply_blend_mode(&mut self, blend: BlendMode) {
+        // TODO: Objects with a blend mode need to be rendered to an intermediate buffer first,
+        // but for now we render each child directly to the canvas. This should look reasonable for most
+        // common cases.
+        // While canvas has built in support for most of the blend modes, a few aren't supported.
         let mode = match blend {
-            BlendMode::Add => "lighter",
             BlendMode::Normal => "source-over",
-            _ => {
-                log::warn!("Canvas backend does not yet support blend mode {:?}", blend);
-                "source-over"
-            }
+            BlendMode::Layer => "source-over", // Requires intermediate buffer.
+            BlendMode::Multiply => "multiply",
+            BlendMode::Screen => "screen",
+            BlendMode::Lighten => "lighten",
+            BlendMode::Darken => "darken",
+            BlendMode::Difference => "difference",
+            BlendMode::Add => "lighter",
+            BlendMode::Subtract => "difference", // Not exposed by canvas, rendered as difference.
+            BlendMode::Invert => "source-over",  // Not exposed by canvas.
+            BlendMode::Alpha => "source-over",   // Requires intermediate buffer.
+            BlendMode::Erase => "source-over",   // Requires intermediate buffer.
+            BlendMode::Overlay => "overlay",
+            BlendMode::HardLight => "hard-light",
         };
         self.context
             .set_global_composite_operation(mode)
