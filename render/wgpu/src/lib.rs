@@ -124,7 +124,7 @@ impl Descriptors {
             bitmap_samplers.layout(),
             &globals_layout,
             &uniform_buffers_layout,
-        )?;
+        );
 
         Ok(Self {
             device,
