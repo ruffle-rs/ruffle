@@ -13,8 +13,6 @@ pub fn round_down_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().floor())
 }
 
-type Error = Box<dyn std::error::Error>;
-
 /// Parameters necessary to evaluate a font.
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -107,7 +105,7 @@ impl<'gc> Font<'gc> {
         renderer: &mut dyn RenderBackend,
         tag: swf::Font,
         encoding: &'static swf::Encoding,
-    ) -> Result<Font<'gc>, Error> {
+    ) -> Font<'gc> {
         let mut glyphs = vec![];
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
 
@@ -147,7 +145,7 @@ impl<'gc> Font<'gc> {
             fnv::FnvHashMap::default()
         };
 
-        Ok(Font(Gc::allocate(
+        Font(Gc::allocate(
             gc_context,
             FontData {
                 glyphs,
@@ -162,7 +160,7 @@ impl<'gc> Font<'gc> {
                 leading,
                 descriptor,
             },
-        )))
+        ))
     }
 
     /// Returns whether this font contains glyph shapes.

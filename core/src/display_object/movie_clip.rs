@@ -2898,8 +2898,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             context.renderer,
             font,
             reader.encoding(),
-        )
-        .unwrap();
+        );
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2920,8 +2919,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             context.renderer,
             font,
             reader.encoding(),
-        )
-        .unwrap();
+        );
         context
             .library
             .library_for_movie_mut(self.movie())
@@ -2942,8 +2940,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             context.renderer,
             font,
             reader.encoding(),
-        )
-        .unwrap();
+        );
         context
             .library
             .library_for_movie_mut(self.movie())
