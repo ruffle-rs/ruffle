@@ -57,7 +57,7 @@ impl Descriptors {
         queue: wgpu::Queue,
         info: wgpu::AdapterInfo,
         surface_format: wgpu::TextureFormat,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let limits = device.limits();
         // TODO: Allow this to be set from command line/settings file.
         let msaa_sample_count = 4;
@@ -126,7 +126,7 @@ impl Descriptors {
             &uniform_buffers_layout,
         );
 
-        Ok(Self {
+        Self {
             device,
             info,
             limits,
@@ -138,7 +138,7 @@ impl Descriptors {
             pipelines,
             bitmap_samplers,
             msaa_sample_count,
-        })
+        }
     }
 }
 
@@ -585,7 +585,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             })
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
-        Descriptors::new(device, queue, info, surface_format)
+        Ok(Descriptors::new(device, queue, info, surface_format))
     }
 
     fn register_shape_internal(
