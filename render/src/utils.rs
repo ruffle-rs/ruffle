@@ -397,6 +397,19 @@ fn premultiply_alpha_rgba(rgba: &mut [u8]) {
     })
 }
 
+/// Converts premultiplied RBGA to unmultipled RGBA.
+pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
+    rgba.chunks_exact_mut(4).for_each(|rgba| {
+        let a = rgba[3];
+        if a > 0 {
+            let a = f32::from(a) / 255.0;
+            rgba[0] = (f32::from(rgba[0]) / a) as u8;
+            rgba[1] = (f32::from(rgba[1]) / a) as u8;
+            rgba[2] = (f32::from(rgba[2]) / a) as u8;
+        }
+    })
+}
+
 /// Decodes zlib-compressed data.
 fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
     let mut out_data = Vec::new();
