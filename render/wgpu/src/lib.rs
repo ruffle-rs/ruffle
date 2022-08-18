@@ -1507,9 +1507,8 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, handle: BitmapHandle) -> Result<(), BitmapError> {
+    fn unregister_bitmap(&mut self, handle: BitmapHandle) {
         self.bitmap_registry.remove(&handle);
-        Ok(())
     }
 
     fn update_texture(

@@ -174,9 +174,7 @@ impl<'gc> BitmapData<'gc> {
         self.height = 0;
         self.pixels.clear();
         if let Some(handle) = self.bitmap_handle {
-            if let Err(e) = renderer.unregister_bitmap(handle) {
-                log::warn!("Failed to unregister bitmap {:?}: {:?}", handle, e);
-            }
+            renderer.unregister_bitmap(handle);
             self.bitmap_handle = None;
         }
         // There's no longer a handle to update

@@ -67,9 +67,7 @@ impl RenderBackend for NullRenderer {
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(0))
     }
-    fn unregister_bitmap(&mut self, _bitmap: BitmapHandle) -> Result<(), Error> {
-        Ok(())
-    }
+    fn unregister_bitmap(&mut self, _bitmap: BitmapHandle) {}
 
     fn update_texture(
         &mut self,

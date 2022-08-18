@@ -1295,9 +1295,8 @@ impl RenderBackend for WebGlRenderBackend {
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), BitmapError> {
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
         self.bitmap_registry.remove(&bitmap);
-        Ok(())
     }
 
     fn update_texture(
