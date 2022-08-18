@@ -3,7 +3,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
-use ruffle_render::error::Error as BitmapError;
+use ruffle_render::error::Error;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
@@ -16,8 +16,6 @@ use web_sys::{
 };
 
 const GRADIENT_TRANSFORM_THRESHOLD: f32 = 0.0001;
-
-type Error = Box<dyn std::error::Error>;
 
 pub struct WebCanvasRenderBackend {
     canvas: HtmlCanvasElement,
@@ -737,10 +735,10 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap.get_pixels()
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        let bitmap_data = BitmapData::new(bitmap).map_err(BitmapError::JavascriptError)?;
+        let bitmap_data = BitmapData::new(bitmap).map_err(Error::JavascriptError)?;
         self.bitmaps.insert(handle, bitmap_data);
         Ok(handle)
     }
@@ -755,13 +753,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, BitmapError> {
+    ) -> Result<BitmapHandle, Error> {
         // TODO: Could be optimized to a single put_image_data call
         // in case it is already stored as a canvas+context.
         self.bitmaps.insert(
             handle,
             BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
-                .map_err(BitmapError::JavascriptError)?,
+                .map_err(Error::JavascriptError)?,
         );
         Ok(handle)
     }
@@ -856,7 +854,7 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Ok(bitmap) = create_bitmap_pattern(
+                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
@@ -907,7 +905,7 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Ok(bitmap) = create_bitmap_pattern(
+                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
@@ -1159,7 +1157,7 @@ fn create_bitmap_pattern(
     bitmap_source: &dyn BitmapSource,
     bitmaps: &FnvHashMap<BitmapHandle, BitmapData>,
     context: &CanvasRenderingContext2d,
-) -> Result<CanvasBitmap, Error> {
+) -> Option<CanvasBitmap> {
     if let Some(bitmap) = bitmap_source
         .bitmap(id)
         .and_then(|bitmap| bitmaps.get(&bitmap.handle))
@@ -1177,18 +1175,18 @@ fn create_bitmap_pattern(
             Ok(Some(pattern)) => pattern,
             _ => {
                 log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
-                return Err("Unable to create bitmap pattern".into());
+                return None;
             }
         };
         pattern.set_transform(matrix.to_dom_matrix().unchecked_ref());
-        Ok(CanvasBitmap {
+        Some(CanvasBitmap {
             pattern,
             matrix: matrix.into(),
             smoothed: is_smoothed,
         })
     } else {
         log::warn!("Couldn't fill shape with unknown bitmap {}", id);
-        Err("Unable to create bitmap pattern".into())
+        None
     }
 }
 
