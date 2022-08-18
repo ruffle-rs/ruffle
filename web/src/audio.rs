@@ -9,8 +9,6 @@ use std::time::Duration;
 use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
 use web_sys::AudioContext;
 
-type Error = Box<dyn std::error::Error>;
-
 #[allow(dead_code)]
 pub struct WebAudioBackend {
     mixer: AudioMixer,
@@ -23,7 +21,7 @@ pub struct WebAudioBackend {
 impl WebAudioBackend {
     const BUFFER_SIZE: u32 = 4096;
 
-    pub fn new() -> Result<Self, Error> {
+    pub fn new() -> Result<Self, JsError> {
         let context = AudioContext::new().into_js_result()?;
         let sample_rate = context.sample_rate();
         let mut audio = Self {
@@ -87,7 +85,7 @@ struct Buffer {
 }
 
 impl Buffer {
-    fn new(audio: &WebAudioBackend) -> Result<Arc<RwLock<Self>>, Error> {
+    fn new(audio: &WebAudioBackend) -> Result<Arc<RwLock<Self>>, JsError> {
         let sample_rate = audio.context.sample_rate();
         let buffer = Arc::new(RwLock::new(Buffer {
             context: audio.context.clone(),
@@ -113,7 +111,7 @@ impl Buffer {
         Ok(buffer)
     }
 
-    fn play(&mut self) -> Result<(), Error> {
+    fn play(&mut self) -> Result<(), JsError> {
         // Mix new audio into the output buffer and copy to JS.
         self.mixer_proxy.mix(&mut self.audio_buffer);
         copy_to_audio_buffer_interleaved(&self.js_buffer, &self.audio_buffer);
