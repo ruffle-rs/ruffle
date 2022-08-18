@@ -1,0 +1,15 @@
+Key: setter1 = true
+Key: nonsetter = 1.1
+Key: setter2 = null
+Key: _x = 5
+Key: setter3 = Hello
+setter3: Hello
+this._x = 0
+this.nonsetter = undefined
+setter2: null
+this._x = 5
+this.nonsetter = undefined
+setter1: true
+this._x = 5
+this.nonsetter = 1.1
+Init movie

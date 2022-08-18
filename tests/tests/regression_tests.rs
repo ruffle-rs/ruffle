@@ -640,6 +640,7 @@ swf_tests! {
     (infinite_recursion_virtual_property, "avm1/infinite_recursion_virtual_property", 1),
     (init_array_invalid, "avm1/init_array_invalid", 1),
     (init_object_invalid, "avm1/init_array_invalid", 1),
+    (init_object_order, "avm1/init_object_order", 1),
     (is_finite, "avm1/is_finite", 1),
     (is_finite_swf6, "avm1/is_finite_swf6", 1),
     (is_prototype_of, "avm1/is_prototype_of", 1),
