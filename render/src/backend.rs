@@ -96,7 +96,7 @@ pub trait RenderBackend: Downcast {
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     // Frees memory used by the bitmap. After this call, `handle` can no longer
     // be used.
-    fn unregister_bitmap(&mut self, handle: BitmapHandle) -> Result<(), Error>;
+    fn unregister_bitmap(&mut self, handle: BitmapHandle);
     fn update_texture(
         &mut self,
         bitmap: BitmapHandle,

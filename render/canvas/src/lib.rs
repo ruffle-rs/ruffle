@@ -745,9 +745,8 @@ impl RenderBackend for WebCanvasRenderBackend {
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), BitmapError> {
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) {
         self.bitmaps.remove(&bitmap);
-        Ok(())
     }
 
     fn update_texture(
