@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context, Error};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
@@ -14,21 +15,21 @@ pub struct CpalAudioBackend {
     mixer: AudioMixer,
 }
 
-type Error = Box<dyn std::error::Error>;
-
 impl CpalAudioBackend {
     pub fn new() -> Result<Self, Error> {
         // Create CPAL audio device.
         let host = cpal::default_host();
         let device = host
             .default_output_device()
-            .ok_or("No audio devices available")?;
+            .ok_or_else(|| anyhow!("No audio devices available"))?;
 
         // Create audio stream for device.
-        let config = device.default_output_config()?;
+        let config = device
+            .default_output_config()
+            .context("Failed to get default output config")?;
         let sample_format = config.sample_format();
         let config = cpal::StreamConfig::from(config);
-        let mixer = AudioMixer::new(config.channels.try_into()?, config.sample_rate.0);
+        let mixer = AudioMixer::new(config.channels as u8, config.sample_rate.0);
 
         // Start the audio stream.
         let stream = {
@@ -54,7 +55,7 @@ impl CpalAudioBackend {
             }?
         };
 
-        stream.play()?;
+        stream.play().context("Couldn't play the audio stream")?;
 
         Ok(Self {
             device,
