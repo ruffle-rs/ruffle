@@ -2,8 +2,19 @@
 pub mod minimp3 {
     use crate::backend::audio::decoders::{Decoder, SeekableDecoder};
     use std::io::{Cursor, Read};
+    use thiserror::Error;
 
-    type Error = Box<dyn std::error::Error>;
+    #[derive(Debug, Error)]
+    pub enum Error {
+        #[error("Couldn't decode MP3 frame")]
+        FrameDecode(#[from] minimp3::Error),
+
+        #[error("Invalid sample rate")]
+        InvalidSampleRate,
+
+        #[error("Invalid channels")]
+        InvalidChannels,
+    }
 
     pub struct Mp3Decoder<R: Read> {
         decoder: minimp3::Decoder<R>,
@@ -17,8 +28,14 @@ pub mod minimp3 {
         pub fn new(reader: R) -> Result<Self, Error> {
             let mut decoder = minimp3::Decoder::new(reader);
             let frame = decoder.next_frame()?;
-            let sample_rate = frame.sample_rate.try_into()?;
-            let num_channels = frame.channels.try_into()?;
+            let sample_rate = frame
+                .sample_rate
+                .try_into()
+                .map_err(|_| Error::InvalidSampleRate)?;
+            let num_channels = frame
+                .channels
+                .try_into()
+                .map_err(|_| Error::InvalidChannels)?;
             Ok(Mp3Decoder {
                 decoder,
                 frame,
@@ -105,8 +122,22 @@ pub mod symphonia {
         },
         default::formats::Mp3Reader as SymphoniaMp3Reader,
     };
+    use thiserror::Error;
 
-    type Error = Box<dyn std::error::Error>;
+    #[derive(Debug, Error)]
+    pub enum Error {
+        #[error("Couldn't decode MP3 frame")]
+        FrameDecode(#[from] errors::Error),
+
+        #[error("No default track")]
+        NoDefaultTrack,
+
+        #[error("Invalid sample rate")]
+        InvalidSampleRate,
+
+        #[error("Invalid channels")]
+        InvalidChannels,
+    }
 
     pub struct Mp3Decoder {
         reader: SymphoniaMp3Reader,
@@ -125,12 +156,12 @@ pub mod symphonia {
             let source = Box::new(io::ReadOnlySource::new(reader)) as Box<dyn io::MediaSource>;
             let source = io::MediaSourceStream::new(source, Default::default());
             let reader = SymphoniaMp3Reader::try_new(source, &Default::default())?;
-            let track = reader.default_track().ok_or("No default track")?;
+            let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
             let codec_params = track.codec_params.clone();
             let decoder =
                 symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
-            let sample_rate = codec_params.sample_rate.ok_or("Invalid sample rate")?;
-            let channels = codec_params.channels.ok_or("Invalid number of channels")?;
+            let sample_rate = codec_params.sample_rate.ok_or(Error::InvalidSampleRate)?;
+            let channels = codec_params.channels.ok_or(Error::InvalidChannels)?;
             Ok(Mp3Decoder {
                 reader,
                 decoder,
@@ -139,8 +170,11 @@ pub mod symphonia {
                     audio::SignalSpec::new(sample_rate, channels),
                 ),
                 cur_sample: 0,
-                num_channels: channels.count().try_into()?,
-                sample_rate: sample_rate.try_into()?,
+                num_channels: channels
+                    .count()
+                    .try_into()
+                    .map_err(|_| Error::InvalidChannels)?,
+                sample_rate: sample_rate.try_into().map_err(|_| Error::InvalidChannels)?,
                 stream_ended: false,
             })
         }
@@ -151,13 +185,12 @@ pub mod symphonia {
             let source = Box::new(reader) as Box<dyn io::MediaSource>;
             let source = io::MediaSourceStream::new(source, Default::default());
             let reader = SymphoniaMp3Reader::try_new(source, &Default::default()).unwrap();
-            let track = reader.default_track().unwrap();
+            let track = reader.default_track().ok_or(Error::NoDefaultTrack)?;
             let codec_params = track.codec_params.clone();
-            let decoder = symphonia::default::get_codecs()
-                .make(&codec_params, &Default::default())
-                .unwrap();
-            let sample_rate = codec_params.sample_rate.ok_or("Invalid sample rate")?;
-            let channels = codec_params.channels.ok_or("Invalid number of channels")?;
+            let decoder =
+                symphonia::default::get_codecs().make(&codec_params, &Default::default())?;
+            let sample_rate = codec_params.sample_rate.ok_or(Error::InvalidSampleRate)?;
+            let channels = codec_params.channels.ok_or(Error::InvalidChannels)?;
             Ok(Mp3Decoder {
                 reader,
                 decoder,

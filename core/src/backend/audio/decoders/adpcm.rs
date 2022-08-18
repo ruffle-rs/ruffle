@@ -1,6 +1,7 @@
 use super::{Decoder, SeekableDecoder};
 use bitstream_io::{BigEndian, BitRead, BitReader};
 use std::io::{Cursor, Read};
+use thiserror::Error;
 
 const INDEX_TABLE: [&[i16]; 4] = [
     &[-1, 2],
@@ -70,7 +71,11 @@ const SAMPLE_DELTA_CALCULATOR: [fn(u16, u32) -> u16; 4] = [
     },
 ];
 
-type Error = Box<dyn std::error::Error>;
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Invalid ADPCM sound")]
+    Invalid,
+}
 
 #[derive(Clone, Default)]
 struct Channel {
@@ -90,7 +95,7 @@ pub struct AdpcmDecoder<R: Read> {
 impl<R: Read> AdpcmDecoder<R> {
     pub fn new(inner: R, is_stereo: bool, sample_rate: u16) -> Result<Self, Error> {
         let mut reader = BitReader::new(inner);
-        let bits_per_sample = reader.read::<u8>(2)? as usize + 2;
+        let bits_per_sample = reader.read::<u8>(2).map_err(|_| Error::Invalid)? as usize + 2;
 
         let num_channels = if is_stereo { 2 } else { 1 };
 
