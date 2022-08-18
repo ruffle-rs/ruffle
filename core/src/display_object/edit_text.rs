@@ -30,9 +30,6 @@ use ruffle_render::transform::Transform;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::Twips;
 
-/// Boxed error type.
-pub type Error = Box<dyn std::error::Error>;
-
 /// The kind of autosizing behavior an `EditText` should have, if any
 #[derive(Copy, Clone, Debug, Collect, PartialEq, Eq)]
 #[collect(no_drop)]
@@ -409,19 +406,13 @@ impl<'gc> EditText<'gc> {
         self.0.read().text_spans.text().into()
     }
 
-    pub fn set_text(
-        self,
-        text: &WStr,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'_, 'gc, '_>) {
         let mut edit_text = self.0.write(context.gc_context);
         let default_format = edit_text.text_spans.default_format().clone();
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
         drop(edit_text);
 
         self.relayout(context);
-
-        Ok(())
     }
 
     pub fn html_text(self) -> WString {
@@ -433,11 +424,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_html_text(
-        self,
-        text: &WStr,
-        context: &mut UpdateContext<'_, 'gc, '_>,
-    ) -> Result<(), Error> {
+    pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'_, 'gc, '_>) {
         if self.is_html() {
             let mut write = self.0.write(context.gc_context);
             let default_format = write.text_spans.default_format().clone();
@@ -445,10 +432,8 @@ impl<'gc> EditText<'gc> {
             drop(write);
 
             self.relayout(context);
-
-            Ok(())
         } else {
-            self.set_text(text, context)
+            self.set_text(text, context);
         }
     }
 
@@ -682,7 +667,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        let _ = self.set_text(&text, &mut activation.context);
+        self.set_text(&text, &mut activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -1050,7 +1035,7 @@ impl<'gc> EditText<'gc> {
                             // If the property exists on the object, we overwrite the text with the property's value.
                             if object.has_property(activation, property) {
                                 let value = object.get(property, activation).unwrap();
-                                let _ = self.set_html_text(
+                                self.set_html_text(
                                     &value.coerce_to_string(activation).unwrap_or_default(),
                                     &mut activation.context,
                                 );
