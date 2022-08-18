@@ -6,6 +6,8 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
+use std::fmt::{self, Display, Formatter};
+use std::str::FromStr;
 
 mod color;
 mod fixed;
@@ -485,6 +487,53 @@ impl BlendMode {
             1 => 0,
             n => n,
         })
+    }
+}
+
+impl Display for BlendMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = match *self {
+            BlendMode::Normal => "normal",
+            BlendMode::Layer => "layer",
+            BlendMode::Multiply => "multiply",
+            BlendMode::Screen => "screen",
+            BlendMode::Lighten => "lighten",
+            BlendMode::Darken => "darken",
+            BlendMode::Difference => "difference",
+            BlendMode::Add => "add",
+            BlendMode::Subtract => "subtract",
+            BlendMode::Invert => "invert",
+            BlendMode::Alpha => "alpha",
+            BlendMode::Erase => "erase",
+            BlendMode::Overlay => "overlay",
+            BlendMode::HardLight => "hardlight",
+        };
+        f.write_str(s)
+    }
+}
+
+impl FromStr for BlendMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mode = match s {
+            "normal" => BlendMode::Normal,
+            "layer" => BlendMode::Layer,
+            "multiply" => BlendMode::Multiply,
+            "screen" => BlendMode::Screen,
+            "lighten" => BlendMode::Lighten,
+            "darken" => BlendMode::Darken,
+            "difference" => BlendMode::Difference,
+            "add" => BlendMode::Add,
+            "subtract" => BlendMode::Subtract,
+            "invert" => BlendMode::Invert,
+            "alpha" => BlendMode::Alpha,
+            "erase" => BlendMode::Erase,
+            "overlay" => BlendMode::Overlay,
+            "hardlight" => BlendMode::HardLight,
+            _ => return Err(()),
+        };
+        Ok(mode)
     }
 }
 
