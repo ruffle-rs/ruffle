@@ -10,9 +10,11 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
+use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
+use std::str::FromStr;
 use swf::BlendMode;
 use swf::Twips;
 
@@ -645,10 +647,15 @@ pub fn set_transform<'gc>(
 
 /// Implements `DisplayObject.blendMode`'s getter.
 pub fn blend_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
-    _this: Option<Object<'gc>>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let mode =
+            AvmString::new_utf8(activation.context.gc_context, dobj.blend_mode().to_string());
+        return Ok(mode.into());
+    }
     Ok(Value::Undefined)
 }
 
@@ -659,41 +666,17 @@ pub fn set_blend_mode<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(Value::String(mode)) = args.get(0).cloned() {
-            let mode = &*mode;
-            let mode = if mode == b"add" {
-                BlendMode::Add
-            } else if mode == b"alpha" {
-                BlendMode::Alpha
-            } else if mode == b"darken" {
-                BlendMode::Darken
-            } else if mode == b"difference" {
-                BlendMode::Difference
-            } else if mode == b"erase" {
-                BlendMode::Erase
-            } else if mode == b"hardlight" {
-                BlendMode::HardLight
-            } else if mode == b"invert" {
-                BlendMode::Invert
-            } else if mode == b"layer" {
-                BlendMode::Layer
-            } else if mode == b"lighten" {
-                BlendMode::Lighten
-            } else if mode == b"multiply" {
-                BlendMode::Multiply
-            } else if mode == b"normal" {
-                BlendMode::Normal
-            } else if mode == b"overlay" {
-                BlendMode::Overlay
-            } else if mode == b"screen" {
-                BlendMode::Screen
-            } else if mode == b"subtract" {
-                BlendMode::Subtract
-            } else {
-                log::error!("Unknown blend mode {:?}", mode);
-                BlendMode::Normal
-            };
+        let mode = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
             dobj.set_blend_mode(activation.context.gc_context, mode);
+        } else {
+            log::error!("Unknown blend mode {}", mode);
+            return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
         }
     }
     Ok(Value::Undefined)
