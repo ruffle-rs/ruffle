@@ -1,4 +1,4 @@
-use crate::{Error, MaskState, Vertex};
+use crate::{MaskState, Vertex};
 use enum_map::{Enum, EnumMap};
 use swf::BlendMode;
 use wgpu::vertex_attr_array;
@@ -101,7 +101,7 @@ impl Pipelines {
         sampler_layout: &wgpu::BindGroupLayout,
         globals_layout: &wgpu::BindGroupLayout,
         dynamic_uniforms_layout: &wgpu::BindGroupLayout,
-    ) -> Result<Self, Error> {
+    ) -> Self {
         let color_shader = create_shader(device, "color", include_str!("../shaders/color.wgsl"));
         let bitmap_shader = create_shader(device, "bitmap", include_str!("../shaders/bitmap.wgsl"));
         let gradient_shader =
@@ -268,7 +268,7 @@ impl Pipelines {
             1,
         ));
 
-        Ok(Self {
+        Self {
             color_pipelines,
             bitmap_pipelines,
             bitmap_layout: bitmap_bind_layout,
@@ -276,7 +276,7 @@ impl Pipelines {
             gradient_layout: gradient_bind_layout,
             copy_srgb_pipeline,
             copy_srgb_layout: copy_srgb_bind_layout,
-        })
+        }
     }
 }
 
