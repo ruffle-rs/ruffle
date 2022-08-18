@@ -38,7 +38,7 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
         JpegTagFormat::Jpeg => decode_jpeg(data, alpha_data),
         JpegTagFormat::Png => decode_png(data),
         JpegTagFormat::Gif => decode_gif(data),
-        JpegTagFormat::Unknown => Err("Unknown bitmap data format".into()),
+        JpegTagFormat::Unknown => Err(Error::UnknownType),
     }
 }
 
@@ -87,15 +87,14 @@ pub fn remove_invalid_jpeg_data(mut data: &[u8]) -> Cow<[u8]> {
 
 /// Decodes a JPEG with optional alpha data.
 /// The decoded bitmap will have pre-multiplied alpha.
-fn decode_jpeg(
-    jpeg_data: &[u8],
-    alpha_data: Option<&[u8]>,
-) -> Result<Bitmap, Box<dyn std::error::Error>> {
+fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
     let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
 
     let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
     decoder.read_info()?;
-    let metadata = decoder.info().ok_or("Unable to get image info")?;
+    let metadata = decoder
+        .info()
+        .expect("info() should always return Some if read_info returned Ok");
     let decoded_data = decoder.decode()?;
 
     let decoded_data = match metadata.pixel_format {
@@ -174,9 +173,7 @@ fn decode_jpeg(
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
-pub fn decode_define_bits_lossless(
-    swf_tag: &swf::DefineBitsLossless,
-) -> Result<Bitmap, Box<dyn std::error::Error>> {
+pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<Bitmap, Error> {
     // Decompress the image data (DEFLATE compression).
     let mut decoded_data = decompress_zlib(swf_tag.data)?;
 
@@ -302,11 +299,10 @@ pub fn decode_define_bits_lossless(
             out_data
         }
         _ => {
-            return Err(format!(
-                "Unexpected DefineBitsLossless{} format: {:?} ",
-                swf_tag.version, swf_tag.format,
-            )
-            .into());
+            return Err(Error::UnsupportedLosslessFormat(
+                swf_tag.version,
+                swf_tag.format,
+            ));
         }
     };
 
@@ -374,7 +370,7 @@ fn decode_gif(data: &[u8]) -> Result<Bitmap, Error> {
     let mut decode_options = gif::DecodeOptions::new();
     decode_options.set_color_output(gif::ColorOutput::RGBA);
     let mut reader = decode_options.read_info(data)?;
-    let frame = reader.read_next_frame()?.ok_or("No frames in GIF")?;
+    let frame = reader.read_next_frame()?.ok_or(Error::EmptyGif)?;
     // GIFs embedded in a DefineBitsJPEG tag will not have premultiplied alpha and need to be converted before sending to the renderer.
     let mut data = frame.buffer.to_vec();
     premultiply_alpha_rgba(&mut data);
@@ -411,10 +407,12 @@ pub fn unmultiply_alpha_rgba(rgba: &mut [u8]) {
 }
 
 /// Decodes zlib-compressed data.
-fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, std::io::Error> {
+fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, Error> {
     let mut out_data = Vec::new();
     let mut decoder = flate2::bufread::ZlibDecoder::new(data);
-    decoder.read_to_end(&mut out_data)?;
+    decoder
+        .read_to_end(&mut out_data)
+        .map_err(|_| Error::InvalidZlibCompression)?;
     out_data.shrink_to_fit();
     Ok(out_data)
 }

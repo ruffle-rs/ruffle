@@ -10,6 +10,7 @@ use fnv::FnvHashMap;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
+use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
     DrawType as TessDrawType, Gradient as TessGradient, GradientType, ShapeTessellator,
@@ -1415,17 +1416,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         if bitmap.width() > self.descriptors.limits.max_texture_dimension_2d
             || bitmap.height() > self.descriptors.limits.max_texture_dimension_2d
         {
-            return Err(format!(
-                "Bitmap texture cannot be larger than {}px on either dimension (requested {} x {})",
-                self.descriptors.limits.max_texture_dimension_2d,
-                bitmap.width(),
-                bitmap.height()
-            )
-            .into());
+            return Err(BitmapError::TooLarge);
         }
 
         let bitmap = bitmap.to_rgba();
@@ -1512,7 +1507,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, handle: BitmapHandle) -> Result<(), Error> {
+    fn unregister_bitmap(&mut self, handle: BitmapHandle) -> Result<(), BitmapError> {
         self.bitmap_registry.remove(&handle);
         Ok(())
     }
@@ -1523,11 +1518,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
+    ) -> Result<BitmapHandle, BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
             &entry.texture_wrapper.texture
         } else {
-            return Err("update_texture: Bitmap not registered".into());
+            log::warn!("Tried to replace nonexistent texture");
+            return Ok(handle);
         };
 
         let extent = wgpu::Extent3d {

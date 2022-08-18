@@ -124,6 +124,9 @@ pub enum Error {
     #[error("Invalid SWF: {0}")]
     InvalidSwf(#[from] crate::tag_utils::Error),
 
+    #[error("Invalid bitmap")]
+    InvalidBitmap(#[from] ruffle_render::error::Error),
+
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),
 

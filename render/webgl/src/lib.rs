@@ -3,6 +3,7 @@ use fnv::FnvHashMap;
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
+use ruffle_render::error::Error as BitmapError;
 use ruffle_render::shape_utils::DistilledShape;
 use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
@@ -1242,7 +1243,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.bitmap_registry.get(&bitmap).map(|e| e.bitmap.clone())
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let format = match bitmap.format() {
             BitmapFormat::Rgb => Gl::RGB,
             BitmapFormat::Rgba => Gl::RGBA,
@@ -1262,7 +1263,8 @@ impl RenderBackend for WebGlRenderBackend {
                 Gl::UNSIGNED_BYTE,
                 Some(bitmap.data()),
             )
-            .into_js_result()?;
+            .into_js_result()
+            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
 
         // You must set the texture parameters for non-power-of-2 textures to function in WebGL1.
         self.gl
@@ -1293,7 +1295,7 @@ impl RenderBackend for WebGlRenderBackend {
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), Error> {
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), BitmapError> {
         self.bitmap_registry.remove(&bitmap);
         Ok(())
     }
@@ -1304,11 +1306,12 @@ impl RenderBackend for WebGlRenderBackend {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
+    ) -> Result<BitmapHandle, BitmapError> {
         let texture = if let Some(entry) = self.bitmap_registry.get(&handle) {
             &entry.texture_wrapper
         } else {
-            return Err("update_texture: Bitmap is not regsitered".into());
+            log::warn!("Tried to replace nonexistent texture");
+            return Ok(handle);
         };
 
         self.gl.bind_texture(Gl::TEXTURE_2D, Some(&texture.texture));
@@ -1325,7 +1328,8 @@ impl RenderBackend for WebGlRenderBackend {
                 Gl::UNSIGNED_BYTE,
                 Some(&rgba),
             )
-            .into_js_result()?;
+            .into_js_result()
+            .map_err(|e| BitmapError::JavascriptError(e.into()))?;
 
         Ok(handle)
     }

@@ -15,6 +15,8 @@ flate2 = "1.0.24"
 smallvec = { version = "1.9.0", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.0", optional = true }
+thiserror = "1.0"
+wasm-bindgen = { version = "=0.2.82", optional = true }
 
 [dependencies.jpeg-decoder]
 version = "0.2.6"
@@ -26,3 +28,4 @@ approx = "0.5.1"
 [features]
 default = []
 tessellator = ["lyon"]
+web = ["wasm-bindgen"]

@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 js-sys = "0.3.59"
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
-ruffle_render = { path = "..", features = ["tessellator"] }
+ruffle_render = { path = "..", features = ["tessellator", "web"] }
 wasm-bindgen = "=0.2.82"
 bytemuck = { version = "1.12.1", features = ["derive"] }
 fnv = "1.0.7"
