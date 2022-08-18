@@ -14,11 +14,13 @@ use crate::display_object::{
 };
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
+use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use gc_arena::MutationContext;
 use ruffle_render::shape_utils::DrawCommand;
+use std::str::FromStr;
 use swf::{
-    FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    BlendMode, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
     LineCapStyle, LineJoinStyle, LineStyle, Twips,
 };
 
@@ -107,6 +109,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "focusEnabled" => property(mc_getter!(focus_enabled), mc_setter!(set_focus_enabled); DONT_DELETE | DONT_ENUM);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
+    "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
 };
 
 /// Implements `MovieClip`
@@ -1459,5 +1462,29 @@ fn set_use_hand_cursor<'gc>(
 ) -> Result<(), Error<'gc>> {
     let use_hand_cursor = value.as_bool(activation.swf_version());
     this.set_use_hand_cursor(&mut activation.context, use_hand_cursor);
+    Ok(())
+}
+
+fn blend_mode<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
+    Ok(mode.into())
+}
+
+fn set_blend_mode<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    // No-op if value is not a string.
+    if let Value::String(mode) = value {
+        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            this.set_blend_mode(activation.context.gc_context, mode);
+        } else {
+            log::error!("Unknown blend mode {}", mode);
+        };
+    }
     Ok(())
 }
