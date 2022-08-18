@@ -1584,7 +1584,7 @@ impl Player {
             renderer,
             reader.read_define_font_2(3)?,
             reader.encoding(),
-        )?;
+        );
         Ok(device_font)
     }
 
