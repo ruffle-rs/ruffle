@@ -3110,6 +3110,8 @@ dependencies = [
  "png",
  "smallvec",
  "swf",
+ "thiserror",
+ "wasm-bindgen",
 ]
 
 [[package]]

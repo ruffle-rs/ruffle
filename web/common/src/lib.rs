@@ -14,6 +14,12 @@ impl std::fmt::Display for JsError {
 
 impl std::error::Error for JsError {}
 
+impl From<JsError> for JsValue {
+    fn from(error: JsError) -> Self {
+        error.value
+    }
+}
+
 pub trait JsResult<T> {
     /// Converts a `JsValue` into a standard `Error`.
     fn warn_on_error(&self);

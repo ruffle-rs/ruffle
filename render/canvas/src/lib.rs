@@ -3,12 +3,13 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
+use ruffle_render::error::Error as BitmapError;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use swf::{BlendMode, Color};
-use wasm_bindgen::{Clamped, JsCast};
+use wasm_bindgen::{Clamped, JsCast, JsValue};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
     HtmlCanvasElement, ImageData, Path2d,
@@ -139,7 +140,7 @@ struct BitmapData {
 
 impl BitmapData {
     /// Puts the image data into a newly created <canvas>, and caches it.
-    fn new(bitmap: Bitmap) -> Result<Self, Error> {
+    fn new(bitmap: Bitmap) -> Result<Self, JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
@@ -736,15 +737,15 @@ impl RenderBackend for WebCanvasRenderBackend {
         bitmap.get_pixels()
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
         let handle = self.next_bitmap_handle;
         self.next_bitmap_handle = BitmapHandle(self.next_bitmap_handle.0 + 1);
-        let bitmap_data = BitmapData::new(bitmap)?;
+        let bitmap_data = BitmapData::new(bitmap).map_err(BitmapError::JavascriptError)?;
         self.bitmaps.insert(handle, bitmap_data);
         Ok(handle)
     }
 
-    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), Error> {
+    fn unregister_bitmap(&mut self, bitmap: BitmapHandle) -> Result<(), BitmapError> {
         self.bitmaps.remove(&bitmap);
         Ok(())
     }
@@ -755,12 +756,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         width: u32,
         height: u32,
         rgba: Vec<u8>,
-    ) -> Result<BitmapHandle, Error> {
+    ) -> Result<BitmapHandle, BitmapError> {
         // TODO: Could be optimized to a single put_image_data call
         // in case it is already stored as a canvas+context.
         self.bitmaps.insert(
             handle,
-            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))?,
+            BitmapData::new(Bitmap::new(width, height, BitmapFormat::Rgba, rgba))
+                .map_err(BitmapError::JavascriptError)?,
         );
         Ok(handle)
     }
