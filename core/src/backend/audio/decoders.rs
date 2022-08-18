@@ -17,8 +17,24 @@ pub use pcm::PcmDecoder;
 use crate::tag_utils::SwfSlice;
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
+use thiserror::Error;
 
-type Error = Box<dyn std::error::Error>;
+#[derive(Debug, Error)]
+pub enum Error {
+    #[cfg(feature = "minimp3")]
+    #[error("Couldn't decode MP3 using minimp3")]
+    InvalidMp3(#[from] mp3::minimp3::Error),
+
+    #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
+    #[error("Couldn't decode MP3 using symphonia")]
+    InvalidMp3(#[from] mp3::symphonia::Error),
+
+    #[error("Couldn't decode ADPCM")]
+    InvalidAdpcm(#[from] adpcm::Error),
+
+    #[error("Unhandled compression {0:?}")]
+    UnhandledCompression(AudioCompression),
+}
 
 /// An audio decoder. Can be used as an `Iterator` to return stero sample frames.
 /// If the sound is mono, the sample is duplicated across both channels.
@@ -62,14 +78,7 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
         AudioCompression::Nellymoser => {
             Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
         }
-        _ => {
-            let msg = format!(
-                "make_decoder: Unhandled audio compression {:?}",
-                format.compression
-            );
-            log::error!("{}", msg);
-            return Err(msg.into());
-        }
+        _ => return Err(Error::UnhandledCompression(format.compression)),
     };
     Ok(decoder)
 }

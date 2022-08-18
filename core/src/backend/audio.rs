@@ -18,23 +18,29 @@ pub mod swf {
 mod mixer;
 use instant::Duration;
 pub use mixer::*;
+use thiserror::Error;
 
 pub type SoundHandle = Index;
 pub type SoundInstanceHandle = Index;
+pub type DecodeError = decoders::Error;
 
-type Error = Box<dyn std::error::Error>;
+#[derive(Debug, Error)]
+pub enum RegisterError {
+    #[error("MP3 sound is too short")]
+    ShortMp3,
+}
 
 pub trait AudioBackend: Downcast {
     fn play(&mut self);
     fn pause(&mut self);
-    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, Error>;
+    fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError>;
 
     /// Plays a sound.
     fn start_sound(
         &mut self,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
-    ) -> Result<SoundInstanceHandle, Error>;
+    ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Starts playing a "stream" sound, which is an audio stream that is distributed
     /// among the frames of a Flash MovieClip.
@@ -46,7 +52,7 @@ pub trait AudioBackend: Downcast {
         clip_frame: u16,
         clip_data: crate::tag_utils::SwfSlice,
         handle: &swf::SoundStreamHead,
-    ) -> Result<SoundInstanceHandle, Error>;
+    ) -> Result<SoundInstanceHandle, DecodeError>;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -138,10 +144,10 @@ impl NullAudioBackend {
 impl AudioBackend for NullAudioBackend {
     fn play(&mut self) {}
     fn pause(&mut self) {}
-    fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, Error> {
+    fn register_sound(&mut self, sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
         // Slice off latency seek for MP3 data.
         let data = if sound.format.compression == swf::AudioCompression::Mp3 {
-            sound.data.get(2..).ok_or("MP3 sound is too short")?
+            sound.data.get(2..).ok_or(RegisterError::ShortMp3)?
         } else {
             sound.data
         };
@@ -162,7 +168,7 @@ impl AudioBackend for NullAudioBackend {
         &mut self,
         _sound: SoundHandle,
         _sound_info: &swf::SoundInfo,
-    ) -> Result<SoundInstanceHandle, Error> {
+    ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 
@@ -172,7 +178,7 @@ impl AudioBackend for NullAudioBackend {
         _clip_frame: u16,
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
-    ) -> Result<SoundInstanceHandle, Error> {
+    ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::from_raw_parts(0, 0))
     }
 

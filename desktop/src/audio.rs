@@ -1,6 +1,7 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioMixer, SoundHandle, SoundInstanceHandle, SoundTransform,
+    swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
+    SoundTransform,
 };
 use ruffle_core::impl_audio_mixer_backend;
 
