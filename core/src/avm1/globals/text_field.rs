@@ -3,7 +3,6 @@ use crate::avm1::error::Error;
 use crate::avm1::object::text_format_object::TextFormatObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
-use crate::avm_error;
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
@@ -275,12 +274,10 @@ pub fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Err(err) = this.set_text(
+    this.set_text(
         &value.coerce_to_string(activation)?,
         &mut activation.context,
-    ) {
-        avm_error!(activation, "Error when setting TextField.text: {}", err);
-    }
+    );
     this.propagate_text_binding(activation);
 
     Ok(())
@@ -341,7 +338,7 @@ pub fn set_html_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let text = value.coerce_to_string(activation)?;
-    let _ = this.set_html_text(&text, &mut activation.context);
+    this.set_html_text(&text, &mut activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
     Ok(())
 }

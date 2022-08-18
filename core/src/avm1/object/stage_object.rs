@@ -238,7 +238,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 binding.variable_name.eq_ignore_case(&name)
             }
         }) {
-            let _ = binding.text_field.set_html_text(
+            binding.text_field.set_html_text(
                 &value.coerce_to_string(activation)?,
                 &mut activation.context,
             );
