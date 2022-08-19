@@ -14,6 +14,12 @@ package flash.ui
 
         public native function hideBuiltInItems(): void;
 
+        private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
+
+        public function get builtInItems(): ContextMenuBuiltInItems {
+            return this._builtInItems;
+        }
+
         public static function get isSupported() : Boolean
         {
             // TODO: return true when implementation actually affects the context menu
