@@ -65,64 +65,6 @@ fn blend_mode_to_state(mode: BlendMode) -> Option<wgpu::BlendState> {
     match mode {
         BlendMode::Normal => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
 
-        // TODO: Needs intermediate buffer.
-        BlendMode::Layer => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-
-        // dst * src
-        BlendMode::Multiply => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::Dst,
-                dst_factor: wgpu::BlendFactor::Zero,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // 1 - (1 - dst) * (1 - src)
-        // TODO: Needs shader. Rendererd as additive for now.
-        BlendMode::Screen => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // max(dst, src)
-        BlendMode::Lighten => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::Max,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // min(dst, src)
-        BlendMode::Darken => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::One,
-                dst_factor: wgpu::BlendFactor::One,
-                operation: wgpu::BlendOperation::Min,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // abs(dst - src)
-        // TODO: Needs shader. Rendererd as subtract for now.
-        BlendMode::Difference => {
-            Some(wgpu::BlendState {
-                // Add src and dst RGB values together
-                color: wgpu::BlendComponent {
-                    src_factor: wgpu::BlendFactor::One,
-                    dst_factor: wgpu::BlendFactor::One,
-                    operation: wgpu::BlendOperation::ReverseSubtract,
-                },
-                alpha: wgpu::BlendComponent::OVER,
-            })
-        }
-
         // dst + src
         BlendMode::Add => Some(wgpu::BlendState {
             color: wgpu::BlendComponent {
@@ -143,47 +85,10 @@ fn blend_mode_to_state(mode: BlendMode) -> Option<wgpu::BlendState> {
             alpha: wgpu::BlendComponent::OVER,
         }),
 
-        // 1 - dst
-        BlendMode::Invert => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::Zero,
-                dst_factor: wgpu::BlendFactor::OneMinusDst,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // TODO: Requires intermediate buffer.
-        // dst.alpha = src.alpha
-        // Parent display object needs to have Layer blend mode.
-        BlendMode::Alpha => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-
-        // TODO: Requires intermediate buffer.
-        // dst.alpha = 1 - src.alpha
-        // Parent display object needs to have Layer blend mode.
-        BlendMode::Erase => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
-
-        // if src > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
-        // TODO: Needs shader, rendered as multiply for now.
-        BlendMode::HardLight => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::Dst,
-                dst_factor: wgpu::BlendFactor::Zero,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
-
-        // if dst > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
-        // TODO: Needs shader, rendered as multiply for now.
-        BlendMode::Overlay => Some(wgpu::BlendState {
-            color: wgpu::BlendComponent {
-                src_factor: wgpu::BlendFactor::Dst,
-                dst_factor: wgpu::BlendFactor::Zero,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha: wgpu::BlendComponent::OVER,
-        }),
+        _ => {
+            // Unsupported blend mode. Default to normal for now.
+            Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING)
+        }
     }
 }
 
