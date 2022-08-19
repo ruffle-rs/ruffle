@@ -889,7 +889,7 @@ mod test {
                 protos.function,
             );
 
-            let o = ScriptObject::object_cell(activation.context.gc_context, Some(protos.object));
+            let o = ScriptObject::new(activation.context.gc_context, Some(protos.object));
             o.define_value(
                 activation.context.gc_context,
                 "valueOf",
@@ -898,7 +898,7 @@ mod test {
             );
 
             assert_eq!(
-                Value::Object(o).to_primitive_num(activation).unwrap(),
+                Value::from(o).to_primitive_num(activation).unwrap(),
                 5.into()
             );
 
