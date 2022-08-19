@@ -5,8 +5,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::{search_prototype, ExecutionName};
 use crate::avm1::property::Attribute;
-use crate::avm1::{AvmString, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::display_object::DisplayObject;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 
 /// Implementation of the `super` object in AS2.

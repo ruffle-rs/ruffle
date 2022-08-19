@@ -1,6 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::{AvmString, Object, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
+use crate::string::AvmString;
 use gc_arena::Collect;
 
 #[derive(Clone, Collect, Debug)]

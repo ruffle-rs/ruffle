@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
-use crate::avm1::{AvmString, Object, ObjectPtr, TObject, Value};
+use crate::avm1::{Object, ObjectPtr, TObject, Value};
+use crate::string::AvmString;
 use std::fmt::Write;
 
 #[allow(dead_code)]
