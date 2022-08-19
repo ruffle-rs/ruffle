@@ -15,6 +15,7 @@ use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::borrow::Cow;
+use swf::avm1::read::Reader;
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -494,4 +495,14 @@ impl<'gc> Avm1<'gc> {
 
     #[cfg(not(feature = "avm_debug"))]
     pub const fn set_show_debug_output(&self, _visible: bool) {}
+}
+
+/// Utility function used by `Avm1::action_wait_for_frame` and
+/// `Avm1::action_wait_for_frame_2`.
+pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
+    for _ in 0..num_actions_to_skip {
+        if let Err(e) = reader.read_action() {
+            log::warn!("Couldn't skip action: {}", e);
+        }
+    }
 }

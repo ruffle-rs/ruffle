@@ -3,10 +3,9 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
+use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::Scope;
-use crate::avm1::{
-    fscommand, globals, scope, skip_actions, start_drag, ArrayObject, ScriptObject, Value,
-};
+use crate::avm1::{fscommand, globals, scope, start_drag, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};

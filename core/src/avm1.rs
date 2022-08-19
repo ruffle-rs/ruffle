@@ -1,7 +1,3 @@
-use swf::avm1::read::Reader;
-
-use crate::display_object::{DisplayObject, TDisplayObject};
-
 #[cfg(test)]
 #[macro_use]
 mod test_utils;
@@ -29,6 +25,7 @@ mod tests;
 
 pub use crate::avm1::activation::{Activation, ActivationIdentifier};
 pub use crate::avm1::error::Error;
+use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 pub use globals::SystemPrototypes;
 pub use object::array_object::ArrayObject;
@@ -80,16 +77,6 @@ pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: 
         }
     }
     activation.context.avm1.halt();
-}
-
-/// Utility function used by `Avm1::action_wait_for_frame` and
-/// `Avm1::action_wait_for_frame_2`.
-fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
-    for _ in 0..num_actions_to_skip {
-        if let Err(e) = reader.read_action() {
-            log::warn!("Couldn't skip action: {}", e);
-        }
-    }
 }
 
 /// Starts dragging this display object, making it follow the cursor.
