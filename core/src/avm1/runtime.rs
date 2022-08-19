@@ -5,8 +5,7 @@ use crate::avm1::object::stage_object;
 use crate::avm1::object::TObject;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
-use crate::avm1::Object;
-use crate::avm1::{scope, Activation, ActivationIdentifier, Value};
+use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};
 use crate::context::UpdateContext;
 use crate::frame_lifecycle::FramePhase;
 use crate::prelude::*;
@@ -148,7 +147,7 @@ impl<'gc> Avm1<'gc> {
             None,
         );
         if let Err(e) = child_activation.run_actions(code) {
-            avm1::root_error_handler(&mut child_activation, e);
+            root_error_handler(&mut child_activation, e);
         }
     }
 
@@ -235,7 +234,7 @@ impl<'gc> Avm1<'gc> {
             None,
         );
         if let Err(e) = child_activation.run_actions(code) {
-            avm1::root_error_handler(&mut child_activation, e);
+            root_error_handler(&mut child_activation, e);
         }
     }
 
@@ -505,4 +504,24 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
             log::warn!("Couldn't skip action: {}", e);
         }
     }
+}
+
+pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
+    match &error {
+        Error::ThrownValue(value) => {
+            let message = value
+                .coerce_to_string(activation)
+                .unwrap_or_else(|_| "undefined".into());
+            activation.context.avm_trace(&message.to_utf8_lossy());
+            // Continue execution without halting.
+            return;
+        }
+        Error::InvalidSwf(swf_error) => {
+            log::error!("{}: {}", error, swf_error);
+        }
+        _ => {
+            log::error!("{}", error);
+        }
+    }
+    activation.context.avm1.halt();
 }

@@ -59,26 +59,6 @@ macro_rules! avm_error {
     )
 }
 
-pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc, '_>, error: Error<'gc>) {
-    match &error {
-        Error::ThrownValue(value) => {
-            let message = value
-                .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into());
-            activation.context.avm_trace(&message.to_utf8_lossy());
-            // Continue execution without halting.
-            return;
-        }
-        Error::InvalidSwf(swf_error) => {
-            log::error!("{}: {}", error, swf_error);
-        }
-        _ => {
-            log::error!("{}", error);
-        }
-    }
-    activation.context.avm1.halt();
-}
-
 /// Starts dragging this display object, making it follow the cursor.
 /// Runs via the `startDrag` method or `StartDrag` AVM1 action.
 pub fn start_drag<'gc>(
