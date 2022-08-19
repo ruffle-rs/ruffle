@@ -1,4 +1,5 @@
-use crate::avm1::{Avm1, Value};
+use crate::avm1::runtime::Avm1;
+use crate::avm1::Value;
 use crate::context::UpdateContext;
 pub use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use gc_arena::{Collect, GcCell, MutationContext};

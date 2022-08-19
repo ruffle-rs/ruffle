@@ -130,7 +130,7 @@ pub fn get_rectangle<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data_object() {
         if !bitmap_data.disposed() {
-            let proto = activation.context.avm1.prototypes.rectangle_constructor;
+            let proto = activation.context.avm1.prototypes().rectangle_constructor;
             let rect = proto.construct(
                 activation,
                 &[
@@ -376,7 +376,7 @@ pub fn clone<'gc>(
         if !bitmap_data.disposed() {
             let new_bitmap_data = BitmapDataObject::empty_object(
                 activation.context.gc_context,
-                Some(activation.context.avm1.prototypes.bitmap_data),
+                Some(activation.context.avm1.prototypes().bitmap_data),
             );
 
             new_bitmap_data
@@ -589,7 +589,7 @@ pub fn get_color_bounds_rect<'gc>(
                     .read()
                     .color_bounds_rect(find_color, mask, color);
 
-                let proto = activation.context.avm1.prototypes.rectangle_constructor;
+                let proto = activation.context.avm1.prototypes().rectangle_constructor;
                 let rect =
                     proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
                 return Ok(rect);
@@ -1118,7 +1118,7 @@ pub fn compare<'gc>(
     match BitmapData::compare(&this_bitmap_data, &other_bitmap_data) {
         Some(bitmap_data) => Ok(BitmapDataObject::with_bitmap_data(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.bitmap_data),
+            Some(activation.context.avm1.prototypes().bitmap_data),
             bitmap_data,
         )
         .into()),
@@ -1162,7 +1162,7 @@ pub fn load_bitmap<'gc>(
             if let Some(bitmap) = renderer.get_bitmap_pixels(bitmap_handle) {
                 let new_bitmap_data = BitmapDataObject::empty_object(
                     activation.context.gc_context,
-                    Some(activation.context.avm1.prototypes.bitmap_data),
+                    Some(activation.context.avm1.prototypes().bitmap_data),
                 );
 
                 let width = bitmap.width();

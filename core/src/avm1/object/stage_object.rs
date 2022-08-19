@@ -4,10 +4,12 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_map::PropertyMap;
-use crate::avm1::{Object, ObjectPtr, ScriptObject, TDisplayObject, TObject, Value};
+use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, EditText, MovieClip, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
 use gc_arena::{Collect, GcCell, MutationContext};
@@ -184,7 +186,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     ) -> Option<Value<'gc>> {
         let name = name.into();
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties;
+        let props = activation.context.avm1.display_properties();
 
         // Property search order for DisplayObjects:
         // 1) Actual properties on the underlying object
@@ -227,7 +229,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         let obj = self.0.read();
-        let props = activation.context.avm1.display_properties;
+        let props = activation.context.avm1.display_properties();
 
         // Check if a text field is bound to this property and update the text if so.
         let case_sensitive = activation.is_case_sensitive();
@@ -401,7 +403,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
             && activation
                 .context
                 .avm1
-                .display_properties
+                .display_properties()
                 .read()
                 .get_by_name(name)
                 .is_some()

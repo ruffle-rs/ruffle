@@ -109,7 +109,7 @@ pub fn color_transform_to_object<'gc>(
     let constructor = activation
         .context
         .avm1
-        .prototypes
+        .prototypes()
         .color_transform_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)

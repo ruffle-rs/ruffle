@@ -2,7 +2,8 @@
 
 use crate::avm1::activation::{Activation, ActivationIdentifier};
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::{Avm1, Object, TObject, Value};
+use crate::avm1::runtime::Avm1;
+use crate::avm1::{Object, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::ByteArrayObject;
 use crate::avm2::object::EventObject as Avm2EventObject;

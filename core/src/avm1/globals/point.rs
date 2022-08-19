@@ -37,7 +37,7 @@ pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.context.avm1.prototypes.point_constructor;
+    let constructor = activation.context.avm1.prototypes().point_constructor;
     let object = constructor.construct(activation, args)?;
     Ok(object)
 }
@@ -96,7 +96,7 @@ fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [this.get("x", activation)?, this.get("y", activation)?];
-    let constructor = activation.context.avm1.prototypes.point_constructor;
+    let constructor = activation.context.avm1.prototypes().point_constructor;
     let cloned = constructor.construct(activation, &args)?;
 
     Ok(cloned)

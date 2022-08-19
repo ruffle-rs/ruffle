@@ -91,7 +91,7 @@ fn get_transform<'gc>(
         let color_transform = base.color_transform();
         let out = ScriptObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.object),
+            Some(activation.context.avm1.prototypes().object),
         );
         out.set(
             "ra",

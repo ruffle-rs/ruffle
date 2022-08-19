@@ -391,7 +391,7 @@ impl<'gc> Executable<'gc> {
                 Scope::new(
                     GcCell::allocate(
                         activation.context.gc_context,
-                        Scope::from_global_object(activation.context.avm1.globals),
+                        Scope::from_global_object(activation.context.avm1.global_object_cell()),
                     ),
                     super::scope::ScopeClass::Target,
                     base_clip_obj,

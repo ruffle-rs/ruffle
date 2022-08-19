@@ -3,12 +3,11 @@ use crate::avm1::debug::VariableDumper;
 use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
-use crate::avm1::{Avm1, ScriptObject, TObject, Value};
-use crate::avm2::object::LoaderInfoObject;
-use crate::avm2::object::TObject as _;
+use crate::avm1::runtime::Avm1;
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, CallStack, Domain as Avm2Domain,
-    EventObject as Avm2EventObject,
+    object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
+    Domain as Avm2Domain, EventObject as Avm2EventObject,
 };
 use crate::backend::{
     audio::{AudioBackend, AudioManager},

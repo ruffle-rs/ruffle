@@ -3,7 +3,8 @@ use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Avm1, ScriptObject, TObject, Value};
+use crate::avm1::runtime::Avm1;
+use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm_warn;
 use bitflags::bitflags;
 use core::fmt;
@@ -298,7 +299,7 @@ impl SystemProperties {
         format!(
             "{} {},0,0,0",
             self.manufacturer.get_platform_name(),
-            avm.player_version
+            avm.player_version()
         )
     }
 
@@ -368,7 +369,7 @@ impl SystemProperties {
                 "M",
                 &self.encode_string(
                     self.manufacturer
-                        .get_manufacturer_string(avm.player_version)
+                        .get_manufacturer_string(avm.player_version())
                         .as_str(),
                 ),
             )
@@ -379,7 +380,7 @@ impl SystemProperties {
             .append_pair("COL", &self.screen_color.to_string())
             .append_pair("AR", &self.aspect_ratio.to_string())
             .append_pair("OS", &self.encode_string(&self.os.to_string()))
-            .append_pair("L", self.language.get_language_code(avm.player_version))
+            .append_pair("L", self.language.get_language_code(avm.player_version()))
             .append_pair("IME", self.encode_capability(SystemCapabilities::IME))
             .append_pair("PT", &self.player_type.to_string())
             .append_pair(

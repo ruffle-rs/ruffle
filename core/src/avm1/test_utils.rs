@@ -16,7 +16,7 @@ where
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
         let context = context.reborrow();
-        let globals = context.avm1.globals;
+        let globals = context.avm1.global_object_cell();
         let root = context.stage.root_clip();
         let mut activation =
             Activation::from_nothing(context, ActivationIdentifier::root("[Test]"), globals, root);

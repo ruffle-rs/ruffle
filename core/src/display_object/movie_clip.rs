@@ -1,7 +1,5 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::{
-    Avm1, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
-};
+use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::Activation as Avm2Activation;
@@ -15,6 +13,7 @@ use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
 use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
+use crate::avm1::runtime::Avm1;
 use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};

@@ -73,7 +73,7 @@ pub fn copy<'gc>(
     let constructor = activation
         .context
         .avm1
-        .prototypes
+        .prototypes()
         .context_menu_item_constructor;
     let copy = constructor.construct(
         activation,

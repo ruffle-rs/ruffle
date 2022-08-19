@@ -24,7 +24,7 @@ pub fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_blur_filter_object() {
-        let proto = activation.context.avm1.prototypes.blur_filter_constructor;
+        let proto = activation.context.avm1.prototypes().blur_filter_constructor;
 
         let blur_x = this.get("blurX", activation)?;
         let blur_y = this.get("blurY", activation)?;
@@ -35,7 +35,11 @@ pub fn clone<'gc>(
     }
 
     if let Some(this) = this.as_bevel_filter_object() {
-        let proto = activation.context.avm1.prototypes.bevel_filter_constructor;
+        let proto = activation
+            .context
+            .avm1
+            .prototypes()
+            .bevel_filter_constructor;
 
         let distance = this.get("distance", activation)?;
         let angle = this.get("angle", activation)?;
@@ -71,7 +75,7 @@ pub fn clone<'gc>(
     }
 
     if let Some(this) = this.as_glow_filter_object() {
-        let proto = activation.context.avm1.prototypes.glow_filter_constructor;
+        let proto = activation.context.avm1.prototypes().glow_filter_constructor;
 
         let color = this.get("color", activation)?;
         let alpha = this.get("alpha", activation)?;
@@ -91,7 +95,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .drop_shadow_filter_constructor;
 
         let distance = this.get("distance", activation)?;
@@ -129,7 +133,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .color_matrix_filter_constructor;
 
         let matrix = this.get("matrix", activation)?;
@@ -143,7 +147,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .displacement_map_filter_constructor;
 
         let map_bitmap = this.get("mapBitmap", activation)?;
@@ -178,7 +182,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .convolution_filter_constructor;
 
         let matrix_x = this.get("matrixX", activation)?;
@@ -213,7 +217,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .gradient_bevel_filter_constructor;
 
         let distance = this.get("distance", activation)?;
@@ -243,7 +247,7 @@ pub fn clone<'gc>(
         let proto = activation
             .context
             .avm1
-            .prototypes
+            .prototypes()
             .gradient_glow_filter_constructor;
 
         let distance = this.get("distance", activation)?;

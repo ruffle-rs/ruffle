@@ -195,7 +195,7 @@ fn get_transform<'gc>(
     if let Some(transform) = transform {
         let obj = ScriptObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.object),
+            Some(activation.context.avm1.prototypes().object),
         );
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
         obj.set("ll", transform.left_to_left.into(), activation)?;

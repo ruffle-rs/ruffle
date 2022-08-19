@@ -163,7 +163,7 @@ fn pixel_bounds<'gc>(
     let bounds = clip.world_bounds();
 
     // Return Rectangle object.
-    let constructor = activation.context.avm1.prototypes.rectangle_constructor;
+    let constructor = activation.context.avm1.prototypes().rectangle_constructor;
     let result = constructor.construct(
         activation,
         &[
