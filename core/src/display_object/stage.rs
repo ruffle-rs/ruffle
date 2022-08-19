@@ -577,7 +577,7 @@ impl<'gc> Stage<'gc> {
         // This event fires immediately when scaleMode is changed;
         // it doesn't queue up.
         if !context.is_action_script_3() {
-            crate::avm1::runtime::Avm1::notify_system_listeners(
+            crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
                 context,
                 "Stage".into(),
@@ -595,7 +595,7 @@ impl<'gc> Stage<'gc> {
     /// Fires `Stage.onFullScreen` in AVM1 or `Event.FULLSCREEN` in AVM2.
     pub fn fire_fullscreen_event(self, context: &mut UpdateContext<'_, 'gc, '_>) {
         if !context.is_action_script_3() {
-            crate::avm1::runtime::Avm1::notify_system_listeners(
+            crate::avm1::Avm1::notify_system_listeners(
                 self.root_clip(),
                 context,
                 "Stage".into(),

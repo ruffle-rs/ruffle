@@ -12,8 +12,8 @@ use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::ui::MouseCursor;
 use bitflags::bitflags;
 
-use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::avm1::runtime::Avm1;
+use crate::avm1::Avm1;
+use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::Character;
 use crate::context::{ActionType, RenderContext, UpdateContext};

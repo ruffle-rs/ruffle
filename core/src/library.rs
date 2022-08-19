@@ -1,4 +1,4 @@
-use crate::avm1::property_map::PropertyMap as Avm1PropertyMap;
+use crate::avm1::PropertyMap as Avm1PropertyMap;
 use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;

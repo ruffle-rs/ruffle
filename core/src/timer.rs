@@ -4,7 +4,7 @@
 //! The timers are stored in a priority queue, where we check if the nearest timer
 //! is ready to tick each frame.
 
-use crate::avm1::function::ExecutionReason;
+use crate::avm1::ExecutionReason;
 use crate::avm1::{
     Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
 };

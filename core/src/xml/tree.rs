@@ -1,8 +1,8 @@
 //! XML Tree structure
 
-use crate::avm1::activation::Activation;
-use crate::avm1::object::xml_node_object::XmlNodeObject;
-use crate::avm1::property::Attribute;
+use crate::avm1::Activation;
+use crate::avm1::Attribute;
+use crate::avm1::XmlNodeObject;
 use crate::avm1::{Error, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, WStr, WString};
 use crate::xml;
