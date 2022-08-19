@@ -30,7 +30,7 @@ pub struct Avm1<'gc> {
     globals: Object<'gc>,
 
     /// System built-ins that we use internally to construct new objects.
-    prototypes: avm1::SystemPrototypes<'gc>,
+    prototypes: avm1::globals::SystemPrototypes<'gc>,
 
     /// Cached functions for the AsBroadcaster
     broadcaster_functions: BroadcasterFunctions<'gc>,
@@ -347,7 +347,7 @@ impl<'gc> Avm1<'gc> {
     }
 
     /// Obtain system built-in prototypes for this instance.
-    pub fn prototypes(&self) -> &avm1::SystemPrototypes<'gc> {
+    pub fn prototypes(&self) -> &avm1::globals::SystemPrototypes<'gc> {
         &self.prototypes
     }
 
