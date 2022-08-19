@@ -534,7 +534,7 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let object_proto = ScriptObject::object_cell(gc_context, None);
+    let object_proto = ScriptObject::new(gc_context, None).into();
     let function_proto = function::create_proto(gc_context, object_proto);
 
     object::fill_proto(gc_context, object_proto, function_proto);

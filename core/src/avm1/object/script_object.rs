@@ -87,14 +87,6 @@ impl<'gc> ScriptObject<'gc> {
         object
     }
 
-    /// Constructs and allocates an empty but normal object in one go.
-    pub fn object_cell(
-        gc_context: MutationContext<'gc, '_>,
-        proto: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        Self::new(gc_context, proto).into()
-    }
-
     /// Constructs an object with no properties, not even builtins.
     ///
     /// Intended for constructing scope chains, since they exclusively use the
