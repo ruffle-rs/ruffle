@@ -10,9 +10,12 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
+use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
+use std::str::FromStr;
+use swf::BlendMode;
 use swf::Twips;
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
@@ -642,6 +645,43 @@ pub fn set_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `DisplayObject.blendMode`'s getter.
+pub fn blend_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let mode =
+            AvmString::new_utf8(activation.context.gc_context, dobj.blend_mode().to_string());
+        return Ok(mode.into());
+    }
+    Ok(Value::Undefined)
+}
+
+/// Implements `DisplayObject.blendMode`'s setter.
+pub fn set_blend_mode<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let mode = args
+            .get(0)
+            .cloned()
+            .unwrap_or(Value::Undefined)
+            .coerce_to_string(activation)?;
+
+        if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            dobj.set_blend_mode(activation.context.gc_context, mode);
+        } else {
+            log::error!("Unknown blend mode {}", mode);
+            return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+        }
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -669,6 +709,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         Option<NativeMethodImpl>,
     )] = &[
         ("alpha", Some(alpha), Some(set_alpha)),
+        ("blendMode", Some(blend_mode), Some(set_blend_mode)),
         ("height", Some(height), Some(set_height)),
         ("scaleY", Some(scale_y), Some(set_scale_y)),
         ("width", Some(width), Some(set_width)),

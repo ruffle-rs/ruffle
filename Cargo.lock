@@ -3497,6 +3497,7 @@ dependencies = [
  "bitstream-io",
  "byteorder",
  "encoding_rs",
+ "enum-map",
  "flate2",
  "libflate",
  "log",

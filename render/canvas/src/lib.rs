@@ -7,7 +7,7 @@ use ruffle_render::matrix::Matrix;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
-use swf::Color;
+use swf::{BlendMode, Color};
 use wasm_bindgen::{Clamped, JsCast};
 use web_sys::{
     CanvasGradient, CanvasPattern, CanvasRenderingContext2d, CanvasWindingRule, DomMatrix, Element,
@@ -29,6 +29,7 @@ pub struct WebCanvasRenderBackend {
     rect: Path2d,
     mask_state: MaskState,
     next_bitmap_handle: BitmapHandle,
+    blend_modes: Vec<BlendMode>,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -289,6 +290,7 @@ impl WebCanvasRenderBackend {
             rect,
             mask_state: MaskState::DrawContent,
             next_bitmap_handle: BitmapHandle(0),
+            blend_modes: vec![BlendMode::Normal],
         };
         Ok(renderer)
     }
@@ -344,6 +346,32 @@ impl WebCanvasRenderBackend {
     fn clear_color_filter(&self) {
         self.context.set_filter("none");
         self.context.set_global_alpha(1.0);
+    }
+
+    fn apply_blend_mode(&mut self, blend: BlendMode) {
+        // TODO: Objects with a blend mode need to be rendered to an intermediate buffer first,
+        // but for now we render each child directly to the canvas. This should look reasonable for most
+        // common cases.
+        // While canvas has built in support for most of the blend modes, a few aren't supported.
+        let mode = match blend {
+            BlendMode::Normal => "source-over",
+            BlendMode::Layer => "source-over", // Requires intermediate buffer.
+            BlendMode::Multiply => "multiply",
+            BlendMode::Screen => "screen",
+            BlendMode::Lighten => "lighten",
+            BlendMode::Darken => "darken",
+            BlendMode::Difference => "difference",
+            BlendMode::Add => "lighter",
+            BlendMode::Subtract => "difference", // Not exposed by canvas, rendered as difference.
+            BlendMode::Invert => "source-over",  // Not exposed by canvas.
+            BlendMode::Alpha => "source-over",   // Requires intermediate buffer.
+            BlendMode::Erase => "source-over",   // Requires intermediate buffer.
+            BlendMode::Overlay => "overlay",
+            BlendMode::HardLight => "hard-light",
+        };
+        self.context
+            .set_global_composite_operation(mode)
+            .expect("Failed to update BlendMode");
     }
 }
 
@@ -670,6 +698,22 @@ impl RenderBackend for WebCanvasRenderBackend {
             // Pop the previous clipping state.
             self.context.restore();
             self.mask_state = MaskState::DrawContent;
+        }
+    }
+
+    fn push_blend_mode(&mut self, blend: BlendMode) {
+        if Some(&blend) != self.blend_modes.last() {
+            self.apply_blend_mode(blend);
+        }
+        self.blend_modes.push(blend);
+    }
+
+    fn pop_blend_mode(&mut self) {
+        let old = self.blend_modes.pop();
+        // We should never pop our base 'BlendMode::Normal'
+        let current = *self.blend_modes.last().unwrap();
+        if old != Some(current) {
+            self.apply_blend_mode(current);
         }
     }
 

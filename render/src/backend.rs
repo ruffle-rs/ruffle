@@ -86,6 +86,9 @@ pub trait RenderBackend: Downcast {
     fn deactivate_mask(&mut self);
     fn pop_mask(&mut self);
 
+    fn push_blend_mode(&mut self, blend: swf::BlendMode);
+    fn pop_blend_mode(&mut self);
+
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap>;
     fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
     // Frees memory used by the bitmap. After this call, `handle` can no longer

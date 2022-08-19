@@ -9,7 +9,7 @@ use ruffle_render::tessellator::{
 };
 use ruffle_render::transform::Transform;
 use ruffle_web_common::JsResult;
-use swf::Color;
+use swf::{BlendMode, Color};
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
@@ -86,7 +86,7 @@ pub struct WebGlRenderBackend {
     is_transparent: bool,
 
     active_program: *const ShaderProgram,
-    blend_func: (u32, u32),
+    blend_modes: Vec<BlendMode>,
     mult_color: Option<[f32; 4]>,
     add_color: Option<[f32; 4]>,
 
@@ -216,7 +216,6 @@ impl WebGlRenderBackend {
         let gradient_program = ShaderProgram::new(&gl, &texture_vertex, &gradient_fragment)?;
 
         gl.enable(Gl::BLEND);
-        gl.blend_func(Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
 
         // Necessary to load RGB textures (alignment defaults to 4).
         gl.pixel_storei(Gl::UNPACK_ALIGNMENT, 1);
@@ -248,12 +247,14 @@ impl WebGlRenderBackend {
             is_transparent,
 
             active_program: std::ptr::null(),
-            blend_func: (Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA),
+            blend_modes: vec![],
             mult_color: None,
             add_color: None,
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
         };
+
+        renderer.push_blend_mode(BlendMode::Normal);
 
         let color_quad_mesh = renderer.build_quad_mesh(&renderer.color_program)?;
         renderer.meshes.push(color_quad_mesh);
@@ -658,6 +659,77 @@ impl WebGlRenderBackend {
             }
         }
     }
+
+    fn apply_blend_mode(&mut self, mode: BlendMode) {
+        let (blend_op, src_rgb, dst_rgb) = match mode {
+            BlendMode::Normal => {
+                // src + (1-a)
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Layer => {
+                // TODO: Needs intermediate buffer.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Multiply => {
+                // src * dst
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+            BlendMode::Screen => {
+                // 1 - (1 - src) * (1 - dst)
+                // TODO: Needs shader. Rendering as additive for now
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Lighten => {
+                // max(src, dst)
+                (Gl2::MAX, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Darken => {
+                // min(src, dst)
+                (Gl2::MIN, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Difference => {
+                // abs(src - dst)
+                (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Add => {
+                // abs(src - dst)
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Subtract => {
+                // abs(src - dst)
+                (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Invert => {
+                // 1 - dst
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
+            }
+            BlendMode::Alpha => {
+                // dst.a = src.a
+                // TODO: Unimplemeneted, needs intermediate buffer.
+                // Parent display object needs to have Layer blend mode.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::Erase => {
+                // dst.a = 1 - src.a
+                // TODO: Unimplemeneted, needs intermediate buffer.
+                // Parent display object needs to have Layer blend mode.
+                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
+            }
+            BlendMode::HardLight => {
+                // if src > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+                // TODO: Needs shader, rendered as multiply for now.
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+            BlendMode::Overlay => {
+                // if dst > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+                // TODO: Needs shader, rendered as multiply for now.
+                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
+            }
+        };
+        self.gl.blend_equation_separate(blend_op, Gl::FUNC_ADD);
+        self.gl
+            .blend_func_separate(src_rgb, dst_rgb, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
+    }
 }
 
 impl RenderBackend for WebGlRenderBackend {
@@ -874,8 +946,7 @@ impl RenderBackend for WebGlRenderBackend {
 
             self.bind_vertex_array(Some(&draw.vao));
 
-            let (program, src_blend, dst_blend) =
-                (&self.bitmap_program, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA);
+            let program = &self.bitmap_program;
 
             // Set common render state, while minimizing unnecessary state changes.
             // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
@@ -888,11 +959,6 @@ impl RenderBackend for WebGlRenderBackend {
 
                 self.mult_color = None;
                 self.add_color = None;
-
-                if (src_blend, dst_blend) != self.blend_func {
-                    self.gl.blend_func(src_blend, dst_blend);
-                    self.blend_func = (src_blend, dst_blend);
-                }
             }
 
             program.uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
@@ -969,10 +1035,10 @@ impl RenderBackend for WebGlRenderBackend {
 
             self.bind_vertex_array(Some(&draw.vao));
 
-            let (program, src_blend, dst_blend) = match &draw.draw_type {
-                DrawType::Color => (&self.color_program, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA),
-                DrawType::Gradient(_) => (&self.gradient_program, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA),
-                DrawType::Bitmap { .. } => (&self.bitmap_program, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA),
+            let program = match &draw.draw_type {
+                DrawType::Color => &self.color_program,
+                DrawType::Gradient(_) => &self.gradient_program,
+                DrawType::Bitmap { .. } => &self.bitmap_program,
             };
 
             // Set common render state, while minimizing unnecessary state changes.
@@ -986,11 +1052,6 @@ impl RenderBackend for WebGlRenderBackend {
 
                 self.mult_color = None;
                 self.add_color = None;
-
-                if (src_blend, dst_blend) != self.blend_func {
-                    self.gl.blend_func(src_blend, dst_blend);
-                    self.blend_func = (src_blend, dst_blend);
-                }
             }
 
             program.uniform_matrix4fv(&self.gl, ShaderUniform::WorldMatrix, &world_matrix);
@@ -1116,8 +1177,6 @@ impl RenderBackend for WebGlRenderBackend {
         self.set_stencil_state();
 
         let program = &self.color_program;
-        let src_blend = Gl::ONE;
-        let dst_blend = Gl::ONE_MINUS_SRC_ALPHA;
 
         // Set common render state, while minimizing unnecessary state changes.
         // TODO: Using designated layout specifiers in WebGL2/OpenGL ES 3, we could guarantee that uniforms
@@ -1130,11 +1189,6 @@ impl RenderBackend for WebGlRenderBackend {
 
             self.mult_color = None;
             self.add_color = None;
-
-            if (src_blend, dst_blend) != self.blend_func {
-                self.gl.blend_func(src_blend, dst_blend);
-                self.blend_func = (src_blend, dst_blend);
-            }
         };
 
         self.color_program
@@ -1191,6 +1245,22 @@ impl RenderBackend for WebGlRenderBackend {
             MaskState::DrawMaskedContent
         };
         self.mask_state_dirty = true;
+    }
+
+    fn push_blend_mode(&mut self, blend: BlendMode) {
+        if self.blend_modes.last() != Some(&blend) {
+            self.apply_blend_mode(blend);
+        }
+        self.blend_modes.push(blend);
+    }
+
+    fn pop_blend_mode(&mut self) {
+        let old = self.blend_modes.pop();
+        // We never pop our base 'BlendMode::Normal'
+        let current = *self.blend_modes.last().unwrap();
+        if old != Some(current) {
+            self.apply_blend_mode(current);
+        }
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {

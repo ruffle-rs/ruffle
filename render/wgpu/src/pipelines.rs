@@ -1,10 +1,11 @@
 use crate::{Error, MaskState, Vertex};
-use enum_map::{enum_map, EnumMap};
+use enum_map::{Enum, EnumMap};
+use swf::BlendMode;
 use wgpu::vertex_attr_array;
 
 #[derive(Debug)]
 pub struct ShapePipeline {
-    pub mask_pipelines: EnumMap<MaskState, wgpu::RenderPipeline>,
+    pub pipelines: EnumMap<BlendMode, EnumMap<MaskState, wgpu::RenderPipeline>>,
 }
 
 #[derive(Debug)]
@@ -22,8 +23,167 @@ pub struct Pipelines {
 }
 
 impl ShapePipeline {
-    pub fn pipeline_for(&self, mask_state: MaskState) -> &wgpu::RenderPipeline {
-        &self.mask_pipelines[mask_state]
+    pub fn pipeline_for(
+        &self,
+        blend_mode: BlendMode,
+        mask_state: MaskState,
+    ) -> &wgpu::RenderPipeline {
+        &self.pipelines[blend_mode][mask_state]
+    }
+
+    /// Builds of a nested `EnumMap` that maps a `BlendMode` and `MaskState` to
+    /// a `RenderPipeline`. The provided callback is used to construct the `RenderPipeline`
+    /// for each possible `(BlendMode, MaskState)` pair.
+    fn build(mut f: impl FnMut(BlendMode, MaskState) -> wgpu::RenderPipeline) -> Self {
+        let blend_array: [EnumMap<MaskState, wgpu::RenderPipeline>; BlendMode::LENGTH] = (0
+            ..BlendMode::LENGTH)
+            .map(|blend_enum| {
+                let blend_mode = BlendMode::from_usize(blend_enum);
+                let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
+                    .map(|mask_enum| {
+                        let mask_state = MaskState::from_usize(mask_enum);
+                        f(blend_mode, mask_state)
+                    })
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap();
+                EnumMap::from_array(mask_array)
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        ShapePipeline {
+            pipelines: EnumMap::from_array(blend_array),
+        }
+    }
+}
+
+fn blend_mode_to_state(mode: BlendMode) -> Option<wgpu::BlendState> {
+    // Use the GPU blend modes to roughly approximate Flash's blend modes.
+    // This should look reasonable for the most common cases, but full support requires
+    // rendering to an intermediate texture and custom shaders for the complex blend modes.
+    match mode {
+        BlendMode::Normal => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+
+        // TODO: Needs intermediate buffer.
+        BlendMode::Layer => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+
+        // dst * src
+        BlendMode::Multiply => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::Dst,
+                dst_factor: wgpu::BlendFactor::Zero,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // 1 - (1 - dst) * (1 - src)
+        // TODO: Needs shader. Rendererd as additive for now.
+        BlendMode::Screen => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // max(dst, src)
+        BlendMode::Lighten => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Max,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // min(dst, src)
+        BlendMode::Darken => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Min,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // abs(dst - src)
+        // TODO: Needs shader. Rendererd as subtract for now.
+        BlendMode::Difference => {
+            Some(wgpu::BlendState {
+                // Add src and dst RGB values together
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::One,
+                    dst_factor: wgpu::BlendFactor::One,
+                    operation: wgpu::BlendOperation::ReverseSubtract,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            })
+        }
+
+        // dst + src
+        BlendMode::Add => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // dst - src
+        BlendMode::Subtract => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::ReverseSubtract,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // 1 - dst
+        BlendMode::Invert => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::Zero,
+                dst_factor: wgpu::BlendFactor::OneMinusDst,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // TODO: Requires intermediate buffer.
+        // dst.alpha = src.alpha
+        // Parent display object needs to have Layer blend mode.
+        BlendMode::Alpha => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+
+        // TODO: Requires intermediate buffer.
+        // dst.alpha = 1 - src.alpha
+        // Parent display object needs to have Layer blend mode.
+        BlendMode::Erase => Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+
+        // if src > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+        // TODO: Needs shader, rendered as multiply for now.
+        BlendMode::HardLight => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::Dst,
+                dst_factor: wgpu::BlendFactor::Zero,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+
+        // if dst > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
+        // TODO: Needs shader, rendered as multiply for now.
+        BlendMode::Overlay => Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::Dst,
+                dst_factor: wgpu::BlendFactor::Zero,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
     }
 }
 
@@ -293,7 +453,7 @@ fn create_shape_pipeline(
         push_constant_ranges: &[],
     });
 
-    let mask_render_state = |mask_name, stencil_state, write_mask| {
+    let mask_render_state = |mask_name, stencil_state, write_mask, blend| {
         device.create_render_pipeline(&create_pipeline_descriptor(
             create_debug_label!("{} pipeline {}", name, mask_name).as_deref(),
             shader,
@@ -313,7 +473,7 @@ fn create_shape_pipeline(
             }),
             &[Some(wgpu::ColorTargetState {
                 format,
-                blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+                blend,
                 write_mask,
             })],
             vertex_buffers_layout,
@@ -321,36 +481,53 @@ fn create_shape_pipeline(
         ))
     };
 
-    let mask_pipelines = enum_map! {
-        MaskState::NoMask => mask_render_state("no mask", wgpu::StencilFaceState {
-                compare: wgpu::CompareFunction::Always,
-                fail_op: wgpu::StencilOperation::Keep,
-                depth_fail_op: wgpu::StencilOperation::Keep,
-                pass_op: wgpu::StencilOperation::Keep,
-            },
-            wgpu::ColorWrites::ALL),
-        MaskState::DrawMaskStencil => mask_render_state("draw mask stencil", wgpu::StencilFaceState {
-                compare: wgpu::CompareFunction::Equal,
-                fail_op: wgpu::StencilOperation::Keep,
-                depth_fail_op: wgpu::StencilOperation::Keep,
-                pass_op: wgpu::StencilOperation::IncrementClamp,
-            },
-            wgpu::ColorWrites::empty()),
-        MaskState::DrawMaskedContent => mask_render_state("draw masked content", wgpu::StencilFaceState {
+    ShapePipeline::build(|blend_mode, mask_state| {
+        let blend = blend_mode_to_state(blend_mode);
+        match mask_state {
+            MaskState::NoMask => mask_render_state(
+                "no mask",
+                wgpu::StencilFaceState {
+                    compare: wgpu::CompareFunction::Always,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::Keep,
+                },
+                wgpu::ColorWrites::ALL,
+                blend,
+            ),
+            MaskState::DrawMaskStencil => mask_render_state(
+                "draw mask stencil",
+                wgpu::StencilFaceState {
+                    compare: wgpu::CompareFunction::Equal,
+                    fail_op: wgpu::StencilOperation::Keep,
+                    depth_fail_op: wgpu::StencilOperation::Keep,
+                    pass_op: wgpu::StencilOperation::IncrementClamp,
+                },
+                wgpu::ColorWrites::empty(),
+                blend,
+            ),
+            MaskState::DrawMaskedContent => mask_render_state(
+                "draw masked content",
+                wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Equal,
                     fail_op: wgpu::StencilOperation::Keep,
                     depth_fail_op: wgpu::StencilOperation::Keep,
                     pass_op: wgpu::StencilOperation::Keep,
                 },
-                wgpu::ColorWrites::ALL),
-        MaskState::ClearMaskStencil => mask_render_state("clear mask stencil", wgpu::StencilFaceState {
+                wgpu::ColorWrites::ALL,
+                blend,
+            ),
+            MaskState::ClearMaskStencil => mask_render_state(
+                "clear mask stencil",
+                wgpu::StencilFaceState {
                     compare: wgpu::CompareFunction::Equal,
                     fail_op: wgpu::StencilOperation::Keep,
                     depth_fail_op: wgpu::StencilOperation::Keep,
                     pass_op: wgpu::StencilOperation::DecrementClamp,
                 },
-                wgpu::ColorWrites::empty()),
-    };
-
-    ShapePipeline { mask_pipelines }
+                wgpu::ColorWrites::empty(),
+                blend,
+            ),
+        }
+    })
 }

@@ -19,7 +19,7 @@ use ruffle_render::transform::Transform;
 use std::num::NonZeroU32;
 use std::path::Path;
 use std::sync::Arc;
-use swf::Color;
+use swf::{BlendMode, Color};
 pub use wgpu;
 
 type Error = Box<dyn std::error::Error>;
@@ -158,6 +158,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     quad_vbo: wgpu::Buffer,
     quad_ibo: wgpu::Buffer,
     quad_tex_transforms: wgpu::Buffer,
+    blend_modes: Vec<BlendMode>,
     bitmap_registry: FnvHashMap<BitmapHandle, RegistryData>,
     next_bitmap_handle: BitmapHandle,
 }
@@ -519,6 +520,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             quad_vbo,
             quad_ibo,
             quad_tex_transforms,
+            blend_modes: vec![BlendMode::Normal],
             bitmap_registry: Default::default(),
             next_bitmap_handle: BitmapHandle(0),
         })
@@ -779,6 +781,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
 
         Mesh { draws }
     }
+
+    fn blend_mode(&self) -> BlendMode {
+        *self.blend_modes.last().unwrap()
+    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
@@ -996,6 +1002,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn render_bitmap(&mut self, bitmap: BitmapHandle, transform: &Transform, smoothing: bool) {
         if let Some(entry) = self.bitmap_registry.get(&bitmap) {
             let texture = &entry.texture_wrapper;
+            let blend_mode = self.blend_mode();
             let frame = if let Some(frame) = &mut self.current_frame {
                 frame.get()
             } else {
@@ -1028,7 +1035,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.descriptors
                     .pipelines
                     .bitmap_pipelines
-                    .pipeline_for(self.mask_state),
+                    .pipeline_for(blend_mode, self.mask_state),
             );
             frame
                 .render_pass
@@ -1080,6 +1087,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: &Transform) {
+        let blend_mode = self.blend_mode();
         let frame = if let Some(frame) = &mut self.current_frame {
             frame.get()
         } else {
@@ -1135,7 +1143,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .color_pipelines
-                            .pipeline_for(self.mask_state),
+                            .pipeline_for(blend_mode, self.mask_state),
                     );
                 }
                 DrawType::Gradient { bind_group, .. } => {
@@ -1143,7 +1151,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .gradient_pipelines
-                            .pipeline_for(self.mask_state),
+                            .pipeline_for(blend_mode, self.mask_state),
                     );
                     frame.render_pass.set_bind_group(2, bind_group, &[]);
                 }
@@ -1157,7 +1165,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                         self.descriptors
                             .pipelines
                             .bitmap_pipelines
-                            .pipeline_for(self.mask_state),
+                            .pipeline_for(blend_mode, self.mask_state),
                     );
                     frame.render_pass.set_bind_group(2, bind_group, &[]);
                     frame.render_pass.set_bind_group(
@@ -1194,6 +1202,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     }
 
     fn draw_rect(&mut self, color: Color, matrix: &ruffle_render::matrix::Matrix) {
+        let blend_mode = self.blend_mode();
         let frame = if let Some(frame) = &mut self.current_frame {
             frame.get()
         } else {
@@ -1224,7 +1233,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             self.descriptors
                 .pipelines
                 .color_pipelines
-                .pipeline_for(self.mask_state),
+                .pipeline_for(blend_mode, self.mask_state),
         );
 
         frame
@@ -1376,6 +1385,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         } else {
             MaskState::DrawMaskedContent
         };
+    }
+
+    fn push_blend_mode(&mut self, blend: BlendMode) {
+        self.blend_modes.push(blend);
+    }
+
+    fn pop_blend_mode(&mut self) {
+        self.blend_modes.pop();
     }
 
     fn get_bitmap_pixels(&mut self, bitmap: BitmapHandle) -> Option<Bitmap> {
