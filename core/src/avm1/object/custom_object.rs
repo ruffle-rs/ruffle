@@ -29,7 +29,7 @@ macro_rules! impl_custom_object {
 
         fn get_local_stored(
             &self,
-            name: impl Into<$crate::avm1::AvmString<'gc>>,
+            name: impl Into<$crate::string::AvmString<'gc>>,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
         ) -> Option<$crate::avm1::Value<'gc>> {
             self.0.read().$field.get_local_stored(name, activation)
@@ -37,7 +37,7 @@ macro_rules! impl_custom_object {
 
         fn set_local(
             &self,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             value: $crate::avm1::Value<'gc>,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
             this: $crate::avm1::Object<'gc>,
@@ -47,7 +47,7 @@ macro_rules! impl_custom_object {
 
         fn call(
             &self,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
             this: $crate::avm1::Value<'gc>,
             args: &[$crate::avm1::Value<'gc>],
@@ -60,7 +60,7 @@ macro_rules! impl_custom_object {
 
         fn getter(
             &self,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
         ) -> Option<$crate::avm1::object::Object<'gc>> {
             self.0.read().$field.getter(name, activation)
@@ -68,7 +68,7 @@ macro_rules! impl_custom_object {
 
         fn setter(
             &self,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
         ) -> Option<$crate::avm1::object::Object<'gc>> {
             self.0.read().$field.setter(name, activation)
@@ -77,7 +77,7 @@ macro_rules! impl_custom_object {
         fn delete(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0.read().$field.delete(activation, name)
         }
@@ -89,7 +89,7 @@ macro_rules! impl_custom_object {
         fn define_value(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
-            name: impl Into<$crate::avm1::AvmString<'gc>>,
+            name: impl Into<$crate::string::AvmString<'gc>>,
             value: $crate::avm1::Value<'gc>,
             attributes: $crate::avm1::property::Attribute,
         ) {
@@ -102,7 +102,7 @@ macro_rules! impl_custom_object {
         fn set_attributes(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
-            name: Option<$crate::avm1::AvmString<'gc>>,
+            name: Option<$crate::string::AvmString<'gc>>,
             set_attributes: $crate::avm1::property::Attribute,
             clear_attributes: $crate::avm1::property::Attribute,
         ) {
@@ -117,7 +117,7 @@ macro_rules! impl_custom_object {
         fn add_property(
             &self,
             gc_context: gc_arena::MutationContext<'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             get: $crate::avm1::object::Object<'gc>,
             set: Option<$crate::avm1::object::Object<'gc>>,
             attributes: $crate::avm1::property::Attribute,
@@ -131,7 +131,7 @@ macro_rules! impl_custom_object {
         fn add_property_with_case(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             get: $crate::avm1::object::Object<'gc>,
             set: Option<$crate::avm1::object::Object<'gc>>,
             attributes: $crate::avm1::property::Attribute,
@@ -145,7 +145,7 @@ macro_rules! impl_custom_object {
         fn has_property(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0.read().$field.has_property(activation, name)
         }
@@ -153,7 +153,7 @@ macro_rules! impl_custom_object {
         fn has_own_property(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0.read().$field.has_own_property(activation, name)
         }
@@ -161,7 +161,7 @@ macro_rules! impl_custom_object {
         fn has_own_virtual(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0.read().$field.has_own_virtual(activation, name)
         }
@@ -169,7 +169,7 @@ macro_rules! impl_custom_object {
         fn is_property_enumerable(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0
                 .read()
@@ -180,7 +180,7 @@ macro_rules! impl_custom_object {
         fn get_keys(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-        ) -> Vec<$crate::avm1::AvmString<'gc>> {
+        ) -> Vec<$crate::string::AvmString<'gc>> {
             self.0.read().$field.get_keys(activation)
         }
 
@@ -234,7 +234,7 @@ macro_rules! impl_custom_object {
         fn call_watcher(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             value: &mut $crate::avm1::Value<'gc>,
             this: $crate::avm1::object::Object<'gc>,
         ) -> Result<(), $crate::avm1::Error<'gc>> {
@@ -244,7 +244,7 @@ macro_rules! impl_custom_object {
         fn watch(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
             callback: $crate::avm1::object::Object<'gc>,
             user_data: $crate::avm1::Value<'gc>,
         ) {
@@ -257,7 +257,7 @@ macro_rules! impl_custom_object {
         fn unwatch(
             &self,
             activation: &mut $crate::avm1::Activation<'_, 'gc, '_>,
-            name: $crate::avm1::AvmString<'gc>,
+            name: $crate::string::AvmString<'gc>,
         ) -> bool {
             self.0.read().$field.unwatch(activation, name)
         }

@@ -36,7 +36,7 @@ macro_rules! test_method {
             $(
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
-                        let name: $crate::avm1::AvmString<'_> = $name.into();
+                        let name: $crate::string::AvmString<'_> = $name.into();
                         let object = $object(activation);
 
                         $(

@@ -5,7 +5,8 @@ use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Activation, ArrayObject, AvmString, Object, ScriptObject, Value};
+use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
+use crate::string::AvmString;
 use gc_arena::{Collect, MutationContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {

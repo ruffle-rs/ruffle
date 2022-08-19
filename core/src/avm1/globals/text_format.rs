@@ -2,13 +2,11 @@
 
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    Activation, ArrayObject, AvmString, Error, Object, ScriptObject, TObject, Value,
-};
+use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::WStr;
+use crate::string::{AvmString, WStr};
 use gc_arena::{GcCell, MutationContext};
 
 macro_rules! getter {

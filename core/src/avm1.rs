@@ -23,7 +23,6 @@ mod value;
 #[cfg(test)]
 mod tests;
 
-use crate::string::AvmString;
 pub use activation::{start_drag, Activation, ActivationIdentifier};
 pub use debug::VariableDumper;
 pub use error::Error;

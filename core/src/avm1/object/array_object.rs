@@ -1,6 +1,7 @@
 use crate::avm1::property::Attribute;
-use crate::avm1::{Activation, AvmString, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
+use crate::avm1::{Activation, Error, Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
+use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
 
