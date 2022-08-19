@@ -350,7 +350,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let globals = self.context.avm1.globals;
+        let globals = self.context.avm1.global_object_cell();
         let mut parent_activation = Activation::from_nothing(
             self.context.reborrow(),
             self.id.child("[Actions Parent]"),
@@ -368,7 +368,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.context.avm1.constant_pool;
+        let constant_pool = parent_activation.context.avm1.constant_pool();
         let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
             parent_activation.context.reborrow(),
@@ -400,13 +400,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         };
         let global_scope = GcCell::allocate(
             self.context.gc_context,
-            Scope::from_global_object(self.context.avm1.globals),
+            Scope::from_global_object(self.context.avm1.global_object_cell()),
         );
         let child_scope = GcCell::allocate(
             self.context.gc_context,
             Scope::new(global_scope, scope::ScopeClass::Target, clip_obj),
         );
-        let constant_pool = self.context.avm1.constant_pool;
+        let constant_pool = self.context.avm1.constant_pool();
         let mut activation = Activation::from_action(
             self.context.reborrow(),
             self.id.child(name),
@@ -754,7 +754,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let fn_name_value = self.context.avm1.pop();
         let fn_name = fn_name_value.coerce_to_string(self)?;
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack.len());
+        let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -779,7 +779,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack.len());
+        let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -832,7 +832,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         action: ConstantPool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.context.avm1.constant_pool = GcCell::allocate(
+        self.context.avm1.set_constant_pool(GcCell::allocate(
             self.context.gc_context,
             action
                 .strings
@@ -842,8 +842,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                         .into()
                 })
                 .collect(),
-        );
-        self.set_constant_pool(self.context.avm1.constant_pool);
+        ));
+        self.set_constant_pool(self.context.avm1.constant_pool());
 
         Ok(FrameControl::Continue)
     }
@@ -875,13 +875,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let name = func.name();
         let prototype = ScriptObject::new(
             self.context.gc_context,
-            Some(self.context.avm1.prototypes.object),
+            Some(self.context.avm1.prototypes().object),
         )
         .into();
         let func_obj = FunctionObject::function(
             self.context.gc_context,
             Gc::allocate(self.context.gc_context, func),
-            Some(self.context.avm1.prototypes.function),
+            Some(self.context.avm1.prototypes().function),
             prototype,
         );
         if let Some(name) = name {
@@ -1096,7 +1096,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else if let Some(target) = self.target_clip() {
             let prop_index = prop_index as usize;
             if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
-                let display_properties = self.context.avm1.display_properties;
+                let display_properties = self.context.avm1.display_properties();
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.get(self, clip)
@@ -1418,7 +1418,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             let object = ScriptObject::new(
                 self.context.gc_context,
-                Some(self.context.avm1.prototypes.object),
+                Some(self.context.avm1.prototypes().object),
             );
             for _ in 0..num_props as usize {
                 let value = self.context.avm1.pop();
@@ -1446,7 +1446,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             avm_warn!(self, "ImplementsOp: Object not coerced into number");
             0
         };
-        let count = count.min(self.context.avm1.stack.len());
+        let count = count.min(self.context.avm1.stack_len());
         let mut interfaces = Vec::with_capacity(count);
 
         // TODO: If one of the interfaces is not an object, do we leave the
@@ -1625,7 +1625,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let method_name = self.context.avm1.pop();
         let object_val = self.context.avm1.pop();
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack.len());
+        let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -1672,7 +1672,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let fn_name_val = self.context.avm1.pop();
         let fn_name = fn_name_val.coerce_to_string(self)?;
         let num_args = self.context.avm1.pop().coerce_to_u32(self)? as usize;
-        let num_args = num_args.min(self.context.avm1.stack.len());
+        let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
             args.push(self.context.avm1.pop());
@@ -1815,7 +1815,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         let path = self.context.avm1.pop();
         if let Some(target) = self.target_clip() {
             if let Some(clip) = self.resolve_target_display_object(target, path, true)? {
-                let display_properties = self.context.avm1.display_properties;
+                let display_properties = self.context.avm1.display_properties();
                 let props = display_properties.read();
                 if let Some(property) = props.get_by_index(prop_index) {
                     property.set(self, clip, value)?;
@@ -2255,8 +2255,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         } else {
             self.context
                 .avm1
-                .registers
-                .get(id as usize)
+                .get_register(id as usize)
                 .cloned()
                 .unwrap_or(Value::Undefined)
         }
@@ -2268,7 +2267,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
         if self.has_local_register(id) {
             self.set_local_register(id, value);
-        } else if let Some(v) = self.context.avm1.registers.get_mut(id as usize) {
+        } else if let Some(v) = self.context.avm1.get_register_mut(id as usize) {
             *v = value;
         }
     }

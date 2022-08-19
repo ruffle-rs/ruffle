@@ -643,7 +643,7 @@ fn create_utc<'gc>(
     // We need a starting value to adjust from.
     let date = DateObject::with_date_time(
         activation.context.gc_context,
-        Some(activation.context.avm1.prototypes.date),
+        Some(activation.context.avm1.prototypes().date),
         Some(Utc.ymd(0, 1, 1).and_hms(0, 0, 0)),
     );
 

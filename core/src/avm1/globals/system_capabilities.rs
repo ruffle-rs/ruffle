@@ -133,7 +133,7 @@ pub fn get_language<'gc>(
             .context
             .system
             .language
-            .get_language_code(activation.context.avm1.player_version),
+            .get_language_code(activation.context.avm1.player_version()),
     )
     .into())
 }
@@ -181,7 +181,7 @@ pub fn get_manufacturer<'gc>(
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.context.avm1.player_version),
+            .get_manufacturer_string(activation.context.avm1.player_version()),
     )
     .into())
 }

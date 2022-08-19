@@ -131,7 +131,7 @@ fn new_rectangle<'gc>(
     let width = (rectangle.x_max - rectangle.x_min).to_pixels();
     let height = (rectangle.y_max - rectangle.y_min).to_pixels();
     let args = &[x.into(), y.into(), width.into(), height.into()];
-    let proto = activation.context.avm1.prototypes.rectangle_constructor;
+    let proto = activation.context.avm1.prototypes().rectangle_constructor;
     proto.construct(activation, args)
 }
 
@@ -1277,7 +1277,7 @@ fn get_bounds<'gc>(
 
         let out = ScriptObject::new(
             activation.context.gc_context,
-            Some(activation.context.avm1.prototypes.object),
+            Some(activation.context.avm1.prototypes().object),
         );
         out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
         out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;
@@ -1432,7 +1432,7 @@ fn transform<'gc>(
     this: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc, '_>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.context.avm1.prototypes.transform_constructor;
+    let constructor = activation.context.avm1.prototypes().transform_constructor;
     let cloned = constructor.construct(activation, &[this.object()])?;
     Ok(cloned)
 }
