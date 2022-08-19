@@ -1,8 +1,8 @@
 //! Management of async loaders
 
-use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::function::ExecutionReason;
-use crate::avm1::runtime::Avm1;
+use crate::avm1::Avm1;
+use crate::avm1::ExecutionReason;
+use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Object, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::ByteArrayObject;
@@ -143,8 +143,8 @@ pub enum Error {
     Avm2Error(String),
 }
 
-impl From<crate::avm1::error::Error<'_>> for Error {
-    fn from(error: crate::avm1::error::Error<'_>) -> Self {
+impl From<crate::avm1::Error<'_>> for Error {
+    fn from(error: crate::avm1::Error<'_>) -> Self {
         Error::Avm1Error(error.to_string())
     }
 }

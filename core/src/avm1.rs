@@ -3,35 +3,45 @@
 mod test_utils;
 
 #[macro_use]
-pub mod function;
+mod function;
 #[macro_use]
-pub mod property_decl;
+mod property_decl;
 
-pub mod activation;
+mod activation;
 mod callable_value;
-pub mod debug;
-pub mod error;
+mod debug;
+mod error;
 mod fscommand;
-pub mod globals;
-pub mod object;
-pub mod property;
-pub mod property_map;
-pub mod runtime;
+mod globals;
+mod object;
+mod property;
+mod property_map;
+mod runtime;
 mod scope;
 mod value;
 
 #[cfg(test)]
 mod tests;
 
-pub use crate::avm1::activation::{Activation, ActivationIdentifier};
-pub use crate::avm1::error::Error;
 use crate::string::AvmString;
+pub use activation::{start_drag, Activation, ActivationIdentifier};
+pub use debug::VariableDumper;
+pub use error::Error;
+pub use function::ExecutionReason;
+pub use globals::context_menu::make_context_menu_state;
+pub use globals::shared_object::flush;
+pub use globals::system::SystemProperties;
 pub use globals::SystemPrototypes;
 pub use object::array_object::ArrayObject;
 pub use object::script_object::ScriptObject;
+pub use object::shared_object::SharedObject;
 pub use object::sound_object::SoundObject;
 pub use object::stage_object::StageObject;
+pub use object::xml_node_object::XmlNodeObject;
 pub use object::{Object, ObjectPtr, TObject};
+pub use property::Attribute;
+pub use property_map::PropertyMap;
+pub use runtime::Avm1;
 pub use value::Value;
 
 #[macro_export]

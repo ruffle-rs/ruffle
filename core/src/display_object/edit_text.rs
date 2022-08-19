@@ -1,8 +1,8 @@
 //! `EditText` display object and support code.
 
-use crate::avm1::activation::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::avm1::function::ExecutionReason;
-use crate::avm1::runtime::Avm1;
+use crate::avm1::Avm1;
+use crate::avm1::ExecutionReason;
+use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{
     Object as Avm1Object, StageObject as Avm1StageObject, TObject as Avm1TObject,
     Value as Avm1Value,

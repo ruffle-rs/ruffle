@@ -1,8 +1,6 @@
-use crate::avm1::activation::{
-    Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier,
-};
-use crate::avm1::object::TObject as _;
+use crate::avm1::TObject as _;
 use crate::avm1::Value as Avm1Value;
+use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier as Avm1ActivationIdentifier};
 use crate::avm1::{
     ArrayObject as Avm1ArrayObject, Error as Avm1Error, Object as Avm1Object,
     ScriptObject as Avm1ScriptObject,

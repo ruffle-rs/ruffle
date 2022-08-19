@@ -1,9 +1,9 @@
-use crate::avm1::activation::{Activation, ActivationIdentifier};
-use crate::avm1::debug::VariableDumper;
-use crate::avm1::globals::system::SystemProperties;
-use crate::avm1::object::Object;
-use crate::avm1::property::Attribute;
-use crate::avm1::runtime::Avm1;
+use crate::avm1::Attribute;
+use crate::avm1::Avm1;
+use crate::avm1::Object;
+use crate::avm1::SystemProperties;
+use crate::avm1::VariableDumper;
+use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm2::{
     object::LoaderInfoObject, object::TObject as _, Activation as Avm2Activation, Avm2, CallStack,
@@ -570,10 +570,7 @@ impl Player {
                 }
             }
 
-            let menu = crate::avm1::globals::context_menu::make_context_menu_state(
-                menu_object,
-                &mut activation,
-            );
+            let menu = crate::avm1::make_context_menu_state(menu_object, &mut activation);
             let ret = menu.info().clone();
             *activation.context.current_context_menu = Some(menu);
             ret
@@ -1683,7 +1680,7 @@ impl Player {
                 Activation::from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"));
             let shared_objects = activation.context.shared_objects.clone();
             for so in shared_objects.values() {
-                let _ = crate::avm1::globals::shared_object::flush(&mut activation, *so, &[]);
+                let _ = crate::avm1::flush(&mut activation, *so, &[]);
             }
         });
     }

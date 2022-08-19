@@ -35,7 +35,7 @@ mod stage;
 mod text;
 mod video;
 
-use crate::avm1::activation::Activation;
+use crate::avm1::Activation;
 pub use crate::display_object::container::{
     DisplayObjectContainer, Lists, TDisplayObjectContainer,
 };
