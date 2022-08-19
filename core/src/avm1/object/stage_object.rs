@@ -43,7 +43,7 @@ impl<'gc> StageObject<'gc> {
         Self(GcCell::allocate(
             gc_context,
             StageObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 display_object,
                 text_field_bindings: Vec::new(),
             },

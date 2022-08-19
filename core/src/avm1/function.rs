@@ -506,7 +506,7 @@ impl<'gc> FunctionObject<'gc> {
         constructor: Option<Executable<'gc>>,
         fn_proto: Option<Object<'gc>>,
     ) -> Self {
-        let base = ScriptObject::object(gc_context, fn_proto);
+        let base = ScriptObject::new(gc_context, fn_proto);
 
         FunctionObject {
             base,
@@ -741,7 +741,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let base = ScriptObject::object(activation.context.gc_context, Some(prototype));
+        let base = ScriptObject::new(activation.context.gc_context, Some(prototype));
         let fn_object = FunctionObject {
             base,
             data: GcCell::allocate(

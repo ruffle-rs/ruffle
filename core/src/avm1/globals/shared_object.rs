@@ -145,7 +145,7 @@ fn deserialize_value<'gc>(activation: &mut Activation<'_, 'gc, '_>, val: &AmfVal
         }
         AmfValue::Object(elements, _) => {
             // Deserialize Object
-            let obj = ScriptObject::object(
+            let obj = ScriptObject::new(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes.object),
             );
@@ -195,7 +195,7 @@ fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = ScriptObject::object(
+    let obj = ScriptObject::new(
         activation.context.gc_context,
         Some(activation.context.avm1.prototypes.object),
     );
@@ -362,7 +362,7 @@ pub fn get_local<'gc>(
 
     if data == Value::Undefined {
         // No data; create a fresh data object.
-        data = ScriptObject::object(
+        data = ScriptObject::new(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.object),
         )

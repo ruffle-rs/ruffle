@@ -20,7 +20,7 @@ pub fn create<'gc>(
     proto: Option<Object<'gc>>,
     fn_proto: Object<'gc>,
 ) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let object = ScriptObject::object(gc_context, proto);
+    let object = ScriptObject::new(gc_context, proto);
 
     let define_as_object = |index: usize| -> Object<'gc> {
         match OBJECT_DECLS[index].define_on(gc_context, object, fn_proto) {

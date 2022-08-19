@@ -873,7 +873,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             self.base_clip(),
         );
         let name = func.name();
-        let prototype = ScriptObject::object(
+        let prototype = ScriptObject::new(
             self.context.gc_context,
             Some(self.context.avm1.prototypes.object),
         )
@@ -1416,7 +1416,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
-            let object = ScriptObject::object(
+            let object = ScriptObject::new(
                 self.context.gc_context,
                 Some(self.context.avm1.prototypes.object),
             );

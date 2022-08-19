@@ -397,7 +397,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let xml_node_proto = ScriptObject::object(gc_context, Some(proto));
+    let xml_node_proto = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, gc_context, xml_node_proto, fn_proto);
     xml_node_proto.into()
 }

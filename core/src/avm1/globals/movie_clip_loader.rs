@@ -161,7 +161,7 @@ pub fn create_proto<'gc>(
     array_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let mcl_proto = ScriptObject::object(gc_context, Some(proto));
+    let mcl_proto = ScriptObject::new(gc_context, Some(proto));
     broadcaster_functions.initialize(gc_context, mcl_proto.into(), array_proto);
     define_properties_on(PROTO_DECLS, gc_context, mcl_proto, fn_proto);
     mcl_proto.into()

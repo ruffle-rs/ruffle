@@ -43,7 +43,7 @@ impl<'gc> BlurFilterObject<'gc> {
         BlurFilterObject(GcCell::allocate(
             gc_context,
             BlurFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 blur_x: 4.0,
                 blur_y: 4.0,
                 quality: 1,

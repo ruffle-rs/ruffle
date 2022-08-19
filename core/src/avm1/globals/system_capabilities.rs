@@ -254,7 +254,7 @@ pub fn create<'gc>(
     proto: Option<Object<'gc>>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let capabilities = ScriptObject::object(gc_context, proto);
+    let capabilities = ScriptObject::new(gc_context, proto);
     define_properties_on(OBJECT_DECLS, gc_context, capabilities, fn_proto);
     capabilities.into()
 }

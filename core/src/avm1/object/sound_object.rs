@@ -58,7 +58,7 @@ impl<'gc> SoundObject<'gc> {
         SoundObject(GcCell::allocate(
             gc_context,
             SoundObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 sound: None,
                 sound_instance: None,
                 owner: None,

@@ -101,7 +101,7 @@ impl<'gc> BevelFilterObject<'gc> {
         BevelFilterObject(GcCell::allocate(
             gc_context,
             BevelFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 angle: 44.9999999772279,
                 blur_x: 4.0,
                 blur_y: 4.0,

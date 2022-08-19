@@ -83,7 +83,7 @@ impl<'gc> ConvolutionFilterObject<'gc> {
         ConvolutionFilterObject(GcCell::allocate(
             gc_context,
             ConvolutionFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 alpha: 0.0,
                 bias: 0.0,
                 clamp: true,

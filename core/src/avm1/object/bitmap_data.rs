@@ -48,7 +48,7 @@ impl<'gc> BitmapDataObject<'gc> {
         Self(GcCell::allocate(
             gc_context,
             BitmapDataData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 disposed: false,
                 data: GcCell::allocate(gc_context, bitmap_data),
             },

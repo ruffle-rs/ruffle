@@ -35,7 +35,7 @@ impl<'gc> ColorMatrixFilterObject<'gc> {
         ColorMatrixFilterObject(GcCell::allocate(
             gc_context,
             ColorMatrixFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 matrix: [
                     1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0,

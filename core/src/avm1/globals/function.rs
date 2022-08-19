@@ -31,7 +31,7 @@ pub fn function<'gc>(
         Ok(arg.to_owned())
     } else {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Ok(ScriptObject::object(activation.context.gc_context, None).into())
+        Ok(ScriptObject::new(activation.context.gc_context, None).into())
     }
 }
 

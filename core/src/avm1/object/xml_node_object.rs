@@ -31,7 +31,7 @@ impl<'gc> XmlNodeObject<'gc> {
         let object = Self(GcCell::allocate(
             gc_context,
             XmlNodeObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 node,
             },
         ));

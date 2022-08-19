@@ -58,7 +58,7 @@ impl<'gc> GlowFilterObject<'gc> {
         GlowFilterObject(GcCell::allocate(
             gc_context,
             GlowFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 alpha: 1.0,
                 blur_x: 6.0,
                 blur_y: 6.0,

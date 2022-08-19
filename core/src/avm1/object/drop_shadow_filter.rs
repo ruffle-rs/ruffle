@@ -67,7 +67,7 @@ impl<'gc> DropShadowFilterObject<'gc> {
         DropShadowFilterObject(GcCell::allocate(
             gc_context,
             DropShadowFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 distance: 4.0,
                 hide_object: false,
                 angle: 44.9999999772279,

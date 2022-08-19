@@ -86,7 +86,7 @@ pub fn create<'gc>(
     broadcaster_functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let ime = ScriptObject::object(gc_context, proto);
+    let ime = ScriptObject::new(gc_context, proto);
     broadcaster_functions.initialize(gc_context, ime.into(), array_proto);
     define_properties_on(OBJECT_DECLS, gc_context, ime, fn_proto);
     ime.into()

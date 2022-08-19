@@ -51,7 +51,7 @@ impl<'gc> ValueObject<'gc> {
             let obj = ValueObject(GcCell::allocate(
                 activation.context.gc_context,
                 ValueObjectData {
-                    base: ScriptObject::object(activation.context.gc_context, proto),
+                    base: ScriptObject::new(activation.context.gc_context, proto),
                     value: Value::Undefined,
                 },
             ));
@@ -86,7 +86,7 @@ impl<'gc> ValueObject<'gc> {
         ValueObject(GcCell::allocate(
             gc_context,
             ValueObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 value: Value::Undefined,
             },
         ))

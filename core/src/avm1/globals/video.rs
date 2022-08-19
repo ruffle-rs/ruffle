@@ -21,6 +21,6 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     _fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::object(gc_context, Some(proto));
+    let object = ScriptObject::new(gc_context, Some(proto));
     object.into()
 }

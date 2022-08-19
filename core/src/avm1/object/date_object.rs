@@ -44,7 +44,7 @@ impl<'gc> DateObject<'gc> {
         DateObject(GcCell::allocate(
             gc_context,
             DateObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 date_time,
             },
         ))

@@ -67,7 +67,7 @@ impl fmt::Debug for ScriptObjectData<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
-    pub fn object(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(gc_context: MutationContext<'gc, '_>, proto: Option<Object<'gc>>) -> Self {
         let object = Self(GcCell::allocate(
             gc_context,
             ScriptObjectData {
@@ -92,7 +92,7 @@ impl<'gc> ScriptObject<'gc> {
         gc_context: MutationContext<'gc, '_>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        Self::object(gc_context, proto).into()
+        Self::new(gc_context, proto).into()
     }
 
     /// Constructs an object with no properties, not even builtins.
@@ -101,7 +101,7 @@ impl<'gc> ScriptObject<'gc> {
     /// object properties, but can't just have a hashmap because of `with` and
     /// friends.
     pub fn bare_object(gc_context: MutationContext<'gc, '_>) -> Self {
-        Self::object(gc_context, None)
+        Self::new(gc_context, None)
     }
 
     /// Gets the value of a data property on this object.
@@ -265,7 +265,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
         activation: &mut Activation<'_, 'gc, '_>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(ScriptObject::object(activation.context.gc_context, Some(this)).into())
+        Ok(ScriptObject::new(activation.context.gc_context, Some(this)).into())
     }
 
     /// Delete a named property from the object.
@@ -558,7 +558,7 @@ mod tests {
         F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc, '_>, Object<'gc>),
     {
         crate::avm1::test_utils::with_avm(swf_version, |activation, _root| {
-            let object = ScriptObject::object(
+            let object = ScriptObject::new(
                 activation.context.gc_context,
                 Some(activation.context.avm1.prototypes().object),
             )
