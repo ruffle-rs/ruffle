@@ -87,15 +87,6 @@ impl<'gc> ScriptObject<'gc> {
         object
     }
 
-    /// Constructs an object with no properties, not even builtins.
-    ///
-    /// Intended for constructing scope chains, since they exclusively use the
-    /// object properties, but can't just have a hashmap because of `with` and
-    /// friends.
-    pub fn bare_object(gc_context: MutationContext<'gc, '_>) -> Self {
-        Self::new(gc_context, None)
-    }
-
     /// Gets the value of a data property on this object.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
