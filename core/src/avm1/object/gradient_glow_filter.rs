@@ -80,7 +80,7 @@ impl<'gc> GradientGlowFilterObject<'gc> {
         GradientGlowFilterObject(GcCell::allocate(
             gc_context,
             GradientGlowFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 alphas: vec![],
                 angle: 0.0,
                 blur_x: 0.0,

@@ -27,7 +27,7 @@ pub fn create_stage_object<'gc>(
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
 ) -> Object<'gc> {
-    let stage = ScriptObject::object(gc_context, proto);
+    let stage = ScriptObject::new(gc_context, proto);
     broadcaster_functions.initialize(gc_context, stage.into(), array_proto.unwrap());
     define_properties_on(OBJECT_DECLS, gc_context, stage, fn_proto);
     stage.into()

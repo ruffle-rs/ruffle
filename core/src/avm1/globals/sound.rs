@@ -193,7 +193,7 @@ fn get_transform<'gc>(
     });
 
     if let Some(transform) = transform {
-        let obj = ScriptObject::object(
+        let obj = ScriptObject::new(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes.object),
         );

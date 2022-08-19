@@ -162,7 +162,7 @@ impl Value {
                 Avm1Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(values) => {
-                let object = Avm1ScriptObject::object(
+                let object = Avm1ScriptObject::new(
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes().object),
                 );

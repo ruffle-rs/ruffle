@@ -46,7 +46,7 @@ pub fn object_function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => {
-            Object::from(ScriptObject::object(activation.context.gc_context, None))
+            Object::from(ScriptObject::new(activation.context.gc_context, None))
         }
         val => val.coerce_to_object(activation),
     };

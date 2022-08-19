@@ -477,7 +477,7 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let object = ScriptObject::object(gc_context, Some(proto));
+    let object = ScriptObject::new(gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, gc_context, object, fn_proto);
     object.into()
 }

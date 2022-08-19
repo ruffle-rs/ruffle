@@ -40,7 +40,7 @@ impl<'gc> ArrayObject<'gc> {
         proto: Object<'gc>,
         elements: impl IntoIterator<Item = Value<'gc>>,
     ) -> Self {
-        let base = ScriptObject::object(gc_context, Some(proto));
+        let base = ScriptObject::new(gc_context, Some(proto));
         let mut length: i32 = 0;
         for value in elements.into_iter() {
             let length_str = AvmString::new_utf8(gc_context, length.to_string());

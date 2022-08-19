@@ -523,7 +523,7 @@ pub fn create<'gc>(
     capabilities: Object<'gc>,
     ime: Object<'gc>,
 ) -> Object<'gc> {
-    let system = ScriptObject::object(gc_context, proto);
+    let system = ScriptObject::new(gc_context, proto);
     define_properties_on(OBJECT_DECLS, gc_context, system, fn_proto);
     system.define_value(gc_context, "IME", ime.into(), Attribute::empty());
     system.define_value(gc_context, "security", security.into(), Attribute::empty());

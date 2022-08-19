@@ -302,7 +302,7 @@ impl Player {
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {
-                let object = ScriptObject::object(context.gc_context, None);
+                let object = ScriptObject::new(context.gc_context, None);
                 for (key, value) in context.swf.parameters().iter() {
                     object.define_value(
                         context.gc_context,

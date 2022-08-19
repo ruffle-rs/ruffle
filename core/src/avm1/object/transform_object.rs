@@ -31,7 +31,7 @@ impl<'gc> TransformObject<'gc> {
         Self(GcCell::allocate(
             gc_context,
             TransformData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 clip: None,
             },
         ))

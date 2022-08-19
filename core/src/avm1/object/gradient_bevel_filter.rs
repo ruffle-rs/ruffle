@@ -80,7 +80,7 @@ impl<'gc> GradientBevelFilterObject<'gc> {
         GradientBevelFilterObject(GcCell::allocate(
             gc_context,
             GradientBevelFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 alphas: vec![],
                 angle: 0.0,
                 blur_x: 0.0,

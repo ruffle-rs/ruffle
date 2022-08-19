@@ -32,7 +32,7 @@ impl<'gc> TextFormatObject<'gc> {
         Self(GcCell::allocate(
             gc_context,
             TextFormatData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 text_format: TextFormat::default(),
             },
         ))
@@ -42,7 +42,7 @@ impl<'gc> TextFormatObject<'gc> {
         Self(GcCell::allocate(
             activation.context.gc_context,
             TextFormatData {
-                base: ScriptObject::object(
+                base: ScriptObject::new(
                     activation.context.gc_context,
                     Some(activation.context.avm1.prototypes.text_format),
                 ),

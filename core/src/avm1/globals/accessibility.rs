@@ -44,7 +44,7 @@ pub fn create_accessibility_object<'gc>(
     proto: Option<Object<'gc>>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let accessibility = ScriptObject::object(gc_context, proto);
+    let accessibility = ScriptObject::new(gc_context, proto);
     define_properties_on(OBJECT_DECLS, gc_context, accessibility, fn_proto);
     accessibility.into()
 }

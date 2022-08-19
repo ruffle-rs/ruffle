@@ -42,7 +42,7 @@ impl<'gc> ColorTransformObject<'gc> {
         ColorTransformObject(GcCell::allocate(
             gc_context,
             ColorTransformData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 params: ColorTransformParams {
                     red_multiplier: 0.0,
                     green_multiplier: 0.0,

@@ -693,11 +693,11 @@ pub fn create_globals<'gc>(
     let boolean = boolean::create_boolean_object(gc_context, boolean_proto, Some(function_proto));
     let date = date::create_date_object(gc_context, date_proto, function_proto);
 
-    let flash = ScriptObject::object(gc_context, Some(object_proto));
+    let flash = ScriptObject::new(gc_context, Some(object_proto));
 
-    let geom = ScriptObject::object(gc_context, Some(object_proto));
-    let filters = ScriptObject::object(gc_context, Some(object_proto));
-    let display = ScriptObject::object(gc_context, Some(object_proto));
+    let geom = ScriptObject::new(gc_context, Some(object_proto));
+    let filters = ScriptObject::new(gc_context, Some(object_proto));
+    let display = ScriptObject::new(gc_context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(gc_context, matrix_proto, Some(function_proto));
     let point = point::create_point_object(gc_context, point_proto, function_proto);
@@ -921,7 +921,7 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
-    let external = ScriptObject::object(gc_context, Some(object_proto));
+    let external = ScriptObject::new(gc_context, Some(object_proto));
     let external_interface = external_interface::create_external_interface_object(
         gc_context,
         external_interface_proto,

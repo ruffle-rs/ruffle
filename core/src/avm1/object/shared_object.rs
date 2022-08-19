@@ -37,7 +37,7 @@ impl<'gc> SharedObject<'gc> {
         SharedObject(GcCell::allocate(
             gc_context,
             SharedObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 name: None,
             },
         ))

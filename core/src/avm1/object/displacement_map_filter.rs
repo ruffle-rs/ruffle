@@ -97,7 +97,7 @@ impl<'gc> DisplacementMapFilterObject<'gc> {
         DisplacementMapFilterObject(GcCell::allocate(
             gc_context,
             DisplacementMapFilterData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 alpha: 0.0,
                 color: 0,
                 component_x: 0,

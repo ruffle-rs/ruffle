@@ -85,7 +85,7 @@ impl<'gc> XmlObject<'gc> {
         let object = Self(GcCell::allocate(
             gc_context,
             XmlObjectData {
-                base: ScriptObject::object(gc_context, proto),
+                base: ScriptObject::new(gc_context, proto),
                 root,
                 xml_decl: None,
                 doctype: None,
