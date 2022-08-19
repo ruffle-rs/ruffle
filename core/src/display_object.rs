@@ -374,7 +374,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn set_blend_mode(&mut self, value: BlendMode) {
         if value != BlendMode::Normal {
             log::warn!(
-                "Blend mode '{}' is experimental and will not render 100% correctly.",
+                "Blend mode '{}' is unsupported and will not render correctly.",
                 value
             );
         }

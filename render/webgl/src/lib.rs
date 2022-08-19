@@ -666,64 +666,17 @@ impl WebGlRenderBackend {
                 // src + (1-a)
                 (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
             }
-            BlendMode::Layer => {
-                // TODO: Needs intermediate buffer.
-                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
-            }
-            BlendMode::Multiply => {
-                // src * dst
-                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
-            }
-            BlendMode::Screen => {
-                // 1 - (1 - src) * (1 - dst)
-                // TODO: Needs shader. Rendering as additive for now
-                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
-            }
-            BlendMode::Lighten => {
-                // max(src, dst)
-                (Gl2::MAX, Gl::ONE, Gl::ONE)
-            }
-            BlendMode::Darken => {
-                // min(src, dst)
-                (Gl2::MIN, Gl::ONE, Gl::ONE)
-            }
-            BlendMode::Difference => {
-                // abs(src - dst)
-                (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
-            }
             BlendMode::Add => {
-                // abs(src - dst)
+                // src + dst
                 (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
             }
             BlendMode::Subtract => {
-                // abs(src - dst)
+                // dst - src
                 (Gl::FUNC_REVERSE_SUBTRACT, Gl::ONE, Gl::ONE)
             }
-            BlendMode::Invert => {
-                // 1 - dst
-                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE)
-            }
-            BlendMode::Alpha => {
-                // dst.a = src.a
-                // TODO: Unimplemeneted, needs intermediate buffer.
-                // Parent display object needs to have Layer blend mode.
+            _ => {
+                // TODO: Unsupported blend mode. Default to normal for now.
                 (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
-            }
-            BlendMode::Erase => {
-                // dst.a = 1 - src.a
-                // TODO: Unimplemeneted, needs intermediate buffer.
-                // Parent display object needs to have Layer blend mode.
-                (Gl::FUNC_ADD, Gl::ONE, Gl::ONE_MINUS_SRC_ALPHA)
-            }
-            BlendMode::HardLight => {
-                // if src > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
-                // TODO: Needs shader, rendered as multiply for now.
-                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
-            }
-            BlendMode::Overlay => {
-                // if dst > .5 { 1 - (1 - dst) * (1 - src) } else { dst * src }
-                // TODO: Needs shader, rendered as multiply for now.
-                (Gl::FUNC_ADD, Gl::DST_COLOR, Gl::ZERO)
             }
         };
         self.gl.blend_equation_separate(blend_op, Gl::FUNC_ADD);
