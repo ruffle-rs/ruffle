@@ -1,13 +1,8 @@
 //! Object trait to expose objects to AVM
 
+use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionName, ExecutionReason, FunctionObject};
-use crate::avm1::object::shared_object::SharedObject;
-use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::object::value_object::ValueObject;
-use crate::avm1::property::Attribute;
-
-use crate::avm1::activation::Activation;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::bevel_filter::BevelFilterObject;
 use crate::avm1::object::bitmap_data::BitmapDataObject;
@@ -21,14 +16,18 @@ use crate::avm1::object::drop_shadow_filter::DropShadowFilterObject;
 use crate::avm1::object::glow_filter::GlowFilterObject;
 use crate::avm1::object::gradient_bevel_filter::GradientBevelFilterObject;
 use crate::avm1::object::gradient_glow_filter::GradientGlowFilterObject;
-use crate::avm1::object::text_format_object::TextFormatObject;
+use crate::avm1::object::shared_object::SharedObject;
+use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::object::transform_object::TransformObject;
+use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::xml_node_object::XmlNodeObject;
 use crate::avm1::object::xml_object::XmlObject;
+use crate::avm1::property::Attribute;
 use crate::avm1::{AvmString, ScriptObject, SoundObject, StageObject, Value};
 use crate::display_object::DisplayObject;
+use crate::html::TextFormat;
 use crate::xml::XmlNode;
-use gc_arena::{Collect, MutationContext};
+use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_macros::enum_trait_object;
 use std::fmt::Debug;
 
@@ -51,11 +50,17 @@ pub mod shared_object;
 pub mod sound_object;
 pub mod stage_object;
 pub mod super_object;
-pub mod text_format_object;
 pub mod transform_object;
 pub mod value_object;
 pub mod xml_node_object;
 pub mod xml_object;
+
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+pub enum NativeObject<'gc> {
+    None,
+    TextFormat(GcCell<'gc, TextFormat>),
+}
 
 /// Represents an object that can be directly interacted with by the AVM
 /// runtime.
@@ -87,7 +92,6 @@ pub mod xml_object;
         GradientGlowFilterObject(GradientGlowFilterObject<'gc>),
         DateObject(DateObject<'gc>),
         BitmapData(BitmapDataObject<'gc>),
-        TextFormatObject(TextFormatObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -493,6 +497,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(false)
     }
 
+    fn native(&self) -> NativeObject<'gc> {
+        NativeObject::None
+    }
+
+    fn set_native(&self, _gc_context: MutationContext<'gc, '_>, _native: NativeObject<'gc>) {}
+
     /// Get the underlying script object, if it exists.
     fn as_script_object(&self) -> Option<ScriptObject<'gc>>;
 
@@ -608,11 +618,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get the underlying `BitmapDataObject`, if it exists
     fn as_bitmap_data_object(&self) -> Option<BitmapDataObject<'gc>> {
-        None
-    }
-
-    /// Get the underlying `TextFormatObject`, if it exists
-    fn as_text_format_object(&self) -> Option<TextFormatObject<'gc>> {
         None
     }
 
