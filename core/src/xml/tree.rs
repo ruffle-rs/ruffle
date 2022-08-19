@@ -65,7 +65,7 @@ impl<'gc> XmlNode<'gc> {
                 next_sibling: None,
                 node_type,
                 node_value,
-                attributes: ScriptObject::bare_object(mc),
+                attributes: ScriptObject::new(mc, None),
                 children: Vec::new(),
             },
         ))
@@ -379,7 +379,7 @@ impl<'gc> XmlNode<'gc> {
     ///
     /// If the `deep` flag is set true, then the entire node tree will be cloned.
     pub fn duplicate(self, gc_context: MutationContext<'gc, '_>, deep: bool) -> Self {
-        let attributes = ScriptObject::bare_object(gc_context);
+        let attributes = ScriptObject::new(gc_context, None);
         for (key, value) in self.attributes().own_properties() {
             attributes.define_value(gc_context, key, value, Attribute::empty());
         }

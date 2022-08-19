@@ -936,7 +936,7 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
-    let globals = ScriptObject::bare_object(gc_context);
+    let globals = ScriptObject::new(gc_context, None);
     globals.define_value(
         gc_context,
         "AsBroadcaster",

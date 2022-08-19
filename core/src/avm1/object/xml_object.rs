@@ -89,7 +89,7 @@ impl<'gc> XmlObject<'gc> {
                 root,
                 xml_decl: None,
                 doctype: None,
-                id_map: ScriptObject::bare_object(gc_context),
+                id_map: ScriptObject::new(gc_context, None),
                 status: XmlStatus::NoError,
             },
         ));

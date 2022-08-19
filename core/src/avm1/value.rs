@@ -920,9 +920,9 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let bo = Value::Object(ScriptObject::bare_object(activation.context.gc_context).into());
+            let o = ScriptObject::new(activation.context.gc_context, None);
 
-            assert!(bo.coerce_to_f64(activation).unwrap().is_nan());
+            assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
             Ok(())
         });
@@ -942,9 +942,9 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let bo = Value::Object(ScriptObject::bare_object(activation.context.gc_context).into());
+            let o = ScriptObject::new(activation.context.gc_context, None);
 
-            assert_eq!(bo.coerce_to_f64(activation).unwrap(), 0.0);
+            assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 
             Ok(())
         });

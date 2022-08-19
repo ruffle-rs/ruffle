@@ -131,7 +131,7 @@ fn get_progress<'gc>(
             }
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::bare_object(activation.context.gc_context);
+        let result = ScriptObject::new(activation.context.gc_context, None);
         if let Some(target) = target {
             if let Some(movie) = target.movie() {
                 result.define_value(
