@@ -1130,7 +1130,7 @@ fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    crate::avm1::start_drag(movie_clip.into(), activation, args);
+    crate::avm1::activation::start_drag(movie_clip.into(), activation, args);
     Ok(Value::Undefined)
 }
 

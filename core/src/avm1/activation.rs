@@ -5,7 +5,7 @@ use crate::avm1::object::{Object, TObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::Scope;
-use crate::avm1::{fscommand, globals, scope, start_drag, ArrayObject, ScriptObject, Value};
+use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
@@ -18,12 +18,14 @@ use gc_arena::{Gc, GcCell, MutationContext};
 use indexmap::IndexMap;
 use instant::Instant;
 use rand::Rng;
+use ruffle_render::bounding_box::BoundingBox;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cell::{Ref, RefMut};
 use std::fmt;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
+use swf::Twips;
 use url::form_urlencoded;
 
 macro_rules! avm_debug {
@@ -2950,4 +2952,85 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         ));
         Ok(FrameControl::Continue)
     }
+}
+
+/// Starts dragging this display object, making it follow the cursor.
+/// Runs via the `startDrag` method or `StartDrag` AVM1 action.
+pub fn start_drag<'gc>(
+    display_object: DisplayObject<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    args: &[Value<'gc>],
+) {
+    let lock_center = args
+        .get(0)
+        .map(|o| o.as_bool(activation.context.swf.version()))
+        .unwrap_or(false);
+
+    let offset = if lock_center {
+        // The object's origin point is locked to the mouse.
+        Default::default()
+    } else {
+        // The object moves relative to current mouse position.
+        // Calculate the offset from the mouse to the object in world space.
+        let (object_x, object_y) = display_object.local_to_global(Default::default());
+        let (mouse_x, mouse_y) = *activation.context.mouse_position;
+        (object_x - mouse_x, object_y - mouse_y)
+    };
+
+    let constraint = if args.len() > 1 {
+        // Invalid values turn into 0.
+        let mut x_min = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut y_min = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut x_max = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+        let mut y_max = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_f64(activation)
+            .map(|n| if n.is_finite() { n } else { 0.0 })
+            .map(Twips::from_pixels)
+            .unwrap_or_default();
+
+        // Normalize the bounds.
+        if x_max.get() < x_min.get() {
+            std::mem::swap(&mut x_min, &mut x_max);
+        }
+        if y_max.get() < y_min.get() {
+            std::mem::swap(&mut y_min, &mut y_max);
+        }
+        BoundingBox {
+            valid: true,
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+        }
+    } else {
+        // No constraints.
+        Default::default()
+    };
+
+    let drag_object = crate::player::DragObject {
+        display_object,
+        offset,
+        constraint,
+    };
+    *activation.context.drag_object = Some(drag_object);
 }
