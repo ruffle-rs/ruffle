@@ -306,7 +306,7 @@ impl Iterator for StreamTagReader {
                             self.mp3_samples_buffered += i32::from(num_samples);
                             audio_block = &audio_block[4..];
                         }
-                        *audio_data = swf_data.to_subslice(audio_block).unwrap();
+                        *audio_data = swf_data.to_subslice(audio_block);
                         Ok(())
                     }
                     TagCode::ShowFrame if compression == AudioCompression::Mp3 => {

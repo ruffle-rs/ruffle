@@ -205,18 +205,18 @@ impl SwfSlice {
     ///
     /// This function returns None if the given slice is not a subslice of the
     /// current slice.
-    pub fn to_subslice(&self, slice: &[u8]) -> Option<Self> {
+    pub fn to_subslice(&self, slice: &[u8]) -> Self {
         let self_pval = self.movie.data().as_ptr() as usize;
         let slice_pval = slice.as_ptr() as usize;
 
         if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
-            Some(Self {
+            Self {
                 movie: self.movie.clone(),
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
-            })
+            }
         } else {
-            None
+            self.copy_empty()
         }
     }
 
@@ -289,7 +289,6 @@ impl SwfSlice {
         if new_start <= new_end {
             if let Some(result) = self.movie.data().get(new_start..new_end) {
                 self.to_subslice(result)
-                    .unwrap_or_else(|| self.copy_empty())
             } else {
                 self.copy_empty()
             }
