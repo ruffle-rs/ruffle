@@ -195,6 +195,12 @@ impl SwfSlice {
         }
     }
 
+    /// Creates an empty SwfSlice of the same movie.
+    #[inline]
+    pub fn copy_empty(&self) -> Self {
+        Self::empty(self.movie.clone())
+    }
+
     /// Construct a new SwfSlice from a regular slice.
     ///
     /// This function returns None if the given slice is not a subslice of the
@@ -273,17 +279,22 @@ impl SwfSlice {
     /// Construct a new SwfSlice from a start and an end.
     ///
     /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield None if the calculated slice
+    /// Furthermore, this function will yield an empty slice if the calculated slice
     /// would be invalid (e.g. negative length) or would extend past the end of
     /// the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Option<Self> {
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
         let new_start = self.start + start;
         let new_end = self.start + end;
 
         if new_start <= new_end {
-            self.to_subslice(self.movie.data().get(new_start..new_end)?)
+            if let Some(result) = self.movie.data().get(new_start..new_end) {
+                self.to_subslice(result)
+                    .unwrap_or_else(|| self.copy_empty())
+            } else {
+                self.copy_empty()
+            }
         } else {
-            None
+            self.copy_empty()
         }
     }
 
