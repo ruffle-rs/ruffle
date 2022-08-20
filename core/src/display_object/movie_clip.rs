@@ -3291,13 +3291,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                 let slice = mc
                     .static_data
                     .swf
-                    .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len())
-                    .ok_or_else(|| {
-                        std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            "Invalid slice generated when constructing sound stream block",
-                        )
-                    })?;
+                    .to_start_and_end(mc.tag_stream_pos as usize, mc.tag_stream_len());
                 let audio_stream = context.start_stream(
                     mc.static_data.audio_stream_handle,
                     self,
