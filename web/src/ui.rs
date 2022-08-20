@@ -1,24 +1,8 @@
 use super::JavascriptPlayer;
-use ruffle_core::backend::ui::{Error, MouseCursor, UiBackend};
+use ruffle_core::backend::ui::{FullscreenError, MouseCursor, UiBackend};
 use ruffle_web_common::JsResult;
+use std::borrow::Cow;
 use web_sys::HtmlCanvasElement;
-
-#[derive(Debug)]
-struct FullScreenError {
-    jsval: String,
-}
-
-impl std::fmt::Display for FullScreenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.jsval)
-    }
-}
-
-impl std::error::Error for FullScreenError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
 
 /// An implementation of `UiBackend` utilizing `web_sys` bindings to input APIs.
 pub struct WebUiBackend {
@@ -75,14 +59,13 @@ impl UiBackend for WebUiBackend {
         log::warn!("set clipboard not implemented");
     }
 
-    fn set_fullscreen(&mut self, is_full: bool) -> Result<(), Error> {
+    fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {
         match self.js_player.set_fullscreen(is_full) {
             Ok(_) => Ok(()),
-            Err(jsval) => Err(Box::new(FullScreenError {
-                jsval: jsval
-                    .as_string()
-                    .unwrap_or_else(|| "Failed to change full screen state".to_string()),
-            })),
+            Err(jsval) => Err(jsval
+                .as_string()
+                .map(Cow::Owned)
+                .unwrap_or_else(|| Cow::Borrowed("Failed to change full screen state"))),
         }
     }
 
