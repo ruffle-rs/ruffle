@@ -147,7 +147,6 @@ impl<'gc> GcRootData<'gc> {
         )
     }
 }
-type Error = Box<dyn std::error::Error>;
 
 make_arena!(GcArena, GcRoot);
 
@@ -1577,7 +1576,7 @@ impl Player {
         gc_context: gc_arena::MutationContext<'gc, '_>,
         data: &[u8],
         renderer: &mut dyn RenderBackend,
-    ) -> Result<crate::font::Font<'gc>, Error> {
+    ) -> Result<crate::font::Font<'gc>, swf::error::Error> {
         let mut reader = swf::read::Reader::new(data, 8);
         let device_font = crate::font::Font::from_swf_tag(
             gc_context,
