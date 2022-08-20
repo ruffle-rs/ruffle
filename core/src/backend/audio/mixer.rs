@@ -5,7 +5,7 @@ use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::tag_utils::SwfSlice;
 use generational_arena::Arena;
 use std::io::Cursor;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
 
 /// An audio mixer for a Flash movie.
@@ -21,6 +21,9 @@ pub struct AudioMixer {
 
     /// The list of actively playing sound instances.
     sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+
+    /// The master volume of the audio from [0.0, 1.0].
+    volume: Arc<RwLock<f32>>,
 
     /// The number of channels in the output stream. Must be 1 or 2.
     num_output_channels: u8,
@@ -152,6 +155,7 @@ impl AudioMixer {
         Self {
             sounds: Arena::new(),
             sound_instances: Arc::new(Mutex::new(Arena::new())),
+            volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
             output_sample_rate,
         }
@@ -161,6 +165,7 @@ impl AudioMixer {
     pub fn proxy(&self) -> AudioMixerProxy {
         AudioMixerProxy {
             sound_instances: Arc::clone(&self.sound_instances),
+            volume: Arc::clone(&self.volume),
             num_output_channels: self.num_output_channels,
         }
     }
@@ -176,8 +181,10 @@ impl AudioMixer {
         T::Float: dasp::sample::conv::FromSample<f32>,
     {
         let mut sound_instances = self.sound_instances.lock().unwrap();
+        let volume = *self.volume.read().unwrap();
         Self::mix_audio::<T>(
             &mut sound_instances,
+            volume,
             self.num_output_channels,
             output_buffer,
         )
@@ -317,6 +324,7 @@ impl AudioMixer {
     /// and mixing in their output.
     fn mix_audio<'a, T>(
         sound_instances: &mut Arena<SoundInstance>,
+        volume: f32,
         num_channels: u8,
         mut output_buffer: &mut [T],
     ) where
@@ -330,6 +338,8 @@ impl AudioMixer {
         };
         use std::ops::DerefMut;
 
+        let volume = volume.to_sample();
+
         // For each sample, mix the samples from all active sound instances.
         for buf_frame in output_buffer
             .deref_mut()
@@ -341,10 +351,11 @@ impl AudioMixer {
                     let sound_frame = sound.stream.next();
                     let [left_0, left_1] = sound_frame.mul_amp(sound.left_transform);
                     let [right_0, right_1] = sound_frame.mul_amp(sound.right_transform);
-                    let sound_frame: Stereo<T::Signed> = [
+                    let mut sound_frame: Stereo<T::Signed> = [
                         Sample::add_amp(left_0, left_1).to_sample(),
                         Sample::add_amp(right_0, right_1).to_sample(),
                     ];
+                    sound_frame = sound_frame.scale_amp(volume);
                     output_frame = output_frame.add_amp(sound_frame);
                 } else {
                     sound.active = false;
@@ -508,6 +519,14 @@ impl AudioMixer {
             instance.right_transform = [transform.left_to_right, transform.right_to_right];
         }
     }
+
+    pub fn volume(&self) -> f32 {
+        *self.volume.read().unwrap()
+    }
+
+    pub fn set_volume(&mut self, volume: f32) {
+        *self.volume.write().unwrap() = volume
+    }
 }
 
 /// A thread-safe proxy to the main `AudioMixer`, allowing for mixing audio from a different thread.
@@ -517,6 +536,9 @@ impl AudioMixer {
 pub struct AudioMixerProxy {
     /// The list of actively playing sound instances.
     sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+
+    /// The master volume of the audio from [0.0, 1.0].
+    volume: Arc<RwLock<f32>>,
 
     /// The number of channels in the output stream. Must be 1 or 2.
     num_output_channels: u8,
@@ -534,8 +556,10 @@ impl AudioMixerProxy {
         T::Float: dasp::sample::conv::FromSample<f32>,
     {
         let mut sound_instances = self.sound_instances.lock().unwrap();
+        let volume = *self.volume.read().unwrap();
         AudioMixer::mix_audio::<T>(
             &mut sound_instances,
+            volume,
             self.num_output_channels,
             output_buffer,
         )
@@ -913,6 +937,16 @@ macro_rules! impl_audio_mixer_backend {
             transform: SoundTransform,
         ) {
             self.$mixer.set_sound_transform(instance, transform)
+        }
+
+        #[inline]
+        fn volume(&self) -> f32 {
+            self.$mixer.volume()
+        }
+
+        #[inline]
+        fn set_volume(&mut self, volume: f32) {
+            self.$mixer.set_volume(volume)
         }
     };
 }
