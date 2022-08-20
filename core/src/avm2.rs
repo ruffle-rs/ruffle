@@ -279,16 +279,12 @@ impl<'gc> Avm2<'gc> {
         let num_read = reader.pos(start);
 
         // The rest of the tag is an ABC file so we can take our SwfSlice now.
-        let slice = swf
-            .resize_to_reader(reader, tag_len - num_read)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running init action",
-                )
-            })?;
+        let slice = swf.resize_to_reader(reader, tag_len - num_read);
 
-        Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain)?;
+        if !slice.is_empty() {
+            Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain)?;
+        }
+
         Ok(())
     }
 
