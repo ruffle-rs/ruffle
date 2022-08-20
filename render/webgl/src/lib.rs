@@ -9,8 +9,9 @@ use ruffle_render::tessellator::{
     Gradient as TessGradient, GradientType, ShapeTessellator, Vertex as TessVertex,
 };
 use ruffle_render::transform::Transform;
-use ruffle_web_common::JsResult;
+use ruffle_web_common::{JsError, JsResult};
 use swf::{BlendMode, Color};
+use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     HtmlCanvasElement, OesVertexArrayObject, WebGl2RenderingContext as Gl2, WebGlBuffer,
@@ -18,7 +19,44 @@ use web_sys::{
     WebGlTexture, WebGlUniformLocation, WebGlVertexArrayObject, WebglDebugRendererInfo,
 };
 
-type Error = Box<dyn std::error::Error>;
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Couldn't create GL context")]
+    CantCreateGLContext,
+
+    #[error("Couldn't create frame buffer")]
+    UnableToCreateFrameBuffer,
+
+    #[error("Couldn't create program")]
+    UnableToCreateProgram,
+
+    #[error("Couldn't create texture")]
+    UnableToCreateTexture,
+
+    #[error("Couldn't compile shader")]
+    UnableToCreateShader,
+
+    #[error("Couldn't create render buffer")]
+    UnableToCreateRenderBuffer,
+
+    #[error("Couldn't create vertex array object")]
+    UnableToCreateVAO,
+
+    #[error("Javascript error: {0}")]
+    JavascriptError(#[from] JsError),
+
+    #[error("OES_element_index_uint extension not available")]
+    OESExtensionNotFound,
+
+    #[error("VAO extension not found")]
+    VAOExtensionNotFound,
+
+    #[error("Couldn't link shader program: {0}")]
+    LinkingShaderProgram(String),
+
+    #[error("GL Error in {0}: {1}")]
+    GLError(&'static str, u32),
+}
 
 const COLOR_VERTEX_GLSL: &str = include_str!("../shaders/color.vert");
 const COLOR_FRAGMENT_GLSL: &str = include_str!("../shaders/color.frag");
@@ -138,7 +176,9 @@ impl WebGlRenderBackend {
             canvas.get_context_with_context_options("webgl2", &context_options)
         {
             log::info!("Creating WebGL2 context.");
-            let gl2 = gl.dyn_into::<Gl2>().map_err(|_| "Expected GL context")?;
+            let gl2 = gl
+                .dyn_into::<Gl2>()
+                .map_err(|_| Error::CantCreateGLContext)?;
 
             // Determine MSAA sample count.
             // Default to 4x MSAA on desktop, 2x on mobile/tablets.
@@ -179,22 +219,24 @@ impl WebGlRenderBackend {
             {
                 log::info!("Falling back to WebGL1.");
 
-                let gl = gl.dyn_into::<Gl>().map_err(|_| "Expected GL context")?;
+                let gl = gl
+                    .dyn_into::<Gl>()
+                    .map_err(|_| Error::CantCreateGLContext)?;
                 // `dyn_into` doesn't work here; why?
                 let vao = gl
                     .get_extension("OES_vertex_array_object")
                     .into_js_result()?
-                    .ok_or("VAO extension not found")?
+                    .ok_or(Error::VAOExtensionNotFound)?
                     .unchecked_into::<OesVertexArrayObject>();
 
                 // On WebGL1, we need to explicitly request support for u32 index buffers.
                 let _ext = gl
                     .get_extension("OES_element_index_uint")
                     .into_js_result()?
-                    .ok_or("OES_element_index_uint extension not available")?;
+                    .ok_or(Error::OESExtensionNotFound)?;
                 (gl, None, vao, 1)
             } else {
-                return Err("Unable to create WebGL rendering context".into());
+                return Err(Error::CantCreateGLContext);
             }
         };
 
@@ -369,7 +411,7 @@ impl WebGlRenderBackend {
     fn compile_shader(gl: &Gl, shader_type: u32, glsl_src: &str) -> Result<WebGlShader, Error> {
         let shader = gl
             .create_shader(shader_type)
-            .ok_or("Unable to create shader")?;
+            .ok_or(Error::UnableToCreateShader)?;
         gl.shader_source(&shader, glsl_src);
         gl.compile_shader(&shader);
         if log::log_enabled!(log::Level::Error) {
@@ -402,10 +444,10 @@ impl WebGlRenderBackend {
         // Create frame and render buffers.
         let render_framebuffer = gl
             .create_framebuffer()
-            .ok_or("Unable to create framebuffer")?;
+            .ok_or(Error::UnableToCreateFrameBuffer)?;
         let color_framebuffer = gl
             .create_framebuffer()
-            .ok_or("Unable to create framebuffer")?;
+            .ok_or(Error::UnableToCreateFrameBuffer)?;
 
         // Note for future self:
         // Whenever we support playing transparent movies,
@@ -413,7 +455,7 @@ impl WebGlRenderBackend {
         // be premultiplied alpha.
         let color_renderbuffer = gl
             .create_renderbuffer()
-            .ok_or("Unable to create renderbuffer")?;
+            .ok_or(Error::UnableToCreateRenderBuffer)?;
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&color_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
@@ -426,7 +468,7 @@ impl WebGlRenderBackend {
 
         let stencil_renderbuffer = gl
             .create_renderbuffer()
-            .ok_or("Unable to create renderbuffer")?;
+            .ok_or(Error::UnableToCreateFrameBuffer)?;
         gl.bind_renderbuffer(Gl2::RENDERBUFFER, Some(&stencil_renderbuffer));
         gl.renderbuffer_storage_multisample(
             Gl2::RENDERBUFFER,
@@ -451,7 +493,7 @@ impl WebGlRenderBackend {
             Some(&stencil_renderbuffer),
         );
 
-        let framebuffer_texture = gl.create_texture().ok_or("Unable to create texture")?;
+        let framebuffer_texture = gl.create_texture().ok_or(Error::UnableToCreateTexture)?;
         gl.bind_texture(Gl2::TEXTURE_2D, Some(&framebuffer_texture));
         gl.tex_parameteri(Gl2::TEXTURE_2D, Gl2::TEXTURE_MAG_FILTER, Gl::NEAREST as i32);
         gl.tex_parameteri(Gl2::TEXTURE_2D, Gl2::TEXTURE_MIN_FILTER, Gl::NEAREST as i32);
@@ -617,14 +659,14 @@ impl WebGlRenderBackend {
     /// Creates and binds a new VAO.
     fn create_vertex_array(&self) -> Result<WebGlVertexArrayObject, Error> {
         let vao = if let Some(gl2) = &self.gl2 {
-            let vao = gl2.create_vertex_array().ok_or("Unable to create VAO")?;
+            let vao = gl2.create_vertex_array().ok_or(Error::UnableToCreateVAO)?;
             gl2.bind_vertex_array(Some(&vao));
             vao
         } else {
             let vao = self
                 .vao_ext
                 .create_vertex_array_oes()
-                .ok_or("Unable to create VAO")?;
+                .ok_or(Error::UnableToCreateVAO)?;
             self.vao_ext.bind_vertex_array_oes(Some(&vao));
             vao
         };
@@ -1472,7 +1514,7 @@ impl ShaderProgram {
         vertex_shader: &WebGlShader,
         fragment_shader: &WebGlShader,
     ) -> Result<Self, Error> {
-        let program = gl.create_program().ok_or("Unable to create program")?;
+        let program = gl.create_program().ok_or(Error::UnableToCreateProgram)?;
         gl.attach_shader(&program, vertex_shader);
         gl.attach_shader(&program, fragment_shader);
 
@@ -1487,7 +1529,7 @@ impl ShaderProgram {
                 gl.get_program_info_log(&program)
             );
             log::error!("{}", msg);
-            return Err(msg.into());
+            return Err(Error::LinkingShaderProgram(msg));
         }
 
         // Find uniforms.
@@ -1561,7 +1603,7 @@ impl GlExt for Gl {
     fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
         match self.get_error() {
             Self::NO_ERROR => Ok(()),
-            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+            error => Err(Error::GLError(error_msg, error)),
         }
     }
 }
@@ -1571,7 +1613,7 @@ impl GlExt for Gl2 {
     fn check_error(&self, error_msg: &'static str) -> Result<(), Error> {
         match self.get_error() {
             Self::NO_ERROR => Ok(()),
-            error => Err(format!("WebGL: Error in {}: {}", error_msg, error).into()),
+            error => Err(Error::GLError(error_msg, error)),
         }
     }
 }
