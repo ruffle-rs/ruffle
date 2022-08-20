@@ -8,7 +8,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo};
 use swf::{VideoCodec, VideoDeblocking};
 
-mod decoders;
+pub mod decoders;
 
 #[cfg(feature = "h263")]
 use self::decoders::h263;
@@ -57,7 +57,7 @@ impl VideoBackend for SoftwareVideoBackend {
             VideoCodec::Vp6WithAlpha => Box::new(vp6::Vp6Decoder::new(true, size)),
             #[cfg(feature = "screenvideo")]
             VideoCodec::ScreenVideo => Box::new(screen::ScreenVideoDecoder::new()),
-            _ => return Err(format!("Unsupported video codec type {:?}", codec).into()),
+            other => return Err(Error::UnsupportedCodec(other)),
         };
         let stream = VideoStream::new(decoder);
         let stream_handle = self.streams.insert(stream);
@@ -72,7 +72,7 @@ impl VideoBackend for SoftwareVideoBackend {
         let stream = self
             .streams
             .get_mut(stream)
-            .ok_or("Unregistered video stream")?;
+            .ok_or(Error::VideoStreamIsNotRegistered)?;
 
         stream.decoder.preload_frame(encoded_frame)
     }
@@ -86,7 +86,7 @@ impl VideoBackend for SoftwareVideoBackend {
         let stream = self
             .streams
             .get_mut(stream)
-            .ok_or("Unregistered video stream")?;
+            .ok_or(Error::VideoStreamIsNotRegistered)?;
 
         let frame = stream.decoder.decode_frame(encoded_frame)?;
         let handle = if let Some(bitmap) = stream.bitmap {

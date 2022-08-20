@@ -4,7 +4,7 @@ use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
-use crate::backend::video::{EncodedFrame, VideoStreamHandle};
+use crate::backend::video::{EncodedFrame, Error, VideoStreamHandle};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
@@ -257,10 +257,7 @@ impl<'gc> Video<'gc> {
                     if let Some((_old_id, old_frame)) = read.decoded_frame {
                         Ok(old_frame)
                     } else {
-                        Err(Box::from(format!(
-                            "Attempted to seek to omitted frame {} without prior decoded frame",
-                            frame_id
-                        )))
+                        Err(Error::SeekingBeforeDecoding(frame_id))
                     }
                 }
             },

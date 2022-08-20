@@ -6,6 +6,24 @@ use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
 
 use flate2::Decompress;
 
+#[derive(thiserror::Error, Debug)]
+pub enum ScreenError {
+    #[error("Unexpected end of file")]
+    UnexpectedEOF,
+
+    #[error("Decompression error")]
+    DecompressionError(#[from] flate2::DecompressError),
+
+    #[error("Invalid frame type: {0}")]
+    InvalidFrameType(u8),
+
+    #[error("Missing reference frame")]
+    MissingReferenceFrame,
+
+    #[error("Not all blocks were updated by a supposed keyframe")]
+    KeyframeInvalid,
+}
+
 /// Screen Video (V1 only) decoder.
 pub struct ScreenVideoDecoder {
     w: usize,
@@ -28,24 +46,24 @@ impl<'a> ByteReader<'a> {
         Self { data, pos: 0 }
     }
 
-    fn read_byte(&mut self) -> Result<u8, Error> {
+    fn read_byte(&mut self) -> Result<u8, ScreenError> {
         if self.pos >= self.data.len() {
-            return Err(Error::from("Unexpected end of data"));
+            return Err(ScreenError::UnexpectedEOF);
         }
         let byte = self.data[self.pos];
         self.pos += 1;
         Ok(byte)
     }
 
-    fn read_u16be(&mut self) -> Result<u16, Error> {
+    fn read_u16be(&mut self) -> Result<u16, ScreenError> {
         let byte1 = self.read_byte()?;
         let byte2 = self.read_byte()?;
         Ok((byte1 as u16) << 8 | (byte2 as u16))
     }
 
-    fn read_buf_ref(&mut self, length: usize) -> Result<&[u8], Error> {
+    fn read_buf_ref(&mut self, length: usize) -> Result<&[u8], ScreenError> {
         if self.pos + length > self.data.len() {
-            return Err(Error::from("Unexpected end of data"));
+            return Err(ScreenError::UnexpectedEOF);
         }
         let result = &self.data[self.pos..self.pos + length];
         self.pos += length;
@@ -85,7 +103,7 @@ impl ScreenVideoDecoder {
                             &mut self.tile[..cur_w * cur_h * 3],
                             flate2::FlushDecompress::Finish,
                         )
-                        .map_err(|e| format!("Error while inflating block: {}", e))?;
+                        .map_err(ScreenError::DecompressionError)?;
 
                     for (dst, src) in row[x * 3..]
                         .chunks_mut(stride)
@@ -118,10 +136,7 @@ impl VideoDecoder for ScreenVideoDecoder {
         match encoded_frame.data[0] >> 4 {
             1 => Ok(FrameDependency::None),
             2 => Ok(FrameDependency::Past),
-            x => Err(Error::from(format!(
-                "Unexpected Screen Video frame type: {}",
-                x
-            ))),
+            x => Err(ScreenError::InvalidFrameType(x).into()),
         }
     }
 
@@ -129,7 +144,7 @@ impl VideoDecoder for ScreenVideoDecoder {
         let is_keyframe = encoded_frame.data[0] >> 4 == 1;
 
         if !is_keyframe && self.last_frame.is_none() {
-            return Err(Error::from("Missing reference frame"));
+            return Err(ScreenError::MissingReferenceFrame.into());
         }
 
         // Need to drop the extra preceding byte
@@ -164,9 +179,7 @@ impl VideoDecoder for ScreenVideoDecoder {
         let is_intra = self.decode_v1(&mut br, data.as_mut_slice(), stride)?;
 
         if is_intra != is_keyframe {
-            return Err(Error::from(
-                "Not all blocks were updated by a supposed keyframe",
-            ));
+            return Err(ScreenError::KeyframeInvalid.into());
         }
 
         let mut rgba = vec![0u8; w * h * 4];

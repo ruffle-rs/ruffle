@@ -9,6 +9,25 @@ use nihav_core::codecs::NADecoderSupport;
 use nihav_duck::codecs::vp6::{VP56Decoder, VP56Parser, VP6BR};
 use nihav_duck::codecs::vpcommon::{BoolCoder, VP_YUVA420_FORMAT};
 
+#[derive(thiserror::Error, Debug)]
+pub enum Vp6Error {
+    #[error("Decoder error: {0:?}")]
+    // DecoderError doesn't impl Error... so this is manual.
+    DecoderError(nihav_core::codecs::DecoderError),
+
+    #[error("Unexpected skip frame")]
+    UnexpectedSkipFrame,
+
+    #[error("Invalid buffer type")]
+    InvalidBufferType,
+}
+
+impl From<nihav_core::codecs::DecoderError> for Vp6Error {
+    fn from(error: nihav_core::codecs::DecoderError) -> Self {
+        Vp6Error::DecoderError(error)
+    }
+}
+
 /// VP6 video decoder.
 pub struct Vp6Decoder {
     with_alpha: bool,
@@ -72,16 +91,12 @@ impl VideoDecoder for Vp6Decoder {
             } else {
                 encoded_frame.data
             })
-            .map_err(|error| {
-                Error::from(format!("Error constructing VP6 bool coder: {:?}", error))
-            })?;
+            .map_err(Vp6Error::DecoderError)?;
 
             let header = self
                 .bitreader
                 .parse_header(&mut bool_coder)
-                .map_err(|error| {
-                    Error::from(format!("Error parsing VP6 frame header: {:?}", error))
-                })?;
+                .map_err(Vp6Error::DecoderError)?;
 
             let video_info = NAVideoInfo::new(
                 header.disp_w as usize * 16,
@@ -96,9 +111,7 @@ impl VideoDecoder for Vp6Decoder {
 
             self.decoder
                 .init(&mut self.support, video_info)
-                .map_err(|error| {
-                    Error::from(format!("Error initializing VP6 decoder: {:?}", error))
-                })?;
+                .map_err(Vp6Error::DecoderError)?;
 
             self.init_called = true;
         }
@@ -110,11 +123,7 @@ impl VideoDecoder for Vp6Decoder {
 
             match &self.last_frame {
                 Some(frame) => frame.clone(),
-                None => {
-                    return Err(Error::from(
-                        "No previous frame found when encountering a skip frame",
-                    ))
-                }
+                None => return Err(Vp6Error::UnexpectedSkipFrame.into()),
             }
         } else {
             // Actually decoding the frame and extracting the buffer it is stored in.
@@ -122,13 +131,11 @@ impl VideoDecoder for Vp6Decoder {
             let decoded = self
                 .decoder
                 .decode_frame(&mut self.support, encoded_frame.data, &mut self.bitreader)
-                .map_err(|error| Error::from(format!("VP6 decoder error: {:?}", error)))?;
+                .map_err(Vp6Error::DecoderError)?;
 
             let frame = match decoded {
                 (Video(buffer), _) => Ok(buffer),
-                _ => Err(Error::from(
-                    "Unexpected buffer type after decoding a VP6 frame",
-                )),
+                _ => Err(Vp6Error::InvalidBufferType),
             }?;
 
             self.last_frame = Some(frame.clone());

@@ -4,6 +4,7 @@ use generational_arena::{Arena, Index};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
 use swf::{VideoCodec, VideoDeblocking};
+use thiserror::Error;
 
 mod software;
 
@@ -11,7 +12,35 @@ pub use crate::backend::video::software::SoftwareVideoBackend;
 
 pub type VideoStreamHandle = Index;
 
-pub type Error = Box<dyn std::error::Error>;
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Attempted to seek to omitted frame {0} without prior decoded frame")]
+    SeekingBeforeDecoding(u32),
+
+    #[error("Unsupported video codec type: {0:?}")]
+    UnsupportedCodec(VideoCodec),
+
+    #[error("Video stream is not registered")]
+    VideoStreamIsNotRegistered,
+
+    #[error("Couldn't create bitmap for video frame")]
+    BitmapError(#[from] ruffle_render::error::Error),
+
+    #[error("Video decoding isn't supported")]
+    DecodingNotSupported,
+
+    #[cfg(feature = "h263")]
+    #[error("H263 decoder error")]
+    H263Error(#[from] software::decoders::h263::H263Error),
+
+    #[cfg(feature = "vp6")]
+    #[error("VP6 decoder error")]
+    VP6Error(#[from] software::decoders::vp6::Vp6Error),
+
+    #[cfg(feature = "screenvideo")]
+    #[error("Screen Video decoder error")]
+    ScreenVideoError(#[from] software::decoders::screen::ScreenError),
+}
 
 /// An encoded video frame of some video codec.
 pub struct EncodedFrame<'a> {
@@ -178,6 +207,6 @@ impl VideoBackend for NullVideoBackend {
         _encoded_frame: EncodedFrame<'_>,
         _renderer: &mut dyn RenderBackend,
     ) -> Result<BitmapInfo, Error> {
-        Err("Video decoding not implemented".into())
+        Err(Error::DecodingNotSupported)
     }
 }
