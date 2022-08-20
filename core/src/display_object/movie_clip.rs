@@ -526,15 +526,11 @@ impl<'gc> MovieClip<'gc> {
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len - num_read)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running init action",
-                )
-            })?;
+            .resize_to_reader(reader, tag_len - num_read);
 
-        Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
+        if !slice.is_empty() {
+            Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
+        }
 
         Ok(())
     }
@@ -1048,19 +1044,22 @@ impl<'gc> MovieClip<'gc> {
             let clip = self.0.read();
             let mut reader = clip.static_data.swf.read_from(0);
             while cur_frame <= frame && !reader.get_ref().is_empty() {
-                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::ShowFrame => {
-                        cur_frame += 1;
-                        Ok(())
-                    }
-                    TagCode::DoAction if cur_frame == frame => {
-                        // On the target frame, add any DoAction tags to the array.
-                        if let Some(code) = clip.static_data.swf.resize_to_reader(reader, tag_len) {
-                            actions.push(code);
+                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| {
+                    match tag_code {
+                        TagCode::ShowFrame => {
+                            cur_frame += 1;
+                            Ok(())
                         }
-                        Ok(())
+                        TagCode::DoAction if cur_frame == frame => {
+                            // On the target frame, add any DoAction tags to the array.
+                            let slice = clip.static_data.swf.resize_to_reader(reader, tag_len);
+                            if !slice.is_empty() {
+                                actions.push(slice);
+                            }
+                            Ok(())
+                        }
+                        _ => Ok(()),
                     }
-                    _ => Ok(()),
                 };
 
                 let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
@@ -2986,13 +2985,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             id,
             self.static_data
                 .swf
-                .resize_to_reader(reader, tag_len - num_read)
-                .ok_or_else(|| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Cannot define sprite with invalid offset and length!",
-                    )
-                })?,
+                .resize_to_reader(reader, tag_len - num_read),
             num_frames,
         );
 
@@ -3180,18 +3173,14 @@ impl<'gc, 'a> MovieClip<'gc> {
             .read()
             .static_data
             .swf
-            .resize_to_reader(reader, tag_len)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Invalid source or tag length when running action",
-                )
-            })?;
-        context.action_queue.queue_actions(
-            self.into(),
-            ActionType::Normal { bytecode: slice },
-            false,
-        );
+            .resize_to_reader(reader, tag_len);
+        if !slice.is_empty() {
+            context.action_queue.queue_actions(
+                self.into(),
+                ActionType::Normal { bytecode: slice },
+                false,
+            );
+        }
         Ok(())
     }
 

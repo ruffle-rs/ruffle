@@ -249,8 +249,8 @@ impl SwfSlice {
     /// The returned slice may or may not be a subslice of the current slice.
     /// If the resulting slice would be outside the bounds of the underlying
     /// movie, or the given reader refers to a different underlying movie, this
-    /// function returns None.
-    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Option<Self> {
+    /// function returns an empty slice.
+    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Self {
         if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
             && (reader.get_ref().as_ptr() as usize)
                 < self.movie.data().as_ptr() as usize + self.movie.data().len()
@@ -263,16 +263,16 @@ impl SwfSlice {
             let len = self.movie.data().len();
 
             if new_start < len && new_end < len {
-                Some(Self {
+                Self {
                     movie: self.movie.clone(),
                     start: new_start,
                     end: new_end,
-                })
+                }
             } else {
-                None
+                self.copy_empty()
             }
         } else {
-            None
+            self.copy_empty()
         }
     }
 
@@ -306,6 +306,11 @@ impl SwfSlice {
     /// Get the version of the SWF this data comes from.
     pub fn version(&self) -> u8 {
         self.movie.header().version()
+    }
+
+    /// Checks if this slice is empty
+    pub fn is_empty(&self) -> bool {
+        self.end == self.start
     }
 
     /// Construct a reader for this slice.
