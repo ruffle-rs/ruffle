@@ -46,9 +46,7 @@ impl<'gc> Avm1Button<'gc> {
     ) -> Self {
         let mut actions = vec![];
         for action in &button.actions {
-            let action_data = source_movie
-                .to_unbounded_subslice(action.action_data)
-                .unwrap();
+            let action_data = source_movie.to_unbounded_subslice(action.action_data);
             let bits = action.conditions.bits();
             let mut bit = 1u16;
             while bits & !(bit - 1) != 0 {
