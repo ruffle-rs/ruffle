@@ -1,8 +1,33 @@
 use gc_arena::Collect;
 use std::sync::Arc;
-use swf::{Fixed8, HeaderExt, Rectangle, TagCode, Twips};
+use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
+use thiserror::Error;
 
-pub type Error = Box<dyn std::error::Error>;
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Couldn't read SWF")]
+    InvalidSwf(#[from] swf::error::Error),
+
+    #[error("Couldn't register bitmap")]
+    InvalidBitmap(#[from] ruffle_render::error::Error),
+
+    #[error("Attempted to set symbol classes on movie without any")]
+    NoSymbolClasses,
+
+    #[error("Attempted to preload video frames into non-video character {0}")]
+    PreloadVideoIntoInvalidCharacter(CharacterId),
+
+    #[error("IO Error")]
+    IOError(#[from] std::io::Error),
+
+    #[error("Invalid SWF url")]
+    InvalidSwfUrl,
+
+    // TODO: Replace avm2 errors with something more substantial
+    #[error("Invalid ABC: {0}")]
+    InvalidABC(String),
+}
+
 pub type DecodeResult = Result<(), Error>;
 pub type SwfStream<'a> = swf::read::Reader<'a>;
 
@@ -57,7 +82,7 @@ impl SwfMovie {
         let data = std::fs::read(&path)?;
 
         let abs_path = path.as_ref().canonicalize()?;
-        let url = url::Url::from_file_path(abs_path).map_err(|()| "Invalid SWF URL")?;
+        let url = url::Url::from_file_path(abs_path).map_err(|()| Error::InvalidSwfUrl)?;
 
         Self::from_data(&data, Some(url.into()), loader_url)
     }

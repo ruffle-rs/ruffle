@@ -34,7 +34,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::Font;
 use crate::prelude::*;
 use crate::string::{AvmString, WStr, WString};
-use crate::tag_utils::{self, DecodeResult, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, Gc, GcCell, MutationContext};
 use smallvec::SmallVec;
@@ -589,9 +589,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         reader: &mut SwfStream<'_>,
     ) -> DecodeResult {
-        let movie = self
-            .movie()
-            .ok_or("Attempted to set symbol classes on movie without any")?;
+        let movie = self.movie().ok_or(Error::NoSymbolClasses)?;
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         let num_symbols = reader.read_u16()?;
@@ -2633,11 +2631,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
                 Ok(())
             }
-            _ => Err(format!(
-                "Attempted to preload video frames into non-video character {}",
-                vframe.stream_id
-            )
-            .into()),
+            _ => Err(Error::PreloadVideoIntoInvalidCharacter(vframe.stream_id)),
         }
     }
 

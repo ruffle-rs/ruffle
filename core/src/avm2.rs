@@ -267,7 +267,7 @@ impl<'gc> Avm2<'gc> {
         domain: Domain<'gc>,
         reader: &mut SwfStream<'_>,
         tag_len: usize,
-    ) -> Result<(), Error> {
+    ) -> Result<(), crate::tag_utils::Error> {
         let start = reader.as_slice();
         // Queue the actions.
         // TODO: The tag reader parses the entire ABC file, instead of just
@@ -282,7 +282,8 @@ impl<'gc> Avm2<'gc> {
         let slice = swf.resize_to_reader(reader, tag_len - num_read);
 
         if !slice.is_empty() {
-            Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain)?;
+            Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain)
+                .map_err(|e| crate::tag_utils::Error::InvalidABC(e.to_string()))?;
         }
 
         Ok(())
