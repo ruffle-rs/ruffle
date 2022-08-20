@@ -244,7 +244,7 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_root(&self, frame: &mut Activation<'_, 'gc, '_>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
-            let root = self.base_clip.avm1_root().object();
+            let root = frame.base_clip().avm1_root().object();
             frame.set_local_register(*preload_r, root);
             *preload_r += 1;
         }
@@ -255,7 +255,7 @@ impl<'gc> Avm1Function<'gc> {
             // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
             // and _global ends up incorrectly taking _parent's register.
             // See test for more info.
-            if let Some(parent) = self.base_clip.avm1_parent() {
+            if let Some(parent) = frame.base_clip().avm1_parent() {
                 frame.set_local_register(*preload_r, parent.object());
                 *preload_r += 1;
             }
