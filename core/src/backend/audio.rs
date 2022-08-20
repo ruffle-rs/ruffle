@@ -98,6 +98,12 @@ pub trait AudioBackend: Downcast {
     fn position_resolution(&self) -> Option<Duration> {
         None
     }
+
+    /// Returns the master volume of the audio backend.
+    fn volume(&self) -> f32;
+
+    /// Sets the master volume of the audio backend.
+    fn set_volume(&mut self, volume: f32);
 }
 
 impl_downcast!(AudioBackend);
@@ -117,12 +123,14 @@ struct NullSound {
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
     sounds: Arena<NullSound>,
+    volume: f32,
 }
 
 impl NullAudioBackend {
     pub fn new() -> NullAudioBackend {
         NullAudioBackend {
             sounds: Arena::new(),
+            volume: 1.0,
         }
     }
 }
@@ -194,6 +202,14 @@ impl AudioBackend for NullAudioBackend {
     }
 
     fn set_sound_transform(&mut self, _instance: SoundInstanceHandle, _transform: SoundTransform) {}
+
+    fn volume(&self) -> f32 {
+        self.volume
+    }
+
+    fn set_volume(&mut self, volume: f32) {
+        self.volume = volume;
+    }
 }
 
 impl Default for NullAudioBackend {
