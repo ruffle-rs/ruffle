@@ -143,11 +143,7 @@ impl<'gc> Video<'gc> {
                     log::warn!("Duplicate frame {}", tag.frame_num);
                 }
 
-                if let Some(subslice) = subslice {
-                    frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
-                } else {
-                    log::warn!("Invalid bitstream subslice on frame {}", tag.frame_num);
-                }
+                frames.insert(tag.frame_num.into(), (subslice.start, subslice.end));
             }
         }
     }

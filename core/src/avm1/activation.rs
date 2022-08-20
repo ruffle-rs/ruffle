@@ -861,7 +861,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
-        let func_data = parent_data.to_unbounded_subslice(action.actions).unwrap();
+        let func_data = parent_data.to_unbounded_subslice(action.actions);
         let constant_pool = self.constant_pool();
         let func = Avm1Function::from_swf_function(
             self.context.gc_context,
@@ -2124,8 +2124,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         action: &Try,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut result =
-            self.run_actions(parent_data.to_unbounded_subslice(action.try_body).unwrap());
+        let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
         if let Some((catch_vars, actions)) = &action.catch_body {
             if let Err(Error::ThrownValue(value)) = &result {
@@ -2151,14 +2150,13 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     }
                 }
 
-                result =
-                    activation.run_actions(parent_data.to_unbounded_subslice(actions).unwrap());
+                result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
             }
         }
 
         if let Some(actions) = action.finally_body {
             if let ReturnType::Explicit(value) =
-                self.run_actions(parent_data.to_unbounded_subslice(actions).unwrap())?
+                self.run_actions(parent_data.to_unbounded_subslice(actions))?
             {
                 return Ok(FrameControl::Return(ReturnType::Explicit(value)));
             }
@@ -2212,7 +2210,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         action: With,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let code = parent_data.to_unbounded_subslice(action.actions).unwrap();
+        let code = parent_data.to_unbounded_subslice(action.actions);
         let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
