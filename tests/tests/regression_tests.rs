@@ -570,6 +570,7 @@ swf_tests! {
     (displacement_map_filter, "avm1/displacement_map_filter", 1),
     (divide_swf4, "avm1/divide_swf4", 1),
     (do_init_action, "avm1/do_init_action", 3),
+    (drag_drop, "avm1/drag_drop", 14),
     (drop_shadow_filter, "avm1/drop_shadow_filter", 1),
     (duplicate_movie_clip_drawing, "avm1/duplicate_movie_clip_drawing", 1),
     (duplicate_movie_clip, "avm1/duplicate_movie_clip", 1),
