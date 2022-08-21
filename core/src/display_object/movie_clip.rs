@@ -2312,6 +2312,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // but a child button can have an invisible hit area outside the parent's bounds.
             let mut hit_depth = 0;
             let mut result = None;
+            let mut options = HitTestOptions::SKIP_INVISIBLE;
+            options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+            // AVM2 allows movie clips to recieve mouse events without explicitly enabling button mode.
+            let check_non_interactive =
+                !require_button_mode || matches!(self.object2(), Avm2Value::Object(_));
 
             for child in self.iter_render_list().rev() {
                 if child.clip_depth() > 0 {
@@ -2323,9 +2328,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                         }
                     }
                 } else if result.is_none() {
-                    result = child
-                        .as_interactive()
-                        .and_then(|c| c.mouse_pick(context, point, require_button_mode));
+                    if let Some(child) = child.as_interactive() {
+                        result = child.mouse_pick(context, point, require_button_mode);
+                    } else if check_non_interactive && child.hit_test_shape(context, point, options)
+                    {
+                        result = Some(this);
+                    }
 
                     if result.is_some() {
                         hit_depth = child.depth();
@@ -2337,12 +2345,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 return result;
             }
 
-            // AVM2 allows movie clips to recieve mouse events without
-            // explicitly enabling button mode.
-            if !require_button_mode || matches!(self.object2(), Avm2Value::Object(_)) {
-                let mut options = HitTestOptions::SKIP_INVISIBLE;
-                options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
-                if self.hit_test_shape(context, point, options) {
+            // Check drawing.
+            if check_non_interactive {
+                let local_matrix = self.global_to_local_matrix();
+                let point = local_matrix * point;
+                if self.0.read().drawing.hit_test(point, &local_matrix) {
                     return Some(this);
                 }
             }
