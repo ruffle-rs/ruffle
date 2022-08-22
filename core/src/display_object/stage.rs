@@ -486,7 +486,7 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Draw the stage's letterbox.
-    fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn draw_letterbox(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         let ViewportDimensions {
             width: viewport_width,
             height: viewport_height,
@@ -694,11 +694,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Some(*self)
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         self.render_children(context);
     }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         let background_color =
             if self.window_mode() != WindowMode::Transparent || self.is_fullscreen() {
                 self.background_color().unwrap_or(Color::WHITE)

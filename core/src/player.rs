@@ -1269,10 +1269,11 @@ impl Player {
         let (renderer, ui, transform_stack) =
             (&mut self.renderer, &mut self.ui, &mut self.transform_stack);
 
-        self.gc_arena.mutate(|_gc_context, gc_root| {
+        self.gc_arena.mutate(|gc_context, gc_root| {
             let root_data = gc_root.0.read();
             let mut render_context = RenderContext {
                 renderer: renderer.deref_mut(),
+                gc_context,
                 ui: ui.deref_mut(),
                 library: &root_data.library,
                 transform_stack,

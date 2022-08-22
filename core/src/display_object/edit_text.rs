@@ -235,7 +235,7 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
-        let bounds: BoundingBox = swf_tag.bounds.clone().into();
+        let bounds: BoundingBox = swf_tag.bounds.into();
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
@@ -881,7 +881,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Render a layout box, plus its children.
-    fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
+    fn render_layout_box(self, context: &mut RenderContext<'_, 'gc, '_>, lbox: &LayoutBox<'gc>) {
         let origin = lbox.bounds().origin();
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(origin.x(), origin.y()),
@@ -1601,7 +1601,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         if !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;

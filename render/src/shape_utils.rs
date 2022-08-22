@@ -557,7 +557,7 @@ mod tests {
         swf::Shape {
             version: 2,
             id: 1,
-            shape_bounds: bounds.clone(),
+            shape_bounds: bounds,
             edge_bounds: bounds,
             has_fill_winding_rule: false,
             has_non_scaling_strokes: false,
@@ -1299,13 +1299,12 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
     // SVG.
     let bounds = glyph
         .bounds
-        .clone()
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
         .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records[..]));
     swf::Shape {
         version: 2,
         id: 0,
-        shape_bounds: bounds.clone(),
+        shape_bounds: bounds,
         edge_bounds: bounds,
         has_fill_winding_rule: false,
         has_non_scaling_strokes: false,

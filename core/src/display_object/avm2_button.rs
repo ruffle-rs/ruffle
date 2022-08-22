@@ -629,7 +629,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         let state = self.0.read().state;
         let current_state = self.get_state_child(state.into());
 
