@@ -1,0 +1,340 @@
+new matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+new Matrix(1) (a=1, b=0, c=0, d=1, tx=0, ty=0)
+new Matrix(1, 2) (a=1, b=2, c=0, d=1, tx=0, ty=0)
+new Matrix(1, 2, 3) (a=1, b=2, c=3, d=1, tx=0, ty=0)
+new Matrix(1, 2, 3, 4) (a=1, b=2, c=3, d=4, tx=0, ty=0)
+new Matrix(1, 2, 3, 4, 5) (a=1, b=2, c=3, d=4, tx=5, ty=0)
+new Matrix(1, 2, 3, 4, 5, 6) (a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// new Matrix(1, 2, 3, 4, 5, 6) .identity()
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+/// Clones
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// cloned
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix === cloned
+false
+
+
+// cloned
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix === cloned
+false
+
+
+/// scale
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.scale(3, 5)
+(a=3, b=0, c=0, d=5, tx=0, ty=0)
+
+
+// matrix
+(a=2, b=0, c=0, d=2, tx=100, ty=100)
+
+// matrix.scale(7, 11)
+(a=14, b=0, c=0, d=22, tx=700, ty=1100)
+
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.scale(13, 17)
+(a=13, b=34, c=39, d=68, tx=65, ty=102)
+
+
+/// rotate
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.rotate(0)
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+/// rotate
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.rotate(0.5)
+(a=0.8775825618903728, b=0.479425538604203, c=-0.479425538604203, d=0.8775825618903728, tx=0, ty=0)
+
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.rotate(0)
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+
+// matrix
+(a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+// matrix.rotate((90/180)*Math.PI)
+(a=-2, b=1.0000000000000002, c=-4, d=3.0000000000000004, tx=-6, ty=5)
+
+
+/// translate
+// matrix
+// matrix.translate(3, 5)
+(a=1, b=0, c=0, d=1, tx=3, ty=5)
+
+
+// matrix
+// matrix.translate(7, 11)
+(a=2, b=0, c=0, d=2, tx=107, ty=111)
+
+
+/// concat
+matrix: (a=11, b=13, c=17, d=19, tx=23, ty=29)
+scale(3, 5): (a=3, b=0, c=0, d=5, tx=0, ty=0)
+translate(7, 9): (a=1, b=0, c=0, d=1, tx=7, ty=9)
+rotate(Math.PI / 2): (a=6.123233995736766e-17, b=1, c=-1, d=6.123233995736766e-17, tx=0, ty=0)
+
+//double transform
+//scale + translate (a=3, b=0, c=0, d=5, tx=7, ty=9)
+//translate + scale (a=3, b=0, c=0, d=5, tx=21, ty=45)
+//scale + rotate (a=1.8369701987210297e-16, b=3, c=-5, d=3.061616997868383e-16, tx=0, ty=0)
+//rotate + scale (a=1.8369701987210297e-16, b=5, c=-3, d=3.061616997868383e-16, tx=0, ty=0)
+//translate + rotate (a=6.123233995736766e-17, b=1, c=-1, d=6.123233995736766e-17, tx=-9, ty=7.000000000000001)
+//rotate + translate (a=6.123233995736766e-17, b=1, c=-1, d=6.123233995736766e-17, tx=7, ty=9)
+
+//triple transform
+//scale + translate + rotate (a=1.8369701987210297e-16, b=3, c=-5, d=3.061616997868383e-16, tx=-9, ty=7.000000000000001)
+//scale + rotate + translate (a=1.8369701987210297e-16, b=3, c=-5, d=3.061616997868383e-16, tx=7, ty=9)
+//translate + scale + rotate (a=1.8369701987210297e-16, b=3, c=-5, d=3.061616997868383e-16, tx=-45, ty=21.000000000000004)
+//translate + rotate + scale (a=1.8369701987210297e-16, b=5, c=-3, d=3.061616997868383e-16, tx=-27, ty=35.00000000000001)
+//rotate + translate + scale (a=1.8369701987210297e-16, b=5, c=-3, d=3.061616997868383e-16, tx=21, ty=45)
+//rotate + scale + translate (a=1.8369701987210297e-16, b=5, c=-3, d=3.061616997868383e-16, tx=7, ty=9)
+
+//right application
+
+//single transform
+//matrix + scale (a=33, b=65, c=51, d=95, tx=69, ty=145)
+//matrix + translate (a=11, b=13, c=17, d=19, tx=30, ty=38)
+//matrix + rotate (a=-13, b=11, c=-19, d=17, tx=-29, ty=23)
+
+//double transform
+//matrix + scale + translate (a=33, b=65, c=51, d=95, tx=76, ty=154)
+//matrix + translate + scale (a=33, b=65, c=51, d=95, tx=90, ty=190)
+//matrix + scale + rotate (a=-65, b=33.00000000000001, c=-95, d=51.00000000000001, tx=-145, ty=69.00000000000001)
+//matrix + rotate + scale (a=-39, b=55, c=-57, d=85, tx=-87, ty=115)
+//matrix + translate + rotate (a=-13, b=11, c=-19, d=17, tx=-38, ty=30.000000000000004)
+//matrix + rotate + translate (a=-13, b=11, c=-19, d=17, tx=-22, ty=32)
+
+//triple transform
+//matrix + scale + translate + rotate (a=-65, b=33.00000000000001, c=-95, d=51.00000000000001, tx=-154, ty=76.00000000000001)
+//matrix + scale + rotate + translate (a=-65, b=33.00000000000001, c=-95, d=51.00000000000001, tx=-138, ty=78.00000000000001)
+//matrix + translate + scale + rotate (a=-65, b=33.00000000000001, c=-95, d=51.00000000000001, tx=-190, ty=90.00000000000001)
+//matrix + translate + rotate + scale (a=-39, b=55, c=-57, d=85, tx=-114, ty=150.00000000000003)
+//matrix + rotate + translate + scale (a=-39, b=55, c=-57, d=85, tx=-66, ty=160)
+//matrix + rotate + scale + translate (a=-39, b=55, c=-57, d=85, tx=-80, ty=124)
+
+//left application
+
+//single transform
+//scale + matrix (a=33, b=39, c=85, d=95, tx=23, ty=29)
+//translate + matrix (a=11, b=13, c=17, d=19, tx=253, ty=291)
+//rotate + matrix (a=17, b=19, c=-10.999999999999998, d=-12.999999999999998, tx=23, ty=29)
+
+//double transform
+//scale + translate + matrix (a=33, b=39, c=85, d=95, tx=253, ty=291)
+//translate + scale + matrix (a=33, b=39, c=85, d=95, tx=1019, ty=1157)
+//scale + rotate + matrix (a=51, b=57, c=-54.99999999999999, d=-65, tx=23, ty=29)
+//rotate + scale + matrix (a=85, b=95, c=-32.99999999999999, d=-38.99999999999999, tx=23, ty=29)
+//translate + rotate + matrix (a=17, b=19, c=-10.999999999999998, d=-12.999999999999998, tx=43.000000000000014, ty=45.00000000000003)
+//rotate + translate + matrix (a=17, b=19, c=-10.999999999999998, d=-12.999999999999998, tx=253, ty=291)
+
+//triple transform
+//scale + translate + rotate + matrix (a=51, b=57, c=-54.99999999999999, d=-65, tx=43.000000000000014, ty=45.00000000000003)
+//scale + rotate + translate + matrix (a=51, b=57, c=-54.99999999999999, d=-65, tx=253, ty=291)
+//translate + scale + rotate + matrix (a=51, b=57, c=-54.99999999999999, d=-65, tx=-114.99999999999994, ty=-156.99999999999994)
+//translate + rotate + scale + matrix (a=85, b=95, c=-32.99999999999999, d=-38.99999999999999, tx=321.0000000000001, ty=343.0000000000001)
+//rotate + translate + scale + matrix (a=85, b=95, c=-32.99999999999999, d=-38.99999999999999, tx=1019, ty=1157)
+//rotate + scale + translate + matrix (a=85, b=95, c=-32.99999999999999, d=-38.99999999999999, tx=253, ty=291)
+
+//middle application
+
+//double transform
+//scale + matrix + translate (a=33, b=39, c=85, d=95, tx=30, ty=38)
+//translate + matrix + scale (a=33, b=65, c=51, d=95, tx=759, ty=1455)
+//scale + matrix + rotate (a=-39, b=33, c=-95, d=85, tx=-29, ty=23)
+//rotate + matrix + scale (a=51, b=95, c=-32.99999999999999, d=-64.99999999999999, tx=69, ty=145)
+//translate + matrix + rotate (a=-13, b=11, c=-19, d=17, tx=-291, ty=253.00000000000003)
+//rotate + matrix + translate (a=17, b=19, c=-10.999999999999998, d=-12.999999999999998, tx=30, ty=38)
+
+//triple transform #1
+//scale + matrix + translate + rotate (a=-39, b=33, c=-95, d=85, tx=-38, ty=30.000000000000004)
+//scale + matrix + rotate + translate (a=-39, b=33, c=-95, d=85, tx=-22, ty=32)
+//translate + matrix + scale + rotate (a=-65, b=33.00000000000001, c=-95, d=51.00000000000001, tx=-1455, ty=759.0000000000001)
+//translate + matrix + rotate + scale (a=-39, b=55, c=-57, d=85, tx=-873, ty=1265.0000000000002)
+//rotate + matrix + translate + scale (a=51, b=95, c=-32.99999999999999, d=-64.99999999999999, tx=90, ty=190)
+//rotate + matrix + scale + translate (a=51, b=95, c=-32.99999999999999, d=-64.99999999999999, tx=76, ty=154)
+
+//triple transform #2
+//scale + translate + matrix + rotate (a=-39, b=33, c=-95, d=85, tx=-291, ty=253.00000000000003)
+//scale + rotate + matrix + translate (a=51, b=57, c=-54.99999999999999, d=-65, tx=30, ty=38)
+//translate + scale + matrix + rotate (a=-39, b=33, c=-95, d=85, tx=-1157, ty=1019.0000000000001)
+//translate + rotate + matrix + scale (a=51, b=95, c=-32.99999999999999, d=-64.99999999999999, tx=129.00000000000006, ty=225.00000000000014)
+//rotate + translate + matrix + scale (a=51, b=95, c=-32.99999999999999, d=-64.99999999999999, tx=759, ty=1455)
+//rotate + scale + matrix + translate (a=85, b=95, c=-32.99999999999999, d=-38.99999999999999, tx=30, ty=38)
+
+
+/// invert
+// matrix
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.invert()
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+
+// matrix
+(a=2, b=3, c=5, d=7, tx=9, ty=11)
+
+// matrix.invert()
+(a=-7, b=3, c=5, d=-2, tx=8, ty=-5)
+
+
+/// createBox
+// matrix = new Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.createBox(2, 3)
+(a=2, b=0, c=0, d=3, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 0)
+(a=2, b=0, c=0, d=3, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 5)
+(a=0.5673243709264525, b=-2.8767728239894153, c=1.917848549326277, d=0.8509865563896788, tx=0, ty=0)
+
+// matrix.createBox(2, 3, 5, 7)
+(a=0.5673243709264525, b=-2.8767728239894153, c=1.917848549326277, d=0.8509865563896788, tx=7, ty=0)
+
+// matrix.createBox(2, 3, 5, 7, 9)
+(a=0.5673243709264525, b=-2.8767728239894153, c=1.917848549326277, d=0.8509865563896788, tx=7, ty=9)
+
+
+/// createGradientBox
+// matrix = new Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.createGradientBox(200, 300)
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 0)
+(a=0.1220703125, b=0, c=0, d=0.18310546875, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 500)
+(a=-0.10789175701067846, b=-0.08565157568160574, c=0.05710105045440383, d=-0.1618376355160177, tx=100, ty=150)
+
+// matrix.createGradientBox(200, 300, 500, 700)
+(a=-0.10789175701067846, b=-0.08565157568160574, c=0.05710105045440383, d=-0.1618376355160177, tx=800, ty=150)
+
+// matrix.createGradientBox(200, 300, 500, 700, 900)
+(a=-0.10789175701067846, b=-0.08565157568160574, c=0.05710105045440383, d=-0.1618376355160177, tx=800, ty=1050)
+
+
+/// transformPoint
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+// matrix.transformPoint(new Point(1, 1));
+(x=18, y=23)
+
+
+/// deltaTransformPoint
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+// matrix.deltaTransformPoint(new Point(1, 1));
+(x=7, y=10)
+
+
+/// copyFrom
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+// matrix2 = new Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix2.copyFrom(matrix);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+
+/// setTo
+// matrix = new Matrix();
+(a=1, b=0, c=0, d=1, tx=0, ty=0)
+
+// matrix.setTo(2, 3, 5, 7, 11, 13);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+
+
+/// copyRowTo
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+// vector = new Vector3D(1,2,3,4);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+Vector3D(1, 2, 3)
+
+// matrix.copyRowTo(0, vector);
+Vector3D(2, 5, 11)
+// matrix.copyRowTo(1, vector);
+Vector3D(3, 7, 13)
+// matrix.copyRowTo(2, vector);
+Vector3D(0, 0, 1)
+// matrix.copyRowTo(3, vector);
+Vector3D(0, 0, 1)
+
+
+/// copyColumnTo
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+// vector = new Vector3D(1,2,3,4);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+Vector3D(1, 2, 3)
+
+// matrix.copyColumnTo(0, vector);
+Vector3D(2, 3, 0)
+// matrix.copyColumnTo(1, vector);
+Vector3D(5, 7, 0)
+// matrix.copyColumnTo(2, vector);
+Vector3D(11, 13, 1)
+// matrix.copyColumnTo(3, vector);
+Vector3D(11, 13, 1)
+
+
+/// copyRowFrom
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+// vector = new Vector3D(17,19,23,29);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+Vector3D(17, 19, 23)
+
+// matrix.copyRowFrom(0, vector);
+(a=17, b=3, c=19, d=7, tx=23, ty=13)
+// matrix.copyRowFrom(1, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+// matrix.copyRowFrom(2, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+// matrix.copyRowFrom(3, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+
+
+/// copyColumnFrom
+// matrix = new Matrix(2, 3, 5, 7, 11, 13);
+// vector = new Vector3D(17,19,23,29);
+(a=2, b=3, c=5, d=7, tx=11, ty=13)
+Vector3D(17, 19, 23)
+
+// matrix.copyColumnFrom(0, vector);
+(a=17, b=3, c=19, d=7, tx=23, ty=13)
+// matrix.copyColumnFrom(1, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+// matrix.copyColumnFrom(2, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+// matrix.copyColumnFrom(3, vector);
+(a=17, b=17, c=19, d=19, tx=23, ty=23)
+
+

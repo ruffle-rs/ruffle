@@ -842,6 +842,9 @@ swf_tests_approx! {
     (as3_edittext_tab_stops, "avm2/edittext_tab_stops", 1, epsilon = 5.0),
     (as3_edittext_underline, "avm2/edittext_underline", 1, epsilon = 4.0),
     (as3_math, "avm2/math", 1, max_relative = 30.0 * f64::EPSILON),
+    (as3_matrix, "avm2/matrix", 1, @num_patterns = &[
+        Regex::new(r"\(a=(.+?), b=(.+?), c=(.+?), d=(.+?), tx=(.+?), ty=(.+?)\)").unwrap()
+    ], max_relative = f32::EPSILON as f64),
     (as3_number_toexponential, "avm2/number_toexponential", 1, max_relative = 0.001),
     (as3_number_tofixed, "avm2/number_tofixed", 1, max_relative = 0.001),
     (as3_number_toprecision, "avm2/number_toprecision", 1, max_relative = 0.001),
