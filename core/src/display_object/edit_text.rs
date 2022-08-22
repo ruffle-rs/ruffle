@@ -789,21 +789,25 @@ impl<'gc> EditText<'gc> {
         edit_text.scroll = 1;
 
         if autosize != AutoSizeMode::None {
-            // The edit text's bounds needs to have the padding baked in.
-            let width = intrinsic_bounds.width() + padding;
-            let height = intrinsic_bounds.height() + padding;
-            let new_x = match autosize {
-                AutoSizeMode::Left => edit_text.bounds.x_min,
-                AutoSizeMode::Center => {
-                    (edit_text.bounds.x_min + edit_text.bounds.x_max - width) / 2
-                }
-                AutoSizeMode::Right => edit_text.bounds.x_max - width,
-                AutoSizeMode::None => unreachable!(),
-            };
             if !is_word_wrap {
+                // The edit text's bounds needs to have the padding baked in.
+                let width = intrinsic_bounds.width() + padding;
+                let new_x = match autosize {
+                    AutoSizeMode::Left => edit_text.bounds.x_min,
+                    AutoSizeMode::Center => {
+                        (edit_text.bounds.x_min + edit_text.bounds.x_max - width) / 2
+                    }
+                    AutoSizeMode::Right => edit_text.bounds.x_max - width,
+                    AutoSizeMode::None => unreachable!(),
+                };
                 edit_text.bounds.set_x(new_x);
                 edit_text.bounds.set_width(width);
+            } else {
+                let width = edit_text.static_data.text.bounds.x_max
+                    - edit_text.static_data.text.bounds.x_min;
+                edit_text.bounds.set_width(width);
             }
+            let height = intrinsic_bounds.height() + padding;
             edit_text.bounds.set_height(height);
             drop(edit_text);
             self.redraw_border(context.gc_context);
