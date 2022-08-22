@@ -2,10 +2,15 @@ use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::{BufRead, BufReader, Error, ErrorKind, Seek, SeekFrom};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+pub struct Pmd {
+    root: PathBuf,
+    data: PmdData,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Pmd {
+pub struct PmdData {
     #[serde(rename = "$value")]
     files: Option<Vec<File>>,
 }
@@ -30,19 +35,23 @@ pub struct Violation {
 }
 
 impl Pmd {
-    pub fn open(path: impl Into<PathBuf>) -> std::io::Result<Self> {
+    pub fn open(root: impl Into<PathBuf>, path: impl Into<PathBuf>) -> std::io::Result<Self> {
         let file = std::fs::File::open(path.into())?;
-        serde_xml_rs::from_reader(file)
-            .map_err(|_| Error::new(ErrorKind::Other, "Failed to parse XML data"))
+        let data = serde_xml_rs::from_reader(file)
+            .map_err(|_| Error::new(ErrorKind::Other, "Failed to parse XML data"))?;
+        Ok(Pmd {
+            root: root.into(),
+            data,
+        })
     }
 
     pub fn contains_violations(&self) -> bool {
-        self.files.is_some()
+        self.data.files.is_some()
     }
 
     pub fn violation_count(&self) -> usize {
         let mut count = 0;
-        if let Some(files) = self.files.as_ref() {
+        if let Some(files) = self.data.files.as_ref() {
             for file in files.iter() {
                 count += file.violations.len();
             }
@@ -51,18 +60,21 @@ impl Pmd {
     }
 }
 
-impl fmt::Display for File {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl File {
+    fn display(&self, root: &Path, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut file = std::fs::File::open(&self.name).map_err(|_| fmt::Error)?;
         for violation in self.violations.iter() {
             writeln!(f, "{}: {}", "warning".yellow(), violation.message)?;
             let max_digits = violation.end_line.to_string().len();
+            let name = Path::new(&self.name)
+                .strip_prefix(root)
+                .map_err(|_| fmt::Error)?;
             writeln!(
                 f,
                 "{}{} {}",
                 " ".repeat(max_digits),
                 "-->".blue().bold(),
-                self.name.bold()
+                name.to_string_lossy().bold()
             )?;
             file.seek(SeekFrom::Start(0)).map_err(|_| fmt::Error)?;
             let reader = BufReader::new(&file);
@@ -102,9 +114,9 @@ impl fmt::Display for File {
 
 impl fmt::Display for Pmd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(files) = self.files.as_ref() {
+        if let Some(files) = self.data.files.as_ref() {
             for file in files.iter() {
-                writeln!(f, "{}", file)?;
+                file.display(&self.root, f)?;
             }
             write!(f, "{} total warnings emitted", self.violation_count())?;
         }

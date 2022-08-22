@@ -40,7 +40,7 @@ fn main() {
                 .arg("-r")
                 .arg(flexpmd.join("ruffle-ruleset.xml"))
                 .arg("-s")
-                .arg(classes_dir)
+                .arg(&classes_dir)
                 .arg("-o")
                 .arg(&tmp)
                 .output()
@@ -50,7 +50,7 @@ fn main() {
                 panic!("{}", String::from_utf8_lossy(&output.stderr));
             }
 
-            let pmd = Pmd::open(tmp.join("pmd.xml")).expect("Invalid PMD xml file");
+            let pmd = Pmd::open(classes_dir, tmp.join("pmd.xml")).expect("Invalid PMD xml file");
             std::fs::remove_dir_all(tmp).expect("Failed to delete temp folder");
             if pmd.contains_violations() {
                 eprintln!("{}", pmd);
