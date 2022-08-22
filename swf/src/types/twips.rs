@@ -159,6 +159,13 @@ impl std::ops::DivAssign<i32> for Twips {
     }
 }
 
+impl std::ops::Neg for Twips {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Twips(-self.0)
+    }
+}
+
 impl std::fmt::Display for Twips {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.to_pixels())

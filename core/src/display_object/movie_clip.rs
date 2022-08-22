@@ -2212,7 +2212,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         self.0.read().drawing.render(context);
         self.render_children(context);
     }

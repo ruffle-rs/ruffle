@@ -35,7 +35,7 @@ impl<'gc> Text<'gc> {
                     TextStatic {
                         swf,
                         id: tag.id,
-                        bounds: tag.bounds.clone().into(),
+                        bounds: tag.bounds.into(),
                         text_transform: tag.matrix.into(),
                         text_blocks: tag.records.clone(),
                     },

@@ -279,11 +279,13 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Renders the children of this container in render list order.
-    fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_children(self, context: &mut RenderContext<'_, 'gc, '_>) {
         let mut clip_depth = 0;
         let mut clip_depth_stack: Vec<(Depth, DisplayObject<'_>)> = vec![];
         for child in self.iter_render_list() {
             let depth = child.depth();
+
+            child.pre_render(context);
 
             // Check if we need to pop off a mask.
             // This must be a while loop because multiple masks can be popped

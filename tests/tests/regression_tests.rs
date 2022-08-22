@@ -238,6 +238,7 @@ swf_tests! {
     (as3_displayobject_name, "avm2/displayobject_name", 4),
     (as3_displayobject_parent, "avm2/displayobject_parent", 4),
     (as3_displayobject_root, "avm2/displayobject_root", 4),
+    (as3_displayobject_scrollrect, "avm2/displayobject_scrollrect", 100, img = true),
     (as3_displayobject_visible, "avm2/displayobject_visible", 4),
     (as3_displayobject_x, "avm2/displayobject_x", 1),
     (as3_displayobject_y, "avm2/displayobject_y", 1),
@@ -1394,6 +1395,8 @@ fn run_swf(
                 AutomatedEvent::Wait => unreachable!(),
             });
         });
+        // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
+        player.lock().unwrap().render();
     }
 
     // Render the image to disk

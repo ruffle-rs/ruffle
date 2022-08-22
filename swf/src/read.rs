@@ -1265,12 +1265,7 @@ impl<'a> Reader<'a> {
                     flags & 0b1 != 0,
                 )
             } else {
-                (
-                    start_shape_bounds.clone(),
-                    end_shape_bounds.clone(),
-                    true,
-                    false,
-                )
+                (start_shape_bounds, end_shape_bounds, true, false)
             };
 
         self.read_u32()?; // Offset to EndEdges.
@@ -1520,7 +1515,7 @@ impl<'a> Reader<'a> {
                     (flags & 0b1) != 0,
                 )
             } else {
-                (shape_bounds.clone(), false, true, false)
+                (shape_bounds, false, true, false)
             };
         let (styles, num_fill_bits, num_line_bits) = self.read_shape_styles(version)?;
         let mut records = Vec::new();

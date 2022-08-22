@@ -422,9 +422,13 @@ impl<'gc> Default for ActionQueue<'gc> {
 
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
-pub struct RenderContext<'a, 'gc> {
+pub struct RenderContext<'a, 'gc, 'gc_context> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
+
+    /// The GC MutationContext, used to perform any GcCell writes
+    /// that must occur during rendering.
+    pub gc_context: MutationContext<'gc, 'gc_context>,
 
     /// The UI backend, used to detect user interactions.
     pub ui: &'a mut dyn UiBackend,

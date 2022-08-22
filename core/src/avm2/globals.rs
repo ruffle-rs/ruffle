@@ -99,6 +99,7 @@ pub struct SystemClasses<'gc> {
     pub matrix: ClassObject<'gc>,
     pub illegaloperationerror: ClassObject<'gc>,
     pub eventdispatcher: ClassObject<'gc>,
+    pub rectangle: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -167,6 +168,7 @@ impl<'gc> SystemClasses<'gc> {
             matrix: object,
             illegaloperationerror: object,
             eventdispatcher: object,
+            rectangle: object,
         }
     }
 }
@@ -726,6 +728,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "MouseEvent", mouseevent),
             ("flash.events", "FullScreenEvent", fullscreenevent),
             ("flash.geom", "Matrix", matrix),
+            ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
         ]

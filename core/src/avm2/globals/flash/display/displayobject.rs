@@ -7,6 +7,7 @@ use crate::avm2::object::{stage_allocator, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::ArrayObject;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
@@ -16,8 +17,8 @@ use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use gc_arena::{GcCell, MutationContext};
 use std::str::FromStr;
-use swf::BlendMode;
 use swf::Twips;
+use swf::{BlendMode, Rectangle};
 
 /// Implements `flash.display.DisplayObject`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -683,6 +684,83 @@ pub fn set_blend_mode<'gc>(
     Ok(Value::Undefined)
 }
 
+fn scroll_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        if let Some(scroll_rect) = dobj.next_scroll_rect() {
+            return Ok(activation
+                .avm2()
+                .classes()
+                .rectangle
+                .construct(
+                    activation,
+                    &[
+                        scroll_rect.x_min.to_pixels().into(),
+                        scroll_rect.y_min.to_pixels().into(),
+                        (scroll_rect.x_max - scroll_rect.x_min).to_pixels().into(),
+                        (scroll_rect.y_max - scroll_rect.y_min).to_pixels().into(),
+                    ],
+                )?
+                .into());
+        } else {
+            return Ok(Value::Null);
+        }
+    }
+    Ok(Value::Undefined)
+}
+
+fn set_scroll_rect<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
+        let rect = args[0].as_object().unwrap();
+        let x = rect
+            .get_property(&Multiname::public("x"), activation)?
+            .coerce_to_number(activation)?;
+
+        let y = rect
+            .get_property(&Multiname::public("y"), activation)?
+            .coerce_to_number(activation)?;
+
+        let width = rect
+            .get_property(&Multiname::public("width"), activation)?
+            .coerce_to_number(activation)?;
+
+        let height = rect
+            .get_property(&Multiname::public("height"), activation)?
+            .coerce_to_number(activation)?;
+
+        // Flash only updates the "internal" scrollRect used by localToLocal
+        // when the next frame is rendered.
+        // However, accessing 'DisplayObject.scrollRect' from ActionScript will
+        // immediately return the updated value.
+        //
+        // To implement this, our 'DisplayObject.scrollRect' ActionScript getter/setter
+        // both use a 'next_scroll_rect' field. Just before we render a DisplayObject, we copy
+        // its 'next_scroll_rect' to the 'scroll_rect' field used for both rendering and
+        // 'localToGlobal'
+        dobj.set_next_scroll_rect(
+            activation.context.gc_context,
+            Some(Rectangle {
+                // Note - the DisplayObject.scrollRect documentation explicitly
+                // states that scrolling works in increments of one pixel.
+                // We round our pixel values here (but still use the Twips struct
+                // for compatibility with our Matrix struct)
+                x_min: Twips::from_pixels(x.round()),
+                y_min: Twips::from_pixels(y.round()),
+                x_max: Twips::from_pixels((x + width).round()),
+                y_max: Twips::from_pixels((y + height).round()),
+            }),
+        );
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObject`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -728,6 +806,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("loaderInfo", Some(loader_info), None),
         ("filters", Some(filters), Some(set_filters)),
         ("transform", Some(transform), Some(set_transform)),
+        ("scrollRect", Some(scroll_rect), Some(set_scroll_rect)),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 

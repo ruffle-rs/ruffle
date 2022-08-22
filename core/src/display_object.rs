@@ -19,7 +19,7 @@ use ruffle_render::transform::Transform;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::sync::Arc;
-use swf::{BlendMode, Fixed8};
+use swf::{BlendMode, Fixed8, Rectangle};
 
 mod avm1_button;
 mod avm2_button;
@@ -107,6 +107,17 @@ pub struct DisplayObjectBase<'gc> {
 
     /// Bit flags for various display object properties.
     flags: DisplayObjectFlags,
+
+    /// The 'internal' scroll rect used for rendering and methods like 'localToGlobal'.
+    /// This is updated from 'pre_render'
+    #[collect(require_static)]
+    scroll_rect: Option<Rectangle>,
+
+    /// The 'next' scroll rect, which we will copy to 'scroll_rect' from 'pre_render'.
+    /// This is used by the ActionScript 'DisplayObject.scrollRect' getter, which sees
+    /// changes immediately (without needing wait for a render)
+    #[collect(require_static)]
+    next_scroll_rect: Option<Rectangle>,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -130,6 +141,8 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             blend_mode: Default::default(),
             opaque_background: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
+            scroll_rect: None,
+            next_scroll_rect: None,
         }
     }
 }
@@ -469,7 +482,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc, '_>) {
     if this.maskee().is_some() {
         return;
     }
@@ -478,6 +491,31 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if blend_mode != BlendMode::Normal {
         context.renderer.push_blend_mode(this.blend_mode());
     }
+
+    let scroll_rect_matrix = if let Some(rect) = this.scroll_rect() {
+        // Translate everything that we render (including DisplayObject.mask)
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(-rect.x_min, -rect.y_min),
+            color_transform: Default::default(),
+        });
+
+        let cur_transform = context.transform_stack.transform();
+        // The matrix we use for actually drawing a rectangle for cropping purposes
+        // Note that we've already applied the translation
+        Some(
+            cur_transform.matrix
+                * Matrix {
+                    a: rect.x_max.to_pixels() as f32,
+                    b: 0.0,
+                    c: 0.0,
+                    d: rect.y_max.to_pixels() as f32,
+                    tx: Twips::from_pixels(0.0),
+                    ty: Twips::from_pixels(0.0),
+                },
+        )
+    } else {
+        None
+    };
 
     let mask = this.masker();
     let mut mask_transform = ruffle_render::transform::Transform::default();
@@ -492,7 +530,35 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         context.allow_mask = true;
         context.renderer.activate_mask();
     }
+
+    // There are two parts to 'DisplayObject.scrollRect':
+    // a scroll effect (translation), and a crop effect.
+    // This scroll is implementing by appling a translation matrix
+    // when we defined 'scroll_rect_matrix'.
+    // The crop is implemented as a rectangular mask using the height
+    // and width provided by 'scrollRect'.
+
+    // Note that this mask is applied *in additon to* a mask defined
+    // with 'DisplayObject.mask'. We will end up rendering content that
+    // lies in the intersection of the scroll rect and DisplayObject.mask,
+    // which is exactly the behavior that we want.
+    if let Some(rect_mat) = scroll_rect_matrix {
+        context.renderer.push_mask();
+        // The color doesn't matter, as this is a mask.
+        context.renderer.draw_rect(Color::BLACK, &rect_mat);
+        context.renderer.activate_mask();
+    }
+
     this.render_self(context);
+
+    if let Some(rect_mat) = scroll_rect_matrix {
+        // Draw the rectangle again after deactivating the mask,
+        // to reset the stencil buffer.
+        context.renderer.deactivate_mask();
+        context.renderer.draw_rect(Color::BLACK, &rect_mat);
+        context.renderer.pop_mask();
+    }
+
     if let Some(m) = mask {
         context.renderer.deactivate_mask();
         context.allow_mask = false;
@@ -505,6 +571,12 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
     if blend_mode != BlendMode::Normal {
         context.renderer.pop_blend_mode();
     }
+
+    if scroll_rect_matrix.is_some() {
+        // Remove the translation that we pushed
+        context.transform_stack.pop();
+    }
+
     context.transform_stack.pop();
 }
 
@@ -569,6 +641,19 @@ pub trait TDisplayObject<'gc>:
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
     fn bounds_with_transform(&self, matrix: &Matrix) -> BoundingBox {
+        // A scroll rect completely overrides an object's bounds,
+        // and can even the bounding box to be larger than the actual content
+        if let Some(scroll_rect) = self.scroll_rect() {
+            return BoundingBox {
+                x_min: -scroll_rect.x_min,
+                y_min: scroll_rect.y_min,
+                x_max: scroll_rect.x_max,
+                y_max: scroll_rect.y_max,
+                valid: true,
+            }
+            .transform(matrix);
+        }
+
         let mut bounds = self.self_bounds().transform(matrix);
 
         if let Some(ctr) = self.as_container() {
@@ -605,6 +690,9 @@ pub trait TDisplayObject<'gc>:
     fn local_to_global_matrix(&self) -> Matrix {
         let mut node = self.parent();
         let mut matrix = *self.base().matrix();
+        if let Some(rect) = self.scroll_rect() {
+            matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
+        }
         while let Some(display_object) = node {
             // TODO: We don't want to include the stage transform because it includes the scale
             // mode and alignment transform, but the AS APIs expect "global" to be relative to the
@@ -616,6 +704,9 @@ pub trait TDisplayObject<'gc>:
                 break;
             }
             matrix = *display_object.base().matrix() * matrix;
+            if let Some(rect) = display_object.scroll_rect() {
+                matrix = Matrix::translate(-rect.x_min, -rect.y_min) * matrix;
+            }
             node = display_object.parent();
         }
         matrix
@@ -951,6 +1042,18 @@ pub trait TDisplayObject<'gc>:
         self.base_mut(gc_context).set_maskee(node);
     }
 
+    fn scroll_rect(&self) -> Option<Rectangle> {
+        self.base().scroll_rect
+    }
+
+    fn next_scroll_rect(&self) -> Option<Rectangle> {
+        self.base().next_scroll_rect
+    }
+
+    fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rect: Option<Rectangle>) {
+        self.base_mut(gc_context).next_scroll_rect = rect;
+    }
+
     fn removed(&self) -> bool {
         self.base().removed()
     }
@@ -1177,9 +1280,17 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
+    /// Called before the child is about to be rendered.
+    /// Note that this happens even if the child is invisible
+    /// (as long as the child is still on a render list)
+    fn pre_render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+        let mut this = self.base_mut(context.gc_context);
+        this.scroll_rect = this.next_scroll_rect;
+    }
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, _context: &mut RenderContext<'_, 'gc, '_>) {}
+
+    fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         render_base((*self).into(), context)
     }
 

@@ -1,0 +1,10 @@
+circle.scrollRect = null
+circle.hitTestPoint(400, 400, false) = false
+circle.hitTestPoint(400, 400, true) = false
+circle.scrollRect = (x=30, y=40, w=500, h=600)
+circle.hitTestPoint(400, 400, false) = false
+circle.hitTestPoint(400, 400, true) = false
+After 50ms delay
+circle.scrollRect = (x=30, y=40, w=500, h=600)
+circle.hitTestPoint(400, 400, false) = true
+circle.hitTestPoint(400, 400, true) = false
