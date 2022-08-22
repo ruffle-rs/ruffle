@@ -1,4 +1,4 @@
-use crate::backend::{RenderBackend, ShapeHandle};
+use crate::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use crate::bitmap::{Bitmap, BitmapHandle, BitmapInfo, BitmapSource};
 use crate::error::Error;
 use crate::matrix::Matrix;
@@ -14,22 +14,23 @@ impl BitmapSource for NullBitmapSource {
     }
 }
 
-pub struct NullRenderer;
-
-impl NullRenderer {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct NullRenderer {
+    dimensions: ViewportDimensions,
 }
 
-impl Default for NullRenderer {
-    fn default() -> Self {
-        Self::new()
+impl NullRenderer {
+    pub fn new(dimensions: ViewportDimensions) -> Self {
+        Self { dimensions }
     }
 }
 
 impl RenderBackend for NullRenderer {
-    fn set_viewport_dimensions(&mut self, _width: u32, _height: u32) {}
+    fn viewport_dimensions(&self) -> ViewportDimensions {
+        self.dimensions
+    }
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
+        self.dimensions = dimensions;
+    }
     fn register_shape(
         &mut self,
         _shape: DistilledShape,

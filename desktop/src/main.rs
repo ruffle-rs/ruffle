@@ -20,7 +20,7 @@ use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
     config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
-    StageDisplayState,
+    StageDisplayState, ViewportDimensions,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
@@ -364,14 +364,11 @@ impl App {
 
                             let viewport_scale_factor = self.window.scale_factor();
                             let mut player_lock = self.player.lock().unwrap();
-                            player_lock.set_viewport_dimensions(
-                                size.width,
-                                size.height,
-                                viewport_scale_factor,
-                            );
-                            player_lock
-                                .renderer_mut()
-                                .set_viewport_dimensions(size.width, size.height);
+                            player_lock.set_viewport_dimensions(ViewportDimensions {
+                                width: size.width,
+                                height: size.height,
+                                scale_factor: viewport_scale_factor,
+                            });
                             self.window.request_redraw();
                         }
                         WindowEvent::CursorMoved { position, .. } => {
@@ -503,14 +500,11 @@ impl App {
                         let viewport_size = self.window.inner_size();
                         let viewport_scale_factor = self.window.scale_factor();
                         let mut player_lock = self.player.lock().unwrap();
-                        player_lock.set_viewport_dimensions(
-                            viewport_size.width,
-                            viewport_size.height,
-                            viewport_scale_factor,
-                        );
-                        player_lock
-                            .renderer_mut()
-                            .set_viewport_dimensions(viewport_size.width, viewport_size.height);
+                        player_lock.set_viewport_dimensions(ViewportDimensions {
+                            width: viewport_size.width,
+                            height: viewport_size.height,
+                            scale_factor: viewport_scale_factor,
+                        });
 
                         loaded = true;
                     }

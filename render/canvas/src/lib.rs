@@ -1,6 +1,6 @@
 use fnv::FnvHashMap;
 use ruffle_render::backend::null::NullBitmapSource;
-use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::backend::{RenderBackend, ShapeHandle, ViewportDimensions};
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapSource};
 use ruffle_render::color_transform::ColorTransform;
 use ruffle_render::matrix::Matrix;
@@ -30,6 +30,10 @@ pub struct WebCanvasRenderBackend {
     mask_state: MaskState,
     next_bitmap_handle: BitmapHandle,
     blend_modes: Vec<BlendMode>,
+
+    // This is currnetly unused - we just store it to report
+    // in `get_viewport_dimensions`
+    viewport_scale_factor: f64,
 }
 
 /// Canvas-drawable shape data extracted from an SWF file.
@@ -287,6 +291,7 @@ impl WebCanvasRenderBackend {
             bitmaps: Default::default(),
             viewport_width: 0,
             viewport_height: 0,
+            viewport_scale_factor: 1.0,
             rect,
             mask_state: MaskState::DrawContent,
             next_bitmap_handle: BitmapHandle(0),
@@ -376,9 +381,18 @@ impl WebCanvasRenderBackend {
 }
 
 impl RenderBackend for WebCanvasRenderBackend {
-    fn set_viewport_dimensions(&mut self, width: u32, height: u32) {
-        self.viewport_width = width;
-        self.viewport_height = height;
+    fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
+        self.viewport_width = dimensions.width;
+        self.viewport_height = dimensions.height;
+        self.viewport_scale_factor = dimensions.scale_factor;
+    }
+
+    fn viewport_dimensions(&self) -> ViewportDimensions {
+        ViewportDimensions {
+            width: self.viewport_width,
+            height: self.viewport_height,
+            scale_factor: self.viewport_scale_factor,
+        }
     }
 
     fn register_shape(

@@ -544,7 +544,7 @@ mod tests {
     use crate::player::{Player, DEVICE_FONT_TAG};
     use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
-    use ruffle_render::backend::{null::NullRenderer, RenderBackend};
+    use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
     use std::ops::DerefMut;
     use swf::Twips;
 
@@ -553,7 +553,12 @@ mod tests {
         F: for<'gc> FnOnce(MutationContext<'gc, '_>, Font<'gc>),
     {
         rootless_arena(|mc| {
-            let mut renderer: Box<dyn RenderBackend> = Box::new(NullRenderer::new());
+            let mut renderer: Box<dyn RenderBackend> =
+                Box::new(NullRenderer::new(ViewportDimensions {
+                    width: 0,
+                    height: 0,
+                    scale_factor: 1.0,
+                }));
             let device_font =
                 Player::load_device_font(mc, DEVICE_FONT_TAG, renderer.deref_mut()).unwrap();
 

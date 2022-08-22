@@ -38,7 +38,7 @@ use gc_arena::{make_arena, ArenaParameters, Collect, GcCell};
 use instant::Instant;
 use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
-use ruffle_render::backend::RenderBackend;
+use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::transform::TransformStack;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
@@ -669,14 +669,14 @@ impl Player {
         self.mutate_with_update_context(|context| context.stage.movie_size().1)
     }
 
-    pub fn viewport_dimensions(&mut self) -> (u32, u32) {
-        self.mutate_with_update_context(|context| context.stage.viewport_size())
+    pub fn viewport_dimensions(&mut self) -> ViewportDimensions {
+        self.mutate_with_update_context(|context| context.renderer.viewport_dimensions())
     }
 
-    pub fn set_viewport_dimensions(&mut self, width: u32, height: u32, scale_factor: f64) {
+    pub fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         self.mutate_with_update_context(|context| {
-            let stage = context.stage;
-            stage.set_viewport_size(context, width, height, scale_factor);
+            context.renderer.set_viewport_dimensions(dimensions);
+            context.stage.build_matrices(context);
         })
     }
 
@@ -1834,7 +1834,6 @@ impl PlayerBuilder {
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
-        use ruffle_render::backend::null::NullRenderer;
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
@@ -1844,9 +1843,13 @@ impl PlayerBuilder {
         let navigator = self
             .navigator
             .unwrap_or_else(|| Box::new(navigator::NullNavigatorBackend::new()));
-        let renderer = self
-            .renderer
-            .unwrap_or_else(|| Box::new(NullRenderer::new()));
+        let renderer = self.renderer.unwrap_or_else(|| {
+            Box::new(NullRenderer::new(ViewportDimensions {
+                width: self.viewport_width,
+                height: self.viewport_height,
+                scale_factor: self.viewport_scale_factor,
+            }))
+        });
         let storage = self
             .storage
             .unwrap_or_else(|| Box::new(storage::MemoryStorageBackend::new()));
@@ -1920,12 +1923,7 @@ impl PlayerBuilder {
                             mouse_hovered_object: None,
                             mouse_pressed_object: None,
                             shared_objects: HashMap::new(),
-                            stage: Stage::empty(
-                                gc_context,
-                                self.viewport_width,
-                                self.viewport_height,
-                                self.fullscreen,
-                            ),
+                            stage: Stage::empty(gc_context, self.fullscreen),
                             timers: Timers::new(),
                             unbound_text_fields: Vec::new(),
                         },
@@ -1948,11 +1946,11 @@ impl PlayerBuilder {
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
-        player_lock.set_viewport_dimensions(
-            self.viewport_width,
-            self.viewport_height,
-            self.viewport_scale_factor,
-        );
+        player_lock.set_viewport_dimensions(ViewportDimensions {
+            width: self.viewport_width,
+            height: self.viewport_height,
+            scale_factor: self.viewport_scale_factor,
+        });
         if let Some(movie) = self.movie {
             player_lock.set_root_movie(movie);
         }
