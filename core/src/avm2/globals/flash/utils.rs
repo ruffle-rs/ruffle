@@ -53,7 +53,7 @@ pub fn get_qualified_class_name<'gc>(
 }
 
 /// Implements `flash.utils.getQualifiedSuperclassName`
-pub fn get_qualified_super_class_name<'gc>(
+pub fn get_qualified_superclass_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     _this: Option<Object<'gc>>,
     args: &[Value<'gc>],
