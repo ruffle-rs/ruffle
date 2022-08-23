@@ -4,6 +4,7 @@
 //Up Button Shape frame 1
 //Over Button Shape frame 1
 //Down Button Shape frame 1
+//MainTimeline frame 1
 //my_button
 [object SimpleButton]
 //my_button.upState

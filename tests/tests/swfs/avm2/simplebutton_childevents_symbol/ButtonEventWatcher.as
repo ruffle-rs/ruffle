@@ -1,16 +1,15 @@
 ﻿package {
-	import flash.display.MovieClip;
+	import flash.display.SimpleButton;
 	import flash.events.Event;
 	
-	public class EventWatcher extends MovieClip {
-		public function EventWatcher() {
+	public class ButtonEventWatcher extends SimpleButton {
+		public function ButtonEventWatcher() {
+			trace("//Constructed ButtonEventWatcher (", this.name, ")!");
 			super();
-			trace(this.name + ": Constructed");
-			this.setup();
 		}
 		
 		function trace_event(event: Event) {
-			trace(this.name + " (frame " + this.currentFrame + "):" + event);
+			trace(this.name + ":" + event);
 		}
 		
 		public function setup() {

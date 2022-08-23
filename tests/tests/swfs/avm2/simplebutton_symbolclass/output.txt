@@ -1,3 +1,4 @@
+///MainTimeline frame 1
 //var my_button = new MyButton();
 //Constructed UpButtonShape ( instance3 )!
 //Constructed OverButtonShape ( instance5 )!
@@ -48,6 +49,7 @@
 //Constructed UpButtonShape ( instance20 )!
 //Constructed OverButtonShape ( instance22 )!
 //Constructed DownButtonShape ( instance24 )!
+///MainTimeline frame 2
 //this.timeline_symbol.upState
 [object Sprite]
 // numChildren:  2
@@ -64,3 +66,25 @@
 //this.timeline_symbol.hitTestState
 [object Shape]
 ///MyButton constructor!
+///MainTimeline frame 3
+//Constructed UpButtonShape ( instance29 )!
+//Constructed OverButtonShape ( instance31 )!
+//Constructed DownButtonShape ( instance33 )!
+///MainTimeline frame 4
+//this.timeline_symbol2.upState
+[object Sprite]
+// numChildren:  2
+[object Shape]
+[object UpButtonShape]
+//this.timeline_symbol2.overState
+[object OverButtonShape]
+// numChildren:  1
+[object Shape]
+//this.timeline_symbol2.downState
+[object DownButtonShape]
+// numChildren:  1
+[object Shape]
+//this.timeline_symbol2.hitTestState
+[object Shape]
+///MyButton constructor!
+///MainTimeline frame 5
