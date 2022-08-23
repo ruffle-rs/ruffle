@@ -4,6 +4,7 @@ use crate::avm1::globals::system::SystemProperties;
 use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
+use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Domain as Avm2Domain, EventObject as Avm2EventObject,
 };
@@ -290,15 +291,29 @@ impl Player {
             let global_domain = activation.avm2().global_domain();
             let domain = Avm2Domain::movie_domain(&mut activation, global_domain);
 
-            drop(activation);
-
-            context
+            activation
+                .context
                 .library
-                .library_for_movie_mut(context.swf.clone())
+                .library_for_movie_mut(activation.context.swf.clone())
                 .set_avm2_domain(domain);
-            context.ui.set_mouse_visible(true);
+            activation.context.ui.set_mouse_visible(true);
 
-            let root: DisplayObject = MovieClip::from_movie(context, context.swf.clone()).into();
+            let swf = activation.context.swf.clone();
+            let root: DisplayObject =
+                MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+
+            // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
+            // and has no associated `Loader` instance.
+            // However, some properties are always accessible, and take their values
+            // from the root SWF.
+            let stage_loader_info = LoaderInfoObject::not_yet_loaded(&mut activation, swf, None)
+                .expect("Failed to construct Stage LoaderInfo");
+            activation
+                .context
+                .stage
+                .set_loader_info(activation.context.gc_context, stage_loader_info);
+
+            drop(activation);
 
             root.set_depth(context.gc_context, 0);
             let flashvars = if !context.swf.parameters().is_empty() {
@@ -1936,7 +1951,7 @@ impl PlayerBuilder {
         let mut player_lock = player.lock().unwrap();
         player_lock.mutate_with_update_context(|context| {
             // Instantiate an empty root before the main movie loads.
-            let fake_root = MovieClip::from_movie(context, fake_movie);
+            let fake_root = MovieClip::new(fake_movie, context.gc_context);
             fake_root.post_instantiation(context, None, Instantiator::Movie, false);
             context.stage.replace_at_depth(context, fake_root.into(), 0);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");

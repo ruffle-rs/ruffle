@@ -3,6 +3,7 @@ use crate::avm1::{
     Avm1, Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value,
 };
 use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::object::LoaderStream;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Namespace as Avm2Namespace,
@@ -177,6 +178,7 @@ impl<'gc> MovieClip<'gc> {
         ))
     }
 
+    /// Constructs a non-root movie
     pub fn new_with_data(
         gc_context: MutationContext<'gc, '_>,
         id: CharacterId,
@@ -189,7 +191,7 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::allocate(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf, num_frames, gc_context),
+                    MovieClipStatic::with_data(id, swf, num_frames, None, gc_context),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -218,20 +220,37 @@ impl<'gc> MovieClip<'gc> {
         ))
     }
 
-    /// Construct a movie clip that represents an entire movie.
-    pub fn from_movie(context: &mut UpdateContext<'_, 'gc, '_>, movie: Arc<SwfMovie>) -> Self {
+    /// Construct a movie clip that represents the root movie
+    /// for the entire `Player`.
+    pub fn player_root_movie(
+        activation: &mut Avm2Activation<'_, 'gc, '_>,
+        movie: Arc<SwfMovie>,
+    ) -> Self {
         let num_frames = movie.num_frames();
+
+        let loader_info = if movie.is_action_script_3() {
+            // The root movie doesn't have a `Loader`
+            // We will replace this with a `LoaderStream::Swf` later in this function
+            Some(
+                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None)
+                    .expect("Failed to construct LoaderInfoObject"),
+            )
+        } else {
+            None
+        };
+
         let mc = MovieClip(GcCell::allocate(
-            context.gc_context,
+            activation.context.gc_context,
             MovieClipData {
                 base: Default::default(),
                 static_data: Gc::allocate(
-                    context.gc_context,
+                    activation.context.gc_context,
                     MovieClipStatic::with_data(
                         0,
                         movie.clone().into(),
                         num_frames,
-                        context.gc_context,
+                        loader_info,
+                        activation.context.gc_context,
                     ),
                 ),
                 tag_stream_pos: 0,
@@ -259,8 +278,21 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
             },
         ));
-        mc.set_is_root(context.gc_context, true);
-        mc.set_loader_info(context, movie);
+
+        if movie.is_action_script_3() {
+            mc.0.read()
+                .static_data
+                .loader_info
+                .as_ref()
+                .unwrap()
+                .as_loader_info_object()
+                .unwrap()
+                .set_loader_stream(
+                    LoaderStream::Swf(movie, mc.into()),
+                    activation.context.gc_context,
+                );
+        }
+        mc.set_is_root(activation.context.gc_context, true);
         mc
     }
 
@@ -276,15 +308,27 @@ impl<'gc> MovieClip<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc, '_>,
         movie: Option<Arc<SwfMovie>>,
+        loader_info: Option<LoaderInfoObject<'gc>>,
     ) {
         let mut mc = self.0.write(context.gc_context);
         let is_swf = movie.is_some();
         let movie = movie.unwrap_or_else(|| Arc::new(SwfMovie::empty(mc.movie().version())));
         let total_frames = movie.num_frames();
+        assert_eq!(
+            mc.static_data.loader_info, None,
+            "Called replace_movie on a clip with LoaderInfo set"
+        );
+
         mc.base.base.reset_for_movie_load();
         mc.static_data = Gc::allocate(
             context.gc_context,
-            MovieClipStatic::with_data(0, movie.clone().into(), total_frames, context.gc_context),
+            MovieClipStatic::with_data(
+                0,
+                movie.into(),
+                total_frames,
+                loader_info.map(|l| l.into()),
+                context.gc_context,
+            ),
         );
         mc.tag_stream_pos = 0;
         mc.flags = MovieClipFlags::PLAYING;
@@ -293,30 +337,6 @@ impl<'gc> MovieClip<'gc> {
         mc.audio_stream = None;
         mc.container = ChildContainer::new();
         drop(mc);
-
-        self.set_loader_info(context, movie);
-    }
-
-    fn set_loader_info(&self, context: &mut UpdateContext<'_, 'gc, '_>, movie: Arc<SwfMovie>) {
-        if movie.is_action_script_3() {
-            let gc_context = context.gc_context;
-            let mc = self.0.write(gc_context);
-            if mc.base.base.is_root() {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
-                match LoaderInfoObject::from_movie(&mut activation, movie, (*self).into()) {
-                    Ok(loader_info) => {
-                        *mc.static_data.loader_info.write(gc_context) = Some(loader_info);
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "Error contructing LoaderInfoObject for movie {:?}: {:?}",
-                            mc,
-                            e
-                        );
-                    }
-                }
-            }
-        }
     }
 
     pub fn preload(self, context: &mut UpdateContext<'_, 'gc, '_>) {
@@ -1855,7 +1875,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         if context.is_action_script_3() {
             let needs_construction = if matches!(self.object2(), Avm2Value::Undefined) {
                 self.allocate_as_avm2_object(context, (*self).into());
-
                 true
             } else {
                 false
@@ -1988,8 +2007,12 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // keeps track if an "init" event has already been fired,
         // so this becomes a no-op after the event has been fired.
         if self.0.read().initialized() {
-            if let Some(loader_info) = self.loader_info() {
-                loader_info.loader_stream_init(context);
+            if let Some(loader_info) = self
+                .loader_info()
+                .as_ref()
+                .and_then(|o| o.as_loader_info_object())
+            {
+                loader_info.fire_init_and_complete_events(context);
             }
         }
 
@@ -2150,7 +2173,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {
-        *self.0.read().static_data.loader_info.read()
+        self.0.read().static_data.loader_info
     }
 
     fn allow_as_mask(&self) -> bool {
@@ -3387,18 +3410,23 @@ struct MovieClipStatic<'gc> {
     /// Only set if this MovieClip is the root movie in an SWF
     /// (either the root SWF initially loaded by the player,
     /// or an SWF dynamically loaded by `Loader`)
-    loader_info: GcCell<'gc, Option<Avm2Object<'gc>>>,
+    ///
+    /// This is always `None` for the AVM1 root movie.
+    /// However, it will be set for an AVM1 movie loaded from AVM2
+    /// via `Loader`
+    loader_info: Option<Avm2Object<'gc>>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
     fn empty(movie: Arc<SwfMovie>, gc_context: MutationContext<'gc, '_>) -> Self {
-        Self::with_data(0, SwfSlice::empty(movie), 1, gc_context)
+        Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context)
     }
 
     fn with_data(
         id: CharacterId,
         swf: SwfSlice,
         total_frames: FrameNumber,
+        loader_info: Option<Avm2Object<'gc>>,
         gc_context: MutationContext<'gc, '_>,
     ) -> Self {
         Self {
@@ -3410,7 +3438,7 @@ impl<'gc> MovieClipStatic<'gc> {
             audio_stream_info: None,
             audio_stream_handle: None,
             exported_name: GcCell::allocate(gc_context, None),
-            loader_info: GcCell::allocate(gc_context, None),
+            loader_info,
         }
     }
 }
