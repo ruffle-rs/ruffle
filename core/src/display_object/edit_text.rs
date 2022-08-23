@@ -155,6 +155,9 @@ pub struct EditTextData<'gc> {
 
     /// How many lines down the text is offset by. 1-based index.
     scroll: usize,
+
+    /// Whether the text layout needs to be recalculated.
+    is_layout_dirty: bool,
 }
 
 // TODO: would be nicer to compute (and return) this during layout, instead of afterwards
@@ -333,6 +336,7 @@ impl<'gc> EditText<'gc> {
                 hscroll: 0.0,
                 line_data,
                 scroll: 1,
+                is_layout_dirty: true,
             },
         ));
 
@@ -418,9 +422,8 @@ impl<'gc> EditText<'gc> {
         let mut edit_text = self.0.write(context.gc_context);
         let default_format = edit_text.text_spans.default_format().clone();
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
+        edit_text.is_layout_dirty = true;
         drop(edit_text);
-
-        self.relayout(context.gc_context, context.library);
 
         Ok(())
     }
@@ -443,10 +446,8 @@ impl<'gc> EditText<'gc> {
             let mut write = self.0.write(context.gc_context);
             let default_format = write.text_spans.default_format().clone();
             write.text_spans = FormatSpans::from_html(text, default_format, write.is_multiline);
+            write.is_layout_dirty = true;
             drop(write);
-
-            self.relayout(context.gc_context, context.library);
-
             Ok(())
         } else {
             self.set_text(text, context)
@@ -481,11 +482,9 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
         // TODO: Convert to byte indices
-        self.0
-            .write(context.gc_context)
-            .text_spans
-            .set_text_format(from, to, &tf);
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.text_spans.set_text_format(from, to, &tf);
+        write.is_layout_dirty = true;
     }
 
     pub fn is_editable(self) -> bool {
@@ -505,13 +504,15 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).is_password = is_password;
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.is_password = is_password;
+        write.is_layout_dirty = true;
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).is_multiline = is_multiline;
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.is_multiline = is_multiline;
+        write.is_layout_dirty = true;
     }
 
     pub fn is_selectable(self) -> bool {
@@ -527,8 +528,9 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_word_wrap(self, is_word_wrap: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).is_word_wrap = is_word_wrap;
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.is_word_wrap = is_word_wrap;
+        write.is_layout_dirty = true;
     }
 
     pub fn autosize(self) -> AutoSizeMode {
@@ -536,8 +538,9 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'_, 'gc, '_>) {
-        self.0.write(context.gc_context).autosize = asm;
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.autosize = asm;
+        write.is_layout_dirty = true;
     }
 
     pub fn has_background(self) -> bool {
@@ -585,8 +588,9 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'_, 'gc, '_>,
         is_device_font: bool,
     ) {
-        self.0.write(context.gc_context).is_device_font = is_device_font;
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.is_device_font = is_device_font;
+        write.is_layout_dirty = true;
     }
 
     pub fn is_html(self) -> bool {
@@ -604,11 +608,9 @@ impl<'gc> EditText<'gc> {
         text: &WStr,
         context: &mut UpdateContext<'_, 'gc, '_>,
     ) {
-        self.0
-            .write(context.gc_context)
-            .text_spans
-            .replace_text(from, to, text, None);
-        self.relayout(context.gc_context, context.library);
+        let mut write = self.0.write(context.gc_context);
+        write.text_spans.replace_text(from, to, text, None);
+        write.is_layout_dirty = true;
     }
 
     /// Construct a base text transform for a particular `EditText` span.
@@ -760,6 +762,10 @@ impl<'gc> EditText<'gc> {
     /// text-span representation.
     fn relayout(self, gc_context: MutationContext<'gc, '_>, library: &Library<'gc>) {
         let mut edit_text = self.0.write(gc_context);
+        if !edit_text.is_layout_dirty {
+            return;
+        }
+        edit_text.is_layout_dirty = false;
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
@@ -1618,6 +1624,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
+        self.relayout(context.gc_context, context.library);
         if !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
