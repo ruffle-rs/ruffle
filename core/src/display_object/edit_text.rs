@@ -244,16 +244,6 @@ impl<'gc> EditText<'gc> {
 
         let bounds: BoundingBox = swf_tag.bounds.clone().into();
 
-        let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
-            &text_spans,
-            context.library,
-            swf_movie.clone(),
-            bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
-            swf_tag.is_word_wrap,
-            swf_tag.is_device_font,
-        );
-        let line_data = get_line_data(&layout);
-
         let has_background = swf_tag.has_border;
         let background_color = 0xFFFFFF; // Default is white
         let has_border = swf_tag.has_border;
@@ -323,8 +313,8 @@ impl<'gc> EditText<'gc> {
                 is_html,
                 drawing: Drawing::new(),
                 object: None,
-                layout,
-                intrinsic_bounds,
+                layout: Default::default(),
+                intrinsic_bounds: Default::default(),
                 bounds,
                 autosize,
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
@@ -334,7 +324,7 @@ impl<'gc> EditText<'gc> {
                 has_focus: false,
                 render_settings: Default::default(),
                 hscroll: 0.0,
-                line_data,
+                line_data: Default::default(),
                 scroll: 1,
                 is_layout_dirty: true,
             },
