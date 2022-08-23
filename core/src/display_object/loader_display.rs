@@ -61,7 +61,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         u16::MAX
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         self.render_children(context);
     }
 

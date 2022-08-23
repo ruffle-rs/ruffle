@@ -469,7 +469,7 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
+pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc, '_>) {
     if this.maskee().is_some() {
         return;
     }
@@ -1187,9 +1187,9 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn render_self(&self, _context: &mut RenderContext<'_, 'gc>) {}
+    fn render_self(&self, _context: &mut RenderContext<'_, 'gc, '_>) {}
 
-    fn render(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         render_base((*self).into(), context)
     }
 

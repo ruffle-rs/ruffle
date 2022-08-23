@@ -331,7 +331,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         self.render_children(context);
     }
 

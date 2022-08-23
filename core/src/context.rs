@@ -415,7 +415,7 @@ impl<'gc> Default for ActionQueue<'gc> {
 
 /// Shared data used during rendering.
 /// `Player` creates this when it renders a frame and passes it down to display objects.
-pub struct RenderContext<'a, 'gc> {
+pub struct RenderContext<'a, 'gc, 'gc_context> {
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,
 
@@ -437,6 +437,9 @@ pub struct RenderContext<'a, 'gc> {
     /// Whether to allow pushing a new mask. A masker-inside-a-masker does not work in Flash, instead
     /// causing the inner mask to be included as part of the outer mask. Maskee-inside-a-maskee works as one expects.
     pub allow_mask: bool,
+
+    /// The mutation context to allocate and mutate `GcCell` types.
+    pub gc_context: MutationContext<'gc, 'gc_context>,
 }
 
 /// The type of action being run.
