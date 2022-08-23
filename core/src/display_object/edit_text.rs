@@ -631,21 +631,6 @@ impl<'gc> EditText<'gc> {
         transform
     }
 
-    pub fn line_width(self) -> Twips {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
-
-        let mut base_width = Twips::from_pixels(self.width());
-
-        if let Some(layout) = &static_data.text.layout {
-            base_width -= layout.left_margin;
-            base_width -= layout.indent;
-            base_width -= layout.right_margin;
-        }
-
-        base_width
-    }
-
     /// Returns the variable that this text field is bound to.
     pub fn variable(&self) -> Option<Ref<str>> {
         let text = self.0.read();
