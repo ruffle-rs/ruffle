@@ -492,30 +492,6 @@ pub fn load_player_globals<'gc>(
     )?;
     class(activation, flash::utils::proxy::create_class(mc), script)?;
 
-    function(
-        activation,
-        "flash.utils",
-        "getTimer",
-        flash::utils::get_timer,
-        script,
-    )?;
-
-    function(
-        activation,
-        "flash.utils",
-        "getQualifiedClassName",
-        flash::utils::get_qualified_class_name,
-        script,
-    )?;
-
-    function(
-        activation,
-        "flash.utils",
-        "getQualifiedSuperclassName",
-        flash::utils::get_qualified_super_class_name,
-        script,
-    )?;
-
     // package `flash.display`
     class(
         activation,
