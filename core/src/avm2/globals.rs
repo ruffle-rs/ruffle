@@ -637,13 +637,6 @@ pub fn load_player_globals<'gc>(
     class(activation, flash::text::font::create_class(mc), script)?;
 
     // package `flash.crypto`
-    function(
-        activation,
-        "flash.crypto",
-        "generateRandomBytes",
-        flash::crypto::generate_random_bytes,
-        script,
-    )?;
 
     // package `flash.external`
     class(
