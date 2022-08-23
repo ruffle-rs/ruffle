@@ -5,7 +5,7 @@ package flash.net {
 
 		// FIXME - this should be a getter/setter for consistency with Flash
 		public var url:String;
-		private var _method:String;
+		private var _method:String = URLRequestMethod.GET;
 		private var _data:Object;
 
 		public function URLRequest(url:String = null) {
