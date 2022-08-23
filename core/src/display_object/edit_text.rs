@@ -809,7 +809,8 @@ impl<'gc> EditText<'gc> {
     /// Measure the width and height of the `EditText`'s current text load.
     ///
     /// The returned tuple should be interpreted as width, then height.
-    pub fn measure_text(self, _context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
+    pub fn measure_text(self, context: &mut UpdateContext<'_, 'gc, '_>) -> (Twips, Twips) {
+        self.relayout(context.gc_context, context.library);
         let edit_text = self.0.read();
 
         (
