@@ -19,6 +19,7 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode};
 use crate::font::{round_down_to_pixel, Glyph, TextRenderSettings};
 use crate::html::{BoxBounds, FormatSpans, LayoutBox, LayoutContent, TextFormat};
+use crate::library::Library;
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -242,7 +243,7 @@ impl<'gc> EditText<'gc> {
 
         let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &text_spans,
-            context,
+            context.library,
             swf_movie.clone(),
             bounds.width() - Twips::from_pixels(Self::INTERNAL_PADDING * 2.0),
             swf_tag.is_word_wrap,
@@ -336,7 +337,7 @@ impl<'gc> EditText<'gc> {
         ));
 
         if swf_tag.is_auto_size {
-            et.relayout(context);
+            et.relayout(context.gc_context, context.library);
         } else {
             et.redraw_border(context.gc_context);
         }
@@ -419,7 +420,7 @@ impl<'gc> EditText<'gc> {
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
         drop(edit_text);
 
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
 
         Ok(())
     }
@@ -444,7 +445,7 @@ impl<'gc> EditText<'gc> {
             write.text_spans = FormatSpans::from_html(text, default_format, write.is_multiline);
             drop(write);
 
-            self.relayout(context);
+            self.relayout(context.gc_context, context.library);
 
             Ok(())
         } else {
@@ -484,7 +485,7 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .text_spans
             .set_text_format(from, to, &tf);
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn is_editable(self) -> bool {
@@ -505,12 +506,12 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_password(self, is_password: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_password = is_password;
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn set_multiline(self, is_multiline: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_multiline = is_multiline;
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn is_selectable(self) -> bool {
@@ -527,7 +528,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_word_wrap(self, is_word_wrap: bool, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).is_word_wrap = is_word_wrap;
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn autosize(self) -> AutoSizeMode {
@@ -536,7 +537,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_autosize(self, asm: AutoSizeMode, context: &mut UpdateContext<'_, 'gc, '_>) {
         self.0.write(context.gc_context).autosize = asm;
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn has_background(self) -> bool {
@@ -585,7 +586,7 @@ impl<'gc> EditText<'gc> {
         is_device_font: bool,
     ) {
         self.0.write(context.gc_context).is_device_font = is_device_font;
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     pub fn is_html(self) -> bool {
@@ -607,7 +608,7 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .text_spans
             .replace_text(from, to, text, None);
-        self.relayout(context);
+        self.relayout(context.gc_context, context.library);
     }
 
     /// Construct a base text transform for a particular `EditText` span.
@@ -757,8 +758,8 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    fn relayout(self, context: &mut UpdateContext<'_, 'gc, '_>) {
-        let mut edit_text = self.0.write(context.gc_context);
+    fn relayout(self, gc_context: MutationContext<'gc, '_>, library: &Library<'gc>) {
+        let mut edit_text = self.0.write(gc_context);
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.is_word_wrap;
         let movie = edit_text.static_data.swf.clone();
@@ -774,7 +775,7 @@ impl<'gc> EditText<'gc> {
 
         let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
             &edit_text.text_spans,
-            context,
+            library,
             movie,
             edit_text.bounds.width() - padding,
             is_word_wrap,
@@ -810,7 +811,7 @@ impl<'gc> EditText<'gc> {
             let height = intrinsic_bounds.height() + padding;
             edit_text.bounds.set_height(height);
             drop(edit_text);
-            self.redraw_border(context.gc_context);
+            self.redraw_border(gc_context);
         }
     }
 
