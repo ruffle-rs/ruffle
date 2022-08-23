@@ -789,6 +789,10 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
     fn blend_mode(&self) -> BlendMode {
         *self.blend_modes.last().unwrap()
     }
+
+    pub fn descriptors(&self) -> &Arc<Descriptors> {
+        &self.descriptors
+    }
 }
 
 impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
