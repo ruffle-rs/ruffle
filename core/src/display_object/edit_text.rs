@@ -1580,6 +1580,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_width(Twips::from_pixels(value));
         write.base.base.set_transformed_by_script(true);
+        write.is_layout_dirty = true;
 
         drop(write);
         self.redraw_border(gc_context);
@@ -1600,6 +1601,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         write.bounds.set_height(Twips::from_pixels(value));
         write.base.base.set_transformed_by_script(true);
+        write.is_layout_dirty = true;
 
         drop(write);
         self.redraw_border(gc_context);
