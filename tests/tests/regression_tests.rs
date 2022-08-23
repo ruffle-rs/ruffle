@@ -26,6 +26,10 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
+    format!("{}-{:?}", std::env::consts::OS, info.backend)
+}
+
 const RUN_IMG_TESTS: bool = cfg!(feature = "imgtests");
 
 fn set_logger() {
@@ -1378,17 +1382,26 @@ fn run_swf(
             .unwrap();
         let actual_image = renderer.capture_frame().expect("Failed to capture image");
 
-        let expected_image_path = base_path.join("expected.png");
-        let expected_image =
-            image::open(&expected_image_path).expect("Failed to read expected image");
+        let suffix = get_img_platform_suffix(&renderer.descriptors().info);
 
-        if expected_image
-            .as_rgba8()
-            .expect("Expected 8-bit RGBA image")
-            .as_raw()
-            != actual_image.as_raw()
-        {
-            let actual_image_path = base_path.join("actual.png");
+        let expected_image_path = base_path.join(format!("expected-{}.png", &suffix));
+        let expected_image = image::open(&expected_image_path);
+
+        let matches = match expected_image {
+            Ok(img) => {
+                img.as_rgba8().expect("Expected 8-bit RGBA image").as_raw() == actual_image.as_raw()
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to open expected image {:?}: {:?}",
+                    &expected_image_path, e
+                );
+                false
+            }
+        };
+
+        if !matches {
+            let actual_image_path = base_path.join(format!("actual-{}.png", suffix));
             actual_image.save_with_format(&actual_image_path, image::ImageFormat::Png)?;
             panic!(
                 "Test output does not match expected image - saved actual image to {:?}",
