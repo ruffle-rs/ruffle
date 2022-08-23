@@ -753,8 +753,8 @@ fn set_visible<'gc>(
     Ok(())
 }
 
-fn width<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.width().into()
+fn width<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.width(&mut activation.context).into()
 }
 
 fn set_width<'gc>(
@@ -768,8 +768,8 @@ fn set_width<'gc>(
     Ok(())
 }
 
-fn height<'gc>(_activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.height().into()
+fn height<'gc>(activation: &mut Activation<'_, 'gc, '_>, this: DisplayObject<'gc>) -> Value<'gc> {
+    this.height(&mut activation.context).into()
 }
 
 fn set_height<'gc>(

@@ -704,7 +704,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
-    fn width(&self) -> f64 {
+    fn width(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> f64 {
         let bounds = self.local_bounds();
         (bounds.x_max - bounds.x_min).to_pixels()
     }
@@ -753,7 +753,7 @@ pub trait TDisplayObject<'gc>:
 
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
-    fn height(&self) -> f64 {
+    fn height(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> f64 {
         let bounds = self.local_bounds();
         (bounds.y_max - bounds.y_min).to_pixels()
     }

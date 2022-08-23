@@ -1565,7 +1565,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn width(&self) -> f64 {
+    fn width(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> f64 {
         let edit_text = self.0.read();
         edit_text
             .bounds
@@ -1584,7 +1584,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.redraw_border(gc_context);
     }
 
-    fn height(&self) -> f64 {
+    fn height(&self, _context: &mut UpdateContext<'_, 'gc, '_>) -> f64 {
         let edit_text = self.0.read();
         edit_text
             .bounds

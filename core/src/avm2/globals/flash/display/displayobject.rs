@@ -107,12 +107,12 @@ pub fn set_alpha<'gc>(
 
 /// Implements `height`'s getter.
 pub fn height<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj.height().into());
+        return Ok(dobj.height(&mut activation.context).into());
     }
 
     Ok(Value::Undefined)
@@ -175,12 +175,12 @@ pub fn set_scale_y<'gc>(
 
 /// Implements `width`'s getter.
 pub fn width<'gc>(
-    _activation: &mut Activation<'_, 'gc, '_>,
+    activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        return Ok(dobj.width().into());
+        return Ok(dobj.width(&mut activation.context).into());
     }
 
     Ok(Value::Undefined)
