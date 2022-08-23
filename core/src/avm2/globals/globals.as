@@ -4,6 +4,7 @@
 include "Error.as"
 
 include "flash/accessibility/AccessibilityProperties.as"
+include "flash/crypto.as"
 include "flash/display/ActionScriptVersion.as"
 include "flash/display/BitmapDataChannel.as"
 include "flash/display/BitmapEncodingColorSpace.as"
