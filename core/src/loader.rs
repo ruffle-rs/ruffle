@@ -20,6 +20,7 @@ use crate::display_object::{
     Bitmap, DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::events::ClipEvent;
+use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::player::Player;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -558,12 +559,15 @@ impl<'gc> Loader<'gc> {
                                     );
                                     // FIXME - do we need to call 'set_place_frame'
                                     mc.preload(&mut activation.context);
-                                    mc.construct_frame(&mut activation.context);
                                     mc.post_instantiation(
                                         &mut activation.context,
                                         None,
                                         Instantiator::Movie,
                                         false,
+                                    );
+                                    catchup_display_object_to_frame(
+                                        &mut activation.context,
+                                        mc.into(),
                                     );
 
                                     if let Some(loader_info) = loader_info {
