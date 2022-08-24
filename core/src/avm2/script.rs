@@ -18,7 +18,9 @@ use std::borrow::Cow;
 use std::cell::Ref;
 use std::mem::drop;
 use std::rc::Rc;
-use swf::avm2::types::{AbcFile, Index, Method as AbcMethod, Script as AbcScript};
+use swf::avm2::types::{
+    AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Script as AbcScript,
+};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
@@ -59,6 +61,11 @@ pub struct TranslationUnitData<'gc> {
     /// They're lazy loaded and offset by 1, with the 0th element being always None.
     strings: Vec<Option<AvmString<'gc>>>,
 
+    /// All multinames loaded from the ABC's multiname list
+    /// Note that some of these may have a runtime (lazy) component.
+    /// Make sure to check for that before using them.
+    multinames: Vec<Option<Gc<'gc, Multiname<'gc>>>>,
+
     /// A map from trait names to their defining `Scripts`.
     /// This is very similar to `Domain.defs`, except it
     /// only stores traits with `Namespace::Private`, which are
@@ -85,6 +92,7 @@ impl<'gc> TranslationUnit<'gc> {
         let methods = vec![None; abc.methods.len()];
         let scripts = vec![None; abc.scripts.len()];
         let strings = vec![None; abc.constant_pool.strings.len() + 1];
+        let multinames = vec![None; abc.constant_pool.multinames.len() + 1];
         let private_trait_scripts = PropertyMap::new();
 
         Self(GcCell::allocate(
@@ -96,6 +104,7 @@ impl<'gc> TranslationUnit<'gc> {
                 methods,
                 scripts,
                 strings,
+                multinames,
                 private_trait_scripts,
             },
         ))
@@ -261,6 +270,60 @@ impl<'gc> TranslationUnit<'gc> {
         Ok(self
             .pool_string_option(string_index, mc)?
             .unwrap_or_default())
+    }
+
+    /// Retrieve a multiname from the current constant pool.
+    /// The name can have a lazy component, do not pass it anywhere.
+    pub fn pool_maybe_uninitialized_multiname(
+        self,
+        multiname_index: Index<AbcMultiname>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        let read = self.0.read();
+        if let Some(Some(multiname)) = read.multinames.get(multiname_index.0 as usize) {
+            return Ok(*multiname);
+        }
+
+        drop(read);
+
+        let multiname = Multiname::from_abc_index(self, multiname_index, mc)?;
+        let multiname = Gc::allocate(mc, multiname);
+        self.0.write(mc).multinames[multiname_index.0 as usize] = Some(multiname);
+
+        Ok(multiname)
+    }
+
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    ///
+    /// This version of the function treats index 0 as an error condition.
+    pub fn pool_multiname_static(
+        self,
+        multiname_index: Index<AbcMultiname>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, mc)?;
+        if multiname.has_lazy_component() {
+            return Err(format!("Multiname {} is not static", multiname_index.0).into());
+        }
+
+        Ok(multiname)
+    }
+
+    /// Retrieve a static, or non-runtime, multiname from the current constant
+    /// pool.
+    ///
+    /// This version of the function treats index 0 as the any-type `*`.
+    pub fn pool_multiname_static_any(
+        self,
+        multiname_index: Index<AbcMultiname>,
+        mc: MutationContext<'gc, '_>,
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        if multiname_index.0 == 0 {
+            Ok(Gc::allocate(mc, Multiname::any()))
+        } else {
+            self.pool_multiname_static(multiname_index, mc)
+        }
     }
 }
 

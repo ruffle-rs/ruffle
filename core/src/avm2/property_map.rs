@@ -66,6 +66,9 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     pub fn get_for_multiname(&self, name: &Multiname<'gc>) -> Option<&V> {
+        if name.has_lazy_component() {
+            unreachable!("Lookup on lazy Multiname should never happen ({:?})", name);
+        }
         if let Some(local_name) = name.local_name() {
             self.0.get(&local_name).iter().find_map(|v| {
                 v.iter()
@@ -79,6 +82,9 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     pub fn get_with_ns_for_multiname(&self, name: &Multiname<'gc>) -> Option<(Namespace<'gc>, &V)> {
+        if name.has_lazy_component() {
+            unreachable!("Lookup on lazy Multiname should never happen ({:?})", name);
+        }
         if let Some(local_name) = name.local_name() {
             self.0.get(&local_name).iter().find_map(|v| {
                 v.iter()

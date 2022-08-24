@@ -10,6 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell};
+use std::ops::Deref;
 use swf::avm2::types::{
     DefaultValue as AbcDefaultValue, Trait as AbcTrait, TraitKind as AbcTraitKind,
 };
@@ -198,11 +199,10 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = if type_name.0 == 0 {
-                    Multiname::any()
-                } else {
-                    Multiname::from_abc_multiname_static(unit, *type_name, mc)?
-                };
+                let type_name = unit
+                    .pool_multiname_static_any(*type_name, mc)?
+                    .deref()
+                    .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,
@@ -260,11 +260,10 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = if type_name.0 == 0 {
-                    Multiname::any()
-                } else {
-                    Multiname::from_abc_multiname_static(unit, *type_name, mc)?
-                };
+                let type_name = unit
+                    .pool_multiname_static_any(*type_name, mc)?
+                    .deref()
+                    .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,
@@ -393,7 +392,7 @@ fn slot_default_value<'gc>(
 fn default_value_for_type<'gc>(type_name: &Multiname<'gc>) -> Value<'gc> {
     // TODO: It's technically possible to have a multiname in here, so this should go through something
     // like `Activation::resolve_type` to get an actual `Class` object, and then check something like `Class::built_in_type`.
-    // The Multiname is guaranteed to be static by `Multiname::from_abc_multiname_static` earlier.
+    // The Multiname is guaranteed to be static by `pool.pool_multiname_static` earlier.
     if type_name.is_any() {
         Value::Undefined
     } else if type_name.contains_public_namespace() {

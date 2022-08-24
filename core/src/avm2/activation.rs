@@ -711,12 +711,32 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     }
 
     /// Retrieve a multiname from the current constant pool.
-    fn pool_multiname(
+    fn pool_maybe_uninitialized_multiname(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-    ) -> Result<Multiname<'gc>, Error> {
-        Multiname::from_abc_multiname(method.translation_unit(), index, self)
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        method
+            .translation_unit()
+            .pool_maybe_uninitialized_multiname(index, self.context.gc_context)
+    }
+
+    /// Retrieve a multiname from the current constant pool.
+    /// The name is guaranteed to be fully initialized.
+    fn pool_multiname_and_initialize(
+        &mut self,
+        method: Gc<'gc, BytecodeMethod<'gc>>,
+        index: Index<AbcMultiname>,
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        let name = method
+            .translation_unit()
+            .pool_maybe_uninitialized_multiname(index, self.context.gc_context)?;
+        if name.has_lazy_component() {
+            let name = name.fill_with_runtime_params(self)?;
+            Ok(Gc::allocate(self.context.gc_context, name))
+        } else {
+            Ok(name)
+        }
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -727,12 +747,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-    ) -> Result<Multiname<'gc>, Error> {
-        Multiname::from_abc_multiname_static(
-            method.translation_unit(),
-            index,
-            self.context.gc_context,
-        )
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        method
+            .translation_unit()
+            .pool_multiname_static(index, self.context.gc_context)
     }
 
     /// Retrieve a static, or non-runtime, multiname from the current constant
@@ -743,16 +761,10 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
-    ) -> Result<Multiname<'gc>, Error> {
-        if index.0 == 0 {
-            Ok(Multiname::any())
-        } else {
-            Multiname::from_abc_multiname_static(
-                method.translation_unit(),
-                index,
-                self.context.gc_context,
-            )
-        }
+    ) -> Result<Gc<'gc, Multiname<'gc>>, Error> {
+        method
+            .translation_unit()
+            .pool_multiname_static_any(index, self.context.gc_context)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -1221,7 +1233,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .context
             .avm2
@@ -1242,7 +1254,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .context
             .avm2
@@ -1267,7 +1279,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .context
             .avm2
@@ -1305,7 +1317,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .context
             .avm2
@@ -1328,7 +1340,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let receiver = self
             .context
             .avm2
@@ -1357,43 +1369,42 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let txunit = method.translation_unit();
-        let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
-        let (multiname, object) = if matches!(
-            abc_multiname,
-            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
-        ) {
+        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
+
+        // default path for static names
+        if !multiname.has_lazy_component() {
+            let object = self.context.avm2.pop();
+            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let value = object.get_property(&multiname, self)?;
+            self.context.avm2.push(value);
+            return Ok(FrameControl::Continue);
+        }
+
+        // side path for dictionary/arrays (TODO)
+        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
-            let name_value = self.context.avm2.pop();
-            let object = self.context.avm2.pop().coerce_to_receiver(self, None)?;
+            let name_value = self.context.avm2.peek(0);
+            let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
+                let object = object.coerce_to_receiver(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
+                    let _ = self.context.avm2.pop();
+                    let _ = self.context.avm2.pop();
                     let value = dictionary.get_property_by_object(name_value.as_object().unwrap());
                     self.context.avm2.push(value);
 
                     return Ok(FrameControl::Continue);
                 }
             }
+        }
 
-            (
-                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
-                object,
-            )
-        } else {
-            let multiname = self.pool_multiname(method, index)?;
-            let object = self
-                .context
-                .avm2
-                .pop()
-                .coerce_to_receiver(self, Some(&multiname))?;
-
-            (multiname, object)
-        };
-
+        // main path for dynamic names
+        let multiname = multiname.fill_with_runtime_params(self)?;
+        let object = self.context.avm2.pop();
+        let object = object.coerce_to_receiver(self, Some(&multiname))?;
         let value = object.get_property(&multiname, self)?;
         self.context.avm2.push(value);
 
@@ -1406,21 +1417,29 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
-        let txunit = method.translation_unit();
-        let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
-        let (multiname, mut object) = if matches!(
-            abc_multiname,
-            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
-        ) {
+        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
+
+        // default path for static names
+        if !multiname.has_lazy_component() {
+            let object = self.context.avm2.pop();
+            let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
+            object.set_property(&multiname, value, self)?;
+            return Ok(FrameControl::Continue);
+        }
+
+        // side path for dictionary/arrays (TODO)
+        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
-            let name_value = self.context.avm2.pop();
-            let object = self.context.avm2.pop().coerce_to_receiver(self, None)?;
+            let name_value = self.context.avm2.peek(0);
+            let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
+                let object = object.coerce_to_receiver(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
+                    let _ = self.context.avm2.pop();
+                    let _ = self.context.avm2.pop();
                     dictionary.set_property_by_object(
                         name_value.as_object().unwrap(),
                         value,
@@ -1430,22 +1449,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     return Ok(FrameControl::Continue);
                 }
             }
+        }
 
-            (
-                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
-                object,
-            )
-        } else {
-            let multiname = self.pool_multiname(method, index)?;
-            let object = self
-                .context
-                .avm2
-                .pop()
-                .coerce_to_receiver(self, Some(&multiname))?;
-
-            (multiname, object)
-        };
-
+        // main path for dynamic names
+        let multiname = multiname.fill_with_runtime_params(self)?;
+        let object = self.context.avm2.pop();
+        let mut object = object.coerce_to_receiver(self, Some(&multiname))?;
         object.set_property(&multiname, value, self)?;
 
         Ok(FrameControl::Continue)
@@ -1457,7 +1466,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let mut object = self
             .context
             .avm2
@@ -1474,21 +1483,30 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let txunit = method.translation_unit();
-        let abc = txunit.abc();
-        let abc_multiname = Multiname::resolve_multiname_index(&abc, index)?;
-        let (multiname, object) = if matches!(
-            abc_multiname,
-            AbcMultiname::MultinameL { .. } | AbcMultiname::MultinameLA { .. }
-        ) {
+        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
+
+        // default path for static names
+        if !multiname.has_lazy_component() {
+            let object = self.context.avm2.pop();
+            let object = object.coerce_to_receiver(self, Some(&multiname))?;
+            let did_delete = object.delete_property(self, &multiname)?;
+            self.context.avm2.push(did_delete);
+            return Ok(FrameControl::Continue);
+        }
+
+        // side path for dictionary/arrays (TODO)
+        if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
-            let name_value = self.context.avm2.pop();
-            let object = self.context.avm2.pop().coerce_to_receiver(self, None)?;
+            let name_value = self.context.avm2.peek(0);
+            let object = self.context.avm2.peek(1);
             if !name_value.is_primitive() {
+                let object = object.coerce_to_receiver(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
+                    let _ = self.context.avm2.pop();
+                    let _ = self.context.avm2.pop();
                     dictionary.delete_property_by_object(
                         name_value.as_object().unwrap(),
                         self.context.gc_context,
@@ -1498,22 +1516,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     return Ok(FrameControl::Continue);
                 }
             }
+        }
 
-            (
-                Multiname::from_multiname_late(txunit, abc_multiname, name_value, self)?,
-                object,
-            )
-        } else {
-            let multiname = self.pool_multiname(method, index)?;
-            let object = self
-                .context
-                .avm2
-                .pop()
-                .coerce_to_receiver(self, Some(&multiname))?;
-
-            (multiname, object)
-        };
-
+        // main path for dynamic names
+        let multiname = multiname.fill_with_runtime_params(self)?;
+        let object = self.context.avm2.pop();
+        let object = object.coerce_to_receiver(self, Some(&multiname))?;
         let did_delete = object.delete_property(self, &multiname)?;
 
         self.context.avm2.push(did_delete);
@@ -1526,7 +1534,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .context
             .avm2
@@ -1548,7 +1556,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
         let value = self.context.avm2.pop();
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let object = self
             .context
             .avm2
@@ -1665,7 +1673,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
         let result = self
             .find_definition(&multiname)?
@@ -1683,7 +1691,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", multiname);
         let found: Result<Object<'gc>, Error> = self
             .find_definition(&multiname)?
@@ -1769,7 +1777,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error> {
         let args = self.context.avm2.pop_args(arg_count);
-        let multiname = self.pool_multiname(method, index)?;
+        let multiname = self.pool_multiname_and_initialize(method, index)?;
         let source = self
             .context
             .avm2
