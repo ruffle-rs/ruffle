@@ -10,6 +10,36 @@ use std::fmt::Debug;
 use swf::avm2::types::{
     AbcFile, Index, Multiname as AbcMultiname, NamespaceSet as AbcNamespaceSet,
 };
+use gc_arena::Gc;
+
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub enum MultinameNamespaceSet<'gc> {
+    Multiple(Gc<'gc, Vec<Namespace<'gc>>>),
+    Single(Namespace<'gc>),
+}
+
+impl<'gc> MultinameNamespaceSet<'gc> {
+    pub fn multiple(set: Vec<Namespace<'gc>>, mc: MutationContext<'gc, '_>) -> Self {
+        Self::Multiple(Gc::allocate(mc, set))
+    }
+    pub fn single(ns: Namespace<'gc>) -> Self {
+        Self::Single(ns)
+    }
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Multiple(ns) => ns.len(),
+            Self::Single(_) => 1,
+        }
+    }
+    pub fn get(&self, index: usize) -> Option<Namespace<'gc>> {
+        match self {
+            Self::Multiple(ns) => ns.get(index).copied(),
+            Self::Single(ns) => if index == 0 { Some(*ns) } else { None },
+        }
+    }
+}
+
 
 /// A `Multiname` consists of a name which could be resolved in one or more
 /// potential namespaces.
@@ -22,7 +52,7 @@ use swf::avm2::types::{
 #[collect(no_drop)]
 pub struct Multiname<'gc> {
     /// The list of namespaces that satisfy this multiname.
-    ns: Vec<Namespace<'gc>>,
+    ns: MultinameNamespaceSet<'gc>,
 
     /// The local name that satisfies this multiname. If `None`, then this
     /// multiname is satisfied by any name in the namespace.
@@ -40,10 +70,11 @@ impl<'gc> Multiname<'gc> {
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
         mc: MutationContext<'gc, '_>,
-    ) -> Result<Vec<Namespace<'gc>>, Error> {
+    ) -> Result<MultinameNamespaceSet<'gc>, Error> {
         if namespace_set_index.0 == 0 {
             //TODO: What is namespace set zero?
-            return Ok(vec![]);
+            let result = MultinameNamespaceSet::multiple(vec![], mc);
+            return Ok(result);
         }
 
         let actual_index = namespace_set_index.0 as usize - 1;
@@ -61,7 +92,11 @@ impl<'gc> Multiname<'gc> {
             result.push(Namespace::from_abc_namespace(translation_unit, *ns, mc)?)
         }
 
-        Ok(result)
+        if result.len() == 1 {
+            Ok(MultinameNamespaceSet::single(result[0]))
+        } else {
+            Ok(MultinameNamespaceSet::multiple(result, mc))
+        }
     }
 
     /// Assemble a multiname from an ABC `MultinameL` and the late-bound name.
@@ -105,11 +140,11 @@ impl<'gc> Multiname<'gc> {
         Ok(match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: vec![Namespace::from_abc_namespace(
+                    ns: MultinameNamespaceSet::single(Namespace::from_abc_namespace(
                         translation_unit,
                         *namespace,
                         activation.context.gc_context,
-                    )?],
+                    )?),
                     name: translation_unit
                         .pool_string_option(name.0, activation.context.gc_context)?,
                     params: Vec::new(),
@@ -119,7 +154,7 @@ impl<'gc> Multiname<'gc> {
                 let ns_value = activation.avm2().pop();
                 let ns = ns_value.as_namespace()?;
                 Self {
-                    ns: vec![*ns],
+                    ns: MultinameNamespaceSet::single(*ns),
                     name: translation_unit
                         .pool_string_option(name.0, activation.context.gc_context)?,
                     params: Vec::new(),
@@ -130,7 +165,7 @@ impl<'gc> Multiname<'gc> {
                 let ns_value = activation.avm2().pop();
                 let ns = ns_value.as_namespace()?;
                 Self {
-                    ns: vec![*ns],
+                    ns: MultinameNamespaceSet::single(*ns),
                     name: Some(name),
                     params: Vec::new(),
                 }
@@ -249,11 +284,11 @@ impl<'gc> Multiname<'gc> {
         Ok(match abc_multiname? {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: vec![Namespace::from_abc_namespace(
+                    ns: MultinameNamespaceSet::single(Namespace::from_abc_namespace(
                         translation_unit,
                         *namespace,
                         mc,
-                    )?],
+                    )?),
                     name: translation_unit.pool_string_option(name.0, mc)?,
                     params: Vec::new(),
                 }
@@ -303,7 +338,7 @@ impl<'gc> Multiname<'gc> {
     /// Indicates the any type (any name in any namespace).
     pub fn any() -> Self {
         Self {
-            ns: vec![Namespace::Any],
+            ns: MultinameNamespaceSet::single(Namespace::Any),
             name: None,
             params: Vec::new(),
         }
@@ -311,33 +346,43 @@ impl<'gc> Multiname<'gc> {
 
     pub fn public(name: impl Into<AvmString<'gc>>) -> Self {
         Self {
-            ns: vec![Namespace::public()],
+            ns: MultinameNamespaceSet::single(Namespace::public()),
             name: Some(name.into()),
             params: Vec::new(),
         }
     }
 
-    pub fn namespace_set(&self) -> impl Iterator<Item = &Namespace<'gc>> {
-        self.ns.iter()
+    pub fn namespace_set(&self) -> &[Namespace<'gc>] {
+        match &self.ns {
+            MultinameNamespaceSet::Single(ns) => std::slice::from_ref(ns),
+            MultinameNamespaceSet::Multiple(ns) => ns,
+        }
     }
+
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
         self.name
     }
 
     pub fn contains_public_namespace(&self) -> bool {
-        self.ns.iter().any(|ns| ns.is_public())
+        match self.ns {
+            MultinameNamespaceSet::Single(ns) => ns.is_public(),
+            MultinameNamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_public())
+        }
     }
 
     /// Indicates if this multiname matches any type in any namespace.
     pub fn is_any(&self) -> bool {
-        self.ns.contains(&Namespace::Any) && self.name.is_none()
+        self.name.is_none() && match self.ns {
+            MultinameNamespaceSet::Single(ns) => ns == Namespace::Any,
+            MultinameNamespaceSet::Multiple(ns) => ns.contains(&Namespace::Any),
+        }
     }
 
     /// Determine if this multiname matches a given QName.
     pub fn contains_name(&self, name: &QName<'gc>) -> bool {
         let ns_match = self
-            .ns
+            .namespace_set()
             .iter()
             .any(|ns| *ns == Namespace::Any || *ns == name.namespace());
         let name_match = self.name.map(|n| n == name.local_name()).unwrap_or(true);
@@ -387,7 +432,7 @@ impl<'gc> Multiname<'gc> {
 impl<'gc> From<QName<'gc>> for Multiname<'gc> {
     fn from(q: QName<'gc>) -> Self {
         Self {
-            ns: vec![q.namespace()],
+            ns: MultinameNamespaceSet::single(q.namespace()),
             name: Some(q.local_name()),
             params: Vec::new(),
         }

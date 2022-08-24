@@ -69,7 +69,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if let Some(local_name) = name.local_name() {
             self.0.get(&local_name).iter().find_map(|v| {
                 v.iter()
-                    .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
+                    .filter(|(n, _)| name.namespace_set().iter().any(|ns| *ns == *n))
                     .map(|(_, v)| v)
                     .next()
             })
@@ -82,7 +82,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if let Some(local_name) = name.local_name() {
             self.0.get(&local_name).iter().find_map(|v| {
                 v.iter()
-                    .filter(|(n, _)| name.namespace_set().any(|ns| *ns == *n))
+                    .filter(|(n, _)| name.namespace_set().iter().any(|ns| *ns == *n))
                     .map(|(ns, v)| (*ns, v))
                     .next()
             })
