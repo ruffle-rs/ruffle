@@ -10,6 +10,7 @@ use crate::string::AvmString;
 use gc_arena::{Collect, CollectionContext, Gc, MutationContext};
 use std::borrow::Cow;
 use std::fmt;
+use std::ops::Deref;
 use std::rc::Rc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
@@ -61,15 +62,11 @@ impl<'gc> ParamConfig<'gc> {
         } else {
             "<Unnamed Parameter>".into()
         };
-        let param_type_name = if config.kind.0 == 0 {
-            Multiname::any()
-        } else {
-            Multiname::from_abc_multiname_static(
-                txunit,
-                config.kind,
-                activation.context.gc_context,
-            )?
-        };
+        let param_type_name = txunit
+            .pool_multiname_static_any(config.kind, activation.context.gc_context)?
+            .deref()
+            .clone();
+
         let default_value = if let Some(dv) = &config.default_value {
             Some(abc_default_value(txunit, dv, activation)?)
         } else {
@@ -151,15 +148,10 @@ impl<'gc> BytecodeMethod<'gc> {
                 signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
-            let return_type = if method.return_type.0 == 0 {
-                Multiname::any()
-            } else {
-                Multiname::from_abc_multiname_static(
-                    txunit,
-                    method.return_type,
-                    activation.context.gc_context,
-                )?
-            };
+            let return_type = txunit
+                .pool_multiname_static_any(method.return_type, activation.context.gc_context)?
+                .deref()
+                .clone();
 
             for (index, method_body) in abc.method_bodies.iter().enumerate() {
                 if method_body.method.0 == abc_method.0 {

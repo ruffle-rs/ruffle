@@ -13,6 +13,7 @@ use crate::avm2::QName;
 use bitflags::bitflags;
 use gc_arena::{Collect, GcCell, MutationContext};
 use std::fmt;
+use std::ops::Deref;
 use swf::avm2::types::{
     Class as AbcClass, Instance as AbcInstance, Method as AbcMethod, MethodBody as AbcMethodBody,
 };
@@ -321,11 +322,11 @@ impl<'gc> Class<'gc> {
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
-            Some(Multiname::from_abc_multiname_static(
-                unit,
-                abc_instance.super_name,
-                activation.context.gc_context,
-            )?)
+            Some(
+                unit.pool_multiname_static(abc_instance.super_name, activation.context.gc_context)?
+                    .deref()
+                    .clone(),
+            )
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
@@ -340,11 +341,11 @@ impl<'gc> Class<'gc> {
 
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
-            interfaces.push(Multiname::from_abc_multiname_static(
-                unit,
-                *interface_name,
-                activation.context.gc_context,
-            )?);
+            interfaces.push(
+                unit.pool_multiname_static(*interface_name, activation.context.gc_context)?
+                    .deref()
+                    .clone(),
+            );
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;

@@ -355,6 +355,23 @@ impl<'gc> Avm2<'gc> {
         value
     }
 
+    /// Peek the n-th value from the end of the operand stack.
+    #[allow(clippy::let_and_return)]
+    fn peek(&mut self, index: usize) -> Value<'gc> {
+        let value = self
+            .stack
+            .get(self.stack.len() - index - 1)
+            .copied()
+            .unwrap_or_else(|| {
+                log::warn!("Avm1::pop: Stack underflow");
+                Value::Undefined
+            });
+
+        avm_debug!(self, "Stack peek {}: {:?}", self.stack.len(), value);
+
+        value
+    }
+
     fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
         let mut args = vec![Value::Undefined; arg_count as usize];
         for arg in args.iter_mut().rev() {
