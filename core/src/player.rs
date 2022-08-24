@@ -1489,7 +1489,6 @@ impl Player {
             ) = root_data.update_context_params();
 
             let mut update_context = UpdateContext {
-                global: gc_root.global,
                 player_version: self.player_version,
                 swf: &self.swf,
                 library,
@@ -1956,8 +1955,10 @@ impl PlayerBuilder {
             let stage = context.stage;
             stage.post_instantiation(context, None, Instantiator::Movie, false);
             stage.build_matrices(context);
-            context.global.write(context.gc_context).avm2_callstack =
-                Some(context.avm2.call_stack());
+        });
+        player_lock.gc_arena.borrow().mutate(|context, root| {
+            let call_stack = root.data.read().avm2.call_stack();
+            root.global.write(context).avm2_callstack = Some(call_stack);
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
