@@ -788,6 +788,8 @@ impl<'gc> MovieClip<'gc> {
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
+        // In AS3, no-op gotos have side effects that are visible to user code.
+        // Hence, we have to run them anyway.
         if frame != self.current_frame() || context.is_action_script_3() {
             if self
                 .0
@@ -1113,7 +1115,7 @@ impl<'gc> MovieClip<'gc> {
     ) {
         let next_frame = self.determine_next_frame();
         match next_frame {
-            //Removals happen before frame advance.
+            // AS3 removals need to happen before frame advance (see below)
             NextFrame::Next if context.is_action_script_3() => {}
             NextFrame::Next => self.0.write(context.gc_context).current_frame += 1,
             NextFrame::First => return self.run_goto(context, 1, true),
@@ -1172,6 +1174,10 @@ impl<'gc> MovieClip<'gc> {
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback, TagCode::ShowFrame);
 
+        // On AS3, we deliberately run all removals before the frame number or
+        // tag position updates. This ensures that code that runs gotos when a
+        // display object is added or removed does not catch the movie clip in
+        // an invalid state.
         let remove_actions = self.unqueue_removes(context);
 
         for (_, tag) in remove_actions {
@@ -1186,6 +1192,8 @@ impl<'gc> MovieClip<'gc> {
             }
         }
 
+        // It is now safe to update the tag position and frame number.
+        // TODO: Determine if explicit gotos override these or not.
         let mut write = self.0.write(context.gc_context);
 
         write.tag_stream_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
@@ -1424,6 +1432,9 @@ impl<'gc> MovieClip<'gc> {
 
         let from_frame = self.current_frame();
 
+        // Explicit gotos in the middle of an AS3 loop cancel the loop's queued
+        // tags. The rest of the goto machinery can handle the side effects of
+        // a half-executed loop.
         let mut write = self.0.write(context.gc_context);
         if write.loop_queued() {
             write.queued_tags = HashMap::new();
@@ -1631,6 +1642,12 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
+        // On AVM2, all explicit gotos act the same way as a normal new frame,
+        // save for the lack of an enterFrame event. Since this must happen
+        // before AS3 continues execution, this is effectively a "recursive
+        // frame".
+        //
+        // Our queued place tags will now run at this time, too.
         if !is_implicit {
             self.construct_frame(context);
             self.frame_constructed(context);
@@ -1873,6 +1890,8 @@ impl<'gc> MovieClip<'gc> {
             // Don't do this for rewinds, because they conceptually
             // start from an empty display list, and we also want to examine
             // the old children to decide if they persist (place_frame <= goto_frame).
+            //
+            // We also have to reset the frame number as this emits AS3 events.
             let to_frame = self.current_frame();
             self.0.write(context.gc_context).current_frame = from_frame;
 
@@ -1951,6 +1970,7 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    /// Remove all `PlaceObject` tags off the internal tag queue.
     fn unqueue_adds(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Vec<(Depth, QueuedTag)> {
         let mut write = self.0.write(context.gc_context);
         let mut unqueued: Vec<_> = write
@@ -1970,6 +1990,7 @@ impl<'gc> MovieClip<'gc> {
         unqueued
     }
 
+    /// Remove all `RemoveObject` tags off the internal tag queue.
     fn unqueue_removes(&self, context: &mut UpdateContext<'_, 'gc, '_>) -> Vec<(Depth, QueuedTag)> {
         let mut write = self.0.write(context.gc_context);
         let mut unqueued: Vec<_> = write
@@ -2052,6 +2073,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 false
             };
 
+            // PlaceObject tags execute at this time.
             let data = self.0.read().static_data.swf.clone();
             let place_actions = self.unqueue_adds(context);
 
