@@ -396,7 +396,7 @@ fn default_value_for_type<'gc>(type_name: &Multiname<'gc>) -> Value<'gc> {
     // The Multiname is guaranteed to be static by `Multiname::from_abc_multiname_static` earlier.
     if type_name.is_any() {
         Value::Undefined
-    } else if type_name.namespace_set().any(|ns| ns.is_public()) {
+    } else if type_name.contains_public_namespace() {
         let name = type_name.local_name().unwrap_or_default();
         if &name == b"Boolean" {
             false.into()
