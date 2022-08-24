@@ -259,6 +259,14 @@ impl<'gc> Executable<'gc> {
                         // TODO: What happens if we can't find the trait?
                     }
                     // We purposely do nothing for instance initializers
+                } else if method.is_function {
+                    output.push_utf8("Function/");
+                    let name = method.method_name();
+                    if name.is_empty() {
+                        output.push_utf8("<anonymous>");
+                    } else {
+                        output.push_utf8(name);
+                    }
                 } else {
                     output.push_utf8("MethodInfo-");
                     output.push_utf8(&method.abc_method.to_string());
