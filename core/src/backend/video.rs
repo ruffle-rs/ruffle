@@ -2,4 +2,4 @@
 
 mod software;
 
-pub use crate::backend::video::software::SoftwareVideoBackend;
+pub use ruffle_video_software::backend::SoftwareVideoBackend;

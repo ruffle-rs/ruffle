@@ -6,6 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+ruffle_render = { path = "../../render" }
 ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
 generational-arena = "0.2.8"

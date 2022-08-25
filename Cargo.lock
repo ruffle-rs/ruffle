@@ -3234,6 +3234,7 @@ name = "ruffle_video_software"
 version = "0.1.0"
 dependencies = [
  "generational-arena",
+ "ruffle_render",
  "ruffle_video",
  "swf",
  "thiserror",
