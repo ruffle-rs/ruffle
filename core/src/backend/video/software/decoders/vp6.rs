@@ -1,5 +1,5 @@
-use crate::backend::video::software::VideoDecoder;
 use ruffle_video::error::Error;
+use ruffle_video_software::decoder::VideoDecoder;
 
 use h263_rs_yuv::bt601::yuv420_to_rgba;
 

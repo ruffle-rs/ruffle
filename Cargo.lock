@@ -3082,6 +3082,7 @@ dependencies = [
  "ruffle_macros",
  "ruffle_render",
  "ruffle_video",
+ "ruffle_video_software",
  "ruffle_wstr",
  "serde",
  "serde_json",
@@ -3224,6 +3225,16 @@ version = "0.1.0"
 dependencies = [
  "generational-arena",
  "ruffle_render",
+ "swf",
+ "thiserror",
+]
+
+[[package]]
+name = "ruffle_video_software"
+version = "0.1.0"
+dependencies = [
+ "generational-arena",
+ "ruffle_video",
  "swf",
  "thiserror",
 ]
