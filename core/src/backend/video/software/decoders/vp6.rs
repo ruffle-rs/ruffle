@@ -1,5 +1,4 @@
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, FrameDependency};
 use ruffle_video::error::Error;
 
 use h263_rs_yuv::bt601::yuv420_to_rgba;
@@ -9,6 +8,7 @@ use nihav_codec_support::codecs::{NABufferType::Video, YUV420_FORMAT};
 use nihav_core::codecs::NADecoderSupport;
 use nihav_duck::codecs::vp6::{VP56Decoder, VP56Parser, VP6BR};
 use nihav_duck::codecs::vpcommon::{BoolCoder, VP_YUVA420_FORMAT};
+use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Vp6Error {
