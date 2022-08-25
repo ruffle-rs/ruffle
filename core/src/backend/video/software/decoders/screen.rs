@@ -2,7 +2,8 @@
 // written by Kostya Shishkov, with permission.
 
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
+use crate::backend::video::{DecodedFrame, EncodedFrame, FrameDependency};
+use ruffle_video::error::Error;
 
 use flate2::Decompress;
 
