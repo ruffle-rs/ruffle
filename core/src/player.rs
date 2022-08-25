@@ -15,7 +15,6 @@ use crate::backend::{
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
     ui::{InputManager, MouseCursor, UiBackend},
-    video::VideoBackend,
 };
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
@@ -44,6 +43,7 @@ use log::info;
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::transform::TransformStack;
+use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;

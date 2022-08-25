@@ -10,7 +10,6 @@ use crate::backend::{
     navigator::NavigatorBackend,
     storage::StorageBackend,
     ui::{InputManager, UiBackend},
-    video::VideoBackend,
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
@@ -29,6 +28,7 @@ use instant::Instant;
 use rand::rngs::SmallRng;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::transform::TransformStack;
+use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
