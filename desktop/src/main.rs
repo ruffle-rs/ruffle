@@ -254,12 +254,16 @@ impl App {
 
         let window = Rc::new(window);
 
+        if cfg!(feature = "software_video") {
+            builder =
+                builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+        }
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(storage::DiskStorageBackend::new())
             .with_ui(ui::DesktopUiBackend::new(window.clone()))
-            .with_software_video()
             .with_autoplay(true)
             .with_letterbox(Letterbox::On)
             .with_warn_on_unsupported_content(!opt.dont_warn_on_unsupported_content)
@@ -783,9 +787,14 @@ fn run_timedemo(opt: Opt) -> Result<(), Error> {
     .map_err(|e| anyhow!(e.to_string()))
     .context("Couldn't create wgpu rendering backend")?;
 
-    let player = PlayerBuilder::new()
+    let mut builder = PlayerBuilder::new();
+
+    if cfg!(feature = "software_video") {
+        builder = builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+    }
+
+    let player = builder
         .with_renderer(renderer)
-        .with_software_video()
         .with_movie(movie)
         .with_viewport_dimensions(viewport_width, viewport_height, viewport_scale_factor)
         .with_autoplay(true)

@@ -1851,13 +1851,6 @@ impl PlayerBuilder {
         self
     }
 
-    /// Configures the player to use software video decoding.
-    #[inline]
-    pub fn with_software_video(mut self) -> Self {
-        self.video = Some(Box::new(crate::backend::video::SoftwareVideoBackend::new()));
-        self
-    }
-
     /// Sets whether the movie will start playing immediately upon load.
     #[inline]
     pub fn with_autoplay(mut self, autoplay: bool) -> Self {

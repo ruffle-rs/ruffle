@@ -112,7 +112,6 @@ fn take_screenshot(
         .with_renderer(
             WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
         )
-        .with_software_video()
         .with_movie(movie)
         .with_viewport_dimensions(width, height, size.scale as f64)
         .build();
