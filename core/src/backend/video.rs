@@ -1,17 +1,16 @@
 //! Video decoder backends
 
-use generational_arena::{Arena, Index};
+use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
+use ruffle_video::VideoStreamHandle;
 use swf::{VideoCodec, VideoDeblocking};
 
 mod software;
 
 pub use crate::backend::video::software::SoftwareVideoBackend;
-
-pub type VideoStreamHandle = Index;
 
 /// A backend that provides access to some number of video decoders.
 ///

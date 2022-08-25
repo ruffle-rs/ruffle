@@ -3222,7 +3222,7 @@ dependencies = [
 name = "ruffle_video"
 version = "0.1.0"
 dependencies = [
- "gc-arena",
+ "generational-arena",
  "ruffle_render",
  "swf",
  "thiserror",

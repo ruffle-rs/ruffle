@@ -1,11 +1,12 @@
 //! Pure software video decoding backend.
 
-use crate::backend::video::{VideoBackend, VideoStreamHandle};
+use crate::backend::video::VideoBackend;
 use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{Bitmap, BitmapFormat, BitmapHandle, BitmapInfo};
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
+use ruffle_video::VideoStreamHandle;
 use swf::{VideoCodec, VideoDeblocking};
 
 pub mod decoders;
