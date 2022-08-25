@@ -1341,8 +1341,7 @@ fn run_swf(
 
         builder = builder
             .with_renderer(WgpuRenderBackend::new(Arc::new(descriptors), target)?)
-            .with_viewport_dimensions(width, height, 1.0)
-            .with_software_video();
+            .with_viewport_dimensions(width, height, 1.0);
     };
 
     let player = builder
