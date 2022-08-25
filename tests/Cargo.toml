@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.23"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug"] }
-ruffle_render_wgpu = { path = "../render/wgpu" }
+ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_input_format = { path = "input-format" }
 image = "0.24.2"
 regex = "1.6.0"
@@ -16,7 +16,7 @@ regex = "1.6.0"
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = []
+imgtests = ["ruffle_render_wgpu"]
 
 [dev-dependencies]
 approx = "0.5.0"
