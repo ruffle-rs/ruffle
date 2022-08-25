@@ -22,6 +22,12 @@ pub enum Vp6Error {
     InvalidBufferType,
 }
 
+impl From<Vp6Error> for Error {
+    fn from(error: Vp6Error) -> Self {
+        Error::DecoderError(Box::new(error))
+    }
+}
+
 impl From<nihav_core::codecs::DecoderError> for Vp6Error {
     fn from(error: nihav_core::codecs::DecoderError) -> Self {
         Vp6Error::DecoderError(error)

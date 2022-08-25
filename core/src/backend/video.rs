@@ -29,17 +29,8 @@ pub enum Error {
     #[error("Video decoding isn't supported")]
     DecodingNotSupported,
 
-    #[cfg(feature = "h263")]
-    #[error("H263 decoder error")]
-    H263Error(#[from] software::decoders::h263::H263Error),
-
-    #[cfg(feature = "vp6")]
-    #[error("VP6 decoder error")]
-    VP6Error(#[from] software::decoders::vp6::Vp6Error),
-
-    #[cfg(feature = "screenvideo")]
-    #[error("Screen Video decoder error")]
-    ScreenVideoError(#[from] software::decoders::screen::ScreenError),
+    #[error(transparent)]
+    DecoderError(Box<dyn std::error::Error + Send + Sync>),
 }
 
 /// An encoded video frame of some video codec.

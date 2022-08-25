@@ -24,6 +24,12 @@ pub enum ScreenError {
     KeyframeInvalid,
 }
 
+impl From<ScreenError> for Error {
+    fn from(error: ScreenError) -> Self {
+        Error::DecoderError(Box::new(error))
+    }
+}
+
 /// Screen Video (V1 only) decoder.
 pub struct ScreenVideoDecoder {
     w: usize,
