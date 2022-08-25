@@ -16,9 +16,9 @@ use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent, ViewportDimensions};
 use ruffle_input_format::{AutomatedEvent, InputInjector, MouseButton as InputMouseButton};
-use ruffle_render_wgpu::target::TextureTarget;
-use ruffle_render_wgpu::wgpu;
-use ruffle_render_wgpu::WgpuRenderBackend;
+
+#[cfg(feature = "imgtests")]
+use ruffle_render_wgpu::{target::TextureTarget, wgpu, WgpuRenderBackend};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -26,6 +26,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+#[cfg(feature = "imgtests")]
 fn get_img_platform_suffix(info: &wgpu::AdapterInfo) -> String {
     format!("{}-{:?}", std::env::consts::OS, info.backend)
 }
@@ -1272,10 +1273,13 @@ fn run_swf(
     before_start: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
     mut injector: InputInjector,
     before_end: impl FnOnce(Arc<Mutex<Player>>) -> Result<(), Error>,
-    mut check_img: bool,
+    #[allow(unused)] mut check_img: bool,
     frame_time_sleep: bool,
 ) -> Result<String, Error> {
-    check_img &= RUN_IMG_TESTS;
+    #[allow(unused_assignments)]
+    {
+        check_img &= RUN_IMG_TESTS;
+    }
 
     let base_path = Path::new(swf_path).parent().unwrap();
     let mut executor = NullExecutor::new();
@@ -1283,8 +1287,11 @@ fn run_swf(
     let frame_time = 1000.0 / movie.frame_rate().to_f64();
     let frame_time_duration = Duration::from_millis(frame_time as u64);
     let trace_output = Rc::new(RefCell::new(Vec::new()));
+
+    #[allow(unused_mut)]
     let mut builder = PlayerBuilder::new();
 
+    #[cfg(feature = "imgtests")]
     if check_img {
         const BACKEND: wgpu::Backends = wgpu::Backends::PRIMARY;
 
@@ -1373,6 +1380,7 @@ fn run_swf(
 
     // Render the image to disk
     // FIXME: Determine how we want to compare against on on-disk image
+    #[cfg(feature = "imgtests")]
     if check_img {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
