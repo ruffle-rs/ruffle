@@ -11,3 +11,17 @@ ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
 generational-arena = "0.2.8"
 thiserror = "1.0"
+flate2 = "1.0.24"
+log = "0.4"
+
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e565c4c778d41f66cfbac5ece6419b2", optional = true }
+nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
+nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
+nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
+
+[features]
+default = ["h263", "vp6", "screenvideo"]
+h263 = ["h263-rs", "h263-rs-yuv"]
+vp6 = ["nihav_core", "nihav_codec_support", "nihav_duck", "h263-rs-yuv"]
+screenvideo = []

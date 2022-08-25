@@ -18,7 +18,6 @@ default = ["canvas", "console_error_panic_hook", "console_log", "webgl"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
-h263 = ["ruffle_core/h263"]
 lzma = ["ruffle_core/lzma"]
 
 # web features
@@ -36,6 +35,7 @@ ruffle_render_canvas = { path = "../render/canvas", optional = true }
 ruffle_web_common = { path = "common" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
+ruffle_video_software = { path = "../video/software" }
 url = "2.2.2"
 wasm-bindgen = { version = "=0.2.82", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.32"
@@ -48,7 +48,7 @@ base64 = "0.13.0"
 [dependencies.ruffle_core]
 path = "../core"
 default-features = false
-features = ["h263", "vp6", "screenvideo", "symphonia", "wasm-bindgen", "audio", "nellymoser"]
+features = ["audio", "nellymoser", "symphonia", "wasm-bindgen"]
 
 [dependencies.web-sys]
 version = "0.3.58"

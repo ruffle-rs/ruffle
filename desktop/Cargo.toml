@@ -11,6 +11,7 @@ clap = { version = "3.2.18", features = ["derive"] }
 cpal = "0.14.0"
 ruffle_core = { path = "../core", features = ["audio", "minimp3", "nellymoser"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
+ruffle_video_software = { path = "../video/software", optional = true }
 env_logger = { version = "0.9", default-features = false, features = ["humantime"] }
 generational-arena = "0.2.8"
 log = "0.4"
@@ -30,14 +31,12 @@ winapi = "0.3.9"
 embed-resource = "1"
 
 [features]
-default = ["h263", "vp6", "screenvideo"]
+default = ["software_video"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
-h263 = ["ruffle_core/h263"]
 lzma = ["ruffle_core/lzma"]
-vp6 = ["ruffle_core/vp6"]
-screenvideo =  ["ruffle_core/screenvideo"]
+software_video = ["ruffle_video_software"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]

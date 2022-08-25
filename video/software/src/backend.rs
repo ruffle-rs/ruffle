@@ -39,13 +39,13 @@ impl VideoBackend for SoftwareVideoBackend {
     ) -> Result<VideoStreamHandle, Error> {
         let decoder: Box<dyn VideoDecoder> = match codec {
             #[cfg(feature = "h263")]
-            VideoCodec::H263 => Box::new(h263::H263Decoder::new()),
+            VideoCodec::H263 => Box::new(crate::decoder::h263::H263Decoder::new()),
             #[cfg(feature = "vp6")]
-            VideoCodec::Vp6 => Box::new(vp6::Vp6Decoder::new(false, size)),
+            VideoCodec::Vp6 => Box::new(crate::decoder::vp6::Vp6Decoder::new(false, size)),
             #[cfg(feature = "vp6")]
-            VideoCodec::Vp6WithAlpha => Box::new(vp6::Vp6Decoder::new(true, size)),
+            VideoCodec::Vp6WithAlpha => Box::new(crate::decoder::vp6::Vp6Decoder::new(true, size)),
             #[cfg(feature = "screenvideo")]
-            VideoCodec::ScreenVideo => Box::new(screen::ScreenVideoDecoder::new()),
+            VideoCodec::ScreenVideo => Box::new(crate::decoder::screen::ScreenVideoDecoder::new()),
             other => return Err(Error::UnsupportedCodec(other)),
         };
         let stream = VideoStream::new(decoder);
