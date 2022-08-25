@@ -1,8 +1,9 @@
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, Error, FrameDependency};
+use crate::backend::video::{DecodedFrame, EncodedFrame, FrameDependency};
 use h263_rs::parser::H263Reader;
 use h263_rs::{DecoderOption, H263State, PictureTypeCode};
 use h263_rs_yuv::bt601::yuv420_to_rgba;
+use ruffle_video::error::Error;
 
 #[derive(thiserror::Error, Debug)]
 pub enum H263Error {

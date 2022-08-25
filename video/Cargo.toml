@@ -1,0 +1,15 @@
+[package]
+name = "ruffle_video"
+version = "0.1.0"
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+swf = { path = "../swf" }
+ruffle_render = { path = "../render" }
+generational-arena = "0.2.8"
+thiserror = "1.0"
+
+[features]
+default = []

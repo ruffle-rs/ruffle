@@ -4,7 +4,7 @@ use crate::avm1::{Object as Avm1Object, StageObject as Avm1StageObject};
 use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
-use crate::backend::video::{EncodedFrame, Error, VideoStreamHandle};
+use crate::backend::video::{EncodedFrame, VideoStreamHandle};
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
 use crate::prelude::*;
@@ -13,6 +13,7 @@ use crate::vminterface::{AvmObject, Instantiator};
 use gc_arena::{Collect, GcCell, MutationContext};
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_render::bounding_box::BoundingBox;
+use ruffle_video::error::Error;
 use std::borrow::{Borrow, BorrowMut};
 use std::cell::{Ref, RefMut};
 use std::collections::{BTreeMap, BTreeSet};

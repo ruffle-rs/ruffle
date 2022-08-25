@@ -16,6 +16,8 @@ members = [
     "render/wgpu",
     "render/webgl",
 
+    "video",
+
     "tests",
     "tests/input-format",
 ]
