@@ -1,0 +1,12 @@
+[package]
+name = "ruffle_video_software"
+version = "0.1.0"
+authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ruffle_video = { path = ".." }
+swf = { path = "../../swf" }
+generational-arena = "0.2.8"
+thiserror = "1.0"

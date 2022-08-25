@@ -17,6 +17,7 @@ members = [
     "render/webgl",
 
     "video",
+    "video/software",
 
     "tests",
     "tests/input-format",
