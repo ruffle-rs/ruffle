@@ -2,10 +2,10 @@
 // written by Kostya Shishkov, with permission.
 
 use crate::backend::video::software::VideoDecoder;
-use crate::backend::video::{DecodedFrame, EncodedFrame, FrameDependency};
 use ruffle_video::error::Error;
 
 use flate2::Decompress;
+use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
 #[derive(thiserror::Error, Debug)]
 pub enum ScreenError {
