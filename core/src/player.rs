@@ -27,6 +27,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseBut
 use crate::external::Value as ExternalValue;
 use crate::external::{ExternalInterface, ExternalInterfaceProvider};
 use crate::focus_tracker::FocusTracker;
+use crate::font::Font;
 use crate::frame_lifecycle::{run_all_phases_avm1, run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::loader::LoadManager;
@@ -47,8 +48,6 @@ use std::ops::DerefMut;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-
-pub static DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
 
 /// The newest known Flash Player version, serves as a default to
 /// `player_version`.
@@ -339,12 +338,8 @@ impl Player {
 
             // Load and parse the device font.
             if context.library.device_font().is_none() {
-                let device_font =
-                    Self::load_device_font(context.gc_context, DEVICE_FONT_TAG, context.renderer);
-                if let Err(e) = &device_font {
-                    log::error!("Unable to load device font: {}", e);
-                }
-                context.library.set_device_font(device_font.ok());
+                let device_font = Self::load_device_font(context.gc_context, context.renderer);
+                context.library.set_device_font(device_font);
             }
 
             // Set the version parameter on the root.
@@ -1552,22 +1547,20 @@ impl Player {
         })
     }
 
-    /// Loads font data from the given buffer.
-    /// The buffer should be the `DefineFont3` info for the tag.
-    /// The tag header should not be included.
     pub fn load_device_font<'gc>(
         gc_context: gc_arena::MutationContext<'gc, '_>,
-        data: &[u8],
         renderer: &mut dyn RenderBackend,
-    ) -> Result<crate::font::Font<'gc>, swf::error::Error> {
-        let mut reader = swf::read::Reader::new(data, 8);
-        let device_font = crate::font::Font::from_swf_tag(
+    ) -> Font<'gc> {
+        const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+        let mut reader = swf::read::Reader::new(DEVICE_FONT_TAG, 8);
+        Font::from_swf_tag(
             gc_context,
             renderer,
-            reader.read_define_font_2(3)?,
+            reader
+                .read_define_font_2(3)
+                .expect("Built-in font should compile"),
             reader.encoding(),
-        );
-        Ok(device_font)
+        )
     }
 
     /// Update the current state of the player.

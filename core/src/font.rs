@@ -539,7 +539,7 @@ impl From<swf::CsmTextSettings> for TextRenderSettings {
 #[cfg(test)]
 mod tests {
     use crate::font::{EvalParameters, Font};
-    use crate::player::{Player, DEVICE_FONT_TAG};
+    use crate::player::Player;
     use crate::string::WStr;
     use gc_arena::{rootless_arena, MutationContext};
     use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
@@ -555,7 +555,7 @@ mod tests {
                 height: 0,
                 scale_factor: 1.0,
             });
-            let device_font = Player::load_device_font(mc, DEVICE_FONT_TAG, &mut renderer).unwrap();
+            let device_font = Player::load_device_font(mc, &mut renderer);
 
             callback(mc, device_font);
         })

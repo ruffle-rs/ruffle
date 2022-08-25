@@ -381,8 +381,8 @@ impl<'gc> Library<'gc> {
     }
 
     /// Sets the device font.
-    pub fn set_device_font(&mut self, font: Option<Font<'gc>>) {
-        self.device_font = font;
+    pub fn set_device_font(&mut self, font: Font<'gc>) {
+        self.device_font = Some(font);
     }
 
     /// Get the AVM2 class registry.
