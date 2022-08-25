@@ -1909,6 +1909,7 @@ impl PlayerBuilder {
     /// Builds the player, wiring up the backends and configuring the specified settings.
     pub fn build(self) -> Arc<Mutex<Player>> {
         use crate::backend::*;
+        use ruffle_video::null;
         let audio = self
             .audio
             .unwrap_or_else(|| Box::new(audio::NullAudioBackend::new()));
@@ -1933,7 +1934,7 @@ impl PlayerBuilder {
             .unwrap_or_else(|| Box::new(ui::NullUiBackend::new()));
         let video = self
             .video
-            .unwrap_or_else(|| Box::new(video::NullVideoBackend::new()));
+            .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
         // Instantiate the player.
         let fake_movie = Arc::new(SwfMovie::empty(NEWEST_PLAYER_VERSION));
