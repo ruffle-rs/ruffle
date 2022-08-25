@@ -19,6 +19,12 @@ pub enum H263Error {
     MissingWidthHeight,
 }
 
+impl From<H263Error> for Error {
+    fn from(error: H263Error) -> Self {
+        Error::DecoderError(Box::new(error))
+    }
+}
+
 /// H263 video decoder.
 pub struct H263Decoder(H263State);
 
