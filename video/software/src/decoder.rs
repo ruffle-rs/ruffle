@@ -1,6 +1,15 @@
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
+#[cfg(feature = "h263")]
+pub mod h263;
+
+#[cfg(feature = "vp6")]
+pub mod vp6;
+
+#[cfg(feature = "screenvideo")]
+pub mod screen;
+
 /// Trait for video decoders.
 /// This should be implemented for each video codec.
 pub trait VideoDecoder {

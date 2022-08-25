@@ -1,8 +1,8 @@
 // This module is heavily based on flashsv.rs from NihAV,
 // written by Kostya Shishkov, with permission.
 
+use crate::decoder::VideoDecoder;
 use ruffle_video::error::Error;
-use ruffle_video_software::decoder::VideoDecoder;
 
 use flate2::Decompress;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
