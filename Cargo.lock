@@ -3077,7 +3077,6 @@ dependencies = [
  "ruffle_macros",
  "ruffle_render",
  "ruffle_video",
- "ruffle_video_software",
  "ruffle_wstr",
  "serde",
  "serde_json",

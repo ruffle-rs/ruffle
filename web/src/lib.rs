@@ -15,6 +15,7 @@ use ruffle_core::external::{
 };
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Color, Player, PlayerBuilder, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -504,7 +505,7 @@ impl Ruffle {
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
-            .with_software_video()
+            .with_video(SoftwareVideoBackend::new())
             .with_letterbox(config.letterbox)
             .with_max_execution_duration(config.max_execution_duration)
             .with_warn_on_unsupported_content(config.warn_on_unsupported_content)
