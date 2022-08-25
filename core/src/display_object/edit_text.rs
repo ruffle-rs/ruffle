@@ -784,10 +784,6 @@ impl<'gc> EditText<'gc> {
                 };
                 edit_text.bounds.set_x(new_x);
                 edit_text.bounds.set_width(width);
-            } else {
-                let width = edit_text.static_data.text.bounds.x_max
-                    - edit_text.static_data.text.bounds.x_min;
-                edit_text.bounds.set_width(width);
             }
             let height = intrinsic_bounds.height() + padding;
             edit_text.bounds.set_height(height);
