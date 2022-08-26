@@ -685,32 +685,55 @@ pub fn set_blend_mode<'gc>(
     Ok(Value::Undefined)
 }
 
+fn new_rectangle<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    rectangle: Rectangle,
+) -> Result<Object<'gc>, Error> {
+    let x = rectangle.x_min.to_pixels();
+    let y = rectangle.y_min.to_pixels();
+    let width = (rectangle.x_max - rectangle.x_min).to_pixels();
+    let height = (rectangle.y_max - rectangle.y_min).to_pixels();
+    let args = &[x.into(), y.into(), width.into(), height.into()];
+    activation
+        .avm2()
+        .classes()
+        .rectangle
+        .construct(activation, args)
+}
+
 fn scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,
     this: Option<Object<'gc>>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        if let Some(scroll_rect) = dobj.next_scroll_rect() {
-            return Ok(activation
-                .avm2()
-                .classes()
-                .rectangle
-                .construct(
-                    activation,
-                    &[
-                        scroll_rect.x_min.to_pixels().into(),
-                        scroll_rect.y_min.to_pixels().into(),
-                        (scroll_rect.x_max - scroll_rect.x_min).to_pixels().into(),
-                        (scroll_rect.y_max - scroll_rect.y_min).to_pixels().into(),
-                    ],
-                )?
-                .into());
+        if dobj.has_scroll_rect() {
+            return Ok(new_rectangle(activation, dobj.next_scroll_rect())?.into());
         } else {
             return Ok(Value::Null);
         }
     }
     Ok(Value::Undefined)
+}
+
+fn object_to_rectangle<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    object: Object<'gc>,
+) -> Result<Rectangle, Error> {
+    const NAMES: &[&str] = &["x", "y", "width", "height"];
+    let mut values = [0.0; 4];
+    for (&name, value) in NAMES.iter().zip(&mut values) {
+        *value = object
+            .get_property(&Multiname::public(name), activation)?
+            .coerce_to_number(activation)?;
+    }
+    let [x, y, width, height] = values;
+    Ok(Rectangle {
+        x_min: Twips::from_pixels_i32(round_to_even(x)),
+        y_min: Twips::from_pixels_i32(round_to_even(y)),
+        x_max: Twips::from_pixels_i32(round_to_even(x + width)),
+        y_max: Twips::from_pixels_i32(round_to_even(y + height)),
+    })
 }
 
 fn set_scroll_rect<'gc>(
@@ -719,45 +742,27 @@ fn set_scroll_rect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error> {
     if let Some(dobj) = this.and_then(|this| this.as_display_object()) {
-        let rect = args[0].as_object().unwrap();
-        let x = rect
-            .get_property(&Multiname::public("x"), activation)?
-            .coerce_to_number(activation)?;
+        if let Some(rectangle) = args[0].as_object() {
+            // Flash only updates the "internal" scrollRect used by `localToLocal` when the next
+            // frame is rendered. However, accessing `DisplayObject.scrollRect` from ActionScript
+            // will immediately return the updated value.
+            //
+            // To implement this, our `DisplayObject.scrollRect` ActionScript getter/setter both
+            // operate on a `next_scroll_rect` field. Just before we render a DisplayObject, we copy
+            // its `next_scroll_rect` to the `scroll_rect` field used for both rendering and
+            // `localToGlobal`.
+            dobj.set_next_scroll_rect(
+                activation.context.gc_context,
+                object_to_rectangle(activation, rectangle)?,
+            );
 
-        let y = rect
-            .get_property(&Multiname::public("y"), activation)?
-            .coerce_to_number(activation)?;
-
-        let width = rect
-            .get_property(&Multiname::public("width"), activation)?
-            .coerce_to_number(activation)?;
-
-        let height = rect
-            .get_property(&Multiname::public("height"), activation)?
-            .coerce_to_number(activation)?;
-
-        // Flash only updates the "internal" scrollRect used by localToLocal
-        // when the next frame is rendered.
-        // However, accessing 'DisplayObject.scrollRect' from ActionScript will
-        // immediately return the updated value.
-        //
-        // To implement this, our 'DisplayObject.scrollRect' ActionScript getter/setter
-        // both use a 'next_scroll_rect' field. Just before we render a DisplayObject, we copy
-        // its 'next_scroll_rect' to the 'scroll_rect' field used for both rendering and
-        // 'localToGlobal'
-        dobj.set_next_scroll_rect(
-            activation.context.gc_context,
-            Some(Rectangle {
-                // Note - the DisplayObject.scrollRect documentation explicitly
-                // states that scrolling works in increments of one pixel.
-                // We round our pixel values here (but still use the Twips struct
-                // for compatibility with our Matrix struct)
-                x_min: Twips::from_pixels(round_to_even(x) as f64),
-                y_min: Twips::from_pixels(round_to_even(y) as f64),
-                x_max: Twips::from_pixels(round_to_even(x + width) as f64),
-                y_max: Twips::from_pixels(round_to_even(y + height) as f64),
-            }),
-        );
+            // TODO: Technically we should accept only `flash.geom.Rectangle` objects, in which case
+            // `object_to_rectangle` will be infallible. Once this happens, the following line can
+            // be moved above the `set_next_scroll_rect` call.
+            dobj.set_has_scroll_rect(activation.context.gc_context, true);
+        } else {
+            dobj.set_has_scroll_rect(activation.context.gc_context, false);
+        }
     }
     Ok(Value::Undefined)
 }
