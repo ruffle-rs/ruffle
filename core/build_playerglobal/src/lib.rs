@@ -5,6 +5,7 @@ use convert_case::{Boundary, Case, Casing};
 use proc_macro2::TokenStream;
 use quote::quote;
 use std::fs::File;
+use std::io::ErrorKind;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -37,7 +38,7 @@ pub fn build_playerglobal(
 
     // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
     // in `out_dir`
-    let code = Command::new("java")
+    let status = Command::new("java")
         .args(&[
             "-classpath",
             &asc_path.to_string_lossy(),
@@ -51,9 +52,19 @@ pub fn build_playerglobal(
             &classes_dir.join("stubs.as").to_string_lossy(),
             &classes_dir.join("globals.as").to_string_lossy(),
         ])
-        .status()?;
-    if !code.success() {
-        return Err(format!("Compiling failed with code {:?}", code).into());
+        .status();
+    match status {
+        Ok(code) => {
+            if !code.success() {
+                return Err(format!("Compiling failed with code {:?}", code).into());
+            }
+        }
+        Err(err) => {
+            if err.kind() == ErrorKind::NotFound {
+                return Err("Java could not be found on your computer. Please install java, then try compiling again.".into());
+            }
+            return Err(err.into());
+        }
     }
 
     let playerglobal = out_dir.join("playerglobal");
