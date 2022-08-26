@@ -3,6 +3,7 @@
 mod adpcm;
 #[cfg(any(feature = "minimp3", feature = "symphonia"))]
 mod mp3;
+#[cfg(feature = "nellymoser")]
 mod nellymoser;
 mod pcm;
 
@@ -11,6 +12,7 @@ pub use adpcm::AdpcmDecoder;
 pub use mp3::minimp3::Mp3Decoder;
 #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
 pub use mp3::symphonia::Mp3Decoder;
+#[cfg(feature = "nellymoser")]
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
@@ -75,6 +77,7 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
         )?),
         #[cfg(any(feature = "minimp3", feature = "symphonia"))]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(data)?),
+        #[cfg(feature = "nellymoser")]
         AudioCompression::Nellymoser => {
             Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
         }
