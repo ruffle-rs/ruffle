@@ -874,6 +874,24 @@ pub fn set_text_format<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn anti_alias_type<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("TextField.antiAliasType getter: not yet implemented");
+    Ok(Value::Undefined)
+}
+
+pub fn set_anti_alias_type<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("TextField.antiAliasType setter: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `TextField`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -923,6 +941,11 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("textWidth", Some(text_width), None),
         ("type", Some(get_type), Some(set_type)),
         ("wordWrap", Some(word_wrap), Some(set_word_wrap)),
+        (
+            "antiAliasType",
+            Some(anti_alias_type),
+            Some(set_anti_alias_type),
+        ),
     ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
