@@ -645,10 +645,10 @@ pub trait TDisplayObject<'gc>:
         // and can even the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
             return BoundingBox {
-                x_min: -scroll_rect.x_min,
-                y_min: scroll_rect.y_min,
-                x_max: scroll_rect.x_max,
-                y_max: scroll_rect.y_max,
+                x_min: Twips::from_pixels(0.0),
+                y_min: Twips::from_pixels(0.0),
+                x_max: scroll_rect.x_max - scroll_rect.x_min,
+                y_max: scroll_rect.y_max - scroll_rect.y_min,
                 valid: true,
             }
             .transform(matrix);

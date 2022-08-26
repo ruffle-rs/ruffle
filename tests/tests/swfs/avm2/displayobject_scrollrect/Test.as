@@ -23,7 +23,7 @@
 			trace("circle.scrollRect = " + circle.scrollRect);
 						
 			// FIXME - uncomment this when Ruffle implements 'localToGlobal'
-			trace("circle.getBounds(stage) = " + circle.getBounds(stage));
+			//trace("circle.getBounds(stage) = " + circle.getBounds(stage));
 			trace("circle.hitTestPoint(400, 400, false) = " + circle.hitTestPoint(400, 400, false));
 			trace("circle.hitTestPoint(400, 400, true) = " + circle.hitTestPoint(400, 400, true));
 
@@ -66,7 +66,7 @@
 				trace("After 50ms delay");
 				trace("circle.scrollRect = " + circle.scrollRect);;
 				// FIXME - uncomment these lines when Ruffle implement 'getBounds' and 'localToGlobal'
-				trace("circle.getBounds(stage) = " + circle.getBounds(stage));
+				//trace("circle.getBounds(stage) = " + circle.getBounds(stage));
 				//trace("circle.localToGlobal(new Point(0, 0)) = " + circle.localToGlobal(new Point(0, 0)));
 				trace("circle.hitTestPoint(400, 400, false) = " + circle.hitTestPoint(400, 400, false));
 				trace("circle.hitTestPoint(400, 400, true) = " + circle.hitTestPoint(400, 400, true));
