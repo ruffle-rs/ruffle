@@ -21,7 +21,7 @@ use ruffle_render::shape_utils::DrawCommand;
 use std::str::FromStr;
 use swf::{
     BlendMode, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle, Twips,
+    LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
 };
 
 macro_rules! mc_method {
@@ -110,6 +110,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
     "useHandCursor" => property(mc_getter!(use_hand_cursor), mc_setter!(set_use_hand_cursor); DONT_DELETE | DONT_ENUM);
     "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM);
+    "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM; version(8));
 };
 
 /// Implements `MovieClip`
@@ -119,6 +120,67 @@ pub fn constructor<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this.into())
+}
+
+fn new_rectangle<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    rectangle: Rectangle,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let x = rectangle.x_min.to_pixels();
+    let y = rectangle.y_min.to_pixels();
+    let width = (rectangle.x_max - rectangle.x_min).to_pixels();
+    let height = (rectangle.y_max - rectangle.y_min).to_pixels();
+    let args = &[x.into(), y.into(), width.into(), height.into()];
+    let proto = activation.context.avm1.prototypes.rectangle_constructor;
+    proto.construct(activation, args)
+}
+
+fn object_to_rectangle<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    object: Object<'gc>,
+) -> Result<Option<Rectangle>, Error<'gc>> {
+    const NAMES: &[&str] = &["x", "y", "width", "height"];
+    let mut values = [0; 4];
+    for (&name, value) in NAMES.iter().zip(&mut values) {
+        *value = match object.get_local_stored(name, activation) {
+            Some(value) => value.coerce_to_i32(activation)?,
+            None => return Ok(None),
+        }
+    }
+    let [x, y, width, height] = values;
+    Ok(Some(Rectangle {
+        x_min: Twips::from_pixels_i32(x),
+        x_max: Twips::from_pixels_i32(x + width),
+        y_min: Twips::from_pixels_i32(y),
+        y_max: Twips::from_pixels_i32(y + height),
+    }))
+}
+
+fn scroll_rect<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if this.has_scroll_rect() {
+        new_rectangle(activation, this.next_scroll_rect())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_scroll_rect<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc, '_>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Value::Object(object) = value {
+        this.set_has_scroll_rect(activation.context.gc_context, true);
+        if let Some(rectangle) = object_to_rectangle(activation, object)? {
+            this.set_next_scroll_rect(activation.context.gc_context, rectangle);
+        }
+    } else {
+        this.set_has_scroll_rect(activation.context.gc_context, false);
+    };
+    Ok(())
 }
 
 #[allow(clippy::comparison_chain)]

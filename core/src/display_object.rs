@@ -112,7 +112,7 @@ pub struct DisplayObjectBase<'gc> {
     /// This is used by the ActionScript 'DisplayObject.scrollRect' getter, which sees
     /// changes immediately (without needing wait for a render)
     #[collect(require_static)]
-    next_scroll_rect: Option<Rectangle>,
+    next_scroll_rect: Rectangle,
 }
 
 impl<'gc> Default for DisplayObjectBase<'gc> {
@@ -136,7 +136,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             opaque_background: Default::default(),
             flags: DisplayObjectFlags::VISIBLE,
             scroll_rect: None,
-            next_scroll_rect: None,
+            next_scroll_rect: Default::default(),
         }
     }
 }
@@ -449,6 +449,14 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn set_instantiated_by_timeline(&mut self, value: bool) {
         self.flags
             .set(DisplayObjectFlags::INSTANTIATED_BY_TIMELINE, value);
+    }
+
+    fn has_scroll_rect(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::HAS_SCROLL_RECT)
+    }
+
+    fn set_has_scroll_rect(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::HAS_SCROLL_RECT, value);
     }
 
     fn masker(&self) -> Option<DisplayObject<'gc>> {
@@ -1022,12 +1030,12 @@ pub trait TDisplayObject<'gc>:
         self.base().scroll_rect
     }
 
-    fn next_scroll_rect(&self) -> Option<Rectangle> {
+    fn next_scroll_rect(&self) -> Rectangle {
         self.base().next_scroll_rect
     }
 
-    fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rect: Option<Rectangle>) {
-        self.base_mut(gc_context).next_scroll_rect = rect;
+    fn set_next_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, rectangle: Rectangle) {
+        self.base_mut(gc_context).next_scroll_rect = rectangle;
     }
 
     fn removed(&self) -> bool {
@@ -1132,6 +1140,16 @@ pub trait TDisplayObject<'gc>:
     /// Note that the object will still be bitmap cached if a filter or blend mode is active.
     fn set_is_bitmap_cached(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
         self.base_mut(gc_context).set_is_bitmap_cached(value)
+    }
+
+    /// Whether this display object has a scroll rectangle applied.
+    fn has_scroll_rect(&self) -> bool {
+        self.base().has_scroll_rect()
+    }
+
+    /// Sets whether this display object has a scroll rectangle applied.
+    fn set_has_scroll_rect(&self, gc_context: MutationContext<'gc, '_>, value: bool) {
+        self.base_mut(gc_context).set_has_scroll_rect(value)
     }
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
@@ -1261,7 +1279,7 @@ pub trait TDisplayObject<'gc>:
     /// (as long as the child is still on a render list)
     fn pre_render(&self, context: &mut RenderContext<'_, 'gc, '_>) {
         let mut this = self.base_mut(context.gc_context);
-        this.scroll_rect = this.next_scroll_rect;
+        this.scroll_rect = this.has_scroll_rect().then_some(this.next_scroll_rect);
     }
 
     fn render_self(&self, _context: &mut RenderContext<'_, 'gc, '_>) {}
@@ -1611,6 +1629,9 @@ bitflags! {
 
         /// Whether this object will be cached to bitmap.
         const CACHE_AS_BITMAP          = 1 << 8;
+
+        /// Whether this object has a scroll rectangle applied.
+        const HAS_SCROLL_RECT          = 1 << 9;
     }
 }
 
