@@ -2,7 +2,7 @@ import { RuffleObject } from "./ruffle-object";
 import { RuffleEmbed } from "./ruffle-embed";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
-import { Config } from "./config";
+import type { Config } from "./config";
 
 let isExtension: boolean;
 const globalConfig: Config = window.RufflePlayer?.config ?? {};

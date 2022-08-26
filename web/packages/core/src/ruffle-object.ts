@@ -13,7 +13,7 @@ import {
     RufflePlayer,
 } from "./ruffle-player";
 import { registerElement } from "./register-element";
-import { URLLoadOptions, WindowMode } from "./load-options";
+import type { URLLoadOptions, WindowMode } from "./load-options";
 import { RuffleEmbed } from "./ruffle-embed";
 
 /**
