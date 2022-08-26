@@ -422,17 +422,6 @@ pub fn load_player_globals<'gc>(
     function(activation, "", "parseInt", toplevel::parse_int, script)?;
     function(activation, "", "parseFloat", toplevel::parse_float, script)?;
     function(activation, "", "escape", toplevel::escape, script)?;
-    constant(mc, "", "undefined", Value::Undefined, script, object_class)?;
-    constant(mc, "", "null", Value::Null, script, object_class)?;
-    constant(mc, "", "NaN", f64::NAN.into(), script, object_class)?;
-    constant(
-        mc,
-        "",
-        "Infinity",
-        f64::INFINITY.into(),
-        script,
-        object_class,
-    )?;
 
     class(activation, json::create_class(mc), script)?;
     avm2_system_class!(regexp, activation, regexp::create_class(mc), script);
