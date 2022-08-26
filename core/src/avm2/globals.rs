@@ -681,7 +681,7 @@ fn load_playerglobal<'gc>(
             let do_abc = reader
                 .read_do_abc()
                 .expect("playerglobal.swf should be valid");
-            Avm2::load_abc(&mut activation.context, do_abc, domain)
+            Avm2::do_abc(&mut activation.context, do_abc, domain)
                 .expect("playerglobal.swf should be valid");
         } else if tag_code != TagCode::End {
             panic!(

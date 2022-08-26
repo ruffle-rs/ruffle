@@ -579,7 +579,7 @@ impl<'gc> MovieClip<'gc> {
             let movie = self.movie().unwrap();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            if let Err(e) = Avm2::load_abc(context, do_abc, domain) {
+            if let Err(e) = Avm2::do_abc(context, do_abc, domain) {
                 log::warn!("Error loading ABC file: {}", e);
             }
         }
