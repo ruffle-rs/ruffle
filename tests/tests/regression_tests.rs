@@ -113,7 +113,6 @@ macro_rules! swf_tests_approx {
 // The test folder is a relative to core/tests/swfs
 // Inside the folder is expected to be "test.swf" and "output.txt" with the correct output.
 swf_tests! {
-    (action_enumerate, "avm1/action_enumerate", 1),
     (action_to_integer, "avm1/action_to_integer", 1),
     (add_swf4, "avm1/add_swf4", 1),
     (add_swf5, "avm1/add_swf5", 1),
