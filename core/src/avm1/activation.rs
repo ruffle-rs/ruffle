@@ -988,8 +988,8 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_enumerate(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let name_value = self.context.avm1.pop();
         let name = name_value.coerce_to_string(self)?;
-        self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
         let object: Value<'gc> = self.get_variable(name)?.into();
+        self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
         match object {
             Value::Object(ob) => {
@@ -1006,7 +1006,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
     fn action_enumerate_2(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.context.avm1.pop();
 
-        self.context.avm1.push(Value::Null); // Sentinel that indicates end of enumeration
+        self.context.avm1.push(Value::Undefined); // Sentinel that indicates end of enumeration
 
         if let Value::Object(object) = value {
             for k in object.get_keys(self).into_iter().rev() {

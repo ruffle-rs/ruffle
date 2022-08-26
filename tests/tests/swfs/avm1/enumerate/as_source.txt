@@ -31,3 +31,63 @@ for(e in this.obj)
 {
    trace(e);
 }
+
+// The following is added via JPEXS
+trace("// enumerate(undefined)")
+trace(enumerate(undefined))
+trace("// enumerate(null)")
+trace(enumerate(null))
+trace("// enumerate(10)")
+trace(enumerate(10))
+trace("// enumerate(10.0)")
+trace(enumerate(10.0))
+trace("// enumerate(false)")
+trace(enumerate(false))
+trace("// enumerate(true)")
+trace(enumerate(true))
+trace("// enumerate('Test string')")
+trace(enumerate('Test string'))
+trace("// enumerate({'a': 1})")
+trace(enumerate({'a': 1}))
+
+trace("// enumerate2(undefined)")
+trace(enumerate2(undefined))
+trace("// enumerate2(null)")
+trace(enumerate2(null))
+trace("// enumerate2(10)")
+trace(enumerate2(10))
+trace("// enumerate2(10.0)")
+trace(enumerate2(10.0))
+trace("// enumerate2(false)")
+trace(enumerate2(false))
+trace("// enumerate2(true)")
+trace(enumerate2(true))
+trace("// enumerate2('Test string')")
+trace(enumerate2('Test string'))
+trace("// enumerate2({'a': 1})")
+trace(enumerate2({'a': 1}))
+
+var x = {'a': 1};
+trace("// enumerate({'a': 1} (indirect))")
+trace(enumerate("x"))
+var x = null;
+trace("// enumerate(null (indirect)")
+trace(enumerate("x"))
+var x = undefined;
+trace("// enumerate(undefined (indirect)")
+trace(enumerate("x"))
+var x = 10;
+trace("// enumerate(10 (indirect)")
+trace(enumerate("x"))
+var x = 10.0;
+trace("// enumerate(10.0 (indirect)")
+trace(enumerate("x"))
+var x = false;
+trace("// enumerate(false (indirect)")
+trace(enumerate("x"))
+var x = true;
+trace("// enumerate(true (indirect)")
+trace(enumerate("x"))
+var x = "Test string";
+trace("// enumerate('Test string' (indirect)")
+trace(enumerate("x"))

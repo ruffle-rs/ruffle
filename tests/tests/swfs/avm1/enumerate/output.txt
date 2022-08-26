@@ -11,3 +11,54 @@ def
 // this.obj (GetMember)
 ghi
 jkl
+// enumerate(undefined)
+undefined
+// enumerate(null)
+undefined
+// enumerate(10)
+undefined
+// enumerate(10.0)
+undefined
+// enumerate(false)
+undefined
+// enumerate(true)
+undefined
+// enumerate('Test string')
+undefined
+// enumerate({'a': 1})
+ghi
+jkl
+// enumerate2(undefined)
+undefined
+// enumerate2(null)
+undefined
+// enumerate2(10)
+undefined
+// enumerate2(10.0)
+undefined
+// enumerate2(false)
+undefined
+// enumerate2(true)
+undefined
+// enumerate2('Test string')
+undefined
+// enumerate2({'a': 1})
+a
+undefined
+// enumerate({'a': 1} (indirect))
+a
+undefined
+// enumerate(null (indirect))
+undefined
+// enumerate(undefined (indirect))
+undefined
+// enumerate(10 (indirect))
+undefined
+// enumerate(10.0 (indirect))
+undefined
+// enumerate(false (indirect))
+undefined
+// enumerate(true (indirect))
+undefined
+// enumerate('Test string' (indirect))
+undefined
