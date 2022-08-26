@@ -22,10 +22,6 @@ pub enum Error {
 
     #[error("Invalid SWF url")]
     InvalidSwfUrl,
-
-    // TODO: Replace avm2 errors with something more substantial
-    #[error("Invalid ABC: {0}")]
-    InvalidABC(String),
 }
 
 pub type DecodeResult = Result<(), Error>;

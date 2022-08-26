@@ -12,10 +12,7 @@ use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::types::*;
 use swf::avm2::write::Writer;
-use swf::DoAbc;
-use swf::Header;
-use swf::SwfStr;
-use swf::Tag;
+use swf::{DoAbc, DoAbcFlag, Header, Tag};
 
 // The metadata name - all metadata in our .as files
 // should be of the form `[Ruffle(key1 = value1, key2 = value2)]`
@@ -77,9 +74,9 @@ pub fn build_playerglobal(
 
     bytes = write_native_table(&bytes, &out_dir)?;
 
-    let tags = vec![Tag::DoAbc(DoAbc {
-        name: SwfStr::from_utf8_str(""),
-        is_lazy_initialize: true,
+    let tags = [Tag::DoAbc(DoAbc {
+        flags: DoAbcFlag::LAZY_INITIALIZE,
+        name: "".into(),
         data: &bytes,
     })];
 
