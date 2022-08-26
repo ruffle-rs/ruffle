@@ -25,6 +25,92 @@ pub fn get_timer<'gc>(
         .into())
 }
 
+/// Implements `flash.utils.setInterval`
+pub fn set_interval<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if args.len() < 2 {
+        return Err(Error::from("setInterval: not enough arguments"));
+    }
+    let (args, params) = args.split_at(2);
+    let callback = crate::timer::TimerCallback::Avm2Callback {
+        closure: args
+            .get(0)
+            .expect("setInterval: not enough arguments")
+            .as_object()
+            .ok_or("setInterval: argument 0 is not an object")?,
+        params: params.to_vec(),
+    };
+    let interval = args
+        .get(1)
+        .expect("setInterval: not enough arguments")
+        .coerce_to_number(activation)?;
+    Ok(Value::Integer(activation.context.timers.add_timer(
+        callback,
+        interval as i32,
+        false,
+    )))
+}
+
+/// Implements `flash.utils.clearInterval`
+pub fn clear_interval<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let id = args
+        .get(0)
+        .ok_or("clearInterval: not enough arguments")?
+        .coerce_to_number(activation)?;
+    activation.context.timers.remove(id as i32);
+    Ok(Value::Undefined)
+}
+
+/// Implements `flash.utils.setTimeout`
+pub fn set_timeout<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if args.len() < 2 {
+        return Err(Error::from("setTimeout: not enough arguments"));
+    }
+    let (args, params) = args.split_at(2);
+    let callback = crate::timer::TimerCallback::Avm2Callback {
+        closure: args
+            .get(0)
+            .expect("setTimeout: not enough arguments")
+            .as_object()
+            .ok_or("setTimeout: argument 0 is not an object")?,
+        params: params.to_vec(),
+    };
+    let interval = args
+        .get(1)
+        .expect("setTimeout: not enough arguments")
+        .coerce_to_number(activation)?;
+    Ok(Value::Integer(activation.context.timers.add_timer(
+        callback,
+        interval as i32,
+        true,
+    )))
+}
+
+/// Implements `flash.utils.clearTimeout`
+pub fn clear_timeout<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    let id = args
+        .get(0)
+        .ok_or("clearTimeout: not enough arguments")?
+        .coerce_to_number(activation)?;
+    activation.context.timers.remove(id as i32);
+    Ok(Value::Undefined)
+}
+
 /// Implements `flash.utils.getQualifiedClassName`
 pub fn get_qualified_class_name<'gc>(
     activation: &mut Activation<'_, 'gc, '_>,

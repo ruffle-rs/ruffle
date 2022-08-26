@@ -66,7 +66,10 @@ pub fn start<'gc>(
             )?
             .coerce_to_object(activation)?;
         let id = activation.context.timers.add_timer(
-            TimerCallback::Avm2Callback(on_update),
+            TimerCallback::Avm2Callback {
+                closure: on_update,
+                params: vec![],
+            },
             delay as _,
             false,
         );

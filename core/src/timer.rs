@@ -9,7 +9,7 @@ use crate::avm1::{
     Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
 };
 use crate::avm2::object::TObject;
-use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object};
+use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -108,10 +108,11 @@ impl<'gc> Timers<'gc> {
                     );
                     false
                 }
-                TimerCallback::Avm2Callback(obj) => {
+                TimerCallback::Avm2Callback { closure, params } => {
                     let mut avm2_activation =
                         Avm2Activation::from_nothing(activation.context.reborrow());
-                    obj.call(None, &[], &mut avm2_activation)
+                    closure
+                        .call(None, &params, &mut avm2_activation)
                         .unwrap()
                         .coerce_to_boolean()
                 }
@@ -296,5 +297,8 @@ pub enum TimerCallback<'gc> {
         params: Vec<Avm1Value<'gc>>,
     },
 
-    Avm2Callback(Avm2Object<'gc>),
+    Avm2Callback {
+        closure: Avm2Object<'gc>,
+        params: Vec<Avm2Value<'gc>>,
+    },
 }
