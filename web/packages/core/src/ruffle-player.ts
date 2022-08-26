@@ -1,9 +1,9 @@
-import { Ruffle } from "../pkg/ruffle_web";
+import type { Ruffle } from "../pkg/ruffle_web";
 
 import { loadRuffle } from "./load-ruffle";
 import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
-import { Config } from "./config";
+import type { Config } from "./config";
 import {
     BaseLoadOptions,
     DataLoadOptions,
@@ -12,8 +12,8 @@ import {
     UnmuteOverlay,
     WindowMode,
 } from "./load-options";
-import { MovieMetadata } from "./movie-metadata";
-import { InternalContextMenuItem } from "./context-menu";
+import type { MovieMetadata } from "./movie-metadata";
+import type { InternalContextMenuItem } from "./context-menu";
 import { swfFileName } from "./swf-file-name";
 
 export const FLASH_MIMETYPE = "application/x-shockwave-flash";

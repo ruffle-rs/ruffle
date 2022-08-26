@@ -1,4 +1,4 @@
-import { Options } from "./common";
+import type { Options } from "./common";
 import { LogLevel } from "ruffle-core";
 
 const DEFAULT_OPTIONS: Options = {

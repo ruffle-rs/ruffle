@@ -1,4 +1,4 @@
-import { Config } from "./config";
+import type { Config } from "./config";
 
 // This must be in global scope because `document.currentScript`
 // works only while the script is initially being processed.

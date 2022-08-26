@@ -1,7 +1,7 @@
 /**
  * Represents the various types of auto-play behaviours that are supported.
  */
-import { BaseLoadOptions } from "./load-options";
+import type { BaseLoadOptions } from "./load-options";
 
 /**
  * The configuration object to control Ruffle's behaviour on the website

@@ -1,7 +1,7 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
-import { Config } from "./config";
+import type { Config } from "./config";
 
 declare global {
     interface Window {

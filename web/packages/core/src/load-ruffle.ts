@@ -10,7 +10,7 @@ import {
 } from "wasm-feature-detect";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
-import { Config } from "./config";
+import type { Config } from "./config";
 
 declare global {
     let __webpack_public_path__: string;
