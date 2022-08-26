@@ -706,7 +706,7 @@ impl<W: Write> Writer<W> {
             Tag::DoAbc(ref do_abc) => {
                 let len = do_abc.data.len() + do_abc.name.len() + 5;
                 self.write_tag_header(TagCode::DoAbc, len as u32)?;
-                self.write_u32(if do_abc.is_lazy_initialize { 1 } else { 0 })?;
+                self.write_u32(do_abc.flags.bits())?;
                 self.write_string(do_abc.name)?;
                 self.output.write_all(do_abc.data)?;
             }

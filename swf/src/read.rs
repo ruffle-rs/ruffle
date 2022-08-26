@@ -506,16 +506,7 @@ impl<'a> Reader<'a> {
                 splitter_rect: tag_reader.read_rectangle()?,
             },
 
-            TagCode::DoAbc => {
-                let flags = tag_reader.read_u32()?;
-                let name = tag_reader.read_str()?;
-                let abc_data = tag_reader.read_slice_to_end();
-                Tag::DoAbc(DoAbc {
-                    name,
-                    is_lazy_initialize: flags & 1 != 0,
-                    data: abc_data,
-                })
-            }
+            TagCode::DoAbc => Tag::DoAbc(tag_reader.read_do_abc()?),
 
             TagCode::DoAction => {
                 let action_data = tag_reader.read_slice_to_end();
@@ -2548,6 +2539,13 @@ impl<'a> Reader<'a> {
             height,
             data,
         })
+    }
+
+    pub fn read_do_abc(&mut self) -> Result<DoAbc<'a>> {
+        let flags = DoAbcFlag::from_bits_truncate(self.read_u32()?);
+        let name = self.read_str()?;
+        let data = self.read_slice_to_end();
+        Ok(DoAbc { flags, name, data })
     }
 
     pub fn read_product_info(&mut self) -> Result<ProductInfo> {

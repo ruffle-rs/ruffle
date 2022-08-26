@@ -1491,9 +1491,15 @@ pub struct DefineBitsJpeg3<'a> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DoAbc<'a> {
+    pub flags: DoAbcFlag,
     pub name: &'a SwfStr,
-    pub is_lazy_initialize: bool,
     pub data: &'a [u8],
+}
+
+bitflags! {
+    pub struct DoAbcFlag: u32 {
+        const LAZY_INITIALIZE = 1 << 0;
+    }
 }
 
 pub type DoAction<'a> = &'a [u8];

@@ -6,12 +6,11 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
-use crate::tag_utils::{SwfSlice, SwfStream};
 use fnv::FnvHashMap;
 use gc_arena::{Collect, MutationContext};
 use std::rc::Rc;
 use swf::avm2::read::Reader;
-use swf::extensions::ReadSwfExt;
+use swf::{DoAbc, DoAbcFlag};
 
 #[macro_export]
 macro_rules! avm_debug {
@@ -261,45 +260,13 @@ impl<'gc> Avm2<'gc> {
         Ok(())
     }
 
-    pub fn load_abc_from_do_abc(
-        context: &mut UpdateContext<'_, 'gc, '_>,
-        swf: &SwfSlice,
-        domain: Domain<'gc>,
-        reader: &mut SwfStream<'_>,
-        tag_len: usize,
-    ) -> Result<(), crate::tag_utils::Error> {
-        let start = reader.as_slice();
-        // Queue the actions.
-        // TODO: The tag reader parses the entire ABC file, instead of just
-        // giving us a `SwfSlice` for later parsing, so we have to replcate the
-        // *entire* parsing code here. This sucks.
-        let flags = reader.read_u32()?;
-        let name = reader.read_str()?.to_string_lossy(reader.encoding());
-        let is_lazy_initialize = flags & 1 != 0;
-        let num_read = reader.pos(start);
-
-        // The rest of the tag is an ABC file so we can take our SwfSlice now.
-        let slice = swf.resize_to_reader(reader, tag_len - num_read);
-
-        if !slice.is_empty() {
-            Avm2::load_abc(slice, &name, is_lazy_initialize, context, domain)
-                .map_err(|e| crate::tag_utils::Error::InvalidABC(e.to_string()))?;
-        }
-
-        Ok(())
-    }
-
-    /// Load an ABC file embedded in a `SwfSlice`.
-    ///
-    /// The `SwfSlice` must resolve to the contents of an ABC file.
+    /// Load an ABC file embedded in a `DoAbc` tag.
     pub fn load_abc(
-        abc: SwfSlice,
-        _abc_name: &str,
-        lazy_init: bool,
         context: &mut UpdateContext<'_, 'gc, '_>,
+        do_abc: DoAbc,
         domain: Domain<'gc>,
     ) -> Result<(), Error> {
-        let mut read = Reader::new(abc.as_ref());
+        let mut read = Reader::new(do_abc.data);
 
         let abc_file = Rc::new(read.read()?);
         let tunit = TranslationUnit::from_abc(abc_file.clone(), domain, context.gc_context);
@@ -307,7 +274,7 @@ impl<'gc> Avm2<'gc> {
         for i in (0..abc_file.scripts.len()).rev() {
             let mut script = tunit.load_script(i as u32, context)?;
 
-            if !lazy_init {
+            if !do_abc.flags.contains(DoAbcFlag::LAZY_INITIALIZE) {
                 script.globals(context)?;
             }
         }
