@@ -28,9 +28,6 @@ package {
         // This is a hacky way to specify `-Infinity` as a default value.
         private static const NegInfinity: Number = -1 / 0;
         public static native function max(x: Number = NegInfinity, y: Number = NegInfinity, ...rest): Number;
-
-        // TODO: Remove this once `Infinity` is properly defined in ActionScript.
-        private static const Infinity: Number = 1 / 0;
         public static native function min(x: Number = Infinity, y: Number = Infinity, ...rest): Number;
 
         public static native function random(): Number;

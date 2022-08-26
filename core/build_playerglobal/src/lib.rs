@@ -47,6 +47,8 @@ pub fn build_playerglobal(
             "playerglobal",
             "-import",
             &classes_dir.join("stubs.as").to_string_lossy(),
+            // From some reason this has to be passed as a separate argument.
+            &classes_dir.join("Toplevel.as").to_string_lossy(),
             &classes_dir.join("globals.as").to_string_lossy(),
         ])
         .status();
