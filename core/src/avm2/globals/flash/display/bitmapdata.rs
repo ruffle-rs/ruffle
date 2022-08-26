@@ -254,18 +254,62 @@ pub fn copy_pixels<'gc>(
                     &src_bitmap_gc_ref
                 };
 
+            let mut alpha_source = None;
+
             if args.len() >= 4 {
-                log::warn!("BitmapData.copyPixels - alpha not implemented");
+                if let Some(alpha_bitmap) = args
+                    .get(3)
+                    .and_then(|o| o.as_object())
+                    .and_then(|o| o.as_bitmap_data())
+                {
+                    // Testing shows that a null/undefined 'alphaPoint' parameter is treated
+                    // as 'new Point(0, 0)'
+                    let mut x = 0;
+                    let mut y = 0;
+
+                    if let Ok(alpha_point) = args
+                        .get(4)
+                        .unwrap_or(&Value::Undefined)
+                        .coerce_to_object(activation)
+                    {
+                        x = alpha_point
+                            .get_property(&Multiname::public("x"), activation)?
+                            .coerce_to_i32(activation)?;
+                        y = alpha_point
+                            .get_property(&Multiname::public("y"), activation)?
+                            .coerce_to_i32(activation)?;
+                    }
+
+                    alpha_source = Some((alpha_bitmap, (x, y)));
+                }
             }
 
-            bitmap_data
-                .write(activation.context.gc_context)
-                .copy_pixels(
-                    source_bitmap_ref,
-                    (src_min_x, src_min_y, src_width, src_height),
-                    (dest_x, dest_y),
-                    None,
-                );
+            let merge_alpha = args
+                .get(5)
+                .unwrap_or(&Value::Bool(false))
+                .coerce_to_boolean();
+
+            if let Some((alpha_bitmap, alpha_point)) = alpha_source {
+                bitmap_data
+                    .write(activation.context.gc_context)
+                    .copy_pixels(
+                        source_bitmap_ref,
+                        (src_min_x, src_min_y, src_width, src_height),
+                        (dest_x, dest_y),
+                        Some((&*alpha_bitmap.read(), alpha_point)),
+                        merge_alpha,
+                    );
+            } else {
+                bitmap_data
+                    .write(activation.context.gc_context)
+                    .copy_pixels(
+                        source_bitmap_ref,
+                        (src_min_x, src_min_y, src_width, src_height),
+                        (dest_x, dest_y),
+                        None,
+                        merge_alpha,
+                    );
+            }
         }
     }
 
