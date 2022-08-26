@@ -261,7 +261,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Load an ABC file embedded in a `DoAbc` tag.
-    pub fn load_abc(
+    pub fn do_abc(
         context: &mut UpdateContext<'_, 'gc, '_>,
         do_abc: DoAbc,
         domain: Domain<'gc>,
