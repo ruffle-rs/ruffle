@@ -58,6 +58,11 @@ jobs:
           sudo apt-get dist-upgrade
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers
 
+      - name: Cache Cargo output
+        uses: Swatinem/rust-cache@90429b3dea365e9a1b0cb82d7f98aabf3089dc63
+        with:
+          shared-key: "desktop"
+
       - name: Check formatting
         uses: actions-rs/cargo@v1
         with:
