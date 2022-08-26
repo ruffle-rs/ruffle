@@ -997,10 +997,7 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
                     self.context.avm1.push(k.into());
                 }
             }
-            _ => {
-                //TODO: when ErrorReportingEnable=1 in mm.cfg the following is traced on error: "Warning {} is not defined"
-                avm_error!(self, "Cannot enumerate properties of {}", name)
-            }
+            _ => avm_error!(self, "Cannot enumerate properties of {}", name),
         };
 
         Ok(FrameControl::Continue)
