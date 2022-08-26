@@ -54,7 +54,7 @@ version = "0.3.23"
 version = "0.4.32"
 
 [features]
-default = ["minimp3"]
+default = []
 h263 = ["h263-rs", "h263-rs-yuv"]
 vp6 = ["nihav_core", "nihav_codec_support", "nihav_duck", "h263-rs-yuv"]
 screenvideo = []
