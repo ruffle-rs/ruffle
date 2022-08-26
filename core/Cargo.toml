@@ -41,7 +41,7 @@ h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "023e14c73e5
 regress = "0.4"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "19fecd07b9888c4bdaa66771c468095783b52bed" }
 lzma-rs = {version = "0.2.0", optional = true }
-dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"] }
+dasp = { git = "https://github.com/RustAudio/dasp", rev = "f05a703", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.1", default-features = false, features = ["mp3"], optional = true }
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "9416fcc9fc8aab8f4681aa9093b42922214abbd3", optional = true }
@@ -64,6 +64,7 @@ avm_debug = []
 deterministic = []
 timeline_debug = []
 nellymoser = ["nellymoser-rs"]
+audio = ["dasp"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }

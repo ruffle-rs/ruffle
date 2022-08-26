@@ -7,6 +7,7 @@ use downcast_rs::Downcast;
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 
+#[cfg(feature = "audio")]
 pub mod decoders;
 pub mod swf {
     pub use swf::{
@@ -15,9 +16,18 @@ pub mod swf {
     };
 }
 
+#[cfg(feature = "audio")]
 mod mixer;
-use instant::Duration;
+#[cfg(feature = "audio")]
 pub use mixer::*;
+
+#[cfg(not(feature = "audio"))]
+mod decoders {
+    #[derive(Debug, thiserror::Error)]
+    pub enum Error {}
+}
+
+use instant::Duration;
 use thiserror::Error;
 
 pub type SoundHandle = Index;
