@@ -1,6 +1,4 @@
-use super::decoders::{
-    self, AdpcmDecoder, Decoder, NellymoserDecoder, PcmDecoder, SeekableDecoder,
-};
+use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
 use super::{SoundHandle, SoundInstanceHandle, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::tag_utils::SwfSlice;
@@ -224,9 +222,11 @@ impl AudioMixer {
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new(data)?),
             #[cfg(all(feature = "symphonia", not(feature = "minimp3")))]
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(data)?),
-            AudioCompression::Nellymoser => {
-                Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
-            }
+            #[cfg(feature = "nellymoser")]
+            AudioCompression::Nellymoser => Box::new(decoders::NellymoserDecoder::new(
+                data,
+                format.sample_rate.into(),
+            )),
             _ => return Err(decoders::Error::UnhandledCompression(format.compression)),
         };
         Ok(decoder)
