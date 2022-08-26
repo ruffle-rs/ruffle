@@ -21,10 +21,23 @@
 			circle.transform.matrix = new Matrix(1.1, 0, 0, 1.1, 0, 0);			
 			
 			trace("circle.scrollRect = " + circle.scrollRect);
+						
 			// FIXME - uncomment this when Ruffle implements 'localToGlobal'
-			//trace("circle.getBounds(stage) = " + circle.getBounds(stage));
+			trace("circle.getBounds(stage) = " + circle.getBounds(stage));
 			trace("circle.hitTestPoint(400, 400, false) = " + circle.hitTestPoint(400, 400, false));
 			trace("circle.hitTestPoint(400, 400, true) = " + circle.hitTestPoint(400, 400, true));
+
+			// Test rounding behavior
+			
+			circle.scrollRect = new Rectangle(0.2, 0.2, 0.3, 0.3); // (x=0, y=0, w=0, h=0)
+			trace(circle.scrollRect);
+
+			circle.scrollRect = new Rectangle(1.2, 1.2, 0.3, 0.3); // (x=1, y=1, w=1, h=1)
+			trace(circle.scrollRect);
+
+			circle.scrollRect = new Rectangle(2.2, 2.2, 0.3, 0.3); // (x=2, y=2, w=0, h=0)
+			trace(circle.scrollRect);			
+
 			circle.scrollRect = new Rectangle(30, 40, 500, 600);
 			
 			// We haven't rendered a new frame yet, so even though scrollRect has updated,
@@ -53,7 +66,7 @@
 				trace("After 50ms delay");
 				trace("circle.scrollRect = " + circle.scrollRect);;
 				// FIXME - uncomment these lines when Ruffle implement 'getBounds' and 'localToGlobal'
-				//trace("circle.getBounds(stage) = " + circle.getBounds(stage));
+				trace("circle.getBounds(stage) = " + circle.getBounds(stage));
 				//trace("circle.localToGlobal(new Point(0, 0)) = " + circle.localToGlobal(new Point(0, 0)));
 				trace("circle.hitTestPoint(400, 400, false) = " + circle.hitTestPoint(400, 400, false));
 				trace("circle.hitTestPoint(400, 400, true) = " + circle.hitTestPoint(400, 400, true));

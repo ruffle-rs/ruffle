@@ -11,6 +11,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::display_object::{HitTestOptions, TDisplayObject};
+use crate::ecma_conversions::round_to_even;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
@@ -751,10 +752,10 @@ fn set_scroll_rect<'gc>(
                 // states that scrolling works in increments of one pixel.
                 // We round our pixel values here (but still use the Twips struct
                 // for compatibility with our Matrix struct)
-                x_min: Twips::from_pixels(x.round()),
-                y_min: Twips::from_pixels(y.round()),
-                x_max: Twips::from_pixels((x + width).round()),
-                y_max: Twips::from_pixels((y + height).round()),
+                x_min: Twips::from_pixels(round_to_even(x) as f64),
+                y_min: Twips::from_pixels(round_to_even(y) as f64),
+                x_max: Twips::from_pixels(round_to_even(x + width) as f64),
+                y_max: Twips::from_pixels(round_to_even(y + height) as f64),
             }),
         );
     }
