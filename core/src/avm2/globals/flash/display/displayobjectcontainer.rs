@@ -578,6 +578,24 @@ pub fn are_inaccessible_objects_under_point<'gc>(
     Err("DisplayObjectContainer.areInaccessibleObjectsUnderPoint not yet implemented".into())
 }
 
+pub fn mouse_children<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObjectContainer.mouseChildren getter: not yet implemented");
+    Ok(Value::Undefined)
+}
+
+pub fn set_mouse_children<'gc>(
+    _activation: &mut Activation<'_, 'gc, '_>,
+    _this: Option<Object<'gc>>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    log::warn!("DisplayObjectContainer.mouseChildren setter: not yet implemented");
+    Ok(Value::Undefined)
+}
+
 /// Construct `DisplayObjectContainer`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -607,7 +625,14 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
-    )] = &[("numChildren", Some(num_children), None)];
+    )] = &[
+        ("numChildren", Some(num_children), None),
+        (
+            "mouseChildren",
+            Some(mouse_children),
+            Some(set_mouse_children),
+        ),
+    ];
     write.define_public_builtin_instance_properties(mc, PUBLIC_INSTANCE_PROPERTIES);
 
     const PUBLIC_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[

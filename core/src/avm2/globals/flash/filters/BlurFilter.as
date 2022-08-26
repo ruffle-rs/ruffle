@@ -7,7 +7,7 @@
 		public function BlurFilter(blurX: Number = 4.0, blurY: Number = 4.0, quality: int = 1) {
 			this.blurX = blurX;
 			this.blurY = blurY;
-			this.quality = qualty;
+			this.quality = quality;
 		}
 
 		override public function clone(): BitmapFilter {
