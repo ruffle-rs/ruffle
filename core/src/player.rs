@@ -5,6 +5,7 @@ use crate::avm1::object::Object;
 use crate::avm1::property::Attribute;
 use crate::avm1::{Avm1, ScriptObject, TObject, Value};
 use crate::avm2::object::LoaderInfoObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, CallStack, Domain as Avm2Domain,
     EventObject as Avm2EventObject,
@@ -903,6 +904,55 @@ impl Player {
                             key_press_handled = true;
                             break;
                         }
+                    }
+                }
+            }
+
+            if context.is_action_script_3() {
+                if let PlayerEvent::KeyDown { key_code, key_char }
+                | PlayerEvent::KeyUp { key_code, key_char } = event
+                {
+                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+                    let event_name = match event {
+                        PlayerEvent::KeyDown { .. } => "keyDown",
+                        PlayerEvent::KeyUp { .. } => "keyUp",
+                        _ => unreachable!(),
+                    };
+
+                    let keyboardevent_class = activation.avm2().classes().keyboardevent;
+                    let event_name_val: Avm2Value<'_> =
+                        AvmString::new_utf8(activation.context.gc_context, event_name).into();
+                    let keyboard_event = keyboardevent_class
+                        .construct(
+                            &mut activation,
+                            &[
+                                event_name_val,
+                                true.into(),                             /* bubbles */
+                                false.into(),                            /* cancelable */
+                                key_char.map_or(0, |c| c as u32).into(), /* charCode */
+                                (key_code as u32).into(),                /* keyCode */
+                            ],
+                        )
+                        .expect("Failed to construct KeyboardEvent");
+
+                    let target = activation
+                        .context
+                        .focus_tracker
+                        .get()
+                        .unwrap_or_else(|| activation.context.stage.into())
+                        .object2()
+                        .coerce_to_object(&mut activation)
+                        .expect("DisplayObject is not an object!");
+
+                    if let Err(e) =
+                        Avm2::dispatch_event(&mut activation.context, keyboard_event, target)
+                    {
+                        log::error!(
+                            "Encountered AVM2 error when broadcasting `{}` event: {}",
+                            event_name,
+                            e
+                        );
                     }
                 }
             }
