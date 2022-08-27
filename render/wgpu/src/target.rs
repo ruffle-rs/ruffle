@@ -1,8 +1,5 @@
-#[cfg(not(target_family = "wasm"))]
 use crate::utils::BufferDimensions;
-#[cfg(not(target_family = "wasm"))]
 use crate::Error;
-#[cfg(not(target_family = "wasm"))]
 use ruffle_render::utils::unmultiply_alpha_rgba;
 use std::fmt::Debug;
 
@@ -111,28 +108,24 @@ impl RenderTarget for SwapChainTarget {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTarget {
-    size: wgpu::Extent3d,
-    texture: wgpu::Texture,
-    format: wgpu::TextureFormat,
-    buffer: wgpu::Buffer,
-    buffer_dimensions: BufferDimensions,
+    pub size: wgpu::Extent3d,
+    pub texture: wgpu::Texture,
+    pub format: wgpu::TextureFormat,
+    pub buffer: wgpu::Buffer,
+    pub buffer_dimensions: BufferDimensions,
 }
 
-#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 pub struct TextureTargetFrame(wgpu::TextureView);
 
-#[cfg(not(target_family = "wasm"))]
 impl RenderTargetFrame for TextureTargetFrame {
     fn view(&self) -> &wgpu::TextureView {
         &self.0
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl TextureTarget {
     pub fn new(device: &wgpu::Device, size: (u32, u32)) -> Result<Self, Error> {
         if size.0 > device.limits().max_texture_dimension_2d
@@ -220,7 +213,6 @@ impl TextureTarget {
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
 impl RenderTarget for TextureTarget {
     type Frame = TextureTargetFrame;
 

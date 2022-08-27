@@ -374,7 +374,7 @@ fn trace_path(_opt: &Opt) -> Option<&Path> {
 fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(opt.graphics.into());
-    let descriptors = Arc::new(
+    let descriptors =
         futures::executor::block_on(WgpuRenderBackend::<TextureTarget>::build_descriptors(
             opt.graphics.into(),
             instance,
@@ -382,8 +382,9 @@ fn main() -> Result<()> {
             opt.power.into(),
             trace_path(&opt),
         ))
-        .map_err(|e| anyhow!(e.to_string()))?,
-    );
+        .map_err(|e| anyhow!(e.to_string()))?;
+
+    let descriptors = Arc::new(descriptors);
 
     if opt.swf.is_file() {
         capture_single_swf(descriptors, &opt)?;

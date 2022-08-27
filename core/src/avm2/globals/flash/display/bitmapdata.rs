@@ -10,9 +10,13 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapData;
+use crate::bitmap::bitmap_data::IBitmapDrawable;
 use crate::bitmap::is_size_valid;
 use crate::character::Character;
+use crate::swf::BlendMode;
 use gc_arena::{GcCell, MutationContext};
+use ruffle_render::transform::Transform;
+use std::str::FromStr;
 
 /// Implements `flash.display.BitmapData`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -67,6 +71,8 @@ pub fn instance_init<'gc>(
                         name
                     );
                 }
+            } else {
+                log::error!("Failed to get bitmap handle for {:?}", bd);
             }
         } else {
             if character.is_some() {
@@ -290,6 +296,75 @@ pub fn lock<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `BitmapData.draw`
+pub fn draw<'gc>(
+    activation: &mut Activation<'_, 'gc, '_>,
+    this: Option<Object<'gc>>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error> {
+    if let Some(bitmap_data) = this.and_then(|this| this.as_bitmap_data()) {
+        let mut transform = Transform::default();
+        let mut blend_mode = BlendMode::Normal;
+
+        let matrix = args.get(1).unwrap_or(&Value::Null);
+        if !matches!(matrix, Value::Null) {
+            transform.matrix = crate::avm2::globals::flash::geom::transform::object_to_matrix(
+                matrix.coerce_to_object(activation)?,
+                activation,
+            )?;
+        }
+
+        let color_transform = args.get(2).unwrap_or(&Value::Null);
+        if !matches!(color_transform, Value::Null) {
+            transform.color_transform =
+                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
+                    color_transform.coerce_to_object(activation)?,
+                    activation,
+                )?;
+        }
+
+        let mode = args.get(3).unwrap_or(&Value::Null);
+        if !matches!(mode, Value::Null) {
+            if let Ok(mode) = BlendMode::from_str(&mode.coerce_to_string(activation)?.to_string()) {
+                blend_mode = mode;
+            } else {
+                log::error!("Unknown blend mode {:?}", mode);
+                return Err("ArgumentError: Error #2008: Parameter blendMode must be one of the accepted values.".into());
+            }
+        }
+
+        if args.get(4).is_some() {
+            log::warn!("BitmapData.draw with clip rect - not implemented")
+        }
+
+        let mut bitmap_data = bitmap_data.write(activation.context.gc_context);
+        // FIXME - handle other arguments
+        let smoothing = args.get(5).unwrap_or(&false.into()).coerce_to_boolean();
+
+        let source = args
+            .get(0)
+            .and_then(|v| v.as_object())
+            .ok_or_else(|| format!("BitmapData.draw: source {:?} is not an Object", args.get(0)))?;
+
+        let source = if let Some(source_object) = source.as_display_object() {
+            IBitmapDrawable::DisplayObject(source_object)
+        } else if let Some(source_bitmap) = source.as_bitmap_data() {
+            IBitmapDrawable::BitmapData(source_bitmap)
+        } else {
+            return Err(format!("BitmapData.draw: unexpected source {:?}", source).into());
+        };
+
+        bitmap_data.draw(
+            source,
+            transform,
+            smoothing,
+            blend_mode,
+            &mut activation.context,
+        );
+    }
+    Ok(Value::Undefined)
+}
+
 /// Construct `BitmapData`'s class.
 pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>> {
     let class = Class::new(
@@ -324,6 +399,7 @@ pub fn create_class<'gc>(mc: MutationContext<'gc, '_>) -> GcCell<'gc, Class<'gc>
         ("lock", lock),
         ("unlock", lock), // sic, it's a noop (TODO)
         ("copyPixels", copy_pixels),
+        ("draw", draw),
     ];
     write.define_public_builtin_instance_methods(mc, PUBLIC_INSTANCE_METHODS);
 

@@ -802,6 +802,16 @@ impl RenderBackend for WebGlRenderBackend {
         handle
     }
 
+    fn with_offscreen_backend(
+        &mut self,
+        _handle: BitmapHandle,
+        _width: u32,
+        _height: u32,
+        _f: &mut dyn FnMut(&mut dyn RenderBackend) -> Result<(), ruffle_render::error::Error>,
+    ) -> Result<image::RgbaImage, ruffle_render::error::Error> {
+        Err(ruffle_render::error::Error::Unimplemented)
+    }
+
     fn begin_frame(&mut self, clear: Color) {
         self.active_program = std::ptr::null();
         self.mask_state = MaskState::NoMask;

@@ -29,4 +29,7 @@ pub enum Error {
     #[cfg(feature = "web")]
     #[error("Javascript error")]
     JavascriptError(wasm_bindgen::JsValue),
+
+    #[error("Not yet implemented")]
+    Unimplemented,
 }

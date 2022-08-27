@@ -1355,6 +1355,7 @@ impl Player {
                 ui: ui.deref_mut(),
                 library: &root_data.library,
                 transform_stack,
+                is_offscreen: false,
                 stage: root_data.stage,
                 clip_depth_stack: vec![],
                 allow_mask: true,
