@@ -104,8 +104,12 @@ impl Pipelines {
     ) -> Self {
         let color_shader = create_shader(device, "color", include_str!("../shaders/color.wgsl"));
         let bitmap_shader = create_shader(device, "bitmap", include_str!("../shaders/bitmap.wgsl"));
-        let gradient_shader =
-            create_shader(device, "gradient", include_str!("../shaders/gradient.wgsl"));
+        let gradient_shader = if device.limits().max_storage_buffers_per_shader_stage > 0 {
+            include_str!("../shaders/gradient_storage.wgsl")
+        } else {
+            include_str!("../shaders/gradient_uniform.wgsl")
+        };
+        let gradient_shader = create_shader(device, "gradient", gradient_shader);
         let copy_srgb_shader = create_shader(
             device,
             "copy sRGB",
@@ -192,7 +196,11 @@ impl Pipelines {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            ty: if device.limits().max_storage_buffers_per_shader_stage > 0 {
+                                wgpu::BufferBindingType::Storage { read_only: true }
+                            } else {
+                                wgpu::BufferBindingType::Uniform
+                            },
                             has_dynamic_offset: false,
                             min_binding_size: None,
                         },

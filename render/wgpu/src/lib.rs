@@ -253,6 +253,50 @@ impl From<TessVertex> for Vertex {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct GradientUniforms {
+    colors: [[f32; 16]; 16],
+    ratios: [[f32; 4]; 16],
+    gradient_type: i32,
+    num_colors: u32,
+    repeat_mode: i32,
+    interpolation: i32,
+    focal_point: f32,
+    _padding: [f32; 3],
+}
+
+impl From<TessGradient> for GradientUniforms {
+    fn from(gradient: TessGradient) -> Self {
+        let mut ratios = [[0.0; 4]; 16];
+        let mut colors = [[0.0; 16]; 16];
+
+        for i in 0..gradient.num_colors {
+            ratios[i] = [gradient.ratios[i], 0.0, 0.0, 0.0];
+            colors[i][0..4].copy_from_slice(&gradient.colors[i]);
+        }
+
+        Self {
+            colors,
+            ratios,
+            gradient_type: match gradient.gradient_type {
+                GradientType::Linear => 0,
+                GradientType::Radial => 1,
+                GradientType::Focal => 2,
+            },
+            num_colors: gradient.num_colors as u32,
+            repeat_mode: match gradient.repeat_mode {
+                swf::GradientSpread::Pad => 0,
+                swf::GradientSpread::Repeat => 1,
+                swf::GradientSpread::Reflect => 2,
+            },
+            interpolation: (gradient.interpolation == swf::GradientInterpolation::LinearRgb) as i32,
+            focal_point: gradient.focal_point.to_f32(),
+            _padding: Default::default(),
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct GradientStorage {
     colors: [[f32; 4]; 16],
     ratios: [f32; 16],
     gradient_type: i32,
@@ -263,7 +307,7 @@ struct GradientUniforms {
     _padding: [f32; 3],
 }
 
-impl From<TessGradient> for GradientUniforms {
+impl From<TessGradient> for GradientStorage {
     fn from(gradient: TessGradient) -> Self {
         let mut ratios = [0.0; 16];
         let mut colors = [[0.0; 4]; 16];
@@ -326,10 +370,10 @@ enum DrawType {
 impl WgpuRenderBackend<SwapChainTarget> {
     #[cfg(target_family = "wasm")]
     pub async fn for_canvas(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, Error> {
-        let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU);
+        let instance = wgpu::Instance::new(wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL);
         let surface = instance.create_surface_from_canvas(canvas);
         let descriptors = Self::build_descriptors(
-            wgpu::Backends::BROWSER_WEBGPU,
+            wgpu::Backends::BROWSER_WEBGPU | wgpu::Backends::GL,
             instance,
             Some(&surface),
             wgpu::PowerPreference::HighPerformance,
@@ -554,16 +598,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             }
         })?;
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    features: wgpu::Features::empty(),
-                    ..Default::default()
-                },
-                trace_path,
-            )
-            .await?;
+        let (device, queue) = request_device(&adapter, trace_path).await?;
         let info = adapter.get_info();
         // Ideally we want to use an RGBA non-sRGB surface format, because Flash colors and
         // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
@@ -644,16 +679,40 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                         ),
                     );
 
-                    let gradient_ubo = create_buffer_with_data(
-                        &self.descriptors.device,
-                        bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
-                        wgpu::BufferUsages::STORAGE,
-                        create_debug_label!(
-                            "Shape {} draw {} gradient ubo transfer buffer",
-                            shape_id,
-                            draw_id
-                        ),
-                    );
+                    let (gradient_ubo, buffer_size) = if self
+                        .descriptors
+                        .limits
+                        .max_storage_buffers_per_shader_stage
+                        > 0
+                    {
+                        (
+                            create_buffer_with_data(
+                                &self.descriptors.device,
+                                bytemuck::cast_slice(&[GradientStorage::from(gradient)]),
+                                wgpu::BufferUsages::STORAGE,
+                                create_debug_label!(
+                                    "Shape {} draw {} gradient ubo transfer buffer",
+                                    shape_id,
+                                    draw_id
+                                ),
+                            ),
+                            wgpu::BufferSize::new(std::mem::size_of::<GradientStorage>() as u64),
+                        )
+                    } else {
+                        (
+                            create_buffer_with_data(
+                                &self.descriptors.device,
+                                bytemuck::cast_slice(&[GradientUniforms::from(gradient)]),
+                                wgpu::BufferUsages::UNIFORM,
+                                create_debug_label!(
+                                    "Shape {} draw {} gradient ubo transfer buffer",
+                                    shape_id,
+                                    draw_id
+                                ),
+                            ),
+                            wgpu::BufferSize::new(std::mem::size_of::<GradientUniforms>() as u64),
+                        )
+                    };
 
                     let bind_group_label = create_debug_label!(
                         "Shape {} (gradient) draw {} bindgroup",
@@ -686,11 +745,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
                                             wgpu::BufferBinding {
                                                 buffer: &gradient_ubo,
                                                 offset: 0,
-                                                size: wgpu::BufferSize::new(std::mem::size_of::<
-                                                    GradientUniforms,
-                                                >(
-                                                )
-                                                    as u64),
+                                                size: buffer_size,
                                             },
                                         ),
                                     },
@@ -800,8 +855,20 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         // Avoid panics from creating 0-sized framebuffers.
         // TODO: find a way to bubble an error when the size is too large
-        let width = std::cmp::max(dimensions.width, 1);
-        let height = std::cmp::max(dimensions.height, 1);
+        let width = std::cmp::max(
+            std::cmp::min(
+                dimensions.width,
+                self.descriptors.limits.max_texture_dimension_2d,
+            ),
+            1,
+        );
+        let height = std::cmp::max(
+            std::cmp::min(
+                dimensions.height,
+                self.descriptors.limits.max_texture_dimension_2d,
+            ),
+            1,
+        );
         self.target.resize(&self.descriptors.device, width, height);
 
         let size = wgpu::Extent3d {
@@ -1609,4 +1676,56 @@ struct Texture {
     height: u32,
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
+}
+
+// We try to request the highest limits we can get away with
+async fn request_device(
+    adapter: &wgpu::Adapter,
+    trace_path: Option<&Path>,
+) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
+    if let Ok(result) =
+        request_device_with_limits(&adapter, trace_path, wgpu::Limits::default()).await
+    {
+        return Ok(result);
+    }
+    if let Ok(result) = request_device_with_limits(
+        &adapter,
+        trace_path,
+        wgpu::Limits {
+            max_texture_dimension_2d: 4096,
+            ..wgpu::Limits::downlevel_defaults()
+        },
+    )
+    .await
+    {
+        return Ok(result);
+    }
+    if let Ok(result) =
+        request_device_with_limits(&adapter, trace_path, wgpu::Limits::downlevel_defaults()).await
+    {
+        return Ok(result);
+    }
+    request_device_with_limits(
+        &adapter,
+        trace_path,
+        wgpu::Limits::downlevel_webgl2_defaults(),
+    )
+    .await
+}
+
+async fn request_device_with_limits(
+    adapter: &wgpu::Adapter,
+    trace_path: Option<&Path>,
+    limits: wgpu::Limits,
+) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
+    adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                features: wgpu::Features::empty(),
+                limits,
+            },
+            trace_path,
+        )
+        .await
 }
