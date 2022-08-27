@@ -1227,7 +1227,7 @@ async fn create_renderer(
     document: &web_sys::Document,
     config: &Config,
 ) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
-    #[cfg(not(any(feature = "canvas", feature = "webgl", feature = "wgpu")))]
+    #[cfg(not(any(feature = "canvas", feature = "webgl")))]
     std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
 
     let _is_transparent = config.wmode.as_deref() == Some("transparent");
