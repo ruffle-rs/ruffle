@@ -20,15 +20,15 @@ use clap::Parser;
 use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
 use rfd::FileDialog;
 use ruffle_core::{
-    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, GcArena, Player, PlayerBuilder,
-    PlayerEvent, StageDisplayState, ViewportDimensions,
+    config::Letterbox, events::KeyCode, tag_utils::SwfMovie, Player, PlayerBuilder, PlayerEvent,
+    StageDisplayState, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::WgpuRenderBackend;
 use std::cell::RefCell;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use url::Url;
@@ -40,10 +40,8 @@ use winit::event::{
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
-type RuffleGcArena = Weak<RefCell<GcArena>>;
-
 thread_local! {
-    static GC_ARENA: RefCell<Option<RuffleGcArena>> = RefCell::default();
+    static CALLSTACK: RefCell<Option<StaticCallstack>> = RefCell::default();
 }
 
 #[derive(Parser, Debug)]
@@ -281,8 +279,8 @@ impl App {
                 Box::new(on_metadata),
             );
 
-            GC_ARENA.with(|arena| {
-                *arena.borrow_mut() = Some(player.lock().unwrap().arena());
+            CALLSTACK.with(|callstack| {
+                *callstack.borrow_mut() = Some(player.lock().unwrap().callstack());
             })
         }
 
@@ -833,16 +831,9 @@ fn init() {
 }
 
 fn panic_hook() {
-    GC_ARENA.with(|arena| {
-        if let Some(arena) = arena.borrow().clone().and_then(|a| a.upgrade()) {
-            if let Ok(arena) = arena.try_borrow() {
-                arena.mutate(|_mc, root| {
-                    let call_stack = root.callstack.read();
-                    if let Some(avm2) = call_stack.avm2 {
-                        println!("AVM2 stack backtrace: {}", &*avm2.read());
-                    }
-                })
-            }
+    CALLSTACK.with(|callstack| {
+        if let Some(callstack) = &*callstack.borrow() {
+            callstack.avm2(|callstack| println!("AVM2 stack trace: {}", callstack))
         }
     });
 }

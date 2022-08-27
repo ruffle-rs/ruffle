@@ -58,20 +58,40 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct GcRoot<'gc> {
-    pub callstack: GcCell<'gc, GcCallstack<'gc>>,
-    pub data: GcCell<'gc, GcRootData<'gc>>,
+struct GcRoot<'gc> {
+    callstack: GcCell<'gc, GcCallstack<'gc>>,
+    data: GcCell<'gc, GcRootData<'gc>>,
 }
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-pub struct GcCallstack<'gc> {
-    pub avm2: Option<GcCell<'gc, CallStack<'gc>>>,
+struct GcCallstack<'gc> {
+    avm2: Option<GcCell<'gc, CallStack<'gc>>>,
+}
+
+#[derive(Clone)]
+pub struct StaticCallstack {
+    arena: RcWeak<RefCell<GcArena>>,
+}
+
+impl StaticCallstack {
+    pub fn avm2(&self, f: impl for<'gc> FnOnce(&CallStack<'gc>)) {
+        if let Some(arena) = self.arena.upgrade() {
+            if let Ok(arena) = arena.try_borrow() {
+                arena.mutate(|_, root| {
+                    let callstack = root.callstack.read();
+                    if let Some(callstack) = callstack.avm2 {
+                        f(&callstack.read())
+                    }
+                })
+            }
+        }
+    }
 }
 
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct GcRootData<'gc> {
+struct GcRootData<'gc> {
     library: Library<'gc>,
 
     /// The root of the display object hierarchy.
@@ -160,7 +180,7 @@ impl<'gc> GcRootData<'gc> {
     }
 }
 
-make_arena!(pub GcArena, GcRoot);
+make_arena!(GcArena, GcRoot);
 
 type Audio = Box<dyn AudioBackend>;
 type Navigator = Box<dyn NavigatorBackend>;
@@ -1664,8 +1684,10 @@ impl Player {
         self.max_execution_duration = max_execution_duration
     }
 
-    pub fn arena(&self) -> RcWeak<RefCell<GcArena>> {
-        Rc::downgrade(&self.gc_arena)
+    pub fn callstack(&self) -> StaticCallstack {
+        StaticCallstack {
+            arena: Rc::downgrade(&self.gc_arena),
+        }
     }
 }
 
