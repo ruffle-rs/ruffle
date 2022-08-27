@@ -59,14 +59,14 @@ pub const NEWEST_PLAYER_VERSION: u8 = 32;
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct GcRoot<'gc> {
-    pub global: GcCell<'gc, GcGlobalData<'gc>>,
+    pub callstack: GcCell<'gc, GcCallstack<'gc>>,
     pub data: GcCell<'gc, GcRootData<'gc>>,
 }
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-pub struct GcGlobalData<'gc> {
-    pub avm2_callstack: Option<GcCell<'gc, CallStack<'gc>>>,
+pub struct GcCallstack<'gc> {
+    pub avm2: Option<GcCell<'gc, CallStack<'gc>>>,
 }
 
 #[derive(Collect)]
@@ -1917,7 +1917,7 @@ impl PlayerBuilder {
                 gc_arena: Rc::new(RefCell::new(GcArena::new(
                     ArenaParameters::default(),
                     |gc_context| GcRoot {
-                        global: GcCell::allocate(gc_context, GcGlobalData::default()),
+                        callstack: GcCell::allocate(gc_context, GcCallstack::default()),
                         data: GcCell::allocate(
                             gc_context,
                             GcRootData {
@@ -1958,7 +1958,7 @@ impl PlayerBuilder {
         });
         player_lock.gc_arena.borrow().mutate(|context, root| {
             let call_stack = root.data.read().avm2.call_stack();
-            root.global.write(context).avm2_callstack = Some(call_stack);
+            root.callstack.write(context).avm2 = Some(call_stack);
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);

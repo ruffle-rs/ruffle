@@ -837,9 +837,9 @@ fn panic_hook() {
         if let Some(arena) = arena.borrow().clone().and_then(|a| a.upgrade()) {
             if let Ok(arena) = arena.try_borrow() {
                 arena.mutate(|_mc, root| {
-                    let global = root.global.read();
-                    if let Some(call_stack) = global.avm2_callstack {
-                        println!("AVM2 stack backtrace: {}", &*call_stack.read());
+                    let call_stack = root.callstack.read();
+                    if let Some(avm2) = call_stack.avm2 {
+                        println!("AVM2 stack backtrace: {}", &*avm2.read());
                     }
                 })
             }
