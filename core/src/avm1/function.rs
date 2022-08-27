@@ -380,7 +380,7 @@ impl<'gc> Executable<'gc> {
             // * Use the SWF version of `this`.
             // * Use the base clip of `this`.
             // * Allocate a new scope using the given base clip. No previous scope is closed over.
-            let swf_version = base_clip.swf_version();
+            let swf_version = base_clip.swf_version().max(5);
             let base_clip_obj = match base_clip.object() {
                 Value::Object(o) => o,
                 _ => unreachable!(),

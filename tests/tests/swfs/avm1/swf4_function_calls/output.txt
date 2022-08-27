@@ -1,0 +1,7 @@
+// Outside function
+1 == 1: 1
+4 / 0: #ERROR#
+
+// Inside function
+1 == 1: true
+4 / 0: Infinity
