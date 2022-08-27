@@ -100,6 +100,7 @@ pub struct SystemClasses<'gc> {
     pub illegaloperationerror: ClassObject<'gc>,
     pub eventdispatcher: ClassObject<'gc>,
     pub rectangle: ClassObject<'gc>,
+    pub keyboardevent: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -169,6 +170,7 @@ impl<'gc> SystemClasses<'gc> {
             illegaloperationerror: object,
             eventdispatcher: object,
             rectangle: object,
+            keyboardevent: object,
         }
     }
 }
@@ -711,6 +713,7 @@ fn load_playerglobal<'gc>(
             ("flash.events", "Event", event),
             ("flash.events", "TextEvent", textevent),
             ("flash.events", "ErrorEvent", errorevent),
+            ("flash.events", "KeyboardEvent", keyboardevent),
             ("flash.events", "ProgressEvent", progressevent),
             ("flash.events", "SecurityErrorEvent", securityerrorevent),
             ("flash.events", "IOErrorEvent", ioerrorevent),
