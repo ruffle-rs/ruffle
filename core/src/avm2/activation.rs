@@ -2672,12 +2672,12 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         type_name_index: Index<AbcMultiname>,
     ) -> Result<FrameControl<'gc>, Error> {
-        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop();
 
         let multiname = self.pool_multiname_static(method, type_name_index)?;
         let class = self.resolve_class(&multiname)?;
 
-        if value.is_of_type(class, self)? {
+        if value.is_of_type(self, class)? {
             self.context.avm2.push(value);
         } else {
             self.context.avm2.push(Value::Null);
@@ -2694,9 +2694,9 @@ impl<'a, 'gc, 'gc_context> Activation<'a, 'gc, 'gc_context> {
             .as_object()
             .and_then(|c| c.as_class_object())
             .ok_or("Cannot coerce a value to a type that is null, undefined, or not a class")?;
-        let value = self.context.avm2.pop().coerce_to_object(self)?;
+        let value = self.context.avm2.pop();
 
-        if value.is_of_type(class, self)? {
+        if value.is_of_type(self, class)? {
             self.context.avm2.push(value);
         } else {
             self.context.avm2.push(Value::Null);
